@@ -1412,6 +1412,33 @@ class Delegate_test : public beast::unit_test::Suite
             env(trust(alice, gw["USD"](50), tfClearNoRipple), delegate::As(bob));
         }
 
+        // Freezing a trustline with TrustlineFreeze granular permission is rejected
+        // when the delegator has set lsfNoFreeze.
+        {
+            Env env(*this);
+            Account const gw{"gw"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            env.fund(XRP(10000), gw, alice, bob);
+            env(trust(alice, gw["USD"](50)));
+            env.close();
+
+            // gw sets lsfNoFreeze
+            env(fset(gw, asfNoFreeze));
+            env.close();
+
+            env(delegate::set(gw, bob, {"TrustlineFreeze", "TrustlineUnfreeze"}));
+            env.close();
+
+            // bob cannot freeze on gw's behalf because gw has lsfNoFreeze
+            env(trust(gw, gw["USD"](0), alice, tfSetFreeze),
+                delegate::As(bob),
+                Ter(terNO_DELEGATE_PERMISSION));
+
+            // Unfreeze is still allowed
+            env(trust(gw, gw["USD"](0), alice, tfClearFreeze), delegate::As(bob));
+        }
+
         // tfFullyCanonicalSig won't block delegated transaction
         {
             Env env(*this);

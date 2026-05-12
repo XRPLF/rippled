@@ -148,6 +148,18 @@ TrustSet::checkGranularSemantics(
     if (curLimit != saLimitAllow)
         return terNO_DELEGATE_PERMISSION;
 
+    // A delegate cannot freeze on behalf of an account that has enabled lsfNoFreeze.
+    // We reject early here to prevent charging the delegate a fee for an operation that will
+    // either be rejected later (with featureDeepFreeze) or succeed silently without applying
+    // the freeze flags (without featureDeepFreeze).
+    std::uint32_t const uTxFlags = tx.getFlags();
+    if ((uTxFlags & tfSetFreeze) != 0u)
+    {
+        auto const sleDelegator = view.read(keylet::account(tx[sfAccount]));
+        if (sleDelegator && sleDelegator->isFlag(lsfNoFreeze))
+            return terNO_DELEGATE_PERMISSION;
+    }
+
     return tesSUCCESS;
 }
 
