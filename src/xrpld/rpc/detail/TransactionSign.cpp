@@ -322,10 +322,10 @@ checkPayment(
 
             auto j = app.getJournal("RPCHandler");
             JLOG(j.debug()) << "transactionSign: build_path: "
-                            << result.getJson(JsonOptions::KNone);
+                            << result.getJson(JsonOptions::Values::None);
 
             if (!result.empty())
-                txJson[jss::Paths] = result.getJson(JsonOptions::KNone);
+                txJson[jss::Paths] = result.getJson(JsonOptions::Values::None);
         }
     }
     return json::Value();
@@ -760,12 +760,12 @@ transactionFormatResultImpl(Transaction::pointer tpTrans, unsigned apiVersion)
     {
         if (apiVersion > 1)
         {
-            jvResult[jss::tx_json] = tpTrans->getJson(JsonOptions::KDisableApiPriorV2);
+            jvResult[jss::tx_json] = tpTrans->getJson(JsonOptions::Values::DisableApiPriorV2);
             jvResult[jss::hash] = to_string(tpTrans->getID());
         }
         else
         {
-            jvResult[jss::tx_json] = tpTrans->getJson(JsonOptions::KNone);
+            jvResult[jss::tx_json] = tpTrans->getJson(JsonOptions::Values::None);
         }
 
         RPC::insertDeliverMax(
@@ -972,7 +972,7 @@ checkFee(
 
 //------------------------------------------------------------------------------
 
-/** Returns a json::objectValue. */
+/** Returns a json::ValueType::Object. */
 json::Value
 transactionSign(
     json::Value jvRequest,
@@ -1006,7 +1006,7 @@ transactionSign(
     return transactionFormatResultImpl(txn.second, apiVersion);
 }
 
-/** Returns a json::objectValue. */
+/** Returns a json::ValueType::Object. */
 json::Value
 transactionSubmit(
     json::Value jvRequest,
@@ -1129,7 +1129,7 @@ sortAndValidateSigners(STArray& signers, AccountID const& signingForID)
 
 }  // namespace detail
 
-/** Returns a json::objectValue. */
+/** Returns a json::ValueType::Object. */
 json::Value
 transactionSignFor(
     json::Value jvRequest,
@@ -1241,7 +1241,7 @@ transactionSignFor(
     return transactionFormatResultImpl(txn.second, apiVersion);
 }
 
-/** Returns a json::objectValue. */
+/** Returns a json::ValueType::Object. */
 json::Value
 transactionSubmitMultiSigned(
     json::Value jvRequest,

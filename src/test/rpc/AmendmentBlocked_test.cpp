@@ -75,7 +75,7 @@ class AmendmentBlocked_test : public beast::unit_test::Suite
         pfReq[jss::subcommand] = "create";
         pfReq[jss::source_account] = alice.human();
         pfReq[jss::destination_account] = bob.human();
-        pfReq[jss::destination_amount] = bob["USD"](20).value().getJson(JsonOptions::KNone);
+        pfReq[jss::destination_amount] = bob["USD"](20).value().getJson(JsonOptions::Values::None);
         jr = wsc->invoke("path_find", pfReq)[jss::result];
         BEAST_EXPECT(
             jr.isMember(jss::alternatives) && jr[jss::alternatives].isArray() &&
@@ -140,7 +140,7 @@ class AmendmentBlocked_test : public beast::unit_test::Suite
         pfReq[jss::subcommand] = "create";
         pfReq[jss::source_account] = alice.human();
         pfReq[jss::destination_account] = bob.human();
-        pfReq[jss::destination_amount] = bob["USD"](20).value().getJson(JsonOptions::KNone);
+        pfReq[jss::destination_amount] = bob["USD"](20).value().getJson(JsonOptions::Values::None);
         jr = wsc->invoke("path_find", pfReq)[jss::result];
         BEAST_EXPECT(
             jr.isMember(jss::alternatives) && jr[jss::alternatives].isArray() &&

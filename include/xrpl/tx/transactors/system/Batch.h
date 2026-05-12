@@ -9,7 +9,7 @@ namespace xrpl {
 class Batch : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
+    static constexpr auto kCONSEQUENCES_FACTORY = ConsequencesFactoryType::Normal;
 
     explicit Batch(ApplyContext& ctx) : Transactor(ctx)
     {

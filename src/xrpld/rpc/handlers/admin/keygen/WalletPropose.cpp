@@ -126,7 +126,7 @@ walletPropose(json::Value const& params)
 
     auto const publicKey = generateKeyPair(*keyType, *seed).first;
 
-    json::Value obj(json::ObjectValue);
+    json::Value obj(json::ValueType::Object);
 
     auto const seed1751 = seedAs1751(*seed);
     auto const seedHex = strHex(*seed);

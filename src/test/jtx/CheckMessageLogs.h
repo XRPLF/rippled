@@ -16,20 +16,20 @@ class CheckMessageLogs : public Logs
         CheckMessageLogs& owner_;
 
     public:
-        CheckMessageSink(beast::severities::Severity threshold, CheckMessageLogs& owner)
+        CheckMessageSink(beast::Severity threshold, CheckMessageLogs& owner)
             : beast::Journal::Sink(threshold, false), owner_(owner)
         {
         }
 
         void
-        write(beast::severities::Severity level, std::string const& text) override
+        write(beast::Severity level, std::string const& text) override
         {
             if (text.find(owner_.msg_) != std::string::npos)
                 *owner_.pFound_ = true;
         }
 
         void
-        writeAlways(beast::severities::Severity level, std::string const& text) override
+        writeAlways(beast::Severity level, std::string const& text) override
         {
             write(level, text);
         }
@@ -43,12 +43,12 @@ public:
        found
     */
     CheckMessageLogs(std::string msg, bool* pFound)
-        : Logs{beast::severities::KDebug}, msg_{std::move(msg)}, pFound_{pFound}
+        : Logs{beast::Severity::Debug}, msg_{std::move(msg)}, pFound_{pFound}
     {
     }
 
     std::unique_ptr<beast::Journal::Sink>
-    makeSink(std::string const& partition, beast::severities::Severity threshold) override
+    makeSink(std::string const& partition, beast::Severity threshold) override
     {
         return std::make_unique<CheckMessageSink>(threshold, *this);
     }

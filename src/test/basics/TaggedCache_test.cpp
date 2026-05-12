@@ -4,6 +4,7 @@
 #include <xrpl/basics/TaggedCache.ipp>  // IWYU pragma: keep
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/Protocol.h>
 
 #include <memory>
@@ -27,7 +28,7 @@ public:
     run() override
     {
         using namespace std::chrono_literals;
-        using namespace beast::severities;
+        using beast::Severity;
         test::SuiteJournal journal("TaggedCache_test", *this);
 
         TestStopwatch clock;

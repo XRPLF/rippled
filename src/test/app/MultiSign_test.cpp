@@ -692,7 +692,7 @@ public:
         {
             aliceSeq = env.seq(alice);
             json::Value jv = setupTx();
-            jv[jss::tx_json][sfSigners.fieldName] = json::Value{json::ArrayValue};
+            jv[jss::tx_json][sfSigners.fieldName] = json::Value{json::ValueType::Array};
             beckySign(jv);
             auto jrr = env.rpc("json", "submit_multisigned", to_string(jv))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "error");

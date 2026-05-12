@@ -164,7 +164,7 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
         }
     }
 
-    json::Value jvObj(json::ObjectValue);
+    json::Value jvObj(json::ValueType::Object);
     jvObj[jss::type] = "bookChanges";
 
     // retrieve validated information from LedgerHeader class
@@ -174,7 +174,7 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
     jvObj[jss::ledger_time] =
         json::Value::UInt(lpAccepted->header().closeTime.time_since_epoch().count());
 
-    jvObj[jss::changes] = json::ArrayValue;
+    jvObj[jss::changes] = json::ValueType::Array;
 
     auto volToStr = [](STAmount const& vol) {
         return vol.asset().visit(
@@ -188,7 +188,7 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
 
     for (auto const& entry : tally)
     {
-        json::Value& inner = jvObj[jss::changes].append(json::ObjectValue);
+        json::Value& inner = jvObj[jss::changes].append(json::ValueType::Object);
 
         STAmount const volA = std::get<0>(entry.second);
         STAmount const volB = std::get<1>(entry.second);
