@@ -110,12 +110,13 @@ PermissionedDomainSet::doApply()
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
 
-        Keylet const pdKeylet =
-            keylet::permissionedDomain(account_, ctx_.tx.getFieldU32(sfSequence));
+        bool const fix313 = view().rules().enabled(fixSecurity3_1_3);
+        auto const seq = fix313 ? ctx_.tx.getSeqValue() : ctx_.tx.getFieldU32(sfSequence);
+        Keylet const pdKeylet = keylet::permissionedDomain(account_, seq);
         auto slePd = std::make_shared<SLE>(pdKeylet);
 
         slePd->setAccountID(sfOwner, account_);
-        slePd->setFieldU32(sfSequence, ctx_.tx.getFieldU32(sfSequence));
+        slePd->setFieldU32(sfSequence, seq);
         slePd->peekFieldArray(sfAcceptedCredentials) = std::move(sortedLE);
         auto const page =
             view().dirInsert(keylet::ownerDir(account_), pdKeylet, describeOwnerDir(account_));
