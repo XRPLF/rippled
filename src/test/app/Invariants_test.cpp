@@ -94,7 +94,7 @@ class Invariants_test : public beast::unit_test::Suite
     static FeatureBitset
     defaultAmendments()
     {
-        return xrpl::test::jtx::testableAmendments() | featureInvariantsV1_1 | fixSecurity3_1_3;
+        return xrpl::test::jtx::testableAmendments() | fixSecurity3_1_3 | fixCleanup3_2_0;
     }
 
     /** Run a specific test case to put the ledger into a state that will be
@@ -3401,7 +3401,7 @@ class Invariants_test : public beast::unit_test::Suite
 
                 sleShares->at(sfFlags) = 0;
                 // Setting wrong pseudo account ID
-                sleShares->at(sfIssuer) = AccountID(uint160(42));
+                sleShares->at(sfIssuer) = AccountID(42);
                 sleShares->at(sfOutstandingAmount) = 0;
                 sleShares->at(sfSequence) = sequence;
 
