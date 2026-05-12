@@ -283,8 +283,16 @@ jobs:
 
       - name: Show test failure summary
         if: ${{ failure() && !inputs.build_only }}
-        working-directory: ${{ runner.os == 'Windows' && format('{0}/{1}', env.BUILD_DIR, inputs.build_type) || env.BUILD_DIR }}
+        env:
+          WORKING_DIR: ${{ runner.os == 'Windows' && format('{0}\{1}', env.BUILD_DIR, inputs.build_type) || env.BUILD_DIR }}
         run: |
+          if [ ! -d "${WORKING_DIR}" ]; then
+            echo "Working directory '${WORKING_DIR}' does not exist."
+            exit 0
+          fi
+
+          cd "${WORKING_DIR}"
+
           if [ ! -f unittest.log ]; then
             echo "unittest.log not found; embedded tests may not have run."
             exit 0

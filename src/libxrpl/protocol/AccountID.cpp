@@ -105,7 +105,7 @@ parseBase58(std::string const& s)
     auto const result = decodeBase58Token(s, TokenType::AccountID);
     if (result.size() != AccountID::kBYTES)
         return std::nullopt;
-    return AccountID{result};
+    return AccountID::fromRaw(result);
 }
 
 //------------------------------------------------------------------------------
@@ -150,7 +150,7 @@ calcAccountID(PublicKey const& pk)
 
     RipeshaHasher rsh;
     rsh(pk.data(), pk.size());
-    return AccountID{static_cast<RipeshaHasher::result_type>(rsh)};
+    return AccountID::fromRaw(static_cast<RipeshaHasher::result_type>(rsh));
 }
 
 AccountID const&
