@@ -35,6 +35,7 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/jss.h>
 
 #include <chrono>
 #include <cstddef>
