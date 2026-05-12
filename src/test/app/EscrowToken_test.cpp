@@ -929,26 +929,21 @@ struct EscrowToken_test : public beast::unit_test::Suite
             env(trust(alice, USD(0)));
             env.close();
 
-            auto const trustLineKey =
-                keylet::line(alice.id(), gw.id(), USD.currency);
+            auto const trustLineKey = keylet::line(alice.id(), gw.id(), USD.currency);
             BEAST_EXPECT(!env.current()->exists(trustLineKey));
 
             env.close();
             env.close();
 
-            auto const expectedResult =
-                env.current()->rules().enabled(fixCleanup3_2_0)
+            auto const expectedResult = env.current()->rules().enabled(fixCleanup3_2_0)
                 ? Ter(tesSUCCESS)
                 : Ter(tefEXCEPTION);
-            env(escrow::cancel(alice, alice, seq),
-                Fee(baseFee),
-                expectedResult);
+            env(escrow::cancel(alice, alice, seq), Fee(baseFee), expectedResult);
             env.close();
 
             if (env.current()->rules().enabled(fixCleanup3_2_0))
             {
-                BEAST_EXPECT(
-                    !env.le(keylet::escrow(alice.id(), seq)));
+                BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), seq)));
                 BEAST_EXPECT(env.current()->exists(trustLineKey));
                 BEAST_EXPECT(env.balance(alice, USD) == USD(1'000));
             }
