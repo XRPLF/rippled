@@ -28,6 +28,13 @@ namespace xrpl {
 intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMapTreeNode::makeTransaction(Slice data, SHAMapHash const& hash, bool hashValid)
 {
+    if (data.size() < kMIN_SHA_MAP_ITEM_BYTES)
+    {
+        Throw<std::runtime_error>(
+            "Short TXN node: " + std::to_string(data.size()) + " bytes (minimum " +
+            std::to_string(kMIN_SHA_MAP_ITEM_BYTES) + " required)");
+    }
+
     auto item = makeShamapitem(sha512Half(HashPrefix::TransactionId, data), data);
 
     if (hashValid)
@@ -44,13 +51,29 @@ SHAMapTreeNode::makeTransactionWithMeta(Slice data, SHAMapHash const& hash, bool
     uint256 tag;
 
     if (s.size() < tag.kBYTES)
-        Throw<std::runtime_error>("Short TXN+MD node");
+    {
+        Throw<std::runtime_error>(
+            "Short TXN+MD node: " + std::to_string(s.size()) + " bytes (minimum " +
+            std::to_string(tag.kBYTES) + " required for tag)");
+    }
 
     // FIXME: improve this interface so that the above check isn't needed
     if (!s.getBitString(tag, s.size() - tag.kBYTES))
-        Throw<std::out_of_range>("Short TXN+MD node (" + std::to_string(s.size()) + ")");
+    {
+        Throw<std::out_of_range>(
+            "Short TXN+MD node: failed to read tag at offset " +
+            std::to_string(s.size() - tag.kBYTES));
+    }
 
     s.chop(tag.kBYTES);
+
+    if (s.size() < kMIN_SHA_MAP_ITEM_BYTES)
+    {
+        Throw<std::runtime_error>(
+            "Short TXN+MD node: " + std::to_string(s.size()) +
+            " bytes after tag removal (minimum " + std::to_string(kMIN_SHA_MAP_ITEM_BYTES) +
+            " required)");
+    }
 
     auto item = makeShamapitem(tag, s.slice());
 
@@ -68,16 +91,30 @@ SHAMapTreeNode::makeAccountState(Slice data, SHAMapHash const& hash, bool hashVa
     uint256 tag;
 
     if (s.size() < tag.kBYTES)
-        Throw<std::runtime_error>("short AS node");
+    {
+        Throw<std::runtime_error>(
+            "Short AS node: " + std::to_string(s.size()) + " bytes (minimum " +
+            std::to_string(tag.kBYTES) + " required for tag)");
+    }
 
     // FIXME: improve this interface so that the above check isn't needed
     if (!s.getBitString(tag, s.size() - tag.kBYTES))
-        Throw<std::out_of_range>("Short AS node (" + std::to_string(s.size()) + ")");
+    {
+        Throw<std::out_of_range>(
+            "Short AS node: failed to read tag at offset " + std::to_string(s.size() - tag.kBYTES));
+    }
 
     s.chop(tag.kBYTES);
 
     if (tag.isZero())
         Throw<std::runtime_error>("Invalid AS node");
+
+    if (s.size() < kMIN_SHA_MAP_ITEM_BYTES)
+    {
+        Throw<std::runtime_error>(
+            "Short AS node: " + std::to_string(s.size()) + " bytes after tag removal (minimum " +
+            std::to_string(kMIN_SHA_MAP_ITEM_BYTES) + " required)");
+    }
 
     auto item = makeShamapitem(tag, s.slice());
 
