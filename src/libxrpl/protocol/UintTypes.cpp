@@ -35,7 +35,7 @@ constexpr std::size_t kIsoCodeLength = 3;
 std::string
 to_string(Currency const& currency)
 {
-    if (currency == beast::kZERO)
+    if (currency == beast::kZero)
         return systemCurrencyCode();
 
     if (currency == noCurrency())
@@ -66,7 +66,7 @@ toCurrency(Currency& currency, std::string const& code)
 {
     if (code.empty() || (code.compare(systemCurrencyCode()) == 0))
     {
-        currency = beast::kZERO;
+        currency = beast::kZero;
         return true;
     }
 
@@ -76,7 +76,7 @@ toCurrency(Currency& currency, std::string const& code)
         if (code.find_first_not_of(detail::kIsoCharSet) != std::string::npos)
             return false;
 
-        currency = beast::kZERO;
+        currency = beast::kZero;
 
         std::ranges::copy(code, currency.begin() + detail::kIsoCodeOffset);
 
@@ -98,22 +98,22 @@ toCurrency(std::string const& code)
 Currency const&
 xrpCurrency()
 {
-    static Currency const kCURRENCY(beast::kZERO);
-    return kCURRENCY;
+    static Currency const kCurrency(beast::kZero);
+    return kCurrency;
 }
 
 Currency const&
 noCurrency()
 {
-    static Currency const kCURRENCY(1);
-    return kCURRENCY;
+    static Currency const kCurrency(1);
+    return kCurrency;
 }
 
 Currency const&
 badCurrency()
 {
-    static Currency const kCURRENCY(0x5852500000000000);
-    return kCURRENCY;
+    static Currency const kCurrency(0x5852500000000000);
+    return kCurrency;
 }
 
 }  // namespace xrpl

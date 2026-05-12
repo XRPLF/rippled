@@ -39,7 +39,7 @@
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/format/free_funcs.hpp>
-#include <boost/optional/optional.hpp>
+#include <boost/optional/optional.hpp>  // IWYU pragma: keep
 #include <boost/system/detail/error_code.hpp>
 
 #include <soci/blob.h>
@@ -87,7 +87,7 @@ toString(TableType type)
             return "AccountTransactions";
         // LCOV_EXCL_START
         default:
-            UNREACHABLE("xrpl::detail::to_string : invalid TableType");
+            UNREACHABLE("xrpl::detail::toString : invalid TableType");
             return "Unknown";
             // LCOV_EXCL_STOP
     }
@@ -230,7 +230,7 @@ saveValidatedLedger(
         // LCOV_EXCL_STOP
     }
 
-    if (ledger->header().accountHash != ledger->stateMap().getHash().asUint256())
+    if (ledger->header().accountHash != ledger->stateMap().getHash().asUInt256())
     {
         // LCOV_EXCL_START
         JLOG(j.fatal()) << "sAL: " << ledger->header().accountHash
@@ -241,7 +241,7 @@ saveValidatedLedger(
     }
 
     XRPL_ASSERT(
-        ledger->header().txHash == ledger->txMap().getHash().asUint256(),
+        ledger->header().txHash == ledger->txMap().getHash().asUInt256(),
         "xrpl::detail::saveValidatedLedger : transaction hash match");
 
     // Save the ledger header in the hashed object store
@@ -357,7 +357,7 @@ saveValidatedLedger(
                     // It's okay for pseudo transactions to not affect any
                     // accounts.  But otherwise...
                     JLOG(j.warn()) << "Transaction in ledger " << seq << " affects no accounts";
-                    JLOG(j.warn()) << sleTxn->getJson(JsonOptions::KNone);
+                    JLOG(j.warn()) << sleTxn->getJson(JsonOptions::Values::None);
                 }
 
                 *db
@@ -1047,7 +1047,7 @@ accountTxPage(
 
     std::optional<RelationalDatabase::AccountTxMarker> newmarker;
 
-    static std::string const kPREFIX(
+    static std::string const kPrefix(
         R"(SELECT AccountTransactions.LedgerSeq,AccountTransactions.TxnSeq,
           Status,RawTxn,TxnMeta
           FROM AccountTransactions INNER JOIN Transactions
@@ -1064,7 +1064,7 @@ accountTxPage(
     if (findLedger == 0)
     {
         sql = boost::str(
-            boost::format(kPREFIX + (R"(AccountTransactions.LedgerSeq BETWEEN %u AND %u
+            boost::format(kPrefix + (R"(AccountTransactions.LedgerSeq BETWEEN %u AND %u
              ORDER BY AccountTransactions.LedgerSeq %s,
              AccountTransactions.TxnSeq %s
              LIMIT %u;)")) %

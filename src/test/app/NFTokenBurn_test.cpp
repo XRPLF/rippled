@@ -337,7 +337,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
         BEAST_EXPECT(nftCount(env, becky.acct) == 0);
         BEAST_EXPECT(nftCount(env, minter.acct) == 0);
 
-        // When all nfts are burned kNONE of the accounts should have
+        // When all nfts are burned kNone of the accounts should have
         // an ownerCount.
         BEAST_EXPECT(ownerCount(env, alice) == 0);
         BEAST_EXPECT(ownerCount(env, becky) == 0);
@@ -771,7 +771,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
                 // checks.  These variables must outlive the ApplyContext.
                 OpenView ov{*env.current()};
                 STTx const tx{ttACCOUNT_SET, [](STObject&) {}};
-                test::StreamSink sink{beast::severities::KWarning};
+                test::StreamSink sink{beast::Severity::Warning};
                 beast::Journal const jlog{sink};
                 ApplyContext ac{
                     env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
@@ -804,7 +804,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
                 // checks.  These variables must outlive the ApplyContext.
                 OpenView ov{*env.current()};
                 STTx const tx{ttACCOUNT_SET, [](STObject&) {}};
-                test::StreamSink sink{beast::severities::KWarning};
+                test::StreamSink sink{beast::Severity::Warning};
                 beast::Journal const jlog{sink};
                 ApplyContext ac{
                     env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};

@@ -745,12 +745,12 @@ public:
         // The object must exist in our table
         XRPL_ASSERT(
             slots.contains(slot->remoteEndpoint()),
-            "xrpl::PeerFinder::Logic::on_endpoints : valid slot input");
+            "xrpl::PeerFinder::Logic::onEndpoints : valid slot input");
 
         // Must be handshaked!
         XRPL_ASSERT(
             slot->state() == Slot::State::Active,
-            "xrpl::PeerFinder::Logic::on_endpoints : valid slot state");
+            "xrpl::PeerFinder::Logic::onEndpoints : valid slot state");
 
         clock_type::time_point const now(clock.now());
 
@@ -762,7 +762,7 @@ public:
 
         for (auto const& ep : list)
         {
-            XRPL_ASSERT(ep.hops, "xrpl::PeerFinder::Logic::on_endpoints : nonzero hops");
+            XRPL_ASSERT(ep.hops, "xrpl::PeerFinder::Logic::onEndpoints : nonzero hops");
 
             slot->recent.insert(ep.address, ep.hops);
 
@@ -1205,7 +1205,7 @@ Logic<Checker>::onRedirects(
 {
     std::scoped_lock const _(lock);
     std::size_t n = 0;
-    for (; first != last && n < Tuning::MaxRedirects; ++first, ++n)
+    for (; first != last && n < Tuning::kMaxRedirects; ++first, ++n)
         bootcache.insert(beast::IPAddressConversion::fromAsio(*first));
     if (n > 0)
     {

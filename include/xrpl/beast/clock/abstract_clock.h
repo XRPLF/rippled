@@ -83,8 +83,8 @@ template <class Facade, class Clock = Facade>
 AbstractClock<Facade>&
 getAbstractClock()
 {
-    static detail::AbstractClockWrapper<Facade, Clock> kCLOCK;
-    return kCLOCK;
+    static detail::AbstractClockWrapper<Facade, Clock> kClock;
+    return kClock;
 }
 
 }  // namespace beast

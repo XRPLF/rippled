@@ -104,10 +104,10 @@ private:
     /** Update peer info. If the message is from a new
      * peer or from a previously expired squelched peer then switch
      * the peer's and slot's state to Counting. If time of last
-     * selection round is > 2 * kMAX_UNSQUELCH_EXPIRE_DEFAULT then switch the
+     * selection round is > 2 * kMaxUnsquelchExpireDefault then switch the
      * slot's state to Counting. If the number of messages for the peer is >
-     * kMIN_MESSAGE_THRESHOLD then add peer to considered peers pool. If the
-     * number of considered peers who reached kMAX_MESSAGE_THRESHOLD is
+     * kMinMessageThreshold then add peer to considered peers pool. If the
+     * number of considered peers who reached kMaxMessageThreshold is
      * maxSelectedPeers_ then randomly select maxSelectedPeers_ from
      * considered peers, and call squelch handler for each peer, which is not
      * selected and not already in Squelched state. Set the state for those
@@ -181,9 +181,9 @@ private:
     void
     deleteIdlePeer(PublicKey const& validator);
 
-    /** Get random squelch duration between kMIN_UNSQUELCH_EXPIRE and
-     * min(max(kMAX_UNSQUELCH_EXPIRE_DEFAULT, kSQUELCH_PER_PEER * npeers),
-     *     kMAX_UNSQUELCH_EXPIRE_PEERS)
+    /** Get random squelch duration between kMinUnsquelchExpire and
+     * min(max(kMaxUnsquelchExpireDefault, kSquelchPerPeer * npeers),
+     *     kMaxUnsquelchExpirePeers)
      * @param npeers number of peers that can be squelched in the Slot
      */
     std::chrono::seconds
@@ -210,10 +210,10 @@ private:
     std::unordered_map<id_t, PeerInfo> peers_;  // peer's data
 
     // pool of peers considered as the source of messages
-    // from validator - peers that reached kMIN_MESSAGE_THRESHOLD
+    // from validator - peers that reached kMinMessageThreshold
     std::unordered_set<id_t> considered_;
 
-    // number of peers that reached kMAX_MESSAGE_THRESHOLD
+    // number of peers that reached kMaxMessageThreshold
     std::uint16_t reachedThreshold_{0};
 
     // last time peers were selected, used to age the slot
@@ -239,7 +239,7 @@ Slot<ClockType>::deleteIdlePeer(PublicKey const& validator)
         auto& peer = it->second;
         auto id = it->first;
         ++it;
-        if (now - peer.lastMessage > kIDLED)
+        if (now - peer.lastMessage > kIdled)
         {
             JLOG(journal_.trace())
                 << "deleteIdlePeer: " << Slice(validator) << " " << id << " idled "
@@ -333,7 +333,7 @@ Slot<ClockType>::update(
                     << "update: peer not found " << Slice(validator) << " " << id;
                 continue;
             }
-            if (now - itPeers->second.lastMessage < kIDLED)
+            if (now - itPeers->second.lastMessage < kIdled)
                 selected.insert(id);
         }
 
@@ -557,7 +557,7 @@ public:
         return baseSquelchEnabled_ && reduceRelayReady();
     }
 
-    /** Check if reduce_relay::kWAIT_ON_BOOTUP time passed since startup */
+    /** Check if reduce_relay::kWaitOnBootup time passed since startup */
     bool
     reduceRelayReady()
     {
@@ -708,7 +708,7 @@ template <typename ClockType>
 bool
 Slots<ClockType>::addPeerMessage(uint256 const& key, id_t id)
 {
-    beast::expire(peersWithMessage, reduce_relay::kIDLED);
+    beast::expire(peersWithMessage, reduce_relay::kIdled);
 
     if (key.isNonZero())
     {

@@ -61,7 +61,7 @@ setVersion(json::Value& parent, unsigned int apiVersion, bool betaEnabled)
 {
     XRPL_ASSERT(apiVersion != kApiInvalidVersion, "xrpl::RPC::setVersion : input is valid");
 
-    auto& retObj = parent[jss::version] = json::ObjectValue;
+    auto& retObj = parent[jss::version] = json::ValueType::Object;
 
     if (apiVersion == kApiVersionIfUnspecified)
     {
@@ -136,14 +136,14 @@ forApiVersions(Fn const& fn, Args&&... args)
         fn(std::integral_constant<unsigned int, MaxVer>{}, std::forward<Args>(args)...);
     }
 {
-    constexpr auto kSIZE = MaxVer + 1 - MinVer;
+    constexpr auto kSize = MaxVer + 1 - MinVer;
     [&]<std::size_t... Offset>(std::index_sequence<Offset...>) {
         // NOLINTBEGIN(bugprone-use-after-move)
         (((void)fn(
              std::integral_constant<unsigned int, MinVer + Offset>{}, std::forward<Args>(args)...)),
          ...);
         // NOLINTEND(bugprone-use-after-move)
-    }(std::make_index_sequence<kSIZE>{});
+    }(std::make_index_sequence<kSize>{});
 }
 
 template <typename Fn, typename... Args>

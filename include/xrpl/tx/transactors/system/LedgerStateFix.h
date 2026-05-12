@@ -11,7 +11,7 @@ public:
         NfTokenPageLink = 1,
     };
 
-    static constexpr ConsequencesFactoryType kConsequencesFactory{Normal};
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 
     explicit LedgerStateFix(ApplyContext& ctx) : Transactor(ctx)
     {

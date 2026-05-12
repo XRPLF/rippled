@@ -339,7 +339,7 @@ ServerHandler::onWSMessage(
     auto const size = boost::asio::buffer_size(buffers);
     if (size > RPC::Tuning::kMaxRequestSize || !json::Reader{}.parse(jv, buffers) || !jv.isObject())
     {
-        json::Value jvResult(json::ObjectValue);
+        json::Value jvResult(json::ValueType::Object);
         jvResult[jss::type] = jss::error;
         jvResult[jss::error] = "jsonInvalid";
         jvResult[jss::value] = buffersToString(buffers);
@@ -425,7 +425,7 @@ ServerHandler::processSession(
     }
 
     // Requests without "command" are invalid.
-    json::Value jr(json::ObjectValue);
+    json::Value jr(json::ValueType::Object);
     Resource::Charge loadType = Resource::kFeeReferenceRpc;
     try
     {
@@ -584,17 +584,17 @@ ServerHandler::processSession(
 static json::Value
 makeJsonError(json::Int code, json::Value&& message)
 {
-    json::Value sub{json::ObjectValue};
+    json::Value sub{json::ValueType::Object};
     sub["code"] = code;
     sub["message"] = std::move(message);
-    json::Value r{json::ObjectValue};
+    json::Value r{json::ValueType::Object};
     r["error"] = sub;
     return r;
 }
 
 json::Int constexpr kMethodNotFound = -32601;
 json::Int constexpr kServerOverloaded = -32604;
-json::Int constexpr kFORBIDDEN = -32605;
+json::Int constexpr kForbidden = -32605;
 json::Int constexpr kWrongVersion = -32606;
 
 void
@@ -637,7 +637,7 @@ ServerHandler::processRequest(
         size = jsonOrig[jss::params].size();
     }
 
-    json::Value reply(batch ? json::ArrayValue : json::ObjectValue);
+    json::Value reply(batch ? json::ValueType::Array : json::ValueType::Object);
     auto const start(std::chrono::high_resolution_clock::now());
     for (unsigned i = 0; i < size; ++i)
     {
@@ -645,7 +645,7 @@ ServerHandler::processRequest(
 
         if (!jsonRPC.isObject())
         {
-            json::Value r(json::ObjectValue);
+            json::Value r(json::ValueType::Object);
             r[jss::request] = jsonRPC;
             r[jss::error] = makeJsonError(kMethodNotFound, "Method not found");
             reply.append(r);
@@ -673,7 +673,7 @@ ServerHandler::processRequest(
                 httpReply(400, jss::invalid_API_version.cStr(), output, rpcJ);
                 return;
             }
-            json::Value r(json::ObjectValue);
+            json::Value r(json::ValueType::Object);
             r[jss::request] = jsonRPC;
             r[jss::error] = makeJsonError(kWrongVersion, jss::invalid_API_version.cStr());
             reply.append(r);
@@ -697,7 +697,7 @@ ServerHandler::processRequest(
         }
         else
         {
-            role = requestRole(required, port, json::ObjectValue, remoteIPAddress, user);
+            role = requestRole(required, port, json::ValueType::Object, remoteIPAddress, user);
         }
 
         Resource::Consumer usage;
@@ -732,7 +732,7 @@ ServerHandler::processRequest(
                 return;
             }
             json::Value r = jsonRPC;
-            r[jss::error] = makeJsonError(kFORBIDDEN, "Forbidden");
+            r[jss::error] = makeJsonError(kForbidden, "Forbidden");
             reply.append(r);
             continue;
         }
@@ -793,7 +793,7 @@ ServerHandler::processRequest(
             params = jsonRPC[jss::params];
             if (!params)
             {
-                params = json::Value(json::ObjectValue);
+                params = json::Value(json::ValueType::Object);
             }
             else if (!params.isArray() || params.size() != 1)
             {
@@ -894,7 +894,7 @@ ServerHandler::processRequest(
         if (usage.warn())
             result[jss::warning] = jss::load;
 
-        json::Value r(json::ObjectValue);
+        json::Value r(json::ValueType::Object);
         if (ripplerpc >= "2.0")
         {
             if (result.isMember(jss::error))

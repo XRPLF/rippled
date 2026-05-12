@@ -17,11 +17,11 @@
 
 namespace xrpl {
 
-STAccount::STAccount() : value_(beast::kZERO), default_(true)
+STAccount::STAccount() : value_(beast::kZero), default_(true)
 {
 }
 
-STAccount::STAccount(SField const& n) : STBase(n), value_(beast::kZERO), default_(true)
+STAccount::STAccount(SField const& n) : STBase(n), value_(beast::kZero), default_(true)
 {
 }
 
@@ -35,11 +35,11 @@ STAccount::STAccount(SField const& n, Buffer const& v) : STAccount(n)
     //    STVar::STVar (SerialIter&, SField const&)
     // which throws.  If STVar can throw in its constructor, then so can
     // STAccount.
-    if (v.size() != uint160::kBYTES)
+    if (v.size() != uint160::kBytes)
         Throw<std::runtime_error>("Invalid STAccount size");
 
     default_ = false;
-    memcpy(value_.begin(), v.data(), uint160::kBYTES);
+    memcpy(value_.begin(), v.data(), uint160::kBytes);
 }
 
 STAccount::STAccount(SerialIter& sit, SField const& name) : STAccount(name, sit.getVLBuffer())
@@ -77,7 +77,7 @@ STAccount::add(Serializer& s) const
     // Preserve the serialization behavior of an STBlob:
     //  o If we are default (all zeros) serialize as an empty blob.
     //  o Otherwise serialize 160 bits.
-    int const size = isDefault() ? 0 : uint160::kBYTES;
+    int const size = isDefault() ? 0 : uint160::kBytes;
     s.addVL(value_.data(), size);
 }
 

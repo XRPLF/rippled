@@ -430,7 +430,7 @@ DirectIPaymentStep::check(StrandContext const& ctx, std::shared_ptr<const SLE> c
         auto const authField = (src_ > dst_) ? lsfHighAuth : lsfLowAuth;
 
         if ((((*sleSrc)[sfFlags] & lsfRequireAuth) != 0u) &&
-            (((*sleLine)[sfFlags] & authField) == 0u) && (*sleLine)[sfBalance] == beast::kZERO)
+            (((*sleLine)[sfFlags] & authField) == 0u) && (*sleLine)[sfBalance] == beast::kZero)
         {
             JLOG(j_.debug()) << "DirectStepI: can't receive IOUs from issuer without auth."
                              << " src: " << src_;
@@ -451,7 +451,7 @@ DirectIPaymentStep::check(StrandContext const& ctx, std::shared_ptr<const SLE> c
 
     {
         auto const owed = creditBalance(ctx.view, dst_, src_, currency_);
-        if (owed <= beast::kZERO)
+        if (owed <= beast::kZero)
         {
             auto const limit = creditLimit(ctx.view, dst_, src_, currency_);
             if (-owed >= limit)
@@ -528,8 +528,8 @@ DirectStepI<TDerived>::revImp(
     {
         JLOG(j_.trace()) << "DirectStepI::rev: dry";
         cache_.emplace(
-            IOUAmount(beast::kZERO), IOUAmount(beast::kZERO), IOUAmount(beast::kZERO), srcDebtDir);
-        return {beast::kZERO, beast::kZERO};
+            IOUAmount(beast::kZero), IOUAmount(beast::kZero), IOUAmount(beast::kZero), srcDebtDir);
+        return {beast::kZero, beast::kZero};
     }
 
     IOUAmount const srcToDst = mulRatio(out, QUALITY_ONE, dstQIn, /*roundUp*/ true);
@@ -641,8 +641,8 @@ DirectStepI<TDerived>::fwdImp(
     {
         JLOG(j_.trace()) << "DirectStepI::fwd: dry";
         cache_.emplace(
-            IOUAmount(beast::kZERO), IOUAmount(beast::kZERO), IOUAmount(beast::kZERO), srcDebtDir);
-        return {beast::kZERO, beast::kZERO};
+            IOUAmount(beast::kZero), IOUAmount(beast::kZero), IOUAmount(beast::kZero), srcDebtDir);
+        return {beast::kZero, beast::kZero};
     }
 
     IOUAmount const srcToDst = mulRatio(in, QUALITY_ONE, srcQOut, /*roundUp*/ false);
@@ -690,7 +690,7 @@ DirectStepI<TDerived>::validFwd(PaymentSandbox& sb, ApplyView& afView, EitherAmo
     if (!cache_)
     {
         JLOG(j_.trace()) << "Expected valid cache in validFwd";
-        return {false, EitherAmount(IOUAmount(beast::kZERO))};
+        return {false, EitherAmount(IOUAmount(beast::kZero))};
     }
 
     auto const savCache = *cache_;
@@ -708,7 +708,7 @@ DirectStepI<TDerived>::validFwd(PaymentSandbox& sb, ApplyView& afView, EitherAmo
     }
     catch (FlowException const&)
     {
-        return {false, EitherAmount(IOUAmount(beast::kZERO))};
+        return {false, EitherAmount(IOUAmount(beast::kZero))};
     }
 
     // NOLINTBEGIN(bugprone-unchecked-optional-access) fwdImp sets cache_ on success

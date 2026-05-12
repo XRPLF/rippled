@@ -47,15 +47,15 @@ namespace base64 {
 inline char const*
 getAlphabet()
 {
-    static char constexpr kTAB[] = {
+    static char constexpr kTab[] = {
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"};
-    return &kTAB[0];
+    return &kTab[0];
 }
 
 inline signed char const*
 getInverse()
 {
-    static signed char constexpr kTAB[] = {
+    static signed char constexpr kTab[] = {
         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  //   0-15
         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  //  16-31
         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 62, -1, -1, -1, 63,  //  32-47
@@ -73,7 +73,7 @@ getInverse()
         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  // 224-239
         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1   // 240-255
     };
-    return &kTAB[0];
+    return &kTab[0];
 }
 
 /// Returns max chars needed to encode a base64 string

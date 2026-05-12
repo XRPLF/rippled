@@ -31,11 +31,11 @@ size_t const kJsonEscapeLength = 2;
 // All other JSON punctuation.
 char const kCloseBrace = '}';
 char const kCloseBracket = ']';
-char const kCOLON = ':';
-char const kCOMMA = ',';
+char const kColon = ':';
+char const kComma = ',';
 char const kOpenBrace = '{';
 char const kOpenBracket = '[';
-char const kQUOTE = '"';
+char const kQuote = '"';
 
 auto const kIntegralFloatsBecomeInts = false;
 
@@ -99,7 +99,7 @@ public:
         markStarted();
         std::size_t position = 0, writtenUntil = 0;
 
-        output_({&kQUOTE, 1});
+        output_({&kQuote, 1});
         auto data = bytes.data();
         for (; position < bytes.size(); ++position)
         {
@@ -116,7 +116,7 @@ public:
         }
         if (writtenUntil < position)
             output_({data + writtenUntil, position - writtenUntil});
-        output_({&kQUOTE, 1});
+        output_({&kQuote, 1});
     }
 
     void
@@ -144,7 +144,7 @@ public:
         }
         else
         {
-            output_({&kCOMMA, 1});
+            output_({&kComma, 1});
         }
     }
 
@@ -159,7 +159,7 @@ public:
 #endif
 
         stringOutput(tag);
-        output_({&kCOLON, 1});
+        output_({&kColon, 1});
     }
 
     [[nodiscard]] bool

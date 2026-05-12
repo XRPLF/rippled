@@ -761,7 +761,7 @@ private:
     /**
         parentHash_ used for logging only
     */
-    LedgerHash parentHash_{beast::kZERO};
+    LedgerHash parentHash_{beast::kZero};
 
     /** Most queue operations are done under the master lock,
         but use this mutex for the RPC "fee" command, which isn't.

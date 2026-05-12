@@ -132,7 +132,7 @@ makeFeaturesResponseHeader(
           this topic, see https://github.com/openssl/openssl/issues/5509 and
           https://github.com/XRPLF/rippled/issues/2413.
 */
-static std::optional<BaseUint<512>>
+static std::optional<BaseUInt<512>>
 hashLastMessage(SSL const* ssl, size_t (*get)(const SSL*, void*, size_t))
 {
     constexpr std::size_t kSslMinimumFinishedLength = 12;
@@ -145,7 +145,7 @@ hashLastMessage(SSL const* ssl, size_t (*get)(const SSL*, void*, size_t))
 
     sha512_hasher const h;
 
-    BaseUint<512> cookie;
+    BaseUInt<512> cookie;
     SHA512(buf, len, cookie.data());
     return cookie;
 }
@@ -171,7 +171,7 @@ makeSharedValue(stream_type& ssl, beast::Journal journal)
 
     // Both messages hash to the same value and the cookie
     // is 0. Don't allow this.
-    if (result == beast::kZERO)
+    if (result == beast::kZero)
     {
         JLOG(journal.error()) << "Cookie generation: identical finished messages";
         return std::nullopt;

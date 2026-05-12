@@ -59,12 +59,12 @@ getAccountObjects(
     // iterate NFT pages if the filter says so AND dirIndex == 0
     bool iterateNFTPages =
         (!typeFilter.has_value() || typeMatchesFilter(typeFilter.value(), ltNFTOKEN_PAGE)) &&
-        dirIndex == beast::kZERO;
+        dirIndex == beast::kZero;
 
     Keylet const firstNFTPage = keylet::nftpageMin(account);
 
     // we need to check the marker to see if it is an NFTTokenPage index.
-    if (iterateNFTPages && entryIndex != beast::kZERO)
+    if (iterateNFTPages && entryIndex != beast::kZero)
     {
         // if it is we will try to iterate the pages up to the limit
         // and then change over to the owner directory
@@ -73,7 +73,7 @@ getAccountObjects(
             iterateNFTPages = false;
     }
 
-    auto& jvObjects = (jvResult[jss::account_objects] = json::ArrayValue);
+    auto& jvObjects = (jvResult[jss::account_objects] = json::ValueType::Array);
 
     // this is a mutable version of limit, used to seamlessly switch
     // to iterating directory entries when nftokenpages are exhausted
@@ -83,7 +83,7 @@ getAccountObjects(
     if (iterateNFTPages)
     {
         Keylet const first =
-            entryIndex == beast::kZERO ? firstNFTPage : Keylet{ltNFTOKEN_PAGE, entryIndex};
+            entryIndex == beast::kZero ? firstNFTPage : Keylet{ltNFTOKEN_PAGE, entryIndex};
 
         Keylet const last = keylet::nftpageMax(account);
 
@@ -95,7 +95,7 @@ getAccountObjects(
 
         while (cp)
         {
-            jvObjects.append(cp->getJson(JsonOptions::KNone));
+            jvObjects.append(cp->getJson(JsonOptions::Values::None));
             auto const npm = (*cp)[~sfNextPageMin];
             if (npm)
             {
@@ -126,7 +126,7 @@ getAccountObjects(
         // to iterating the root directory (and the conventional
         // behaviour of this RPC function.) Therefore we should
         // zero entryIndex so as not to terribly confuse things.
-        entryIndex = beast::kZERO;
+        entryIndex = beast::kZero;
     }
 
     auto const root = keylet::ownerDir(account);
@@ -145,7 +145,7 @@ getAccountObjects(
         // directory entries. If there's no nftoken page, we will
         // give empty array for account_objects.
         if (mlimit >= limit)
-            jvResult[jss::account_objects] = json::ArrayValue;
+            jvResult[jss::account_objects] = json::ValueType::Array;
 
         // non-zero dirIndex validity was checked in the beginning of this
         // function; by this point, it should be zero. This function returns
@@ -187,7 +187,7 @@ getAccountObjects(
             if (!typeFilter.has_value() ||
                 typeMatchesFilter(typeFilter.value(), sleNode->getType()))
             {
-                jvObjects.append(sleNode->getJson(JsonOptions::KNone));
+                jvObjects.append(sleNode->getJson(JsonOptions::Values::None));
             }
 
             if (++i == mlimit)

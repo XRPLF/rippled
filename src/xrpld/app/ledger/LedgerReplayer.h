@@ -20,8 +20,8 @@ namespace LedgerReplayParameters {
 auto constexpr kTaskTimeout = std::chrono::milliseconds{500};
 
 // for LedgerReplayTask to calculate max allowed timeouts
-// = max( kTASK_MAX_TIMEOUTS_MINIMUM,
-//        (# of ledger to replay) * kTASK_MAX_TIMEOUTS_MULTIPLIER)
+// = max( kTaskMaxTimeoutsMinimum,
+//        (# of ledger to replay) * kTaskMaxTimeoutsMultiplier)
 std::uint32_t constexpr kTaskMaxTimeoutsMultiplier = 2;
 std::uint32_t constexpr kTaskMaxTimeoutsMinimum = 10;
 

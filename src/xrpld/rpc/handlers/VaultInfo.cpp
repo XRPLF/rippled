@@ -22,7 +22,7 @@ parseVault(json::Value const& params, json::Value& jvResult)
     auto const hasOwner = params.isMember(jss::owner);
     auto const hasSeq = params.isMember(jss::seq);
 
-    uint256 uNodeIndex = beast::kZERO;
+    uint256 uNodeIndex = beast::kZero;
     if (hasVaultId && !hasOwner && !hasSeq)
     {
         if (!uNodeIndex.parseHex(params[jss::vault_id].asString()))
@@ -69,8 +69,8 @@ doVaultInfo(RPC::JsonContext& context)
     if (!lpLedger)
         return jvResult;
 
-    auto const uNodeIndex = parseVault(context.params, jvResult).value_or(beast::kZERO);
-    if (uNodeIndex == beast::kZERO)
+    auto const uNodeIndex = parseVault(context.params, jvResult).value_or(beast::kZero);
+    if (uNodeIndex == beast::kZero)
     {
         jvResult[jss::error] = "malformedRequest";
         return jvResult;
@@ -87,9 +87,9 @@ doVaultInfo(RPC::JsonContext& context)
     }
 
     json::Value& vault = jvResult[jss::vault];
-    vault = sleVault->getJson(JsonOptions::KNone);
+    vault = sleVault->getJson(JsonOptions::Values::None);
     auto& share = vault[jss::shares];
-    share = sleIssuance->getJson(JsonOptions::KNone);
+    share = sleIssuance->getJson(JsonOptions::Values::None);
 
     jvResult[jss::vault] = vault;
     return jvResult;

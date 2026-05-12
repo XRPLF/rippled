@@ -56,8 +56,8 @@ TxFormats::TxFormats()
 TxFormats const&
 TxFormats::getInstance()
 {
-    static TxFormats const kINSTANCE;
-    return kINSTANCE;
+    static TxFormats const kInstance;
+    return kInstance;
 }
 
 }  // namespace xrpl

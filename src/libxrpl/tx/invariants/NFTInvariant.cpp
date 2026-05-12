@@ -74,7 +74,7 @@ ValidNFTokenPage::visitEntry(
 
             // If prev is valid, use it to establish a lower bound for
             // page entries.  If prev is not valid the lower bound is zero.
-            uint256 const loLimit = prev ? *prev & kPageBits : uint256(beast::kZERO);
+            uint256 const loLimit = prev ? *prev & kPageBits : uint256(beast::kZero);
 
             // Also verify that all NFTokenIDs in the page are sorted.
             uint256 loCmp = loLimit;

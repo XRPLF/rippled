@@ -67,7 +67,7 @@ buildVersionString()
 std::string const&
 getVersionString()
 {
-    static std::string const kVALUE = [] {
+    static std::string const kValue = [] {
         std::string const s = buildVersionString();
 
         beast::SemanticVersion v;
@@ -75,14 +75,14 @@ getVersionString()
             logicError(s + ": Bad server version string");
         return s;
     }();
-    return kVALUE;
+    return kValue;
 }
 
 std::string const&
 getFullVersionString()
 {
-    static std::string const kVALUE = systemName() + "-" + getVersionString();
-    return kVALUE;
+    static std::string const kValue = systemName() + "-" + getVersionString();
+    return kValue;
 }
 
 static constexpr std::uint64_t kImplementationVersionIdentifier = 0x183B'0000'0000'0000LLU;
@@ -155,8 +155,8 @@ encodeSoftwareVersion(std::string_view versionStr)
 std::uint64_t
 getEncodedVersion()
 {
-    static std::uint64_t const kCOOKIE = {encodeSoftwareVersion(getVersionString())};
-    return kCOOKIE;
+    static std::uint64_t const kCookie = {encodeSoftwareVersion(getVersionString())};
+    return kCookie;
 }
 
 bool

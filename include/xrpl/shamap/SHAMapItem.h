@@ -139,7 +139,7 @@ inline boost::intrusive_ptr<SHAMapItem>
 makeShamapitem(uint256 const& tag, Slice data)
 {
     XRPL_ASSERT(
-        data.size() <= megabytes<std::size_t>(16), "xrpl::make_shamapitem : maximum input size");
+        data.size() <= megabytes<std::size_t>(16), "xrpl::makeShamapitem : maximum input size");
 
     // NOLINTNEXTLINE(misc-const-correctness)
     std::uint8_t* raw = detail::gSlabber.allocate(data.size());

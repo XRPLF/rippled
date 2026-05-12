@@ -290,8 +290,8 @@ class TheoreticalQuality_test : public beast::unit_test::Suite
         auto compareClose = [](Quality const& q1, Quality const& q2) {
             // relative diff is fabs(a-b)/min(a,b)
             // can't get access to internal value. Use the rate
-            constexpr double kTOLERANCE = 0.0000001;
-            return relativeDistance(q1, q2) <= kTOLERANCE;
+            constexpr double kTolerance = 0.0000001;
+            return relativeDistance(q1, q2) <= kTolerance;
         };
 
         for (auto const& strand : sr.second)

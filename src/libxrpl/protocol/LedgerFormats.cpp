@@ -41,8 +41,8 @@ LedgerFormats::LedgerFormats()
 LedgerFormats const&
 LedgerFormats::getInstance()
 {
-    static LedgerFormats const kINSTANCE;
-    return kINSTANCE;
+    static LedgerFormats const kInstance;
+    return kInstance;
 }
 
 }  // namespace xrpl

@@ -60,7 +60,7 @@ invalidAMMAsset(Asset const& asset, std::optional<std::pair<Asset, Asset>> const
 {
     auto const err = asset.visit(
         [](MPTIssue const& issue) -> std::optional<NotTEC> {
-            if (issue.getIssuer() == beast::kZERO)
+            if (issue.getIssuer() == beast::kZero)
                 return temBAD_MPT;
             return std::nullopt;
         },
@@ -101,7 +101,7 @@ invalidAMMAmount(
 {
     if (auto const res = invalidAMMAsset(amount.asset(), pair))
         return res;
-    if (amount < beast::kZERO || (!validZero && amount == beast::kZERO))
+    if (amount < beast::kZero || (!validZero && amount == beast::kZero))
         return temBAD_AMOUNT;
     return tesSUCCESS;
 }

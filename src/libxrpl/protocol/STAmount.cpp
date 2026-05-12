@@ -228,7 +228,7 @@ STAmount::STAmount(std::uint64_t mantissa, bool negative)
 }
 
 STAmount::STAmount(XRPAmount const& amount)
-    : asset_(xrpIssue()), offset_(0), isNegative_(amount < beast::kZERO)
+    : asset_(xrpIssue()), offset_(0), isNegative_(amount < beast::kZero)
 {
     if (isNegative_)
     {
@@ -315,7 +315,7 @@ STAmount::operator=(IOUAmount const& iou)
 {
     XRPL_ASSERT(integral() == false, "xrpl::STAmount::operator=(IOUAmount) : is not integral");
     offset_ = iou.exponent();
-    isNegative_ = iou < beast::kZERO;
+    isNegative_ = iou < beast::kZero;
     if (isNegative_)
     {
         value_ = static_cast<std::uint64_t>(-iou.mantissa());
@@ -372,10 +372,10 @@ operator+(STAmount const& v1, STAmount const& v2)
     if (!areComparable(v1, v2))
         Throw<std::runtime_error>("Can't add amounts that are't comparable!");
 
-    if (v2 == beast::kZERO)
+    if (v2 == beast::kZero)
         return v1;
 
-    if (v1 == beast::kZERO)
+    if (v1 == beast::kZero)
     {
         // Result must be in terms of v1 currency and issuer.
         return {v1.getFName(), v1.asset(), v2.mantissa(), v2.exponent(), v2.negative()};
@@ -457,13 +457,13 @@ STAmount::setIssue(Asset const& asset)
 std::uint64_t
 getRate(STAmount const& offerOut, STAmount const& offerIn)
 {
-    if (offerOut == beast::kZERO)
+    if (offerOut == beast::kZero)
         return 0;
 
     try
     {
         STAmount const r = divide(offerIn, offerOut, noIssue());
-        if (r == beast::kZERO)  // offer is too good
+        if (r == beast::kZero)  // offer is too good
             return 0;
         XRPL_ASSERT(
             (r.exponent() >= -100) && (r.exponent() <= 155),
@@ -504,7 +504,7 @@ canAdd(STAmount const& a, STAmount const& b)
         return false;
 
     // special case: adding anything to zero is always fine
-    if (a == beast::kZERO || b == beast::kZERO)
+    if (a == beast::kZero || b == beast::kZero)
         return true;
 
     // XRP case (overflow & underflow check)
@@ -526,10 +526,10 @@ canAdd(STAmount const& a, STAmount const& b)
             TIss1 const&, TIss2 const&) -> std::optional<bool> {
             if constexpr (kIsIssueV<TIss1> && kIsIssueV<TIss2>)
             {
-                static STAmount const kONE{IOUAmount{1, 0}, noIssue()};
+                static STAmount const kOne{IOUAmount{1, 0}, noIssue()};
                 static STAmount const kMaxLoss{IOUAmount{1, -4}, noIssue()};
-                STAmount const lhs = divide((a - b) + b, a, noIssue()) - kONE;
-                STAmount const rhs = divide((b - a) + a, b, noIssue()) - kONE;
+                STAmount const lhs = divide((a - b) + b, a, noIssue()) - kOne;
+                STAmount const rhs = divide((b - a) + a, b, noIssue()) - kOne;
                 return ((rhs.negative() ? -rhs : rhs) + (lhs.negative() ? -lhs : lhs)) <= kMaxLoss;
             }
 
@@ -581,7 +581,7 @@ canSubtract(STAmount const& a, STAmount const& b)
         return false;
 
     // Special case: subtracting zero is always fine
-    if (b == beast::kZERO)
+    if (b == beast::kZero)
         return true;
 
     // XRP case (underflow & overflow check)
@@ -641,7 +641,7 @@ canSubtract(STAmount const& a, STAmount const& b)
 void
 STAmount::setJson(json::Value& elem) const
 {
-    elem = json::ObjectValue;
+    elem = json::ValueType::Object;
 
     if (!native())
     {
@@ -682,7 +682,7 @@ std::string
 STAmount::getText() const
 {
     // keep full internal accuracy, but make more human friendly if possible
-    if (*this == beast::kZERO)
+    if (*this == beast::kZero)
         return "0";
 
     std::string const rawValue(std::to_string(value_));
@@ -802,7 +802,7 @@ STAmount::add(Serializer& s) const
             }
             else
             {
-                if (*this == beast::kZERO)
+                if (*this == beast::kZero)
                 {
                     s.add64(kIssuedCurrency);
                 }
@@ -1056,8 +1056,8 @@ amountFromJson(SField const& name, json::Value const& v)
     else if (v.isArray())
     {
         value = v.get(json::UInt(0), 0);
-        currencyOrMPTID = v.get(json::UInt(1), json::NullValue);
-        issuer = v.get(json::UInt(2), json::NullValue);
+        currencyOrMPTID = v.get(json::UInt(1), json::ValueType::Null);
+        issuer = v.get(json::UInt(2), json::ValueType::Null);
     }
     else if (v.isString())
     {
@@ -1274,10 +1274,10 @@ muldivRound(
 STAmount
 divide(STAmount const& num, STAmount const& den, Asset const& asset)
 {
-    if (den == beast::kZERO)
+    if (den == beast::kZero)
         Throw<std::runtime_error>("division by zero");
 
-    if (num == beast::kZERO)
+    if (num == beast::kZero)
         return {asset};
 
     std::uint64_t numVal = num.mantissa();
@@ -1319,7 +1319,7 @@ divide(STAmount const& num, STAmount const& den, Asset const& asset)
 STAmount
 multiply(STAmount const& v1, STAmount const& v2, Asset const& asset)
 {
-    if (v1 == beast::kZERO || v2 == beast::kZERO)
+    if (v1 == beast::kZero || v2 == beast::kZero)
         return STAmount(asset);
 
     if (v1.native() && v2.native() && asset.native())
@@ -1493,7 +1493,7 @@ roundToScale(STAmount const& value, std::int32_t scale, Number::RoundingMode rou
         return value;
 
     // Nothing to do for zero.
-    if (value == beast::kZERO)
+    if (value == beast::kZero)
         return value;
 
     // If the value's exponent is greater than or equal to the scale, then
@@ -1539,7 +1539,7 @@ template <void (*CanonicalizeFunc)(bool, std::uint64_t&, int&, bool), typename M
 static STAmount
 mulRoundImpl(STAmount const& v1, STAmount const& v2, Asset const& asset, bool roundUp)
 {
-    if (v1 == beast::kZERO || v2 == beast::kZERO)
+    if (v1 == beast::kZero || v2 == beast::kZero)
         return {asset};
 
     if (v1.native() && v2.native() && asset.native())
@@ -1653,10 +1653,10 @@ template <typename MightSaveRound>
 static STAmount
 divRoundImpl(STAmount const& num, STAmount const& den, Asset const& asset, bool roundUp)
 {
-    if (den == beast::kZERO)
+    if (den == beast::kZero)
         Throw<std::runtime_error>("division by zero");
 
-    if (num == beast::kZERO)
+    if (num == beast::kZero)
         return {asset};
 
     std::uint64_t numVal = num.mantissa(), denVal = den.mantissa();

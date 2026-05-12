@@ -122,7 +122,7 @@ intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMapInnerNode::makeFullInner(Slice data, SHAMapHash const& hash, bool hashValid)
 {
     // A full inner node is serialized as 16 256-bit hashes, back to back:
-    if (data.size() != kBranchFactor * uint256::kBYTES)
+    if (data.size() != kBranchFactor * uint256::kBytes)
         Throw<std::runtime_error>("Invalid FI node");
 
     auto ret = intr_ptr::makeShared<SHAMapInnerNode>(0, kBranchFactor);
@@ -133,7 +133,7 @@ SHAMapInnerNode::makeFullInner(Slice data, SHAMapHash const& hash, bool hashVali
 
     for (int i = 0; i < kBranchFactor; ++i)
     {
-        hashes[i].asUint256() = si.getBitString<256>();
+        hashes[i].asUInt256() = si.getBitString<256>();
 
         if (hashes[i].isNonZero())
             ret->isBranch_ |= (1 << i);
@@ -158,7 +158,7 @@ SHAMapInnerNode::makeCompressedInner(Slice data)
 {
     // A compressed inner node is serialized as a series of 33 byte chunks,
     // representing a one byte "position" and a 256-bit hash:
-    constexpr std::size_t kChunkSize = uint256::kBYTES + 1;
+    constexpr std::size_t kChunkSize = uint256::kBytes + 1;
 
     if (auto const s = data.size(); (s % kChunkSize != 0) || (s > kChunkSize * kBranchFactor))
         Throw<std::runtime_error>("Invalid CI node");
@@ -177,7 +177,7 @@ SHAMapInnerNode::makeCompressedInner(Slice data)
         if (pos >= kBranchFactor)
             Throw<std::runtime_error>("invalid CI node");
 
-        hashes[pos].asUint256() = hash;
+        hashes[pos].asUInt256() = hash;
 
         if (hashes[pos].isNonZero())
             ret->isBranch_ |= (1 << pos);
@@ -228,14 +228,14 @@ SHAMapInnerNode::serializeForWire(Serializer& s) const
         // compressed node
         auto hashes = hashesAndChildren_.getHashes();
         iterNonEmptyChildIndexes([&](auto branchNum, auto indexNum) {
-            s.addBitString(hashes[indexNum].asUint256());
+            s.addBitString(hashes[indexNum].asUInt256());
             s.add8(branchNum);
         });
         s.add8(kWireTypeCompressedInner);
     }
     else
     {
-        iterChildren([&](SHAMapHash const& hh) { s.addBitString(hh.asUint256()); });
+        iterChildren([&](SHAMapHash const& hh) { s.addBitString(hh.asUInt256()); });
         s.add8(kWireTypeInner);
     }
 }
@@ -246,7 +246,7 @@ SHAMapInnerNode::serializeWithPrefix(Serializer& s) const
     XRPL_ASSERT(!isEmpty(), "xrpl::SHAMapInnerNode::serializeWithPrefix : is non-empty");
 
     s.add32(HashPrefix::InnerNode);
-    iterChildren([&](SHAMapHash const& hh) { s.addBitString(hh.asUint256()); });
+    iterChildren([&](SHAMapHash const& hh) { s.addBitString(hh.asUInt256()); });
 }
 
 std::string

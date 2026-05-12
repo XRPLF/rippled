@@ -66,12 +66,12 @@ public:
     {
         testcase("Malformed serialized form");
 
-        constexpr unsigned char kPAYLOAD1[] = {
+        constexpr unsigned char kPayload1[] = {
             0x0a, 0xff, 0xff, 0xff, 0xff, 0x63, 0x63, 0x63, 0x63, 0x63, 0x63, 0x63, 0x63,
             0x1b, 0x1b, 0x1b, 0x1b, 0x1b, 0x1b, 0x1b, 0x1b, 0x1b, 0x29, 0x1b, 0x1b, 0x1b,
             0x1b, 0xef, 0xef, 0xef, 0xef, 0xef, 0xef, 0xef, 0xef, 0xef, 0xef, 0xef};
 
-        constexpr unsigned char kPAYLOAD2[] = {
+        constexpr unsigned char kPayload2[] = {
             0xff, 0xef, 0xff, 0xef, 0xff, 0xef, 0xff, 0xef, 0xff, 0xef, 0xff, 0xef, 0xef, 0xff,
             0xef, 0xef, 0xff, 0xef, 0xff, 0xef, 0xef, 0xff, 0xef, 0xff, 0xef, 0xef, 0xff, 0xef,
             0xff, 0xef, 0xff, 0xef, 0xef, 0xff, 0xef, 0xff, 0xef, 0xff, 0xef, 0xef, 0xff, 0xef,
@@ -1063,7 +1063,7 @@ public:
             0xef, 0xff, 0xef, 0xff, 0xef, 0xff, 0xef, 0x3b, 0x3b, 0x43, 0x3b, 0x3b, 0xff, 0x3b,
             0x12, 0xf1, 0x12, 0x12, 0x12, 0xff};
 
-        constexpr unsigned char kPAYLOAD3[] = {
+        constexpr unsigned char kPayload3[] = {
             0x12, 0x00, 0x65, 0x24, 0x00, 0x00, 0x00, 0x00, 0x20, 0x1e, 0x00, 0x4f, 0x00, 0x00,
             0x20, 0x1f, 0x03, 0xf6, 0x00, 0x00, 0x20, 0x20, 0x00, 0x00, 0x00, 0x00, 0x35, 0x00,
             0x59, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x68, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -1083,7 +1083,7 @@ public:
             0x02, 0x00, 0x73, 0x00, 0x81, 0x14, 0x00, 0x10, 0x00, 0x73, 0x00, 0x81, 0x14, 0x00,
             0x10, 0x00, 0x00, 0x00, 0x00, 0x26, 0x00, 0x00, 0x00, 0x00, 0xe5, 0xfe};
 
-        constexpr unsigned char kPAYLOAD4[] = {
+        constexpr unsigned char kPayload4[] = {
             0x12, 0x00, 0x65, 0x24, 0x00, 0x00, 0x00, 0x00, 0x20, 0x1e, 0x00, 0x4f, 0x00, 0x00,
             0x20, 0x1f, 0x03, 0xf6, 0x00, 0x00, 0x20, 0x20, 0x00, 0x00, 0x00, 0x00, 0x35, 0x00,
             0x59, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x68, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -1279,7 +1279,7 @@ public:
             // from earlier versions results in "Unknown field". Either way,
             // we expect an exception from STTx, but the specific message will
             // vary.
-            BEAST_EXPECT(!tx2.ParseFromArray(kPAYLOAD1, sizeof(kPAYLOAD1)));
+            BEAST_EXPECT(!tx2.ParseFromArray(kPayload1, sizeof(kPayload1)));
 
             xrpl::SerialIter sit(xrpl::makeSlice(tx2.rawtransaction()));
 
@@ -1293,7 +1293,7 @@ public:
 
         try
         {
-            xrpl::SerialIter sit{kPAYLOAD2};
+            xrpl::SerialIter sit{kPayload2};
             auto stx = std::make_shared<xrpl::STTx const>(sit);
             fail("An exception should have been thrown");
         }
@@ -1304,7 +1304,7 @@ public:
 
         try
         {
-            xrpl::SerialIter sit{kPAYLOAD3};
+            xrpl::SerialIter sit{kPayload3};
             auto stx = std::make_shared<xrpl::STTx const>(sit);
             fail("An exception should have been thrown");
         }
@@ -1315,7 +1315,7 @@ public:
 
         try
         {
-            xrpl::SerialIter sit{kPAYLOAD4};
+            xrpl::SerialIter sit{kPayload4};
             auto stx = std::make_shared<xrpl::STTx const>(sit);
             fail("An exception should have been thrown");
         }
@@ -1352,8 +1352,8 @@ public:
 
         if (copy != j)
         {
-            log << "j=" << j.getJson(JsonOptions::KNone) << '\n'
-                << "copy=" << copy.getJson(JsonOptions::KNone) << std::endl;
+            log << "j=" << j.getJson(JsonOptions::Values::None) << '\n'
+                << "copy=" << copy.getJson(JsonOptions::Values::None) << std::endl;
             fail("Transaction fails serialize/deserialize test");
         }
         else
@@ -1361,15 +1361,15 @@ public:
             pass();
         }
 
-        STParsedJSONObject parsed("test", j.getJson(JsonOptions::KNone));
+        STParsedJSONObject parsed("test", j.getJson(JsonOptions::Values::None));
         if (!parsed.object.has_value())
         {
             fail("Unable to build object from json");
         }
         else if (STObject(j) != parsed.object)
         {
-            log << "ORIG: " << j.getJson(JsonOptions::KNone) << '\n'
-                << "BUILT " << parsed.object->getJson(JsonOptions::KNone) << std::endl;
+            log << "ORIG: " << j.getJson(JsonOptions::Values::None) << '\n'
+                << "BUILT " << parsed.object->getJson(JsonOptions::Values::None) << std::endl;
             fail("Built a different transaction");
         }
         else

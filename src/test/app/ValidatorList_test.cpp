@@ -220,7 +220,7 @@ private:
     {
         testcase("Config Load");
 
-        jtx::Env env(*this, jtx::envconfig(), nullptr, beast::severities::KDisabled);
+        jtx::Env env(*this, jtx::envconfig(), nullptr, beast::Severity::Disabled);
         auto& app = env.app();
         std::vector<std::string> const emptyCfgKeys;
         std::vector<std::string> const emptyCfgPublishers;
@@ -1545,10 +1545,10 @@ private:
             // locals[0]: from 0 to maxKeys - 4
             // locals[1]: from 1 to maxKeys - 2
             // locals[2]: from 2 to maxKeys
-            constexpr static int kPUBLISHERS = 3;
+            constexpr static int kPublishers = 3;
             std::array<
                 std::pair<decltype(valKeys)::const_iterator, decltype(valKeys)::const_iterator>,
-                kPUBLISHERS>
+                kPublishers>
                 locals = {
                     std::make_pair(valKeys.cbegin(), valKeys.cend() - 4),
                     std::make_pair(valKeys.cbegin() + 1, valKeys.cend() - 2),
@@ -1588,7 +1588,7 @@ private:
             };
 
             // Apply multiple published lists
-            for (auto i = 0; i < kPUBLISHERS; ++i)
+            for (auto i = 0; i < kPublishers; ++i)
                 addPublishedList(i);
             BEAST_EXPECT(trustedKeys->getListThreshold() == 1);
 
@@ -1635,10 +1635,10 @@ private:
             // locals[2]: from 2 to maxKeys
             // intersection of at least 2: same as locals[1]
             // intersection when 1 is dropped: from 2 to maxKeys - 4
-            constexpr static int kPUBLISHERS = 3;
+            constexpr static int kPublishers = 3;
             std::array<
                 std::pair<decltype(valKeys)::const_iterator, decltype(valKeys)::const_iterator>,
-                kPUBLISHERS>
+                kPublishers>
                 locals = {
                     std::make_pair(valKeys.cbegin(), valKeys.cend() - 4),
                     std::make_pair(valKeys.cbegin() + 1, valKeys.cend() - 2),
@@ -1703,7 +1703,7 @@ private:
             // Apply multiple published lists
             // validUntil1 is expiration time for locals[1]
             NetClock::time_point validUntil1, validUntil2;
-            for (auto i = 0; i < kPUBLISHERS; ++i)
+            for (auto i = 0; i < kPublishers; ++i)
                 addPublishedList(i, validUntil1, validUntil2);
             BEAST_EXPECT(trustedKeys->getListThreshold() == 2);
 
@@ -2592,13 +2592,13 @@ private:
                 auto const pubSigningKeys = randomKeyPair(KeyType::Secp256k1);
                 cfgPublishers.push_back(strHex(publisherPublic));
 
-                constexpr auto kREVOKED = std::numeric_limits<std::uint32_t>::max();
+                constexpr auto kRevoked = std::numeric_limits<std::uint32_t>::max();
                 auto const manifest = base64Encode(makeManifestString(
                     publisherPublic,
                     publisherSecret,
                     pubSigningKeys.first,
                     pubSigningKeys.second,
-                    i < countRevoked ? kREVOKED : 1));
+                    i < countRevoked ? kRevoked : 1));
                 publishers.push_back(
                     Publisher{
                         .revoked = i < countRevoked,

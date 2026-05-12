@@ -14,8 +14,8 @@ namespace xrpl {
 static inline std::string const&
 systemName()
 {
-    static std::string const kNAME = "xrpld";
-    return kNAME;
+    static std::string const kName = "xrpld";
+    return kName;
 }
 
 /** Configure the native currency. */
@@ -44,8 +44,8 @@ isLegalAmountSigned(XRPAmount const& amount)
 static inline std::string const&
 systemCurrencyCode()
 {
-    static std::string const kCODE = "XRP";
-    return kCODE;
+    static std::string const kCode = "XRP";
+    return kCode;
 }
 
 /** The XRP ledger network's earliest allowed sequence */

@@ -14,13 +14,13 @@ namespace {
 // Given n children, an array of size `*std::lower_bound(boundaries.begin(),
 // boundaries.end(), n);` is used to store the children. Note that the last
 // element must be the number of children in a dense array.
-constexpr std::array<std::uint8_t, 4> kBOUNDARIES{2, 4, 6, SHAMapInnerNode::kBranchFactor};
+constexpr std::array<std::uint8_t, 4> kBoundaries{2, 4, 6, SHAMapInnerNode::kBranchFactor};
 static_assert(
-    kBOUNDARIES.size() <= 4,
+    kBoundaries.size() <= 4,
     "The hashesAndChildren member uses a tagged array format with two bits "
     "reserved for the tag. This supports at most 4 values.");
 static_assert(
-    kBOUNDARIES.back() == SHAMapInnerNode::kBranchFactor,
+    kBoundaries.back() == SHAMapInnerNode::kBranchFactor,
     "Last element of boundaries must be number of children in a dense array");
 
 // Terminology: A chunk is the memory being allocated from a block. A block
@@ -32,32 +32,32 @@ constexpr size_t kElementSizeBytes =
 constexpr size_t kBlockSizeBytes = kilobytes(512);
 
 template <std::size_t... I>
-constexpr std::array<size_t, kBOUNDARIES.size()>
+constexpr std::array<size_t, kBoundaries.size()>
 initArrayChunkSizeBytes(std::index_sequence<I...>)
 {
-    return std::array<size_t, kBOUNDARIES.size()>{
-        kBOUNDARIES[I] * kElementSizeBytes...,
+    return std::array<size_t, kBoundaries.size()>{
+        kBoundaries[I] * kElementSizeBytes...,
     };
 }
 constexpr auto kArrayChunkSizeBytes =
-    initArrayChunkSizeBytes(std::make_index_sequence<kBOUNDARIES.size()>{});
+    initArrayChunkSizeBytes(std::make_index_sequence<kBoundaries.size()>{});
 
 template <std::size_t... I>
-constexpr std::array<size_t, kBOUNDARIES.size()>
+constexpr std::array<size_t, kBoundaries.size()>
 initArrayChunksPerBlock(std::index_sequence<I...>)
 {
-    return std::array<size_t, kBOUNDARIES.size()>{
+    return std::array<size_t, kBoundaries.size()>{
         kBlockSizeBytes / kArrayChunkSizeBytes[I]...,
     };
 }
 constexpr auto kChunksPerBlock =
-    initArrayChunksPerBlock(std::make_index_sequence<kBOUNDARIES.size()>{});
+    initArrayChunksPerBlock(std::make_index_sequence<kBoundaries.size()>{});
 
 [[nodiscard]] inline std::uint8_t
 numAllocatedChildren(std::uint8_t n)
 {
     XRPL_ASSERT(n <= SHAMapInnerNode::kBranchFactor, "xrpl::numAllocatedChildren : valid input");
-    return *std::ranges::lower_bound(kBOUNDARIES, n);
+    return *std::ranges::lower_bound(kBoundaries, n);
 }
 
 [[nodiscard]] inline std::size_t
@@ -65,14 +65,14 @@ boundariesIndex(std::uint8_t numChildren)
 {
     XRPL_ASSERT(
         numChildren <= SHAMapInnerNode::kBranchFactor, "xrpl::boundariesIndex : valid input");
-    return std::distance(kBOUNDARIES.begin(), std::ranges::lower_bound(kBOUNDARIES, numChildren));
+    return std::distance(kBoundaries.begin(), std::ranges::lower_bound(kBoundaries, numChildren));
 }
 
 template <std::size_t... I>
-std::array<std::function<void*()>, kBOUNDARIES.size()>
+std::array<std::function<void*()>, kBoundaries.size()>
 initAllocateArrayFuns(std::index_sequence<I...>)
 {
-    return std::array<std::function<void*()>, kBOUNDARIES.size()>{
+    return std::array<std::function<void*()>, kBoundaries.size()>{
         boost::singleton_pool<
             boost::fast_pool_allocator_tag,
             kArrayChunkSizeBytes[I],
@@ -82,14 +82,14 @@ initAllocateArrayFuns(std::index_sequence<I...>)
             kChunksPerBlock[I]>::malloc...,
     };
 }
-std::array<std::function<void*()>, kBOUNDARIES.size()> const kAllocateArrayFuns =
-    initAllocateArrayFuns(std::make_index_sequence<kBOUNDARIES.size()>{});
+std::array<std::function<void*()>, kBoundaries.size()> const kAllocateArrayFuns =
+    initAllocateArrayFuns(std::make_index_sequence<kBoundaries.size()>{});
 
 template <std::size_t... I>
-std::array<std::function<void(void*)>, kBOUNDARIES.size()>
+std::array<std::function<void(void*)>, kBoundaries.size()>
 initFreeArrayFuns(std::index_sequence<I...>)
 {
-    return std::array<std::function<void(void*)>, kBOUNDARIES.size()>{
+    return std::array<std::function<void(void*)>, kBoundaries.size()>{
         static_cast<void (*)(void*)>(boost::singleton_pool<
                                      boost::fast_pool_allocator_tag,
                                      kArrayChunkSizeBytes[I],
@@ -99,14 +99,14 @@ initFreeArrayFuns(std::index_sequence<I...>)
                                      kChunksPerBlock[I]>::free)...,
     };
 }
-std::array<std::function<void(void*)>, kBOUNDARIES.size()> const kFreeArrayFuns =
-    initFreeArrayFuns(std::make_index_sequence<kBOUNDARIES.size()>{});
+std::array<std::function<void(void*)>, kBoundaries.size()> const kFreeArrayFuns =
+    initFreeArrayFuns(std::make_index_sequence<kBoundaries.size()>{});
 
 template <std::size_t... I>
-std::array<std::function<bool(void*)>, kBOUNDARIES.size()>
+std::array<std::function<bool(void*)>, kBoundaries.size()>
 initIsFromArrayFuns(std::index_sequence<I...>)
 {
-    return std::array<std::function<bool(void*)>, kBOUNDARIES.size()>{
+    return std::array<std::function<bool(void*)>, kBoundaries.size()>{
         boost::singleton_pool<
             boost::fast_pool_allocator_tag,
             kArrayChunkSizeBytes[I],
@@ -116,8 +116,8 @@ initIsFromArrayFuns(std::index_sequence<I...>)
             kChunksPerBlock[I]>::is_from...,
     };
 }
-std::array<std::function<bool(void*)>, kBOUNDARIES.size()> const kIsFromArrayFuns =
-    initIsFromArrayFuns(std::make_index_sequence<kBOUNDARIES.size()>{});
+std::array<std::function<bool(void*)>, kBoundaries.size()> const kIsFromArrayFuns =
+    initIsFromArrayFuns(std::make_index_sequence<kBoundaries.size()>{});
 
 // This function returns an untagged pointer
 [[nodiscard]] inline std::pair<std::uint8_t, void*>
@@ -247,7 +247,7 @@ inline TaggedPointer::TaggedPointer(RawAllocateTag, std::uint8_t numChildren)
 {
     auto [tag, p] = allocateArrays(numChildren);
     XRPL_ASSERT(
-        tag < kBOUNDARIES.size(),
+        tag < kBoundaries.size(),
         "xrpl::TaggedPointer::TaggedPointer(RawAllocateTag, std::uint8_t) : "
         "maximum tag");
     XRPL_ASSERT(
@@ -514,13 +514,13 @@ TaggedPointer::decode() const
 [[nodiscard]] inline std::uint8_t
 TaggedPointer::capacity() const
 {
-    return kBOUNDARIES[tp_ & kTagMask];
+    return kBoundaries[tp_ & kTagMask];
 }
 
 [[nodiscard]] inline bool
 TaggedPointer::isDense() const
 {
-    return (tp_ & kTagMask) == kBOUNDARIES.size() - 1;
+    return (tp_ & kTagMask) == kBoundaries.size() - 1;
 }
 
 [[nodiscard]] inline std::tuple<std::uint8_t, SHAMapHash*, intr_ptr::SharedPtr<SHAMapTreeNode>*>
@@ -528,7 +528,7 @@ TaggedPointer::getHashesAndChildren() const
 {
     auto const [tag, ptr] = decode();
     auto const hashes = reinterpret_cast<SHAMapHash*>(ptr);
-    std::uint8_t const numAllocated = kBOUNDARIES[tag];
+    std::uint8_t const numAllocated = kBoundaries[tag];
     auto const children =
         reinterpret_cast<intr_ptr::SharedPtr<SHAMapTreeNode>*>(hashes + numAllocated);
     return {numAllocated, hashes, children};

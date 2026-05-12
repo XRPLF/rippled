@@ -7,7 +7,7 @@ namespace xrpl {
 class PermissionedDomainSet : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType kConsequencesFactory{Normal};
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 
     explicit PermissionedDomainSet(ApplyContext& ctx) : Transactor(ctx)
     {

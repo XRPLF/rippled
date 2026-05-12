@@ -18,11 +18,11 @@ static constexpr auto kMaxUnsquelchExpireDefault = std::chrono::seconds{600};
 static constexpr auto kSquelchPerPeer = std::chrono::seconds(10);
 static constexpr auto kMaxUnsquelchExpirePeers = std::chrono::seconds{3600};
 // No message received threshold before identifying a peer as idled
-static constexpr auto kIDLED = std::chrono::seconds{8};
+static constexpr auto kIdled = std::chrono::seconds{8};
 // Message count threshold to start selecting peers as the source
 // of messages from the validator. We add peers who reach
-// kMIN_MESSAGE_THRESHOLD to considered pool once kMAX_SELECTED_PEERS
-// reach kMAX_MESSAGE_THRESHOLD.
+// kMinMessageThreshold to considered pool once kMaxSelectedPeers
+// reach kMaxMessageThreshold.
 static constexpr uint16_t kMinMessageThreshold = 19;
 static constexpr uint16_t kMaxMessageThreshold = 20;
 // Max selected peers to choose as the source of messages from validator

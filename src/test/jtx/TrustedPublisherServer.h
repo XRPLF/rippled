@@ -339,7 +339,7 @@ public:
     static std::string const&
     cert()
     {
-        static std::string const kCERT{R"cert(
+        static std::string const kCert{R"cert(
 -----BEGIN CERTIFICATE-----
 MIIDczCCAlugAwIBAgIBATANBgkqhkiG9w0BAQsFADBjMQswCQYDVQQGEwJVUzEL
 MAkGA1UECAwCQ0ExFDASBgNVBAcMC0xvcyBBbmdlbGVzMRswGQYDVQQKDBJyaXBw
@@ -362,7 +362,7 @@ GSGO8NEEq8BTVmp69zD1JyfvQcXzsi7WtkAX+/EOFZ7LesnZ6VsyjZ74wECCaQuD
 X1yu/XxHqchM+DOzzVw6wRKaM7Zsk80=
 -----END CERTIFICATE-----
 )cert"};
-        return kCERT;
+        return kCert;
     }
 
     static std::string const&
@@ -403,7 +403,7 @@ ZzARzaWhQPvbDqEtLJDWuXZNXfL8/PTIs5NmuKuQ8F4+gQJpkQgwaw==
     static std::string const&
     caCert()
     {
-        static std::string const kCERT{R"cert(
+        static std::string const kCert{R"cert(
 -----BEGIN CERTIFICATE-----
 MIIDpzCCAo+gAwIBAgIUWc45WqaaNuaSLoFYTMC/Mjfqw/gwDQYJKoZIhvcNAQEL
 BQAwYzELMAkGA1UEBhMCVVMxCzAJBgNVBAgMAkNBMRQwEgYDVQQHDAtMb3MgQW5n
@@ -427,7 +427,7 @@ mRMyNekaRw+Npy4Hjou5sx272cXHHmPCSF5TjwdaibSaGjx1k0Q50mOf7S9KG5b5
 7X1e3FekJlaD02EBEhtkXURIxogOQALdFncj
 -----END CERTIFICATE-----
 )cert"};
-        return kCERT;
+        return kCert;
     }
 
     static std::string const&

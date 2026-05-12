@@ -128,14 +128,14 @@ private:
     };
 
     // Single common genesis instance
-    static Instance const kGENESIS;
+    static Instance const kGenesis;
 
     Ledger(ID id, Instance const* i) : id_{id}, instance_{i}
     {
     }
 
 public:
-    Ledger(MakeGenesis) : instance_(&kGENESIS)
+    Ledger(MakeGenesis) : instance_(&kGenesis)
     {
     }
 

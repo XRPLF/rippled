@@ -341,11 +341,11 @@ doGetAggregatePrice(RPC::JsonContext& context)
         auto const middle = size / 2;
         if ((size % 2) == 0)
         {
-            static STAmount const kTWO{noIssue(), 2, 0};
+            static STAmount const kTwo{noIssue(), 2, 0};
             auto it = itAdvance(prices.right.begin(), middle - 1);
             auto const& a1 = it->first;
             auto const& a2 = (++it)->first;
-            return divide(a1 + a2, kTWO, noIssue());
+            return divide(a1 + a2, kTwo, noIssue());
         }
         return itAdvance(prices.right.begin(), middle)->first;
     }();

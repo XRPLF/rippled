@@ -8,7 +8,7 @@ namespace xrpl {
 class OfferCancel : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType kConsequencesFactory{Normal};
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 
     explicit OfferCancel(ApplyContext& ctx) : Transactor(ctx)
     {

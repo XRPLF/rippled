@@ -42,7 +42,7 @@ class Sandbox;
 class AMMDeposit : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType kConsequencesFactory{Normal};
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 
     explicit AMMDeposit(ApplyContext& ctx) : Transactor(ctx)
     {

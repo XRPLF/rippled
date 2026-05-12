@@ -39,7 +39,7 @@ PermissionedDomainSet::preflight(PreflightContext const& ctx)
         return err;
 
     auto const domain = ctx.tx.at(~sfDomainID);
-    if (domain && *domain == beast::kZERO)
+    if (domain && *domain == beast::kZero)
         return temMALFORMED;
 
     return tesSUCCESS;
@@ -137,6 +137,7 @@ PermissionedDomainSet::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -147,6 +148,7 @@ PermissionedDomainSet::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

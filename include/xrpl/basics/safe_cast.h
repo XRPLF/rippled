@@ -81,7 +81,7 @@ safeDowncast(Src* s) noexcept
     return static_cast<Dest>(s);  // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
 #else
     auto* result = dynamic_cast<Dest>(s);
-    XRPL_ASSERT(result != nullptr, "xrpl::safe_downcast : pointer downcast is valid");
+    XRPL_ASSERT(result != nullptr, "xrpl::safeDowncast : pointer downcast is valid");
     return result;
 #endif
 }
@@ -94,7 +94,7 @@ safeDowncast(Src& s) noexcept
 #ifndef NDEBUG
     XRPL_ASSERT(
         dynamic_cast<std::add_pointer_t<std::remove_reference_t<Dest>>>(&s) != nullptr,
-        "xrpl::safe_downcast : reference downcast is valid");
+        "xrpl::safeDowncast : reference downcast is valid");
 #endif
     return static_cast<Dest>(s);  // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
 }

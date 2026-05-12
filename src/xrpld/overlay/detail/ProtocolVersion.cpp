@@ -141,7 +141,7 @@ negotiateProtocolVersion(boost::beast::string_view const& versions)
 std::string const&
 supportedProtocolVersions()
 {
-    static std::string const kSUPPORTED = []() {
+    static std::string const kSupported = []() {
         std::string ret;
         for (auto const& v : kSupportedProtocolList)
         {
@@ -153,7 +153,7 @@ supportedProtocolVersions()
         return ret;
     }();
 
-    return kSUPPORTED;
+    return kSupported;
 }
 
 bool

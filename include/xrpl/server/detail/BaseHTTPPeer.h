@@ -30,7 +30,7 @@ namespace xrpl {
 
 /** Represents an active connection. */
 template <class Handler, class Impl>
-class BaseHTTPPeer : public IoList::Work, public Session
+class BaseHTTPPeer : public IOList::Work, public Session
 {
 protected:
     using clock_type = std::chrono::system_clock;
@@ -38,16 +38,9 @@ protected:
     using endpoint_type = boost::asio::ip::tcp::endpoint;
     using yield_context = boost::asio::yield_context;
 
-    // Need to be named before converting
-    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-    enum {
-        // Size of our read/write buffer
-        BufferSize = 4 * 1024,
-
-        // Max seconds without completing a message
-        TimeoutSeconds = 30,
-        TimeoutSecondsLocal = 3  // used for localhost clients
-    };
+    static constexpr auto kBufferSize = 4 * 1024;    // size of read/write buffer
+    static constexpr auto kTimeoutSeconds = 30;      // max seconds without completing a message
+    static constexpr auto kTimeoutSecondsLocal = 3;  // used for localhost clients
 
     struct Buffer
     {
@@ -203,8 +196,8 @@ BaseHTTPPeer<Handler, Impl>::BaseHTTPPeer(
 {
     read_buf_.commit(
         boost::asio::buffer_copy(read_buf_.prepare(boost::asio::buffer_size(buffers)), buffers));
-    static std::atomic<int> kSID;
-    nid_ = ++kSID;
+    static std::atomic<int> kSid;
+    nid_ = ++kSid;
     id_ = std::string("#") + std::to_string(nid_) + " ";
     JLOG(journal_.trace()) << id_ << "accept:    " << remote_address_.address();
 }
@@ -252,7 +245,7 @@ BaseHTTPPeer<Handler, Impl>::startTimer()
     boost::beast::get_lowest_layer(impl().stream_)
         .expires_after(
             std::chrono::seconds(
-                remote_address_.address().is_loopback() ? TimeoutSecondsLocal : TimeoutSeconds));
+                remote_address_.address().is_loopback() ? kTimeoutSecondsLocal : kTimeoutSeconds));
 }
 
 // Convenience for discarding the error code
@@ -364,7 +357,7 @@ BaseHTTPPeer<Handler, Impl>::doWriter(
 
     for (;;)
     {
-        if (!writer->prepare(BufferSize, resume))
+        if (!writer->prepare(kBufferSize, resume))
             return;
         error_code ec;
         auto const bytesTransferred = boost::asio::async_write(

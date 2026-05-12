@@ -81,7 +81,7 @@ doAccountNFTs(RPC::JsonContext& context)
         Keylet(ltNFTOKEN_PAGE, ledger->succ(first.key, last.key.next()).value_or(last.key)));
 
     std::uint32_t cnt = 0;
-    auto& nfts = (result[jss::account_nfts] = json::ArrayValue);
+    auto& nfts = (result[jss::account_nfts] = json::ValueType::Array);
 
     // Continue iteration from the current page:
     bool pastMarker = marker.isZero();
@@ -128,7 +128,7 @@ doAccountNFTs(RPC::JsonContext& context)
             pastMarker = true;
 
             {
-                json::Value& obj = nfts.append(o.getJson(JsonOptions::KNone));
+                json::Value& obj = nfts.append(o.getJson(JsonOptions::Values::None));
 
                 // Pull out the components of the nft ID.
                 obj[sfFlags.jsonName] = nft::getFlags(nftokenID);

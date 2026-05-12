@@ -303,7 +303,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
 
     std::shared_ptr<SLE const> sleDirNode{};
     unsigned int uDirEntry{0};
-    uint256 dirEntry{beast::kZERO};
+    uint256 dirEntry{beast::kZero};
 
     // Account has no directory at all.  This _should_ have been caught
     // by the dirIsEmpty() check earlier, but it's okay to catch it here.
@@ -422,6 +422,7 @@ AccountDelete::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -432,6 +433,7 @@ AccountDelete::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

@@ -348,9 +348,9 @@ updateTrustLine(
         return false;
 
     // YYY Could skip this if rippling in reverse.
-    if (before > beast::kZERO
+    if (before > beast::kZero
         // Sender balance was positive.
-        && after <= beast::kZERO
+        && after <= beast::kZero
         // Sender is zero or negative.
         && ((flags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve)) != 0u)
         // Sender reserve is set.
@@ -698,7 +698,7 @@ removeEmptyHolding(
     auto const line = view.peek(keylet::line(accountID, issue));
     if (!line)
         return accountIsIssuer ? (TER)tesSUCCESS : (TER)tecOBJECT_NOT_FOUND;
-    if (!accountIsIssuer && line->at(sfBalance)->iou() != beast::kZERO)
+    if (!accountIsIssuer && line->at(sfBalance)->iou() != beast::kZero)
         return tecHAS_OBLIGATIONS;
 
     // Adjust the owner count(s)

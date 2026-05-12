@@ -65,12 +65,12 @@ AMMVote::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.debug()) << "AMM Vote: Invalid asset pair.";
         return terNO_AMM;
     }
-    if (ammSle->getFieldAmount(sfLPTokenBalance) == beast::kZERO)
+    if (ammSle->getFieldAmount(sfLPTokenBalance) == beast::kZero)
     {
         return tecAMM_EMPTY;
     }
     if (auto const lpTokensNew = ammLPHolds(ctx.view, *ammSle, ctx.tx[sfAccount], ctx.j);
-        lpTokensNew == beast::kZERO)
+        lpTokensNew == beast::kZero)
     {
         JLOG(ctx.j.debug()) << "AMM Vote: account is not LP.";
         return tecAMM_INVALID_TOKENS;
@@ -106,7 +106,7 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journ
     {
         auto const entryAccount = entry[sfAccount];
         auto lpTokens = ammLPHolds(sb, *ammSle, entryAccount, ctx.journal);
-        if (lpTokens == beast::kZERO)
+        if (lpTokens == beast::kZero)
         {
             JLOG(j.debug()) << "AMMVote::applyVote, account " << entryAccount << " is not LP";
             continue;
@@ -254,11 +254,13 @@ AMMVote::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
 AMMVote::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

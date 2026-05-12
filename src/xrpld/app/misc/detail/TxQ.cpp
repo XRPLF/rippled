@@ -761,7 +761,7 @@ TxQ::apply(
     // If the transaction needs a Ticket is that Ticket in the ledger?
     SeqProxy const acctSeqProx = SeqProxy::sequence((*sleAccount)[sfSequence]);
     SeqProxy const txSeqProx = tx->getSeqProxy();
-    if (txSeqProx.isTicket() && !view.exists(keylet::kTICKET(account, txSeqProx)))
+    if (txSeqProx.isTicket() && !view.exists(keylet::kTicket(account, txSeqProx)))
     {
         if (txSeqProx.value() < acctSeqProx.value())
         {
@@ -1027,8 +1027,8 @@ TxQ::apply(
             // Sum fees and spending for all of the queued transactions
             // so we know how much to remove from the account balance
             // for the trial preclaim.
-            XRPAmount potentialSpend = beast::kZERO;
-            XRPAmount totalFee = beast::kZERO;
+            XRPAmount potentialSpend = beast::kZero;
+            XRPAmount totalFee = beast::kZero;
             for (auto iter = txIter->first; iter != txIter->end; ++iter)
             {
                 // If we're replacing this transaction don't include
@@ -1246,7 +1246,7 @@ TxQ::apply(
             if (lastRIter->feeLevel > feeLevelPaid || endAccount.transactions.size() == 1)
                 return lastRIter->feeLevel;
 
-            constexpr FeeLevel64 kMAX{std::numeric_limits<std::uint64_t>::max()};
+            constexpr FeeLevel64 kMax{std::numeric_limits<std::uint64_t>::max()};
             auto endTotal = std::accumulate(
                 endAccount.transactions.begin(),
                 endAccount.transactions.end(),
@@ -1255,8 +1255,8 @@ TxQ::apply(
                     // Check for overflow.
                     auto next = txn.second.feeLevel / endAccount.transactions.size();
                     auto mod = txn.second.feeLevel % endAccount.transactions.size();
-                    if (total.first >= kMAX - next || total.second >= kMAX - mod)
-                        return {kMAX, FeeLevel64{0}};
+                    if (total.first >= kMax - next || total.second >= kMax - mod)
+                        return {kMax, FeeLevel64{0}};
 
                     return {total.first + next, total.second + mod};
                 });
@@ -1825,9 +1825,9 @@ TxQ::doRPC(Application& app) const
 
     auto const metrics = getMetrics(*view);
 
-    json::Value ret(json::ObjectValue);
+    json::Value ret(json::ValueType::Object);
 
-    auto& levels = ret[jss::levels] = json::ObjectValue;
+    auto& levels = ret[jss::levels] = json::ValueType::Object;
 
     ret[jss::ledger_current_index] = view->header().seq;
     ret[jss::expected_ledger_size] = std::to_string(metrics.txPerLedger);

@@ -102,7 +102,7 @@ private:
     static constexpr size_t kWeakCountNumBits = kStrongCountNumBits - 2;
     using FieldType = std::uint32_t;
     static constexpr size_t kFieldTypeBits = sizeof(FieldType) * 8;
-    static constexpr FieldType kONE = 1;
+    static constexpr FieldType kOne = 1;
 
     /** `refCounts` consists of four fields that are treated atomically:
 
@@ -151,7 +151,7 @@ private:
          Note: The weak count is stored in the high `WeakCountNumBits` bits of
          refCounts
       */
-    static constexpr FieldType kWeakDelta = (kONE << kStrongCountNumBits);
+    static constexpr FieldType kWeakDelta = (kOne << kStrongCountNumBits);
 
     /**  Flag that is set when the partialDestroy function has started running
          (or is about to start running).
@@ -159,14 +159,14 @@ private:
          See description of the `refCounts` field for a fuller description of
          this field.
       */
-    static constexpr FieldType kPartialDestroyStartedMask = (kONE << (kFieldTypeBits - 1));
+    static constexpr FieldType kPartialDestroyStartedMask = (kOne << (kFieldTypeBits - 1));
 
     /**  Flag that is set when the partialDestroy function has finished running
 
          See description of the `refCounts` field for a fuller description of
          this field.
       */
-    static constexpr FieldType kPartialDestroyFinishedMask = (kONE << (kFieldTypeBits - 2));
+    static constexpr FieldType kPartialDestroyFinishedMask = (kOne << (kFieldTypeBits - 2));
 
     /** Mask that will zero out all the `count` bits and leave the tag bits
         unchanged.
@@ -180,12 +180,12 @@ private:
 
     /** Mask that will zero out everything except the strong count.
      */
-    static constexpr FieldType kStrongMask = ((kONE << kStrongCountNumBits) - 1) & kValueMask;
+    static constexpr FieldType kStrongMask = ((kOne << kStrongCountNumBits) - 1) & kValueMask;
 
     /** Mask that will zero out everything except the weak count.
      */
     static constexpr FieldType kWeakMask =
-        (((kONE << kWeakCountNumBits) - 1) << kStrongCountNumBits) & kValueMask;
+        (((kOne << kWeakCountNumBits) - 1) << kStrongCountNumBits) & kValueMask;
 
     /** Unpack the count and tag fields from the packed atomic integer form. */
     struct RefCountPair
@@ -211,9 +211,9 @@ private:
         combinedValue() const noexcept;
 
         static constexpr CountType kMaxStrongValue =
-            static_cast<CountType>((kONE << kStrongCountNumBits) - 1);
+            static_cast<CountType>((kOne << kStrongCountNumBits) - 1);
         static constexpr CountType kMaxWeakValue =
-            static_cast<CountType>((kONE << kWeakCountNumBits) - 1);
+            static_cast<CountType>((kOne << kWeakCountNumBits) - 1);
         /**  Put an extra margin to detect when running up against limits.
              This is only used in debug code, and is useful if we reduce the
              number of bits in the strong and weak counts (to 16 and 14 bits).
@@ -289,7 +289,7 @@ IntrusiveRefCounts::addWeakReleaseStrongRef() const
     using enum ReleaseStrongRefAction;
 
     static_assert(kWeakDelta > kStrongDelta);
-    auto constexpr kDELTA = kWeakDelta - kStrongDelta;
+    auto constexpr kDelta = kWeakDelta - kStrongDelta;
     auto prevIntVal = refCounts_.load(std::memory_order_acquire);
     // This loop will almost always run once. The loop is needed to atomically
     // change the counts and flags (the count could be atomically changed, but
@@ -311,7 +311,7 @@ IntrusiveRefCounts::addWeakReleaseStrongRef() const
             "xrpl::IntrusiveRefCounts::addWeakReleaseStrongRef : not in "
             "partial destroy");
 
-        auto nextIntVal = prevIntVal + kDELTA;
+        auto nextIntVal = prevIntVal + kDelta;
         ReleaseStrongRefAction action = NoOp;
         if (prevVal.strong == 1)
         {

@@ -54,7 +54,7 @@ public:
         env(noop(alice), Sig(alice));
 
         testcase("Revoke regular key");
-        env(regkey(alice, kDISABLED));
+        env(regkey(alice, kDisabled));
         env(noop(alice), Sig(bob), Ter(tefBAD_AUTH));
         env(noop(alice), Sig(alice));
     }
@@ -158,7 +158,7 @@ public:
         env.close();
 
         // Disable the regular key using a ticket.
-        env(regkey(alice, kDISABLED), Sig(alie), ticket::Use(--ticketSeq));
+        env(regkey(alice, kDisabled), Sig(alie), ticket::Use(--ticketSeq));
         env.close();
 
         // alice should be able to sign using the master key but not the

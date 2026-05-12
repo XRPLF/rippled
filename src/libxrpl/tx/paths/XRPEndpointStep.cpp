@@ -272,7 +272,7 @@ XRPEndpointStep<TDerived>::revImp(
     auto& receiver = isLast_ ? acc_ : xrpAccount();
     auto ter = accountSend(sb, sender, receiver, toSTAmount(result), j_);
     if (!isTesSuccess(ter))
-        return {XRPAmount{beast::kZERO}, XRPAmount{beast::kZERO}};
+        return {XRPAmount{beast::kZero}, XRPAmount{beast::kZero}};
 
     cache_.emplace(result);
     return {result, result};
@@ -295,7 +295,7 @@ XRPEndpointStep<TDerived>::fwdImp(
     auto& receiver = isLast_ ? acc_ : xrpAccount();
     auto ter = accountSend(sb, sender, receiver, toSTAmount(result), j_);
     if (!isTesSuccess(ter))
-        return {XRPAmount{beast::kZERO}, XRPAmount{beast::kZERO}};
+        return {XRPAmount{beast::kZero}, XRPAmount{beast::kZero}};
 
     cache_.emplace(result);
     return {result, result};
@@ -308,7 +308,7 @@ XRPEndpointStep<TDerived>::validFwd(PaymentSandbox& sb, ApplyView& afView, Eithe
     if (!cache_)
     {
         JLOG(j_.error()) << "Expected valid cache in validFwd";
-        return {false, EitherAmount(XRPAmount(beast::kZERO))};
+        return {false, EitherAmount(XRPAmount(beast::kZero))};
     }
 
     XRPL_ASSERT(in.holds<XRPAmount>(), "xrpl::XRPEndpointStep::validFwd : input is XRP");

@@ -53,7 +53,7 @@ Payment::makeTxConsequences(PreflightContext const& ctx)
 
         // If there's no sfSendMax in XRP, and the sfAmount isn't
         // in XRP, then the transaction does not spend XRP.
-        return maxAmount.native() ? maxAmount.xrp() : beast::kZERO;
+        return maxAmount.native() ? maxAmount.xrp() : beast::kZero;
     };
 
     return TxConsequences{ctx.tx, calculateMaxXRPSpend(ctx.tx)};
@@ -78,7 +78,7 @@ getMaxSourceAmount(
                 Issue{issue.currency, account},
                 dstAmount.mantissa(),
                 dstAmount.exponent(),
-                dstAmount < beast::kZERO);
+                dstAmount < beast::kZero);
         });
 }
 
@@ -164,13 +164,13 @@ Payment::preflight(PreflightContext const& ctx)
                         << "Payment destination account not specified.";
         return temDST_NEEDED;
     }
-    if (hasMax && maxSourceAmount <= beast::kZERO)
+    if (hasMax && maxSourceAmount <= beast::kZero)
     {
         JLOG(j.trace()) << "Malformed transaction: bad max amount: "
                         << maxSourceAmount.getFullText();
         return temBAD_AMOUNT;
     }
-    if (dstAmount <= beast::kZERO)
+    if (dstAmount <= beast::kZero)
     {
         JLOG(j.trace()) << "Malformed transaction: bad dst amount: " << dstAmount.getFullText();
         return temBAD_AMOUNT;
@@ -241,7 +241,7 @@ Payment::preflight(PreflightContext const& ctx)
         }
 
         auto const dMin = *deliverMin;
-        if (!isLegalNet(dMin) || dMin <= beast::kZERO)
+        if (!isLegalNet(dMin) || dMin <= beast::kZero)
         {
             JLOG(j.trace()) << "Malformed transaction: Invalid " << jss::DeliverMin.cStr()
                             << " amount. " << dMin.getFullText();
@@ -431,7 +431,7 @@ Payment::doApply()
         sleDst = std::make_shared<SLE>(k);
         sleDst->setAccountID(sfAccount, dstAccountID);
         sleDst->setFieldU32(sfSequence, view().seq());
-        sleDst->setFieldAmount(sfBalance, XRPAmount(beast::kZERO));
+        sleDst->setFieldAmount(sfBalance, XRPAmount(beast::kZero));
 
         view().insert(sleDst);
     }
@@ -684,11 +684,13 @@ Payment::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
 Payment::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

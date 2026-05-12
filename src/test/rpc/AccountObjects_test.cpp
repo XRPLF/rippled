@@ -144,9 +144,9 @@ public:
             testInvalidAccountParam(1);
             testInvalidAccountParam(1.1);
             testInvalidAccountParam(true);
-            testInvalidAccountParam(json::Value(json::NullValue));
-            testInvalidAccountParam(json::Value(json::ObjectValue));
-            testInvalidAccountParam(json::Value(json::ArrayValue));
+            testInvalidAccountParam(json::Value(json::ValueType::Null));
+            testInvalidAccountParam(json::Value(json::ValueType::Object));
+            testInvalidAccountParam(json::Value(json::ValueType::Array));
         }
         // test error on  malformed account string.
         {
@@ -674,7 +674,7 @@ public:
             jvEscrow[jss::TransactionType] = jss::EscrowCreate;
             jvEscrow[jss::Account] = gw.human();
             jvEscrow[jss::Destination] = gw.human();
-            jvEscrow[jss::Amount] = XRP(100).value().getJson(JsonOptions::KNone);
+            jvEscrow[jss::Amount] = XRP(100).value().getJson(JsonOptions::Values::None);
             jvEscrow[sfFinishAfter.jsonName] = env.now().time_since_epoch().count() + 1;
             env(jvEscrow);
             env.close();
@@ -740,11 +740,11 @@ public:
                 return scEnv.rpc("json", "account_objects", to_string(params));
             };
 
-            json::Value const resp = scEnvAcctObjs(Account::kMASTER, jss::bridge);
+            json::Value const resp = scEnvAcctObjs(Account::kMaster, jss::bridge);
 
             BEAST_EXPECT(acctObjsIsSize(resp, 1));
             auto const& acctBridge = resp[jss::result][jss::account_objects][0u];
-            BEAST_EXPECT(acctBridge[sfAccount.jsonName] == Account::kMASTER.human());
+            BEAST_EXPECT(acctBridge[sfAccount.jsonName] == Account::kMaster.human());
             BEAST_EXPECT(acctBridge[sfLedgerEntryType.getJsonName()] == "Bridge");
             BEAST_EXPECT(acctBridge[sfXChainClaimID.getJsonName()].asUInt() == 0);
             BEAST_EXPECT(acctBridge[sfXChainAccountClaimCount.getJsonName()].asUInt() == 0);
@@ -800,7 +800,7 @@ public:
 
             // send first batch of account create attestations, so the
             // xchain_create_account_claim_id_ should be present on the door
-            // account (Account::kMASTER) to collect the signatures until a
+            // account (Account::kMaster) to collect the signatures until a
             // quorum is reached
             scEnv(
                 test::jtx::createAccountAttestation(
@@ -827,13 +827,13 @@ public:
             {
                 // Find the xchain_create_account_claim_id_
                 json::Value const resp =
-                    scEnvAcctObjs(Account::kMASTER, jss::xchain_owned_create_account_claim_id);
+                    scEnvAcctObjs(Account::kMaster, jss::xchain_owned_create_account_claim_id);
                 BEAST_EXPECT(acctObjsIsSize(resp, 1));
 
                 auto const& xchainCreateAccountClaimId =
                     resp[jss::result][jss::account_objects][0u];
                 BEAST_EXPECT(
-                    xchainCreateAccountClaimId[sfAccount.jsonName] == Account::kMASTER.human());
+                    xchainCreateAccountClaimId[sfAccount.jsonName] == Account::kMaster.human());
                 BEAST_EXPECT(
                     xchainCreateAccountClaimId[sfXChainAccountCreateCount.getJsonName()].asUInt() ==
                     1);
@@ -860,7 +860,7 @@ public:
             jvPayChan[jss::TransactionType] = jss::PaymentChannelCreate;
             jvPayChan[jss::Account] = gw.human();
             jvPayChan[jss::Destination] = alice.human();
-            jvPayChan[jss::Amount] = XRP(300).value().getJson(JsonOptions::KNone);
+            jvPayChan[jss::Amount] = XRP(300).value().getJson(JsonOptions::Values::None);
             jvPayChan[sfSettleDelay.jsonName] = 24 * 60 * 60;
             jvPayChan[sfPublicKey.jsonName] = strHex(gw.pk().slice());
             env(jvPayChan);
@@ -1180,9 +1180,9 @@ public:
             testInvalidAccountParam(1);
             testInvalidAccountParam(1.1);
             testInvalidAccountParam(true);
-            testInvalidAccountParam(json::Value(json::NullValue));
-            testInvalidAccountParam(json::Value(json::ObjectValue));
-            testInvalidAccountParam(json::Value(json::ArrayValue));
+            testInvalidAccountParam(json::Value(json::ValueType::Null));
+            testInvalidAccountParam(json::Value(json::ValueType::Object));
+            testInvalidAccountParam(json::Value(json::ValueType::Array));
         }
     }
 

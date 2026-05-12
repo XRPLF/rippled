@@ -113,7 +113,7 @@ AMMBid::preclaim(PreclaimContext const& ctx)
     }
 
     auto const lpTokensBalance = (*ammSle)[sfLPTokenBalance];
-    if (lpTokensBalance == beast::kZERO)
+    if (lpTokensBalance == beast::kZero)
         return tecAMM_EMPTY;
 
     if (ctx.tx.isFieldPresent(sfAuthAccounts))
@@ -130,7 +130,7 @@ AMMBid::preclaim(PreclaimContext const& ctx)
 
     auto const lpTokens = ammLPHolds(ctx.view, *ammSle, ctx.tx[sfAccount], ctx.j);
     // Not LP
-    if (lpTokens == beast::kZERO)
+    if (lpTokens == beast::kZero)
     {
         JLOG(ctx.j.debug()) << "AMM Bid: account is not LP.";
         return tecAMM_INVALID_TOKENS;
@@ -384,11 +384,13 @@ AMMBid::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
 AMMBid::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

@@ -208,7 +208,7 @@ public:
     std::unique_ptr<AmendmentTable>
     makeTable(test::jtx::Env& env, std::chrono::seconds majorityTime)
     {
-        static std::vector<AmendmentTable::FeatureInfo> const kSUPPORTED = combine(
+        static std::vector<AmendmentTable::FeatureInfo> const kSupported = combine(
             makeDefaultYes(yes_),
             // Use non-intuitive default votes for "enabled_" and "vetoed_"
             // so that when the tests later explicitly enable or veto them,
@@ -218,7 +218,7 @@ public:
             makeDefaultYes(vetoed_),
             makeObsolete(obsolete_));
         return makeTable(
-            env.app(), majorityTime, kSUPPORTED, makeSection(enabled_), makeSection(vetoed_));
+            env.app(), majorityTime, kSupported, makeSection(enabled_), makeSection(vetoed_));
     }
 
     void

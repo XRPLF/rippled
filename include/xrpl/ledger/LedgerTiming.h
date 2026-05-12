@@ -46,7 +46,7 @@ auto constexpr kDecreaseLedgerTimeResolutionEvery = 1;
     @param ledgerSeq the sequence number of the new ledger
 
     @pre previousResolution must be a valid bin
-         from @ref kLEDGER_POSSIBLE_TIME_RESOLUTIONS
+         from @ref kLedgerPossibleTimeResolutions
 
     @tparam Rep Type representing number of ticks in std::chrono::duration
     @tparam Period An std::ratio representing tick period in

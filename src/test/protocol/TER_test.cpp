@@ -216,7 +216,7 @@ struct TER_test : public beast::unit_test::Suite
         // All of the TER-related types should be comparable.
 
         // Examples of all the types we expect to successfully compare.
-        static auto const kTERS = std::make_tuple(
+        static auto const kTers = std::make_tuple(
             telLOCAL_ERROR,
             temMALFORMED,
             tefFAILURE,
@@ -225,11 +225,11 @@ struct TER_test : public beast::unit_test::Suite
             tecCLAIM,
             NotTEC{telLOCAL_ERROR},
             TER{tecCLAIM});
-        static int const kHiIndex{std::tuple_size_v<decltype(kTERS)> - 1};
+        static int const kHiIndex{std::tuple_size_v<decltype(kTers)> - 1};
 
         // Verify that all types in the ters tuple can be compared with all
         // the other types in ters.
-        testIterate<kHiIndex, kHiIndex, CheckComparable>(kTERS, *this);
+        testIterate<kHiIndex, kHiIndex, CheckComparable>(kTers, *this);
     }
 
     void

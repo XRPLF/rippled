@@ -74,8 +74,8 @@ MemoryFactory* gMemoryFactory = nullptr;
 void
 registerMemoryFactory(Manager& manager)
 {
-    static MemoryFactory kINSTANCE{manager};
-    gMemoryFactory = &kINSTANCE;
+    static MemoryFactory kInstance{manager};
+    gMemoryFactory = &kInstance;
 }
 
 //------------------------------------------------------------------------------

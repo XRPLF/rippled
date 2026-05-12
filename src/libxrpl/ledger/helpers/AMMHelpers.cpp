@@ -205,7 +205,7 @@ adjustAmountsByLPTokens(
 
     auto const lpTokensActual = adjustLPTokens(lptAMMBalance, lpTokens, isDeposit);
 
-    if (lpTokensActual == beast::kZERO)
+    if (lpTokensActual == beast::kZero)
     {
         auto const amount2Opt = amount2 ? std::make_optional(STAmount{}) : std::nullopt;
         return std::make_tuple(STAmount{}, amount2Opt, lpTokensActual);
@@ -644,7 +644,7 @@ deleteAMMTrustLines(
             if (nodeType == ltRIPPLE_STATE)
             {
                 // Trustlines must have zero balance
-                if (sleItem->getFieldAmount(sfBalance) != beast::kZERO)
+                if (sleItem->getFieldAmount(sfBalance) != beast::kZero)
                 {
                     // LCOV_EXCL_START
                     JLOG(j.error()) << "deleteAMMObjects: deleting trustline with "
@@ -817,6 +817,9 @@ initializeFeeAuctionVote(
     {
         auctionSlot.makeFieldAbsent(sfDiscountedFee);  // LCOV_EXCL_LINE
     }
+    // Clear stale auth accounts from any previous auction slot holder.
+    if (rules.enabled(fixCleanup3_2_0) && auctionSlot.isFieldPresent(sfAuthAccounts))
+        auctionSlot.makeFieldAbsent(sfAuthAccounts);
 }
 
 Expected<bool, TER>

@@ -101,8 +101,8 @@ public:
 inline std::error_category const&
 getCryptoconditionsErrorCategory()
 {
-    static CryptoconditionsErrorCategory const kCAT{};
-    return kCAT;
+    static CryptoconditionsErrorCategory const kCat{};
+    return kCat;
 }
 
 }  // namespace detail

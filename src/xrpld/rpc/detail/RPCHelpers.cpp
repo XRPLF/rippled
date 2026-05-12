@@ -351,7 +351,7 @@ chooseLedgerEntryType(json::Value const& params)
     std::pair<RPC::Status, LedgerEntryType> result{RPC::Status::kOK, ltANY};
     if (params.isMember(jss::type))
     {
-        static constexpr auto kTYPES =
+        static constexpr auto kTypes =
             std::to_array<std::tuple<char const*, char const*, LedgerEntryType>>({
 #pragma push_macro("LEDGER_ENTRY")
 #undef LEDGER_ENTRY
@@ -378,10 +378,10 @@ chooseLedgerEntryType(json::Value const& params)
         // against the canonical name (case-insensitive) or the RPC name
         // (case-sensitive).
         auto const filter = p.asString();
-        auto const iter = std::ranges::find_if(kTYPES, [&filter](decltype(kTYPES.front())& t) {
+        auto const iter = std::ranges::find_if(kTypes, [&filter](decltype(kTypes.front())& t) {
             return boost::iequals(std::get<0>(t), filter) || std::get<1>(t) == filter;
         });
-        if (iter == kTYPES.end())
+        if (iter == kTypes.end())
         {
             result.first = RPC::Status{RpcInvalidParams, "Invalid field 'type'."};
             XRPL_ASSERT(

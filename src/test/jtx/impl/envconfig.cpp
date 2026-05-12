@@ -72,7 +72,7 @@ secureGateway(std::unique_ptr<Config> cfg)
 {
     (*cfg)[PORT_RPC].set("admin", "");
     (*cfg)[PORT_WS].set("admin", "");
-    (*cfg)[PORT_RPC].set("secureGateway", getEnvLocalhostAddr());
+    (*cfg)[PORT_RPC].set("secure_gateway", getEnvLocalhostAddr());
     return cfg;
 }
 
@@ -89,8 +89,8 @@ secureGatewayLocalnet(std::unique_ptr<Config> cfg)
 {
     (*cfg)[PORT_RPC].set("admin", "");
     (*cfg)[PORT_WS].set("admin", "");
-    (*cfg)[PORT_RPC].set("secureGateway", "127.0.0.0/8");
-    (*cfg)[PORT_WS].set("secureGateway", "127.0.0.0/8");
+    (*cfg)[PORT_RPC].set("secure_gateway", "127.0.0.0/8");
+    (*cfg)[PORT_WS].set("secure_gateway", "127.0.0.0/8");
     return cfg;
 }
 std::unique_ptr<Config>
@@ -100,14 +100,14 @@ singleThreadIo(std::unique_ptr<Config> cfg)
     return cfg;
 }
 
-auto constexpr kDEFAULTSEED = "shUwVw52ofnCUX5m7kPTKzJdr4HEH";
+auto constexpr kDefaultSeed = "shUwVw52ofnCUX5m7kPTKzJdr4HEH";
 
 std::unique_ptr<Config>
 validator(std::unique_ptr<Config> cfg, std::string const& seed)
 {
     // If the config has valid validation keys then we run as a validator.
     cfg->section(SECTION_VALIDATION_SEED)
-        .append(std::vector<std::string>{seed.empty() ? kDEFAULTSEED : seed});
+        .append(std::vector<std::string>{seed.empty() ? kDefaultSeed : seed});
     return cfg;
 }
 
@@ -127,7 +127,7 @@ addGrpcConfigWithSecureGateway(std::unique_ptr<Config> cfg, std::string const& s
     // Check https://man7.org/linux/man-pages/man7/ip.7.html
     // "ip_local_port_range" section for using 0 ports
     (*cfg)[SECTION_PORT_GRPC].set("port", "0");
-    (*cfg)[SECTION_PORT_GRPC].set("secureGateway", secureGateway);
+    (*cfg)[SECTION_PORT_GRPC].set("secure_gateway", secureGateway);
     return cfg;
 }
 

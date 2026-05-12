@@ -92,15 +92,11 @@
 namespace xrpl {
 
 namespace CrawlOptions {
-// Need to be named before converting
-// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-enum {
-    Disabled = 0,
-    Overlay = (1 << 0),
-    ServerInfo = (1 << 1),
-    ServerCounts = (1 << 2),
-    Unl = (1 << 3)
-};
+static constexpr auto kDisabled = 0;
+static constexpr auto kOverlay = (1 << 0);
+static constexpr auto kServerInfo = (1 << 1);
+static constexpr auto kServerCounts = (1 << 2);
+static constexpr auto kUNL = (1 << 3);
 }  // namespace CrawlOptions
 
 //------------------------------------------------------------------------------
@@ -157,7 +153,7 @@ OverlayImpl::Timer::onTimer(error_code ec)
     if (overlay_.app_.config().TX_REDUCE_RELAY_ENABLE)
         overlay_.sendTxQueue();
 
-    if ((++overlay_.timer_count_ % Tuning::CheckIdlePeers) == 0)
+    if ((++overlay_.timer_count_ % Tuning::kCheckIdlePeers) == 0)
         overlay_.deleteIdlePeers();
 
     asyncWait();
@@ -396,9 +392,9 @@ OverlayImpl::makeRedirectResponse(
     }
     msg.insert("Content-Type", "application/json");
     msg.insert(boost::beast::http::field::connection, "close");
-    msg.body() = json::ObjectValue;
+    msg.body() = json::ValueType::Object;
     {
-        json::Value& ips = (msg.body()["peer-ips"] = json::ArrayValue);
+        json::Value& ips = (msg.body()["peer-ips"] = json::ValueType::Array);
         for (auto const& _ : peerFinder_->redirect(slot))
             ips.append(_.address.toString());
     }
@@ -475,14 +471,14 @@ OverlayImpl::addActive(std::shared_ptr<PeerImp> const& peer)
 
     {
         auto const result = peers_.emplace(peer->slot(), peer);
-        XRPL_ASSERT(result.second, "xrpl::OverlayImpl::add_active : peer is inserted");
+        XRPL_ASSERT(result.second, "xrpl::OverlayImpl::addActive : peer is inserted");
         (void)result.second;
     }
 
     {
         auto const result = ids_.emplace(
             std::piecewise_construct, std::make_tuple(peer->id()), std::make_tuple(peer));
-        XRPL_ASSERT(result.second, "xrpl::OverlayImpl::add_active : peer ID is inserted");
+        XRPL_ASSERT(result.second, "xrpl::OverlayImpl::addActive : peer ID is inserted");
         (void)result.second;
     }
 
@@ -749,10 +745,10 @@ OverlayImpl::getOverlayInfo() const
 {
     using namespace std::chrono;
     json::Value jv;
-    auto& av = jv[jss::active] = json::Value(json::ArrayValue);
+    auto& av = jv[jss::active] = json::Value(json::ValueType::Array);
 
     forEach([&](std::shared_ptr<PeerImp> const& sp) {
-        auto& pv = av.append(json::Value(json::ObjectValue));
+        auto& pv = av.append(json::Value(json::ValueType::Object));
         pv[jss::public_key] = base64Encode(sp->getNodePublic().data(), sp->getNodePublic().size());
         pv[jss::type] = sp->slot()->inbound() ? jss::in : jss::out;
         pv[jss::uptime] = static_cast<std::uint32_t>(duration_cast<seconds>(sp->uptime()).count());
@@ -865,7 +861,7 @@ OverlayImpl::json()
 bool
 OverlayImpl::processCrawl(http_request_type const& req, Handoff& handoff)
 {
-    if (req.target() != "/crawl" || setup_.crawlOptions == CrawlOptions::Disabled)
+    if (req.target() != "/crawl" || setup_.crawlOptions == CrawlOptions::kDisabled)
         return false;
 
     boost::beast::http::response<JsonBody> msg;
@@ -876,19 +872,19 @@ OverlayImpl::processCrawl(http_request_type const& req, Handoff& handoff)
     msg.insert("Connection", "close");
     msg.body()["version"] = json::Value(2u);
 
-    if ((setup_.crawlOptions & CrawlOptions::Overlay) != 0u)
+    if ((setup_.crawlOptions & CrawlOptions::kOverlay) != 0u)
     {
         msg.body()["overlay"] = getOverlayInfo();
     }
-    if ((setup_.crawlOptions & CrawlOptions::ServerInfo) != 0u)
+    if ((setup_.crawlOptions & CrawlOptions::kServerInfo) != 0u)
     {
         msg.body()["server"] = getServerInfo();
     }
-    if ((setup_.crawlOptions & CrawlOptions::ServerCounts) != 0u)
+    if ((setup_.crawlOptions & CrawlOptions::kServerCounts) != 0u)
     {
         msg.body()["counts"] = getServerCounts();
     }
-    if ((setup_.crawlOptions & CrawlOptions::Unl) != 0u)
+    if ((setup_.crawlOptions & CrawlOptions::kUNL) != 0u)
     {
         msg.body()["unl"] = getUnlInfo();
     }
@@ -903,9 +899,9 @@ OverlayImpl::processValidatorList(http_request_type const& req, Handoff& handoff
 {
     // If the target is in the form "/vl/<validator_list_public_key>",
     // return the most recent validator list for that key.
-    constexpr std::string_view kPREFIX("/vl/");
+    constexpr std::string_view kPrefix("/vl/");
 
-    if (!req.target().starts_with(kPREFIX) || !setup_.vlEnabled)
+    if (!req.target().starts_with(kPrefix) || !setup_.vlEnabled)
         return false;
 
     std::uint32_t version = 1;
@@ -920,14 +916,14 @@ OverlayImpl::processValidatorList(http_request_type const& req, Handoff& handoff
         msg.result(status);
         msg.insert("Content-Length", "0");
 
-        msg.body() = json::NullValue;
+        msg.body() = json::ValueType::Null;
 
         msg.prepare_payload();
         handoff.response = std::make_shared<SimpleWriter>(msg);
         return true;
     };
 
-    std::string_view key = req.target().substr(kPREFIX.size());
+    std::string_view key = req.target().substr(kPrefix.size());
 
     if (auto slash = key.find('/'); slash != std::string_view::npos)
     {
@@ -989,7 +985,7 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
     auto health = HealthState::Healthy;
     auto setHealth = [&health](HealthState state) { health = std::max(health, state); };
 
-    msg.body()[jss::info] = json::ObjectValue;
+    msg.body()[jss::info] = json::ValueType::Object;
     if (lastValidatedLedgerAge >= 7 || lastValidatedLedgerAge < 0)
     {
         msg.body()[jss::info][jss::validated_ledger] = lastValidatedLedgerAge;
@@ -1566,19 +1562,19 @@ setupOverlay(BasicConfig const& config)
         {
             if (get<bool>(section, "overlay", true))
             {
-                setup.crawlOptions |= CrawlOptions::Overlay;
+                setup.crawlOptions |= CrawlOptions::kOverlay;
             }
             if (get<bool>(section, "server", true))
             {
-                setup.crawlOptions |= CrawlOptions::ServerInfo;
+                setup.crawlOptions |= CrawlOptions::kServerInfo;
             }
             if (get<bool>(section, "counts", false))
             {
-                setup.crawlOptions |= CrawlOptions::ServerCounts;
+                setup.crawlOptions |= CrawlOptions::kServerCounts;
             }
             if (get<bool>(section, "unl", true))
             {
-                setup.crawlOptions |= CrawlOptions::Unl;
+                setup.crawlOptions |= CrawlOptions::kUNL;
             }
         }
     }

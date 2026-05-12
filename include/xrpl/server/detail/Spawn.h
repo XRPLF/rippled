@@ -50,7 +50,7 @@ inline constexpr auto kPropagateExceptions = [](std::exception_ptr ePtr) {
 /**
  * @brief Spawns a coroutine using `boost::asio::spawn`
  *
- * @note This uses kPROPAGATE_EXCEPTIONS to force asio to propagate exceptions
+ * @note This uses kPropagateExceptions to force asio to propagate exceptions
  * through `io_context`
  * @note Since implicit strand was removed from boost::asio::spawn this helper
  * function adds the strand back

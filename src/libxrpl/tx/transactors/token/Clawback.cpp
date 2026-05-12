@@ -46,7 +46,7 @@ preflightHelper<Issue>(PreflightContext const& ctx)
     // The issuer field is used for the token holder instead
     AccountID const& holder = clawAmount.getIssuer();
 
-    if (issuer == holder || isXRP(clawAmount) || clawAmount <= beast::kZERO)
+    if (issuer == holder || isXRP(clawAmount) || clawAmount <= beast::kZero)
         return temBAD_AMOUNT;
 
     return tesSUCCESS;
@@ -69,7 +69,7 @@ preflightHelper<MPTIssue>(PreflightContext const& ctx)
     if (ctx.tx[sfAccount] == *mptHolder)
         return temMALFORMED;
 
-    if (clawAmount.mpt() > MPTAmount{kMaxMpTokenAmount} || clawAmount <= beast::kZERO)
+    if (clawAmount.mpt() > MPTAmount{kMaxMpTokenAmount} || clawAmount <= beast::kZero)
         return temBAD_AMOUNT;
 
     return tesSUCCESS;
@@ -121,11 +121,11 @@ preclaimHelper<Issue>(
     STAmount const balance = (*sleRippleState)[sfBalance];
 
     // If balance is positive, issuer must have higher address than holder
-    if (balance > beast::kZERO && issuer < holder)
+    if (balance > beast::kZero && issuer < holder)
         return tecNO_PERMISSION;
 
     // If balance is negative, issuer must have lower address than holder
-    if (balance < beast::kZERO && issuer > holder)
+    if (balance < beast::kZero && issuer > holder)
         return tecNO_PERMISSION;
 
     // At this point, we know that issuer and holder accounts
@@ -143,7 +143,7 @@ preclaimHelper<Issue>(
             clawAmount.get<Issue>().currency,
             issuer,
             FreezeHandling::IgnoreFreeze,
-            ctx.j) <= beast::kZERO)
+            ctx.j) <= beast::kZero)
         return tecINSUFFICIENT_FUNDS;
 
     return tesSUCCESS;
@@ -178,7 +178,7 @@ preclaimHelper<MPTIssue>(
             clawAmount.get<MPTIssue>(),
             FreezeHandling::IgnoreFreeze,
             AuthHandling::IgnoreAuth,
-            ctx.j) <= beast::kZERO)
+            ctx.j) <= beast::kZero)
         return tecINSUFFICIENT_FUNDS;
 
     return tesSUCCESS;
@@ -284,11 +284,13 @@ Clawback::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
 Clawback::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

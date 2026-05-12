@@ -101,7 +101,7 @@ public:
     }
 };
 
-struct Uint256Field : public JTxField<SF_UINT256, uint256, std::string>
+struct UInt256Field : public JTxField<SF_UINT256, uint256, std::string>
 {
     using SF = SF_UINT256;
     using SV = uint256;
@@ -112,7 +112,7 @@ protected:
     using base::value_;
 
 public:
-    explicit Uint256Field(SF const& sfield, SV const& value) : JTxField(sfield, value)
+    explicit UInt256Field(SF const& sfield, SV const& value) : JTxField(sfield, value)
     {
     }
 
@@ -163,7 +163,7 @@ public:
     [[nodiscard]] OV
     value() const override
     {
-        return value_.getJson(JsonOptions::KNone);
+        return value_.getJson(JsonOptions::Values::None);
     }
 };
 
@@ -274,9 +274,9 @@ using simpleField = JTxFieldWrapper<JTxField<SField, StoredValue>>;
 
 /** General field definitions, or fields used in multiple transaction namespaces
  */
-auto const kDATA = JTxFieldWrapper<BlobField>(sfData);
+auto const kData = JTxFieldWrapper<BlobField>(sfData);
 
-auto const kAMOUNT = JTxFieldWrapper<StAmountField>(sfAmount);
+auto const kAmount = JTxFieldWrapper<StAmountField>(sfAmount);
 
 // TODO We only need this long "requires" clause as polyfill, for C++20
 // implementations which are missing <ranges> header. Replace with
@@ -714,7 +714,7 @@ create(A const& account, A const& dest, STAmount const& sendMax)
 {
     json::Value jv;
     jv[sfAccount.jsonName] = to_string(account);
-    jv[sfSendMax.jsonName] = sendMax.getJson(JsonOptions::KNone);
+    jv[sfSendMax.jsonName] = sendMax.getJson(JsonOptions::Values::None);
     jv[sfDestination.jsonName] = to_string(dest);
     jv[sfTransactionType.jsonName] = jss::CheckCreate;
     return jv;
@@ -856,7 +856,7 @@ coverWithdraw(
 json::Value
 coverClawback(AccountID const& account, std::uint32_t flags = 0);
 
-auto const kLoanBrokerId = JTxFieldWrapper<Uint256Field>(sfLoanBrokerID);
+auto const kLoanBrokerId = JTxFieldWrapper<UInt256Field>(sfLoanBrokerID);
 
 auto const kManagementFeeRate =
     valueUnitWrapper<SF_UINT16, unit::TenthBipsTag>(sfManagementFeeRate);
@@ -868,7 +868,7 @@ auto const kCoverRateMinimum = valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(s
 auto const kCoverRateLiquidation =
     valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfCoverRateLiquidation);
 
-auto const kDESTINATION = JTxFieldWrapper<AccountIdField>(sfDestination);
+auto const kDestination = JTxFieldWrapper<AccountIdField>(sfDestination);
 
 }  // namespace loanBroker
 
@@ -882,7 +882,7 @@ set(AccountID const& account,
     Number principalRequested,
     std::uint32_t flags = 0);
 
-auto const kCOUNTERPARTY = JTxFieldWrapper<AccountIdField>(sfCounterparty);
+auto const kCounterparty = JTxFieldWrapper<AccountIdField>(sfCounterparty);
 
 // For `CounterPartySignature`, use `Sig(sfCounterpartySignature, ...)`
 

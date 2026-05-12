@@ -26,7 +26,7 @@ struct TAmounts
 {
     TAmounts() = default;
 
-    TAmounts(beast::Zero, beast::Zero) : in(beast::kZERO), out(beast::kZERO)
+    TAmounts(beast::Zero, beast::Zero) : in(beast::kZero), out(beast::kZero)
     {
     }
 
@@ -38,7 +38,7 @@ struct TAmounts
     [[nodiscard]] bool
     empty() const noexcept
     {
-        return in <= beast::kZERO || out <= beast::kZERO;
+        return in <= beast::kZero || out <= beast::kZero;
     }
 
     TAmounts&

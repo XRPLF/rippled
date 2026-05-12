@@ -768,7 +768,7 @@ public:
             BEAST_EXPECT(!bobStat.begin()->lastValid);
             BEAST_EXPECT(!bobStat.begin()->consequences.isBlocker());
 
-            auto noStat = txQ.getAccountTxs(Account::kMASTER.id());
+            auto noStat = txQ.getAccountTxs(Account::kMaster.id());
             BEAST_EXPECT(noStat.empty());
         }
 
@@ -2788,7 +2788,7 @@ public:
         auto const aliceSeq = env.seq(alice);
         auto const lastLedgerSeq = env.current()->header().seq + 2;
 
-        auto submitParams = json::Value(json::ObjectValue);
+        auto submitParams = json::Value(json::ValueType::Object);
         for (int i = 0; i < 5; ++i)
         {
             if (i == 2)
@@ -2796,13 +2796,13 @@ public:
                 envs(
                     noop(alice),
                     Fee(baseFee * 100),
-                    Seq(kNONE),
+                    Seq(kNone),
                     Json(jss::LastLedgerSequence, lastLedgerSeq),
                     Ter(terQUEUED))(submitParams);
             }
             else
             {
-                envs(noop(alice), Fee(baseFee * 100), Seq(kNONE), Ter(terQUEUED))(submitParams);
+                envs(noop(alice), Fee(baseFee * 100), Seq(kNone), Ter(terQUEUED))(submitParams);
             }
         }
         checkMetrics(*this, env, 5, std::nullopt, 7, 6);
@@ -2828,7 +2828,7 @@ public:
         // Put some txs in the queue for bob.
         // Give them a higher fee so they'll beat alice's.
         for (int i = 0; i < 8; ++i)
-            envs(noop(bob), Fee(baseFee * 200), Seq(kNONE), Ter(terQUEUED))();
+            envs(noop(bob), Fee(baseFee * 200), Seq(kNone), Ter(terQUEUED))();
         checkMetrics(*this, env, 13, std::nullopt, 7, 6);
 
         env.close();
@@ -2837,14 +2837,14 @@ public:
         // Give them a higher fee so they'll beat alice's.
         fillQueue(env, bob);
         for (int i = 0; i < 9; ++i)
-            envs(noop(bob), Fee(baseFee * 200), Seq(kNONE), Ter(terQUEUED))();
+            envs(noop(bob), Fee(baseFee * 200), Seq(kNone), Ter(terQUEUED))();
         checkMetrics(*this, env, 14, 14, 8, 7, 25601);
         env.close();
         // Put some more txs in the queue for bob.
         // Give them a higher fee so they'll beat alice's.
         fillQueue(env, bob);
         for (int i = 0; i < 10; ++i)
-            envs(noop(bob), Fee(baseFee * 200), Seq(kNONE), Ter(terQUEUED))();
+            envs(noop(bob), Fee(baseFee * 200), Seq(kNone), Ter(terQUEUED))();
         checkMetrics(*this, env, 15, 16, 9, 8);
         env.close();
         checkMetrics(*this, env, 4, 18, 10, 9);
@@ -2872,7 +2872,7 @@ public:
             }
         }
         // Now, fill the gap.
-        envs(noop(alice), Fee(baseFee * 100), Seq(kNONE), Ter(terQUEUED))(submitParams);
+        envs(noop(alice), Fee(baseFee * 100), Seq(kNone), Ter(terQUEUED))(submitParams);
         checkMetrics(*this, env, 5, 18, 10, 9);
         {
             auto aliceStat = txQ.getAccountTxs(alice.id());
@@ -2973,11 +2973,11 @@ public:
             BEAST_EXPECT(!queueData.isMember(jss::transactions));
         }
 
-        auto submitParams = json::Value(json::ObjectValue);
-        envs(noop(alice), Fee(baseFee * 10), Seq(kNONE), Ter(terQUEUED))(submitParams);
-        envs(noop(alice), Fee(baseFee * 10), Seq(kNONE), Ter(terQUEUED))(submitParams);
-        envs(noop(alice), Fee(baseFee * 10), Seq(kNONE), Ter(terQUEUED))(submitParams);
-        envs(noop(alice), Fee(baseFee * 10), Seq(kNONE), Ter(terQUEUED))(submitParams);
+        auto submitParams = json::Value(json::ValueType::Object);
+        envs(noop(alice), Fee(baseFee * 10), Seq(kNone), Ter(terQUEUED))(submitParams);
+        envs(noop(alice), Fee(baseFee * 10), Seq(kNone), Ter(terQUEUED))(submitParams);
+        envs(noop(alice), Fee(baseFee * 10), Seq(kNone), Ter(terQUEUED))(submitParams);
+        envs(noop(alice), Fee(baseFee * 10), Seq(kNone), Ter(terQUEUED))(submitParams);
         checkMetrics(*this, env, 4, 6, 4, 3);
 
         {
@@ -3025,12 +3025,12 @@ public:
         checkMetrics(*this, env, 0, 8, 4, 4);
 
         // Fill the ledger and then queue up a blocker.
-        envs(noop(alice), Seq(kNONE))(submitParams);
+        envs(noop(alice), Seq(kNone))(submitParams);
 
         envs(
             fset(alice, asfAccountTxnID),
             Fee(baseFee * 10),
-            Seq(kNONE),
+            Seq(kNone),
             Json(jss::LastLedgerSequence, 10),
             Ter(terQUEUED))(submitParams);
         checkMetrics(*this, env, 1, 8, 5, 4);
@@ -3084,7 +3084,7 @@ public:
             }
         }
 
-        envs(noop(alice), Fee(baseFee * 10), Seq(kNONE), Ter(telCAN_NOT_QUEUE_BLOCKED))(
+        envs(noop(alice), Fee(baseFee * 10), Seq(kNone), Ter(telCAN_NOT_QUEUE_BLOCKED))(
             submitParams);
         checkMetrics(*this, env, 1, 8, 5, 4);
 
@@ -3219,7 +3219,7 @@ public:
         checkMetrics(*this, env, 0, 6, 4, 3);
 
         auto aliceSeq = env.seq(alice);
-        auto submitParams = json::Value(json::ObjectValue);
+        auto submitParams = json::Value(json::ValueType::Object);
         for (auto i = 0; i < 4; ++i)
             envs(noop(alice), Fee(baseFee * 10), Seq(aliceSeq + i), Ter(terQUEUED))(submitParams);
         checkMetrics(*this, env, 4, 6, 4, 3);
@@ -3406,7 +3406,7 @@ public:
         auto const baseFee = env.current()->fees().base.drops();
 
         json::Value stream;
-        stream[jss::streams] = json::ArrayValue;
+        stream[jss::streams] = json::ValueType::Array;
         stream[jss::streams].append("server");
         auto wsc = makeWSClient(env.app().config());
         {
@@ -4377,7 +4377,7 @@ public:
         //    b) For just now having a queued transaction fail on apply()
         //       because of the sequence gap.
         //
-        // Verify that kNONE of alice's queued transactions actually applied to
+        // Verify that kNone of alice's queued transactions actually applied to
         // her account.
         BEAST_EXPECT(env.seq(alice) == seqSaveAlice);
         seqAlice = seqSaveAlice;

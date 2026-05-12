@@ -241,7 +241,7 @@ public:
     [[nodiscard]] std::string
     getText() const override;
 
-    [[nodiscard]] json::Value getJson(JsonOptions = JsonOptions::KNone) const override;
+    [[nodiscard]] json::Value getJson(JsonOptions = JsonOptions::Values::None) const override;
 
     void
     add(Serializer& s) const override;
@@ -356,7 +356,7 @@ STAmount::STAmount(A const& asset, int mantissa, int exponent)
 
 // Legacy support for new-style amounts
 inline STAmount::STAmount(IOUAmount const& amount, Issue const& issue)
-    : asset_(issue), offset_(amount.exponent()), isNegative_(amount < beast::kZERO)
+    : asset_(issue), offset_(amount.exponent()), isNegative_(amount < beast::kZero)
 {
     if (isNegative_)
     {
@@ -371,7 +371,7 @@ inline STAmount::STAmount(IOUAmount const& amount, Issue const& issue)
 }
 
 inline STAmount::STAmount(MPTAmount const& amount, MPTIssue const& mptIssue)
-    : asset_(mptIssue), offset_(0), isNegative_(amount < beast::kZERO)
+    : asset_(mptIssue), offset_(0), isNegative_(amount < beast::kZero)
 {
     if (isNegative_)
     {
@@ -498,7 +498,7 @@ STAmount::zeroed() const
 inline STAmount::
 operator bool() const noexcept
 {
-    return *this != beast::kZERO;
+    return *this != beast::kZero;
 }
 
 inline STAmount::
@@ -548,7 +548,7 @@ STAmount::fromNumber(A const& a, Number const& number)
 inline void
 STAmount::negate()
 {
-    if (*this != beast::kZERO)
+    if (*this != beast::kZero)
         isNegative_ = !isNegative_;
 }
 

@@ -7,7 +7,7 @@ namespace xrpl {
 class CredentialDelete : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType kConsequencesFactory{Normal};
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 
     explicit CredentialDelete(ApplyContext& ctx) : Transactor(ctx)
     {

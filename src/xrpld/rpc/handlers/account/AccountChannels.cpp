@@ -38,7 +38,7 @@ namespace xrpl {
 void
 addChannel(json::Value& jsonLines, SLE const& line)
 {
-    json::Value& jDst(jsonLines.append(json::ObjectValue));
+    json::Value& jDst(jsonLines.append(json::ValueType::Object));
     jDst[jss::channel_id] = to_string(line.key());
     jDst[jss::account] = to_string(line[sfAccount]);
     jDst[jss::destination_account] = to_string(line[sfDestination]);
@@ -111,7 +111,7 @@ doAccountChannels(RPC::JsonContext& context)
     if (auto err = readLimitField(limit, RPC::Tuning::kAccountChannels, context))
         return *err;
 
-    json::Value jsonChannels{json::ArrayValue};
+    json::Value jsonChannels{json::ValueType::Array};
     struct VisitData
     {
         std::vector<std::shared_ptr<SLE const>> items;
@@ -120,7 +120,7 @@ doAccountChannels(RPC::JsonContext& context)
     };
     VisitData visitData = {.items = {}, .accountID = accountID, .raDstAccount = raDstAccount};
     visitData.items.reserve(limit);
-    uint256 startAfter = beast::kZERO;
+    uint256 startAfter = beast::kZero;
     std::uint64_t startHint = 0;
 
     if (params.isMember(jss::marker))

@@ -53,7 +53,7 @@ inline void
 maybeReverseBytes(T& t, Hasher&)
 {
     maybeReverseBytes(
-        t, std::integral_constant<bool, Hasher::kENDIAN != boost::endian::order::native>{});
+        t, std::integral_constant<bool, Hasher::kEndian != boost::endian::order::native>{});
 }
 
 }  // namespace detail
@@ -154,7 +154,7 @@ struct IsContiguouslyHashable
     : public std::integral_constant<
           bool,
           IsUniquelyRepresented<T>::value &&
-              (sizeof(T) == 1 || HashAlgorithm::kENDIAN == boost::endian::order::native)>
+              (sizeof(T) == 1 || HashAlgorithm::kEndian == boost::endian::order::native)>
 {
     explicit IsContiguouslyHashable() = default;
 };

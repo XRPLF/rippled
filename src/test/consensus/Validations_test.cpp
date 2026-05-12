@@ -648,8 +648,8 @@ class Validations_test : public beast::unit_test::Suite
         LedgerHistoryHelper h;
         TestHarness harness(h.oracle);
         Node const a = harness.makeNode();
-        constexpr Ledger::Seq kONE(1);
-        constexpr Ledger::Seq kTWO(2);
+        constexpr Ledger::Seq kOne(1);
+        constexpr Ledger::Seq kTwo(2);
 
         // simple cases
         Ledger const ledgerA = h["a"];
@@ -665,12 +665,12 @@ class Validations_test : public beast::unit_test::Suite
         Ledger const ledgerB = h["ab"];
         BEAST_EXPECT(ValStatus::Current == harness.add(a.validate(ledgerB)));
         BEAST_EXPECT(harness.vals().numTrustedForLedger(ledgerB.id()) == 1);
-        harness.vals().setSeqToKeep(ledgerB.seq(), ledgerB.seq() + kONE);
+        harness.vals().setSeqToKeep(ledgerB.seq(), ledgerB.seq() + kOne);
         harness.clock().advance(harness.parms().validationSET_EXPIRES);
         harness.vals().expire(j);
         BEAST_EXPECT(harness.vals().numTrustedForLedger(ledgerB.id()) == 1);
         // change toKeep
-        harness.vals().setSeqToKeep(ledgerB.seq() + kONE, ledgerB.seq() + kTWO);
+        harness.vals().setSeqToKeep(ledgerB.seq() + kOne, ledgerB.seq() + kTwo);
         // advance clock slowly
         int const loops =
             harness.parms().validationSET_EXPIRES / harness.parms().validationFRESHNESS + 1;
@@ -685,7 +685,7 @@ class Validations_test : public beast::unit_test::Suite
         Ledger const ledgerC = h["abc"];
         BEAST_EXPECT(ValStatus::Current == harness.add(a.validate(ledgerC)));
         BEAST_EXPECT(harness.vals().numTrustedForLedger(ledgerC.id()) == 1);
-        harness.vals().setSeqToKeep(ledgerC.seq() - kONE, ledgerC.seq());
+        harness.vals().setSeqToKeep(ledgerC.seq() - kOne, ledgerC.seq());
         harness.clock().advance(harness.parms().validationSET_EXPIRES);
         harness.vals().expire(j);
         BEAST_EXPECT(harness.vals().numTrustedForLedger(ledgerC.id()) == 0);

@@ -142,8 +142,8 @@ public:
     [[nodiscard]] uint256 const&
     getClosedLedgerHash() const override
     {
-        static uint256 const kHASH{};
-        return kHASH;
+        static uint256 const kHash{};
+        return kHash;
     }
     [[nodiscard]] bool
     hasLedger(uint256 const& hash, std::uint32_t seq) const override
@@ -205,25 +205,25 @@ public:
     static void
     advance(duration d) noexcept
     {
-        kNOW += d;
+        kNow += d;
     }
 
     static void
     randAdvance(milliseconds min, milliseconds max)
     {
-        kNOW += randDuration(min, max);
+        kNow += randDuration(min, max);
     }
 
     static void
     reset() noexcept
     {
-        kNOW = time_point(seconds(0));
+        kNow = time_point(seconds(0));
     }
 
     static time_point
     now() noexcept
     {
-        return kNOW;
+        return kNow;
     }
 
     static duration
@@ -235,7 +235,7 @@ public:
     explicit ManualClock() = default;
 
 private:
-    inline static time_point kNOW = time_point(seconds(0));
+    inline static time_point kNow = time_point(seconds(0));
 };
 
 /** Simulate server's OverlayImpl */
@@ -1051,7 +1051,7 @@ protected:
                     auto d = reduce_relay::epoch<milliseconds>(now).count() -
                         std::get<3>(peers[event.peer]);
                     mustHandle = event.isSelected &&
-                        d > milliseconds(reduce_relay::kIDLED).count() &&
+                        d > milliseconds(reduce_relay::kIdled).count() &&
                         network_.overlay().inState(*event.key, reduce_relay::PeerState::Squelched) >
                             0 &&
                         peers.contains(event.peer);
@@ -1070,7 +1070,7 @@ protected:
             }
             if (event.state == State::WaitReset ||
                 (event.state == State::On &&
-                 (now - event.time > (reduce_relay::kIDLED + seconds(2)))))
+                 (now - event.time > (reduce_relay::kIdled + seconds(2)))))
             {
                 bool const handled = event.state == State::WaitReset || !event.handled;
                 BEAST_EXPECT(handled);
@@ -1247,7 +1247,7 @@ protected:
         doTest("Selected Peer Stops Relaying", log, [this](bool log) {
             ManualClock::advance(seconds(601));
             BEAST_EXPECT(propagateAndSquelch(log, true, false));
-            ManualClock::advance(reduce_relay::kIDLED + seconds(1));
+            ManualClock::advance(reduce_relay::kIdled + seconds(1));
             std::uint16_t unsquelched = 0;
             network_.overlay().deleteIdlePeers(
                 [&](PublicKey const& key, PeerWPtr const& peer) { unsquelched++; });
@@ -1469,7 +1469,7 @@ vp_base_squelch_max_selected_peers=2
             peers = network_.overlay().getPeers(network_.validator(0));
             BEAST_EXPECT(std::get<1>(peers[0]) == (nMessages - 1));
             // advance the clock
-            ManualClock::advance(reduce_relay::kIDLED + seconds(1));
+            ManualClock::advance(reduce_relay::kIdled + seconds(1));
             network_.overlay().updateSlotAndSquelch(
                 key, network_.validator(0), 0, [&](PublicKey const&, PeerWPtr, std::uint32_t) {});
             peers = network_.overlay().getPeers(network_.validator(0));
@@ -1524,7 +1524,7 @@ vp_base_squelch_max_selected_peers=2
             };
 
             using namespace reduce_relay;
-            // expect max duration less than kMAX_UNSQUELCH_EXPIRE_DEFAULT with
+            // expect max duration less than kMaxUnsquelchExpireDefault with
             // less than or equal to 60 peers
             run(20);
             BEAST_EXPECT(
@@ -1534,8 +1534,8 @@ vp_base_squelch_max_selected_peers=2
             BEAST_EXPECT(
                 handler.maxDuration >= kMinUnsquelchExpire.count() &&
                 handler.maxDuration <= kMaxUnsquelchExpireDefault.count());
-            // expect max duration greater than kMIN_UNSQUELCH_EXPIRE and less
-            // than kMAX_UNSQUELCH_EXPIRE_PEERS with peers greater than 60
+            // expect max duration greater than kMinUnsquelchExpire and less
+            // than kMaxUnsquelchExpirePeers with peers greater than 60
             // and less than 360
             run(350);
             // can't make this condition stronger. squelch
@@ -1551,7 +1551,7 @@ vp_base_squelch_max_selected_peers=2
                     << std::endl
                     << std::flush;
             }
-            // more than 400 is still less than kMAX_UNSQUELCH_EXPIRE_PEERS
+            // more than 400 is still less than kMaxUnsquelchExpirePeers
             run(400);
             BEAST_EXPECT(
                 handler.maxDuration >= kMinUnsquelchExpire.count() &&

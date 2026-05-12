@@ -131,7 +131,7 @@ LoanSet::preflight(PreflightContext const& ctx)
             return *ret;
     }
 
-    if (auto const brokerID = ctx.tx[~sfLoanBrokerID]; brokerID && *brokerID == beast::kZERO)
+    if (auto const brokerID = ctx.tx[~sfLoanBrokerID]; brokerID && *brokerID == beast::kZero)
         return temINVALID;
 
     return tesSUCCESS;
@@ -418,6 +418,7 @@ LoanSet::doApply()
     auto const paymentTotal = tx[~sfPaymentTotal].value_or(kDefaultPaymentTotal);
 
     auto const properties = computeLoanProperties(
+        view.rules(),
         vaultAsset,
         principalRequested,
         interestRate,
@@ -459,7 +460,7 @@ LoanSet::doApply()
     if (auto const ret = checkLoanGuards(
             vaultAsset,
             principalRequested,
-            interestRate != beast::kZERO,
+            interestRate != beast::kZero,
             paymentTotal,
             properties,
             j_))
@@ -536,7 +537,7 @@ LoanSet::doApply()
 
     // 2. Transfer originationFee, if any, from vault pseudo-account to
     // LoanBroker owner.
-    if (originationFee != beast::kZERO)
+    if (originationFee != beast::kZero)
     {
         // Create the holding if it doesn't already exist (necessary for MPTs).
         // The owner may have deleted their MPT / line at some point.
@@ -652,11 +653,13 @@ LoanSet::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
 LoanSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

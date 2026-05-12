@@ -117,6 +117,6 @@ operator<<(std::ostream& os, MPT const& mpt)
     return os;
 }
 
-AnyT const kANY{};
+AnyT const kAny{};
 
 }  // namespace xrpl::test::jtx

@@ -249,10 +249,10 @@ NoBadOffers::visitEntry(
 {
     auto isBad = [](STAmount const& pays, STAmount const& gets) {
         // An offer should never be negative
-        if (pays < beast::kZERO)
+        if (pays < beast::kZero)
             return true;
 
-        if (gets < beast::kZERO)
+        if (gets < beast::kZero)
             return true;
 
         // Can't have an XRP to XRP offer:
@@ -306,7 +306,7 @@ NoZeroEscrow::visitEntry(
             return amount.asset().visit(
                 [&](Issue const& issue) {
                     // IOU case
-                    if (amount <= beast::kZERO)
+                    if (amount <= beast::kZero)
                         return true;
 
                     if (badCurrency() == issue.currency)
@@ -318,7 +318,7 @@ NoZeroEscrow::visitEntry(
                 // MPT case
                 ,
                 [&](MPTIssue const&) {
-                    if (amount <= beast::kZERO)
+                    if (amount <= beast::kZero)
                         return true;
 
                     if (amount.mpt() > MPTAmount{kMaxMpTokenAmount})
@@ -501,7 +501,7 @@ AccountRootsDeletedClean::finalize(
     {
         auto const accountID = before->getAccountID(sfAccount);
         // An account should not be deleted with a balance
-        if (after->at(sfBalance) != beast::kZERO)
+        if (after->at(sfBalance) != beast::kZero)
         {
             JLOG(j.fatal()) << "Invariant failed: account deletion left "
                                "behind a non-zero balance";

@@ -85,13 +85,13 @@ doAMMInfo(RPC::JsonContext& context)
         std::optional<Asset> asset2;
         std::optional<uint256> ammID;
 
-        constexpr auto kINVALID = [](json::Value const& params) -> bool {
+        constexpr auto kInvalid = [](json::Value const& params) -> bool {
             return (params.isMember(jss::asset) != params.isMember(jss::asset2)) ||
                 (params.isMember(jss::asset) == params.isMember(jss::amm_account));
         };
 
         // NOTE, identical check for apVersion >= 3 below
-        if (context.apiVersion < 3 && kINVALID(params))
+        if (context.apiVersion < 3 && kInvalid(params))
             return Unexpected(RpcInvalidParams);
 
         if (params.isMember(jss::asset))
@@ -139,7 +139,7 @@ doAMMInfo(RPC::JsonContext& context)
         }
 
         // NOTE, identical check for apVersion < 3 above
-        if (context.apiVersion >= 3 && kINVALID(params))
+        if (context.apiVersion >= 3 && kInvalid(params))
             return Unexpected(RpcInvalidParams);
 
         XRPL_ASSERT(
@@ -194,7 +194,7 @@ doAMMInfo(RPC::JsonContext& context)
     lptAMMBalance.setJson(ammResult[jss::lp_token]);
     ammResult[jss::trading_fee] = (*amm)[sfTradingFee];
     ammResult[jss::account] = to_string(ammAccountID);
-    json::Value voteSlots(json::ArrayValue);
+    json::Value voteSlots(json::ValueType::Array);
     if (amm->isFieldPresent(sfVoteSlots))
     {
         for (auto const& voteEntry : amm->getFieldArray(sfVoteSlots))

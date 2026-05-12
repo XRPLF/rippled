@@ -29,7 +29,7 @@ LoanDelete::checkExtraFeatures(PreflightContext const& ctx)
 NotTEC
 LoanDelete::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfLoanID] == beast::kZERO)
+    if (ctx.tx[sfLoanID] == beast::kZero)
         return temINVALID;
 
     return tesSUCCESS;
@@ -117,14 +117,14 @@ LoanDelete::doApply()
     if (brokerSle->at(sfOwnerCount) == 0)
     {
         auto debtTotalProxy = brokerSle->at(sfDebtTotal);
-        if (*debtTotalProxy != beast::kZERO)
+        if (*debtTotalProxy != beast::kZero)
         {
             XRPL_ASSERT_PARTS(
                 roundToAsset(
                     vaultSle->at(sfAsset),
                     debtTotalProxy,
                     getAssetsTotalScale(vaultSle),
-                    Number::RoundingMode::TowardsZero) == beast::kZERO,
+                    Number::RoundingMode::TowardsZero) == beast::kZero,
                 "xrpl::LoanDelete::doApply",
                 "last loan, remaining debt rounds to zero");
             debtTotalProxy = 0;
@@ -147,11 +147,13 @@ LoanDelete::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
 LoanDelete::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

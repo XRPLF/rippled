@@ -29,18 +29,18 @@ namespace xrpl {
 NotTEC
 VaultWithdraw::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfVaultID] == beast::kZERO)
+    if (ctx.tx[sfVaultID] == beast::kZero)
     {
         JLOG(ctx.j.debug()) << "VaultWithdraw: zero/empty vault ID.";
         return temMALFORMED;
     }
 
-    if (ctx.tx[sfAmount] <= beast::kZERO)
+    if (ctx.tx[sfAmount] <= beast::kZero)
         return temBAD_AMOUNT;
 
     if (auto const destination = ctx.tx[~sfDestination])
     {
-        if (*destination == beast::kZERO)
+        if (*destination == beast::kZero)
         {
             return temMALFORMED;
         }
@@ -187,7 +187,7 @@ VaultWithdraw::doApply()
                 sharesRedeemed = *maybeShares;
             }
 
-            if (sharesRedeemed == beast::kZERO)
+            if (sharesRedeemed == beast::kZero)
                 return tecPRECISION_LOSS;
             auto const maybeAssets = sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed);
             if (!maybeAssets)
@@ -297,6 +297,7 @@ VaultWithdraw::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -307,6 +308,7 @@ VaultWithdraw::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

@@ -57,7 +57,8 @@ private:
     verifyDeliveredAmount(jtx::Env& env, STAmount const& amount)
     {
         // Get the hash for the most recent transaction.
-        std::string const txHash{env.tx()->getJson(JsonOptions::KNone)[jss::hash].asString()};
+        std::string const txHash{
+            env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString()};
 
         // Verify DeliveredAmount and delivered_amount metadata are correct.
         // We can't use env.meta() here, because meta() doesn't include
@@ -71,7 +72,7 @@ private:
 
         // DeliveredAmount and delivered_amount should both be present and
         // equal amount.
-        json::Value const jsonExpect{amount.getJson(JsonOptions::KNone)};
+        json::Value const jsonExpect{amount.getJson(JsonOptions::Values::None)};
         BEAST_EXPECT(meta[sfDeliveredAmount.jsonName] == jsonExpect);
         BEAST_EXPECT(meta[jss::delivered_amount] == jsonExpect);
     }
@@ -90,7 +91,7 @@ private:
         jv[jss::TransactionType] = jss::PaymentChannelCreate;
         jv[jss::Account] = account.human();
         jv[jss::Destination] = to.human();
-        jv[jss::Amount] = amount.getJson(JsonOptions::KNone);
+        jv[jss::Amount] = amount.getJson(JsonOptions::Values::None);
         jv[sfSettleDelay.jsonName] = settleDelay.count();
         jv[sfCancelAfter.jsonName] = cancelAfter.time_since_epoch().count() + 2;
         jv[sfPublicKey.jsonName] = strHex(pk.slice());
@@ -214,7 +215,7 @@ public:
             BEAST_EXPECT(env.closed()->exists(keylet::ownerDir(carol.id())));
             BEAST_EXPECT(env.closed()->exists(keylet::depositPreauth(carol.id(), becky.id())));
             BEAST_EXPECT(env.closed()->exists(keylet::offer(carol.id(), carolOfferSeq)));
-            BEAST_EXPECT(env.closed()->exists(keylet::kTICKET(carol.id(), carolTicketSeq)));
+            BEAST_EXPECT(env.closed()->exists(keylet::kTicket(carol.id(), carolTicketSeq)));
             BEAST_EXPECT(env.closed()->exists(keylet::signers(carol.id())));
 
             // Delete carol's account even with stuff in her directory.  Show
@@ -228,7 +229,7 @@ public:
             BEAST_EXPECT(!env.closed()->exists(keylet::ownerDir(carol.id())));
             BEAST_EXPECT(!env.closed()->exists(keylet::depositPreauth(carol.id(), becky.id())));
             BEAST_EXPECT(!env.closed()->exists(keylet::offer(carol.id(), carolOfferSeq)));
-            BEAST_EXPECT(!env.closed()->exists(keylet::kTICKET(carol.id(), carolTicketSeq)));
+            BEAST_EXPECT(!env.closed()->exists(keylet::kTicket(carol.id(), carolTicketSeq)));
             BEAST_EXPECT(!env.closed()->exists(keylet::signers(carol.id())));
 
             // Verify that Carol's XRP, minus the fee, was transferred to becky.
@@ -661,7 +662,7 @@ public:
             BEAST_EXPECT(closed->exists(keylet::account(bob.id())));
             for (std::uint32_t i = 0; i < 250; ++i)
             {
-                BEAST_EXPECT(closed->exists(keylet::kTICKET(bob.id(), ticketSeq + i)));
+                BEAST_EXPECT(closed->exists(keylet::kTicket(bob.id(), ticketSeq + i)));
             }
         }
 
@@ -680,7 +681,7 @@ public:
             BEAST_EXPECT(!closed->exists(keylet::account(bob.id())));
             for (std::uint32_t i = 0; i < 250; ++i)
             {
-                BEAST_EXPECT(!closed->exists(keylet::kTICKET(bob.id(), ticketSeq + i)));
+                BEAST_EXPECT(!closed->exists(keylet::kTicket(bob.id(), ticketSeq + i)));
             }
         }
     }

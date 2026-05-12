@@ -153,7 +153,7 @@ doGatewayBalances(RPC::JsonContext& context)
                     return;
 
                 auto& bal = locked[escrow.get<Issue>().currency];
-                if (bal == beast::kZERO)
+                if (bal == beast::kZero)
                 {
                     // This is needed to set the currency code correctly
                     bal = escrow;
@@ -209,7 +209,7 @@ doGatewayBalances(RPC::JsonContext& context)
             {
                 // normal negative balance, obligation to customer
                 auto& bal = sums[rs->getBalance().get<Issue>().currency];
-                if (bal == beast::kZERO)
+                if (bal == beast::kZero)
                 {
                     // This is needed to set the currency code correctly
                     bal = -rs->getBalance();

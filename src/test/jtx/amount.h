@@ -55,7 +55,6 @@ struct None
 // This value is also defined in SystemParameters.h. It's
 // duplicated here to catch any possible future errors that
 // could change that value (however unlikely).
-// TODO: rename — clashes with xrpl::kDROPS_PER_XRP
 constexpr XRPAmount kJtxDropsPerXrp{1'000'000};
 
 /** Represents an XRP, IOU, or MPT quantity
@@ -371,7 +370,7 @@ struct EpsilonT
     }
 };
 
-static EpsilonT const kEPSILON;
+static EpsilonT const kEpsilon;
 
 /** Converts to IOU Issue or STAmount.
 
@@ -612,7 +611,7 @@ AnyT::operator()(STAmount const& sta) const
 /** Returns an amount representing "any issuer"
     @note With respect to what the recipient will accept
 */
-extern AnyT const kANY;
+extern AnyT const kAny;
 
 }  // namespace test::jtx
 

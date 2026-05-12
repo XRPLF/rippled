@@ -23,18 +23,18 @@ public:
         BEAST_EXPECT(z.exponent() == -100);
         BEAST_EXPECT(!z);
         BEAST_EXPECT(z.signum() == 0);
-        BEAST_EXPECT(z == beast::kZERO);
+        BEAST_EXPECT(z == beast::kZero);
 
         BEAST_EXPECT((z + z) == z);
         BEAST_EXPECT((z - z) == z);
         BEAST_EXPECT(z == -z);
 
-        IOUAmount const zz(beast::kZERO);
+        IOUAmount const zz(beast::kZero);
         BEAST_EXPECT(z == zz);
 
         // https://github.com/XRPLF/rippled/issues/5170
         IOUAmount const zzz{};
-        BEAST_EXPECT(zzz == beast::kZERO);
+        BEAST_EXPECT(zzz == beast::kZero);
         // BEAST_EXPECT(zzz == zz);
     }
 
@@ -58,32 +58,32 @@ public:
     {
         testcase("beast::Zero Comparisons");
 
-        using beast::kZERO;
+        using beast::kZero;
 
         {
-            IOUAmount const z(kZERO);
-            BEAST_EXPECT(z == kZERO);
-            BEAST_EXPECT(z >= kZERO);
-            BEAST_EXPECT(z <= kZERO);
-            unexpected(z != kZERO);
-            unexpected(z > kZERO);
-            unexpected(z < kZERO);
+            IOUAmount const z(kZero);
+            BEAST_EXPECT(z == kZero);
+            BEAST_EXPECT(z >= kZero);
+            BEAST_EXPECT(z <= kZero);
+            unexpected(z != kZero);
+            unexpected(z > kZero);
+            unexpected(z < kZero);
         }
 
         {
             IOUAmount const neg(-2, 0);
-            BEAST_EXPECT(neg < kZERO);
-            BEAST_EXPECT(neg <= kZERO);
-            BEAST_EXPECT(neg != kZERO);
-            unexpected(neg == kZERO);
+            BEAST_EXPECT(neg < kZero);
+            BEAST_EXPECT(neg <= kZero);
+            BEAST_EXPECT(neg != kZero);
+            unexpected(neg == kZero);
         }
 
         {
             IOUAmount const pos(2, 0);
-            BEAST_EXPECT(pos > kZERO);
-            BEAST_EXPECT(pos >= kZERO);
-            BEAST_EXPECT(pos != kZERO);
-            unexpected(pos == kZERO);
+            BEAST_EXPECT(pos > kZero);
+            BEAST_EXPECT(pos >= kZero);
+            BEAST_EXPECT(pos != kZero);
+            unexpected(pos == kZero);
         }
     }
 
@@ -210,14 +210,14 @@ public:
             BEAST_EXPECT(tiny == mulRatio(tiny, 1, kMaxUInt, true));
             BEAST_EXPECT(tiny == mulRatio(tiny, kMaxUInt - 1, kMaxUInt, true));
             // rounding down should be zero
-            BEAST_EXPECT(beast::kZERO == mulRatio(tiny, 1, kMaxUInt, false));
-            BEAST_EXPECT(beast::kZERO == mulRatio(tiny, kMaxUInt - 1, kMaxUInt, false));
+            BEAST_EXPECT(beast::kZero == mulRatio(tiny, 1, kMaxUInt, false));
+            BEAST_EXPECT(beast::kZero == mulRatio(tiny, kMaxUInt - 1, kMaxUInt, false));
 
             // tiny negative numbers
             IOUAmount const tinyNeg(-kMinMantissa, kMinExponent);
             // Round up should give zero
-            BEAST_EXPECT(beast::kZERO == mulRatio(tinyNeg, 1, kMaxUInt, true));
-            BEAST_EXPECT(beast::kZERO == mulRatio(tinyNeg, kMaxUInt - 1, kMaxUInt, true));
+            BEAST_EXPECT(beast::kZero == mulRatio(tinyNeg, 1, kMaxUInt, true));
+            BEAST_EXPECT(beast::kZero == mulRatio(tinyNeg, kMaxUInt - 1, kMaxUInt, true));
             // rounding down should be tiny
             BEAST_EXPECT(tinyNeg == mulRatio(tinyNeg, 1, kMaxUInt, false));
             BEAST_EXPECT(tinyNeg == mulRatio(tinyNeg, kMaxUInt - 1, kMaxUInt, false));

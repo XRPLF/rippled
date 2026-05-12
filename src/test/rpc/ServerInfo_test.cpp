@@ -18,7 +18,7 @@ namespace xrpl::test {
 namespace validator_data {
 static auto const kPublicKey = "nHBt9fsb4849WmZiCds4r5TXyBeQjqnH5kzPtqgMAQMgi39YZRPa";
 
-static auto const kTOKEN =
+static auto const kToken =
     "eyJ2YWxpZGF0aW9uX3NlY3JldF9rZXkiOiI5ZWQ0NWY4NjYyNDFjYzE4YTI3NDdiNT\n"
     "QzODdjMDYyNTkwNzk3MmY0ZTcxOTAyMzFmYWE5Mzc0NTdmYTlkYWY2IiwibWFuaWZl\n"
     "c3QiOiJKQUFBQUFGeEllMUZ0d21pbXZHdEgyaUNjTUpxQzlnVkZLaWxHZncxL3ZDeE\n"
@@ -54,7 +54,7 @@ protocol = wss2
 admin = 127.0.0.1
 )xrpldConfig");
 
-        p->loadFromString(boost::str(toLoad % validator_data::kTOKEN % validator_data::kPublicKey));
+        p->loadFromString(boost::str(toLoad % validator_data::kToken % validator_data::kPublicKey));
 
         setupConfigForUnitTests(*p);
 

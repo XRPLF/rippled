@@ -12,7 +12,7 @@ class Sandbox;
 class OfferCreate : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType kConsequencesFactory{Custom};
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Custom;
 
     /** Construct a Transactor subclass that creates an offer in the ledger. */
     explicit OfferCreate(ApplyContext& ctx) : Transactor(ctx)

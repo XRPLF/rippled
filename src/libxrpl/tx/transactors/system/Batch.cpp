@@ -311,7 +311,7 @@ Batch::preflight(PreflightContext const& ctx)
         }
 
         // Check that the Fee is native asset (XRP) and zero
-        if (auto const fee = stx.getFieldAmount(sfFee); !fee.native() || fee.xrp() != beast::kZERO)
+        if (auto const fee = stx.getFieldAmount(sfFee); !fee.native() || fee.xrp() != beast::kZero)
         {
             JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
                                 << "inner txn must have a fee of 0. "
@@ -523,11 +523,13 @@ Batch::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
 Batch::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

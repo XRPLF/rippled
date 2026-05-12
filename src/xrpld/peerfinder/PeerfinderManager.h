@@ -27,7 +27,7 @@ struct Config
         This includes both inbound and outbound, but does not include
         fixed peers.
     */
-    std::size_t maxPeers{Tuning::DefaultMaxPeers};
+    std::size_t maxPeers{Tuning::kDefaultMaxPeers};
 
     /** The number of automatic outbound connections to maintain.
         Outbound connections are only maintained if autoConnect

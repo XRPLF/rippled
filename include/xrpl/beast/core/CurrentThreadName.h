@@ -21,7 +21,7 @@ setCurrentThreadName(std::string_view newThreadName);
 
 // On Linux, thread names are limited to 16 bytes including the null terminator.
 // Maximum number of characters is therefore 15.
-constexpr std::size_t kMAX_THREAD_NAME_LENGTH = 15;
+constexpr std::size_t kMaxThreadNameLength = 15;
 
 /** Sets the name of the caller thread with compile-time size checking.
     @tparam N The size of the string literal including null terminator
@@ -34,7 +34,7 @@ template <std::size_t N>
 void
 setCurrentThreadName(char const (&newThreadName)[N])
 {
-    static_assert(N <= kMAX_THREAD_NAME_LENGTH + 1, "Thread name cannot exceed 15 characters");
+    static_assert(N <= kMaxThreadNameLength + 1, "Thread name cannot exceed 15 characters");
 
     setCurrentThreadName(std::string_view(newThreadName, N - 1));
 }

@@ -53,7 +53,7 @@ public:
     // NuDB database. We used it to identify shard databases before that code
     // was removed. For now, its only use is a sanity check that the database
     // was created by xrpld.
-    static constexpr std::uint64_t kAPPNUM = 1;
+    static constexpr std::uint64_t kAppNum = 1;
 
     beast::Journal const j;
     size_t const keyBytes;
@@ -161,7 +161,7 @@ public:
         if (ec)
             Throw<nudb::system_error>(ec);
 
-        if (db.appnum() != kAPPNUM)
+        if (db.appnum() != kAppNum)
             Throw<std::runtime_error>("nodestore: unknown appnum");
         db.set_burst(burstSize);
     }
@@ -175,7 +175,7 @@ public:
     void
     open(bool createIfMissing) override
     {
-        open(createIfMissing, kAPPNUM, nudb::make_uid(), nudb::make_salt());
+        open(createIfMissing, kAppNum, nudb::make_uid(), nudb::make_salt());
     }
 
     void
@@ -460,7 +460,7 @@ public:
 void
 registerNuDBFactory(Manager& manager)
 {
-    static NuDBFactory const kINSTANCE{manager};
+    static NuDBFactory const kInstance{manager};
 }
 
 }  // namespace xrpl::NodeStore

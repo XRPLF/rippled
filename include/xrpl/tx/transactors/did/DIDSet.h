@@ -7,7 +7,7 @@ namespace xrpl {
 class DIDSet : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType kConsequencesFactory{Normal};
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 
     explicit DIDSet(ApplyContext& ctx) : Transactor(ctx)
     {

@@ -88,7 +88,7 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
 {
     auto const sle = view.read(keylet::account(id));
     if (sle == nullptr)
-        return beast::kZERO;
+        return beast::kZero;
 
     // Return balance minus reserve
     std::uint32_t const ownerCount =
@@ -156,7 +156,7 @@ pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey)
         if (!view.read(keylet::account(ret)))
             return ret;
     }
-    return beast::kZERO;
+    return beast::kZero;
 }
 
 // Pseudo-account designator fields MUST be maintained by including the
@@ -183,7 +183,7 @@ getPseudoAccountFields()
         std::vector<SField const*> pseudoFields;
         for (auto const& field : soTemplate)
         {
-            if (field.sField().shouldMeta(SField::SMdPseudoAccount))
+            if (field.sField().shouldMeta(SField::kSmdPseudoAccount))
                 pseudoFields.emplace_back(&field.sField());
         }
         return pseudoFields;
@@ -221,7 +221,7 @@ createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey, SField const
         "xrpl::createPseudoAccount : valid owner field");
 
     auto const accountId = pseudoAccountAddress(view, pseudoOwnerKey);
-    if (accountId == beast::kZERO)
+    if (accountId == beast::kZero)
         return Unexpected(tecDUPLICATE);
 
     // Create pseudo-account.

@@ -194,7 +194,7 @@ authorizeMPToken(
         // items. This is similar to the reserve requirements of trust lines.
         std::uint32_t const uOwnerCount = sleAcct->getFieldU32(sfOwnerCount);
         XRPAmount const reserveCreate(
-            (uOwnerCount < 2) ? XRPAmount(beast::kZERO)
+            (uOwnerCount < 2) ? XRPAmount(beast::kZero)
                               : view.fees().accountReserve(uOwnerCount + 1));
 
         if (priorBalance < reserveCreate)

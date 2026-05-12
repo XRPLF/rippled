@@ -82,7 +82,7 @@ struct BookT
     Keylet
     operator()(Book const& b) const;
 };
-static BookT const kBOOK{};
+static BookT const kBook{};
 
 /** The index of a trust line for a given currency
 
@@ -126,7 +126,7 @@ struct NextT
     Keylet
     operator()(Keylet const& k) const;
 };
-static NextT const kNEXT{};
+static NextT const kNext{};
 
 /** A ticket belonging to an account */
 struct TicketT
@@ -145,7 +145,7 @@ struct TicketT
         return {ltTICKET, key};
     }
 };
-static TicketT const kTICKET{};
+static TicketT const kTicket{};
 
 /** A SignerList */
 Keylet

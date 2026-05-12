@@ -37,7 +37,7 @@ namespace xrpl {
 class AMMCreate : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType kConsequencesFactory{Normal};
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 
     explicit AMMCreate(ApplyContext& ctx) : Transactor(ctx)
     {

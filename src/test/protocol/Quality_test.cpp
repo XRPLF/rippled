@@ -263,7 +263,7 @@ public:
                 raw(2755280000000000ull, -15));                // 2.75528
             STAmount const limit(raw(4131113916555555, -16));  // .4131113916555555
             Amounts const result(q.ceilOut(value, limit));
-            BEAST_EXPECT(result.in != beast::kZERO);
+            BEAST_EXPECT(result.in != beast::kZero);
         }
     }
 

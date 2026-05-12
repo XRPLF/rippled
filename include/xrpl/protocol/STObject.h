@@ -132,7 +132,7 @@ public:
     getText() const override;
 
     // TODO(tom): options should be an enum.
-    [[nodiscard]] json::Value getJson(JsonOptions = JsonOptions::KNone) const override;
+    [[nodiscard]] json::Value getJson(JsonOptions = JsonOptions::Values::None) const override;
 
     void
     addWithoutSigningFields(Serializer& s) const;
@@ -381,7 +381,7 @@ public:
 
     template <class Tag>
     void
-    setFieldH160(SField const& field, BaseUint<160, Tag> const& v);
+    setFieldH160(SField const& field, BaseUInt<160, Tag> const& v);
 
     STObject&
     peekFieldObject(SField const& field);
@@ -1143,7 +1143,7 @@ STObject::at(OptionaledField<T> const& of) -> OptionalProxy<T>
 
 template <class Tag>
 void
-STObject::setFieldH160(SField const& field, BaseUint<160, Tag> const& v)
+STObject::setFieldH160(SField const& field, BaseUInt<160, Tag> const& v)
 {
     STBase* rf = getPField(field, true);
 

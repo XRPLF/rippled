@@ -87,7 +87,7 @@ class PaymentSandbox_test : public beast::unit_test::Suite
 
         PathSet const paths(TestPath(gw1, usdGw2, gw2), TestPath(gw2, usdGw1, gw1));
 
-        env(pay(snd, rcv, kANY(usdGw1(4))),
+        env(pay(snd, rcv, kAny(usdGw1(4))),
             Json(paths.json()),
             Txflags(tfNoRippleDirect | tfPartialPayment));
 
@@ -354,7 +354,7 @@ class PaymentSandbox_test : public beast::unit_test::Suite
                 auto r = accountSend(sb, alice, xrpAccount(), XRP(100), env.journal);
                 BEAST_EXPECT(isTesSuccess(r));
             }
-            BEAST_EXPECT(accountFundsXRP(sb, alice, env.journal) == beast::kZERO);
+            BEAST_EXPECT(accountFundsXRP(sb, alice, env.journal) == beast::kZero);
         }
     }
 

@@ -886,7 +886,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         // Empty list of tokens to delete.
         {
             json::Value jv = token::cancelOffer(buyer);
-            jv[sfNFTokenOffers.jsonName] = json::ArrayValue;
+            jv[sfNFTokenOffers.jsonName] = json::ValueType::Array;
             env(jv, Ter(temMALFORMED));
             env.close();
             BEAST_EXPECT(ownerCount(env, buyer) == 1);
@@ -1058,7 +1058,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         // A buy offer may not contain a sfNFTokenBrokerFee field.
         {
             json::Value jv = token::acceptBuyOffer(buyer, noXferOfferIndex);
-            jv[sfNFTokenBrokerFee.jsonName] = STAmount(500000).getJson(JsonOptions::KNone);
+            jv[sfNFTokenBrokerFee.jsonName] = STAmount(500000).getJson(JsonOptions::Values::None);
             env(jv, Ter(temMALFORMED));
             env.close();
             BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
@@ -1067,7 +1067,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         // A sell offer may not contain a sfNFTokenBrokerFee field.
         {
             json::Value jv = token::acceptSellOffer(buyer, noXferOfferIndex);
-            jv[sfNFTokenBrokerFee.jsonName] = STAmount(500000).getJson(JsonOptions::KNone);
+            jv[sfNFTokenBrokerFee.jsonName] = STAmount(500000).getJson(JsonOptions::Values::None);
             env(jv, Ter(temMALFORMED));
             env.close();
             BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
@@ -1084,7 +1084,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         // preclaim
 
         // The buy offer must be non-zero.
-        env(token::acceptBuyOffer(buyer, beast::kZERO), Ter(tecOBJECT_NOT_FOUND));
+        env(token::acceptBuyOffer(buyer, beast::kZero), Ter(tecOBJECT_NOT_FOUND));
         env.close();
         BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
@@ -1105,7 +1105,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
         // The sell offer must be non-zero.
-        env(token::acceptSellOffer(buyer, beast::kZERO), Ter(tecOBJECT_NOT_FOUND));
+        env(token::acceptSellOffer(buyer, beast::kZero), Ter(tecOBJECT_NOT_FOUND));
         env.close();
         BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
@@ -1320,7 +1320,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         //----------------------------------------------------------------------
         // doApply
         //
-        // As far as I can see kNONE of the failure modes are accessible as
+        // As far as I can see kNone of the failure modes are accessible as
         // long as the preflight and preclaim conditions are met.
     }
 
@@ -4488,7 +4488,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
                                int expectMarkerCount,
                                int line) {
             int markerCount = 0;
-            json::Value allOffers(json::ArrayValue);
+            json::Value allOffers(json::ValueType::Array);
             std::string marker;
 
             // The do/while collects results until no marker is returned.
@@ -5127,7 +5127,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             }
             {
                 // Minter attempts to sell the token for XPB 10, which they
-                // have no trust line for and buyer has kNONE of (sellside).
+                // have no trust line for and buyer has kNone of (sellside).
                 reinitializeTrustLineBalances();
                 auto const nftID = mintNFT(minter);
                 auto const offerID = createSellOffer(minter, nftID, gwXPB(10));
@@ -5138,7 +5138,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             }
             {
                 // Minter attempts to sell the token for XPB 10, which they
-                // have no trust line for and buyer has kNONE of (buyside).
+                // have no trust line for and buyer has kNone of (buyside).
                 reinitializeTrustLineBalances();
                 auto const nftID = mintNFT(minter);
                 auto const offerID = createBuyOffer(
@@ -6100,7 +6100,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         // transaction
         auto verifyNFTokenID = [&](uint256 const& actualNftID) {
             // Get the hash for the most recent transaction.
-            std::string const txHash{env.tx()->getJson(JsonOptions::KNone)[jss::hash].asString()};
+            std::string const txHash{
+                env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString()};
 
             env.close();
             json::Value const meta = env.rpc("tx", txHash)[jss::result][jss::meta];
@@ -6120,7 +6121,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         // changed in the most recent NFTokenCancelOffer transaction
         auto verifyNFTokenIDsInCancelOffer = [&](std::vector<uint256> actualNftIDs) {
             // Get the hash for the most recent transaction.
-            std::string const txHash{env.tx()->getJson(JsonOptions::KNone)[jss::hash].asString()};
+            std::string const txHash{
+                env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString()};
 
             env.close();
             json::Value const meta = env.rpc("tx", txHash)[jss::result][jss::meta];
@@ -6158,7 +6160,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         // changed in the most recent NFTokenCreateOffer tx
         auto verifyNFTokenOfferID = [&](uint256 const& offerID) {
             // Get the hash for the most recent transaction.
-            std::string const txHash{env.tx()->getJson(JsonOptions::KNone)[jss::hash].asString()};
+            std::string const txHash{
+                env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString()};
 
             env.close();
             json::Value const meta = env.rpc("tx", txHash)[jss::result][jss::meta];
@@ -6364,7 +6367,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
 
                 BEAST_EXPECT(ownerCount(env, bob) == 0);
 
-                // Send bob an kINCREMENT reserve and base fee (to make up for
+                // Send bob an kIncrement reserve and base fee (to make up for
                 // the transaction fee burnt from the prev failed tx) Bob now
                 // owns 250,000,000 drops
                 env(pay(env.master, bob, incReserve + drops(baseFee)));
@@ -6493,8 +6496,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             env.fund(XRP(10000), alice);
             env.close();
 
-            // Bob is funded with account reserve + kINCREMENT reserve + 1 XRP
-            // kINCREMENT reserve is for the buy offer, and 1 XRP is for offer
+            // Bob is funded with account reserve + kIncrement reserve + 1 XRP
+            // kIncrement reserve is for the buy offer, and 1 XRP is for offer
             // price
             env.fund(acctReserve + incReserve + XRP(1), bob);
             env.close();

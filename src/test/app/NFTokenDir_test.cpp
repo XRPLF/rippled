@@ -381,7 +381,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
 
         // Lambda that exercises the split.
         auto exercise = [this, &features](std::initializer_list<std::string_view const> seeds) {
-            Env env{*this, envconfig(), features, nullptr, beast::severities::KDisabled};
+            Env env{*this, envconfig(), features, nullptr, beast::Severity::Disabled};
 
             // Eventually all of the NFTokens will be owned by buyer.
             Account const buyer{"buyer"};
@@ -583,7 +583,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
 
         // Here are 33 seeds that produce identical low 32-bits in their
         // corresponding AccountIDs.
-        static std::initializer_list<std::string_view const> const kSEEDS{
+        static std::initializer_list<std::string_view const> const kSeeds{
             "sp6JS7f14BuwFY8Mw5FnqmbciPvH6",  //  0. 0x9a8ebed3
             "sp6JS7f14BuwFY8Mw5MBGbyMSsXLp",  //  1. 0x9a8ebed3
             "sp6JS7f14BuwFY8Mw5S4PnDyBdKKm",  //  2. 0x9a8ebed3
@@ -621,8 +621,8 @@ class NFTokenDir_test : public beast::unit_test::Suite
 
         // Create accounts for all of the seeds and fund those accounts.
         std::vector<Account> accounts;
-        accounts.reserve(kSEEDS.size());
-        for (std::string_view const seed : kSEEDS)
+        accounts.reserve(kSeeds.size());
+        for (std::string_view const seed : kSeeds)
         {
             Account const& account =
                 accounts.emplace_back(Account::AcctStringType::Base58Seed, std::string(seed));
@@ -731,7 +731,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
         //
         // All of the NFTs should be acquired by the buyer.
         //
-        // Lastly, kNONE of the remaining NFTs should be acquirable by the
+        // Lastly, kNone of the remaining NFTs should be acquirable by the
         // buyer.  They would cause page overflow.
 
         testcase("NFToken consecutive packing");
@@ -747,7 +747,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
 
         // Here are 33 seeds that produce identical low 32-bits in their
         // corresponding AccountIDs.
-        static std::initializer_list<std::string_view const> const kSEEDS{
+        static std::initializer_list<std::string_view const> const kSeeds{
             "sp6JS7f14BuwFY8Mw56vZeiBuhePx",  //  0. 0x115d0525
             "sp6JS7f14BuwFY8Mw5BodF9tGuTUe",  //  1. 0x115d0525
             "sp6JS7f14BuwFY8Mw5EnhC1cg84J7",  //  2. 0x115d0525
@@ -785,8 +785,8 @@ class NFTokenDir_test : public beast::unit_test::Suite
 
         // Create accounts for all of the seeds and fund those accounts.
         std::vector<Account> accounts;
-        accounts.reserve(kSEEDS.size());
-        for (std::string_view const seed : kSEEDS)
+        accounts.reserve(kSeeds.size());
+        for (std::string_view const seed : kSeeds)
         {
             Account const& account =
                 accounts.emplace_back(Account::AcctStringType::Base58Seed, std::string(seed));
@@ -850,11 +850,11 @@ class NFTokenDir_test : public beast::unit_test::Suite
         {
             overflowNFTs.push_back(nftIDsByPage[i].back());
             nftIDsByPage[i].pop_back();
-            BEAST_EXPECT(nftIDsByPage[i].size() == kSEEDS.size() - 1);
+            BEAST_EXPECT(nftIDsByPage[i].size() == kSeeds.size() - 1);
 
             overflowOffers.push_back(offers[i].back());
             offers[i].pop_back();
-            BEAST_EXPECT(offers[i].size() == kSEEDS.size() - 1);
+            BEAST_EXPECT(offers[i].size() == kSeeds.size() - 1);
         }
 
         // buyer accepts all of the offers that won't cause an overflow.
@@ -892,7 +892,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
 
         // See what the account_objects command does with "nft_offer".
         {
-            json::Value ownedNftOffers(json::ArrayValue);
+            json::Value ownedNftOffers(json::ValueType::Array);
             std::string marker;
             do
             {
@@ -965,7 +965,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
 
         // Verify that the ledger reports all of the NFTs owned by buyer.
         // Use the account_nfts rpc call to get the values.
-        json::Value ownedNFTs(json::ArrayValue);
+        json::Value ownedNFTs(json::ValueType::Array);
         std::string marker;
         do
         {

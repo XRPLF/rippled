@@ -15,10 +15,10 @@ BookDirs::BookDirs(ReadView const& view, Book const& book)
     : view_(&view)
     , root_(keylet::page(getBookBase(book)).key)
     , next_quality_(getQualityNext(root_))
-    , key_(view_->succ(root_, next_quality_).value_or(beast::kZERO))
+    , key_(view_->succ(root_, next_quality_).value_or(beast::kZero))
 {
-    XRPL_ASSERT(root_ != beast::kZERO, "xrpl::BookDirs::BookDirs : nonzero root");
-    if (key_ != beast::kZERO)
+    XRPL_ASSERT(root_ != beast::kZero, "xrpl::BookDirs::BookDirs : nonzero root");
+    if (key_ != beast::kZero)
     {
         if (!cdirFirst(*view_, key_, sle_, entry_, index_))
         {
@@ -33,7 +33,7 @@ auto
 BookDirs::begin() const -> BookDirs::const_iterator
 {
     auto it = BookDirs::const_iterator(*view_, root_, key_);
-    if (key_ != beast::kZERO)
+    if (key_ != beast::kZero)
     {
         it.next_quality_ = next_quality_;
         it.sle_ = sle_;
@@ -66,7 +66,7 @@ BookDirs::const_iterator::reference
 BookDirs::const_iterator::operator*() const
 {
     XRPL_ASSERT(
-        index_ != beast::kZERO, "xrpl::BookDirs::const_iterator::operator* : nonzero index");
+        index_ != beast::kZero, "xrpl::BookDirs::const_iterator::operator* : nonzero index");
     if (!cache_)
         cache_ = view_->read(keylet::offer(index_));
     return *cache_;
@@ -75,19 +75,19 @@ BookDirs::const_iterator::operator*() const
 BookDirs::const_iterator&
 BookDirs::const_iterator::operator++()
 {
-    using beast::kZERO;
+    using beast::kZero;
 
-    XRPL_ASSERT(index_ != kZERO, "xrpl::BookDirs::const_iterator::operator++ : nonzero index");
+    XRPL_ASSERT(index_ != kZero, "xrpl::BookDirs::const_iterator::operator++ : nonzero index");
     if (!cdirNext(*view_, cur_key_, sle_, entry_, index_))
     {
         if (index_ == 0)
-            cur_key_ = view_->succ(++cur_key_, next_quality_).value_or(kZERO);
+            cur_key_ = view_->succ(++cur_key_, next_quality_).value_or(kZero);
 
-        if (index_ != 0 || cur_key_ == kZERO)
+        if (index_ != 0 || cur_key_ == kZero)
         {
             cur_key_ = key_;
             entry_ = 0;
-            index_ = kZERO;
+            index_ = kZero;
         }
         else if (!cdirFirst(*view_, cur_key_, sle_, entry_, index_))
         {
@@ -105,7 +105,7 @@ BookDirs::const_iterator
 BookDirs::const_iterator::operator++(int)
 {
     XRPL_ASSERT(
-        index_ != beast::kZERO, "xrpl::BookDirs::const_iterator::operator++(int) : nonzero index");
+        index_ != beast::kZero, "xrpl::BookDirs::const_iterator::operator++(int) : nonzero index");
     const_iterator tmp(*this);
     ++(*this);
     return tmp;

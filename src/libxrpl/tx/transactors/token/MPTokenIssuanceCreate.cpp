@@ -68,7 +68,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 
     if (auto const domain = ctx.tx[~sfDomainID])
     {
-        if (*domain == beast::kZERO)
+        if (*domain == beast::kZero)
             return temMALFORMED;
 
         // Domain present implies that MPTokenIssuance is not public
@@ -178,6 +178,7 @@ MPTokenIssuanceCreate::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -188,6 +189,7 @@ MPTokenIssuanceCreate::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

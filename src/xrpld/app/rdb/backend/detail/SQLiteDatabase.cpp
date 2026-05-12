@@ -641,10 +641,10 @@ SQLiteDatabase::SQLiteDatabase(ServiceRegistry& registry, Config const& config, 
             setup,
             DatabaseCon::CheckpointerSetup{.jobQueue = &jobQueue, .registry = registry_}))
     {
-        std::string_view constexpr kERROR = "Failed to create ledger databases";
+        std::string_view constexpr kError = "Failed to create ledger databases";
 
-        JLOG(j_.fatal()) << kERROR;
-        Throw<std::runtime_error>(kERROR.data());
+        JLOG(j_.fatal()) << kError;
+        Throw<std::runtime_error>(kError.data());
     }
 }
 

@@ -39,7 +39,7 @@ namespace xrpl {
 
 /** A listening socket. */
 template <class Handler>
-class Door : public IoList::Work, public std::enable_shared_from_this<Door<Handler>>
+class Door : public IOList::Work, public std::enable_shared_from_this<Door<Handler>>
 {
 private:
     using clock_type = std::chrono::steady_clock;
@@ -53,7 +53,7 @@ private:
     using stream_type = boost::beast::tcp_stream;
 
     // Detects SSL on a socket
-    class Detector : public IoList::Work, public std::enable_shared_from_this<Detector>
+    class Detector : public IOList::Work, public std::enable_shared_from_this<Detector>
     {
     private:
         Port const& port_;
@@ -403,7 +403,7 @@ Door<Handler>::queryFdStats() const
         return std::nullopt;
     s.limit = static_cast<std::uint64_t>(rl.rlim_cur);
 #if BOOST_OS_LINUX
-    constexpr char const* kFD_DIR = "/proc/self/fd";
+    constexpr char const* kFdDir = "/proc/self/fd";
 #else
     constexpr char const* kFdDir = "/dev/fd";
 #endif

@@ -374,7 +374,7 @@ parseDirectoryNode(
     }
 
     if (params.isMember(jss::sub_index) &&
-        (!params[jss::sub_index].isConvertibleTo(json::UintValue) ||
+        (!params[jss::sub_index].isConvertibleTo(json::ValueType::UInt) ||
          params[jss::sub_index].isBool()))
     {
         return LedgerEntryHelpers::invalidFieldError("malformedRequest", jss::sub_index, "number");
@@ -967,7 +967,7 @@ doLedgerEntry(RPC::JsonContext& context)
     }
     else
     {
-        jvResult[jss::node] = sleNode->getJson(JsonOptions::KNone);
+        jvResult[jss::node] = sleNode->getJson(JsonOptions::Values::None);
     }
 
     return jvResult;

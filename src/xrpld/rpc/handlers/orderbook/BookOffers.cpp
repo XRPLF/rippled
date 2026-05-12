@@ -249,12 +249,12 @@ doBookOffers(RPC::JsonContext& context)
 
     json::Value const jvMarker(
         context.params.isMember(jss::marker) ? context.params[jss::marker]
-                                             : json::Value(json::NullValue));
+                                             : json::Value(json::ValueType::Null));
 
     context.netOps.getBookPage(
         lpLedger,
         {book.in, book.out, domain},
-        takerID ? *takerID : beast::kZERO,
+        takerID ? *takerID : beast::kZero,
         bProof,
         limit,
         jvMarker,

@@ -102,7 +102,7 @@ private:
     }
 
 public:
-    static constexpr auto const kENDIAN = boost::endian::order::native;
+    static constexpr auto const kEndian = boost::endian::order::native;
 
     Xxhasher(Xxhasher const&) = delete;
     Xxhasher&

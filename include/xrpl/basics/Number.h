@@ -409,19 +409,19 @@ public:
     static internalrep
     minMantissa()
     {
-        return kRANGE.get().min;
+        return kRange.get().min;
     }
 
     static internalrep
     maxMantissa()
     {
-        return kRANGE.get().max;
+        return kRange.get().max;
     }
 
     static int
     mantissaLog()
     {
-        return kRANGE.get().log;
+        return kRange.get().log;
     }
 
     /// oneSmall is needed because the ranges are private
@@ -463,7 +463,7 @@ private:
     // The range for the mantissa when normalized.
     // Use reference_wrapper to avoid making copies, and prevent accidentally
     // changing the values inside the range.
-    static thread_local std::reference_wrapper<MantissaRange const> kRANGE;
+    static thread_local std::reference_wrapper<MantissaRange const> kRange;
 
     void
     normalize();
@@ -471,7 +471,7 @@ private:
     /** Normalize Number components to an arbitrary range.
      *
      * min/maxMantissa are parameters because this function is used by both
-     * normalize(), which reads from kRANGE, and by normalizeToRange,
+     * normalize(), which reads from kRange, and by normalizeToRange,
      * which is public and can accept an arbitrary range from the caller.
      */
     template <class T>
@@ -671,25 +671,25 @@ operator/(Number const& x, Number const& y)
 inline Number
 Number::min() noexcept
 {
-    return Number{false, kRANGE.get().min, kMinExponent, Unchecked{}};
+    return Number{false, kRange.get().min, kMinExponent, Unchecked{}};
 }
 
 inline Number
 Number::max() noexcept
 {
-    return Number{false, std::min(kRANGE.get().max, kMaxRep), kMaxExponent, Unchecked{}};
+    return Number{false, std::min(kRange.get().max, kMaxRep), kMaxExponent, Unchecked{}};
 }
 
 inline Number
 Number::lowest() noexcept
 {
-    return Number{true, std::min(kRANGE.get().max, kMaxRep), kMaxExponent, Unchecked{}};
+    return Number{true, std::min(kRange.get().max, kMaxRep), kMaxExponent, Unchecked{}};
 }
 
 inline bool
 Number::isnormal() const noexcept
 {
-    MantissaRange const& range = kRANGE;
+    MantissaRange const& range = kRange;
     auto const absM = mantissa_;
     return *this == Number{} ||
         (range.min <= absM && absM <= range.max && (absM <= kMaxRep || absM % 10 == 0) &&

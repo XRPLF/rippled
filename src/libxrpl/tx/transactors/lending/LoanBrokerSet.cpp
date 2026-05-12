@@ -57,13 +57,13 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
             tx.isFieldPresent(sfCoverRateLiquidation))
             return temINVALID;
 
-        if (tx[sfLoanBrokerID] == beast::kZERO)
+        if (tx[sfLoanBrokerID] == beast::kZero)
             return temINVALID;
     }
 
     if (auto const vaultID = tx.at(~sfVaultID))
     {
-        if (*vaultID == beast::kZERO)
+        if (*vaultID == beast::kZero)
             return temINVALID;
     }
 
@@ -284,6 +284,7 @@ LoanBrokerSet::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -294,6 +295,7 @@ LoanBrokerSet::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

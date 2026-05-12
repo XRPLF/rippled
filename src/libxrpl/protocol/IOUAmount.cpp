@@ -71,7 +71,7 @@ IOUAmount::normalize()
 {
     if (mantissa_ == 0)
     {
-        *this = beast::kZERO;
+        *this = beast::kZero;
         return;
     }
 
@@ -82,7 +82,7 @@ IOUAmount::normalize()
         if (exponent_ > kMaxExponent)
             Throw<std::overflow_error>("value overflow");
         if (exponent_ < kMinExponent)
-            *this = beast::kZERO;
+            *this = beast::kZero;
         return;
     }
 
@@ -108,7 +108,7 @@ IOUAmount::normalize()
 
     if ((exponent_ < kMinExponent) || (mantissa_ < kMinMantissa))
     {
-        *this = beast::kZERO;
+        *this = beast::kZero;
         return;
     }
 
@@ -124,16 +124,16 @@ IOUAmount::IOUAmount(Number const& other) : IOUAmount(fromNumber(other))
     if (exponent_ > kMaxExponent)
         Throw<std::overflow_error>("value overflow");
     if (exponent_ < kMinExponent)
-        *this = beast::kZERO;
+        *this = beast::kZero;
 }
 
 IOUAmount&
 IOUAmount::operator+=(IOUAmount const& other)
 {
-    if (other == beast::kZERO)
+    if (other == beast::kZero)
         return *this;
 
-    if (*this == beast::kZERO)
+    if (*this == beast::kZero)
     {
         *this = other;
         return *this;
@@ -165,7 +165,7 @@ IOUAmount::operator+=(IOUAmount const& other)
 
     if (mantissa_ >= -10 && mantissa_ <= 10)
     {
-        *this = beast::kZERO;
+        *this = beast::kZero;
         return *this;
     }
 
@@ -223,7 +223,7 @@ mulRatio(IOUAmount const& amt, std::uint32_t num, std::uint32_t den, bool roundU
         return int(std::distance(kPowerTable.begin(), l));
     };
 
-    static auto const kFL64 = kLoG10Floor(std::numeric_limits<std::int64_t>::max());
+    static auto const kFl64 = kLoG10Floor(std::numeric_limits<std::int64_t>::max());
 
     bool const neg = amt.mantissa() < 0;
     uint128_t const den128(den);
@@ -244,7 +244,7 @@ mulRatio(IOUAmount const& amt, std::uint32_t num, std::uint32_t den, bool roundU
         // and (rem/den128) is as large as possible. Scale by multiplying low
         // and rem by 10 and subtracting one from the exponent. We could do this
         // with a loop, but it's more efficient to use logarithms.
-        auto const roomToGrow = kFL64 - kLoG10Ceil(low);
+        auto const roomToGrow = kFl64 - kLoG10Ceil(low);
         if (roomToGrow > 0)
         {
             exponent -= roomToGrow;
@@ -261,7 +261,7 @@ mulRatio(IOUAmount const& amt, std::uint32_t num, std::uint32_t den, bool roundU
     // and adding one to the exponent until the low will fit in the 64-bit
     // mantissa. Use logarithms to avoid looping.
     bool hasRem = bool(rem);
-    auto const mustShrink = kLoG10Ceil(low) - kFL64;
+    auto const mustShrink = kLoG10Ceil(low) - kFl64;
     if (mustShrink > 0)
     {
         uint128_t const sav(low);

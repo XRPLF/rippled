@@ -75,19 +75,19 @@ Results::add(SuiteResults const& r)
 
         if (iter != top.end())
         {
-            if (top.size() == MaxTop && iter == top.end() - 1)
+            if (top.size() == kMaxTop && iter == top.end() - 1)
             {
                 // avoid invalidating the iterator
                 *iter = run_time{static_string{static_string::string_view_type{r.name}}, elapsed};
             }
             else
             {
-                if (top.size() == MaxTop)
+                if (top.size() == kMaxTop)
                     top.resize(top.size() - 1);
                 top.emplace(iter, static_string{static_string::string_view_type{r.name}}, elapsed);
             }
         }
-        else if (top.size() < MaxTop)
+        else if (top.size() < kMaxTop)
         {
             top.emplace_back(static_string{static_string::string_view_type{r.name}}, elapsed);
         }
@@ -103,14 +103,14 @@ Results::merge(Results const& r)
     failed += r.failed;
 
     // combine the two top collections
-    boost::container::static_vector<run_time, 2 * MaxTop> topResult;
+    boost::container::static_vector<run_time, 2 * kMaxTop> topResult;
     topResult.resize(top.size() + r.top.size());
     std::ranges::merge(top, r.top, topResult.begin(), [](run_time const& t1, run_time const& t2) {
         return t1.second > t2.second;
     });
 
-    if (topResult.size() > MaxTop)
-        topResult.resize(MaxTop);
+    if (topResult.size() > kMaxTop)
+        topResult.resize(kMaxTop);
 
     top = topResult;
 }

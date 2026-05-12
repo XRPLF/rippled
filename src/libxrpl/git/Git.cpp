@@ -17,15 +17,15 @@ static constexpr char kGitBuildBranch[] = GIT_BUILD_BRANCH;
 std::string const&
 getCommitHash()
 {
-    static std::string const kVALUE = kGitCommitHash;
-    return kVALUE;
+    static std::string const kValue = kGitCommitHash;
+    return kValue;
 }
 
 std::string const&
 getBuildBranch()
 {
-    static std::string const kVALUE = kGitBuildBranch;
-    return kVALUE;
+    static std::string const kValue = kGitBuildBranch;
+    return kValue;
 }
 
 }  // namespace xrpl::git

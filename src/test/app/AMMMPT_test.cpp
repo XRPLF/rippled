@@ -411,13 +411,14 @@ private:
 
                 // LPTokenOut can not be MPT
                 {
-                    json::Value jv = json::ObjectValue;
+                    json::Value jv = json::ValueType::Object;
                     jv[jss::Account] = alice_.human();
                     jv[jss::TransactionType] = jss::AMMDeposit;
-                    jv[jss::Asset] = STIssue(sfAsset, XRP).getJson(JsonOptions::KNone);
+                    jv[jss::Asset] = STIssue(sfAsset, XRP).getJson(JsonOptions::Values::None);
                     jv[jss::Asset2] =
-                        STIssue(sfAsset, MPT(ammAlice[1])).getJson(JsonOptions::KNone);
-                    jv[jss::LPTokenOut] = MPT(ammAlice[1])(100).value().getJson(JsonOptions::KNone);
+                        STIssue(sfAsset, MPT(ammAlice[1])).getJson(JsonOptions::Values::None);
+                    jv[jss::LPTokenOut] =
+                        MPT(ammAlice[1])(100).value().getJson(JsonOptions::Values::None);
                     jv[jss::Flags] = tfLPToken;
                     env(jv, Ter(telENV_RPC_FAILED));
                 }
@@ -425,13 +426,13 @@ private:
                 // Provided LPTokenOut does not match AMM pool's LPToken
                 // asset
                 {
-                    json::Value jv = json::ObjectValue;
+                    json::Value jv = json::ValueType::Object;
                     jv[jss::Account] = alice_.human();
                     jv[jss::TransactionType] = jss::AMMDeposit;
-                    jv[jss::Asset] = STIssue(sfAsset, XRP).getJson(JsonOptions::KNone);
+                    jv[jss::Asset] = STIssue(sfAsset, XRP).getJson(JsonOptions::Values::None);
                     jv[jss::Asset2] =
-                        STIssue(sfAsset, MPT(ammAlice[1])).getJson(JsonOptions::KNone);
-                    jv[jss::LPTokenOut] = USD(100).value().getJson(JsonOptions::KNone);
+                        STIssue(sfAsset, MPT(ammAlice[1])).getJson(JsonOptions::Values::None);
+                    jv[jss::LPTokenOut] = USD(100).value().getJson(JsonOptions::Values::None);
                     jv[jss::Flags] = tfLPToken;
                     env(jv, Ter(temBAD_AMM_TOKENS));
                 }
@@ -4136,14 +4137,14 @@ private:
         testAMM(
             [&](AMM& ammAlice, Env& env) {
                 env(escrow::create(carol_, ammAlice.ammAccount(), MPT(ammAlice[1])(1)),
-                    escrow::kCONDITION(escrow::kCB1),
+                    escrow::kCondition(escrow::kCb1),
                     escrow::kFinishTime(env.now() + 1s),
                     escrow::kCancelTime(env.now() + 2s),
                     Fee(1'500),
                     Ter(tecNO_PERMISSION));
 
                 env(escrow::create(carol_, ammAlice.ammAccount(), XRP(1)),
-                    escrow::kCONDITION(escrow::kCB1),
+                    escrow::kCondition(escrow::kCb1),
                     escrow::kFinishTime(env.now() + 1s),
                     escrow::kCancelTime(env.now() + 2s),
                     Fee(1'500),
@@ -6255,7 +6256,8 @@ private:
 
                 amm.deposit(carol_, 1'000);
 
-                auto affected = env.meta()->getJson(JsonOptions::KNone)[sfAffectedNodes.fieldName];
+                auto affected =
+                    env.meta()->getJson(JsonOptions::Values::None)[sfAffectedNodes.fieldName];
                 try
                 {
                     bool found = false;

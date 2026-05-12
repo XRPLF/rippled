@@ -55,8 +55,8 @@ template <class = void>
 boost::thread_specific_ptr<detail::LocalValues>&
 getLocalValues()
 {
-    static boost::thread_specific_ptr<detail::LocalValues> kTSP(&detail::LocalValues::cleanup);
-    return kTSP;
+    static boost::thread_specific_ptr<detail::LocalValues> kTsp(&detail::LocalValues::cleanup);
+    return kTsp;
 }
 
 }  // namespace detail

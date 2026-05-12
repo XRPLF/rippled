@@ -18,12 +18,12 @@ namespace xrpl::test::jtx {
     ((cond) ? (env.test.pass(), true) : (env.test.fail((reason), __FILE__, __LINE__), false))
 
 void
-doBalance(Env& env, AccountID const& account, bool kNONE, STAmount const& value, Issue const& issue)
+doBalance(Env& env, AccountID const& account, bool kNone, STAmount const& value, Issue const& issue)
 {
     if (isXRP(issue))
     {
         auto const sle = env.le(keylet::account(account));
-        if (kNONE)
+        if (kNone)
         {
             TEST_EXPECT(!sle);
         }
@@ -37,7 +37,7 @@ doBalance(Env& env, AccountID const& account, bool kNONE, STAmount const& value,
     else
     {
         auto const sle = env.le(keylet::line(account, issue));
-        if (kNONE)
+        if (kNone)
         {
             TEST_EXPECT(!sle);
         }
@@ -56,12 +56,12 @@ void
 doBalance(
     Env& env,
     AccountID const& account,
-    bool kNONE,
+    bool kNone,
     STAmount const& value,
     MPTIssue const& mptIssue)
 {
     auto const sle = env.le(keylet::mptoken(mptIssue.getMptID(), account));
-    if (kNONE)
+    if (kNone)
     {
         TEST_EXPECT(!sle);
     }

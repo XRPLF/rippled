@@ -64,7 +64,7 @@ VaultCreate::preflight(PreflightContext const& ctx)
 
     if (auto const domain = ctx.tx[~sfDomainID])
     {
-        if (*domain == beast::kZERO)
+        if (*domain == beast::kZero)
         {
             return temMALFORMED;
         }
@@ -76,7 +76,7 @@ VaultCreate::preflight(PreflightContext const& ctx)
 
     if (auto const assetMax = ctx.tx[~sfAssetsMaximum])
     {
-        if (*assetMax < beast::kZERO)
+        if (*assetMax < beast::kZero)
             return temMALFORMED;
     }
 
@@ -130,7 +130,7 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
 
     auto const sequence = ctx.tx.getSeqValue();
     if (auto const accountId = pseudoAccountAddress(ctx.view, keylet::vault(account, sequence).key);
-        accountId == beast::kZERO)
+        accountId == beast::kZero)
         return terADDRESS_COLLISION;
 
     return tesSUCCESS;
@@ -255,11 +255,13 @@ VaultCreate::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
 VaultCreate::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

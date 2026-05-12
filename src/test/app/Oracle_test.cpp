@@ -748,7 +748,7 @@ private:
                 .series = {{"XRP", "USD", 741, 1}}, .msig = Msig(becky, bogie), .fee = baseFee});
         BEAST_EXPECT(oracle.expectPrice({{"XRP", "USD", 741, 1}}));
         // remove the signer list
-        env(signers(alice, jtx::kNONE), Sig(alie));
+        env(signers(alice, jtx::kNone), Sig(alie));
         env.close();
         env.require(Owners(alice, 1));
         // create new signer list

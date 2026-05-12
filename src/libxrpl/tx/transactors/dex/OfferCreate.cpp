@@ -57,7 +57,7 @@ OfferCreate::makeTxConsequences(PreflightContext const& ctx)
 {
     auto calculateMaxXRPSpend = [](STTx const& tx) -> XRPAmount {
         auto const& amount{tx[sfTakerGets]};
-        return amount.native() ? amount.xrp() : beast::kZERO;
+        return amount.native() ? amount.xrp() : beast::kZero;
     };
 
     return TxConsequences{ctx.tx, calculateMaxXRPSpend(ctx.tx)};
@@ -130,7 +130,7 @@ OfferCreate::preflight(PreflightContext const& ctx)
         JLOG(j.debug()) << "Malformed offer: redundant (XRP for XRP)";
         return temBAD_OFFER;
     }
-    if (saTakerPays <= beast::kZERO || saTakerGets <= beast::kZERO)
+    if (saTakerPays <= beast::kZero || saTakerGets <= beast::kZero)
     {
         JLOG(j.debug()) << "Malformed offer: bad amount";
         return temBAD_OFFER;
@@ -198,7 +198,7 @@ OfferCreate::preclaim(PreclaimContext const& ctx)
             saTakerGets,
             FreezeHandling::ZeroIfFrozen,
             AuthHandling::ZeroIfUnauthorized,
-            viewJ) <= beast::kZERO)
+            viewJ) <= beast::kZero)
     {
         JLOG(ctx.j.debug()) << "delay: Offers must be at least partially funded.";
         return tecUNFUNDED_OFFER;
@@ -352,7 +352,7 @@ OfferCreate::flowCross(
         // Allow unfunded MPT issuer
         auto const disallowUnfunded =
             !inStartBalance.holds<MPTIssue>() || inStartBalance.getIssuer() != account_;
-        if (disallowUnfunded && inStartBalance <= beast::kZERO)
+        if (disallowUnfunded && inStartBalance <= beast::kZero)
         {
             // The account balance can't cover even part of the offer.
             JLOG(j_.debug()) << "Not crossing: taker is unfunded.";
@@ -465,7 +465,7 @@ OfferCreate::flowCross(
                 AuthHandling::ZeroIfUnauthorized,
                 j_);
 
-            if (disallowUnfunded && takerInBalance <= beast::kZERO)
+            if (disallowUnfunded && takerInBalance <= beast::kZero)
             {
                 // If offer crossing exhausted the account's funds don't
                 // create the offer.
@@ -496,8 +496,8 @@ OfferCreate::flowCross(
                     afterCross.in -= nonGatewayAmountIn;
 
                     // It's possible that the divRound will cause our subtract
-                    // to go slightly negative.  So limit afterCross.in to beast::kZERO.
-                    if (afterCross.in < beast::kZERO)
+                    // to go slightly negative.  So limit afterCross.in to beast::kZero.
+                    if (afterCross.in < beast::kZero)
                     {
                         // We should verify that the difference *is* small, but
                         // what is a good threshold to check?
@@ -514,9 +514,9 @@ OfferCreate::flowCross(
                     // Quality.
                     afterCross.out -= result.actualAmountOut;
                     XRPL_ASSERT(
-                        afterCross.out >= beast::kZERO,
+                        afterCross.out >= beast::kZero,
                         "xrpl::OfferCreate::flowCross : minimum offer");
-                    if (afterCross.out < beast::kZERO)
+                    if (afterCross.out < beast::kZero)
                         afterCross.out.clear();
                     afterCross.in = mulRound(afterCross.out, rate, takerAmount.in.asset(), true);
                 }
@@ -562,7 +562,7 @@ OfferCreate::applyHybrid(
     // if offer is hybrid, need to also place into open offer dir
     Book const book{saTakerPays.asset(), saTakerGets.asset(), std::nullopt};
 
-    auto dir = keylet::quality(keylet::kBOOK(book), getRate(saTakerGets, saTakerPays));
+    auto dir = keylet::quality(keylet::kBook(book), getRate(saTakerGets, saTakerPays));
     bool const bookExists = sb.exists(dir);
 
     auto const bookNode = sb.dirAppend(dir, offerKey, [&](SLE::ref sle) {
@@ -593,7 +593,7 @@ OfferCreate::applyHybrid(
 std::pair<TER, bool>
 OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 {
-    using beast::kZERO;
+    using beast::kZero;
 
     std::uint32_t const uTxFlags = ctx_.tx.getFlags();
 
@@ -755,7 +755,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
         // The offer that we need to place after offer crossing should
         // never be negative. If it is, something went very very wrong.
-        if (placeOffer.in < kZERO || placeOffer.out < kZERO)
+        if (placeOffer.in < kZero || placeOffer.out < kZero)
         {
             JLOG(j_.fatal()) << "Cross left offer negative!"
                              << "     in: " << formatAmount(placeOffer.in)
@@ -763,7 +763,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
             return {tefINTERNAL, true};
         }
 
-        if (placeOffer.in == kZERO || placeOffer.out == kZERO)
+        if (placeOffer.in == kZero || placeOffer.out == kZero)
         {
             JLOG(j_.debug()) << "Offer fully crossed!";
             return {result, true};
@@ -777,7 +777,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     }
 
     XRPL_ASSERT(
-        saTakerPays > beast::kZERO && saTakerGets > beast::kZERO,
+        saTakerPays > beast::kZero && saTakerGets > beast::kZero,
         "xrpl::OfferCreate::applyGuts : taker pays and gets positive");
 
     if (!isTesSuccess(result))
@@ -876,7 +876,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     // Hybrid domain offer - BookDirectory points to domain directory,
     // and AdditionalBooks field stores one entry that points to the open
     // directory
-    auto dir = keylet::quality(keylet::kBOOK(book), uRate);
+    auto dir = keylet::quality(keylet::kBook(book), uRate);
     bool const bookExisted = static_cast<bool>(sb.peek(dir));
 
     auto setBookDir = [&](SLE::ref sle, std::optional<uint256> const& maybeDomain) {
@@ -976,11 +976,13 @@ OfferCreate::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
 OfferCreate::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

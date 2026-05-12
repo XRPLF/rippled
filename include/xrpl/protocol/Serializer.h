@@ -102,7 +102,7 @@ public:
 
     template <std::size_t Bits, class Tag>
     int
-    addBitString(BaseUint<Bits, Tag> const& v)
+    addBitString(BaseUInt<Bits, Tag> const& v)
     {
         return addRaw(v.data(), v.size());
     }
@@ -134,13 +134,13 @@ public:
     bool
     getInteger(Integer& number, int offset)
     {
-        static auto const kBYTES = sizeof(Integer);
-        if ((offset + kBYTES) > data_.size())
+        static auto const kBytes = sizeof(Integer);
+        if ((offset + kBytes) > data_.size())
             return false;
         number = 0;
 
         auto ptr = &data_[offset];
-        for (auto i = 0; i < kBYTES; ++i)
+        for (auto i = 0; i < kBytes; ++i)
         {
             if (i)
                 number <<= 8;
@@ -151,7 +151,7 @@ public:
 
     template <std::size_t Bits, typename Tag = void>
     bool
-    getBitString(BaseUint<Bits, Tag>& data, int offset) const
+    getBitString(BaseUInt<Bits, Tag>& data, int offset) const
     {
         auto success = (offset + (Bits / 8)) <= data_.size();
         if (success)
@@ -369,7 +369,7 @@ public:
     geti64();
 
     template <std::size_t Bits, class Tag = void>
-    BaseUint<Bits, Tag>
+    BaseUInt<Bits, Tag>
     getBitString();
 
     uint128
@@ -428,7 +428,7 @@ public:
 };
 
 template <std::size_t Bits, class Tag>
-BaseUint<Bits, Tag>
+BaseUInt<Bits, Tag>
 SerialIter::getBitString()
 {
     auto const n = Bits / 8;
@@ -442,7 +442,7 @@ SerialIter::getBitString()
     used_ += n;
     remain_ -= n;
 
-    return BaseUint<Bits, Tag>::fromVoid(x);
+    return BaseUInt<Bits, Tag>::fromVoid(x);
 }
 
 }  // namespace xrpl

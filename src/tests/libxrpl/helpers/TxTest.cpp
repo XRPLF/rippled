@@ -41,7 +41,7 @@ namespace xrpl::test {
 FeatureBitset
 allFeatures()
 {
-    static FeatureBitset const kFEATURES = [] {
+    static FeatureBitset const kFeatures = [] {
         auto const& sa = allAmendments();
         std::vector<uint256> feats;
         feats.reserve(sa.size());
@@ -52,7 +52,7 @@ allFeatures()
         }
         return FeatureBitset(feats);
     }();
-    return kFEATURES;
+    return kFeatures;
 }
 
 //------------------------------------------------------------------------------

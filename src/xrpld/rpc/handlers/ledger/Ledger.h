@@ -46,7 +46,7 @@ public:
 
     static constexpr Role role = Role::USER;
 
-    static constexpr Condition condition = NoCondition;
+    static constexpr Condition condition = Condition::NoCondition;
     // NOLINTEND(readability-identifier-naming)
 
 private:

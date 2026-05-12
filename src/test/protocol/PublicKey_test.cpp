@@ -46,12 +46,12 @@ public:
             }
         };
 
-        static Table kLUT;
+        static Table kLut;
         out.reserve(std::distance(first, last) / 2);
         while (first != last)
         {
-            auto const hi(kLUT[(*first++)]);
-            auto const lo(kLUT[(*first++)]);
+            auto const hi(kLut[(*first++)]);
+            auto const lo(kLut[(*first++)]);
             out.push_back((hi * 16) + lo);
         }
     }

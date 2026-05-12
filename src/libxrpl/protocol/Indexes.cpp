@@ -197,8 +197,8 @@ child(uint256 const& key) noexcept
 Keylet const&
 skip() noexcept
 {
-    static Keylet const kRET{ltLEDGER_HASHES, indexHash(LedgerNameSpace::SkipList)};
-    return kRET;
+    static Keylet const kRet{ltLEDGER_HASHES, indexHash(LedgerNameSpace::SkipList)};
+    return kRet;
 }
 
 Keylet
@@ -213,22 +213,22 @@ skip(LedgerIndex ledger) noexcept
 Keylet const&
 amendments() noexcept
 {
-    static Keylet const kRET{ltAMENDMENTS, indexHash(LedgerNameSpace::Amendments)};
-    return kRET;
+    static Keylet const kRet{ltAMENDMENTS, indexHash(LedgerNameSpace::Amendments)};
+    return kRet;
 }
 
 Keylet const&
 fees() noexcept
 {
-    static Keylet const kRET{ltFEE_SETTINGS, indexHash(LedgerNameSpace::FeeSettings)};
-    return kRET;
+    static Keylet const kRet{ltFEE_SETTINGS, indexHash(LedgerNameSpace::FeeSettings)};
+    return kRet;
 }
 
 Keylet const&
 negativeUNL() noexcept
 {
-    static Keylet const kRET{ltNEGATIVE_UNL, indexHash(LedgerNameSpace::NegativeUnl)};
-    return kRET;
+    static Keylet const kRet{ltNEGATIVE_UNL, indexHash(LedgerNameSpace::NegativeUnl)};
+    return kRet;
 }
 
 Keylet
@@ -287,7 +287,7 @@ quality(Keylet const& k, std::uint64_t q) noexcept
 Keylet
 NextT::operator()(Keylet const& k) const
 {
-    XRPL_ASSERT(k.type == ltDIR_NODE, "xrpl::keylet::next_t::operator() : valid input type");
+    XRPL_ASSERT(k.type == ltDIR_NODE, "xrpl::keylet::NextT::operator() : valid input type");
     return {ltDIR_NODE, getQualityNext(k.key)};
 }
 

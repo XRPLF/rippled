@@ -220,12 +220,12 @@ struct XChainBridgeObjects
     [[nodiscard]] json::Value
     createBridge(
         Account const& acc,
-        json::Value const& bridge = json::NullValue,
+        json::Value const& bridge = json::ValueType::Null,
         STAmount const& reward = XRP(1),
         std::optional<STAmount> const& minAccountCreate = std::nullopt) const
     {
         return bridgeCreate(
-            acc, bridge == json::NullValue ? jvb : bridge, reward, minAccountCreate);
+            acc, bridge == json::ValueType::Null ? jvb : bridge, reward, minAccountCreate);
     }
 };
 

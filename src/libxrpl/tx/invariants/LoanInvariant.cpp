@@ -44,9 +44,9 @@ ValidLoan::finalize(
         // https://github.com/Tapanito/XRPL-Standards/blob/xls-66-lending-protocol/XLS-0066d-lending-protocol/README.md#3223-invariants
         // If `Loan.PaymentRemaining = 0` then the loan MUST be fully paid off
         if (after->at(sfPaymentRemaining) == 0 &&
-            (after->at(sfTotalValueOutstanding) != beast::kZERO ||
-             after->at(sfPrincipalOutstanding) != beast::kZERO ||
-             after->at(sfManagementFeeOutstanding) != beast::kZERO))
+            (after->at(sfTotalValueOutstanding) != beast::kZero ||
+             after->at(sfPrincipalOutstanding) != beast::kZero ||
+             after->at(sfManagementFeeOutstanding) != beast::kZero))
         {
             JLOG(j.fatal()) << "Invariant failed: Loan with zero payments "
                                "remaining has not been paid off";
@@ -55,9 +55,9 @@ ValidLoan::finalize(
         // If `Loan.PaymentRemaining != 0` then the loan MUST NOT be fully paid
         // off
         if (after->at(sfPaymentRemaining) != 0 &&
-            after->at(sfTotalValueOutstanding) == beast::kZERO &&
-            after->at(sfPrincipalOutstanding) == beast::kZERO &&
-            after->at(sfManagementFeeOutstanding) == beast::kZERO)
+            after->at(sfTotalValueOutstanding) == beast::kZero &&
+            after->at(sfPrincipalOutstanding) == beast::kZero &&
+            after->at(sfManagementFeeOutstanding) == beast::kZero)
         {
             JLOG(j.fatal()) << "Invariant failed: Fully paid off Loan still has payments remaining";
             return false;

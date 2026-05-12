@@ -26,7 +26,7 @@ namespace xrpl {
     As consensus proceeds, peers may change their position on the transaction,
     or choose to abstain. Each successive proposal includes a strictly
     monotonically increasing number (or, if a peer is choosing to abstain,
-    the special value `kSEQ_LEAVE`).
+    the special value `kSeqLeave`).
 
     Refer to @ref Consensus for requirements of the template arguments.
 
@@ -95,7 +95,7 @@ public:
 
     /** Get the sequence number of this proposal
 
-        Starting with an initial sequence number of `kSEQ_JOIN`, successive
+        Starting with an initial sequence number of `kSeqJoin`, successive
         proposals from a peer will increase the sequence number.
 
         @return the sequence number
@@ -195,7 +195,7 @@ public:
     {
         using std::to_string;
 
-        json::Value ret = json::ObjectValue;
+        json::Value ret = json::ValueType::Object;
         ret[jss::previous_ledger] = to_string(prevLedger());
 
         if (!isBowOut())

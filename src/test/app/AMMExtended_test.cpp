@@ -506,7 +506,7 @@ private:
         env(offer(dan, XRP(500), euR1(50)));
         env.close();
 
-        json::Value jtp{json::ArrayValue};
+        json::Value jtp{json::ValueType::Array};
         jtp[0u][0u][jss::currency] = "XRP";
         env(pay(alice_, bob_, euR1(30)), Json(jss::Paths, jtp), Sendmax(usD1(333)));
         env.close();
@@ -681,7 +681,8 @@ private:
         payment[jss::tx_json][jss::Sequence] =
             env.current()->read(keylet::account(bob_.id()))->getFieldU32(sfSequence);
         payment[jss::tx_json][jss::Fee] = to_string(env.current()->fees().base);
-        payment[jss::tx_json][jss::SendMax] = bob_["XTS"](1.5).value().getJson(JsonOptions::KNone);
+        payment[jss::tx_json][jss::SendMax] =
+            bob_["XTS"](1.5).value().getJson(JsonOptions::Values::None);
         payment[jss::tx_json][jss::Flags] = tfPartialPayment;
         auto const jrr = env.rpc("json", "submit", to_string(payment));
         BEAST_EXPECT(jrr[jss::result][jss::status] == "success");
@@ -1119,14 +1120,14 @@ private:
             env(pay(ann, cam, dBux(60)), Path(localBob, dan), Sendmax(aBux(200)));
             env.close();
 
-            BEAST_EXPECT(expectHolding(env, ann, aBux(kNONE)));
-            BEAST_EXPECT(expectHolding(env, ann, dBux(kNONE)));
+            BEAST_EXPECT(expectHolding(env, ann, aBux(kNone)));
+            BEAST_EXPECT(expectHolding(env, ann, dBux(kNone)));
             BEAST_EXPECT(expectHolding(env, localBob, aBux(72)));
             BEAST_EXPECT(expectHolding(env, localBob, dBux(40)));
-            BEAST_EXPECT(expectHolding(env, cam, aBux(kNONE)));
+            BEAST_EXPECT(expectHolding(env, cam, aBux(kNone)));
             BEAST_EXPECT(expectHolding(env, cam, dBux(60)));
-            BEAST_EXPECT(expectHolding(env, dan, aBux(kNONE)));
-            BEAST_EXPECT(expectHolding(env, dan, dBux(kNONE)));
+            BEAST_EXPECT(expectHolding(env, dan, aBux(kNone)));
+            BEAST_EXPECT(expectHolding(env, dan, dBux(kNone)));
 
             AMM const ammBob(env, localBob, aBux(30), dBux(30));
 
@@ -1138,12 +1139,12 @@ private:
             env.close();
 
             BEAST_EXPECT(ammBob.expectBalances(aBux(30), dBux(30), ammBob.tokens()));
-            BEAST_EXPECT(expectHolding(env, ann, aBux(kNONE)));
+            BEAST_EXPECT(expectHolding(env, ann, aBux(kNone)));
             BEAST_EXPECT(expectHolding(env, ann, dBux(0)));
-            BEAST_EXPECT(expectHolding(env, cam, aBux(kNONE)));
+            BEAST_EXPECT(expectHolding(env, cam, aBux(kNone)));
             BEAST_EXPECT(expectHolding(env, cam, dBux(60)));
             BEAST_EXPECT(expectHolding(env, dan, aBux(0)));
-            BEAST_EXPECT(expectHolding(env, dan, dBux(kNONE)));
+            BEAST_EXPECT(expectHolding(env, dan, dBux(kNone)));
         }
     }
 
@@ -2713,7 +2714,7 @@ private:
         // Carol offers to buy 1000 XRP for 1000 USD. She removes Bob's next
         // 1000 offers as unfunded and hits the step limit.
         env(offer(carol_, USD(1'000), XRP(1'000)));
-        env.require(Balance(carol_, USD(kNONE)));
+        env.require(Balance(carol_, USD(kNone)));
         env.require(Owners(carol_, 1));
         env.require(Balance(bob_, USD(0)));
         env.require(Owners(bob_, 1));
@@ -3084,12 +3085,14 @@ private:
             // Is cleared via a TrustSet with ClearFreeze flag
             //    test: sets LowFreeze | HighFreeze flags
             env(trust(g1, bob["USD"](0), tfClearFreeze));
-            auto affected = env.meta()->getJson(JsonOptions::KNone)[sfAffectedNodes.fieldName];
+            auto affected =
+                env.meta()->getJson(JsonOptions::Values::None)[sfAffectedNodes.fieldName];
             if (!BEAST_EXPECT(checkArraySize(affected, 2u)))
                 return;
             auto ff = affected[1u][sfModifiedNode.fieldName][sfFinalFields.fieldName];
             BEAST_EXPECT(
-                ff[sfLowLimit.fieldName] == g1["USD"](0).value().getJson(JsonOptions::KNone));
+                ff[sfLowLimit.fieldName] ==
+                g1["USD"](0).value().getJson(JsonOptions::Values::None));
             BEAST_EXPECT(!(ff[jss::Flags].asUInt() & lsfLowFreeze));
             BEAST_EXPECT(!(ff[jss::Flags].asUInt() & lsfHighFreeze));
             env.close();

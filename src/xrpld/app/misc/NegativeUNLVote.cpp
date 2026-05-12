@@ -141,7 +141,7 @@ NodeID
 NegativeUNLVote::choose(uint256 const& randomPadData, std::vector<NodeID> const& candidates)
 {
     XRPL_ASSERT(!candidates.empty(), "xrpl::NegativeUNLVote::choose : non-empty input");
-    static_assert(NodeID::kBYTES <= uint256::kBYTES);
+    static_assert(NodeID::kBytes <= uint256::kBytes);
     NodeID const randomPad = NodeID::fromVoid(randomPadData.data());
     NodeID txNodeID = candidates[0];
     for (int j = 1; j < candidates.size(); ++j)

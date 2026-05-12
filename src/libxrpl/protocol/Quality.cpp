@@ -62,10 +62,10 @@ ceilInImpl(Amounts const& amount, STAmount const& limit, bool roundUp, Quality c
         // Clamp out
         if (result.out > amount.out)
             result.out = amount.out;
-        XRPL_ASSERT(result.in == limit, "xrpl::ceil_in_impl : result matches limit");
+        XRPL_ASSERT(result.in == limit, "xrpl::ceilInImpl : result matches limit");
         return result;
     }
-    XRPL_ASSERT(amount.in <= limit, "xrpl::ceil_in_impl : result inside limit");
+    XRPL_ASSERT(amount.in <= limit, "xrpl::ceilInImpl : result inside limit");
     return amount;
 }
 
@@ -91,10 +91,10 @@ ceilOutImpl(Amounts const& amount, STAmount const& limit, bool roundUp, Quality 
         // Clamp in
         if (result.in > amount.in)
             result.in = amount.in;
-        XRPL_ASSERT(result.out == limit, "xrpl::ceil_out_impl : result matches limit");
+        XRPL_ASSERT(result.out == limit, "xrpl::ceilOutImpl : result matches limit");
         return result;
     }
-    XRPL_ASSERT(amount.out <= limit, "xrpl::ceil_out_impl : result inside limit");
+    XRPL_ASSERT(amount.out <= limit, "xrpl::ceilOutImpl : result inside limit");
     return amount;
 }
 
@@ -114,10 +114,10 @@ Quality
 composedQuality(Quality const& lhs, Quality const& rhs)
 {
     STAmount const lhsRate(lhs.rate());
-    XRPL_ASSERT(lhsRate != beast::kZERO, "xrpl::composed_quality : nonzero left input");
+    XRPL_ASSERT(lhsRate != beast::kZero, "xrpl::composedQuality : nonzero left input");
 
     STAmount const rhsRate(rhs.rate());
-    XRPL_ASSERT(rhsRate != beast::kZERO, "xrpl::composed_quality : nonzero right input");
+    XRPL_ASSERT(rhsRate != beast::kZero, "xrpl::composedQuality : nonzero right input");
 
     STAmount const rate(mulRound(lhsRate, rhsRate, lhsRate.asset(), true));
 
@@ -125,7 +125,7 @@ composedQuality(Quality const& lhs, Quality const& rhs)
     std::uint64_t const storedMantissa(rate.mantissa());
 
     XRPL_ASSERT(
-        (storedExponent > 0) && (storedExponent <= 255), "xrpl::composed_quality : valid exponent");
+        (storedExponent > 0) && (storedExponent <= 255), "xrpl::composedQuality : valid exponent");
 
     return Quality((storedExponent << (64 - 8)) | storedMantissa);
 }
@@ -134,7 +134,7 @@ Quality
 Quality::round(int digits) const
 {
     // Modulus for mantissa
-    static std::uint64_t const kMOD[17] = {
+    static std::uint64_t const kMod[17] = {
         /* 0 */ 10000000000000000,
         /* 1 */ 1000000000000000,
         /* 2 */ 100000000000000,
@@ -156,8 +156,8 @@ Quality::round(int digits) const
 
     auto exponent = value_ >> (64 - 8);
     auto mantissa = value_ & 0x00ffffffffffffffULL;
-    mantissa += kMOD[digits] - 1;
-    mantissa -= (mantissa % kMOD[digits]);
+    mantissa += kMod[digits] - 1;
+    mantissa -= (mantissa % kMod[digits]);
 
     return Quality{(exponent << (64 - 8)) | mantissa};
 }

@@ -177,7 +177,7 @@ getAMMOfferStartWithTakerGets(
     Quality const& targetQuality,
     std::uint16_t const& tfee)
 {
-    if (targetQuality.rate() == beast::kZERO)
+    if (targetQuality.rate() == beast::kZero)
         return std::nullopt;
 
     NumberRoundModeGuard const mg(Number::RoundingMode::ToNearest);
@@ -244,7 +244,7 @@ getAMMOfferStartWithTakerPays(
     Quality const& targetQuality,
     std::uint16_t tfee)
 {
-    if (targetQuality.rate() == beast::kZERO)
+    if (targetQuality.rate() == beast::kZero)
         return std::nullopt;
 
     NumberRoundModeGuard const mg(Number::RoundingMode::ToNearest);

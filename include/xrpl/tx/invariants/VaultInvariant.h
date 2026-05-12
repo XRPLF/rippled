@@ -35,15 +35,15 @@ namespace xrpl {
  */
 class ValidVault
 {
-    Number static constexpr kZERO{};
+    Number static constexpr kZero{};
 
     struct Vault final
     {
-        uint256 key = beast::kZERO;
+        uint256 key = beast::kZero;
         Asset asset;
         AccountID pseudoId;
         AccountID owner;
-        uint192 shareMPTID = beast::kZERO;
+        uint192 shareMPTID = beast::kZero;
         Number assetsTotal = 0;
         Number assetsAvailable = 0;
         Number assetsMaximum = 0;

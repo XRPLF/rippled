@@ -39,25 +39,25 @@ public:
     {
         testcase("beast::Zero Comparisons");
 
-        using beast::kZERO;
+        using beast::kZero;
 
         for (auto i : {-1, 0, 1})
         {
             XRPAmount const x(i);
 
-            BEAST_EXPECT((i == 0) == (x == kZERO));
-            BEAST_EXPECT((i != 0) == (x != kZERO));
-            BEAST_EXPECT((i < 0) == (x < kZERO));
-            BEAST_EXPECT((i > 0) == (x > kZERO));
-            BEAST_EXPECT((i <= 0) == (x <= kZERO));
-            BEAST_EXPECT((i >= 0) == (x >= kZERO));
+            BEAST_EXPECT((i == 0) == (x == kZero));
+            BEAST_EXPECT((i != 0) == (x != kZero));
+            BEAST_EXPECT((i < 0) == (x < kZero));
+            BEAST_EXPECT((i > 0) == (x > kZero));
+            BEAST_EXPECT((i <= 0) == (x <= kZero));
+            BEAST_EXPECT((i >= 0) == (x >= kZero));
 
-            BEAST_EXPECT((0 == i) == (kZERO == x));
-            BEAST_EXPECT((0 != i) == (kZERO != x));
-            BEAST_EXPECT((0 < i) == (kZERO < x));
-            BEAST_EXPECT((0 > i) == (kZERO > x));
-            BEAST_EXPECT((0 <= i) == (kZERO <= x));
-            BEAST_EXPECT((0 >= i) == (kZERO >= x));
+            BEAST_EXPECT((0 == i) == (kZero == x));
+            BEAST_EXPECT((0 != i) == (kZero != x));
+            BEAST_EXPECT((0 < i) == (kZero < x));
+            BEAST_EXPECT((0 > i) == (kZero > x));
+            BEAST_EXPECT((0 <= i) == (kZero <= x));
+            BEAST_EXPECT((0 >= i) == (kZero >= x));
         }
     }
 
@@ -136,10 +136,10 @@ public:
         XRPAmount test{0};
         BEAST_EXPECT(test.drops() == 0);
 
-        test = make(beast::kZERO);
+        test = make(beast::kZero);
         BEAST_EXPECT(test.drops() == 0);
 
-        test = beast::kZERO;
+        test = beast::kZero;
         BEAST_EXPECT(test.drops() == 0);
 
         test = make(100);
@@ -212,7 +212,7 @@ public:
     {
         testcase("mulRatio");
 
-        constexpr auto kMaxUInT32 = std::numeric_limits<std::uint32_t>::max();
+        constexpr auto kMaxUInt32 = std::numeric_limits<std::uint32_t>::max();
         constexpr auto kMaxXrp = std::numeric_limits<XRPAmount::value_type>::max();
         constexpr auto kMinXrp = std::numeric_limits<XRPAmount::value_type>::min();
 
@@ -220,9 +220,9 @@ public:
             // multiply by a number that would overflow then divide by the same
             // number, and check we didn't lose any value
             XRPAmount big(kMaxXrp);
-            BEAST_EXPECT(big == mulRatio(big, kMaxUInT32, kMaxUInT32, true));
+            BEAST_EXPECT(big == mulRatio(big, kMaxUInt32, kMaxUInt32, true));
             // rounding mode shouldn't matter as the result is exact
-            BEAST_EXPECT(big == mulRatio(big, kMaxUInT32, kMaxUInT32, false));
+            BEAST_EXPECT(big == mulRatio(big, kMaxUInt32, kMaxUInt32, false));
 
             // multiply and divide by values that would overflow if done
             // naively, and check that it gives the correct answer
@@ -235,9 +235,9 @@ public:
         {
             // Similar test as above, but for negative values
             XRPAmount big(kMinXrp);  // NOLINT TODO
-            BEAST_EXPECT(big == mulRatio(big, kMaxUInT32, kMaxUInT32, true));
+            BEAST_EXPECT(big == mulRatio(big, kMaxUInt32, kMaxUInt32, true));
             // rounding mode shouldn't matter as the result is exact
-            BEAST_EXPECT(big == mulRatio(big, kMaxUInT32, kMaxUInT32, false));
+            BEAST_EXPECT(big == mulRatio(big, kMaxUInt32, kMaxUInt32, false));
 
             // multiply and divide by values that would overflow if done
             // naively, and check that it gives the correct answer
@@ -250,39 +250,39 @@ public:
             // small amounts
             XRPAmount const tiny(1);
             // Round up should give the smallest allowable number
-            BEAST_EXPECT(tiny == mulRatio(tiny, 1, kMaxUInT32, true));
+            BEAST_EXPECT(tiny == mulRatio(tiny, 1, kMaxUInt32, true));
             // rounding down should be zero
-            BEAST_EXPECT(beast::kZERO == mulRatio(tiny, 1, kMaxUInT32, false));
-            BEAST_EXPECT(beast::kZERO == mulRatio(tiny, kMaxUInT32 - 1, kMaxUInT32, false));
+            BEAST_EXPECT(beast::kZero == mulRatio(tiny, 1, kMaxUInt32, false));
+            BEAST_EXPECT(beast::kZero == mulRatio(tiny, kMaxUInt32 - 1, kMaxUInt32, false));
 
             // tiny negative numbers
             XRPAmount const tinyNeg(-1);
             // Round up should give zero
-            BEAST_EXPECT(beast::kZERO == mulRatio(tinyNeg, 1, kMaxUInT32, true));
-            BEAST_EXPECT(beast::kZERO == mulRatio(tinyNeg, kMaxUInT32 - 1, kMaxUInT32, true));
+            BEAST_EXPECT(beast::kZero == mulRatio(tinyNeg, 1, kMaxUInt32, true));
+            BEAST_EXPECT(beast::kZero == mulRatio(tinyNeg, kMaxUInt32 - 1, kMaxUInt32, true));
             // rounding down should be tiny
-            BEAST_EXPECT(tinyNeg == mulRatio(tinyNeg, kMaxUInT32 - 1, kMaxUInT32, false));
+            BEAST_EXPECT(tinyNeg == mulRatio(tinyNeg, kMaxUInt32 - 1, kMaxUInt32, false));
         }
 
         {  // rounding
             {
                 XRPAmount const one(1);
-                auto const rup = mulRatio(one, kMaxUInT32 - 1, kMaxUInT32, true);
-                auto const rdown = mulRatio(one, kMaxUInT32 - 1, kMaxUInT32, false);
+                auto const rup = mulRatio(one, kMaxUInt32 - 1, kMaxUInt32, true);
+                auto const rdown = mulRatio(one, kMaxUInt32 - 1, kMaxUInt32, false);
                 BEAST_EXPECT(rup.drops() - rdown.drops() == 1);
             }
 
             {
                 XRPAmount const big(kMaxXrp);
-                auto const rup = mulRatio(big, kMaxUInT32 - 1, kMaxUInT32, true);
-                auto const rdown = mulRatio(big, kMaxUInT32 - 1, kMaxUInT32, false);
+                auto const rup = mulRatio(big, kMaxUInt32 - 1, kMaxUInt32, true);
+                auto const rdown = mulRatio(big, kMaxUInt32 - 1, kMaxUInt32, false);
                 BEAST_EXPECT(rup.drops() - rdown.drops() == 1);
             }
 
             {
                 XRPAmount const negOne(-1);
-                auto const rup = mulRatio(negOne, kMaxUInT32 - 1, kMaxUInT32, true);
-                auto const rdown = mulRatio(negOne, kMaxUInT32 - 1, kMaxUInT32, false);
+                auto const rup = mulRatio(negOne, kMaxUInt32 - 1, kMaxUInt32, true);
+                auto const rdown = mulRatio(negOne, kMaxUInt32 - 1, kMaxUInt32, false);
                 BEAST_EXPECT(rup.drops() - rdown.drops() == 1);
             }
         }

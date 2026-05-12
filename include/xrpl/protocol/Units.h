@@ -300,13 +300,13 @@ public:
             using jsontype =
                 std::conditional_t<std::is_signed_v<value_type>, json::Int, json::UInt>;
 
-            constexpr auto kMIN = std::numeric_limits<jsontype>::min();
-            constexpr auto kMAX = std::numeric_limits<jsontype>::max();
+            constexpr auto kMin = std::numeric_limits<jsontype>::min();
+            constexpr auto kMax = std::numeric_limits<jsontype>::max();
 
-            if (value_ < kMIN)
-                return kMIN;
-            if (value_ > kMAX)
-                return kMAX;
+            if (value_ < kMin)
+                return kMin;
+            if (value_ > kMax)
+                return kMax;
             return static_cast<jsontype>(value_);
         }
         else
@@ -392,14 +392,14 @@ mulDivU(Source1 value, Dest mul, Source2 div)
     }
 
     using desttype = typename Dest::value_type;
-    constexpr auto kMAX = std::numeric_limits<desttype>::max();
+    constexpr auto kMax = std::numeric_limits<desttype>::max();
 
     // Shortcuts, since these happen a lot in the real world
     if (value == div)
         return mul;
     if (mul.value() == div.value())
     {
-        if (value.value() > kMAX)
+        if (value.value() > kMax)
             return std::nullopt;
         return Dest{static_cast<desttype>(value.value())};
     }
@@ -414,7 +414,7 @@ mulDivU(Source1 value, Dest mul, Source2 div)
 
     auto quotient = product / div.value();
 
-    if (quotient > kMAX)
+    if (quotient > kMax)
         return std::nullopt;
 
     return Dest{static_cast<desttype>(quotient)};

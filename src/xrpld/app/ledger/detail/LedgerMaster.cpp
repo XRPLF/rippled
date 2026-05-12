@@ -1257,7 +1257,7 @@ LedgerMaster::findNewLedgersToPublish(std::unique_lock<std::recursive_mutex>& sl
             // VFALCO TODO Restructure this code so that zero is not
             // used.
             if (!hash)
-                hash = beast::kZERO;  // kludge
+                hash = beast::kZero;  // kludge
             if (seq == valSeq)
             {
                 // We need to publish the ledger we just fully validated
@@ -2035,7 +2035,7 @@ populateFetchPack(
         s.erase();
         n.serializeWithPrefix(s);
 
-        auto const& hash = n.getHash().asUint256();
+        auto const& hash = n.getHash().asUInt256();
 
         protocol::TMIndexedObject* obj = into->add_objects();
         obj->set_ledgerseq(seq);

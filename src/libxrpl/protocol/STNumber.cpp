@@ -58,7 +58,7 @@ STNumber::associateAsset(Asset const& a)
     STTakesAsset::associateAsset(a);
 
     XRPL_ASSERT_PARTS(
-        getFName().shouldMeta(SField::SMdNeedsAsset),
+        getFName().shouldMeta(SField::kSmdNeedsAsset),
         "STNumber::associateAsset",
         "field needs asset");
 
@@ -76,7 +76,7 @@ STNumber::add(Serializer& s) const
     auto const exponent = value.exponent();
 
     SField const& field = getFName();
-    if (field.shouldMeta(SField::SMdNeedsAsset))
+    if (field.shouldMeta(SField::kSmdNeedsAsset))
     {
         // asset is defined in the STTakesAsset base class
         if (asset_)

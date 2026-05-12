@@ -88,7 +88,7 @@ constexpr MPTAmount::MPTAmount(value_type value) : value_(value)
 
 constexpr MPTAmount::MPTAmount(beast::Zero)
 {
-    *this = beast::kZERO;
+    *this = beast::kZero;
 }
 
 constexpr MPTAmount&

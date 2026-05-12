@@ -5,9 +5,12 @@
 #include <test/jtx/acctdelete.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/credentials.h>
+#include <test/jtx/deposit.h>
 #include <test/jtx/directory.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/noop.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/permissioned_domains.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/ticket.h>
 #include <test/jtx/txflags.h>
@@ -24,11 +27,13 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
 #include <cstdint>
+#include <cstring>
 #include <memory>
 #include <string_view>
 
@@ -1029,6 +1034,121 @@ struct Credentials_test : public beast::unit_test::Suite
     }
 
     void
+    testRemoveExpiredCorruption(FeatureBitset features)
+    {
+        bool const fixEnabled = features[fixSecurity3_1_3];
+        testcase(
+            "removeExpired ignores deleteSLE failure " +
+            (fixEnabled ? std::string(" after fix") : std::string(" before fix")));
+
+        using namespace test::jtx;
+
+        char const credType[] = "abcde";
+        Account const issuer{"issuer"};
+        Account const subject{"subject"};
+        Account const becky{"becky"};
+
+        Env env{*this, features};
+        env.fund(XRP(10000), issuer, subject, becky);
+        env.close();
+
+        // Create credential with short expiration
+        auto jv = credentials::create(subject, issuer, credType);
+        uint32_t const expiration =
+            env.current()->header().parentCloseTime.time_since_epoch().count() + 40;
+        jv[sfExpiration.jsonName] = expiration;
+        env(jv);
+        env.close();
+
+        auto const credLE = credentials::ledgerEntry(env, subject, issuer, credType);
+        std::string const credIdx = credLE[jss::result][jss::index].asString();
+
+        // Subject accepts the credential
+        env(credentials::accept(subject, issuer, credType));
+        env.close();
+
+        // Build the credential keylet
+        auto const credKeylet =
+            keylet::credential(subject.id(), issuer.id(), Slice(credType, std::strlen(credType)));
+
+        // Verify credential exists and is accepted
+        {
+            auto const sleCred = env.current()->read(credKeylet);
+            BEAST_EXPECT(sleCred && sleCred->getFlags() & lsfAccepted);
+        }
+
+        // Create DepositPreauth
+        env(deposit::authCredentials(becky, {{subject, credType}}));
+        env.close();
+        // env();
+        auto jtx = env.jt(pay(subject, becky, XRP(100)), credentials::Ids({credIdx}));
+        if (!BEAST_EXPECT(jtx.stx))
+            return;
+        auto const stx = std::make_shared<STTx>(*jtx.stx);
+
+        // Create PermissionedDomain
+        env(pdomain::setTx(becky, {{issuer, credType}}));
+        env.close();
+        auto const objects = pdomain::getObjects(becky, env);
+        if (!BEAST_EXPECT(!objects.empty()))
+            return;
+        auto const domain = objects.begin()->first;
+
+        using namespace std::chrono_literals;
+        env.close(50s);
+
+        // Verify time has advanced past expiration
+        {
+            auto const sleCred = env.current()->read(credKeylet);
+            BEAST_EXPECT(
+                sleCred &&
+                xrpl::credentials::checkExpired(*sleCred, env.current()->header().parentCloseTime));
+        }
+
+        // Create an ApplyViewImpl on top of the current closed ledger
+        // and corrupt it by erasing the issuer's account SLE
+        auto const open = env.current();
+        ApplyViewImpl av(&*open, TapNone);
+
+        // Erase the issuer's account to simulate ledger corruption
+        auto sleIssuer = av.peek(keylet::account(issuer.id()));
+        if (!BEAST_EXPECT(sleIssuer))
+            return;
+        av.erase(sleIssuer);
+        BEAST_EXPECT(!av.exists(keylet::account(issuer.id())));
+
+        // Credential still exists before removeExpired
+        BEAST_EXPECT(av.exists(credKeylet));
+
+        // Call removeExpired on the corrupted view
+        STVector256 credHashes;
+        credHashes.pushBack(credKeylet.key);
+        beast::Journal const j{beast::Journal::getNullSink()};
+
+        auto const dpTer = xrpl::verifyDepositPreauth(*stx, av, subject, becky, {}, j);
+        auto sleCredAfter = av.read(credKeylet);
+        BEAST_EXPECT(sleCredAfter && (sleCredAfter->getFlags() & lsfAccepted));
+
+        auto const domTer = xrpl::verifyValidDomain(av, subject.id(), domain, j);
+        sleCredAfter = av.read(credKeylet);
+        BEAST_EXPECT(sleCredAfter && (sleCredAfter->getFlags() & lsfAccepted));
+
+        if (fixEnabled)
+        {
+            // removeExpired returns error, cred wasn't deleted
+            BEAST_EXPECT(dpTer == tecINTERNAL);
+            BEAST_EXPECT(domTer == tecINTERNAL);
+        }
+        else
+        {
+            // removeExpired returns true (claims it found & deleted expired
+            // creds)
+            BEAST_EXPECT(dpTer == tecEXPIRED);
+            BEAST_EXPECT(isTesSuccess(domTer));
+        }
+    }
+
+    void
     run() override
     {
         using namespace test::jtx;
@@ -1043,6 +1163,9 @@ struct Credentials_test : public beast::unit_test::Suite
         testFlags(all - fixInvalidTxFlags);
         testFlags(all);
         testRPC();
+
+        testRemoveExpiredCorruption(all - fixSecurity3_1_3);
+        testRemoveExpiredCorruption(all | fixSecurity3_1_3);
     }
 };
 

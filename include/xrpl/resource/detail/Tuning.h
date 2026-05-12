@@ -5,25 +5,18 @@
 namespace xrpl::Resource {
 
 /** Tunable constants. */
-// Need to be named before converting
-// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-enum {
-    // Balance at which a warning is issued
-    WarningThreshold = 5000
 
-    // Balance at which the consumer is disconnected
-    ,
-    DropThreshold = 25000
+// balance at which a warning is issued
+static constexpr auto kWarningThreshold = 5000;
 
-    // The number of seconds in the exponential decay window
-    // (This should be a power of two)
-    ,
-    DecayWindowSeconds = 32
+// balance at which the consumer is disconnected
+static constexpr auto kDropThreshold = 25000;
 
-    // The minimum balance required in order to include a load source in gossip
-    ,
-    MinimumGossipBalance = 1000
-};
+// seconds in exponential decay window (power of two)
+static constexpr auto kDecayWindowSeconds = 32;
+
+// minimum balance to include a load source in gossip
+static constexpr auto kMinimumGossipBalance = 1000;
 
 // The number of seconds until an inactive table item is removed
 std::chrono::seconds constexpr kSecondsUntilExpiration{300};

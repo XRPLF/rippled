@@ -30,7 +30,7 @@ namespace xrpl {
 class AMMVote : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType kConsequencesFactory{Normal};
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 
     explicit AMMVote(ApplyContext& ctx) : Transactor(ctx)
     {
