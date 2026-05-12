@@ -31,8 +31,7 @@ canApplyToVault(
     SLE::const_ref vault,
     STAmount const& amount,
     beast::Journal j,
-    std::string_view logPrefix,
-    std::optional<AccountID> const& counterparty)
+    std::string_view logPrefix)
 {
     XRPL_ASSERT(vault->getType() == ltVAULT, "xrpl::canApplyToVault : valid Vault sle");
 
@@ -43,57 +42,23 @@ canApplyToVault(
 
     Asset const vaultAsset = vault->at(sfAsset);
 
-    // (a) Rail sub-ULP: silent absorption when the request rounds to zero at
-    //     sfAssetsAvailable's scale.
+    //  Silent absorption when the request rounds to zero at sfAssetsAvailable's scale.
     int const availScale = scale(vault->at(sfAssetsAvailable), vaultAsset);
-    if (roundsToZeroAtScale(vaultAsset, amount, availScale))
+    if (amount.isZeroAtScale(availScale))
     {
         JLOG(j.warn()) << logPrefix << ": amount " << amount.getFullText()
                        << " rounds to zero at available scale " << availScale;
         return tecPRECISION_LOSS;
     }
 
-    // (b) Coarser-scale lossless: only when scales actually differ
-    //     (loan-trapped state). Same-scale ops are guarded by caller-side
-    //     clamping in VaultDeposit::doApply — see VaultHelpers.h
-    //     "Vault asset accounting precision".
+    // Coarser-scale lossless
     int const totalScale = scale(vault->at(sfAssetsTotal), vaultAsset);
-    if (totalScale > availScale && !roundsLosslesslyAtScale(vaultAsset, amount, totalScale))
+    if (totalScale > availScale && !amount.isExactAtScale(totalScale))
     {
         JLOG(j.warn()) << logPrefix << ": amount " << amount.getFullText()
                        << " is not representable at vault total scale " << totalScale
                        << " while available is at scale " << availScale;
         return tecPRECISION_LOSS;
-    }
-
-    // (c) Counterparty-rail absorption: if the counterparty's trust-line
-    //     balance sits in a coarser exponent band than the request, the
-    //     +=/-= on that rail canonicalizes back to the pre-state balance
-    //     and the operation transfers no value on that side. accountSendExact's
-    //     lenient predicate would admit this 0-vs-N case as conserved at the
-    //     coarser anchor; we reject upfront. Skip when the counterparty has
-    //     no balance — the rail is at the asset's natural finest scale, so
-    //     no absorption is possible.
-    if (counterparty)
-    {
-        STAmount const counterpartyBalance = accountHolds(
-            view,
-            *counterparty,
-            vaultAsset,
-            FreezeHandling::IgnoreFreeze,
-            AuthHandling::IgnoreAuth,
-            j);
-        if (counterpartyBalance != beast::kZERO)
-        {
-            int const counterpartyScale = scale(Number{counterpartyBalance}, vaultAsset);
-            if (roundsToZeroAtScale(vaultAsset, amount, counterpartyScale))
-            {
-                JLOG(j.warn()) << logPrefix << ": amount " << amount.getFullText()
-                               << " rounds to zero at counterparty trust-line scale "
-                               << counterpartyScale;
-                return tecPRECISION_LOSS;
-            }
-        }
     }
 
     return tesSUCCESS;
@@ -237,12 +202,6 @@ depositToVault(
     XRPL_ASSERT(
         assetsDeposited.asset() == vaultAsset, "xrpl::depositToVault : assets and vault match");
 
-    // Pre-fixCleanup3_2_0 the helper performed no delta verification: silent
-    // rounding by associateAsset on the STNumber accounting fields would be
-    // caught (if at all) by the deposit invariants at finalize time, with
-    // tecINVARIANT_FAILED. Post-amendment we snapshot the pre-state and
-    // compare deltas at the end of the helper, returning tecPRECISION_LOSS
-    // before invariants run.
     Number const beforeAssetsTotal = *vault->at(sfAssetsTotal);
     Number const beforeAssetsAvailable = *vault->at(sfAssetsAvailable);
 
@@ -255,18 +214,11 @@ depositToVault(
     if (maximum != 0 && *vault->at(sfAssetsTotal) > maximum)
         return tecLIMIT_EXCEEDED;
 
-    // Transfer assets from depositor to vault. accountSendExact verifies
-    // depositor loss == vault gain, catching IOU canonicalization losses
-    // when either trust line crosses the 16-digit edge.
     if (auto const ter = accountSendExact(
             view, depositor, vaultAccount, assetsDeposited, j, WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
 
-    // Round the vault's STNumber accounting fields to the asset's precision.
-    // Post-amendment this must run before delta verification so any silent
-    // rounding here is observed as a delta mismatch rather than left to fire
-    // as an invariant after commit.
     associateAsset(*vault, vaultAsset);
 
     if (!view.rules().enabled(fixCleanup3_2_0))
@@ -287,32 +239,11 @@ depositToVault(
         // LCOV_EXCL_STOP
     }
 
-    // Trust-line value-transfer integrity is enforced by accountSendExact
-    // above; this remaining check covers SLE-field rounding by
-    // associateAsset on the vault's STNumber accounting fields.
-    //
-    // The two field deltas should agree at the asset's precision. When
-    // sfAssetsTotal sits at a different magnitude from sfAssetsAvailable
-    // a deposit that fits cleanly on sfAssetsAvailable can still
-    // be silently rounded inside roundToAsset on sfAssetsTotal, leaving
-    // total understated relative to the vault's actual receipt.
-    //
-    // Defense-in-depth quantize-then-equal at the coarser of the two
-    // fields' pre-state scales (matching VaultInvariant's idiom). Both
-    // fields receive `+= assetsDeposited` in Number arithmetic; the
-    // tolerance admits sub-coarser-side-ULP canonicalization noise
-    // accumulated from prior operations.
     Number const afterAssetsTotal = *vault->at(sfAssetsTotal);
     Number const afterAssetsAvailable = *vault->at(sfAssetsAvailable);
     Number const totalDelta = afterAssetsTotal - beforeAssetsTotal;
     Number const availableDelta = afterAssetsAvailable - beforeAssetsAvailable;
 
-    // Catches asymmetric associateAsset rounding when sfAssetsTotal sits
-    // close to the IOU edge while sfAssetsAvailable is at a lower magnitude
-    // (outstanding loans). A deposit that crosses the edge for sfAssetsTotal
-    // but stays clean for sfAssetsAvailable produces unequal deltas; the
-    // preclaim sub-ULP guard does not catch this because the deposit is
-    // representable at the pre-state scale of both fields.
     if (!equalAtAssetScale(
             totalDelta,
             availableDelta,
@@ -320,11 +251,6 @@ depositToVault(
             beforeAssetsAvailable.nonZeroOr(afterAssetsAvailable),
             vaultAsset))
     {
-        // Catches the post-state edge-cross asymmetric rounding case
-        // that canApplyToVault can't catch in preclaim — when both
-        // fields start at the same scale but a deposit pushes only
-        // one of them across a 10^N boundary, the canonicalization
-        // produces unequal deltas. See testBugVaultDepositSleAsymmetricRounding.
         JLOG(j.error()) << "depositToVault: vault accounting delta mismatch"
                         << " totalDelta=" << to_string(totalDelta)
                         << " availableDelta=" << to_string(availableDelta);
@@ -354,17 +280,6 @@ withdrawFromVault(
     XRPL_ASSERT(
         assetsWithdrawn.asset() == vaultAsset, "xrpl::withdrawFromVault : assets and vault match");
 
-    // Pre-fixCleanup3_2_0 the helper performed no delta verification: silent
-    // rounding by associateAsset on the STNumber accounting fields would be
-    // caught (if at all) by the withdrawal invariants at finalize time, with
-    // tecINVARIANT_FAILED. Post-amendment we snapshot the pre-state and
-    // compare deltas at the end of the helper, returning tecPRECISION_LOSS
-    // before invariants run. Trust-line value transfer is verified inside
-    // doWithdraw via accountSendExact, which compares sender-loss to
-    // destination-gain at the coarser pre-state grid — sub-ULP-at-receiver
-    // canonicalization is admitted as silent absorption (vault loses, the
-    // unit returns to the issuer's obligation pool); super-ULP discrepancies
-    // are rejected as tecPRECISION_LOSS.
     Number const beforeAssetsTotal = *vault->at(sfAssetsTotal);
     Number const beforeAssetsAvailable = *vault->at(sfAssetsAvailable);
 
@@ -373,9 +288,7 @@ withdrawFromVault(
         lossUnrealized <= (beforeAssetsTotal - beforeAssetsAvailable),
         "xrpl::withdrawFromVault : loss and assets do balance");
 
-    // The vault must have enough assets on hand. The vault may hold assets
-    // that it has already pledged. That is why we look at AssetAvailable
-    // instead of the pseudo-account balance.
+    // The vault must have enough assets on hand.
     if (beforeAssetsAvailable < assetsWithdrawn)
     {
         JLOG(j.debug()) << "withdrawFromVault: vault doesn't hold enough assets";
@@ -415,14 +328,8 @@ withdrawFromVault(
     }
 
     // Round the vault's STNumber accounting fields to the asset's precision.
-    // Post-amendment this must run before delta verification so any silent
-    // rounding here is observed as a delta mismatch rather than left to fire
-    // as an invariant after commit.
     associateAsset(*vault, vaultAsset);
 
-    // doWithdraw uses accountSendExact internally; super-ULP value-transfer
-    // mismatches return tecPRECISION_LOSS, sub-ULP-at-receiver canonicalization
-    // is admitted as silent absorption.
     if (auto const ter = doWithdraw(
             view, tx, depositor, destination, vaultAccount, preFeeBalance, assetsWithdrawn, j);
         !isTesSuccess(ter))
@@ -434,20 +341,12 @@ withdrawFromVault(
     // accountSendExact above covers trust-line conservation. This remaining
     // check is orthogonal: it catches associateAsset asymmetric rounding
     // on the vault's STNumber accounting fields (sfAssetsTotal vs
-    // sfAssetsAvailable). Subtraction from already-canonicalized 16-digit
-    // STAmount values cannot promote a delta into a coarser exponent band
-    // — precision can only improve on the way down — so for canonical
-    // single-step withdrawals this check is unreachable in practice (no
-    // test exercises it today). Symmetry with the deposit helper is
-    // preserved so future changes (non-zero sfScale, multi-asset
-    // operations, or deltas constructed outside the standard pipeline)
-    // don't silently regress the asymmetric-rounding contract.
+    // sfAssetsAvailable).
     Number const afterAssetsTotal = *vault->at(sfAssetsTotal);
     Number const afterAssetsAvailable = *vault->at(sfAssetsAvailable);
     Number const totalDelta = beforeAssetsTotal - afterAssetsTotal;
     Number const availableDelta = beforeAssetsAvailable - afterAssetsAvailable;
 
-    // Catches asymmetric associateAsset rounding (same shape as deposit side).
     if (!equalAtAssetScale(
             totalDelta,
             availableDelta,
@@ -464,6 +363,124 @@ withdrawFromVault(
     }
 
     return tesSUCCESS;
+}
+
+Expected<ClampedWithdrawal, TER>
+clampAssetWithdrawal(
+    std::shared_ptr<SLE const> const& vault,
+    std::shared_ptr<SLE const> const& issuance,
+    STAmount const& amount,
+    Rules const& rules)
+{
+    auto maybeShares = assetsToSharesWithdraw(
+        vault,
+        issuance,
+        amount,
+        rules.enabled(fixCleanup3_2_0) ? TruncateShares::Yes : TruncateShares::No);
+    if (!maybeShares)
+        return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+
+    auto const shares = *maybeShares;
+    if (shares == beast::kZERO)
+        return Unexpected(tecPRECISION_LOSS);
+
+    auto const maybeAssetAmount = sharesToAssetsWithdraw(vault, issuance, shares);
+    if (!maybeAssetAmount)
+        return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+
+    auto const assetAmount = *maybeAssetAmount;
+
+    if (!rules.enabled(fixCleanup3_2_0))
+    {
+        return ClampedWithdrawal{
+            .assets = assetAmount,
+            .shares = shares,
+        };
+    }
+
+    Asset vaultAsset = vault->at(sfAsset);
+    // Since sfAssetsTotal >= sfAssetsAvailable it is guaranteed to have the coarser scale
+    int const vaultScale = scale(vault->at(sfAssetsTotal), vaultAsset);
+
+    // Clamp the final asset amount down to the vault's coarser ULP grid
+    auto const clampedAssets =
+        roundToScale(assetAmount, vaultScale, Number::RoundingMode::TowardsZero);
+
+    // Per-share NAV can fall below one coarse-grid tick (e.g. heavy loan
+    // inflation). Burning shares for zero assets destroys value — reject.
+    if (clampedAssets == beast::kZERO)
+        return Unexpected(tecPRECISION_LOSS);
+
+    maybeShares = assetsToSharesWithdraw(vault, issuance, clampedAssets);
+    if (!maybeShares)
+        return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+
+    auto const clampedShares = *maybeShares;
+
+    return ClampedWithdrawal{
+        .assets = clampedAssets,
+        .shares = clampedShares,
+    };
+}
+
+Expected<ClampedWithdrawal, TER>
+clampShareWithdrawal(
+    std::shared_ptr<SLE const> const& vault,
+    std::shared_ptr<SLE const> const& issuance,
+    STAmount const& shares,
+    Rules const& rules)
+{
+    // Shares are integer (MPT) — no share-side truncation needed.
+    // Step 1: convert the requested share count to assets at current NAV.
+    auto const maybeAssets = sharesToAssetsWithdraw(vault, issuance, shares);
+    if (!maybeAssets)
+        return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+
+    auto const assetAmount = *maybeAssets;
+
+    // Short-circuit two cases: drained-vault (NAV-conversion yielded zero;
+    // let doApply's downstream handling surface tecINSUFFICIENT_FUNDS) and
+    // pre-amendment (locked for replay — pass through unchanged).
+    if (assetAmount == beast::kZERO || !rules.enabled(fixCleanup3_2_0))
+    {
+        return ClampedWithdrawal{
+            .assets = assetAmount,
+            .shares = shares,
+        };
+    }
+
+    // Step 2: floor assets to sfAssetsTotal's grid so the rail decrements
+    // stay in lockstep (same property clampAssetWithdrawal enforces).
+    Asset const vaultAsset = vault->at(sfAsset);
+    int const vaultScale = scale(vault->at(sfAssetsTotal), vaultAsset);
+    auto const clampedAssets =
+        roundToScale(assetAmount, vaultScale, Number::RoundingMode::TowardsZero);
+
+    // Step 3: requested share count doesn't even buy 1 ULP at the coarse
+    // grid (heavily diluted vault, or sub-grid NAV). Burning shares for
+    // zero assets is value destruction — refuse.
+    if (clampedAssets == beast::kZERO)
+        return Unexpected(tecPRECISION_LOSS);
+
+    // Step 4: re-derive the share count from the clamped asset amount so
+    // assets-out and shares-burnt stay paired. The re-derived count is
+    // bounded above by the original (clampedAssets ≤ assetAmount), so the
+    // user never burns more than they asked to.
+    auto const maybeShares =
+        assetsToSharesWithdraw(vault, issuance, clampedAssets, TruncateShares::Yes);
+    if (!maybeShares)
+        return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+
+    // Step 5: re-derived shares could truncate to zero in a heavily-diluted
+    // vault where NAV < 1 ULP of total. That would deliver assets for no
+    // shares burnt — also value destruction in the opposite direction.
+    if (*maybeShares == beast::kZERO)
+        return Unexpected(tecPRECISION_LOSS);
+
+    return ClampedWithdrawal{
+        .assets = clampedAssets,
+        .shares = *maybeShares,
+    };
 }
 
 }  // namespace xrpl

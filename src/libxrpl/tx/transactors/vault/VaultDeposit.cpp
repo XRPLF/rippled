@@ -50,9 +50,9 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         return tecNO_ENTRY;
 
     auto const& account = ctx.tx[sfAccount];
-    auto const assets = ctx.tx[sfAmount];
+    auto const amount = ctx.tx[sfAmount];
     auto const vaultAsset = vault->at(sfAsset);
-    if (assets.asset() != vaultAsset)
+    if (amount.asset() != vaultAsset)
         return tecWRONG_ASSET;
 
     auto const& vaultAccount = vault->at(sfAccount);
@@ -64,7 +64,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
 
     auto const mptIssuanceID = vault->at(sfShareMPTID);
     auto const vaultShare = MPTIssue(mptIssuanceID);
-    if (vaultShare == assets.asset())
+    if (vaultShare == amount.asset())
     {
         // LCOV_EXCL_START
         JLOG(ctx.j.error()) << "VaultDeposit: vault shares and assets cannot be same.";
@@ -123,25 +123,34 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     if (auto const ter = requireAuth(ctx.view, vaultAsset, account); !isTesSuccess(ter))
         return ter;
 
-    if (accountHolds(
-            ctx.view,
-            account,
-            vaultAsset,
-            FreezeHandling::ZeroIfFrozen,
-            AuthHandling::ZeroIfUnauthorized,
-            ctx.j,
-            SpendableHandling::FullBalance) < assets)
+    auto const accountBalance = accountHolds(
+        ctx.view,
+        account,
+        vaultAsset,
+        FreezeHandling::ZeroIfFrozen,
+        AuthHandling::ZeroIfUnauthorized,
+        ctx.j,
+        SpendableHandling::FullBalance);
+
+    if (accountBalance < amount)
         return tecINSUFFICIENT_FUNDS;
 
-    // Post-fixCleanup3_2_0 preclaim precision guard.
-    // See VaultHelpers.h "Vault asset accounting precision" for the bug
-    // class, defense layers, and granularity-floor trade-off. Pass the
-    // depositor as counterparty so a coarse-scale sender TL whose
-    // subtraction would canonicalize to a no-op is rejected here rather
-    // than relying on the finalize-time deposit-must-decrease-depositor
-    // invariant.
-    if (auto const ret = canApplyToVault(ctx.view, vault, assets, ctx.j, "VaultDeposit", account))
-        return ret;
+    if (ctx.view.rules().enabled(fixCleanup3_2_0))
+    {
+        // Counterparty-scale guard: reject IOU deposits whose subtraction
+        // would canonicalize to a no-op at the depositor's trust-line scale.
+        // Skipped for issuer-as-depositor: accountHolds returns the sentinel
+        // (kMAX_VALUE @ kMAX_OFFSET) which would always trip the predicate.
+        bool const depositorIsIssuer =
+            amount.holds<Issue>() && account == amount.get<Issue>().getIssuer();
+        if (amount.holds<Issue>() && !depositorIsIssuer &&
+            amount.isZeroAtScale(scale(accountBalance, vaultAsset)))
+        {
+            JLOG(ctx.j.warn()) << "VaultDeposit: amount " << amount.getFullText()
+                               << " rounds to zero at counterparty trust-line scale";
+            return tecPRECISION_LOSS;
+        }
+    }
 
     return tesSUCCESS;
 }
@@ -153,27 +162,24 @@ VaultDeposit::doApply()
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const txAmount = ctx_.tx[sfAmount];
-    // Clamp the deposit to the vault's coarsest grid (Downward — never
-    // exceed the signed amount) so a sub-ULP tail can't be absorbed  while shares mint on the
-    // original amount. Residual sub-ULP noise from the shares-roundtrip is admitted by
-    // accountSendExact's lenient predicate; larger mismatches are rejected there.
-    STAmount amount = txAmount;
-    if (view().rules().enabled(fixCleanup3_2_0) && !amount.native() && !amount.holds<MPTIssue>())
-    {
+    // Post-amendment IOU only: clamp Downward to the coarsest rail's grid so
+    // a sub-ULP tail can't be silently absorbed by one rail and not the other.
+    auto const amount = [&]() -> STAmount {
+        if (!view().rules().enabled(fixCleanup3_2_0) || !ctx_.tx[sfAmount].holds<Issue>())
+            return ctx_.tx[sfAmount];
+
         Asset const vaultAsset = vault->at(sfAsset);
         int const maxScale = std::max(
             scale(vault->at(sfAssetsAvailable), vaultAsset),
             scale(vault->at(sfAssetsTotal), vaultAsset));
-        Number const clamped =
-            roundToAsset(vaultAsset, txAmount, maxScale, Number::RoundingMode::Downward);
-        if (clamped == beast::kZERO)
-        {
-            JLOG(j_.warn()) << "VaultDeposit: amount " << txAmount.getFullText()
-                            << " clamps to zero at vault scale " << maxScale;
-            return tecPRECISION_LOSS;
-        }
-        amount = STAmount{vaultAsset, clamped};
+        return roundToScale(ctx_.tx[sfAmount], maxScale, Number::RoundingMode::Downward);
+    }();
+
+    if (amount == beast::kZERO)
+    {
+        JLOG(j_.warn()) << "VaultDeposit: amount " << ctx_.tx[sfAmount]
+                        << " clamps to zero at vault scale";
+        return tecPRECISION_LOSS;
     }
 
     // Make sure the depositor can hold shares.

@@ -16,99 +16,28 @@
 
 namespace xrpl {
 
-// =============================================================================================
-// Vault asset accounting precision (fixCleanup3_2_0)
-// =============================================================================================
-//
-// A vault tracks two STNumber accounting fields:
-//   - sfAssetsTotal       — total accounted assets, including outstanding loan value.
-//   - sfAssetsAvailable   — assets the vault pseudo-account actually holds (mirrors its IOU TL).
-//
-// With outstanding loans, sfAssetsAvailable < sfAssetsTotal, and the two can land in different
-// IOU exponent bands. Different bands → different ULPs.
-//
-// Bug — silent SLE asymmetric rounding: when the fields sit at different scales, the same request
-// canonicalizes differently on each. The pseudo-account trustline and sfAssetsAvailable apply the
-// exact delta; sfAssetsTotal rounds to the nearest multiple of its (coarser) ULP, drifting by up to
-// one ULP. Repeated ops accumulate dust until the vault conservation invariant trips.
-//
-//   Example: sfAssetsTotal at 1.5×10^16 (ULP=10), sfAssetsAvailable at 5×10^15 (ULP=1).
-//   A 7-unit withdrawal: pseudo TL and sfAssetsAvailable lose 7 (exact); sfAssetsTotal loses 10.
-//   sfAssetsTotal under-states accounted assets by 3.
-//
-// Defense layers (post-fixCleanup3_2_0):
-//
-//   1. canApplyToVault preclaim guard. Two legs, both return tecPRECISION_LOSS:
-//        a. Rail sub-ULP — reject when the request rounds to zero at sfAssetsAvailable's scale
-//           (silent absorption). Uses roundsToZeroAtScale().
-//        b. Coarser-scale lossless — only when sfAssetsTotal sits coarser than sfAssetsAvailable
-//            require the request rounds losslessly at sfAssetsTotal's scale. Uses
-//            roundsLosslesslyAtScale(). Skipping the leg when scales match avoids over-
-//           rejecting legitimate same-scale fractional ops (e.g. share-denominated withdraws
-//           whose NAV-derived asset amount has fractional precision). Same-scale tail
-//           absorption on deposits is handled by caller-side clamping in
-//           VaultDeposit::doApply rather than predicate rejection — the user pays only the
-//           clamped amount, the remainder stays in their wallet, and shares mint on the
-//           clamped value (no dilution).
-//
-//   2. accountSendExact wraps every value transfer on these rails: depositToVault, via
-//      doWithdraw in withdrawFromVault, and the direct issuer-bound transfer in VaultClawback.
-//      Two-sided shape compares sender loss to receiver gain across both trust lines;
-//      destroy shape (to == issuer) verifies the sender's delta in isolation, catching
-//      sub-ULP sender-side absorption that the preclaim guard can't anticipate when the
-//      holder's trust line sits at a different scale than sfAssetsAvailable.
-//
-//   3. equalAtAssetScale cross-check (in depositToVault and withdrawFromVault). Defense-in-depth
-//      at the coarser field's scale; lenient by design (tolerates the 1-ULP drift the preclaim
-//      guard catches upfront) and guards against grosser corruption.
-//
-// Trade-off — granularity floor: in the loan-trapped state, leg (b) rejects any request that
-// isn't a clean multiple of the coarser ULP. A holder with a 7-unit stake (per the example)
-// can't withdraw via any denomination until outstanding loans repay and sfAssetsAvailable grows
-// back into sfAssetsTotal's exponent band. Deposit-side same-scale clamping (see
-// VaultDeposit::doApply) sidesteps this for new deposits by transferring only the representable
-// portion of the user's request and leaving the remainder in the depositor's wallet.
-//
-// Applies symmetrically to VaultDeposit, VaultWithdraw, VaultClawback.
-//
-// =============================================================================================
-
-/** Vault preclaim precision guard. Catches:
- *    - silent absorption on the vault rail (request rounds to zero at
- *      sfAssetsAvailable's scale);
- *    - asymmetric SLE rounding in the loan-trapped state (request fails
- *      lossless canonicalization at sfAssetsTotal's coarser scale);
- *    - counterparty-rail absorption when supplied (request rounds to zero
- *      at the counterparty's trust-line scale — e.g. a depositor with a
- *      coarse-scale TL whose subtraction would canonicalize back to its
- *      pre-state balance, or a withdrawal destination whose addition
- *      would canonicalize back to its pre-state balance). Without this
- *      leg the lenient accountSendExact predicate admits 0-vs-N as
- *      conserved when one endpoint sits in a coarser exponent band,
- *      relying on the finalize-time deposit/withdraw invariants to
- *      catch the inconsistency.
- *  Same-scale tail absorption on the vault side is intentionally not
- *  rejected here — VaultDeposit::doApply applies caller-side clamping
- *  for that case.
+/**
+ * Vault preclaim precision guard (fixCleanup3_2_0).
  *
- *  Returns tesSUCCESS when the amendment is disabled, when amount is zero,
- *  or when the request passes both legs. Returns tecPRECISION_LOSS on
- *  rejection. The amount==0 short-circuit lets drained-vault and "all
- *  available" sentinel callers fall through to their downstream
- *  INSUFFICIENT_FUNDS / INTERNAL handling rather than re-encoding the
- *  amount==0 contract at every call site.
+ * Prevents asymmetric drift between `sfAssetsTotal` and `sfAssetsAvailable`
+ * when they live in different IOU exponent bands. Two checks return `tecPRECISION_LOSS`:
+ *  1. Rail sub-ULP: reject if `amount` rounds to zero at `sfAssetsAvailable`'s
+ *     scale.
+ *  2. Coarser-scale lossless (only when `sfAssetsTotal` sits coarser than
+ *     `sfAssetsAvailable`): reject if `amount` is not representable losslessly
+ *     at `sfAssetsTotal`'s scale.
  *
- *  Share-denominated requests must be converted to their asset equivalent
- *  via sharesToAssetsWithdraw before invoking; the doApply SLE subtraction
- *  operates on the converted value, so the predicate must too. The STAmount
- *  argument carries the vault asset for the log message — the predicate
- *  itself only reads the numeric magnitude.
+ * Trade-off: in a loan-trapped state, check (2) rejects any request that isn't
+ * a clean multiple of the coarser ULP.
  *
- *  @param view       Apply view (rules used for amendment gating).
- *  @param vault      The vault SLE (read-only).
- *  @param amount     Asset-denominated effective subtraction/addition amount.
- *  @param j          Journal for logging.
- *  @param logPrefix  Transactor name for log diagnostics (e.g. "VaultDeposit").
+ * Note: Share-denominated requests must be converted via `sharesToAssetsWithdraw`
+ * before calling.
+ *
+ * @param view         Apply view (rules used for amendment gating).
+ * @param vault        The vault SLE (read-only).
+ * @param amount       Asset-denominated effective subtraction/addition.
+ * @param j            Journal for logging.
+ * @param logPrefix    Transactor name for log diagnostics.
  */
 [[nodiscard]] TER
 canApplyToVault(
@@ -116,8 +45,7 @@ canApplyToVault(
     SLE::const_ref vault,
     STAmount const& amount,
     beast::Journal j,
-    std::string_view logPrefix,
-    std::optional<AccountID> const& counterparty = std::nullopt);
+    std::string_view logPrefix);
 
 /** From the perspective of a vault, return the number of shares to give
     depositor when they offer a fixed amount of assets. Note, since shares are
@@ -189,28 +117,65 @@ sharesToAssetsWithdraw(
     std::shared_ptr<SLE const> const& issuance,
     STAmount const& shares);
 
-/** Apply the asset-side of a vault deposit.
+/** Aligned (shares, assets) pair for a VaultWithdraw rail update. */
+struct ClampedWithdrawal
+{
+    STAmount assets;
+    STAmount shares;
+};
 
-    Increments the vault's asset accounting fields, transfers assets from the
-    depositor to the vault pseudo-account, runs `associateAsset` on the vault
-    SLE so any STNumber rounding to the asset's scale is observable, and then
-    verifies that the resulting deltas match the requested amount. If
-    `associateAsset` (or any other rounding step) silently dropped precision,
-    the verification fails with `tecPRECISION_LOSS` and the partial mutation
-    is rolled back via standard tec-class semantics.
+/**
+ * Clamp an asset-denominated withdraw to the vault's coarsest grid.
+ *
+ * Pre-amendment: returns the legacy round-trip
+ * (`assetsToSharesWithdraw` no-truncate → `sharesToAssetsWithdraw`).
+ *
+ * Post-amendment: truncates shares, re-derives assets, floors the asset
+ * round-trip down to `sfAssetsTotal`'s scale, and re-derives shares from the
+ * clamped assets so the two rails decrement in lockstep. Returns
+ * `tecPRECISION_LOSS` when the request is sub-share or sub-asset dust.
+ */
+Expected<ClampedWithdrawal, TER>
+clampAssetWithdrawal(
+    std::shared_ptr<SLE const> const& vault,
+    std::shared_ptr<SLE const> const& issuance,
+    STAmount const& amount,
+    Rules const& rules);
 
-    @param view The apply view.
-    @param vault The vault SLE (peeked, will be mutated).
-    @param depositor The account depositing assets.
-    @param assetsDeposited The amount of assets to be deposited.
-    @param j Journal for logging.
+/**
+ * Clamp a share-denominated withdraw to the vault's coarsest grid.
+ *
+ * Drained-vault short-circuit: if the NAV-conversion yields zero assets,
+ * passes through so `doApply`'s `accountHolds` check can surface
+ * `tecINSUFFICIENT_FUNDS`.
+ *
+ * Pre-amendment: returns the legacy pass-through after the short-circuit.
+ *
+ * Post-amendment: floors the asset round-trip down to `sfAssetsTotal`'s scale,
+ * then re-derives shares from the clamped assets. Returns `tecPRECISION_LOSS`
+ * on sub-asset dust or when the re-derived share count truncates to zero
+ * (heavily diluted vault where NAV < 1 ULP).
+ */
+Expected<ClampedWithdrawal, TER>
+clampShareWithdrawal(
+    std::shared_ptr<SLE const> const& vault,
+    std::shared_ptr<SLE const> const& issuance,
+    STAmount const& shares,
+    Rules const& rules);
 
-    @return tesSUCCESS on success; tecLIMIT_EXCEEDED if the deposit would push
-            the vault past its `sfAssetsMaximum`; tecPRECISION_LOSS if any
-            ledger field or trust-line balance changed by an amount different
-            than `assetsDeposited`; tefINTERNAL on impossible internal states;
-            otherwise the result of the underlying `accountSend`.
-*/
+/**
+ * Applies the asset-side of a vault deposit.
+ *
+ * Execution steps:
+ * 1. Increments the vault's asset accounting fields.
+ * 2. Transfers assets from the `depositor` to the vault pseudo-account.
+ * 3. Runs `associateAsset` on the vault SLE.
+ * 4. Verifies that the resulting deltas exactly match the requested amount.
+ *
+ * Note: If `associateAsset` (or any other step) silently drops precision due
+ * to rounding, the delta verification fails with `tecPRECISION_LOSS` and the
+ * partial mutation is safely rolled back via standard tec-class semantics.
+ */
 [[nodiscard]] TER
 depositToVault(
     ApplyView& view,
@@ -219,36 +184,22 @@ depositToVault(
     STAmount const& assetsDeposited,
     beast::Journal j);
 
-/** Apply the asset-side of a vault withdrawal.
-
-    Decrements the vault's asset accounting fields, transfers shares from the
-    depositor back to the vault pseudo-account (and removes their empty
-    MPToken if applicable), runs `associateAsset` on the vault SLE, then
-    transfers the requested assets from the vault pseudo-account to the
-    destination via `doWithdraw`. Post-amendment, verifies that the resulting
-    deltas match the requested amount and returns `tecPRECISION_LOSS` on
-    silent rounding mismatches before the withdrawal invariants would fire.
-
-    @param view The apply view.
-    @param tx The triggering transaction (forwarded to `doWithdraw` for
-        deposit-preauth and destination-tag checks).
-    @param vault The vault SLE (peeked, will be mutated).
-    @param depositor The account redeeming shares.
-    @param destination The account receiving the assets (may equal depositor).
-    @param preFeeBalance The depositor's pre-fee XRP balance, forwarded to
-        `doWithdraw` and used by `addEmptyHolding` to verify the reserve when
-        destination == depositor and a new trust line / MPToken needs to be
-        created for the inbound assets.
-    @param assetsWithdrawn The amount of assets to be withdrawn.
-    @param sharesRedeemed The amount of shares to be burned in exchange.
-    @param j Journal for logging.
-
-    @return tesSUCCESS on success; tecINSUFFICIENT_FUNDS if the vault's
-            available balance is too low; tecPRECISION_LOSS if any ledger
-            field or trust-line balance changed by an amount different than
-            `assetsWithdrawn`; otherwise the result of the underlying
-            `accountSend`, `removeEmptyHolding`, or `doWithdraw`.
-*/
+/**
+ * Applies the asset-side of a vault withdrawal.
+ *
+ * Execution steps:
+ * 1. Decrements the vault's asset accounting fields.
+ * 2. Transfers shares from the `depositor` back to the vault pseudo-account
+ * (removing their empty MPToken if applicable).
+ * 3. Runs `associateAsset` on the vault SLE.
+ * 4. Transfers `assetsWithdrawn` from the vault pseudo-account to the
+ * `destination` via `doWithdraw`.
+ * 5. Verifies that the resulting deltas exactly match the requested amount.
+ *
+ * Note: Post-amendment, the delta verification catches silent rounding
+ * mismatches and safely returns `tecPRECISION_LOSS` before the broader
+ * withdrawal invariants have a chance to fire.
+ */
 [[nodiscard]] TER
 withdrawFromVault(
     ApplyView& view,
@@ -260,5 +211,4 @@ withdrawFromVault(
     STAmount const& assetsWithdrawn,
     STAmount const& sharesRedeemed,
     beast::Journal j);
-
 }  // namespace xrpl

@@ -1755,4 +1755,16 @@ equalAtAssetScale(
     return roundToAsset(asset, a, coarserScale) == roundToAsset(asset, b, coarserScale);
 }
 
+[[nodiscard]] bool
+STAmount::isZeroAtScale(int scale) const noexcept
+{
+    return roundToScale(*this, scale).signum() == 0;
+}
+
+[[nodiscard]] bool
+STAmount::isExactAtScale(int scale) const noexcept
+{
+    return roundToScale(*this, scale) == *this;
+}
+
 }  // namespace xrpl

@@ -184,6 +184,27 @@ public:
     [[nodiscard]] STAmount const&
     value() const noexcept;
 
+    /**
+     * Checks if this amount evaluates to zero when constrained to a specific
+     * accounting scale.
+     *
+     * @param scale The target accounting scale to evaluate against.
+     * @return `true` if this amount rounds to zero at the given scale,
+     * `false` otherwise.
+     */
+    [[nodiscard]] bool
+    isZeroAtScale(int scale) const noexcept;
+
+    /**
+     * Checks if this amount is exactly representable at a specific accounting
+     * scale without any loss of precision.
+     *
+     * @param scale The target accounting scale to evaluate against.
+     * @return `true` if this amount fits perfectly at the given scale without
+     * rounding, `false` if precision would be lost.
+     */
+    [[nodiscard]] bool
+    isExactAtScale(int scale) const noexcept;
     //--------------------------------------------------------------------------
     //
     // Operators
@@ -580,7 +601,6 @@ isLegalNet(STAmount const& value)
 {
     return !value.native() || (value.mantissa() <= STAmount::kMAX_NATIVE_N);
 }
-
 //------------------------------------------------------------------------------
 //
 // Operators

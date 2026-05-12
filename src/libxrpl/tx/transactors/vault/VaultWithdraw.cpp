@@ -150,16 +150,6 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     if (auto const ret = checkFrozen(ctx.view, account, Asset{vaultShare}))
         return ret;
 
-    // For share-denominated requests whose NAV-conversion yields zero
-    // (drained vault or total loss), canApplyToVault short-circuits
-    // on amount == 0 so the downstream INSUFFICIENT_FUNDS / INTERNAL /
-    // INVARIANT_FAILED handling in doApply surfaces the right error.
-    // No counterparty argument: withdraws intentionally admit receiver-
-    // side absorption (the "stuck vault drains, value returns to the
-    // issuer's obligation pool" path — see testBugStuckVaultReceiverAtEdge).
-    if (auto const ret = canApplyToVault(ctx.view, vault, assetAmount, ctx.j, "VaultWithdraw"))
-        return ret;
-
     return tesSUCCESS;
 }
 
@@ -193,36 +183,14 @@ VaultWithdraw::doApply()
     STAmount assetsWithdrawn;
     try
     {
-        if (amount.asset() == vaultAsset)
-        {
-            // Fixed assets, variable shares.
-            {
-                auto const maybeShares = assetsToSharesWithdraw(vault, sleIssuance, amount);
-                if (!maybeShares)
-                    return tecINTERNAL;  // LCOV_EXCL_LINE
-                sharesRedeemed = *maybeShares;
-            }
+        auto const maybeResult = amount.asset() == vaultAsset
+            ? clampAssetWithdrawal(vault, sleIssuance, amount, view().rules())
+            : clampShareWithdrawal(vault, sleIssuance, amount, view().rules());
+        if (!maybeResult)
+            return maybeResult.error();
 
-            if (sharesRedeemed == beast::kZERO)
-                return tecPRECISION_LOSS;
-            auto const maybeAssets = sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed);
-            if (!maybeAssets)
-                return tecINTERNAL;  // LCOV_EXCL_LINE
-            assetsWithdrawn = *maybeAssets;
-        }
-        else if (amount.asset() == share)
-        {
-            // Fixed shares, variable assets.
-            sharesRedeemed = amount;
-            auto const maybeAssets = sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed);
-            if (!maybeAssets)
-                return tecINTERNAL;  // LCOV_EXCL_LINE
-            assetsWithdrawn = *maybeAssets;
-        }
-        else
-        {
-            return tefINTERNAL;  // LCOV_EXCL_LINE
-        }
+        sharesRedeemed = maybeResult->shares;
+        assetsWithdrawn = maybeResult->assets;
     }
     catch (std::overflow_error const&)
     {
@@ -247,12 +215,9 @@ VaultWithdraw::doApply()
 
     auto const dstAcct = ctx_.tx[~sfDestination].value_or(account_);
 
-    // Receiver-side IOU canonicalization absorption: when the destination's
-    // trust line sits in a coarser exponent band than the requested amount,
-    // the inflow rounds to zero. Post-fixCleanup3_2_0, VaultInvariant's IOU
-    // carve-out admits this as silent absorption (vault drains, shares burn,
-    // unit returns to issuer's obligation pool); see ValidVault::finalize for
-    // the policy details and the safety net for super-ULP discrepancies.
+    // Receiver-side IOU absorption (destination TL at a coarser scale than
+    // the inflow) is admitted by ValidVault::finalize as silent absorption —
+    // stuck-vault drain semantics. See that invariant for the safety net.
     return withdrawFromVault(
         view(),
         ctx_.tx,

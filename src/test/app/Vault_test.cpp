@@ -3406,8 +3406,10 @@ class Vault_test : public beast::unit_test::Suite
         };
 
         auto testCase = [&, this](
-                            std::uint8_t scale, std::function<void(Env & env, Data data)> test) {
-            Env env{*this, testableAmendments()};
+                            std::uint8_t scale,
+                            std::function<void(Env & env, Data data)> test,
+                            FeatureBitset features = testableAmendments()) {
+            Env env{*this, features};
             Account const owner{"owner"};
             Account const issuer{"issuer"};
             Account const depositor{"depositor"};
@@ -3793,186 +3795,214 @@ class Vault_test : public beast::unit_test::Suite
             }
         });
 
-        testCase(1, [&, this](Env& env, Data d) {
-            // initial setup: deposit 100 IOU, receive 1000 shares
-            auto const start = env.balance(d.depositor, d.assets).number();
-            auto tx = d.vault.deposit(
-                {.depositor = d.depositor,
-                 .id = d.keylet.key,
-                 .amount = STAmount(d.asset, Number(100, 0))});
-            env(tx);
-            env.close();
-            BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(1000));
-            BEAST_EXPECT(
-                env.balance(d.depositor, d.assets) == STAmount(d.asset, start - Number(100, 0)));
-            BEAST_EXPECT(
-                env.balance(d.vaultAccount, d.assets) == STAmount(d.asset, Number(100, 0)));
-            BEAST_EXPECT(
-                env.balance(d.vaultAccount, d.shares) == STAmount(d.share, Number(-1000, 0)));
+        // Asset-denominated withdraw sequence at sfScale=1. Pre-fixCleanup3_2_0
+        // the share-rounding step is round-to-nearest (MPT canonicalization);
+        // post-amendment clampAssetWithdrawal truncates and applies a final
+        // coarse-grid clamp. The cumulative vault state therefore diverges,
+        // so we run the whole sequence twice, once per amendment state.
+        auto runScaleWithdrawSequence = [&testCase, this](FeatureBitset features) {
+            bool const cleanupActive = features[fixCleanup3_2_0];
+            std::string const suffix =
+                cleanupActive ? " (post-fixCleanup3_2_0)" : " (pre-fixCleanup3_2_0)";
+            testCase(
+                1,
+                [&, this, cleanupActive, suffix](Env& env, Data d) {
+                    // initial setup: deposit 100 IOU, receive 1000 shares
+                    auto const start = env.balance(d.depositor, d.assets).number();
+                    auto tx = d.vault.deposit(
+                        {.depositor = d.depositor,
+                         .id = d.keylet.key,
+                         .amount = STAmount(d.asset, Number(100, 0))});
+                    env(tx);
+                    env.close();
+                    BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(1000));
+                    BEAST_EXPECT(
+                        env.balance(d.depositor, d.assets) ==
+                        STAmount(d.asset, start - Number(100, 0)));
+                    BEAST_EXPECT(
+                        env.balance(d.vaultAccount, d.assets) == STAmount(d.asset, Number(100, 0)));
+                    BEAST_EXPECT(
+                        env.balance(d.vaultAccount, d.shares) ==
+                        STAmount(d.share, Number(-1000, 0)));
 
-            {
-                testcase("Scale withdraw exact");
-                // assetsToSharesWithdraw:
-                //  shares = sharesTotal * (assets / assetsTotal)
-                //  shares = 1000 * 10 / 100 = 1000 * 0.1 = 100
-                // sharesToAssetsWithdraw:
-                //  assets = assetsTotal * (shares / sharesTotal)
-                //  assets = 100 * 100 / 1000 = 100 * 0.1 = 10
+                    {
+                        testcase("Scale withdraw exact" + suffix);
+                        // assetsToSharesWithdraw:
+                        //  shares = sharesTotal * (assets / assetsTotal)
+                        //  shares = 1000 * 10 / 100 = 1000 * 0.1 = 100
+                        // sharesToAssetsWithdraw:
+                        //  assets = assetsTotal * (shares / sharesTotal)
+                        //  assets = 100 * 100 / 1000 = 100 * 0.1 = 10
 
-                auto const start = env.balance(d.depositor, d.assets).number();
-                auto tx = d.vault.withdraw(
-                    {.depositor = d.depositor,
-                     .id = d.keylet.key,
-                     .amount = STAmount(d.asset, Number(10, 0))});
-                env(tx);
-                env.close();
-                BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(900));
-                BEAST_EXPECT(
-                    env.balance(d.depositor, d.assets) == STAmount(d.asset, start + Number(10, 0)));
-                BEAST_EXPECT(
-                    env.balance(d.vaultAccount, d.assets) == STAmount(d.asset, Number(90, 0)));
-                BEAST_EXPECT(
-                    env.balance(d.vaultAccount, d.shares) == STAmount(d.share, Number(-900, 0)));
-            }
+                        auto const start = env.balance(d.depositor, d.assets).number();
+                        auto tx = d.vault.withdraw(
+                            {.depositor = d.depositor,
+                             .id = d.keylet.key,
+                             .amount = STAmount(d.asset, Number(10, 0))});
+                        env(tx);
+                        env.close();
+                        BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(900));
+                        BEAST_EXPECT(
+                            env.balance(d.depositor, d.assets) ==
+                            STAmount(d.asset, start + Number(10, 0)));
+                        BEAST_EXPECT(
+                            env.balance(d.vaultAccount, d.assets) ==
+                            STAmount(d.asset, Number(90, 0)));
+                        BEAST_EXPECT(
+                            env.balance(d.vaultAccount, d.shares) ==
+                            STAmount(d.share, Number(-900, 0)));
+                    }
 
-            {
-                testcase("Scale withdraw insignificant amount");
-                auto tx = d.vault.withdraw(
-                    {.depositor = d.depositor,
-                     .id = d.keylet.key,
-                     .amount = STAmount(d.asset, Number(4, -2))});
-                env(tx, Ter{tecPRECISION_LOSS});
-            }
+                    {
+                        testcase("Scale withdraw insignificant amount" + suffix);
+                        auto tx = d.vault.withdraw(
+                            {.depositor = d.depositor,
+                             .id = d.keylet.key,
+                             .amount = STAmount(d.asset, Number(4, -2))});
+                        env(tx, Ter{tecPRECISION_LOSS});
+                    }
 
-            {
-                testcase("Scale withdraw with rounding assets");
-                // assetsToSharesWithdraw:
-                //  shares = sharesTotal * (assets / assetsTotal)
-                //  shares = 900 * 2.5 / 90 = 900 * 0.02777... = 25
-                // sharesToAssetsWithdraw:
-                //  assets = assetsTotal * (shares / sharesTotal)
-                //  assets = 90 * 25 / 900 = 90 * 0.02777... = 2.5
+                    {
+                        testcase("Scale withdraw with rounding assets" + suffix);
+                        // assetsToSharesWithdraw:
+                        //  shares = sharesTotal * (assets / assetsTotal)
+                        //  shares = 900 * 2.5 / 90 = 900 * 0.02777... = 25
+                        // sharesToAssetsWithdraw:
+                        //  assets = assetsTotal * (shares / sharesTotal)
+                        //  assets = 90 * 25 / 900 = 90 * 0.02777... = 2.5
 
-                auto const start = env.balance(d.depositor, d.assets).number();
-                d.peek([](SLE& vault, auto&) -> bool {
-                    vault[sfAssetsAvailable] = Number(1);
-                    return true;
-                });
+                        auto const start = env.balance(d.depositor, d.assets).number();
+                        d.peek([](SLE& vault, auto&) -> bool {
+                            vault[sfAssetsAvailable] = Number(1);
+                            return true;
+                        });
 
-                // Note, this transaction fails first (because of above change
-                // in the open ledger) but then succeeds when the ledger is
-                // closed (because a modification like above is not persistent),
-                // which is why the checks below are expected to pass.
-                auto tx = d.vault.withdraw(
-                    {.depositor = d.depositor,
-                     .id = d.keylet.key,
-                     .amount = STAmount(d.asset, Number(25, -1))});
-                env(tx, Ter{tecINSUFFICIENT_FUNDS});
-                env.close();
-                BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(900 - 25));
-                BEAST_EXPECT(
-                    env.balance(d.depositor, d.assets) ==
-                    STAmount(d.asset, start + Number(25, -1)));
-                BEAST_EXPECT(
-                    env.balance(d.vaultAccount, d.assets) ==
-                    STAmount(d.asset, Number(900 - 25, -1)));
-                BEAST_EXPECT(
-                    env.balance(d.vaultAccount, d.shares) ==
-                    STAmount(d.share, -Number(900 - 25, 0)));
-            }
+                        // Note, this transaction fails first (because of above change
+                        // in the open ledger) but then succeeds when the ledger is
+                        // closed (because a modification like above is not persistent),
+                        // which is why the checks below are expected to pass.
+                        auto tx = d.vault.withdraw(
+                            {.depositor = d.depositor,
+                             .id = d.keylet.key,
+                             .amount = STAmount(d.asset, Number(25, -1))});
+                        env(tx, Ter{tecINSUFFICIENT_FUNDS});
+                        env.close();
+                        BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(900 - 25));
+                        BEAST_EXPECT(
+                            env.balance(d.depositor, d.assets) ==
+                            STAmount(d.asset, start + Number(25, -1)));
+                        BEAST_EXPECT(
+                            env.balance(d.vaultAccount, d.assets) ==
+                            STAmount(d.asset, Number(900 - 25, -1)));
+                        BEAST_EXPECT(
+                            env.balance(d.vaultAccount, d.shares) ==
+                            STAmount(d.share, -Number(900 - 25, 0)));
+                    }
 
-            {
-                testcase("Scale withdraw with rounding shares up");
-                // assetsToSharesWithdraw:
-                //  shares = sharesTotal * (assets / assetsTotal)
-                //  shares = 875 * 3.75 / 87.5 = 875 * 0.042857... = 37.5
-                // sharesToAssetsWithdraw:
-                //  assets = assetsTotal * (shares / sharesTotal)
-                //  assets = 87.5 * 38 / 875 = 87.5 * 0.043428... = 3.8
+                    {
+                        testcase("Scale withdraw with rounding shares up" + suffix);
+                        // shares = 875 * 3.75 / 87.5 = 37.5
+                        //   pre  → round-to-nearest → 38, assets back = 87.5*38/875 = 3.8
+                        //   post → truncate         → 37, assets back = 87.5*37/875 = 3.7
 
-                auto const start = env.balance(d.depositor, d.assets).number();
-                auto tx = d.vault.withdraw(
-                    {.depositor = d.depositor,
-                     .id = d.keylet.key,
-                     .amount = STAmount(d.asset, Number(375, -2))});
-                env(tx);
-                env.close();
-                BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(875 - 38));
-                BEAST_EXPECT(
-                    env.balance(d.depositor, d.assets) ==
-                    STAmount(d.asset, start + Number(38, -1)));
-                BEAST_EXPECT(
-                    env.balance(d.vaultAccount, d.assets) ==
-                    STAmount(d.asset, Number(875 - 38, -1)));
-                BEAST_EXPECT(
-                    env.balance(d.vaultAccount, d.shares) ==
-                    STAmount(d.share, -Number(875 - 38, 0)));
-            }
+                        int const burned = cleanupActive ? 37 : 38;
+                        auto const start = env.balance(d.depositor, d.assets).number();
+                        auto tx = d.vault.withdraw(
+                            {.depositor = d.depositor,
+                             .id = d.keylet.key,
+                             .amount = STAmount(d.asset, Number(375, -2))});
+                        env(tx);
+                        env.close();
+                        BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(875 - burned));
+                        BEAST_EXPECT(
+                            env.balance(d.depositor, d.assets) ==
+                            STAmount(d.asset, start + Number(burned, -1)));
+                        BEAST_EXPECT(
+                            env.balance(d.vaultAccount, d.assets) ==
+                            STAmount(d.asset, Number(875 - burned, -1)));
+                        BEAST_EXPECT(
+                            env.balance(d.vaultAccount, d.shares) ==
+                            STAmount(d.share, -Number(875 - burned, 0)));
+                    }
 
-            {
-                testcase("Scale withdraw with rounding shares down");
-                // assetsToSharesWithdraw:
-                //  shares = sharesTotal * (assets / assetsTotal)
-                //  shares = 837 * 3.72 / 83.7 = 837 * 0.04444... = 37.2
-                // sharesToAssetsWithdraw:
-                //  assets = assetsTotal * (shares / sharesTotal)
-                //  assets = 83.7 * 37 / 837 = 83.7 * 0.044205... = 3.7
+                    {
+                        testcase("Scale withdraw with rounding shares down" + suffix);
+                        // Entering state: pre 837/83.7, post 838/83.8.
+                        // shares = entering_shares * 3.72 / entering_assets ≈ 37.2/37.19...
+                        //   pre  → round-to-nearest → 37, assets = 83.7*37/837 = 3.7
+                        //   post → truncate         → 37, assets = 83.8*37/838 = 3.7
+                        // Burned/out match; cumulative state differs.
 
-                auto const start = env.balance(d.depositor, d.assets).number();
-                auto tx = d.vault.withdraw(
-                    {.depositor = d.depositor,
-                     .id = d.keylet.key,
-                     .amount = STAmount(d.asset, Number(372, -2))});
-                env(tx);
-                env.close();
-                BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(837 - 37));
-                BEAST_EXPECT(
-                    env.balance(d.depositor, d.assets) ==
-                    STAmount(d.asset, start + Number(37, -1)));
-                BEAST_EXPECT(
-                    env.balance(d.vaultAccount, d.assets) ==
-                    STAmount(d.asset, Number(837 - 37, -1)));
-                BEAST_EXPECT(
-                    env.balance(d.vaultAccount, d.shares) ==
-                    STAmount(d.share, -Number(837 - 37, 0)));
-            }
+                        int const enterShares = cleanupActive ? 838 : 837;
+                        int const burned = 37;
+                        auto const start = env.balance(d.depositor, d.assets).number();
+                        auto tx = d.vault.withdraw(
+                            {.depositor = d.depositor,
+                             .id = d.keylet.key,
+                             .amount = STAmount(d.asset, Number(372, -2))});
+                        env(tx);
+                        env.close();
+                        BEAST_EXPECT(
+                            env.balance(d.depositor, d.shares) == d.share(enterShares - burned));
+                        BEAST_EXPECT(
+                            env.balance(d.depositor, d.assets) ==
+                            STAmount(d.asset, start + Number(burned, -1)));
+                        BEAST_EXPECT(
+                            env.balance(d.vaultAccount, d.assets) ==
+                            STAmount(d.asset, Number(enterShares - burned, -1)));
+                        BEAST_EXPECT(
+                            env.balance(d.vaultAccount, d.shares) ==
+                            STAmount(d.share, -Number(enterShares - burned, 0)));
+                    }
 
-            {
-                testcase("Scale withdraw tiny amount");
+                    {
+                        testcase("Scale withdraw tiny amount" + suffix);
+                        // Entering state: pre 800/80, post 801/80.1.
+                        // shares = enter * 0.09 / enter_assets = 0.9
+                        //   pre  → round-to-nearest → 1 share, 0.1 assets out
+                        //   post → truncate         → 0 shares → tecPRECISION_LOSS
 
-                auto const start = env.balance(d.depositor, d.assets).number();
-                auto tx = d.vault.withdraw(
-                    {.depositor = d.depositor,
-                     .id = d.keylet.key,
-                     .amount = STAmount(d.asset, Number(9, -2))});
-                env(tx);
-                env.close();
-                BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(800 - 1));
-                BEAST_EXPECT(
-                    env.balance(d.depositor, d.assets) == STAmount(d.asset, start + Number(1, -1)));
-                BEAST_EXPECT(
-                    env.balance(d.vaultAccount, d.assets) ==
-                    STAmount(d.asset, Number(800 - 1, -1)));
-                BEAST_EXPECT(
-                    env.balance(d.vaultAccount, d.shares) ==
-                    STAmount(d.share, -Number(800 - 1, 0)));
-            }
+                        int const enterShares = cleanupActive ? 801 : 800;
+                        auto const start = env.balance(d.depositor, d.assets).number();
+                        auto tx = d.vault.withdraw(
+                            {.depositor = d.depositor,
+                             .id = d.keylet.key,
+                             .amount = STAmount(d.asset, Number(9, -2))});
+                        env(tx, cleanupActive ? Ter{tecPRECISION_LOSS} : Ter{tesSUCCESS});
+                        env.close();
+                        int const burned = cleanupActive ? 0 : 1;
+                        BEAST_EXPECT(
+                            env.balance(d.depositor, d.shares) == d.share(enterShares - burned));
+                        BEAST_EXPECT(
+                            env.balance(d.depositor, d.assets) ==
+                            STAmount(d.asset, start + Number(burned, -1)));
+                        BEAST_EXPECT(
+                            env.balance(d.vaultAccount, d.assets) ==
+                            STAmount(d.asset, Number(enterShares - burned, -1)));
+                        BEAST_EXPECT(
+                            env.balance(d.vaultAccount, d.shares) ==
+                            STAmount(d.share, -Number(enterShares - burned, 0)));
+                    }
 
-            {
-                testcase("Scale withdraw rest");
-                auto const rest = env.balance(d.vaultAccount, d.assets).number();
+                    {
+                        testcase("Scale withdraw rest" + suffix);
+                        auto const rest = env.balance(d.vaultAccount, d.assets).number();
 
-                tx = d.vault.withdraw(
-                    {.depositor = d.depositor,
-                     .id = d.keylet.key,
-                     .amount = STAmount(d.asset, rest)});
-                env(tx);
-                env.close();
-                BEAST_EXPECT(env.balance(d.depositor, d.shares).number() == 0);
-                BEAST_EXPECT(env.balance(d.vaultAccount, d.assets).number() == 0);
-                BEAST_EXPECT(env.balance(d.vaultAccount, d.shares).number() == 0);
-            }
-        });
+                        tx = d.vault.withdraw(
+                            {.depositor = d.depositor,
+                             .id = d.keylet.key,
+                             .amount = STAmount(d.asset, rest)});
+                        env(tx);
+                        env.close();
+                        BEAST_EXPECT(env.balance(d.depositor, d.shares).number() == 0);
+                        BEAST_EXPECT(env.balance(d.vaultAccount, d.assets).number() == 0);
+                        BEAST_EXPECT(env.balance(d.vaultAccount, d.shares).number() == 0);
+                    }
+                },
+                features);
+        };
+        runScaleWithdrawSequence(testableAmendments() - fixCleanup3_2_0);
+        runScaleWithdrawSequence(testableAmendments());
 
         testCase(18, [&, this](Env& env, Data d) {
             testcase("Scale clawback overflow");
@@ -6491,24 +6521,25 @@ class Vault_test : public beast::unit_test::Suite
         }
     }
 
-    // VaultWithdraw with sub-ULP asset-denominated amount at the
-    // vault's coarsest scale. Vault parked at 10^16 (scale 1, ULP=10);
-    // alice withdraws 5 USD asset-denominated. accountSendExact's
-    // two-sided check tolerates 5 vs 5 at scale 1 (both round to 0);
-    // the helper-level SLE cross-check tolerates the same way.
-    // VaultInvariant catches the rounded-to-zero rail delta at
-    // finalize.
-    //
-    // Post-amendment: VaultWithdraw::preclaim's sub-ULP guard rejects
-    // proactively. Anchors testWithdrawReflectsUnrealizedLoss-style
-    // cases as still passing (legitimate share withdrawals at
-    // moderate magnitudes are not affected by this guard).
+    // VaultWithdraw with sub-ULP asset-denominated amount at the vault's
+    // coarsest scale (sfAssetsTotal=10^16, ULP=10; alice withdraws 5 USD).
+    // Pre-amendment: rail delta absorbs at the coarse equality check;
+    // VaultInvariant fires at finalize. Post-amendment:
+    // clampAssetWithdrawal's sub-asset-dust guard rejects in doApply with
+    // tecPRECISION_LOSS, no rail update.
     void
     testBugSubUlpVaultWithdraw()
     {
         using namespace test::jtx;
 
-        auto runScenario = [this](FeatureBitset features, TER expected) {
+        // Pre-amendment: 5 USD sub-ULP withdraw trips the conservation
+        // invariant; the follow-up 15 USD passes cleanly (above the
+        // rail-detection ULP), 15 USD out / 15 shares burnt.
+        // Post-amendment: clampAssetWithdrawal rejects the 5 USD at its
+        // sub-asset-dust guard; the 15 USD goes through and is clamped to
+        // 10 USD with 10 shares burnt (re-derived from clamped assets).
+        auto runScenario = [&](FeatureBitset features, TER firstWithdrawTer) {
+            bool const cleanupActive = features[fixCleanup3_2_0];
             Env env(*this, features);
 
             Account const issuer{"issuer"};
@@ -6541,8 +6572,51 @@ class Vault_test : public beast::unit_test::Suite
             // Withdraw 5 USD asset-denominated. Sub-ULP at vault's
             // coarsest scale (scale 1, ULP=10).
             env(vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = usd(5)}),
-                Ter(expected));
+                Ter(firstWithdrawTer));
             env.close();
+
+            auto const balanceBefore = env.balance(alice, usd);
+            auto const vaultSleBefore = env.le(vaultKeylet);
+            MPTIssue const shareIssue{vaultSleBefore->at(sfShareMPTID)};
+            // Memoize the vault pseudo-account so env.balance(..., MPTIssue)
+            // can resolve the share issuer.
+            env.memoize(Account("vault", vaultSleBefore->at(sfAccount)));
+            auto const sharesBefore = env.balance(alice, shareIssue);
+
+            env(vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = usd(15)}),
+                Ter(tesSUCCESS));
+            env.close();
+
+            auto const balanceAfter = env.balance(alice, usd);
+            auto const vaultSleAfter = env.le(vaultKeylet);
+            auto const sharesAfter = env.balance(alice, shareIssue);
+
+            // Pre: 15 USD round-trips cleanly. Post: clampAssetWithdrawal
+            // rounds the asset output Downward to the coarse rail's ULP and
+            // re-derives the share count.
+            int const expectedAssetsOut = cleanupActive ? 10 : 15;
+            int const expectedSharesBurnt = cleanupActive ? 10 : 15;
+
+            BEAST_EXPECTS(
+                balanceAfter - balanceBefore == usd(expectedAssetsOut),
+                (balanceAfter - balanceBefore).getFullText());
+            BEAST_EXPECTS(
+                vaultSleAfter->at(sfAssetsAvailable) - vaultSleBefore->at(sfAssetsAvailable) ==
+                    -expectedAssetsOut,
+                "mismatch: " +
+                    to_string(
+                        vaultSleAfter->at(sfAssetsAvailable) -
+                        vaultSleBefore->at(sfAssetsAvailable)));
+            BEAST_EXPECTS(
+                vaultSleAfter->at(sfAssetsTotal) - vaultSleBefore->at(sfAssetsTotal) ==
+                    -expectedAssetsOut,
+                "mismatch: " +
+                    to_string(
+                        vaultSleAfter->at(sfAssetsTotal) - vaultSleBefore->at(sfAssetsTotal)));
+            STAmount const expectedSharesBurntAmt{shareIssue, expectedSharesBurnt};
+            BEAST_EXPECTS(
+                sharesBefore - sharesAfter == expectedSharesBurntAmt,
+                "shares burnt: " + to_string(sharesBefore - sharesAfter));
         };
 
         {
@@ -6553,9 +6627,84 @@ class Vault_test : public beast::unit_test::Suite
         }
         {
             testcase(
-                "bug: VaultWithdraw::preclaim catches sub-ULP withdrawal "
+                "bug: clampAssetWithdrawal catches sub-ULP withdrawal "
                 "(post-fixCleanup3_2_0)");
             runScenario(testableAmendments(), tecPRECISION_LOSS);
+        }
+    }
+
+    // Drained-vault share-denom short-circuit. After alice drains her own
+    // vault, sfAssetsTotal is zero and clampShareWithdrawal's NAV-conversion
+    // yields zero. Without the early pass-through, the sub-asset-dust guard
+    // would mask the natural tecINSUFFICIENT_FUNDS from doApply's
+    // accountHolds check. (The asset-denom path on a drained vault returns
+    // tecPRECISION_LOSS by design — exercised by testSequences:283.)
+    void
+    testBugDrainedVaultShareWithdraw()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features) {
+            Env env(*this, features);
+
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+
+            env.fund(XRP(100'000), issuer, alice);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            env(trust(alice, STAmount{usd.raw(), 1000}));
+            env.close();
+            env(pay(issuer, alice, STAmount{usd.raw(), 100}));
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
+            vaultTx[sfScale] = 0;
+            env(vaultTx);
+            env.close();
+
+            env(vault.deposit(
+                {.depositor = alice, .id = vaultKeylet.key, .amount = STAmount{usd.raw(), 100}}));
+            env.close();
+
+            // Drain via asset-denom withdraw.
+            env(vault.withdraw(
+                {.depositor = alice, .id = vaultKeylet.key, .amount = STAmount{usd.raw(), 100}}));
+            env.close();
+
+            auto const vaultSle = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(vaultSle))
+                return;
+            MPTIssue const shareIssue{vaultSle->at(sfShareMPTID)};
+            env.memoize(Account("vault", vaultSle->at(sfAccount)));
+            STAmount const zeroShares{shareIssue, 0};
+            BEAST_EXPECT(env.balance(alice, shareIssue) == zeroShares);
+
+            // Alice no longer holds any shares; the vault is drained.
+            // Share-denom withdraw must report tecINSUFFICIENT_FUNDS via
+            // doApply's accountHolds check, not tecPRECISION_LOSS from the
+            // clamp guards.
+            env(vault.withdraw(
+                    {.depositor = alice,
+                     .id = vaultKeylet.key,
+                     .amount = STAmount{shareIssue, 10}}),
+                Ter{tecINSUFFICIENT_FUNDS});
+            env.close();
+        };
+
+        {
+            testcase(
+                "bug: drained-vault withdraw surfaces INSUFFICIENT_FUNDS (pre-fixCleanup3_2_0)");
+            runScenario(testableAmendments() - fixCleanup3_2_0);
+        }
+        {
+            testcase(
+                "bug: drained-vault withdraw surfaces INSUFFICIENT_FUNDS (post-fixCleanup3_2_0)");
+            runScenario(testableAmendments());
         }
     }
 
@@ -6628,17 +6777,18 @@ class Vault_test : public beast::unit_test::Suite
 
     // Stuck vault: alice is the sole depositor with 1 USD parked in the vault. The issuer then
     // mints 10^16 USD directly to her trust line, pushing it past the 16-digit edge (mantissa
-    // 10^15, exponent 1, grid step 10). She withdraws her own 1 USD — the vault pseudo-account's
-    // outflow is clean (-1), but alice's +1 inflow is sub-ULP at her grid and canonicalizes to
-    // zero.
+    // 10^15, exponent 1, grid step 10). She withdraws her own 1 USD — the vault
+    // pseudo-account's outflow is clean (-1), but alice's +1 inflow is sub-ULP at her grid and
+    // canonicalizes to zero.
     //
     // Pre-fixCleanup3_2_0:
-    // VaultInvariant fires "withdrawal must increase destination balance" → tecINVARIANT_FAILED.
+    // VaultInvariant fires "withdrawal must increase destination balance" →
+    // tecINVARIANT_FAILED.
     //
-    // Post-amendment: the IOU-only carve-out in VaultInvariant tolerates a zero-rounded destination
-    // delta — the canonicalized-away unit returns to the issuer's obligation pool, mirroring AMM
-    // withdraw semantics. Vault drains, alice's trust-line balance stays at 10^16, her shares burn,
-    // the 1 USD evaporates.
+    // Post-amendment: the IOU-only carve-out in VaultInvariant tolerates a zero-rounded
+    // destination delta — the canonicalized-away unit returns to the issuer's obligation pool,
+    // mirroring AMM withdraw semantics. Vault drains, alice's trust-line balance stays at
+    // 10^16, her shares burn, the 1 USD evaporates.
     void
     testBugStuckVaultReceiverAtEdge()
     {
@@ -7579,6 +7729,344 @@ class Vault_test : public beast::unit_test::Suite
         }
     }
 
+    // Fixture state for VaultWithdraw / clampAssetWithdrawal scenarios.
+    // Owner deposits to create the share supply; if a loan is configured, the
+    // borrower draws from the vault to drive sfAssetsAvailable < sfAssetsTotal
+    // (placing the two fields in different exponent bands).
+    struct WithdrawClampingFixture
+    {
+        test::jtx::Account issuer;
+        test::jtx::Account owner;
+        test::jtx::Account borrower;
+        Keylet vaultKeylet;
+        Keylet brokerKeylet;  // beast::zero if no loan was created.
+        MPTID shareMPTID;
+    };
+
+    struct WithdrawClampingConfig
+    {
+        // Initial deposit by the vault owner. Drives the initial share supply
+        // (shares = deposit * 10^scale) and seeds sfAssetsTotal / Available.
+        // The asset is always the fixture's USD issuer; only the magnitude
+        // matters.
+        Number initialDeposit;
+        // sfScale on the vault SLE.
+        std::uint8_t scale = 0;
+        // Optional loan principal. If set, a loan broker is created and the
+        // borrower draws this amount, reducing sfAssetsAvailable while leaving
+        // sfAssetsTotal at `initialDeposit`.
+        std::optional<Number> loanAmount;
+        // Loan terms. Periodic rate = paymentInterval * interestRate /
+        // (10^7 * kSECONDS_IN_YEAR). Defaults to a single-period, 0% loan.
+        TenthBips32 interestRate{0};
+        std::uint32_t paymentInterval = 600;
+        std::uint32_t paymentTotal = 1;
+        // If true, advance the ledger by one paymentInterval and have the
+        // borrower repay the full outstanding (principal + accrued interest).
+        // The issuer pre-funds the borrower so they can cover interest.
+        bool repayLoan = false;
+    };
+
+    static WithdrawClampingFixture
+    setupWithdrawClampingVault(test::jtx::Env& env, WithdrawClampingConfig const& cfg)
+    {
+        using namespace test::jtx;
+
+        Account const issuer{"issuer"};
+        Account const owner{"owner"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(100'000), issuer, owner, borrower);
+        env.close();
+        env(fset(issuer, asfDefaultRipple));
+        env(fset(issuer, asfAllowTrustLineClawback));
+        env.close();
+
+        PrettyAsset const usd{issuer["USD"]};
+        // Trust limit comfortably above the largest amount we will route.
+        STAmount const trustLimit{usd.raw(), 2, 18};
+        env(trust(owner, trustLimit));
+        env(trust(borrower, trustLimit));
+        env.close();
+        STAmount const initialDepositAmt{usd.raw(), cfg.initialDeposit};
+        env(pay(issuer, owner, initialDepositAmt));
+        // Pre-fund borrower so they can cover the interest portion of any
+        // loan repayment (principal comes from the loan draw itself).
+        env(pay(issuer, borrower, initialDepositAmt));
+        env.close();
+
+        Vault const vault{env};
+        auto [vaultTx, vaultKeylet] = vault.create({.owner = owner, .asset = usd});
+        vaultTx[sfScale] = cfg.scale;
+        env(vaultTx);
+        env.close();
+
+        env(vault.deposit(
+            {.depositor = owner, .id = vaultKeylet.key, .amount = initialDepositAmt}));
+        env.close();
+
+        auto const shareMPTID = [&]() {
+            auto const sle = env.le(vaultKeylet);
+            return MPTID{sle->at(sfShareMPTID)};
+        }();
+        // Memoize the vault pseudo-account so env.balance(..., MPTIssue) can
+        // resolve the share issuer.
+        env.memoize(Account("vault", env.le(vaultKeylet)->at(sfAccount)));
+
+        Keylet brokerKeylet{ltLOAN_BROKER, uint256{}};
+        if (cfg.loanAmount && *cfg.loanAmount != Number{0})
+        {
+            brokerKeylet = keylet::loanbroker(owner.id(), env.seq(owner));
+            env(loanBroker::set(owner, vaultKeylet.key), Fee(env.current()->fees().base * 2));
+            env.close();
+
+            // Snapshot the upcoming loan's keylet before issuing the loan
+            // so we can target it for repayment.
+            auto const brokerSle = env.le(brokerKeylet);
+            Keylet const loanKeylet = keylet::loan(brokerKeylet.key, brokerSle->at(sfLoanSequence));
+
+            env(loan::set(borrower, brokerKeylet.key, *cfg.loanAmount),
+                Sig(sfCounterpartySignature, owner),
+                loan::kPAYMENT_TOTAL(cfg.paymentTotal),
+                loan::kPAYMENT_INTERVAL(cfg.paymentInterval),
+                loan::kINTEREST_RATE(cfg.interestRate),
+                Fee(env.current()->fees().base * 2));
+            env.close();
+
+            if (cfg.repayLoan)
+            {
+                auto const loanSle = env.le(loanKeylet);
+                env(loan::pay(
+                        borrower,
+                        loanKeylet.key,
+                        STAmount{usd.raw(), loanSle->at(sfTotalValueOutstanding)}),
+                    Fee(env.current()->fees().base * 2));
+                env.close();
+            }
+        }
+
+        return {
+            .issuer = issuer,
+            .owner = owner,
+            .borrower = borrower,
+            .vaultKeylet = vaultKeylet,
+            .brokerKeylet = brokerKeylet,
+            .shareMPTID = shareMPTID};
+    }
+
+    // Drives clamp[Asset|Share]Withdrawal via real VaultWithdraw transactions.
+    // One scenario per meaningful path; see each scenario's comment for the
+    // math trace.
+    void
+    testVaultWithdrawClamping()
+    {
+        using namespace test::jtx;
+
+        // Asset-denom requests run through clampAssetWithdrawal; share-denom
+        // requests run through clampShareWithdrawal.
+        enum class WithdrawDenom { Asset, Share };
+
+        struct Scenario
+        {
+            std::string name;
+            WithdrawClampingConfig setup;
+            WithdrawDenom denom;
+            Number withdrawAmount;
+            TER expectedTer;
+            // Expected post-state deltas vs. pre-withdraw snapshot. Only used
+            // when expectedTer == tesSUCCESS.
+            Number expectedAssetsOut;     // assets received by owner
+            Number expectedSharesBurned;  // shares destroyed
+        };
+
+        auto runScenario = [this](Scenario const& s) {
+            testcase(s.name);
+
+            Env env(*this, testableAmendments());
+            auto const fix = setupWithdrawClampingVault(env, s.setup);
+            Issue const usdIssue = fix.issuer["USD"];
+            MPTIssue const shareIssue{fix.shareMPTID};
+            Vault const vault{env};
+
+            auto const vaultSlePre = env.le(fix.vaultKeylet);
+            if (!BEAST_EXPECT(vaultSlePre))
+                return;
+            Number const ownerAssetsPre = env.balance(fix.owner, usdIssue).number();
+            Number const ownerSharesPre = env.balance(fix.owner, shareIssue).number();
+            Number const assetsTotalPre = vaultSlePre->at(sfAssetsTotal);
+            Number const assetsAvailablePre = vaultSlePre->at(sfAssetsAvailable);
+
+            STAmount const withdrawAmt = s.denom == WithdrawDenom::Asset
+                ? STAmount{usdIssue, s.withdrawAmount}
+                : STAmount{shareIssue, s.withdrawAmount};
+            env(vault.withdraw(
+                    {.depositor = fix.owner, .id = fix.vaultKeylet.key, .amount = withdrawAmt}),
+                Ter(s.expectedTer));
+            env.close();
+
+            auto const vaultSlePost = env.le(fix.vaultKeylet);
+            if (!BEAST_EXPECT(vaultSlePost))
+                return;
+            Number const ownerAssetsPost = env.balance(fix.owner, usdIssue).number();
+            Number const ownerSharesPost = env.balance(fix.owner, shareIssue).number();
+            Number const assetsTotalPost = vaultSlePost->at(sfAssetsTotal);
+            Number const assetsAvailablePost = vaultSlePost->at(sfAssetsAvailable);
+
+            if (s.expectedTer == tesSUCCESS)
+            {
+                BEAST_EXPECT(ownerAssetsPost - ownerAssetsPre == s.expectedAssetsOut);
+                BEAST_EXPECT(ownerSharesPre - ownerSharesPost == s.expectedSharesBurned);
+                BEAST_EXPECT(assetsTotalPre - assetsTotalPost == s.expectedAssetsOut);
+                BEAST_EXPECT(assetsAvailablePre - assetsAvailablePost == s.expectedAssetsOut);
+            }
+            else
+            {
+                BEAST_EXPECT(ownerAssetsPost == ownerAssetsPre);
+                BEAST_EXPECT(ownerSharesPost == ownerSharesPre);
+                BEAST_EXPECT(assetsTotalPost == assetsTotalPre);
+                BEAST_EXPECT(assetsAvailablePost == assetsAvailablePre);
+            }
+        };
+
+        std::vector<Scenario> scenarios = {
+            // No loan, NAV=1. Withdraw aligns with both grids — clamp is a no-op.
+            {
+                .name = "VaultWithdraw clamping: base case (no loan, NAV=1)",
+                .setup =
+                    {
+                        .initialDeposit = 100,
+                        .scale = 0,
+                        .loanAmount = std::nullopt,
+                    },
+                .denom = WithdrawDenom::Asset,
+                .withdrawAmount = 10,
+                .expectedTer = tesSUCCESS,
+                .expectedAssetsOut = 10,
+                .expectedSharesBurned = 10,
+            },
+            // 0.5 / NAV=1 = 0.5 shares → truncates to 0 → first guard fires.
+            {
+                .name = "VaultWithdraw clamping: sub-share dust → tecPRECISION_LOSS",
+                .setup =
+                    {
+                        .initialDeposit = 100,
+                        .scale = 0,
+                        .loanAmount = std::nullopt,
+                    },
+                .denom = WithdrawDenom::Asset,
+                .withdrawAmount = Number{5, -1},
+                .expectedTer = tecPRECISION_LOSS,
+                .expectedAssetsOut = 0,
+                .expectedSharesBurned = 0,
+            },
+            // NAV=1.5 via 50% APR loan repaid in one period (10 → 15 total,
+            // shares=10). Request 4 → 4/1.5=2.66 truncates to 2 shares → 3 out.
+            {
+                .name = "VaultWithdraw clamping: share-only truncation (NAV=1.5)",
+                .setup =
+                    {
+                        .initialDeposit = 10,
+                        .scale = 0,
+                        .loanAmount = Number{10},
+                        .interestRate = percentageToTenthBips(50),
+                        .paymentInterval = 365u * 24 * 60 * 60,
+                        .paymentTotal = 1,
+                        .repayLoan = true,
+                    },
+                .denom = WithdrawDenom::Asset,
+                .withdrawAmount = 4,
+                .expectedTer = tesSUCCESS,
+                .expectedAssetsOut = 3,
+                .expectedSharesBurned = 2,
+            },
+            // NAV just above 1 via min-rate loan; request 1.5 truncates to 1
+            // share → vault drains. expectedAssetsOut is the empirical
+            // post-repay NAV.
+            {
+                .name = "VaultWithdraw clamping: 1 share worth at NAV ≈ 1+ULP",
+                .setup =
+                    {
+                        .initialDeposit = 1,
+                        .scale = 0,
+                        .loanAmount = Number{1},
+                        .interestRate = TenthBips32{1},
+                        .paymentInterval = 60,
+                        .paymentTotal = 1,
+                        .repayLoan = true,
+                    },
+                .denom = WithdrawDenom::Asset,
+                .withdrawAmount = Number{15, -1},  // 1.5
+                .expectedTer = tesSUCCESS,
+                .expectedAssetsOut = Number{1000000010019026, -15},
+                .expectedSharesBurned = 1,
+            },
+            // Total at coarse scale (1e10 → ULP=1e-5) with NAV=1.000006 via
+            // 1 tenth-bip APR loan (periodicRate=1e-5; principal=6e9 →
+            // interest=6e4). Request 2.5 → truncate to 2 shares → 2.000012
+            // raw → clamp to 1e-5 grid → 2.00001.
+            {
+                .name = "VaultWithdraw clamping: double truncation (NAV=1.000006, coarse total)",
+                .setup =
+                    {
+                        .initialDeposit = Number{1, 10},  // 1e10
+                        .scale = 0,
+                        .loanAmount = Number{6, 9},  // 6e9
+                        .interestRate = TenthBips32{1},
+                        .paymentInterval = 365u * 24 * 60 * 60,
+                        .paymentTotal = 1,
+                        .repayLoan = true,
+                    },
+                .denom = WithdrawDenom::Asset,
+                .withdrawAmount = Number{25, -1},  // 2.5
+                .expectedTer = tesSUCCESS,
+                .expectedAssetsOut = Number{200001, -5},  // 2.00001
+                .expectedSharesBurned = 2,
+            },
+            // Diluted vault (scale=6 → 1e16 shares, NAV=1e-6) with coarse
+            // total (ULP=1e-5). 2 whole shares' worth = 2e-6 clamps to 0 →
+            // second guard fires, prevents burning shares for nothing.
+            {
+                .name = "VaultWithdraw clamping: sub-asset dust → tecPRECISION_LOSS",
+                .setup =
+                    {
+                        .initialDeposit = Number{1, 10},  // 1e10
+                        .scale = 6,
+                        .loanAmount = std::nullopt,
+                    },
+                .denom = WithdrawDenom::Asset,
+                .withdrawAmount = Number{2, -6},  // 2e-6
+                .expectedTer = tecPRECISION_LOSS,
+                .expectedAssetsOut = 0,
+                .expectedSharesBurned = 0,
+            },
+            // Loan-trapped: sfAssetsTotal=1e16 (ULP=10), sfAssetsAvailable=100
+            // (ULP=1e-13). 5 USD withdraw is sub-ULP at the coarse rail; the
+            // clamp drives it to 0 → tecPRECISION_LOSS, rails stay aligned.
+            {
+                .name = "VaultWithdraw clamping: loan-trapped asymmetric drift → "
+                        "tecPRECISION_LOSS",
+                .setup =
+                    {
+                        .initialDeposit = Number{1, 16},  // 1e16
+                        .scale = 0,
+                        .loanAmount = Number{9'999'999'999'999'900, 0},  // 1e16 - 100
+                        .interestRate = TenthBips32{0},
+                        .paymentInterval = 600,
+                        .paymentTotal = 1,
+                        .repayLoan = false,
+                    },
+                .denom = WithdrawDenom::Asset,
+                .withdrawAmount = 5,
+                .expectedTer = tecPRECISION_LOSS,
+                .expectedAssetsOut = 0,
+                .expectedSharesBurned = 0,
+            },
+        };
+
+        for (auto const& tc : scenarios)
+            runScenario(tc);
+    }
+
 public:
     void
     run() override
@@ -7595,14 +8083,16 @@ public:
         testBugSleDeltaCheckTotalEdgeWithLoan();
         testBugIssuerVaultDepositAtEdge();
         testBugAssociateAssetRoundingDeposit();
-        // Withdraw
+        // // Withdraw
         testBugSubUlpVaultWithdraw();
+        testBugDrainedVaultShareWithdraw();
         testBugAssociateAssetRoundingWithdraw();
         testBugStuckVaultReceiverAtEdge();
-        // Clawback
+        // // Clawback
         testVaultClawbackConvergenceAtIouEdge();
         testVaultClawbackAllAvailable();
         testVaultClawbackEdge();
+        testVaultWithdrawClamping();
 
         // -- Vault operations --------------------------------------------
         testVaultClawbackBurnShares();
