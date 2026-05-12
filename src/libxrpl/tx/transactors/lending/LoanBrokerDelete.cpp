@@ -97,11 +97,13 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
         {
             auto const brokerPseudo = sleBroker->at(sfAccount);
             if (auto const ter = requireAuth(ctx.view, asset, brokerOwner, AuthType::WeakAuth))
+            {
                 return ter;
+            }
             if (auto const ret = checkFrozen(ctx.view, brokerPseudo, asset))
+            {
                 return ret;
-            if (auto const ret = checkDeepFrozen(ctx.view, brokerOwner, asset))
-                return ret;
+            }
         }
     }
 
