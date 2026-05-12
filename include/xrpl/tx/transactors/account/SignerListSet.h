@@ -18,13 +18,13 @@ class SignerListSet : public Transactor
 {
 private:
     // Values determined during preCompute for use later.
-    enum Operation { unknown, set, destroy };
-    Operation do_{unknown};
+    enum class Operation { Unknown, Set, Destroy };
+    Operation do_{Operation::Unknown};
     std::uint32_t quorum_{0};
     std::vector<SignerEntries::SignerEntry> signers_;
 
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Blocker};
+    static constexpr auto kCONSEQUENCES_FACTORY = ConsequencesFactoryType::Blocker;
 
     explicit SignerListSet(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -40,6 +40,20 @@ public:
     doApply() override;
     void
     preCompute() override;
+
+    void
+    visitInvariantEntry(
+        bool isDelete,
+        std::shared_ptr<SLE const> const& before,
+        std::shared_ptr<SLE const> const& after) override;
+
+    [[nodiscard]] bool
+    finalizeInvariants(
+        STTx const& tx,
+        TER result,
+        XRPAmount fee,
+        ReadView const& view,
+        beast::Journal const& j) override;
 
     // Interface used by AccountDelete
     static TER

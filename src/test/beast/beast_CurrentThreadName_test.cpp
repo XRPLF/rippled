@@ -1,14 +1,19 @@
 #include <xrpl/beast/core/CurrentThreadName.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 
 #include <boost/predef/os.h>
 
+#if BOOST_OS_LINUX
+#include <pthread.h>
+#endif
+
+#include <atomic>
+#include <string>
 #include <thread>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
-class CurrentThreadName_test : public beast::unit_test::suite
+class CurrentThreadName_test : public beast::unit_test::Suite
 {
 private:
     static void
@@ -47,7 +52,7 @@ private:
             beast::setCurrentThreadName(nameToSet);
 
             // Initialize buffer to be safe.
-            char actualName[beast::maxThreadNameLength + 1] = {};
+            char actualName[beast::kMAX_THREAD_NAME_LENGTH + 1] = {};
             pthread_getname_np(pthread_self(), actualName, sizeof(actualName));
 
             BEAST_EXPECT(std::string(actualName) == expectedName);
@@ -100,5 +105,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(CurrentThreadName, beast, beast);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

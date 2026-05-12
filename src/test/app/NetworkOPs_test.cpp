@@ -1,13 +1,23 @@
-#include <test/jtx.h>
 #include <test/jtx/CaptureLogs.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/envconfig.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/jtx_json.h>
+#include <test/jtx/seq.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
 
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/HashRouter.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
+#include <memory>
 
-class NetworkOPs_test : public beast::unit_test::suite
+namespace xrpl::test {
+
+class NetworkOPs_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -28,17 +38,16 @@ public:
         {
             using namespace jtx;
             auto const alice = Account{"alice"};
-            Env env{
-                *this, envconfig(), std::make_unique<CaptureLogs>(&logs), beast::severities::kAll};
+            Env env{*this, envconfig(), std::make_unique<CaptureLogs>(&logs), beast::Severity::All};
             env.memoize(env.master);
             env.memoize(alice);
 
-            auto const jtx = env.jt(ticket::create(alice, 1), seq(1), fee(10));
+            auto const jtx = env.jt(ticket::create(alice, 1), Seq(1), Fee(10));
 
             auto transactionId = jtx.stx->getTransactionID();
             env.app().getHashRouter().setFlags(transactionId, HashRouterFlags::HELD);
 
-            env(jtx, json(jss::Sequence, 1), ter(terNO_ACCOUNT));
+            env(jtx, Json(jss::Sequence, 1), Ter(terNO_ACCOUNT));
 
             env.app().getHashRouter().setFlags(transactionId, HashRouterFlags::BAD);
 
@@ -51,5 +60,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(NetworkOPs, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

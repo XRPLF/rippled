@@ -1,12 +1,26 @@
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/envconfig.h>
+#include <test/jtx/noop.h>
 
 #include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/core/Config.h>
 
-namespace xrpl {
-namespace test {
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
 
-class LedgerMaster_test : public beast::unit_test::suite
+#include <cstdint>
+#include <memory>
+#include <vector>
+
+namespace xrpl::test {
+
+class LedgerMaster_test : public beast::unit_test::Suite
 {
     static std::unique_ptr<Config>
     makeNetworkConfig(uint32_t networkID)
@@ -102,7 +116,7 @@ public:
     run() override
     {
         using namespace test::jtx;
-        FeatureBitset const all{testable_amendments()};
+        FeatureBitset const all{testableAmendments()};
         testWithFeats(all);
     }
 
@@ -115,5 +129,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(LedgerMaster, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

@@ -2,23 +2,19 @@
 
 #include <test/jtx/Env.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
-struct invoice_id
+struct InvoiceId
 {
 private:
     uint256 hash_;
 
 public:
-    explicit invoice_id(uint256 const& hash) : hash_(hash)
+    explicit InvoiceId(uint256 const& hash) : hash_(hash)
     {
     }
 
     void
     operator()(Env&, JTx& jt) const;
 };
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

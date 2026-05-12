@@ -1,5 +1,8 @@
 #include <xrpl/basics/RangeSet.h>
 
+#include <boost/icl/concept/interval_associator.hpp>
+#include <boost/icl/concept/interval_set.hpp>
+
 #include <gtest/gtest.h>
 
 #include <cstdint>
@@ -55,34 +58,34 @@ TEST(RangeSet, fromString)
 {
     RangeSet<std::uint32_t> set;
 
-    EXPECT_FALSE(from_string(set, ""));
+    EXPECT_FALSE(fromString(set, ""));
     EXPECT_EQ(boost::icl::length(set), 0);
 
-    EXPECT_FALSE(from_string(set, "#"));
+    EXPECT_FALSE(fromString(set, "#"));
     EXPECT_EQ(boost::icl::length(set), 0);
 
-    EXPECT_FALSE(from_string(set, ","));
+    EXPECT_FALSE(fromString(set, ","));
     EXPECT_EQ(boost::icl::length(set), 0);
 
-    EXPECT_FALSE(from_string(set, ",-"));
+    EXPECT_FALSE(fromString(set, ",-"));
     EXPECT_EQ(boost::icl::length(set), 0);
 
-    EXPECT_FALSE(from_string(set, "1,,2"));
+    EXPECT_FALSE(fromString(set, "1,,2"));
     EXPECT_EQ(boost::icl::length(set), 0);
 
-    EXPECT_TRUE(from_string(set, "1"));
+    EXPECT_TRUE(fromString(set, "1"));
     EXPECT_EQ(boost::icl::length(set), 1);
     EXPECT_EQ(boost::icl::first(set), 1);
 
-    EXPECT_TRUE(from_string(set, "1,1"));
+    EXPECT_TRUE(fromString(set, "1,1"));
     EXPECT_EQ(boost::icl::length(set), 1);
     EXPECT_EQ(boost::icl::first(set), 1);
 
-    EXPECT_TRUE(from_string(set, "1-1"));
+    EXPECT_TRUE(fromString(set, "1-1"));
     EXPECT_EQ(boost::icl::length(set), 1);
     EXPECT_EQ(boost::icl::first(set), 1);
 
-    EXPECT_TRUE(from_string(set, "1,4-6"));
+    EXPECT_TRUE(fromString(set, "1,4-6"));
     EXPECT_EQ(boost::icl::length(set), 4);
     EXPECT_EQ(boost::icl::first(set), 1);
     EXPECT_FALSE(boost::icl::contains(set, 2));
@@ -91,14 +94,14 @@ TEST(RangeSet, fromString)
     EXPECT_TRUE(boost::icl::contains(set, 5));
     EXPECT_EQ(boost::icl::last(set), 6);
 
-    EXPECT_TRUE(from_string(set, "1-2,4-6"));
+    EXPECT_TRUE(fromString(set, "1-2,4-6"));
     EXPECT_EQ(boost::icl::length(set), 5);
     EXPECT_EQ(boost::icl::first(set), 1);
     EXPECT_TRUE(boost::icl::contains(set, 2));
     EXPECT_TRUE(boost::icl::contains(set, 4));
     EXPECT_EQ(boost::icl::last(set), 6);
 
-    EXPECT_TRUE(from_string(set, "1-2,6"));
+    EXPECT_TRUE(fromString(set, "1-2,6"));
     EXPECT_EQ(boost::icl::length(set), 3);
     EXPECT_EQ(boost::icl::first(set), 1);
     EXPECT_TRUE(boost::icl::contains(set, 2));

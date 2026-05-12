@@ -1,8 +1,19 @@
-#include <xrpl/ledger/helpers/NFTokenHelpers.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/nft/NFTokenBurn.h>
+
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/helpers/NFTokenHelpers.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/protocol/nft.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <cstddef>
+#include <memory>
 
 namespace xrpl {
 
@@ -29,7 +40,7 @@ NFTokenBurn::preclaim(PreclaimContext const& ctx)
     // do so if the token is marked as burnable.
     if (auto const account = ctx.tx[sfAccount]; owner != account)
     {
-        if ((nft::getFlags(ctx.tx[sfNFTokenID]) & nft::flagBurnable) == 0)
+        if ((nft::getFlags(ctx.tx[sfNFTokenID]) & nft::kFLAG_BURNABLE) == 0)
             return tecNO_PERMISSION;
 
         if (auto const issuer = nft::getIssuer(ctx.tx[sfNFTokenID]); issuer != account)
@@ -61,7 +72,7 @@ NFTokenBurn::doApply()
 
     if (auto issuer = view().peek(keylet::account(nft::getIssuer(ctx_.tx[sfNFTokenID]))))
     {
-        (*issuer)[~sfBurnedNFTokens] = (*issuer)[~sfBurnedNFTokens].value_or(0) + 1;
+        (*issuer)[~sfBurnedNFTokens] = (*issuer)[~sfBurnedNFTokens].valueOr(0) + 1;
         view().update(issuer);
     }
 
@@ -70,17 +81,33 @@ NFTokenBurn::doApply()
     // the number of buy offers, we prioritize the deletion of sell
     // offers in order to clean up sell offer directory
     std::size_t const deletedSellOffers = nft::removeTokenOffersWithLimit(
-        view(), keylet::nft_sells(ctx_.tx[sfNFTokenID]), maxDeletableTokenOfferEntries);
+        view(), keylet::nftSells(ctx_.tx[sfNFTokenID]), kMAX_DELETABLE_TOKEN_OFFER_ENTRIES);
 
-    if (maxDeletableTokenOfferEntries > deletedSellOffers)
+    if (kMAX_DELETABLE_TOKEN_OFFER_ENTRIES > deletedSellOffers)
     {
         nft::removeTokenOffersWithLimit(
             view(),
-            keylet::nft_buys(ctx_.tx[sfNFTokenID]),
-            maxDeletableTokenOfferEntries - deletedSellOffers);
+            keylet::nftBuys(ctx_.tx[sfNFTokenID]),
+            kMAX_DELETABLE_TOKEN_OFFER_ENTRIES - deletedSellOffers);
     }
 
     return tesSUCCESS;
+}
+
+void
+NFTokenBurn::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+NFTokenBurn::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

@@ -1,20 +1,40 @@
-#include <test/jtx.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>  // IWYU pragma: keep
 #include <test/jtx/envconfig.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/seq.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/tags.h>
+#include <test/jtx/trust.h>
 
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
-#include <xrpl/beast/utility/temp_dir.h>
+#include <xrpl/basics/DecayingSample.h>
+#include <xrpl/beast/clock/abstract_clock.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/tokens.h>
 #include <xrpl/resource/ResourceManager.h>
 #include <xrpl/resource/detail/Entry.h>
 #include <xrpl/resource/detail/Tuning.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 
+#include <chrono>
+#include <string>
+
 namespace xrpl {
 
-class NoRippleCheck_test : public beast::unit_test::suite
+class NoRippleCheck_test : public beast::unit_test::Suite
 {
     void
     testBadInput()
@@ -35,7 +55,7 @@ class NoRippleCheck_test : public beast::unit_test::suite
         }
 
         {  // missing role field
-            Json::Value params;
+            json::Value params;
             params[jss::account] = alice.human();
             auto const result = env.rpc("json", "noripple_check", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "invalidParams");
@@ -45,7 +65,7 @@ class NoRippleCheck_test : public beast::unit_test::suite
         // test account non-string
         {
             auto testInvalidAccountParam = [&](auto const& param) {
-                Json::Value params;
+                json::Value params;
                 params[jss::account] = param;
                 params[jss::role] = "user";
                 auto jrr = env.rpc("json", "noripple_check", to_string(params))[jss::result];
@@ -56,13 +76,13 @@ class NoRippleCheck_test : public beast::unit_test::suite
             testInvalidAccountParam(1);
             testInvalidAccountParam(1.1);
             testInvalidAccountParam(true);
-            testInvalidAccountParam(Json::Value(Json::nullValue));
-            testInvalidAccountParam(Json::Value(Json::objectValue));
-            testInvalidAccountParam(Json::Value(Json::arrayValue));
+            testInvalidAccountParam(json::Value(json::ValueType::Null));
+            testInvalidAccountParam(json::Value(json::ValueType::Object));
+            testInvalidAccountParam(json::Value(json::ValueType::Array));
         }
 
         {  // invalid role field
-            Json::Value params;
+            json::Value params;
             params[jss::account] = alice.human();
             params[jss::role] = "not_a_role";
             auto const result = env.rpc("json", "noripple_check", to_string(params))[jss::result];
@@ -71,7 +91,7 @@ class NoRippleCheck_test : public beast::unit_test::suite
         }
 
         {  // invalid limit
-            Json::Value params;
+            json::Value params;
             params[jss::account] = alice.human();
             params[jss::role] = "user";
             params[jss::limit] = -1;
@@ -82,7 +102,7 @@ class NoRippleCheck_test : public beast::unit_test::suite
         }
 
         {  // invalid ledger (hash)
-            Json::Value params;
+            json::Value params;
             params[jss::account] = alice.human();
             params[jss::role] = "user";
             params[jss::ledger_hash] = 1;
@@ -93,7 +113,7 @@ class NoRippleCheck_test : public beast::unit_test::suite
         }
 
         {  // account not found
-            Json::Value params;
+            json::Value params;
             params[jss::account] = Account{"nobody"}.human();
             params[jss::role] = "user";
             params[jss::ledger] = "current";
@@ -104,7 +124,7 @@ class NoRippleCheck_test : public beast::unit_test::suite
 
         {  // passing an account private key will cause
            // parsing as a seed to fail
-            Json::Value params;
+            json::Value params;
             params[jss::account] = toBase58(TokenType::NodePrivate, alice.sk());
             params[jss::role] = "user";
             params[jss::ledger] = "current";
@@ -115,7 +135,7 @@ class NoRippleCheck_test : public beast::unit_test::suite
 
         {
             // ledger and ledger_hash are included
-            Json::Value params;
+            json::Value params;
             params[jss::account] = Account{"nobody"}.human();
             params[jss::role] = "user";
             params[jss::ledger] = "current";
@@ -130,10 +150,10 @@ class NoRippleCheck_test : public beast::unit_test::suite
 
         {
             // invalid ledger
-            Json::Value params;
+            json::Value params;
             params[jss::account] = Account{"nobody"}.human();
             params[jss::role] = "user";
-            params[jss::ledger] = Json::objectValue;
+            params[jss::ledger] = json::ValueType::Object;
             auto const result = env.rpc("json", "noripple_check", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "invalidParams");
             BEAST_EXPECT(
@@ -166,7 +186,7 @@ class NoRippleCheck_test : public beast::unit_test::suite
         }
         env.close();
 
-        Json::Value params;
+        json::Value params;
         params[jss::account] = alice.human();
         params[jss::role] = (user ? "user" : "gateway");
         params[jss::ledger] = "current";
@@ -221,7 +241,7 @@ class NoRippleCheck_test : public beast::unit_test::suite
                 result[jss::transactions][txs.size() - 1][jss::TransactionType] == jss::TrustSet);
             BEAST_EXPECT(
                 result[jss::transactions][txs.size() - 1][jss::LimitAmount] ==
-                gw["USD"](100).value().getJson(JsonOptions::none));
+                gw["USD"](100).value().getJson(JsonOptions::Values::None));
         }
         else
         {
@@ -242,7 +262,7 @@ public:
     }
 };
 
-class NoRippleCheckLimits_test : public beast::unit_test::suite
+class NoRippleCheckLimits_test : public beast::unit_test::Suite
 {
     void
     testLimits(bool admin)
@@ -251,7 +271,7 @@ class NoRippleCheckLimits_test : public beast::unit_test::suite
 
         using namespace test::jtx;
 
-        Env env{*this, admin ? envconfig() : envconfig(no_admin)};
+        Env env{*this, admin ? envconfig() : envconfig(noAdmin)};
 
         auto const alice = Account{"alice"};
         env.fund(XRP(100000), alice);
@@ -270,18 +290,18 @@ class NoRippleCheckLimits_test : public beast::unit_test::suite
             using namespace std::chrono;
             using namespace beast::IP;
             auto c = env.app().getResourceManager().newInboundEndpoint(
-                Endpoint::from_string(test::getEnvLocalhostAddr()));
+                Endpoint::fromString(test::getEnvLocalhostAddr()));
 
             // if we go above the warning threshold, reset
-            if (c.balance() > warningThreshold)
+            if (c.balance() > kWARNING_THRESHOLD)
             {
-                using ct = beast::abstract_clock<steady_clock>;
+                using ct = beast::AbstractClock<steady_clock>;
                 c.entry().local_balance =
-                    DecayingSample<decayWindowSeconds, ct>{steady_clock::now()};
+                    DecayingSample<kDECAY_WINDOW_SECONDS, ct>{steady_clock::now()};
             }
         };
 
-        for (auto i = 0; i < xrpl::RPC::Tuning::noRippleCheck.rmax + 5; ++i)
+        for (auto i = 0; i < xrpl::RPC::Tuning::kNO_RIPPLE_CHECK.rmax + 5; ++i)
         {
             if (!admin)
                 checkBalance();
@@ -291,20 +311,20 @@ class NoRippleCheckLimits_test : public beast::unit_test::suite
             env.memoize(gw);
             auto const baseFee = env.current()->fees().base;
             env(pay(env.master, gw, XRP(1000)),
-                seq(autofill),
-                fee(toDrops(txq.getMetrics(*env.current()).openLedgerFeeLevel, baseFee) + 1),
-                sig(autofill));
+                Seq(kAUTOFILL),
+                Fee(toDrops(txq.getMetrics(*env.current()).openLedgerFeeLevel, baseFee) + 1),
+                Sig(kAUTOFILL));
             env(fset(gw, asfDefaultRipple),
-                seq(autofill),
-                fee(toDrops(txq.getMetrics(*env.current()).openLedgerFeeLevel, baseFee) + 1),
-                sig(autofill));
+                Seq(kAUTOFILL),
+                Fee(toDrops(txq.getMetrics(*env.current()).openLedgerFeeLevel, baseFee) + 1),
+                Sig(kAUTOFILL));
             env(trust(alice, gw["USD"](10)),
-                fee(toDrops(txq.getMetrics(*env.current()).openLedgerFeeLevel, baseFee) + 1));
+                Fee(toDrops(txq.getMetrics(*env.current()).openLedgerFeeLevel, baseFee) + 1));
             env.close();
         }
 
         // default limit value
-        Json::Value params;
+        json::Value params;
         params[jss::account] = alice.human();
         params[jss::role] = "user";
         params[jss::ledger] = "current";

@@ -3,9 +3,7 @@
 #include <xrpl/nodestore/DatabaseRotating.h>
 #include <xrpl/nodestore/Factory.h>
 
-namespace xrpl {
-
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 /** Singleton for managing NodeStore factories and back ends. */
 class Manager
@@ -38,7 +36,7 @@ public:
 
     /** Create a backend. */
     virtual std::unique_ptr<Backend>
-    make_Backend(
+    makeBackend(
         Section const& parameters,
         std::size_t burstSize,
         Scheduler& scheduler,
@@ -73,7 +71,7 @@ public:
         @return The opened database.
     */
     virtual std::unique_ptr<Database>
-    make_Database(
+    makeDatabase(
         std::size_t burstSize,
         Scheduler& scheduler,
         int readThreads,
@@ -81,5 +79,4 @@ public:
         beast::Journal journal) = 0;
 };
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

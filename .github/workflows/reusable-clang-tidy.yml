@@ -1,4 +1,4 @@
-name: Clang-tidy check
+name: Run clang-tidy on files
 
 on:
   workflow_call:
@@ -16,40 +16,175 @@ defaults:
   run:
     shell: bash
 
+env:
+  BUILD_DIR: build
+  BUILD_TYPE: Debug # Debug so that ASSERTS and such participate in clang-tidy check
+
+  OUTPUT_FILE: clang-tidy-output.txt
+  DIFF_FILE: clang-tidy-git-diff.txt
+  ISSUE_FILE: clang-tidy-issue.md
+
 jobs:
   determine-files:
-    name: Determine files to check
     if: ${{ inputs.check_only_changed }}
-    runs-on: ubuntu-latest
-    outputs:
-      clang_tidy_config_changed: ${{ steps.changed_clang_tidy.outputs.any_changed }}
-      any_cpp_changed: ${{ steps.changed_files.outputs.any_changed }}
-      all_changed_files: ${{ steps.changed_files.outputs.all_changed_files }}
+    permissions:
+      contents: read
+    uses: XRPLF/actions/.github/workflows/determine-tidy-files.yml@224f3c48d3014d082a1129237b8291ff0b0a331f
+
+  run-clang-tidy:
+    name: Run clang tidy
+    needs: [determine-files]
+    if: ${{ always() && !cancelled() && (!inputs.check_only_changed || needs.determine-files.outputs.cpp_changed_files != '' || needs.determine-files.outputs.clang_tidy_config_changed == 'true') }}
+    runs-on: ["self-hosted", "Linux", "X64", "heavy"]
+    container: "ghcr.io/xrplf/ci/debian-trixie:clang-21-sha-53033a2"
+    permissions:
+      contents: read
+      issues: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Get changed C++ files
-        id: changed_files
-        uses: tj-actions/changed-files@22103cc46bda19c2b464ffe86db46df6922fd323 # v47.0.5
+      - name: Prepare runner
+        uses: XRPLF/actions/prepare-runner@90f11ee655d1687824fb8793db770477d52afbab
         with:
-          files: |
-            **/*.cpp
-            **/*.h
-            **/*.ipp
-          separator: " "
+          enable_ccache: false
 
-      - name: Get changed clang-tidy configuration
-        id: changed_clang_tidy
-        uses: tj-actions/changed-files@22103cc46bda19c2b464ffe86db46df6922fd323 # v47.0.5
+      - name: Print build environment
+        uses: XRPLF/actions/print-build-env@59dec886e4afb05a1724443af08baccbc045b574
+
+      - name: Get number of processors
+        uses: XRPLF/actions/get-nproc@cf0433aa74563aead044a1e395610c96d65a37cf
+        id: nproc
+
+      - name: Setup Conan
+        uses: ./.github/actions/setup-conan
+
+      - name: Build dependencies
+        uses: ./.github/actions/build-deps
         with:
-          files: |
-            .clang-tidy
+          build_nproc: ${{ steps.nproc.outputs.nproc }}
+          build_type: ${{ env.BUILD_TYPE }}
+          log_verbosity: verbose
 
-  run-clang-tidy:
-    needs: [determine-files]
-    if: ${{ always() && !cancelled() && (!inputs.check_only_changed || needs.determine-files.outputs.any_cpp_changed == 'true' || needs.determine-files.outputs.clang_tidy_config_changed == 'true') }}
-    uses: ./.github/workflows/reusable-clang-tidy-files.yml
-    with:
-      files: ${{ (needs.determine-files.outputs.clang_tidy_config_changed != 'true' && inputs.check_only_changed) && needs.determine-files.outputs.all_changed_files || '' }}
-      create_issue_on_failure: ${{ inputs.create_issue_on_failure }}
+      - name: Configure CMake
+        working-directory: ${{ env.BUILD_DIR }}
+        run: |
+          cmake \
+            -G 'Ninja' \
+            -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
+            -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
+            -Dtests=ON \
+            -Dwerr=ON \
+            -Dxrpld=ON \
+            ..
+
+      # clang-tidy needs headers generated from proto files
+      - name: Build libxrpl.libpb
+        working-directory: ${{ env.BUILD_DIR }}
+        run: |
+          ninja -j ${{ steps.nproc.outputs.nproc }} xrpl.libpb
+
+      - name: Run clang tidy
+        id: run_clang_tidy
+        continue-on-error: true
+        env:
+          TARGETS: ${{ (needs.determine-files.outputs.clang_tidy_config_changed != 'true' && inputs.check_only_changed) && needs.determine-files.outputs.cpp_changed_files || 'src tests' }}
+        run: |
+          set -o pipefail
+          run-clang-tidy -j ${{ steps.nproc.outputs.nproc }} -p "${BUILD_DIR}" -quiet -fix -allow-no-checks ${TARGETS} 2>&1 | tee "${OUTPUT_FILE}"
+
+      - name: Print errors
+        if: ${{ steps.run_clang_tidy.outcome != 'success' }}
+        run: |
+          sed '/error\||/!d' "${OUTPUT_FILE}"
+
+      - name: Upload clang-tidy output
+        if: ${{ github.event.repository.visibility == 'public' && steps.run_clang_tidy.outcome != 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          path: ${{ env.OUTPUT_FILE }}
+          archive: false
+          retention-days: 30
+
+      - name: Check for changes
+        id: files_changed
+        continue-on-error: true
+        run: |
+          git diff --exit-code
+
+      - name: Fix style
+        if: ${{ steps.files_changed.outcome != 'success' }}
+        run: |
+          pre-commit run --all-files || true
+
+      - name: Generate git diff
+        if: ${{ steps.files_changed.outcome != 'success' }}
+        run: |
+          git diff | tee "${DIFF_FILE}"
+
+      - name: Upload clang-tidy diff output
+        if: ${{ github.event.repository.visibility == 'public' && steps.files_changed.outcome != 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          path: ${{ env.DIFF_FILE }}
+          archive: false
+          retention-days: 30
+
+      - name: Write issue header
+        if: ${{ steps.run_clang_tidy.outcome != 'success' }}
+        run: |
+          cat > "${ISSUE_FILE}" <<EOF
+          ## Clang-tidy Check Failed
+
+          ### Clang-tidy Output:
+          \`\`\`
+          EOF
+
+      - name: Append clang-tidy output to issue body (filter for errors and warnings)
+        if: ${{ steps.run_clang_tidy.outcome != 'success' }}
+        run: |
+          if [ -f "${OUTPUT_FILE}" ]; then
+            # Extract lines containing 'error:', 'warning:', or 'note:'
+            grep -E '(error:|warning:|note:)' "${OUTPUT_FILE}" > filtered-output.txt || true
+
+            # If filtered output is empty, use original (might be a different error format)
+            if [ ! -s filtered-output.txt ]; then
+              cp "${OUTPUT_FILE}" filtered-output.txt
+            fi
+
+            # Truncate if too large
+            head -c 60000 filtered-output.txt >> "${ISSUE_FILE}"
+            if [ "$(wc -c < filtered-output.txt)" -gt 60000 ]; then
+              echo "" >> "${ISSUE_FILE}"
+              echo "... (output truncated, see artifacts for full output)" >> "${ISSUE_FILE}"
+            fi
+
+            rm filtered-output.txt
+          else
+            echo "No output file found" >> "${ISSUE_FILE}"
+          fi
+
+      - name: Append issue footer
+        if: ${{ steps.run_clang_tidy.outcome != 'success' }}
+        run: |
+          cat >> "${ISSUE_FILE}" <<EOF
+          \`\`\`
+
+          ---
+          *This issue was automatically created by the clang-tidy workflow.*
+          EOF
+
+      - name: Create issue
+        if: ${{ steps.run_clang_tidy.outcome != 'success' && inputs.create_issue_on_failure }}
+        uses: XRPLF/actions/create-issue@fbcc16eb7f20dc3199eaf1aed0d3523a5ba9008c
+        with:
+          title: "Clang-tidy check failed"
+          body_file: ${{ env.ISSUE_FILE }}
+          labels: "Bug,Clang-tidy"
+          assignees: "godexsoft,mathbunnyru"
+
+      - name: Fail if clang-tidy found issues
+        if: ${{ steps.run_clang_tidy.outcome != 'success' }}
+        run: |
+          echo "Clang-tidy check failed!"
+          exit 1

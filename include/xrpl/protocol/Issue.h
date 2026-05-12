@@ -12,8 +12,8 @@ namespace xrpl {
 class Issue
 {
 public:
-    Currency currency{};
-    AccountID account{};
+    Currency currency;
+    AccountID account;
 
     Issue() = default;
 
@@ -21,22 +21,22 @@ public:
     {
     }
 
-    AccountID const&
+    [[nodiscard]] AccountID const&
     getIssuer() const
     {
         return account;
     }
 
-    std::string
+    [[nodiscard]] std::string
     getText() const;
 
     void
-    setJson(Json::Value& jv) const;
+    setJson(json::Value& jv) const;
 
-    bool
+    [[nodiscard]] bool
     native() const;
 
-    bool
+    [[nodiscard]] bool
     integral() const;
 
     friend constexpr std::weak_ordering
@@ -49,11 +49,11 @@ isConsistent(Issue const& ac);
 std::string
 to_string(Issue const& ac);
 
-Json::Value
-to_json(Issue const& is);
+json::Value
+toJson(Issue const& is);
 
 Issue
-issueFromJson(Json::Value const& v);
+issueFromJson(json::Value const& v);
 
 std::ostream&
 operator<<(std::ostream& os, Issue const& x);
@@ -68,7 +68,7 @@ hash_append(Hasher& h, Issue const& r)
 
 /** Equality comparison. */
 /** @{ */
-[[nodiscard]] inline constexpr bool
+[[nodiscard]] constexpr bool
 operator==(Issue const& lhs, Issue const& rhs)
 {
     return (lhs.currency == rhs.currency) && (isXRP(lhs.currency) || lhs.account == rhs.account);
@@ -96,16 +96,16 @@ operator<=>(Issue const& lhs, Issue const& rhs)
 inline Issue const&
 xrpIssue()
 {
-    static Issue const issue{xrpCurrency(), xrpAccount()};
-    return issue;
+    static Issue const kISSUE{xrpCurrency(), xrpAccount()};
+    return kISSUE;
 }
 
 /** Returns an asset specifier that represents no account and currency. */
 inline Issue const&
 noIssue()
 {
-    static Issue const issue{noCurrency(), noAccount()};
-    return issue;
+    static Issue const kISSUE{noCurrency(), noAccount()};
+    return kISSUE;
 }
 
 inline bool

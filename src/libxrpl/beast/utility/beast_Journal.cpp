@@ -12,19 +12,19 @@ namespace beast {
 class NullJournalSink : public Journal::Sink
 {
 public:
-    NullJournalSink() : Sink(severities::kDisabled, false)
+    NullJournalSink() : Sink(Severity::Disabled, false)
     {
     }
 
     ~NullJournalSink() override = default;
 
-    bool
-    active(severities::Severity) const override
+    [[nodiscard]] bool
+    active(Severity) const override
     {
         return false;
     }
 
-    bool
+    [[nodiscard]] bool
     console() const override
     {
         return false;
@@ -35,24 +35,24 @@ public:
     {
     }
 
-    severities::Severity
+    [[nodiscard]] Severity
     threshold() const override
     {
-        return severities::kDisabled;
+        return Severity::Disabled;
     }
 
     void
-    threshold(severities::Severity) override
+    threshold(Severity) override
     {
     }
 
     void
-    write(severities::Severity, std::string const&) override
+    write(Severity, std::string const&) override
     {
     }
 
     void
-    writeAlways(severities::Severity, std::string const&) override
+    writeAlways(Severity, std::string const&) override
     {
     }
 };
@@ -62,13 +62,13 @@ public:
 Journal::Sink&
 Journal::getNullSink()
 {
-    static NullJournalSink sink;
-    return sink;
+    static NullJournalSink kSINK;
+    return kSINK;
 }
 
 //------------------------------------------------------------------------------
 
-Journal::Sink::Sink(Severity thresh, bool console) : thresh_(thresh), m_console(console)
+Journal::Sink::Sink(Severity thresh, bool console) : thresh_(thresh), console_(console)
 {
 }
 
@@ -83,16 +83,16 @@ Journal::Sink::active(Severity level) const
 bool
 Journal::Sink::console() const
 {
-    return m_console;
+    return console_;
 }
 
 void
 Journal::Sink::console(bool output)
 {
-    m_console = output;
+    console_ = output;
 }
 
-severities::Severity
+Severity
 Journal::Sink::threshold() const
 {
     return thresh_;
@@ -106,30 +106,30 @@ Journal::Sink::threshold(Severity thresh)
 
 //------------------------------------------------------------------------------
 
-Journal::ScopedStream::ScopedStream(Sink& sink, Severity level) : m_sink(sink), m_level(level)
+Journal::ScopedStream::ScopedStream(Sink& sink, Severity level) : sink_(sink), level_(level)
 {
     // Modifiers applied from all ctors
-    m_ostream << std::boolalpha << std::showbase;
+    ostream_ << std::boolalpha << std::showbase;
 }
 
 Journal::ScopedStream::ScopedStream(Stream const& stream, std::ostream& manip(std::ostream&))
     : ScopedStream(stream.sink(), stream.level())
 {
-    m_ostream << manip;
+    ostream_ << manip;
 }
 
 Journal::ScopedStream::~ScopedStream()
 {
-    std::string const& s(m_ostream.str());
+    std::string const& s(ostream_.str());
     if (!s.empty())
     {
         if (s == "\n")
         {
-            m_sink.write(m_level, "");
+            sink_.write(level_, "");
         }
         else
         {
-            m_sink.write(m_level, s);
+            sink_.write(level_, s);
         }
     }
 }
@@ -137,7 +137,7 @@ Journal::ScopedStream::~ScopedStream()
 std::ostream&
 Journal::ScopedStream::operator<<(std::ostream& manip(std::ostream&)) const
 {
-    return m_ostream << manip;
+    return ostream_ << manip;
 }
 
 //------------------------------------------------------------------------------

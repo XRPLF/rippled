@@ -1,3 +1,5 @@
+#include <xrpl/protocol/STIssue.h>
+
 #include <xrpl/basics/contract.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
@@ -6,7 +8,6 @@
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
-#include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
 
@@ -77,10 +78,10 @@ STIssue::getText() const
     return asset_.getText();
 }
 
-Json::Value
+json::Value
 STIssue::getJson(JsonOptions) const
 {
-    Json::Value jv;
+    json::Value jv;
     asset_.setJson(jv);
     return jv;
 }
@@ -131,7 +132,7 @@ STIssue::move(std::size_t n, void* buf)
 }
 
 STIssue
-issueFromJson(SField const& name, Json::Value const& v)
+issueFromJson(SField const& name, json::Value const& v)
 {
     return STIssue{name, assetFromJson(v)};
 }

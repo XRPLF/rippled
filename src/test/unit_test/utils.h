@@ -2,8 +2,7 @@
 
 #include <cstring>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 /// Compare two SecretKey objects for equality.
 /// SecretKey::operator== is deleted, so a named function is used
@@ -11,9 +10,8 @@ namespace test {
 inline bool
 equal(SecretKey const& lhs, SecretKey const& rhs)
 {
-    return lhs.size() == SecretKey::size_ && rhs.size() == SecretKey::size_ &&
-        std::memcmp(lhs.data(), rhs.data(), SecretKey::size_) == 0;
+    return lhs.size() == SecretKey::kSIZE && rhs.size() == SecretKey::kSIZE &&
+        std::memcmp(lhs.data(), rhs.data(), SecretKey::kSIZE) == 0;
 }
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

@@ -1,34 +1,48 @@
-#include <test/jtx.h>
 #include <test/jtx/CaptureLogs.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/envconfig.h>
 #include <test/unit_test/SuiteJournal.h>
 
+#include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
-#include <xrpl/basics/make_SSLContext.h>
 #include <xrpl/beast/rfc2616.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/server/Handoff.h>
+#include <xrpl/server/Port.h>
 #include <xrpl/server/Server.h>
 #include <xrpl/server/Session.h>
+#include <xrpl/server/WSSession.h>
+#include <xrpl/server/detail/ServerImpl.h>
 
-#include <boost/asio.hpp>
+#include <boost/asio/buffer.hpp>
 #include <boost/asio/executor_work_guard.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/address.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/streambuf.hpp>
 #include <boost/beast/core/tcp_stream.hpp>
 #include <boost/beast/ssl/ssl_stream.hpp>
-#include <boost/utility/in_place_factory.hpp>
+#include <boost/system/detail/error_code.hpp>
 
 #include <chrono>
+#include <exception>
+#include <memory>
 #include <optional>
+#include <ostream>
 #include <stdexcept>
+#include <string>
 #include <thread>
+#include <utility>
+#include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 using socket_type = boost::beast::tcp_stream;
 using stream_type = boost::beast::ssl_stream<socket_type>;
 
-class Server_test : public beast::unit_test::suite
+class Server_test : public beast::unit_test::Suite
 {
 public:
     class TestThread
@@ -53,7 +67,7 @@ public:
         }
 
         boost::asio::io_context&
-        get_io_context()
+        getIoContext()
         {
             return io_context_;
         }
@@ -63,16 +77,16 @@ public:
 
     class TestSink : public beast::Journal::Sink
     {
-        beast::unit_test::suite& suite_;
+        beast::unit_test::Suite& suite_;
 
     public:
-        explicit TestSink(beast::unit_test::suite& suite)
-            : Sink(beast::severities::kWarning, false), suite_(suite)
+        explicit TestSink(beast::unit_test::Suite& suite)
+            : Sink(beast::Severity::Warning, false), suite_(suite)
         {
         }
 
         void
-        write(beast::severities::Severity level, std::string const& text) override
+        write(beast::Severity level, std::string const& text) override
         {
             if (level < threshold())
                 return;
@@ -81,7 +95,7 @@ public:
         }
 
         void
-        writeAlways(beast::severities::Severity level, std::string const& text) override
+        writeAlways(beast::Severity level, std::string const& text) override
         {
             suite_.log << text << std::endl;
         }
@@ -102,7 +116,7 @@ public:
             Session& session,
             std::unique_ptr<stream_type> const& bundle,
             http_request_type const& request,
-            boost::asio::ip::tcp::endpoint remote_address)
+            boost::asio::ip::tcp::endpoint remoteAddress)
         {
             return Handoff{};
         }
@@ -111,7 +125,7 @@ public:
         onHandoff(
             Session& session,
             http_request_type const& request,
-            boost::asio::ip::tcp::endpoint remote_address)
+            boost::asio::ip::tcp::endpoint remoteAddress)
         {
             return Handoff{};
         }
@@ -120,7 +134,7 @@ public:
         onRequest(Session& session)
         {
             session.write(std::string("Hello, world!\n"));
-            if (beast::rfc2616::is_keep_alive(session.request()))
+            if (beast::rfc2616::isKeepAlive(session.request()))
             {
                 session.complete();
             }
@@ -190,7 +204,7 @@ public:
     // Expect that reading the stream produces a matching string
     template <class SyncReadStream>
     bool
-    expect_read(SyncReadStream& s, std::string const& match)
+    expectRead(SyncReadStream& s, std::string const& match)
     {
         boost::asio::streambuf b(1000);  // limit on read
         try
@@ -216,7 +230,7 @@ public:
     }
 
     void
-    test_request(boost::asio::ip::tcp::endpoint const& ep)
+    testRequest(boost::asio::ip::tcp::endpoint const& ep)
     {
         boost::asio::io_context ios;
         using socket = boost::asio::ip::tcp::socket;
@@ -232,7 +246,7 @@ public:
                 "\r\n"))
             return;
 
-        if (!expect_read(s, "Hello, world!\n"))
+        if (!expectRead(s, "Hello, world!\n"))
             return;
 
         boost::system::error_code ec;
@@ -242,7 +256,7 @@ public:
     }
 
     void
-    test_keepalive(boost::asio::ip::tcp::endpoint const& ep)
+    testKeepalive(boost::asio::ip::tcp::endpoint const& ep)
     {
         boost::asio::io_context ios;
         using socket = boost::asio::ip::tcp::socket;
@@ -258,7 +272,7 @@ public:
                 "\r\n"))
             return;
 
-        if (!expect_read(s, "Hello, world!\n"))
+        if (!expectRead(s, "Hello, world!\n"))
             return;
 
         if (!write(
@@ -268,7 +282,7 @@ public:
                 "\r\n"))
             return;
 
-        if (!expect_read(s, "Hello, world!\n"))
+        if (!expectRead(s, "Hello, world!\n"))
             return;
 
         boost::system::error_code ec;
@@ -281,17 +295,17 @@ public:
         testcase("Basic client/server");
         TestSink sink{*this};
         TestThread thread;
-        sink.threshold(beast::severities::Severity::kAll);
+        sink.threshold(beast::Severity::All);
         beast::Journal const journal{sink};
         TestHandler handler;
-        auto s = make_Server(handler, thread.get_io_context(), journal);
+        auto s = makeServer(handler, thread.getIoContext(), journal);
         std::vector<Port> serverPort(1);
         serverPort.back().ip = boost::asio::ip::make_address(getEnvLocalhostAddr()),
         serverPort.back().port = 0;
         serverPort.back().protocol.insert("http");
         auto eps = s->ports(serverPort);
-        test_request(eps.begin()->second);
-        test_keepalive(eps.begin()->second);
+        testRequest(eps.begin()->second);
+        testKeepalive(eps.begin()->second);
         // s->close();
         s = nullptr;
         pass();
@@ -314,7 +328,7 @@ public:
                 Session& session,
                 std::unique_ptr<stream_type> const& bundle,
                 http_request_type const& request,
-                boost::asio::ip::tcp::endpoint remote_address)
+                boost::asio::ip::tcp::endpoint remoteAddress)
             {
                 return Handoff{};
             }
@@ -323,7 +337,7 @@ public:
             onHandoff(
                 Session& session,
                 http_request_type const& request,
-                boost::asio::ip::tcp::endpoint remote_address)
+                boost::asio::ip::tcp::endpoint remoteAddress)
             {
                 return Handoff{};
             }
@@ -351,14 +365,14 @@ public:
             }
         };
 
-        using namespace beast::severities;
+        using beast::Severity;
         SuiteJournal journal("Server_test", *this);
 
         NullHandler h;
         for (int i = 0; i < 1000; ++i)
         {
             TestThread thread;
-            auto s = make_Server(h, thread.get_io_context(), journal);
+            auto s = makeServer(h, thread.getIoContext(), journal);
             std::vector<Port> serverPort(1);
             serverPort.back().ip = boost::asio::ip::make_address(getEnvLocalhostAddr()),
             serverPort.back().port = 0;
@@ -501,5 +515,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Server, server, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

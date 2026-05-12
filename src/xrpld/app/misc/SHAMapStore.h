@@ -1,5 +1,7 @@
 #pragma once
 
+#include <xrpld/app/main/Application.h>
+
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/nodestore/Manager.h>
 
@@ -31,8 +33,8 @@ public:
     virtual void
     stop() = 0;
 
-    virtual std::uint32_t
-    clampFetchDepth(std::uint32_t fetch_depth) const = 0;
+    [[nodiscard]] virtual std::uint32_t
+    clampFetchDepth(std::uint32_t fetchDepth) const = 0;
 
     virtual std::unique_ptr<NodeStore::Database>
     makeNodeStore(int readThreads) = 0;
@@ -42,7 +44,7 @@ public:
     setCanDelete(LedgerIndex canDelete) = 0;
 
     /** Whether advisory delete is enabled. */
-    virtual bool
+    [[nodiscard]] virtual bool
     advisoryDelete() const = 0;
 
     /** Maximum ledger that has been deleted, or will be deleted if
@@ -56,7 +58,7 @@ public:
     getCanDelete() = 0;
 
     /** Returns the number of file descriptors that are needed. */
-    virtual int
+    [[nodiscard]] virtual int
     fdRequired() const = 0;
 
     /** The minimum ledger to try and maintain in our database.
@@ -75,12 +77,12 @@ public:
         @return The minimum ledger sequence to keep online based on the
             description above. If not set, then an unseated optional.
     */
-    virtual std::optional<LedgerIndex>
+    [[nodiscard]] virtual std::optional<LedgerIndex>
     minimumOnline() const = 0;
 };
 
 //------------------------------------------------------------------------------
 
 std::unique_ptr<SHAMapStore>
-make_SHAMapStore(Application& app, NodeStore::Scheduler& scheduler, beast::Journal journal);
+makeSHAMapStore(Application& app, NodeStore::Scheduler& scheduler, beast::Journal journal);
 }  // namespace xrpl

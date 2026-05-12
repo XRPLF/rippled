@@ -1,19 +1,25 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/TimeKeeper.h>
 #include <xrpld/overlay/Cluster.h>
+#include <xrpld/overlay/ClusterNode.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/rpc/Context.h>
 
-#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/tokens.h>
 #include <xrpl/server/LoadFeeTrack.h>
+
+#include <cstdint>
 
 namespace xrpl {
 
-Json::Value
+json::Value
 doPeers(RPC::JsonContext& context)
 {
-    Json::Value jvResult(Json::objectValue);
+    json::Value jvResult(json::ValueType::Object);
 
     jvResult[jss::peers] = context.app.getOverlay().json();
 
@@ -41,14 +47,14 @@ doPeers(RPC::JsonContext& context)
     auto const now = context.app.getTimeKeeper().now();
     auto const self = context.app.nodeIdentity().first;
 
-    Json::Value& cluster = (jvResult[jss::cluster] = Json::objectValue);
+    json::Value& cluster = (jvResult[jss::cluster] = json::ValueType::Object);
     std::uint32_t const ref = context.app.getFeeTrack().getLoadBase();
 
-    context.app.getCluster().for_each([&cluster, now, ref, &self](ClusterNode const& node) {
+    context.app.getCluster().forEach([&cluster, now, ref, &self](ClusterNode const& node) {
         if (node.identity() == self)
             return;
 
-        Json::Value& json = cluster[toBase58(TokenType::NodePublic, node.identity())];
+        json::Value& json = cluster[toBase58(TokenType::NodePublic, node.identity())];
 
         if (!node.name().empty())
             json[jss::tag] = node.name();

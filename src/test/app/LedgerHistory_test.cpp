@@ -1,21 +1,32 @@
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
 #include <test/jtx/CheckMessageLogs.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/envconfig.h>
+#include <test/jtx/noop.h>
 
 #include <xrpld/app/ledger/LedgerHistory.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/beast/insight/NullCollector.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/tx/apply.h>
 
-#include <chrono>
-#include <sstream>
+#include <cassert>
+#include <memory>
+#include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
-class LedgerHistory_test : public beast::unit_test::suite
+class LedgerHistory_test : public beast::unit_test::Suite
 {
 public:
     /** Generate a new ledger by hand, applying a specific close time offset
@@ -37,7 +48,7 @@ public:
         {
             assert(!stx);
             return std::make_shared<Ledger>(
-                create_genesis,
+                kCREATE_GENESIS,
                 Rules{env.app().config().features},
                 env.app().config().FEES.toFees(),
                 std::vector<uint256>{},
@@ -48,14 +59,14 @@ public:
         if (stx)
         {
             OpenView accum(&*res);
-            applyTransaction(env.app(), accum, *stx, false, tapNONE, env.journal);
+            applyTransaction(env.app(), accum, *stx, false, TapNone, env.journal);
             accum.apply(*res);
         }
         res->updateSkipList();
 
         {
-            res->stateMap().flushDirty(hotACCOUNT_NODE);
-            res->txMap().flushDirty(hotTRANSACTION_NODE);
+            res->stateMap().flushDirty(NodeObjectType::AccountNode);
+            res->txMap().flushDirty(NodeObjectType::TransactionNode);
         }
         res->unshare();
 
@@ -79,7 +90,7 @@ public:
         {
             bool found = false;
             Env env{*this, envconfig(), std::make_unique<CheckMessageLogs>("MISMATCH ", &found)};
-            LedgerHistory lh{beast::insight::NullCollector::New(), env.app()};
+            LedgerHistory lh{beast::insight::NullCollector::make(), env.app()};
             auto const genesis = makeLedger({}, env, lh, 0s);
             uint256 const dummyTxHash{1};
             lh.builtLedger(genesis, dummyTxHash, {});
@@ -95,7 +106,7 @@ public:
                 *this,
                 envconfig(),
                 std::make_unique<CheckMessageLogs>("MISMATCH on close time", &found)};
-            LedgerHistory lh{beast::insight::NullCollector::New(), env.app()};
+            LedgerHistory lh{beast::insight::NullCollector::make(), env.app()};
             auto const genesis = makeLedger({}, env, lh, 0s);
             auto const ledgerA = makeLedger(genesis, env, lh, 4s);
             auto const ledgerB = makeLedger(genesis, env, lh, 40s);
@@ -114,7 +125,7 @@ public:
                 *this,
                 envconfig(),
                 std::make_unique<CheckMessageLogs>("MISMATCH on prior ledger", &found)};
-            LedgerHistory lh{beast::insight::NullCollector::New(), env.app()};
+            LedgerHistory lh{beast::insight::NullCollector::make(), env.app()};
             auto const genesis = makeLedger({}, env, lh, 0s);
             auto const ledgerA = makeLedger(genesis, env, lh, 4s);
             auto const ledgerB = makeLedger(genesis, env, lh, 40s);
@@ -136,7 +147,7 @@ public:
                                           : "MISMATCH on consensus transaction set";
             bool found = false;
             Env env{*this, envconfig(), std::make_unique<CheckMessageLogs>(msg, &found)};
-            LedgerHistory lh{beast::insight::NullCollector::New(), env.app()};
+            LedgerHistory lh{beast::insight::NullCollector::make(), env.app()};
 
             Account const alice{"A1"};
             Account const bob{"A2"};
@@ -170,5 +181,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(LedgerHistory, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

@@ -1,21 +1,18 @@
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
-#include <xrpl/basics/strHex.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/conditions/Condition.h>
 #include <xrpl/conditions/Fulfillment.h>
-#include <xrpl/conditions/detail/PreimageSha256.h>
 
-#include <algorithm>
 #include <string>
+#include <system_error>
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace cryptoconditions {
+namespace xrpl::cryptoconditions {
 
-class PreimageSha256_test : public beast::unit_test::suite
+class PreimageSha256_test : public beast::unit_test::Suite
 {
     Buffer
     hexblob(std::string const& s)
@@ -76,7 +73,7 @@ class PreimageSha256_test : public beast::unit_test::suite
         BEAST_EXPECT(validate(*f2, *c2, makeSlice(known[0].first)));
         BEAST_EXPECT(validate(*f2, *c2, makeSlice(known[0].second)));
 
-        // Shouldn't validate if the fulfillment & condition don't match
+        // Shouldn't validate if the kFULFILLMENT & condition don't match
         // regardless of the message.
         BEAST_EXPECT(!validate(*f2, *c1));
         BEAST_EXPECT(!validate(*f2, *c1, makeSlice(known[0].first)));
@@ -168,6 +165,4 @@ class PreimageSha256_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(PreimageSha256, conditions, xrpl);
 
-}  // namespace cryptoconditions
-
-}  // namespace xrpl
+}  // namespace xrpl::cryptoconditions

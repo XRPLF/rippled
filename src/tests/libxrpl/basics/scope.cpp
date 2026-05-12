@@ -2,29 +2,31 @@
 
 #include <gtest/gtest.h>
 
+#include <utility>
+
 using namespace xrpl;
 
-TEST(scope, scope_exit)
+TEST(scope, ScopeExit)
 {
-    // scope_exit always executes the functor on destruction,
+    // ScopeExit always executes the functor on destruction,
     // unless release() is called
     int i = 0;
     {
-        scope_exit const x{[&i]() { i = 1; }};
+        ScopeExit const x{[&i]() { i = 1; }};
     }
     EXPECT_EQ(i, 1);
     {
-        scope_exit x{[&i]() { i = 2; }};
+        ScopeExit x{[&i]() { i = 2; }};
         x.release();
     }
     EXPECT_EQ(i, 1);
     {
-        scope_exit x{[&i]() { i += 2; }};
+        ScopeExit x{[&i]() { i += 2; }};
         auto x2 = std::move(x);
     }
     EXPECT_EQ(i, 3);
     {
-        scope_exit x{[&i]() { i = 4; }};
+        ScopeExit x{[&i]() { i = 4; }};
         x.release();
         auto x2 = std::move(x);
     }
@@ -32,7 +34,7 @@ TEST(scope, scope_exit)
     {
         try
         {
-            scope_exit const x{[&i]() { i = 5; }};
+            ScopeExit const x{[&i]() { i = 5; }};
             throw 1;
         }
         catch (...)  // NOLINT(bugprone-empty-catch)
@@ -43,7 +45,7 @@ TEST(scope, scope_exit)
     {
         try
         {
-            scope_exit x{[&i]() { i = 6; }};
+            ScopeExit x{[&i]() { i = 6; }};
             x.release();
             throw 1;
         }
@@ -54,27 +56,27 @@ TEST(scope, scope_exit)
     EXPECT_EQ(i, 5);
 }
 
-TEST(scope, scope_fail)
+TEST(scope, ScopeFail)
 {
-    // scope_fail executes the functor on destruction only
+    // ScopeFail executes the functor on destruction only
     // if an exception is unwinding, unless release() is called
     int i = 0;
     {
-        scope_fail const x{[&i]() { i = 1; }};
+        ScopeFail const x{[&i]() { i = 1; }};
     }
     EXPECT_EQ(i, 0);
     {
-        scope_fail x{[&i]() { i = 2; }};
+        ScopeFail x{[&i]() { i = 2; }};
         x.release();
     }
     EXPECT_EQ(i, 0);
     {
-        scope_fail x{[&i]() { i = 3; }};
+        ScopeFail x{[&i]() { i = 3; }};
         auto x2 = std::move(x);
     }
     EXPECT_EQ(i, 0);
     {
-        scope_fail x{[&i]() { i = 4; }};
+        ScopeFail x{[&i]() { i = 4; }};
         x.release();
         auto x2 = std::move(x);
     }
@@ -82,7 +84,7 @@ TEST(scope, scope_fail)
     {
         try
         {
-            scope_fail const x{[&i]() { i = 5; }};
+            ScopeFail const x{[&i]() { i = 5; }};
             throw 1;
         }
         catch (...)  // NOLINT(bugprone-empty-catch)
@@ -93,7 +95,7 @@ TEST(scope, scope_fail)
     {
         try
         {
-            scope_fail x{[&i]() { i = 6; }};
+            ScopeFail x{[&i]() { i = 6; }};
             x.release();
             throw 1;
         }
@@ -104,27 +106,27 @@ TEST(scope, scope_fail)
     EXPECT_EQ(i, 5);
 }
 
-TEST(scope, scope_success)
+TEST(scope, ScopeSuccess)
 {
-    // scope_success executes the functor on destruction only
+    // ScopeSuccess executes the functor on destruction only
     // if an exception is not unwinding, unless release() is called
     int i = 0;
     {
-        scope_success const x{[&i]() { i = 1; }};
+        ScopeSuccess const x{[&i]() { i = 1; }};
     }
     EXPECT_EQ(i, 1);
     {
-        scope_success x{[&i]() { i = 2; }};
+        ScopeSuccess x{[&i]() { i = 2; }};
         x.release();
     }
     EXPECT_EQ(i, 1);
     {
-        scope_success x{[&i]() { i += 2; }};
+        ScopeSuccess x{[&i]() { i += 2; }};
         auto x2 = std::move(x);
     }
     EXPECT_EQ(i, 3);
     {
-        scope_success x{[&i]() { i = 4; }};
+        ScopeSuccess x{[&i]() { i = 4; }};
         x.release();
         auto x2 = std::move(x);
     }
@@ -132,7 +134,7 @@ TEST(scope, scope_success)
     {
         try
         {
-            scope_success const x{[&i]() { i = 5; }};
+            ScopeSuccess const x{[&i]() { i = 5; }};
             throw 1;
         }
         catch (...)  // NOLINT(bugprone-empty-catch)
@@ -143,7 +145,7 @@ TEST(scope, scope_success)
     {
         try
         {
-            scope_success x{[&i]() { i = 6; }};
+            ScopeSuccess x{[&i]() { i = 6; }};
             x.release();
             throw 1;
         }

@@ -1,11 +1,14 @@
 #include <test/jtx/memo.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+#include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
+
+#include <xrpl/basics/strHex.h>
+
+namespace xrpl::test::jtx {
 
 void
-memo::operator()(Env&, JTx& jt) const
+Memo::operator()(Env&, JTx& jt) const
 {
     auto& jv = jt.jv;
     auto& ma = jv["Memos"];
@@ -17,7 +20,7 @@ memo::operator()(Env&, JTx& jt) const
 }
 
 void
-memo_data::operator()(Env&, JTx& jt) const
+MemoData::operator()(Env&, JTx& jt) const
 {
     auto& jv = jt.jv;
     auto& ma = jv["Memos"];
@@ -27,7 +30,7 @@ memo_data::operator()(Env&, JTx& jt) const
 }
 
 void
-memo_format::operator()(Env&, JTx& jt) const
+MemoFormat::operator()(Env&, JTx& jt) const
 {
     auto& jv = jt.jv;
     auto& ma = jv["Memos"];
@@ -37,7 +40,7 @@ memo_format::operator()(Env&, JTx& jt) const
 }
 
 void
-memo_type::operator()(Env&, JTx& jt) const
+MemoType::operator()(Env&, JTx& jt) const
 {
     auto& jv = jt.jv;
     auto& ma = jv["Memos"];
@@ -46,6 +49,4 @@ memo_type::operator()(Env&, JTx& jt) const
     m["MemoType"] = strHex(s_);
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

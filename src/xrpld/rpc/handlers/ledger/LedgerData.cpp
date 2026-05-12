@@ -6,10 +6,21 @@
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/serialize.h>
+
+#include <grpcpp/support/status.h>
+#include <org/xrpl/rpc/v1/get_ledger_data.pb.h>
+
+#include <memory>
+#include <utility>
 
 namespace xrpl {
 
@@ -24,7 +35,7 @@ namespace xrpl {
 //     ledger_index: chosen ledger's index
 //     state:        array of state nodes
 //     marker:       resume point, if any
-Json::Value
+json::Value
 doLedgerData(RPC::JsonContext& context)
 {
     std::shared_ptr<ReadView const> lpLedger;
@@ -38,19 +49,25 @@ doLedgerData(RPC::JsonContext& context)
     ReadView::key_type key = ReadView::key_type();
     if (isMarker)
     {
-        Json::Value const& jMarker = params[jss::marker];
+        json::Value const& jMarker = params[jss::marker];
         if (!(jMarker.isString() && key.parseHex(jMarker.asString())))
-            return RPC::expected_field_error(jss::marker, "valid");
+            return RPC::expectedFieldError(jss::marker, "valid");
     }
 
-    bool const isBinary = params[jss::binary].asBool();
+    bool isBinary = false;
+    if (params.isMember(jss::binary))
+    {
+        if (!params[jss::binary].isBool())
+            return RPC::expectedFieldError(jss::binary, "boolean");
+        isBinary = params[jss::binary].asBool();
+    }
 
     int limit = -1;
     if (params.isMember(jss::limit))
     {
-        Json::Value const& jLimit = params[jss::limit];
+        json::Value const& jLimit = params[jss::limit];
         if (!jLimit.isIntegral())
-            return RPC::expected_field_error(jss::limit, "integer");
+            return RPC::expectedFieldError(jss::limit, "integer");
 
         limit = jLimit.asInt();
     }
@@ -65,8 +82,8 @@ doLedgerData(RPC::JsonContext& context)
     if (!isMarker)
     {
         // Return base ledger data on first query
-        jvResult[jss::ledger] =
-            getJson(LedgerFill(*lpLedger, &context, isBinary ? LedgerFill::Options::binary : 0));
+        jvResult[jss::ledger] = getJson(LedgerFill(
+            *lpLedger, &context, isBinary ? static_cast<int>(LedgerFill::Options::Binary) : 0));
     }
 
     auto [rpcStatus, type] = RPC::chooseLedgerEntryType(params);
@@ -76,14 +93,14 @@ doLedgerData(RPC::JsonContext& context)
         rpcStatus.inject(jvResult);
         return jvResult;
     }
-    Json::Value& nodes = jvResult[jss::state];
-    if (nodes.type() == Json::nullValue)
+    json::Value& nodes = jvResult[jss::state];
+    if (nodes.type() == json::ValueType::Null)
     {
-        nodes = Json::Value(Json::arrayValue);
+        nodes = json::Value(json::ValueType::Array);
     }
 
     auto e = lpLedger->sles.end();
-    for (auto i = lpLedger->sles.upper_bound(key); i != e; ++i)
+    for (auto i = lpLedger->sles.upperBound(key); i != e; ++i)
     {
         auto sle = lpLedger->read(keylet::unchecked((*i)->key()));
         if (limit-- <= 0)
@@ -98,13 +115,13 @@ doLedgerData(RPC::JsonContext& context)
         {
             if (isBinary)
             {
-                Json::Value& entry = nodes.append(Json::objectValue);
+                json::Value& entry = nodes.append(json::ValueType::Object);
                 entry[jss::data] = serializeHex(*sle);
                 entry[jss::index] = to_string(sle->key());
             }
             else
             {
-                Json::Value& entry = nodes.append(sle->getJson(JsonOptions::none));
+                json::Value& entry = nodes.append(sle->getJson(JsonOptions::Values::None));
                 entry[jss::index] = to_string(sle->key());
             }
         }
@@ -124,7 +141,7 @@ doLedgerDataGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>& con
     if (auto status = RPC::ledgerFromRequest(ledger, context))
     {
         grpc::Status errorStatus;
-        if (status.toErrorCode() == rpcINVALID_PARAMS)
+        if (status.toErrorCode() == RpcInvalidParams)
         {
             errorStatus = grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, status.message());
         }
@@ -157,12 +174,12 @@ doLedgerDataGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>& con
         if (*key < startKey)
             return {response, {grpc::StatusCode::INVALID_ARGUMENT, "end marker out of range"}};
 
-        e = ledger->sles.upper_bound(*key);
+        e = ledger->sles.upperBound(*key);
     }
 
     int maxLimit = RPC::Tuning::pageLength(true);
 
-    for (auto i = ledger->sles.upper_bound(startKey); i != e; ++i)
+    for (auto i = ledger->sles.upperBound(startKey); i != e; ++i)
     {
         auto sle = ledger->read(keylet::unchecked((*i)->key()));
         if (maxLimit-- <= 0)

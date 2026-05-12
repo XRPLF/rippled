@@ -1,28 +1,42 @@
 #include <xrpl/tx/transactors/lending/LoanBrokerCoverWithdraw.h>
-//
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTakesAsset.h>
-#include <xrpl/tx/transactors/lending/LendingHelpers.h>
-#include <xrpl/tx/transactors/payment/Payment.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/Units.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <memory>
 
 namespace xrpl {
 
 bool
 LoanBrokerCoverWithdraw::checkExtraFeatures(PreflightContext const& ctx)
 {
-    return checkLendingProtocolDependencies(ctx);
+    return checkLendingProtocolDependencies(ctx.rules, ctx.tx);
 }
 
 NotTEC
 LoanBrokerCoverWithdraw::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfLoanBrokerID] == beast::zero)
+    if (ctx.tx[sfLoanBrokerID] == beast::kZERO)
         return temINVALID;
 
     auto const dstAmount = ctx.tx[sfAmount];
-    if (dstAmount <= beast::zero)
+    if (dstAmount <= beast::kZERO)
         return temBAD_AMOUNT;
 
     if (!isLegalNet(dstAmount))
@@ -30,7 +44,7 @@ LoanBrokerCoverWithdraw::preflight(PreflightContext const& ctx)
 
     if (auto const destination = ctx.tx[~sfDestination])
     {
-        if (*destination == beast::zero)
+        if (*destination == beast::kZERO)
         {
             return temMALFORMED;
         }
@@ -119,11 +133,11 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     auto const minimumCover = [&]() {
         // Always round the minimum required up.
         // Applies to `tenthBipsOfValue` as well as `roundToAsset`.
-        NumberRoundModeGuard const mg(Number::upward);
+        NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
         return roundToAsset(
             vaultAsset,
             tenthBipsOfValue(currentDebtTotal, TenthBips32(sleBroker->at(sfCoverRateMinimum))),
-            currentDebtTotal.exponent());
+            scale(currentDebtTotal, vaultAsset));
     }();
     if (coverAvail < amount)
         return tecINSUFFICIENT_FUNDS;
@@ -134,8 +148,8 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
             ctx.view,
             pseudoAccountID,
             vaultAsset,
-            FreezeHandling::fhZERO_IF_FROZEN,
-            AuthHandling::ahZERO_IF_UNAUTHORIZED,
+            FreezeHandling::ZeroIfFrozen,
+            AuthHandling::ZeroIfUnauthorized,
             ctx.j) < amount)
         return tecINSUFFICIENT_FUNDS;
 
@@ -170,6 +184,27 @@ LoanBrokerCoverWithdraw::doApply()
     associateAsset(*broker, vaultAsset);
 
     return doWithdraw(view(), tx, account_, dstAcct, brokerPseudoID, preFeeBalance_, amount, j_);
+}
+
+void
+LoanBrokerCoverWithdraw::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+LoanBrokerCoverWithdraw::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 //------------------------------------------------------------------------------

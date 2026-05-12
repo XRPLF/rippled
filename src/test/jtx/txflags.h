@@ -2,18 +2,16 @@
 
 #include <test/jtx/Env.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 /** Set the flags on a JTx. */
-class txflags
+class Txflags
 {
 private:
     std::uint32_t v_;
 
 public:
-    explicit txflags(std::uint32_t v) : v_(v)
+    explicit Txflags(std::uint32_t v) : v_(v)
     {
     }
 
@@ -21,6 +19,4 @@ public:
     operator()(Env&, JTx& jt) const;
 };
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

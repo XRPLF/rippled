@@ -1,14 +1,35 @@
-#include <xrpl/basics/chrono.h>
-#include <xrpl/beast/core/CurrentThreadName.h>
-#include <xrpl/json/json_value.h>
 #include <xrpl/nodestore/Database.h>
-#include <xrpl/protocol/HashPrefix.h>
+
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/core/CurrentThreadName.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_forwards.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/nodestore/Backend.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/Types.h>
+#include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/jss.h>
 
+#include <algorithm>
+#include <atomic>
 #include <chrono>
+#include <cstdint>
+#include <exception>
+#include <functional>
+#include <memory>
+#include <mutex>
+#include <stdexcept>
+#include <string>
+#include <thread>
+#include <utility>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 Database::Database(
     Scheduler& scheduler,
@@ -17,7 +38,7 @@ Database::Database(
     beast::Journal journal)
     : j_(journal)
     , scheduler_(scheduler)
-    , earliestLedgerSeq_(get<std::uint32_t>(config, "earliest_seq", XRP_LEDGER_EARLIEST_SEQ))
+    , earliestLedgerSeq_(get<std::uint32_t>(config, "earliest_seq", kXRP_LEDGER_EARLIEST_SEQ))
     , requestBundle_(get<int>(config, "rq_bundle", 4))
     , readThreads_(std::max(1, readThreads))
 {
@@ -74,7 +95,7 @@ Database::Database(
                         auto const& data = it->second;
                         auto const seqn = data[0].first;
 
-                        auto obj = fetchNodeObject(hash, seqn, FetchType::async);
+                        auto obj = fetchNodeObject(hash, seqn, FetchType::Async);
 
                         // This could be further optimized: if there are
                         // multiple requests for sequence numbers mapping to
@@ -86,7 +107,7 @@ Database::Database(
                             req.second(
                                 (seqn == req.first) || isSameDB(req.first, seqn)
                                     ? obj
-                                    : fetchNodeObject(hash, req.first, FetchType::async));
+                                    : fetchNodeObject(hash, req.first, FetchType::Async));
                         }
                     }
 
@@ -122,7 +143,7 @@ void
 Database::stop()
 {
     {
-        std::lock_guard const lock(readLock_);
+        std::scoped_lock const lock(readLock_);
 
         if (!readStopping_.exchange(true, std::memory_order_relaxed))
         {
@@ -158,7 +179,7 @@ Database::asyncFetch(
     std::uint32_t ledgerSeq,
     std::function<void(std::shared_ptr<NodeObject> const&)>&& cb)
 {
-    std::lock_guard const lock(readLock_);
+    std::scoped_lock const lock(readLock_);
 
     if (!isStopping())
     {
@@ -171,7 +192,7 @@ void
 Database::importInternal(Backend& dstBackend, Database& srcDB)
 {
     Batch batch;
-    batch.reserve(batchWritePreallocationSize);
+    batch.reserve(kBATCH_WRITE_PREALLOCATION_SIZE);
     auto storeBatch = [&, fname = __func__]() {
         try
         {
@@ -190,13 +211,13 @@ Database::importInternal(Backend& dstBackend, Database& srcDB)
         batch.clear();
     };
 
-    srcDB.for_each([&](std::shared_ptr<NodeObject> nodeObject) {
+    srcDB.forEach([&](std::shared_ptr<NodeObject> nodeObject) {
         XRPL_ASSERT(nodeObject, "xrpl::NodeStore::Database::importInternal : non-null node");
         if (!nodeObject)  // This should never happen
             return;
 
         batch.emplace_back(std::move(nodeObject));
-        if (batch.size() >= batchWritePreallocationSize)
+        if (batch.size() >= kBATCH_WRITE_PREALLOCATION_SIZE)
             storeBatch();
     });
 
@@ -233,13 +254,13 @@ Database::fetchNodeObject(
 }
 
 void
-Database::getCountsJson(Json::Value& obj)
+Database::getCountsJson(json::Value& obj)
 {
     XRPL_ASSERT(obj.isObject(), "xrpl::NodeStore::Database::getCountsJson : valid input type");
 
     {
         std::unique_lock<std::mutex> const lock(readLock_);
-        obj["read_queue"] = static_cast<Json::UInt>(read_.size());
+        obj["read_queue"] = static_cast<json::UInt>(read_.size());
     }
 
     obj["read_threads_total"] = readThreads_.load();
@@ -254,5 +275,4 @@ Database::getCountsJson(Json::Value& obj)
     obj[jss::node_reads_duration_us] = std::to_string(fetchDurationUs_);
 }
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

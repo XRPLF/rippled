@@ -1,11 +1,16 @@
+#include <xrpl/conditions/Fulfillment.h>
+
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/conditions/Condition.h>
-#include <xrpl/conditions/Fulfillment.h>
 #include <xrpl/conditions/detail/PreimageSha256.h>
+#include <xrpl/conditions/detail/error.h>
 #include <xrpl/conditions/detail/utils.h>
 
-namespace xrpl {
-namespace cryptoconditions {
+#include <memory>
+#include <system_error>
+
+namespace xrpl::cryptoconditions {
 
 bool
 match(Fulfillment const& f, Condition const& c)
@@ -48,7 +53,7 @@ Fulfillment::deserialize(Slice s, std::error_code& ec)
 
     if (s.empty())
     {
-        ec = error::buffer_empty;
+        ec = Error::BufferEmpty;
         return nullptr;
     }
 
@@ -61,25 +66,25 @@ Fulfillment::deserialize(Slice s, std::error_code& ec)
     // All fulfillments are context-specific, constructed types
     if (!isConstructed(p) || !isContextSpecific(p))
     {
-        ec = error::malformed_encoding;
+        ec = Error::MalformedEncoding;
         return nullptr;
     }
 
     if (p.length > s.size())
     {
-        ec = error::buffer_underfull;
+        ec = Error::BufferUnderfull;
         return {};
     }
 
     if (p.length < s.size())
     {
-        ec = error::buffer_overfull;
+        ec = Error::BufferOverfull;
         return {};
     }
 
-    if (p.length > maxSerializedFulfillment)
+    if (p.length > kMAX_SERIALIZED_FULFILLMENT)
     {
-        ec = error::large_size;
+        ec = Error::LargeSize;
         return {};
     }
 
@@ -88,45 +93,44 @@ Fulfillment::deserialize(Slice s, std::error_code& ec)
     using TagType = decltype(p.tag);
     switch (p.tag)
     {
-        case safe_cast<TagType>(Type::preimageSha256):
+        case safeCast<TagType>(Type::PreimageSha256):
             f = PreimageSha256::deserialize(Slice(s.data(), p.length), ec);
             if (ec)
                 return {};
             s += p.length;
             break;
 
-        case safe_cast<TagType>(Type::prefixSha256):
-            ec = error::unsupported_type;
+        case safeCast<TagType>(Type::PrefixSha256):
+            ec = Error::UnsupportedType;
             return {};
             break;
 
-        case safe_cast<TagType>(Type::thresholdSha256):
-            ec = error::unsupported_type;
+        case safeCast<TagType>(Type::ThresholdSha256):
+            ec = Error::UnsupportedType;
             return {};
             break;
 
-        case safe_cast<TagType>(Type::rsaSha256):
-            ec = error::unsupported_type;
+        case safeCast<TagType>(Type::RsaSha256):
+            ec = Error::UnsupportedType;
             return {};
             break;
 
-        case safe_cast<TagType>(Type::ed25519Sha256):
-            ec = error::unsupported_type;
+        case safeCast<TagType>(Type::Ed25519Sha256):
+            ec = Error::UnsupportedType;
             return {};
 
         default:
-            ec = error::unknown_type;
+            ec = Error::UnknownType;
             return {};
     }
 
     if (!s.empty())
     {
-        ec = error::trailing_garbage;
+        ec = Error::TrailingGarbage;
         return {};
     }
 
     return f;
 }
 
-}  // namespace cryptoconditions
-}  // namespace xrpl
+}  // namespace xrpl::cryptoconditions

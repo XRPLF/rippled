@@ -6,6 +6,8 @@
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
 
+#include <exception>
+
 namespace xrpl {
 
 namespace RPC {
@@ -16,7 +18,7 @@ struct JsonContext;
 // {
 //   random: <uint256>
 // }
-Json::Value
+json::Value
 doRandom(RPC::JsonContext& context)
 {
     // TODO(tom): the try/catch is almost certainly redundant, we catch at the
@@ -24,15 +26,15 @@ doRandom(RPC::JsonContext& context)
     try
     {
         uint256 rand;
-        beast::rngfill(rand.begin(), rand.size(), crypto_prng());
+        beast::rngfill(rand.begin(), rand.size(), cryptoPrng());
 
-        Json::Value jvResult;
+        json::Value jvResult;
         jvResult[jss::random] = to_string(rand);
         return jvResult;
     }
     catch (std::exception const&)
     {
-        return rpcError(rpcINTERNAL);  // LCOV_EXCL_LINE
+        return rpcError(RpcInternal);  // LCOV_EXCL_LINE
     }
 }
 

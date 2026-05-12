@@ -1,19 +1,34 @@
 #include <test/jtx/batch.h>
+
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
 #include <test/jtx/utility.h>
 
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/Batch.h>
-#include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/Sign.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
+#include <cstddef>
+#include <cstdint>
 #include <optional>
-#include <sstream>
+#include <ostream>
+#include <utility>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
-
-namespace batch {
+namespace xrpl::test::jtx::batch {
 
 XRPAmount
 calcBatchFee(test::jtx::Env const& env, uint32_t const& numSigners, uint32_t const& txns)
@@ -23,13 +38,13 @@ calcBatchFee(test::jtx::Env const& env, uint32_t const& numSigners, uint32_t con
 }
 
 // Batch.
-Json::Value
+json::Value
 outer(jtx::Account const& account, uint32_t seq, STAmount const& fee, std::uint32_t flags)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::TransactionType] = jss::Batch;
     jv[jss::Account] = account.human();
-    jv[jss::RawTransactions] = Json::Value{Json::arrayValue};
+    jv[jss::RawTransactions] = json::Value{json::ValueType::Array};
     jv[jss::Sequence] = seq;
     jv[jss::Flags] = flags;
     jv[jss::Fee] = to_string(fee);
@@ -37,18 +52,18 @@ outer(jtx::Account const& account, uint32_t seq, STAmount const& fee, std::uint3
 }
 
 void
-inner::operator()(Env& env, JTx& jt) const
+Inner::operator()(Env& env, JTx& jt) const
 {
     auto const index = jt.jv[jss::RawTransactions].size();
-    Json::Value& batchTransaction = jt.jv[jss::RawTransactions][index];
+    json::Value& batchTransaction = jt.jv[jss::RawTransactions][index];
 
     // Initialize the batch transaction
-    batchTransaction = Json::Value{};
+    batchTransaction = json::Value{};
     batchTransaction[jss::RawTransaction] = txn_;
 }
 
 void
-sig::operator()(Env& env, JTx& jt) const
+Sig::operator()(Env& env, JTx& jt) const
 {
     auto const mySigners = signers;
     std::optional<STObject> st;
@@ -58,10 +73,10 @@ sig::operator()(Env& env, JTx& jt) const
         jt.jv[jss::SigningPubKey] = "";
         st = parse(jt.jv);
     }
-    catch (parse_error const&)
+    catch (ParseError const&)
     {
         env.test.log << pretty(jt.jv) << std::endl;
-        Rethrow();
+        rethrow();
     }
     STTx const& stx = STTx{std::move(*st)};
     auto& js = jt[sfBatchSigners.getJsonName()];
@@ -81,7 +96,7 @@ sig::operator()(Env& env, JTx& jt) const
 }
 
 void
-msig::operator()(Env& env, JTx& jt) const
+Msig::operator()(Env& env, JTx& jt) const
 {
     auto const mySigners = signers;
     std::optional<STObject> st;
@@ -91,10 +106,10 @@ msig::operator()(Env& env, JTx& jt) const
         jt.jv[jss::SigningPubKey] = "";
         st = parse(jt.jv);
     }
-    catch (parse_error const&)
+    catch (ParseError const&)
     {
         env.test.log << pretty(jt.jv) << std::endl;
-        Rethrow();
+        rethrow();
     }
     STTx const& stx = STTx{std::move(*st)};
     auto& bs = jt[sfBatchSigners.getJsonName()];
@@ -119,8 +134,4 @@ msig::operator()(Env& env, JTx& jt) const
     }
 }
 
-}  // namespace batch
-
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::batch

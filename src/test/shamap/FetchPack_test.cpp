@@ -1,25 +1,40 @@
 #include <test/shamap/common.h>
 #include <test/unit_test/SuiteJournal.h>
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/SHAMapHash.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/random.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/xor_shift_engine.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/shamap/SHAMap.h>
+#include <xrpl/shamap/SHAMapItem.h>
+#include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapSyncFilter.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 
-#include <functional>
+#include <boost/smart_ptr/intrusive_ptr.hpp>
+
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <optional>
 #include <stdexcept>
 
-namespace xrpl {
-namespace tests {
+namespace xrpl::tests {
 
-class FetchPack_test : public beast::unit_test::suite
+class FetchPack_test : public beast::unit_test::Suite
 {
 public:
-    enum { tableItems = 100, tableItemsExtra = 20 };
+    static constexpr auto kTABLE_ITEMS = 100;
+    static constexpr auto kTABLE_ITEMS_EXTRA = 20;
 
     using Map = hash_map<SHAMapHash, Blob>;
     using Table = SHAMap;
@@ -36,7 +51,7 @@ public:
 
     struct TestFilter : SHAMapSyncFilter
     {
-        TestFilter(Map& map, beast::Journal journal) : mMap(map), mJournal(journal)
+        TestFilter(Map& map, beast::Journal journal) : map(map), journal(journal)
         {
         }
 
@@ -50,53 +65,53 @@ public:
         {
         }
 
-        std::optional<Blob>
+        [[nodiscard]] std::optional<Blob>
         getNode(SHAMapHash const& nodeHash) const override
         {
-            Map::iterator const it = mMap.find(nodeHash);
-            if (it == mMap.end())
+            Map::iterator const it = map.find(nodeHash);
+            if (it == map.end())
             {
-                JLOG(mJournal.fatal()) << "Test filter missing node";
+                JLOG(journal.fatal()) << "Test filter missing node";
                 return std::nullopt;
             }
             return it->second;
         }
 
-        Map& mMap;
-        beast::Journal mJournal;
+        Map& map;
+        beast::Journal journal;
     };
 
     static boost::intrusive_ptr<Item>
-    make_random_item(beast::xor_shift_engine& r)
+    makeRandomItemMember(beast::xor_shift_engine& r)
     {
         Serializer s;
         for (int d = 0; d < 3; ++d)
-            s.add32(xrpl::rand_int<std::uint32_t>(r));
-        return make_shamapitem(s.getSHA512Half(), s.slice());
+            s.add32(xrpl::randInt<std::uint32_t>(r));
+        return makeShamapitem(s.getSHA512Half(), s.slice());
     }
 
     static void
-    add_random_items(std::size_t n, Table& t, beast::xor_shift_engine& r)
+    addRandomItems(std::size_t n, Table& t, beast::xor_shift_engine& r)
     {
         while ((n--) != 0u)
         {
-            auto const result(t.addItem(SHAMapNodeType::tnACCOUNT_STATE, make_random_item(r)));
+            auto const result(t.addItem(SHAMapNodeType::TnAccountState, makeRandomItemMember(r)));
             assert(result);
             (void)result;
         }
     }
 
     void
-    on_fetch(Map& map, SHAMapHash const& hash, Blob const& blob)
+    onFetch(Map& map, SHAMapHash const& hash, Blob const& blob)
     {
-        BEAST_EXPECT(sha512Half(makeSlice(blob)) == hash.as_uint256());
+        BEAST_EXPECT(sha512Half(makeSlice(blob)) == hash.asUInt256());
         map.emplace(hash, blob);
     }
 
     void
     run() override
     {
-        using namespace beast::severities;
+        using beast::Severity;
         test::SuiteJournal journal("FetchPack_test", *this);
 
         TestNodeFamily f(journal);
@@ -105,11 +120,11 @@ public:
         pass();
 
         //         beast::Random r;
-        //         add_random_items (tableItems, *t1, r);
+        //         add_random_items_ (tableItems, *t1, r);
         //         std::shared_ptr <Table> t2 (t1->snapShot (true));
         //
-        //         add_random_items (tableItemsExtra, *t1, r);
-        //         add_random_items (tableItemsExtra, *t2, r);
+        //         add_random_items_ (tableItemsExtra, *t1, r);
+        //         add_random_items_ (tableItemsExtra, *t2, r);
 
         // turn t1 into t2
         //         Map map;
@@ -151,5 +166,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(FetchPack, shamap, xrpl);
 
-}  // namespace tests
-}  // namespace xrpl
+}  // namespace xrpl::tests

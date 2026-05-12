@@ -7,8 +7,7 @@
 #include <condition_variable>
 #include <mutex>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 /** Batch-writing assist logic.
 
@@ -41,7 +40,7 @@ public:
 
         Anything pending in the batch is written out before this returns.
     */
-    ~BatchWriter();
+    ~BatchWriter() override;
 
     /** Store the object.
 
@@ -67,14 +66,13 @@ private:
     using LockType = std::recursive_mutex;
     using CondvarType = std::condition_variable_any;
 
-    Callback& m_callback;
-    Scheduler& m_scheduler;
-    LockType mWriteMutex;
-    CondvarType mWriteCondition;
-    int mWriteLoad{0};
-    bool mWritePending{false};
-    Batch mWriteSet;
+    Callback& callback_;
+    Scheduler& scheduler_;
+    LockType writeMutex_;
+    CondvarType writeCondition_;
+    int writeLoad_{0};
+    bool writePending_{false};
+    Batch writeSet_;
 };
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

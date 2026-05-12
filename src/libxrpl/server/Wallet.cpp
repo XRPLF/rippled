@@ -1,7 +1,37 @@
-#include <xrpl/rdb/DBInit.h>
 #include <xrpl/server/Wallet.h>
 
-#include <boost/format.hpp>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/hash/uhash.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/PeerReservationTable.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/tokens.h>
+#include <xrpl/rdb/DBInit.h>
+#include <xrpl/rdb/DatabaseCon.h>
+#include <xrpl/rdb/SociDB.h>
+#include <xrpl/server/Manifest.h>
+
+#include <boost/format/free_funcs.hpp>
+#include <boost/optional/optional.hpp>  // IWYU pragma: keep
+
+#include <soci/blob.h>
+#include <soci/into.h>
+#include <soci/session.h>
+#include <soci/statement.h>
+#include <soci/transaction.h>
+#include <soci/use.h>
+
+#include <array>
+#include <functional>
+#include <memory>
+#include <string>
+#include <unordered_set>
+#include <utility>
 
 namespace xrpl {
 
@@ -10,7 +40,7 @@ makeWalletDB(DatabaseCon::Setup const& setup, beast::Journal j)
 {
     // wallet database
     return std::make_unique<DatabaseCon>(
-        setup, WalletDBName, std::array<std::string, 0>(), WalletDBInit, j);
+        setup, kWALLET_DB_NAME, std::array<std::string, 0>(), kWALLET_DB_INIT, j);
 }
 
 std::unique_ptr<DatabaseCon>
@@ -18,14 +48,14 @@ makeTestWalletDB(DatabaseCon::Setup const& setup, std::string const& dbname, bea
 {
     // wallet database
     return std::make_unique<DatabaseCon>(
-        setup, dbname.data(), std::array<std::string, 0>(), WalletDBInit, j);
+        setup, dbname.data(), std::array<std::string, 0>(), kWALLET_DB_INIT, j);
 }
 
 void
 getManifests(
     soci::session& session,
     std::string const& dbTable,
-    ManifestCache& mCache,
+    ManifestCache& cache,
     beast::Journal j)
 {
     // Load manifests stored in database
@@ -45,7 +75,7 @@ getManifests(
                 continue;
             }
 
-            mCache.applyManifest(std::move(*mo));
+            cache.applyManifest(std::move(*mo));
         }
         else
         {
@@ -121,13 +151,13 @@ getNodeIdentity(soci::session& session)
             auto const pk = parseBase58<PublicKey>(TokenType::NodePublic, pubKO.value_or(""));
 
             // Only use if the public and secret keys are a pair
-            if (sk && pk && (*pk == derivePublicKey(KeyType::secp256k1, *sk)))
+            if (sk && pk && (*pk == derivePublicKey(KeyType::Secp256k1, *sk)))
                 return {*pk, *sk};
         }
     }
 
     // If a valid identity wasn't found, we randomly generate a new one:
-    auto [newpublicKey, newsecretKey] = randomKeyPair(KeyType::secp256k1);
+    auto [newpublicKey, newsecretKey] = randomKeyPair(KeyType::Secp256k1);
 
     session << str(
         boost::format(
@@ -139,10 +169,10 @@ getNodeIdentity(soci::session& session)
     return {newpublicKey, newsecretKey};
 }
 
-std::unordered_set<PeerReservation, beast::uhash<>, KeyEqual>
+std::unordered_set<PeerReservation, beast::Uhash<>, KeyEqual>
 getPeerReservationTable(soci::session& session, beast::Journal j)
 {
-    std::unordered_set<PeerReservation, beast::uhash<>, KeyEqual> table;
+    std::unordered_set<PeerReservation, beast::Uhash<>, KeyEqual> table;
     // These values must be boost::optionals (not std) because SOCI expects
     // boost::optionals.
     boost::optional<std::string> valPubKey, valDesc;
@@ -168,7 +198,7 @@ getPeerReservationTable(soci::session& session, beast::Journal j)
             JLOG(j.warn()) << "load: not a public key: " << valPubKey;
             continue;
         }
-        table.insert(PeerReservation{*optNodeId, *valDesc});
+        table.insert(PeerReservation{.nodeId = *optNodeId, .description = *valDesc});
     }
 
     return table;
@@ -223,13 +253,13 @@ void
 readAmendments(
     soci::session& session,
     std::function<void(
-        boost::optional<std::string> amendment_hash,
-        boost::optional<std::string> amendment_name,
+        boost::optional<std::string> amendmentHash,
+        boost::optional<std::string> amendmentName,
         boost::optional<AmendmentVote> vote)> const& callback)
 {
     // lambda that converts the internally stored int to an AmendmentVote.
     auto intToVote = [](boost::optional<int> const& dbVote) -> boost::optional<AmendmentVote> {
-        return safe_cast<AmendmentVote>(dbVote.value_or(1));
+        return safeCast<AmendmentVote>(dbVote.value_or(1));
     };
 
     soci::transaction const tr(session);
@@ -239,18 +269,18 @@ readAmendments(
         "(  PARTITION BY AmendmentHash ORDER BY ROWID DESC ) "
         "as rnk FROM FeatureVotes ) WHERE rnk = 1";
     // SOCI requires boost::optional (not std::optional) as parameters.
-    boost::optional<std::string> amendment_hash;
-    boost::optional<std::string> amendment_name;
-    boost::optional<int> vote_to_veto;
+    boost::optional<std::string> amendmentHash;
+    boost::optional<std::string> amendmentName;
+    boost::optional<int> voteToVeto;
     soci::statement st =
         (session.prepare << sql,
-         soci::into(amendment_hash),
-         soci::into(amendment_name),
-         soci::into(vote_to_veto));
+         soci::into(amendmentHash),
+         soci::into(amendmentName),
+         soci::into(voteToVeto));
     st.execute();
     while (st.fetch())
     {
-        callback(amendment_hash, amendment_name, intToVote(vote_to_veto));
+        callback(amendmentHash, amendmentName, intToVote(voteToVeto));
     }
 }
 
@@ -267,7 +297,7 @@ voteAmendment(
         "('";
     sql += to_string(amendment);
     sql += "', '" + name;
-    sql += "', '" + std::to_string(safe_cast<int>(vote)) + "');";
+    sql += "', '" + std::to_string(safeCast<int>(vote)) + "');";
     session << sql;
     tr.commit();
 }

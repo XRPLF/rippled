@@ -1,12 +1,14 @@
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/TER.h>
 
+#include <cstddef>
+#include <string>
 #include <tuple>
 #include <type_traits>
 
 namespace xrpl {
 
-struct TER_test : public beast::unit_test::suite
+struct TER_test : public beast::unit_test::Suite
 {
     void
     testTransResultInfo()
@@ -42,27 +44,25 @@ struct TER_test : public beast::unit_test::suite
     public:
         template <typename Tup>
         void
-        operator()(Tup const& tup, beast::unit_test::suite&) const
+        operator()(Tup const& tup, beast::unit_test::Suite&) const
         {
             // Entries in the tuple should not be convertible or assignable
             // unless they are the same types.
             using To_t = std::decay_t<decltype(std::get<I1>(tup))>;
             using From_t = std::decay_t<decltype(std::get<I2>(tup))>;
             static_assert(
-                std::is_same<From_t, To_t>::value == std::is_convertible<From_t, To_t>::value,
-                "Convert err");
+                std::is_same_v<From_t, To_t> == std::is_convertible_v<From_t, To_t>, "Convert err");
             static_assert(
-                std::is_same<To_t, From_t>::value == std::is_constructible<To_t, From_t>::value,
+                std::is_same_v<To_t, From_t> == std::is_constructible_v<To_t, From_t>,
                 "Construct err");
             static_assert(
-                std::is_same<To_t, From_t>::value ==
-                    std::is_assignable<To_t&, From_t const&>::value,
+                std::is_same_v<To_t, From_t> == std::is_assignable_v<To_t&, From_t const&>,
                 "Assign err");
 
             // Assignment or conversion from integer to type should never work.
-            static_assert(!std::is_convertible<int, To_t>::value, "Convert err");
-            static_assert(!std::is_constructible<To_t, int>::value, "Construct err");
-            static_assert(!std::is_assignable<To_t&, int const&>::value, "Assign err");
+            static_assert(!std::is_convertible_v<int, To_t>, "Convert err");
+            static_assert(!std::is_constructible_v<To_t, int>, "Construct err");
+            static_assert(!std::is_assignable_v<To_t&, int const&>, "Assign err");
         }
     };
 
@@ -73,7 +73,7 @@ struct TER_test : public beast::unit_test::suite
         template <std::size_t, std::size_t> class Func,
         typename Tup>
     std::enable_if_t<I1 != 0>
-    testIterate(Tup const& tup, beast::unit_test::suite& s)
+    testIterate(Tup const& tup, beast::unit_test::Suite& s)
     {
         Func<I1, I2> const func;
         func(tup, s);
@@ -87,11 +87,11 @@ struct TER_test : public beast::unit_test::suite
         template <std::size_t, std::size_t> class Func,
         typename Tup>
     std::enable_if_t<I1 == 0 && I2 != 0>
-    testIterate(Tup const& tup, beast::unit_test::suite& s)
+    testIterate(Tup const& tup, beast::unit_test::Suite& s)
     {
         Func<I1, I2> const func;
         func(tup, s);
-        testIterate<std::tuple_size<Tup>::value - 1, I2 - 1, Func>(tup, s);
+        testIterate<std::tuple_size_v<Tup> - 1, I2 - 1, Func>(tup, s);
     }
 
     // Finish iteration over the tuple.
@@ -101,7 +101,7 @@ struct TER_test : public beast::unit_test::suite
         template <std::size_t, std::size_t> class Func,
         typename Tup>
     std::enable_if_t<I1 == 0 && I2 == 0>
-    testIterate(Tup const& tup, beast::unit_test::suite& s)
+    testIterate(Tup const& tup, beast::unit_test::Suite& s)
     {
         Func<I1, I2> const func;
         func(tup, s);
@@ -114,20 +114,20 @@ struct TER_test : public beast::unit_test::suite
         // are not valid.
 
         // Examples of each kind of enum.
-        static auto const terEnums = std::make_tuple(
+        static auto const kTER_ENUMS = std::make_tuple(
             telLOCAL_ERROR, temMALFORMED, tefFAILURE, terRETRY, tesSUCCESS, tecCLAIM);
-        static int const hiIndex{std::tuple_size<decltype(terEnums)>::value - 1};
+        static int const kHI_INDEX{std::tuple_size_v<decltype(kTER_ENUMS)> - 1};
 
         // Verify that enums cannot be converted to other enum types.
-        testIterate<hiIndex, hiIndex, NotConvertible>(terEnums, *this);
+        testIterate<kHI_INDEX, kHI_INDEX, NotConvertible>(kTER_ENUMS, *this);
 
         // Lambda that verifies assignability and convertibility.
         auto isConvertible = [](auto from, auto to) {
             using From_t = std::decay_t<decltype(from)>;
             using To_t = std::decay_t<decltype(to)>;
-            static_assert(std::is_convertible<From_t, To_t>::value, "Convert err");
-            static_assert(std::is_constructible<To_t, From_t>::value, "Construct err");
-            static_assert(std::is_assignable<To_t&, From_t const&>::value, "Assign err");
+            static_assert(std::is_convertible_v<From_t, To_t>, "Convert err");
+            static_assert(std::is_constructible_v<To_t, From_t>, "Construct err");
+            static_assert(std::is_assignable_v<To_t&, From_t const&>, "Assign err");
         };
 
         // Verify the right types convert to NotTEC.
@@ -143,9 +143,9 @@ struct TER_test : public beast::unit_test::suite
         auto notConvertible = [](auto from, auto to) {
             using To_t = std::decay_t<decltype(to)>;
             using From_t = std::decay_t<decltype(from)>;
-            static_assert(!std::is_convertible<From_t, To_t>::value, "Convert err");
-            static_assert(!std::is_constructible<To_t, From_t>::value, "Construct err");
-            static_assert(!std::is_assignable<To_t&, From_t const&>::value, "Assign err");
+            static_assert(!std::is_convertible_v<From_t, To_t>, "Convert err");
+            static_assert(!std::is_constructible_v<To_t, From_t>, "Construct err");
+            static_assert(!std::is_assignable_v<To_t&, From_t const&>, "Assign err");
         };
 
         // Verify types that shouldn't convert to NotTEC.
@@ -181,23 +181,23 @@ struct TER_test : public beast::unit_test::suite
     public:
         template <typename Tup>
         void
-        operator()(Tup const& tup, beast::unit_test::suite& s) const
+        operator()(Tup const& tup, beast::unit_test::Suite& s) const
         {
             // All entries in the tuple should be comparable one to the other.
             auto const lhs = std::get<I1>(tup);
             auto const rhs = std::get<I2>(tup);
 
-            static_assert(std::is_same<decltype(operator==(lhs, rhs)), bool>::value, "== err");
+            static_assert(std::is_same_v<decltype(operator==(lhs, rhs)), bool>, "== err");
 
-            static_assert(std::is_same<decltype(operator!=(lhs, rhs)), bool>::value, "!= err");
+            static_assert(std::is_same_v<decltype(operator!=(lhs, rhs)), bool>, "!= err");
 
-            static_assert(std::is_same<decltype(operator<(lhs, rhs)), bool>::value, "< err");
+            static_assert(std::is_same_v<decltype(operator<(lhs, rhs)), bool>, "< err");
 
-            static_assert(std::is_same<decltype(operator<=(lhs, rhs)), bool>::value, "<= err");
+            static_assert(std::is_same_v<decltype(operator<=(lhs, rhs)), bool>, "<= err");
 
-            static_assert(std::is_same<decltype(operator>(lhs, rhs)), bool>::value, "> err");
+            static_assert(std::is_same_v<decltype(operator>(lhs, rhs)), bool>, "> err");
 
-            static_assert(std::is_same<decltype(operator>=(lhs, rhs)), bool>::value, ">= err");
+            static_assert(std::is_same_v<decltype(operator>=(lhs, rhs)), bool>, ">= err");
 
             // Make sure a sampling of TER types exhibit the expected behavior
             // for all comparison operators.
@@ -216,7 +216,7 @@ struct TER_test : public beast::unit_test::suite
         // All of the TER-related types should be comparable.
 
         // Examples of all the types we expect to successfully compare.
-        static auto const ters = std::make_tuple(
+        static auto const kTERS = std::make_tuple(
             telLOCAL_ERROR,
             temMALFORMED,
             tefFAILURE,
@@ -225,11 +225,11 @@ struct TER_test : public beast::unit_test::suite
             tecCLAIM,
             NotTEC{telLOCAL_ERROR},
             TER{tecCLAIM});
-        static int const hiIndex{std::tuple_size<decltype(ters)>::value - 1};
+        static int const kHI_INDEX{std::tuple_size_v<decltype(kTERS)> - 1};
 
         // Verify that all types in the ters tuple can be compared with all
         // the other types in ters.
-        testIterate<hiIndex, hiIndex, CheckComparable>(ters, *this);
+        testIterate<kHI_INDEX, kHI_INDEX, CheckComparable>(kTERS, *this);
     }
 
     void

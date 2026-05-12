@@ -51,27 +51,28 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
         # Only generate a subset of configurations in PRs.
         if not all:
             # Debian:
-            # - Bookworm using GCC 13: Release on linux/amd64, set the reference
-            #   fee to 500.
-            # - Bookworm using GCC 15: Debug on linux/amd64, enable code
-            #   coverage (which will be done below).
+            # - Bookworm using GCC 13: Debug on linux/amd64, set the reference
+            #   fee to 500 and enable code coverage (which will be done below).
+            # - Bookworm using GCC 15: Debug on linux/amd64, enable Address and
+            #   UB sanitizers (which will be done below).
             # - Bookworm using Clang 16: Debug on linux/amd64, enable voidstar.
             # - Bookworm using Clang 17: Release on linux/amd64, set the
             #   reference fee to 1000.
-            # - Bookworm using Clang 20: Debug on linux/amd64.
+            # - Bookworm using Clang 20: Debug on linux/amd64, enable Address
+            #   and UB sanitizers (which will be done below).
             if os["distro_name"] == "debian":
                 skip = True
                 if os["distro_version"] == "bookworm":
                     if (
                         f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-13"
-                        and build_type == "Release"
+                        and build_type == "Debug"
                         and architecture["platform"] == "linux/amd64"
                     ):
                         cmake_args = f"-DUNIT_TEST_REFERENCE_FEE=500 {cmake_args}"
                         skip = False
                     if (
                         f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-15"
-                        and build_type == "Debug"
+                        and build_type == "Release"
                         and architecture["platform"] == "linux/amd64"
                     ):
                         skip = False
@@ -89,8 +90,9 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
                     ):
                         cmake_args = f"-DUNIT_TEST_REFERENCE_FEE=1000 {cmake_args}"
                         skip = False
+                elif os["distro_version"] == "trixie":
                     if (
-                        f"{os['compiler_name']}-{os['compiler_version']}" == "clang-20"
+                        f"{os['compiler_name']}-{os['compiler_version']}" == "clang-22"
                         and build_type == "Debug"
                         and architecture["platform"] == "linux/amd64"
                     ):
@@ -187,17 +189,18 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
 
         # We skip all clang 20+ on arm64 due to Boost build error.
         if (
-            f"{os['compiler_name']}-{os['compiler_version']}"
-            in ["clang-20", "clang-21"]
+            os["compiler_name"] == "clang"
+            and os["compiler_version"].isdigit()
+            and int(os["compiler_version"]) >= 20
             and architecture["platform"] == "linux/arm64"
         ):
             continue
 
-        # Enable code coverage for Debian Bookworm using GCC 15 in Debug on
-        # linux/amd64
+        # Enable code coverage for Debian Bookworm using GCC 13 in Debug on
+        # linux/amd64.
         if (
             f"{os['distro_name']}-{os['distro_version']}" == "debian-bookworm"
-            and f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-15"
+            and f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-13"
             and build_type == "Debug"
             and architecture["platform"] == "linux/amd64"
         ):
@@ -234,23 +237,39 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
         # Add the configuration to the list, with the most unique fields first,
         # so that they are easier to identify in the GitHub Actions UI, as long
         # names get truncated.
-        # Add Address and Thread (both coupled with UB) sanitizers for specific bookworm distros.
+        # Add Address and UB sanitizers as separate configurations for specific
+        # bookworm distros. Thread sanitizer is currently disabled (see below).
         # GCC-Asan xrpld-embedded tests are failing because of https://github.com/google/sanitizers/issues/856
         if (
             os["distro_version"] == "bookworm"
-            and f"{os['compiler_name']}-{os['compiler_version']}" == "clang-20"
+            and f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-15"
+        ) or (
+            os["distro_version"] == "trixie"
+            and f"{os['compiler_name']}-{os['compiler_version']}" == "clang-22"
         ):
-            # Add ASAN + UBSAN configuration.
+            # Add ASAN and UBSAN configurations for both gcc-15 and clang-22
             configurations.append(
                 {
-                    "config_name": config_name + "-asan-ubsan",
+                    "config_name": config_name + "-asan",
                     "cmake_args": cmake_args,
                     "cmake_target": cmake_target,
                     "build_only": build_only,
                     "build_type": build_type,
                     "os": os,
                     "architecture": architecture,
-                    "sanitizers": "address,undefinedbehavior",
+                    "sanitizers": "address",
+                }
+            )
+            configurations.append(
+                {
+                    "config_name": config_name + "-ubsan",
+                    "cmake_args": cmake_args,
+                    "cmake_target": cmake_target,
+                    "build_only": build_only,
+                    "build_type": build_type,
+                    "os": os,
+                    "architecture": architecture,
+                    "sanitizers": "undefinedbehavior",
                 }
             )
             # TSAN is deactivated due to seg faults with latest compilers.

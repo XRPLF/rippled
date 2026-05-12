@@ -1,8 +1,11 @@
-#include <boost/predef.h>
-
 #include <helpers/TestSink.h>
 
+#include <xrpl/beast/utility/Journal.h>
+
+#include <boost/predef.h>
+
 #include <cstdlib>  // for getenv
+#include <string>
 
 #if BOOST_OS_WINDOWS
 #include <io.h>     // for _isatty, _fileno
@@ -15,12 +18,12 @@
 
 namespace xrpl {
 
-TestSink::TestSink(beast::severities::Severity threshold) : Sink(threshold, false)
+TestSink::TestSink(beast::Severity threshold) : Sink(threshold, false)
 {
 }
 
 void
-TestSink::write(beast::severities::Severity level, std::string const& text)
+TestSink::write(beast::Severity level, std::string const& text)
 {
     if (level < threshold())
         return;
@@ -28,7 +31,7 @@ TestSink::write(beast::severities::Severity level, std::string const& text)
 }
 
 void
-TestSink::writeAlways(beast::severities::Severity level, std::string const& text)
+TestSink::writeAlways(beast::Severity level, std::string const& text)
 {
     auto supportsColor = [] {
         // 1. Check for "NO_COLOR" environment variable (Standard convention)
@@ -61,17 +64,17 @@ TestSink::writeAlways(beast::severities::Severity level, std::string const& text
     auto color = [level]() {
         switch (level)
         {
-            case beast::severities::kTrace:
+            case beast::Severity::Trace:
                 return "\033[34m";  // blue
-            case beast::severities::kDebug:
+            case beast::Severity::Debug:
                 return "\033[32m";  // green
-            case beast::severities::kInfo:
+            case beast::Severity::Info:
                 return "\033[36m";  // cyan
-            case beast::severities::kWarning:
+            case beast::Severity::Warning:
                 return "\033[33m";  // yellow
-            case beast::severities::kError:
+            case beast::Severity::Error:
                 return "\033[31m";  // red
-            case beast::severities::kFatal:
+            case beast::Severity::Fatal:
             default:
                 break;
         }
@@ -81,17 +84,17 @@ TestSink::writeAlways(beast::severities::Severity level, std::string const& text
     auto prefix = [level]() {
         switch (level)
         {
-            case beast::severities::kTrace:
+            case beast::Severity::Trace:
                 return "TRC:";
-            case beast::severities::kDebug:
+            case beast::Severity::Debug:
                 return "DBG:";
-            case beast::severities::kInfo:
+            case beast::Severity::Info:
                 return "INF:";
-            case beast::severities::kWarning:
+            case beast::Severity::Warning:
                 return "WRN:";
-            case beast::severities::kError:
+            case beast::Severity::Error:
                 return "ERR:";
-            case beast::severities::kFatal:
+            case beast::Severity::Fatal:
             default:
                 break;
         }
@@ -101,19 +104,19 @@ TestSink::writeAlways(beast::severities::Severity level, std::string const& text
     auto& stream = [level]() -> std::ostream& {
         switch (level)
         {
-            case beast::severities::kError:
-            case beast::severities::kFatal:
+            case beast::Severity::Error:
+            case beast::Severity::Fatal:
                 return std::cerr;
             default:
                 return std::cout;
         }
     }();
 
-    constexpr auto reset = "\033[0m";
+    constexpr auto kRESET = "\033[0m";
 
     if (supportsColor)
     {
-        stream << color << prefix << " " << text << reset << std::endl;
+        stream << color << prefix << " " << text << kRESET << std::endl;
     }
     else
     {

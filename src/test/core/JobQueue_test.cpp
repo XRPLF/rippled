@@ -1,14 +1,17 @@
 #include <test/jtx/Env.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 
-namespace xrpl {
-namespace test {
+#include <atomic>
+#include <memory>
+
+namespace xrpl::test {
 
 //------------------------------------------------------------------------------
 
-class JobQueue_test : public beast::unit_test::suite
+class JobQueue_test : public beast::unit_test::Suite
 {
     void
     testAddJob()
@@ -20,7 +23,7 @@ class JobQueue_test : public beast::unit_test::suite
             // addJob() should run the Job (and return true).
             std::atomic<bool> jobRan{false};
             BEAST_EXPECT(
-                jQueue.addJob(jtCLIENT, "JobAddTest1", [&jobRan]() { jobRan = true; }) == true);
+                jQueue.addJob(JtClient, "JobAddTest1", [&jobRan]() { jobRan = true; }) == true);
 
             // Wait for the Job to run.
             while (!jobRan)
@@ -37,7 +40,7 @@ class JobQueue_test : public beast::unit_test::suite
             // unprotected variable on the stack should be completely safe.
             // Not recommended for the faint of heart...
             bool unprotected = false;
-            BEAST_EXPECT(jQueue.addJob(jtCLIENT, "JobAddTest2", [&unprotected]() {
+            BEAST_EXPECT(jQueue.addJob(JtClient, "JobAddTest2", [&unprotected]() {
                 unprotected = false;
             }) == false);
         }
@@ -53,7 +56,7 @@ class JobQueue_test : public beast::unit_test::suite
             // Test repeated post()s until the Coro completes.
             std::atomic<int> yieldCount{0};
             auto const coro = jQueue.postCoro(
-                jtCLIENT,
+                JtClient,
                 "PostCoroTest1",
                 [&yieldCount](std::shared_ptr<JobQueue::Coro> const& coroCopy) {
                     while (++yieldCount < 4)
@@ -82,7 +85,7 @@ class JobQueue_test : public beast::unit_test::suite
             // Test repeated resume()s until the Coro completes.
             int yieldCount{0};
             auto const coro = jQueue.postCoro(
-                jtCLIENT,
+                JtClient,
                 "PostCoroTest2",
                 [&yieldCount](std::shared_ptr<JobQueue::Coro> const& coroCopy) {
                     while (++yieldCount < 4)
@@ -120,7 +123,7 @@ class JobQueue_test : public beast::unit_test::suite
             // Not recommended for the faint of heart...
             bool unprotected = false;
             auto const coro = jQueue.postCoro(
-                jtCLIENT, "PostCoroTest3", [&unprotected](std::shared_ptr<JobQueue::Coro> const&) {
+                JtClient, "PostCoroTest3", [&unprotected](std::shared_ptr<JobQueue::Coro> const&) {
                     unprotected = false;
                 });
             BEAST_EXPECT(coro == nullptr);
@@ -138,5 +141,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(JobQueue, core, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

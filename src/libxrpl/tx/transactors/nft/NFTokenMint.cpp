@@ -1,14 +1,34 @@
-#include <xrpl/basics/Expected.h>
-#include <xrpl/ledger/View.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/InnerObjectFormats.h>
-#include <xrpl/protocol/Rate.h>
-#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/nft/NFTokenMint.h>
+
+#include <xrpl/basics/Expected.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/NFTokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/InnerObjectFormats.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SOTemplate.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/protocol/nft.h>
+#include <xrpl/tx/Transactor.h>
 
 #include <boost/endian/conversion.hpp>
 
 #include <array>
+#include <cstdint>
+#include <cstring>
+#include <iterator>  // IWYU pragma: keep
+#include <memory>
+#include <utility>
 
 namespace xrpl {
 
@@ -66,7 +86,7 @@ NFTokenMint::preflight(PreflightContext const& ctx)
 {
     if (auto const f = ctx.tx[~sfTransferFee])
     {
-        if (f > maxTransferFee)
+        if (f > kMAX_TRANSFER_FEE)
             return temBAD_NFTOKEN_TRANSFER_FEE;
 
         // If a non-zero TransferFee is set then the tfTransferable flag
@@ -81,7 +101,7 @@ NFTokenMint::preflight(PreflightContext const& ctx)
 
     if (auto uri = ctx.tx[~sfURI])
     {
-        if (uri->empty() || uri->length() > maxTokenURILength)
+        if (uri->empty() || uri->length() > kMAX_TOKEN_URI_LENGTH)
             return temMALFORMED;
     }
 
@@ -236,7 +256,7 @@ NFTokenMint::doApply()
                                                                                      : acctSeq - 1;
         }
 
-        std::uint32_t const mintedNftCnt = (*root)[~sfMintedNFTokens].value_or(0u);
+        std::uint32_t const mintedNftCnt = (*root)[~sfMintedNFTokens].valueOr(0u);
 
         (*root)[sfMintedNFTokens] = mintedNftCnt + 1u;
         if ((*root)[sfMintedNFTokens] == 0u)
@@ -321,6 +341,22 @@ NFTokenMint::doApply()
             return tecINSUFFICIENT_RESERVE;
     }
     return tesSUCCESS;
+}
+
+void
+NFTokenMint::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+NFTokenMint::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

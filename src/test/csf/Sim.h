@@ -13,9 +13,7 @@
 #include <iostream>
 #include <random>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 /** Sink that prepends simulation time to messages */
 class BasicSink : public beast::Journal::Sink
@@ -24,12 +22,12 @@ class BasicSink : public beast::Journal::Sink
 
 public:
     BasicSink(Scheduler::clock_type const& clock)
-        : Sink(beast::severities::kDisabled, false), clock_{clock}
+        : Sink(beast::Severity::Disabled, false), clock_{clock}
     {
     }
 
     void
-    write(beast::severities::Severity level, std::string const& text) override
+    write(beast::Severity level, std::string const& text) override
     {
         if (level < threshold())
             return;
@@ -38,7 +36,7 @@ public:
     }
 
     void
-    writeAlways(beast::severities::Severity level, std::string const& text) override
+    writeAlways(beast::Severity level, std::string const& text) override
     {
         std::cout << clock_.now().time_since_epoch().count() << " " << text << std::endl;
     }
@@ -48,8 +46,8 @@ class Sim
 {
     // Use a deque to have stable pointers even when dynamically adding peers
     //  - Alternatively consider using unique_ptrs allocated from arena
-    std::deque<Peer> peers;
-    PeerGroup allPeers;
+    std::deque<Peer> peers_;
+    PeerGroup allPeers_;
 
 public:
     std::mt19937_64 rng;
@@ -89,18 +87,18 @@ public:
         newPeers.reserve(numPeers);
         for (std::size_t i = 0; i < numPeers; ++i)
         {
-            peers.emplace_back(
-                PeerID{static_cast<std::uint32_t>(peers.size())},
+            peers_.emplace_back(
+                PeerID{static_cast<std::uint32_t>(peers_.size())},
                 scheduler,
                 oracle,
                 net,
                 trustGraph,
                 collectors,
                 j);
-            newPeers.emplace_back(&peers.back());
+            newPeers.emplace_back(&peers_.back());
         }
         PeerGroup res{newPeers};
-        allPeers = allPeers + res;
+        allPeers_ = allPeers_ + res;
         return res;
     }
 
@@ -108,7 +106,7 @@ public:
     std::size_t
     size() const
     {
-        return peers.size();
+        return peers_.size();
     }
 
     /** Run consensus protocol to generate the provided number of ledgers.
@@ -151,6 +149,4 @@ public:
     branches() const;
 };
 
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf

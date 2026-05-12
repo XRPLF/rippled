@@ -1,11 +1,24 @@
 #include <xrpl/tx/transactors/permissioned_domain/PermissionedDomainSet.h>
-//
-#include <xrpl/ledger/View.h>
+
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
-#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <memory>
+#include <utility>
 
 namespace xrpl {
 
@@ -20,13 +33,13 @@ PermissionedDomainSet::preflight(PreflightContext const& ctx)
 {
     if (auto err = credentials::checkArray(
             ctx.tx.getFieldArray(sfAcceptedCredentials),
-            maxPermissionedDomainCredentialsArraySize,
+            kMAX_PERMISSIONED_DOMAIN_CREDENTIALS_ARRAY_SIZE,
             ctx.j);
         !isTesSuccess(err))
         return err;
 
     auto const domain = ctx.tx.at(~sfDomainID);
-    if (domain && *domain == beast::zero)
+    if (domain && *domain == beast::kZERO)
         return temMALFORMED;
 
     return tesSUCCESS;
@@ -76,7 +89,7 @@ PermissionedDomainSet::doApply()
         auto cred = STObject::makeInnerObject(sfCredential);
         cred.setAccountID(sfIssuer, p.first);
         cred.setFieldVL(sfCredentialType, p.second);
-        sortedLE.push_back(std::move(cred));
+        sortedLE.pushBack(std::move(cred));
     }
 
     if (ctx_.tx.isFieldPresent(sfDomainID))
@@ -116,6 +129,27 @@ PermissionedDomainSet::doApply()
     }
 
     return tesSUCCESS;
+}
+
+void
+PermissionedDomainSet::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+PermissionedDomainSet::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

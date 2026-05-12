@@ -1,7 +1,19 @@
 #include <xrpl/ledger/detail/ApplyViewBase.h>
 
-namespace xrpl {
-namespace detail {
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Fees.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/XRPAmount.h>
+
+#include <memory>
+#include <optional>
+
+namespace xrpl::detail {
 
 ApplyViewBase::ApplyViewBase(ReadView const* base, ApplyFlags flags) : flags_(flags), base_(base)
 {
@@ -53,31 +65,31 @@ ApplyViewBase::read(Keylet const& k) const
 }
 
 auto
-ApplyViewBase::slesBegin() const -> std::unique_ptr<sles_type::iter_base>
+ApplyViewBase::slesBegin() const -> std::unique_ptr<SlesType::iter_base>
 {
     return base_->slesBegin();
 }
 
 auto
-ApplyViewBase::slesEnd() const -> std::unique_ptr<sles_type::iter_base>
+ApplyViewBase::slesEnd() const -> std::unique_ptr<SlesType::iter_base>
 {
     return base_->slesEnd();
 }
 
 auto
-ApplyViewBase::slesUpperBound(uint256 const& key) const -> std::unique_ptr<sles_type::iter_base>
+ApplyViewBase::slesUpperBound(uint256 const& key) const -> std::unique_ptr<SlesType::iter_base>
 {
     return base_->slesUpperBound(key);
 }
 
 auto
-ApplyViewBase::txsBegin() const -> std::unique_ptr<txs_type::iter_base>
+ApplyViewBase::txsBegin() const -> std::unique_ptr<TxsType::iter_base>
 {
     return base_->txsBegin();
 }
 
 auto
-ApplyViewBase::txsEnd() const -> std::unique_ptr<txs_type::iter_base>
+ApplyViewBase::txsEnd() const -> std::unique_ptr<TxsType::iter_base>
 {
     return base_->txsEnd();
 }
@@ -152,5 +164,4 @@ ApplyViewBase::rawDestroyXRP(XRPAmount const& fee)
     items_.destroyXRP(fee);
 }
 
-}  // namespace detail
-}  // namespace xrpl
+}  // namespace xrpl::detail

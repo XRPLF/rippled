@@ -3,28 +3,30 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/PathRequestManager.h>
 
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/server/InfoSub.h>
 
 namespace xrpl {
 
-Json::Value
+json::Value
 doPathFind(RPC::JsonContext& context)
 {
     if (context.app.config().PATH_SEARCH_MAX == 0)
-        return rpcError(rpcNOT_SUPPORTED);
+        return rpcError(RpcNotSupported);
 
     auto lpLedger = context.ledgerMaster.getClosedLedger();
 
     if (!context.params.isMember(jss::subcommand) || !context.params[jss::subcommand].isString())
     {
-        return rpcError(rpcINVALID_PARAMS);
+        return rpcError(RpcInvalidParams);
     }
 
     if (!context.infoSub)
-        return rpcError(rpcNO_EVENTS);
+        return rpcError(RpcNoEvents);
 
     context.infoSub->setApiVersion(context.apiVersion);
 
@@ -32,7 +34,7 @@ doPathFind(RPC::JsonContext& context)
 
     if (sSubCommand == "create")
     {
-        context.loadType = Resource::feeHeavyBurdenRPC;
+        context.loadType = Resource::kFEE_HEAVY_BURDEN_RPC;
         context.infoSub->clearRequest();
         return context.app.getPathRequestManager().makePathRequest(
             context.infoSub, lpLedger, context.params);
@@ -43,7 +45,7 @@ doPathFind(RPC::JsonContext& context)
         InfoSubRequest::pointer const request = context.infoSub->getRequest();
 
         if (!request)
-            return rpcError(rpcNO_PF_REQUEST);
+            return rpcError(RpcNoPfRequest);
 
         context.infoSub->clearRequest();
         return request->doClose();
@@ -54,12 +56,12 @@ doPathFind(RPC::JsonContext& context)
         InfoSubRequest::pointer const request = context.infoSub->getRequest();
 
         if (!request)
-            return rpcError(rpcNO_PF_REQUEST);
+            return rpcError(RpcNoPfRequest);
 
         return request->doStatus(context.params);
     }
 
-    return rpcError(rpcINVALID_PARAMS);
+    return rpcError(RpcInvalidParams);
 }
 
 }  // namespace xrpl

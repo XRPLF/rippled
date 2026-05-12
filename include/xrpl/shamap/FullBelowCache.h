@@ -22,7 +22,7 @@ private:
     using CacheType = KeyCache;
 
 public:
-    enum { defaultCacheTargetSize = 0 };
+    static constexpr auto kDEFAULT_CACHE_TARGET_SIZE = 0;
 
     using key_type = uint256;
     using clock_type = typename CacheType::clock_type;
@@ -38,10 +38,10 @@ public:
         std::string const& name,
         clock_type& clock,
         beast::Journal j,
-        beast::insight::Collector::ptr const& collector = beast::insight::NullCollector::New(),
-        std::size_t target_size = defaultCacheTargetSize,
+        beast::insight::Collector::ptr const& collector = beast::insight::NullCollector::make(),
+        std::size_t targetSize = kDEFAULT_CACHE_TARGET_SIZE,
         std::chrono::seconds expiration = std::chrono::minutes{2})
-        : m_cache(name, target_size, expiration, clock, j, collector), m_gen(1)
+        : cache_(name, targetSize, expiration, clock, j, collector), gen_(1)
     {
     }
 
@@ -49,7 +49,7 @@ public:
     clock_type&
     clock()
     {
-        return m_cache.clock();
+        return cache_.clock();
     }
 
     /** Return the number of elements in the cache.
@@ -59,7 +59,7 @@ public:
     std::size_t
     size() const
     {
-        return m_cache.size();
+        return cache_.size();
     }
 
     /** Remove expired cache items.
@@ -69,7 +69,7 @@ public:
     void
     sweep()
     {
-        m_cache.sweep();
+        cache_.sweep();
     }
 
     /** Refresh the last access time of an item, if it exists.
@@ -79,9 +79,9 @@ public:
         @return `true` If the key exists.
     */
     bool
-    touch_if_exists(key_type const& key)
+    touchIfExists(key_type const& key)
     {
-        return m_cache.touch_if_exists(key);
+        return cache_.touchIfExists(key);
     }
 
     /** Insert a key into the cache.
@@ -94,33 +94,33 @@ public:
     void
     insert(key_type const& key)
     {
-        m_cache.insert(key);
+        cache_.insert(key);
     }
 
     /** generation determines whether cached entry is valid */
     std::uint32_t
     getGeneration(void) const
     {
-        return m_gen;
+        return gen_;
     }
 
     void
     clear()
     {
-        m_cache.clear();
-        ++m_gen;
+        cache_.clear();
+        ++gen_;
     }
 
     void
     reset()
     {
-        m_cache.clear();
-        m_gen = 1;
+        cache_.clear();
+        gen_ = 1;
     }
 
 private:
-    CacheType m_cache;
-    std::atomic<std::uint32_t> m_gen;
+    CacheType cache_;
+    std::atomic<std::uint32_t> gen_;
 };
 
 }  // namespace detail

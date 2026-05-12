@@ -1,8 +1,24 @@
-#include <xrpld/app/main/Application.h>
-#include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/PeerSet.h>
 
-#include <xrpl/core/JobQueue.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/overlay/Message.h>
+#include <xrpld/overlay/Overlay.h>
+#include <xrpld/overlay/Peer.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
+
+#include <google/protobuf/message.h>
+
+#include <xrpl.pb.h>
+
+#include <algorithm>
+#include <cstddef>
+#include <functional>
+#include <memory>
+#include <set>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -24,7 +40,7 @@ public:
         protocol::MessageType type,
         std::shared_ptr<Peer> const& peer) override;
 
-    std::set<Peer::id_t> const&
+    [[nodiscard]] std::set<Peer::id_t> const&
     getPeerIds() const override;
 
 private:
@@ -59,9 +75,8 @@ PeerSetImpl::addPeers(
         pairs.emplace_back(score, std::move(peer));
     });
 
-    std::sort(pairs.begin(), pairs.end(), [](ScoredPeer const& lhs, ScoredPeer const& rhs) {
-        return lhs.first > rhs.first;
-    });
+    std::ranges::sort(
+        pairs, [](ScoredPeer const& lhs, ScoredPeer const& rhs) { return lhs.first > rhs.first; });
 
     std::size_t accepted = 0;
     for (auto const& pair : pairs)
@@ -108,7 +123,7 @@ public:
     {
     }
 
-    virtual std::unique_ptr<PeerSet>
+    std::unique_ptr<PeerSet>
     build() override
     {
         return std::make_unique<PeerSetImpl>(app_);
@@ -119,7 +134,7 @@ private:
 };
 
 std::unique_ptr<PeerSetBuilder>
-make_PeerSetBuilder(Application& app)
+makePeerSetBuilder(Application& app)
 {
     return std::make_unique<PeerSetBuilderImpl>(app);
 }
@@ -149,12 +164,12 @@ public:
         JLOG(j_.error()) << "DummyPeerSet sendRequest should not be called";
     }
 
-    std::set<Peer::id_t> const&
+    [[nodiscard]] std::set<Peer::id_t> const&
     getPeerIds() const override
     {
-        static std::set<Peer::id_t> const emptyPeers;
+        static std::set<Peer::id_t> const kEMPTY_PEERS;
         JLOG(j_.error()) << "DummyPeerSet getPeerIds should not be called";
-        return emptyPeers;
+        return kEMPTY_PEERS;
     }
 
 private:
@@ -162,7 +177,7 @@ private:
 };
 
 std::unique_ptr<PeerSet>
-make_DummyPeerSet(Application& app)
+makeDummyPeerSet(Application& app)
 {
     return std::make_unique<DummyPeerSet>(app);
 }

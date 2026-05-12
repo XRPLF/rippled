@@ -1,11 +1,25 @@
-#include <xrpl/basics/Log.h>
+#include <xrpl/tx/transactors/did/DIDSet.h>
+
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/did/DIDSet.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <cstddef>
+#include <memory>
 
 namespace xrpl {
 
@@ -41,8 +55,9 @@ DIDSet::preflight(PreflightContext const& ctx)
         return false;
     };
 
-    if (isTooLong(sfURI, maxDIDURILength) || isTooLong(sfDIDDocument, maxDIDDocumentLength) ||
-        isTooLong(sfData, maxDIDDataLength))
+    if (isTooLong(sfURI, kMAX_DIDURI_LENGTH) ||
+        isTooLong(sfDIDDocument, kMAX_DID_DOCUMENT_LENGTH) ||
+        isTooLong(sfData, kMAX_DID_DATA_LENGTH))
         return temMALFORMED;
 
     return tesSUCCESS;
@@ -133,6 +148,22 @@ DIDSet::doApply()
     }
 
     return addSLE(ctx_, sleDID, account_);
+}
+
+void
+DIDSet::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+DIDSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

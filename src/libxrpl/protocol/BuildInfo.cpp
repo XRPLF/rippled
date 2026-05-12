@@ -1,20 +1,19 @@
+#include <xrpl/protocol/BuildInfo.h>
+
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/core/SemanticVersion.h>
-#include <xrpl/git/Git.h>
-#include <xrpl/protocol/BuildInfo.h>
+#include <xrpl/git/Git.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SystemParameters.h>
 
-#include <boost/preprocessor/stringize.hpp>
+#include <boost/preprocessor/stringize.hpp>  // IWYU pragma: keep
 
 #include <algorithm>
 #include <cstdint>
 #include <string>
 #include <string_view>
 
-namespace xrpl {
-
-namespace BuildInfo {
+namespace xrpl::BuildInfo {
 
 namespace {
 
@@ -23,6 +22,7 @@ namespace {
 //  and follow the format described at http://semver.org/
 //------------------------------------------------------------------------------
 // clang-format off
+// NOLINTNEXTLINE(readability-identifier-naming)
 char const* const versionString = "3.2.0-b0"
     // clang-format on
     ;
@@ -67,31 +67,31 @@ buildVersionString()
 std::string const&
 getVersionString()
 {
-    static std::string const value = [] {
+    static std::string const kVALUE = [] {
         std::string const s = buildVersionString();
 
         beast::SemanticVersion v;
         if (!v.parse(s) || v.print() != s)
-            LogicError(s + ": Bad server version string");
+            logicError(s + ": Bad server version string");
         return s;
     }();
-    return value;
+    return kVALUE;
 }
 
 std::string const&
 getFullVersionString()
 {
-    static std::string const value = systemName() + "-" + getVersionString();
-    return value;
+    static std::string const kVALUE = systemName() + "-" + getVersionString();
+    return kVALUE;
 }
 
-static constexpr std::uint64_t implementationVersionIdentifier = 0x183B'0000'0000'0000LLU;
-static constexpr std::uint64_t implementationVersionIdentifierMask = 0xFFFF'0000'0000'0000LLU;
+static constexpr std::uint64_t kIMPLEMENTATION_VERSION_IDENTIFIER = 0x183B'0000'0000'0000LLU;
+static constexpr std::uint64_t kIMPLEMENTATION_VERSION_IDENTIFIER_MASK = 0xFFFF'0000'0000'0000LLU;
 
 std::uint64_t
 encodeSoftwareVersion(std::string_view versionStr)
 {
-    std::uint64_t c = implementationVersionIdentifier;
+    std::uint64_t c = kIMPLEMENTATION_VERSION_IDENTIFIER;
 
     beast::SemanticVersion v;
 
@@ -122,7 +122,7 @@ encodeSoftwareVersion(std::string_view versionStr)
                                           std::uint8_t hik) -> std::uint8_t {
                     std::uint8_t ret = 0;
 
-                    if (prefix != identifier.substr(0, prefix.length()))
+                    if (!identifier.starts_with(prefix))
                         return 0;
 
                     if (!beast::lexicalCastChecked(
@@ -155,14 +155,15 @@ encodeSoftwareVersion(std::string_view versionStr)
 std::uint64_t
 getEncodedVersion()
 {
-    static std::uint64_t const cookie = {encodeSoftwareVersion(getVersionString())};
-    return cookie;
+    static std::uint64_t const kCOOKIE = {encodeSoftwareVersion(getVersionString())};
+    return kCOOKIE;
 }
 
 bool
 isXrpldVersion(std::uint64_t version)
 {
-    return (version & implementationVersionIdentifierMask) == implementationVersionIdentifier;
+    return (version & kIMPLEMENTATION_VERSION_IDENTIFIER_MASK) ==
+        kIMPLEMENTATION_VERSION_IDENTIFIER;
 }
 
 bool
@@ -173,6 +174,4 @@ isNewerVersion(std::uint64_t version)
     return false;
 }
 
-}  // namespace BuildInfo
-
-}  // namespace xrpl
+}  // namespace xrpl::BuildInfo

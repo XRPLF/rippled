@@ -4,8 +4,9 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/resource/detail/Kind.h>
 
-namespace xrpl {
-namespace Resource {
+#include <utility>
+
+namespace xrpl::Resource {
 
 // The consumer key
 struct Key
@@ -15,25 +16,25 @@ struct Key
 
     Key() = delete;
 
-    Key(Kind k, beast::IP::Endpoint const& addr) : kind(k), address(addr)
+    Key(Kind k, beast::IP::Endpoint addr) : kind(k), address(std::move(addr))
     {
     }
 
-    struct hasher
+    struct Hasher
     {
         std::size_t
         operator()(Key const& v) const
         {
-            return m_addr_hash(v.address);
+            return addr_hash_(v.address);
         }
 
     private:
-        beast::uhash<> m_addr_hash;
+        beast::Uhash<> addr_hash_;
     };
 
-    struct key_equal
+    struct KeyEqual
     {
-        key_equal() = default;
+        KeyEqual() = default;
 
         bool
         operator()(Key const& lhs, Key const& rhs) const
@@ -45,5 +46,4 @@ struct Key
     };
 };
 
-}  // namespace Resource
-}  // namespace xrpl
+}  // namespace xrpl::Resource

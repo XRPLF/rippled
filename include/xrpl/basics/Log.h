@@ -10,22 +10,10 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <utility>
 
 namespace xrpl {
-
-// DEPRECATED use beast::severities::Severity instead
-enum LogSeverity {
-    lsINVALID = -1,  // used to indicate an invalid severity
-    lsTRACE = 0,     // Very low-level progress information, details inside
-                     // an operation
-    lsDEBUG = 1,     // Function-level progress information, operations
-    lsINFO = 2,      // Server-level progress information, major operations
-    lsWARNING = 3,   // Conditions that warrant human attention, may indicate
-                     // a problem
-    lsERROR = 4,     // A condition that indicates a problem
-    lsFATAL = 5      // A severe condition that indicates a server problem
-};
 
 /** Manages partitions for logging. */
 class Logs
@@ -38,17 +26,17 @@ private:
         std::string partition_;
 
     public:
-        Sink(std::string const& partition, beast::severities::Severity thresh, Logs& logs);
+        Sink(std::string partition, beast::Severity thresh, Logs& logs);
 
         Sink(Sink const&) = delete;
         Sink&
         operator=(Sink const&) = delete;
 
         void
-        write(beast::severities::Severity level, std::string const& text) override;
+        write(beast::Severity level, std::string const& text) override;
 
         void
-        writeAlways(beast::severities::Severity level, std::string const& text) override;
+        writeAlways(beast::Severity level, std::string const& text) override;
     };
 
     /** Manages a system file containing logged output.
@@ -76,7 +64,7 @@ private:
             @return `true` if a system file is associated and opened for
             writing.
         */
-        bool
+        [[nodiscard]] bool
         isOpen() const noexcept;
 
         /** Associate a system file with the log.
@@ -129,18 +117,18 @@ private:
         /** @} */
 
     private:
-        std::unique_ptr<std::ofstream> m_stream;
-        boost::filesystem::path m_path;
+        std::unique_ptr<std::ofstream> stream_;
+        boost::filesystem::path path_;
     };
 
     std::mutex mutable mutex_;
     std::map<std::string, std::unique_ptr<beast::Journal::Sink>, boost::beast::iless> sinks_;
-    beast::severities::Severity thresh_;
+    beast::Severity thresh_;
     File file_;
     bool silent_ = false;
 
 public:
-    Logs(beast::severities::Severity level);
+    Logs(beast::Severity level);
 
     Logs(Logs const&) = delete;
     Logs&
@@ -160,18 +148,18 @@ public:
     beast::Journal
     journal(std::string const& name);
 
-    beast::severities::Severity
+    beast::Severity
     threshold() const;
 
     void
-    threshold(beast::severities::Severity thresh);
+    threshold(beast::Severity thresh);
 
     std::vector<std::pair<std::string, std::string>>
-    partition_severities() const;
+    partitionSeverities() const;
 
     void
     write(
-        beast::severities::Severity level,
+        beast::Severity level,
         std::string const& partition,
         std::string const& text,
         bool console);
@@ -191,34 +179,25 @@ public:
     }
 
     virtual std::unique_ptr<beast::Journal::Sink>
-    makeSink(std::string const& partition, beast::severities::Severity startingLevel);
+    makeSink(std::string const& partition, beast::Severity startingLevel);
 
 public:
-    static LogSeverity
-    fromSeverity(beast::severities::Severity level);
-
-    static beast::severities::Severity
-    toSeverity(LogSeverity level);
-
     static std::string
-    toString(LogSeverity s);
+    toString(beast::Severity s);
 
-    static LogSeverity
+    static std::optional<beast::Severity>
     fromString(std::string const& s);
 
 private:
-    enum {
-        // Maximum line length for log messages.
-        // If the message exceeds this length it will be truncated with
-        // ellipses.
-        maximumMessageCharacters = 12 * 1024
-    };
+    // Maximum line length for log messages.
+    // If the message exceeds this length it will be truncated with ellipses.
+    static constexpr auto kMAXIMUM_MESSAGE_CHARACTERS = 12 * 1024;
 
     static void
     format(
         std::string& output,
         std::string const& message,
-        beast::severities::Severity severity,
+        beast::Severity severity,
         std::string const& partition);
 };
 

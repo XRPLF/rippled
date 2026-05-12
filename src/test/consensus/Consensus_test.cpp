@@ -1,15 +1,37 @@
 #include <test/csf.h>
+#include <test/csf/Peer.h>
+#include <test/csf/PeerGroup.h>
+#include <test/csf/Sim.h>
+#include <test/csf/SimTime.h>
+#include <test/csf/collectors.h>
+#include <test/csf/events.h>
+#include <test/csf/random.h>
+#include <test/csf/submitters.h>
 #include <test/unit_test/SuiteJournal.h>
 
 #include <xrpld/consensus/Consensus.h>
+#include <xrpld/consensus/ConsensusParms.h>
+#include <xrpld/consensus/ConsensusTypes.h>
+#include <xrpld/consensus/DisputedTx.h>
 
-#include <xrpl/beast/unit_test.h>
-#include <xrpl/json/to_string.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/LedgerTiming.h>
 
-namespace xrpl {
-namespace test {
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <sstream>
+#include <string>
+#include <vector>
 
-class Consensus_test : public beast::unit_test::suite
+namespace xrpl::test {
+
+class Consensus_test : public beast::unit_test::Suite
 {
     SuiteJournal journal_;
 
@@ -615,7 +637,7 @@ public:
         slow.connect(network, round<milliseconds>(1.1 * parms.ledgerGRANULARITY));
 
         // Run to the ledger *prior* to decreasing the resolution
-        sim.run(increaseLedgerTimeResolutionEvery - 2);
+        sim.run(kINCREASE_LEDGER_TIME_RESOLUTION_EVERY - 2);
 
         // In order to create the discrepancy, we want a case where if
         //   X = effCloseTime(closeTime, resolution, parentCloseTime)
@@ -642,7 +664,7 @@ public:
             when += 1s;
         // Advance the clock without consensus running (IS THIS WHAT
         // PREVENTS IT IN PRACTICE?)
-        sim.scheduler.step_for(NetClock::time_point{when} - network[0]->now());
+        sim.scheduler.stepFor(NetClock::time_point{when} - network[0]->now());
 
         // Run one more ledger with 30s resolution
         sim.run(1);
@@ -1017,7 +1039,7 @@ public:
 #if 0
         // Have all beast::journal output printed to stdout
         for (Peer* p : network)
-            p->sink.threshold(beast::severities::kAll);
+            p->sink.threshold(beast::Severity::All);
 
         // Print ledger accept and fully validated events to stdout
         StreamCollector sc{std::cout};
@@ -1028,7 +1050,7 @@ public:
 
         // Simulate clients submitting 1 tx every 5 seconds to a random
         // validator
-        Rate const rate{1, 5s};
+        Rate const rate{.count = 1, .duration = 5s};
         auto peerSelector = makeSelector(
             network.begin(), network.end(), std::vector<double>(network.size(), 1.), sim.rng);
         auto txSubmitter = makeSubmitter(
@@ -1064,7 +1086,7 @@ public:
         ConsensusParms const p;
         std::size_t peersUnchanged = 0;
 
-        auto logs = std::make_unique<Logs>(beast::severities::kError);
+        auto logs = std::make_unique<Logs>(beast::Severity::Error);
         auto j = logs->journal("Test");
         auto clog = std::make_unique<std::stringstream>();
 
@@ -1078,10 +1100,10 @@ public:
             Dispute proposingFalse{txFalse.id(), false, numPeers, journal_};
             Dispute followingTrue{txFollowingTrue.id(), true, numPeers, journal_};
             Dispute followingFalse{txFollowingFalse.id(), false, numPeers, journal_};
-            BEAST_EXPECT(proposingTrue.ID() == 99);
-            BEAST_EXPECT(proposingFalse.ID() == 98);
-            BEAST_EXPECT(followingTrue.ID() == 97);
-            BEAST_EXPECT(followingFalse.ID() == 96);
+            BEAST_EXPECT(proposingTrue.id() == 99);
+            BEAST_EXPECT(proposingFalse.id() == 98);
+            BEAST_EXPECT(followingTrue.id() == 97);
+            BEAST_EXPECT(followingFalse.id() == 96);
 
             // Create an even split in the peer votes
             for (int i = 0; i < numPeers; ++i)
@@ -1421,5 +1443,4 @@ public:
 };
 
 BEAST_DEFINE_TESTSUITE(Consensus, consensus, xrpl);
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

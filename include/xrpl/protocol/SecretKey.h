@@ -17,10 +17,10 @@ namespace xrpl {
 class SecretKey
 {
 public:
-    static constexpr std::size_t size_ = 32;
+    static constexpr std::size_t kSIZE = 32;
 
 private:
-    std::uint8_t buf_[size_]{};
+    std::uint8_t buf_[kSIZE]{};
 
 public:
     using const_iterator = std::uint8_t const*;
@@ -37,16 +37,16 @@ public:
 
     ~SecretKey();
 
-    SecretKey(std::array<std::uint8_t, size_> const& data);
+    SecretKey(std::array<std::uint8_t, kSIZE> const& data);
     SecretKey(Slice const& slice);
 
-    std::uint8_t const*
+    [[nodiscard]] std::uint8_t const*
     data() const
     {
         return buf_;
     }
 
-    std::size_t
+    [[nodiscard]] std::size_t
     size() const
     {
         return sizeof(buf_);
@@ -57,38 +57,38 @@ public:
         @note The operator<< function is deliberately omitted
         to avoid accidental exposure of secret key material.
     */
-    std::string
-    to_string() const;
+    [[nodiscard]] std::string
+    toString() const;
 
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const noexcept
     {
         return buf_;
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cbegin() const noexcept
     {
         return buf_;
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const noexcept
     {
         return buf_ + sizeof(buf_);
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cend() const noexcept
     {
         return buf_ + sizeof(buf_);
     }
 };
 
-inline bool
+bool
 operator==(SecretKey const& lhs, SecretKey const& rhs) = delete;
 
-inline bool
+bool
 operator!=(SecretKey const& lhs, SecretKey const& rhs) = delete;
 
 //------------------------------------------------------------------------------

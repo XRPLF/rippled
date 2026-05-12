@@ -8,9 +8,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 class IOU;
 
@@ -19,13 +17,13 @@ class Account
 {
 private:
     // Tag for access to private contr
-    struct privateCtorTag
+    struct PrivateCtorTag
     {
     };
 
 public:
     /** The master account. */
-    static Account const master;
+    static Account const kMASTER;
 
     Account() = delete;
     Account(Account&&) = default;
@@ -37,16 +35,16 @@ public:
 
     /** Create an account from a simple string name. */
     /** @{ */
-    Account(std::string name, KeyType type = KeyType::secp256k1);
+    Account(std::string name, KeyType type = KeyType::Secp256k1);
 
-    Account(char const* name, KeyType type = KeyType::secp256k1) : Account(std::string(name), type)
+    Account(char const* name, KeyType type = KeyType::Secp256k1) : Account(std::string(name), type)
     {
     }
 
     // This constructor needs to be public so `std::pair` can use it when
     // emplacing into the cache. However, it is logically `private`. This is
     // enforced with the `privateTag` parameter.
-    Account(std::string name, std::pair<PublicKey, SecretKey> const& keys, Account::privateCtorTag);
+    Account(std::string name, std::pair<PublicKey, SecretKey> const& keys, Account::PrivateCtorTag);
 
     /** @} */
 
@@ -54,26 +52,26 @@ public:
      * secret key is unavailable, such as for pseudo-accounts. */
     explicit Account(std::string name, AccountID const& id);
 
-    enum AcctStringType { base58Seed, other };
+    enum class AcctStringType { Base58Seed, Other };
     /** Create an account from a base58 seed string.  Throws on invalid seed. */
     Account(AcctStringType stringType, std::string base58SeedStr);
 
     /** Return the name */
-    std::string const&
+    [[nodiscard]] std::string const&
     name() const
     {
         return name_;
     }
 
     /** Return the public key. */
-    PublicKey const&
+    [[nodiscard]] PublicKey const&
     pk() const
     {
         return pk_;
     }
 
     /** Return the secret key. */
-    SecretKey const&
+    [[nodiscard]] SecretKey const&
     sk() const
     {
         return sk_;
@@ -83,14 +81,14 @@ public:
 
         The Account ID is the uint160 hash of the public key.
     */
-    AccountID
+    [[nodiscard]] AccountID
     id() const
     {
         return id_;
     }
 
     /** Returns the human readable public key. */
-    std::string const&
+    [[nodiscard]] std::string const&
     human() const
     {
         return human_;
@@ -111,7 +109,7 @@ public:
     operator[](std::string const& s) const;
 
 private:
-    static std::unordered_map<std::pair<std::string, KeyType>, Account, beast::uhash<>> cache_;
+    static std::unordered_map<std::pair<std::string, KeyType>, Account, beast::Uhash<>> cache;
 
     // Return the account from the cache & add it to the cache if needed
     static Account
@@ -132,7 +130,7 @@ operator==(Account const& lhs, Account const& rhs) noexcept
 
 template <class Hasher>
 void
-hash_append(Hasher& h, Account const& v) noexcept
+hash_append(Hasher& h, Account const& v) noexcept  // NOLINT(readability-identifier-naming)
 {
     hash_append(h, v.id());
 }
@@ -143,6 +141,4 @@ operator<=>(Account const& lhs, Account const& rhs) noexcept
     return lhs.id() <=> rhs.id();
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

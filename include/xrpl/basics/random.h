@@ -15,8 +15,8 @@ namespace xrpl {
 #ifndef __INTELLISENSE__
 static_assert(
     // NOLINTNEXTLINE(misc-redundant-expression)
-    std::is_integral<beast::xor_shift_engine::result_type>::value &&
-        std::is_unsigned<beast::xor_shift_engine::result_type>::value,
+    std::is_integral_v<beast::xor_shift_engine::result_type> &&
+        std::is_unsigned_v<beast::xor_shift_engine::result_type>,
     "The XRPL default PRNG engine must return an unsigned integral type.");
 
 static_assert(
@@ -44,30 +44,30 @@ using is_engine = std::is_invocable_r<Result, Engine>;
     will be randomly seeded.
 */
 inline beast::xor_shift_engine&
-default_prng()
+defaultPrng()
 {
     // This is used to seed the thread-specific PRNGs on demand
-    static beast::xor_shift_engine seeder = [] {
+    static beast::xor_shift_engine kSEEDER = [] {
         std::random_device rng;
         std::uniform_int_distribution<std::uint64_t> distribution{1};
         return beast::xor_shift_engine(distribution(rng));
     }();
 
     // This protects the seeder
-    static std::mutex m;
+    static std::mutex kM;
 
     // The thread-specific PRNGs:
-    thread_local beast::xor_shift_engine engine = [] {
+    thread_local beast::xor_shift_engine kENGINE = [] {
         std::uint64_t seed = 0;
         {
-            std::lock_guard const lk(m);
+            std::scoped_lock const lk(kM);
             std::uniform_int_distribution<std::uint64_t> distribution{1};
-            seed = distribution(seeder);
+            seed = distribution(kSEEDER);
         }
         return beast::xor_shift_engine{seed};
     }();
 
-    return engine;
+    return kENGINE;
 }
 
 /** Return a uniformly distributed random integer.
@@ -91,10 +91,10 @@ default_prng()
 */
 /** @{ */
 template <class Engine, class Integral>
-std::enable_if_t<std::is_integral<Integral>::value && detail::is_engine<Engine>::value, Integral>
-rand_int(Engine& engine, Integral min, Integral max)
+std::enable_if_t<std::is_integral_v<Integral> && detail::is_engine<Engine>::value, Integral>
+randInt(Engine& engine, Integral min, Integral max)
 {
-    XRPL_ASSERT(max > min, "xrpl::rand_int : max over min inputs");
+    XRPL_ASSERT(max > min, "xrpl::randInt : max over min inputs");
 
     // This should have no state and constructing it should
     // be very cheap. If that turns out not to be the case
@@ -103,38 +103,38 @@ rand_int(Engine& engine, Integral min, Integral max)
 }
 
 template <class Integral>
-std::enable_if_t<std::is_integral<Integral>::value, Integral>
-rand_int(Integral min, Integral max)
+std::enable_if_t<std::is_integral_v<Integral>, Integral>
+randInt(Integral min, Integral max)
 {
-    return rand_int(default_prng(), min, max);
+    return randInt(defaultPrng(), min, max);
 }
 
 template <class Engine, class Integral>
-std::enable_if_t<std::is_integral<Integral>::value && detail::is_engine<Engine>::value, Integral>
-rand_int(Engine& engine, Integral max)
+std::enable_if_t<std::is_integral_v<Integral> && detail::is_engine<Engine>::value, Integral>
+randInt(Engine& engine, Integral max)
 {
-    return rand_int(engine, Integral(0), max);
+    return randInt(engine, Integral(0), max);
 }
 
 template <class Integral>
-std::enable_if_t<std::is_integral<Integral>::value, Integral>
-rand_int(Integral max)
+std::enable_if_t<std::is_integral_v<Integral>, Integral>
+randInt(Integral max)
 {
-    return rand_int(default_prng(), max);
+    return randInt(defaultPrng(), max);
 }
 
 template <class Integral, class Engine>
-std::enable_if_t<std::is_integral<Integral>::value && detail::is_engine<Engine>::value, Integral>
-rand_int(Engine& engine)
+std::enable_if_t<std::is_integral_v<Integral> && detail::is_engine<Engine>::value, Integral>
+randInt(Engine& engine)
 {
-    return rand_int(engine, std::numeric_limits<Integral>::max());
+    return randInt(engine, std::numeric_limits<Integral>::max());
 }
 
 template <class Integral = int>
-std::enable_if_t<std::is_integral<Integral>::value, Integral>
-rand_int()
+std::enable_if_t<std::is_integral_v<Integral>, Integral>
+randInt()
 {
-    return rand_int(default_prng(), std::numeric_limits<Integral>::max());
+    return randInt(defaultPrng(), std::numeric_limits<Integral>::max());
 }
 /** @} */
 
@@ -142,22 +142,20 @@ rand_int()
 /** @{ */
 template <class Byte, class Engine>
 std::enable_if_t<
-    (std::is_same<Byte, unsigned char>::value || std::is_same<Byte, std::uint8_t>::value) &&
+    (std::is_same_v<Byte, unsigned char> || std::is_same_v<Byte, std::uint8_t>) &&
         detail::is_engine<Engine>::value,
     Byte>
-rand_byte(Engine& engine)
+randByte(Engine& engine)
 {
-    return static_cast<Byte>(rand_int<Engine, std::uint32_t>(
+    return static_cast<Byte>(randInt<Engine, std::uint32_t>(
         engine, std::numeric_limits<Byte>::min(), std::numeric_limits<Byte>::max()));
 }
 
 template <class Byte = std::uint8_t>
-std::enable_if_t<
-    (std::is_same<Byte, unsigned char>::value || std::is_same<Byte, std::uint8_t>::value),
-    Byte>
-rand_byte()
+std::enable_if_t<(std::is_same_v<Byte, unsigned char> || std::is_same_v<Byte, std::uint8_t>), Byte>
+randByte()
 {
-    return rand_byte<Byte>(default_prng());
+    return randByte<Byte>(defaultPrng());
 }
 /** @} */
 
@@ -165,15 +163,15 @@ rand_byte()
 /** @{ */
 template <class Engine>
 inline bool
-rand_bool(Engine& engine)
+randBool(Engine& engine)
 {
-    return rand_int(engine, 1) == 1;
+    return randInt(engine, 1) == 1;
 }
 
 inline bool
-rand_bool()
+randBool()
 {
-    return rand_bool(default_prng());
+    return randBool(defaultPrng());
 }
 /** @} */
 

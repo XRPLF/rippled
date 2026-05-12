@@ -2,6 +2,8 @@
 
 #include <xrpl/beast/utility/Journal.h>
 
+#include <utility>
+
 namespace beast {
 
 /** Wraps a Journal::Sink to prefix its output with a string. */
@@ -17,8 +19,8 @@ private:
     std::string prefix_;
 
 public:
-    explicit WrappedSink(beast::Journal::Sink& sink, std::string const& prefix = "")
-        : Sink(sink), sink_(sink), prefix_(prefix)
+    explicit WrappedSink(beast::Journal::Sink& sink, std::string prefix = "")
+        : Sink(sink), sink_(sink), prefix_(std::move(prefix))
     {
     }
 
@@ -33,13 +35,13 @@ public:
         prefix_ = s;
     }
 
-    bool
-    active(beast::severities::Severity level) const override
+    [[nodiscard]] bool
+    active(beast::Severity level) const override
     {
         return sink_.active(level);
     }
 
-    bool
+    [[nodiscard]] bool
     console() const override
     {
         return sink_.console();
@@ -51,27 +53,27 @@ public:
         sink_.console(output);
     }
 
-    beast::severities::Severity
+    [[nodiscard]] beast::Severity
     threshold() const override
     {
         return sink_.threshold();
     }
 
     void
-    threshold(beast::severities::Severity thresh) override
+    threshold(beast::Severity thresh) override
     {
         sink_.threshold(thresh);
     }
 
     void
-    write(beast::severities::Severity level, std::string const& text) override
+    write(beast::Severity level, std::string const& text) override
     {
         using beast::Journal;
         sink_.write(level, prefix_ + text);
     }
 
     void
-    writeAlways(severities::Severity level, std::string const& text) override
+    writeAlways(Severity level, std::string const& text) override
     {
         using beast::Journal;
         sink_.writeAlways(level, prefix_ + text);

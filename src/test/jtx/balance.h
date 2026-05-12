@@ -3,9 +3,9 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/tags.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+#include <utility>
+
+namespace xrpl::test::jtx {
 
 /** A balance matches.
 
@@ -15,7 +15,7 @@ namespace jtx {
     exist even if the amount is 0, or else the test
     fails.
 */
-class balance
+class Balance
 {
 private:
     bool const none_;
@@ -23,17 +23,17 @@ private:
     STAmount const value_;
 
 public:
-    balance(Account const& account, none_t) : none_(true), account_(account), value_(XRP)
+    Balance(Account account, NoneT) : none_(true), account_(std::move(account)), value_(XRP)
     {
     }
 
-    balance(Account const& account, None const& value)
-        : none_(true), account_(account), value_(value.asset)
+    Balance(Account account, None const& value)
+        : none_(true), account_(std::move(account)), value_(value.asset)
     {
     }
 
-    balance(Account const& account, STAmount const& value)
-        : none_(false), account_(account), value_(value)
+    Balance(Account account, STAmount value)
+        : none_(false), account_(std::move(account)), value_(std::move(value))
     {
     }
 
@@ -41,6 +41,4 @@ public:
     operator()(Env&) const;
 };
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

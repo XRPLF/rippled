@@ -1,19 +1,36 @@
 #include <test/shamap/common.h>
 #include <test/unit_test/SuiteJournal.h>
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/SHAMapHash.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/random.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/xor_shift_engine.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapItem.h>
+#include <xrpl/shamap/SHAMapMissingNode.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 
-namespace xrpl {
-namespace tests {
+#include <boost/smart_ptr/intrusive_ptr.hpp>
 
-class SHAMapSync_test : public beast::unit_test::suite
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <list>
+#include <ostream>
+#include <utility>
+#include <vector>
+
+namespace xrpl::tests {
+
+class SHAMapSync_test : public beast::unit_test::Suite
 {
 public:
-    beast::xor_shift_engine eng_;
+    beast::xor_shift_engine eng;
 
     boost::intrusive_ptr<SHAMapItem>
     makeRandomAS()
@@ -21,8 +38,8 @@ public:
         Serializer s;
 
         for (int d = 0; d < 3; ++d)
-            s.add32(rand_int<std::uint32_t>(eng_));
-        return make_shamapitem(s.getSHA512Half(), s.slice());
+            s.add32(randInt<std::uint32_t>(eng));
+        return makeShamapitem(s.getSHA512Half(), s.slice());
     }
 
     bool
@@ -39,7 +56,7 @@ public:
             auto item = makeRandomAS();
             items.push_back(item->key());
 
-            if (!map.addItem(SHAMapNodeType::tnACCOUNT_STATE, item))
+            if (!map.addItem(SHAMapNodeType::TnAccountState, item))
             {
                 log << "Unable to add item to map\n";
                 return false;
@@ -67,7 +84,7 @@ public:
     void
     run() override
     {
-        using namespace beast::severities;
+        using beast::Severity;
         test::SuiteJournal journal("SHAMapSync_test", *this);
 
         TestNodeFamily f(journal), f2(journal);
@@ -77,7 +94,7 @@ public:
         int const items = 10000;
         for (int i = 0; i < items; ++i)
         {
-            source.addItem(SHAMapNodeType::tnACCOUNT_STATE, makeRandomAS());
+            source.addItem(SHAMapNodeType::TnAccountState, makeRandomAS());
             if (i % 100 == 0)
                 source.invariants();
         }
@@ -101,7 +118,7 @@ public:
         {
             std::vector<std::pair<SHAMapNodeID, Blob>> a;
 
-            BEAST_EXPECT(source.getNodeFat(SHAMapNodeID(), a, rand_bool(eng_), rand_int(eng_, 2)));
+            BEAST_EXPECT(source.getNodeFat(SHAMapNodeID(), a, randBool(eng), randInt(eng, 2)));
 
             unexpected(a.empty(), "NodeSize");
 
@@ -127,7 +144,7 @@ public:
                 // Don't use BEAST_EXPECT here b/c it will be called a
                 // non-deterministic number of times and the number of tests run
                 // should be deterministic
-                if (!source.getNodeFat(it.first, b, rand_bool(eng_), rand_int(eng_, 2)))
+                if (!source.getNodeFat(it.first, b, randBool(eng), randInt(eng, 2)))
                     fail("", __FILE__, __LINE__);
             }
 
@@ -158,5 +175,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(SHAMapSync, shamap, xrpl);
 
-}  // namespace tests
-}  // namespace xrpl
+}  // namespace xrpl::tests

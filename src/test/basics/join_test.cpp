@@ -1,12 +1,19 @@
 #include <test/jtx/Account.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/join.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 
-namespace xrpl {
-namespace test {
+#include <array>
+#include <cstddef>
+#include <initializer_list>
+#include <sstream>
+#include <string>
+#include <vector>
 
-struct join_test : beast::unit_test::suite
+namespace xrpl::test {
+
+struct join_test : beast::unit_test::Suite
 {
     void
     run() override
@@ -51,8 +58,8 @@ struct join_test : beast::unit_test::suite
             // vector with one item edge case
             using namespace jtx;
             test(
-                CollectionAndDelimiter(std::vector<Account>{Account::master}, "xxx"),
-                Account::master.human());
+                CollectionAndDelimiter(std::vector<Account>{Account::kMASTER}, "xxx"),
+                Account::kMASTER.human());
         }
         // empty vector edge case
         test(CollectionAndDelimiter(std::vector<uint256>{}, ","), "");
@@ -73,5 +80,4 @@ struct join_test : beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(join, basics, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

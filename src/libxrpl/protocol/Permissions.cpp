@@ -1,7 +1,15 @@
-#include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Permissions.h>
-#include <xrpl/protocol/jss.h>
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/Feature.h>  // IWYU pragma: keep
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/TxFormats.h>
+
+#include <cstdint>
+#include <functional>
+#include <optional>
+#include <string>
 
 namespace xrpl {
 
@@ -84,8 +92,8 @@ Permission::Permission()
 Permission const&
 Permission::getInstance()
 {
-    static Permission const instance;
-    return instance;
+    static Permission const kINSTANCE;
+    return kINSTANCE;
 }
 
 std::optional<std::string>
@@ -174,7 +182,7 @@ Permission::isDelegable(std::uint32_t const& permissionValue, Rules const& rules
     if (txFeaturesIt->second != uint256{} && !rules.enabled(txFeaturesIt->second))
         return false;
 
-    if (it->second == Delegation::notDelegable)
+    if (it->second == Delegation::NotDelegable)
         return false;
 
     return true;

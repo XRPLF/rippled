@@ -8,8 +8,7 @@
 
 #include <fstream>
 
-namespace xrpl {
-namespace detail {
+namespace xrpl::detail {
 
 /**
     Create a directory and remove it when it's done
@@ -24,34 +23,40 @@ private:
     bool rmSubDir_{false};
 
 protected:
-    beast::unit_test::suite& test_;
+    beast::unit_test::Suite& test_;
 
     auto
     rmDir(path const& toRm)
     {
         if (is_directory(toRm) && is_empty(toRm))
+        {
             remove(toRm);
+        }
         else
+        {
             test_.log << "Expected " << toRm.string() << " to be an empty existing directory."
                       << std::endl;
+        }
     }
 
 public:
-    DirGuard(beast::unit_test::suite& test, path subDir, bool useCounter = true)
+    DirGuard(beast::unit_test::Suite& test, path subDir, bool useCounter = true)
         : subDir_(std::move(subDir)), test_(test)
     {
         using namespace boost::filesystem;
 
-        static auto subDirCounter = 0;
+        static auto kSUB_DIR_COUNTER = 0;
         if (useCounter)
-            subDir_ += std::to_string(++subDirCounter);
+            subDir_ += std::to_string(++kSUB_DIR_COUNTER);
         if (!exists(subDir_))
         {
             create_directory(subDir_);
             rmSubDir_ = true;
         }
         else if (is_directory(subDir_))
+        {
             rmSubDir_ = false;
+        }
         else
         {
             // Cannot run the test. Someone created a file where we want to
@@ -76,7 +81,7 @@ public:
         };
     }
 
-    path const&
+    [[nodiscard]] path const&
     subdir() const
     {
         return subDir_;
@@ -94,7 +99,7 @@ protected:
 
 public:
     FileDirGuard(
-        beast::unit_test::suite& test,
+        beast::unit_test::Suite& test,
         path subDir,
         path file,
         std::string const& contents,
@@ -129,8 +134,10 @@ public:
             else
             {
                 if (created_)
+                {
                     test_.log << "Expected " << file_.string() << " to be an existing file."
                               << std::endl;
+                }
             }
         }
         catch (std::exception& e)
@@ -140,18 +147,17 @@ public:
         };
     }
 
-    path const&
+    [[nodiscard]] path const&
     file() const
     {
         return file_;
     }
 
-    bool
+    [[nodiscard]] bool
     fileExists() const
     {
         return boost::filesystem::exists(file_);
     }
 };
 
-}  // namespace detail
-}  // namespace xrpl
+}  // namespace xrpl::detail

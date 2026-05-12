@@ -1,16 +1,38 @@
+#include <xrpl/tx/transactors/check/CheckCash.h>
+
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/scope.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/paths/Flow.h>
-#include <xrpl/tx/transactors/check/CheckCash.h>
-#include <xrpl/tx/transactors/token/MPTokenAuthorize.h>
+#include <xrpl/tx/paths/detail/Steps.h>
 
 #include <algorithm>
+#include <cstdint>
+#include <memory>
+#include <optional>
 
 namespace xrpl {
 
@@ -142,8 +164,8 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                 ctx.view,
                 sleCheck->at(sfAccount),
                 value,
-                fhZERO_IF_FROZEN,
-                ahZERO_IF_UNAUTHORIZED,
+                FreezeHandling::ZeroIfFrozen,
+                AuthHandling::ZeroIfUnauthorized,
                 ctx.j)};
 
             // Note that src will have one reserve's worth of additional XRP
@@ -191,13 +213,13 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                         // determined by a lexicographical "greater than"
                         // comparison employing strict weak ordering.
                         // Determine which entry we need to access.
-                        bool const canonical_gt(dstId > issuerId);
+                        bool const canonicalGt(dstId > issuerId);
 
-                        bool const is_authorized(
+                        bool const isAuthorized(
                             (sleTrustLine->at(sfFlags) &
-                             (canonical_gt ? lsfLowAuth : lsfHighAuth)) != 0u);
+                             (canonicalGt ? lsfLowAuth : lsfHighAuth)) != 0u);
 
-                        if (!is_authorized)
+                        if (!isAuthorized)
                         {
                             JLOG(ctx.j.warn()) << "Can't receive IOUs from "
                                                   "issuer without auth.";
@@ -350,10 +372,12 @@ CheckCash::doApply()
                 return optDeliverMin->asset().visit(
                     [&](Issue const&) {
                         return STAmount(
-                            optDeliverMin->asset(), STAmount::cMaxValue / 2, STAmount::cMaxOffset);
+                            optDeliverMin->asset(),
+                            STAmount::kMAX_VALUE / 2,
+                            STAmount::kMAX_OFFSET);
                     },
                     [&](MPTIssue const&) {
-                        return STAmount(optDeliverMin->asset(), maxMPTokenAmount / 2);
+                        return STAmount(optDeliverMin->asset(), kMAX_MP_TOKEN_AMOUNT / 2);
                     });
             };
             STAmount const flowDeliver{
@@ -452,7 +476,7 @@ CheckCash::doApply()
                     // Set the trust line limit to the highest possible
                     // value while flow runs.
                     STAmount const bigAmount(
-                        trustLineIssue, STAmount::cMaxValue, STAmount::cMaxOffset);
+                        trustLineIssue, STAmount::kMAX_VALUE, STAmount::kMAX_OFFSET);
                     sleTrustLine->at(tweakedLimit) = bigAmount;
 
                     return std::nullopt;
@@ -483,7 +507,7 @@ CheckCash::doApply()
                 return *err;
             // Make sure the tweaked limits are restored when we leave
             // scope.
-            scope_exit const fixup([&psb, &trustLineKey, destLow, &savedLimit]() {
+            ScopeExit const fixup([&psb, &trustLineKey, destLow, &savedLimit]() {
                 if (trustLineKey)
                 {
                     SF_AMOUNT const& tweakedLimit = destLow ? sfLowLimit : sfHighLimit;
@@ -502,7 +526,7 @@ CheckCash::doApply()
                 true,                              // default path
                 static_cast<bool>(optDeliverMin),  // partial payment
                 true,                              // owner pays transfer fee
-                OfferCrossing::no,
+                OfferCrossing::No,
                 std::nullopt,
                 sleCheck->getFieldAmount(sfSendMax),
                 std::nullopt,  // check does not support domain
@@ -562,6 +586,22 @@ CheckCash::doApply()
 
     psb.apply(ctx_.rawView());
     return tesSUCCESS;
+}
+
+void
+CheckCash::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+CheckCash::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

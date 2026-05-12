@@ -9,12 +9,12 @@
 
 namespace xrpl {
 
-Rate const parityRate(QUALITY_ONE);
+Rate const kPARITY_RATE(QUALITY_ONE);
 
 namespace detail {
 
 STAmount
-as_amount(Rate const& rate)
+asAmount(Rate const& rate)
 {
     return {noIssue(), rate.value, -9, false};
 }
@@ -35,10 +35,10 @@ multiply(STAmount const& amount, Rate const& rate)
 {
     XRPL_ASSERT(rate.value, "xrpl::nft::multiply : nonzero rate input");
 
-    if (rate == parityRate)
+    if (rate == kPARITY_RATE)
         return amount;
 
-    return multiply(amount, detail::as_amount(rate), amount.asset());
+    return multiply(amount, detail::asAmount(rate), amount.asset());
 }
 
 STAmount
@@ -46,10 +46,10 @@ multiplyRound(STAmount const& amount, Rate const& rate, bool roundUp)
 {
     XRPL_ASSERT(rate.value, "xrpl::nft::multiplyRound : nonzero rate input");
 
-    if (rate == parityRate)
+    if (rate == kPARITY_RATE)
         return amount;
 
-    return mulRound(amount, detail::as_amount(rate), amount.asset(), roundUp);
+    return mulRound(amount, detail::asAmount(rate), amount.asset(), roundUp);
 }
 
 STAmount
@@ -57,12 +57,12 @@ multiplyRound(STAmount const& amount, Rate const& rate, Asset const& asset, bool
 {
     XRPL_ASSERT(rate.value, "xrpl::nft::multiplyRound(Issue) : nonzero rate input");
 
-    if (rate == parityRate)
+    if (rate == kPARITY_RATE)
     {
         return amount;
     }
 
-    return mulRound(amount, detail::as_amount(rate), asset, roundUp);
+    return mulRound(amount, detail::asAmount(rate), asset, roundUp);
 }
 
 STAmount
@@ -70,10 +70,10 @@ divide(STAmount const& amount, Rate const& rate)
 {
     XRPL_ASSERT(rate.value, "xrpl::nft::divide : nonzero rate input");
 
-    if (rate == parityRate)
+    if (rate == kPARITY_RATE)
         return amount;
 
-    return divide(amount, detail::as_amount(rate), amount.asset());
+    return divide(amount, detail::asAmount(rate), amount.asset());
 }
 
 STAmount
@@ -81,10 +81,10 @@ divideRound(STAmount const& amount, Rate const& rate, bool roundUp)
 {
     XRPL_ASSERT(rate.value, "xrpl::nft::divideRound : nonzero rate input");
 
-    if (rate == parityRate)
+    if (rate == kPARITY_RATE)
         return amount;
 
-    return divRound(amount, detail::as_amount(rate), amount.asset(), roundUp);
+    return divRound(amount, detail::asAmount(rate), amount.asset(), roundUp);
 }
 
 STAmount
@@ -92,10 +92,10 @@ divideRound(STAmount const& amount, Rate const& rate, Asset const& asset, bool r
 {
     XRPL_ASSERT(rate.value, "xrpl::nft::divideRound(Issue) : nonzero rate input");
 
-    if (rate == parityRate)
+    if (rate == kPARITY_RATE)
         return amount;
 
-    return divRound(amount, detail::as_amount(rate), asset, roundUp);
+    return divRound(amount, detail::asAmount(rate), asset, roundUp);
 }
 
 }  // namespace xrpl

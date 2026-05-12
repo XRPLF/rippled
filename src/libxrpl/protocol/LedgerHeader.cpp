@@ -1,9 +1,12 @@
+#include <xrpl/protocol/LedgerHeader.h>
+
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/protocol/HashPrefix.h>
-#include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/digest.h>
+
+#include <cstdint>
 
 namespace xrpl {
 
@@ -58,7 +61,7 @@ calculateLedgerHash(LedgerHeader const& info)
 {
     // VFALCO This has to match addRaw in View.h.
     return sha512Half(
-        HashPrefix::ledgerMaster,
+        HashPrefix::LedgerMaster,
         std::uint32_t(info.seq),
         std::uint64_t(info.drops.drops()),
         info.parentHash,

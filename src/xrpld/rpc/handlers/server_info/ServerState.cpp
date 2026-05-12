@@ -7,10 +7,10 @@
 
 namespace xrpl {
 
-Json::Value
+json::Value
 doServerState(RPC::JsonContext& context)
 {
-    Json::Value ret(Json::objectValue);
+    json::Value ret(json::ValueType::Object);
 
     ret[jss::state] = context.netOps.getServerInfo(
         false,

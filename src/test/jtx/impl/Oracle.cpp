@@ -1,16 +1,34 @@
 #include <test/jtx/Oracle.h>
 
+#include <test/jtx/Env.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/seq.h>
+#include <test/jtx/ter.h>
+
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/jss.h>
 
 #include <boost/lexical_cast/try_lexical_convert.hpp>
-#include <boost/regex.hpp>
+#include <boost/regex.hpp>  // IWYU pragma: keep
+#include <boost/regex/v5/regex_replace.hpp>
 
-#include <vector>
+#include <algorithm>
+#include <cassert>
+#include <chrono>
+#include <cstdint>
+#include <optional>
+#include <string>
+#include <variant>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
-namespace oracle {
+namespace xrpl::test::jtx::oracle {
 
 Oracle::Oracle(Env& env, CreateArg const& arg, bool submit) : env_(env)
 {
@@ -21,7 +39,7 @@ Oracle::Oracle(Env& env, CreateArg const& arg, bool submit) : env_(env)
     // on testStartTime since XRPL epoch.
     auto const now = env_.timeKeeper().now();
     if (now.time_since_epoch().count() == 0 || arg.close)
-        env_.close(now + testStartTime - epoch_offset);
+        env_.close(now + kTEST_START_TIME - kEPOCH_OFFSET);
     if (arg.owner)
         owner_ = *arg.owner;
     if (arg.documentID && validDocumentID(*arg.documentID))
@@ -33,7 +51,7 @@ Oracle::Oracle(Env& env, CreateArg const& arg, bool submit) : env_(env)
 void
 Oracle::remove(RemoveArg const& arg)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::TransactionType] = jss::OracleDelete;
     jv[jss::Account] = to_string(arg.owner.value_or(owner_));
     toJson(jv[jss::OracleDocumentID], arg.documentID.value_or(documentID_));
@@ -56,10 +74,10 @@ Oracle::remove(RemoveArg const& arg)
 
 void
 Oracle::submit(
-    Json::Value const& jv,
-    std::optional<jtx::msig> const& msig,
-    std::optional<jtx::seq> const& seq,
-    std::optional<ter> const& err)
+    json::Value const& jv,
+    std::optional<jtx::Msig> const& msig,
+    std::optional<jtx::Seq> const& seq,
+    std::optional<Ter> const& err)
 {
     if (msig)
     {
@@ -116,7 +134,7 @@ Oracle::expectPrice(DataSeries const& series) const
             return false;
         for (auto const& data : series)
         {
-            if (std::find_if(leSeries.begin(), leSeries.end(), [&](STObject const& o) -> bool {
+            if (std::ranges::find_if(leSeries, [&](STObject const& o) -> bool {
                     auto const& baseAsset = o.getFieldCurrency(sfBaseAsset);
                     auto const& quoteAsset = o.getFieldCurrency(sfQuoteAsset);
                     auto const& price = o.getFieldU64(sfAssetPrice);
@@ -139,7 +157,7 @@ Oracle::expectLastUpdateTime(std::uint32_t lastUpdateTime) const
     return sle && (*sle)[sfLastUpdateTime] == lastUpdateTime;
 }
 
-Json::Value
+json::Value
 Oracle::aggregatePrice(
     Env& env,
     std::optional<AnyValue> const& baseAsset,
@@ -148,13 +166,13 @@ Oracle::aggregatePrice(
     std::optional<AnyValue> const& trim,
     std::optional<AnyValue> const& timeThreshold)
 {
-    Json::Value jv;
-    Json::Value jvOracles(Json::arrayValue);
+    json::Value jv;
+    json::Value jvOracles(json::ValueType::Array);
     if (oracles)
     {
         for (auto const& id : *oracles)
         {
-            Json::Value oracle;
+            json::Value oracle;
             if (id.first)
                 oracle[jss::account] = to_string((*id.first).id());
             if (id.second)
@@ -173,7 +191,7 @@ Oracle::aggregatePrice(
         toJson(jv[jss::time_threshold], *timeThreshold);
     // Convert "%None%" to None
     auto str = to_string(jv);
-    str = boost::regex_replace(str, boost::regex(NonePattern), UnquotedNone);
+    str = boost::regex_replace(str, boost::regex(kNONE_PATTERN), kUNQUOTED_NONE);
     auto jr = env.rpc("json", "get_aggregate_price", str);
 
     if (jr.isObject())
@@ -187,14 +205,14 @@ Oracle::aggregatePrice(
             return jr;
         }
     }
-    return Json::nullValue;
+    return json::ValueType::Null;
 }
 
 void
 Oracle::set(UpdateArg const& arg)
 {
     using namespace std::chrono;
-    Json::Value jv;
+    json::Value jv;
     if (arg.owner)
         owner_ = *arg.owner;
     if (arg.documentID && std::holds_alternative<std::uint32_t>(*arg.documentID))
@@ -238,7 +256,7 @@ Oracle::set(UpdateArg const& arg)
         if (std::holds_alternative<std::uint32_t>(*arg.lastUpdateTime))
         {
             jv[jss::LastUpdateTime] =
-                to_string(testStartTime.count() + std::get<std::uint32_t>(*arg.lastUpdateTime));
+                to_string(kTEST_START_TIME.count() + std::get<std::uint32_t>(*arg.lastUpdateTime));
         }
         else
         {
@@ -249,9 +267,9 @@ Oracle::set(UpdateArg const& arg)
     {
         jv[jss::LastUpdateTime] = to_string(
             duration_cast<seconds>(env_.current()->header().closeTime.time_since_epoch()).count() +
-            epoch_offset.count());
+            kEPOCH_OFFSET.count());
     }
-    Json::Value dataSeries(Json::arrayValue);
+    json::Value dataSeries(json::ValueType::Array);
     auto assetToStr = [](std::string const& s) {
         // assume standard currency
         if (s.size() == 3)
@@ -262,8 +280,8 @@ Oracle::set(UpdateArg const& arg)
     };
     for (auto const& data : arg.series)
     {
-        Json::Value priceData;
-        Json::Value price;
+        json::Value priceData;
+        json::Value price;
         price[jss::BaseAsset] = assetToStr(std::get<0>(data));
         price[jss::QuoteAsset] = assetToStr(std::get<1>(data));
         if (std::get<2>(data))
@@ -298,14 +316,14 @@ Oracle::set(CreateArg const& arg)
         .err = arg.err});
 }
 
-Json::Value
+json::Value
 Oracle::ledgerEntry(
     Env& env,
     std::optional<std::variant<AccountID, std::string>> const& account,
     std::optional<AnyValue> const& documentID,
     std::optional<std::string> const& index)
 {
-    Json::Value jvParams;
+    json::Value jvParams;
     if (account)
     {
         if (std::holds_alternative<AccountID>(*account))
@@ -333,7 +351,7 @@ Oracle::ledgerEntry(
     }
     // Convert "%None%" to None
     auto str = to_string(jvParams);
-    str = boost::regex_replace(str, boost::regex(NonePattern), UnquotedNone);
+    str = boost::regex_replace(str, boost::regex(kNONE_PATTERN), kUNQUOTED_NONE);
     auto jr = env.rpc("json", "ledger_entry", str);
 
     if (jr.isObject())
@@ -343,17 +361,17 @@ Oracle::ledgerEntry(
         if (jr.isMember(jss::result) && jr[jss::result].isMember(jss::status))
             return jr[jss::result];
     }
-    return Json::nullValue;
+    return json::ValueType::Null;
 }
 
 void
-toJson(Json::Value& jv, AnyValue const& v)
+toJson(json::Value& jv, AnyValue const& v)
 {
     std::visit([&](auto&& arg) { jv = arg; }, v);
 }
 
 void
-toJsonHex(Json::Value& jv, AnyValue const& v)
+toJsonHex(json::Value& jv, AnyValue const& v)
 {
     std::visit(
         [&]<typename T>(T&& arg) {
@@ -379,7 +397,7 @@ toJsonHex(Json::Value& jv, AnyValue const& v)
 std::uint32_t
 asUInt(AnyValue const& v)
 {
-    Json::Value jv;
+    json::Value jv;
     toJson(jv, v);
     return jv.asUInt();
 }
@@ -389,10 +407,10 @@ validDocumentID(AnyValue const& v)
 {
     try
     {
-        Json::Value jv;
+        json::Value jv;
         toJson(jv, v);
-        jv.asUInt();
-        jv.isNumeric();
+        [[maybe_unused]] auto unused1 = jv.asUInt();
+        [[maybe_unused]] auto unused2 = jv.isNumeric();
         return true;
     }
     catch (...)
@@ -401,7 +419,4 @@ validDocumentID(AnyValue const& v)
     }
 }
 
-}  // namespace oracle
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::oracle

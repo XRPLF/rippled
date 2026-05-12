@@ -1,8 +1,9 @@
+#include <xrpl/protocol/STCurrency.h>
+
 #include <xrpl/basics/contract.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
-#include <xrpl/protocol/STCurrency.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
 
@@ -40,7 +41,7 @@ STCurrency::getText() const
     return to_string(currency_);
 }
 
-Json::Value
+json::Value
 STCurrency::getJson(JsonOptions) const
 {
     return to_string(currency_);
@@ -84,14 +85,14 @@ STCurrency::move(std::size_t n, void* buf)
 }
 
 STCurrency
-currencyFromJson(SField const& name, Json::Value const& v)
+currencyFromJson(SField const& name, json::Value const& v)
 {
     if (!v.isString())
     {
         Throw<std::runtime_error>("currencyFromJson currency must be a string Json value");
     }
 
-    auto const currency = to_currency(v.asString());
+    auto const currency = toCurrency(v.asString());
     if (currency == badCurrency() || currency == noCurrency())
     {
         Throw<std::runtime_error>("currencyFromJson currency must be a valid currency");

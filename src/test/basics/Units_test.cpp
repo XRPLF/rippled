@@ -1,11 +1,17 @@
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/Units.h>
+#include <xrpl/protocol/XRPAmount.h>
 
-namespace xrpl {
-namespace test {
+#include <cstdint>
+#include <limits>
+#include <type_traits>
 
-class units_test : public beast::unit_test::suite
+namespace xrpl::test {
+
+class units_test : public beast::unit_test::Suite
 {
 private:
     void
@@ -90,57 +96,57 @@ private:
         {
             FeeLevel32 const x{std::numeric_limits<std::uint32_t>::max()};
             auto y = x.jsonClipped();
-            BEAST_EXPECT(y.type() == Json::uintValue);
-            BEAST_EXPECT(y == Json::Value{x.fee()});
+            BEAST_EXPECT(y.type() == json::ValueType::UInt);
+            BEAST_EXPECT(y == json::Value{x.fee()});
         }
 
         {
             FeeLevel32 const x{std::numeric_limits<std::uint32_t>::min()};
             auto y = x.jsonClipped();
-            BEAST_EXPECT(y.type() == Json::uintValue);
-            BEAST_EXPECT(y == Json::Value{x.fee()});
+            BEAST_EXPECT(y.type() == json::ValueType::UInt);
+            BEAST_EXPECT(y == json::Value{x.fee()});
         }
 
         {
             FeeLevel64 const x{std::numeric_limits<std::uint64_t>::max()};
             auto y = x.jsonClipped();
-            BEAST_EXPECT(y.type() == Json::uintValue);
-            BEAST_EXPECT(y == Json::Value{std::numeric_limits<std::uint32_t>::max()});
+            BEAST_EXPECT(y.type() == json::ValueType::UInt);
+            BEAST_EXPECT(y == json::Value{std::numeric_limits<std::uint32_t>::max()});
         }
 
         {
             FeeLevel64 const x{std::numeric_limits<std::uint64_t>::min()};
             auto y = x.jsonClipped();
-            BEAST_EXPECT(y.type() == Json::uintValue);
-            BEAST_EXPECT(y == Json::Value{0});
+            BEAST_EXPECT(y.type() == json::ValueType::UInt);
+            BEAST_EXPECT(y == json::Value{0});
         }
 
         {
             FeeLevelDouble const x{std::numeric_limits<double>::max()};
             auto y = x.jsonClipped();
-            BEAST_EXPECT(y.type() == Json::realValue);
-            BEAST_EXPECT(y == Json::Value{std::numeric_limits<double>::max()});
+            BEAST_EXPECT(y.type() == json::ValueType::Real);
+            BEAST_EXPECT(y == json::Value{std::numeric_limits<double>::max()});
         }
 
         {
             FeeLevelDouble const x{std::numeric_limits<double>::min()};
             auto y = x.jsonClipped();
-            BEAST_EXPECT(y.type() == Json::realValue);
-            BEAST_EXPECT(y == Json::Value{std::numeric_limits<double>::min()});
+            BEAST_EXPECT(y.type() == json::ValueType::Real);
+            BEAST_EXPECT(y == json::Value{std::numeric_limits<double>::min()});
         }
 
         {
             XRPAmount const x{std::numeric_limits<std::int64_t>::max()};
             auto y = x.jsonClipped();
-            BEAST_EXPECT(y.type() == Json::intValue);
-            BEAST_EXPECT(y == Json::Value{std::numeric_limits<std::int32_t>::max()});
+            BEAST_EXPECT(y.type() == json::ValueType::Int);
+            BEAST_EXPECT(y == json::Value{std::numeric_limits<std::int32_t>::max()});
         }
 
         {
             XRPAmount const x{std::numeric_limits<std::int64_t>::min()};
             auto y = x.jsonClipped();
-            BEAST_EXPECT(y.type() == Json::intValue);
-            BEAST_EXPECT(y == Json::Value{std::numeric_limits<std::int32_t>::min()});
+            BEAST_EXPECT(y.type() == json::ValueType::Int);
+            BEAST_EXPECT(y == json::Value{std::numeric_limits<std::int32_t>::min()});
         }
     }
 
@@ -160,10 +166,10 @@ private:
             FeeLevel64 test{0};
             BEAST_EXPECT(test.fee() == 0);
 
-            test = explicitmake(beast::zero);
+            test = explicitmake(beast::kZERO);
             BEAST_EXPECT(test.fee() == 0);
 
-            test = beast::zero;
+            test = beast::kZERO;
             BEAST_EXPECT(test.fee() == 0);
 
             test = explicitmake(100u);
@@ -245,10 +251,10 @@ private:
             FeeLevelDouble test{0};
             BEAST_EXPECT(test.fee() == 0);
 
-            test = explicitmake(beast::zero);
+            test = explicitmake(beast::kZERO);
             BEAST_EXPECT(test.fee() == 0);
 
-            test = beast::zero;
+            test = beast::kZERO;
             BEAST_EXPECT(test.fee() == 0);
 
             test = explicitmake(100.0);
@@ -324,8 +330,8 @@ public:
     void
     run() override
     {
-        BEAST_EXPECT(INITIAL_XRP.drops() == 100'000'000'000'000'000);
-        BEAST_EXPECT(INITIAL_XRP == XRPAmount{100'000'000'000'000'000});
+        BEAST_EXPECT(kINITIAL_XRP.drops() == 100'000'000'000'000'000);
+        BEAST_EXPECT(kINITIAL_XRP == XRPAmount{100'000'000'000'000'000});
 
         testTypes();
         testJson();
@@ -335,5 +341,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(units, basics, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

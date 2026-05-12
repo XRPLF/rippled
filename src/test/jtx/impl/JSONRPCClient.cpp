@@ -1,21 +1,37 @@
 #include <test/jtx/JSONRPCClient.h>
 
+#include <test/jtx/AbstractClient.h>
+
+#include <xrpld/core/Config.h>
+
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/Port.h>
 
-#include <boost/asio.hpp>
+#include <boost/asio/buffer.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/address_v4.hpp>
+#include <boost/asio/ip/address_v6.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/http/dynamic_body.hpp>
 #include <boost/beast/http/message.hpp>
 #include <boost/beast/http/read.hpp>
 #include <boost/beast/http/string_body.hpp>
+#include <boost/beast/http/verb.hpp>
 #include <boost/beast/http/write.hpp>
 
+#include <iostream>
+#include <memory>
+#include <sstream>
+#include <stdexcept>
 #include <string>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class JSONRPCClient : public AbstractClient
 {
@@ -24,14 +40,14 @@ class JSONRPCClient : public AbstractClient
     {
         auto& log = std::cerr;
         ParsedPort common;
-        parse_Port(common, cfg["server"], log);
+        parsePort(common, cfg["server"], log);
         for (auto const& name : cfg.section("server").values())
         {
             if (!cfg.exists(name))
                 continue;
             ParsedPort pp;
-            parse_Port(pp, cfg[name], log);
-            if (pp.protocol.count("http") == 0)
+            parsePort(pp, cfg[name], log);
+            if (not pp.protocol.contains("http"))
                 continue;
             using namespace boost::asio::ip;
             if (pp.ip && pp.ip->is_unspecified())
@@ -51,7 +67,7 @@ class JSONRPCClient : public AbstractClient
 
     template <class ConstBufferSequence>
     static std::string
-    buffer_string(ConstBufferSequence const& b)
+    bufferString(ConstBufferSequence const& b)
     {
         using namespace boost::asio;
         std::string s;
@@ -68,16 +84,10 @@ class JSONRPCClient : public AbstractClient
     unsigned rpc_version_;
 
 public:
-    explicit JSONRPCClient(Config const& cfg, unsigned rpc_version)
-        : ep_(getEndpoint(cfg)), stream_(ios_), rpc_version_(rpc_version)
+    explicit JSONRPCClient(Config const& cfg, unsigned rpcVersion)
+        : ep_(getEndpoint(cfg)), stream_(ios_), rpc_version_(rpcVersion)
     {
         stream_.connect(ep_);
-    }
-
-    ~JSONRPCClient() override
-    {
-        // stream_.shutdown(boost::asio::ip::tcp::socket::shutdown_both);
-        // stream_.close();
     }
 
     /*
@@ -86,8 +96,8 @@ public:
             error
             result
     */
-    Json::Value
-    invoke(std::string const& cmd, Json::Value const& params) override
+    json::Value
+    invoke(std::string const& cmd, json::Value const& params) override
     {
         using namespace boost::beast::http;
         using namespace boost::asio;
@@ -104,7 +114,7 @@ public:
             req.insert("Host", ostr.str());
         }
         {
-            Json::Value jr;
+            json::Value jr;
             jr[jss::method] = cmd;
             if (rpc_version_ == 2)
             {
@@ -114,7 +124,7 @@ public:
             }
             if (params)
             {
-                Json::Value& ja = jr[jss::params] = Json::arrayValue;
+                json::Value& ja = jr[jss::params] = json::ValueType::Array;
                 ja.append(params);
             }
             req.body() = to_string(jr);
@@ -125,9 +135,9 @@ public:
         response<dynamic_body> res;
         read(stream_, bin_, res);
 
-        Json::Reader jr;
-        Json::Value jv;
-        jr.parse(buffer_string(res.body().data()), jv);
+        json::Reader jr;
+        json::Value jv;
+        jr.parse(bufferString(res.body().data()), jv);
         if (jv["result"].isMember("error"))
             jv["error"] = jv["result"]["error"];
         if (jv["result"].isMember("status"))
@@ -135,7 +145,7 @@ public:
         return jv;
     }
 
-    unsigned
+    [[nodiscard]] unsigned
     version() const override
     {
         return rpc_version_;
@@ -143,10 +153,9 @@ public:
 };
 
 std::unique_ptr<AbstractClient>
-makeJSONRPCClient(Config const& cfg, unsigned rpc_version)
+makeJSONRPCClient(Config const& cfg, unsigned rpcVersion)
 {
-    return std::make_unique<JSONRPCClient>(cfg, rpc_version);
+    return std::make_unique<JSONRPCClient>(cfg, rpcVersion);
 }
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

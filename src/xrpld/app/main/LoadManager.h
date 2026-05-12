@@ -3,6 +3,7 @@
 #include <xrpl/beast/utility/Journal.h>
 
 #include <atomic>
+#include <condition_variable>
 #include <memory>
 #include <mutex>
 #include <thread>
@@ -87,10 +88,10 @@ private:
     bool armed_;
 
     friend std::unique_ptr<LoadManager>
-    make_LoadManager(Application& app, beast::Journal journal);
+    makeLoadManager(Application& app, beast::Journal journal);
 };
 
 std::unique_ptr<LoadManager>
-make_LoadManager(Application& app, beast::Journal journal);
+makeLoadManager(Application& app, beast::Journal journal);
 
 }  // namespace xrpl

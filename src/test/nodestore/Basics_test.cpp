@@ -1,10 +1,14 @@
 #include <test/nodestore/TestBase.h>
 
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/detail/DecodedBlob.h>
 #include <xrpl/nodestore/detail/EncodedBlob.h>
 
-namespace xrpl {
-namespace NodeStore {
+#include <cstdint>
+#include <memory>
+
+namespace xrpl::NodeStore {
 
 // Tests predictable batches, and NodeObject blob encoding
 //
@@ -17,13 +21,13 @@ public:
     {
         testcase("batch");
 
-        auto batch1 = createPredictableBatch(numObjectsToTest, seedValue);
+        auto batch1 = createPredictableBatch(kNUM_OBJECTS_TO_TEST, seedValue);
 
-        auto batch2 = createPredictableBatch(numObjectsToTest, seedValue);
+        auto batch2 = createPredictableBatch(kNUM_OBJECTS_TO_TEST, seedValue);
 
         BEAST_EXPECT(areBatchesEqual(batch1, batch2));
 
-        auto batch3 = createPredictableBatch(numObjectsToTest, seedValue + 1);
+        auto batch3 = createPredictableBatch(kNUM_OBJECTS_TO_TEST, seedValue + 1);
 
         BEAST_EXPECT(!areBatchesEqual(batch1, batch3));
     }
@@ -34,7 +38,7 @@ public:
     {
         testcase("encoding");
 
-        auto batch = createPredictableBatch(numObjectsToTest, seedValue);
+        auto batch = createPredictableBatch(kNUM_OBJECTS_TO_TEST, seedValue);
 
         for (int i = 0; i < batch.size(); ++i)
         {
@@ -66,5 +70,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(NodeStoreBasic, nodestore, xrpl);
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

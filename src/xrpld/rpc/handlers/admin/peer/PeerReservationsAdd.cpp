@@ -1,24 +1,26 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/handlers/Handlers.h>
 
+#include <xrpl/core/PeerReservationTable.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/tokens.h>
 
 #include <optional>
 #include <string>
 
 namespace xrpl {
 
-Json::Value
+json::Value
 doPeerReservationsAdd(RPC::JsonContext& context)
 {
     auto const& params = context.params;
 
     if (!params.isMember(jss::public_key))
-        return RPC::missing_field_error(jss::public_key);
+        return RPC::missingFieldError(jss::public_key);
 
     // Returning JSON from every function ruins any attempt to encapsulate
     // the pattern of "get field F as type T, and diagnose an error if it is
@@ -34,7 +36,7 @@ doPeerReservationsAdd(RPC::JsonContext& context)
     // essentially an optional (the "maybe monad" in Haskell) with a non-unit
     // type for the failure case to capture more information.
     if (!params[jss::public_key].isString())
-        return RPC::expected_field_error(jss::public_key, "a string");
+        return RPC::expectedFieldError(jss::public_key, "a string");
 
     // Same for the pattern of "if field F is present, make sure it has type T
     // and get it".
@@ -42,7 +44,7 @@ doPeerReservationsAdd(RPC::JsonContext& context)
     if (params.isMember(jss::description))
     {
         if (!params[jss::description].isString())
-            return RPC::expected_field_error(jss::description, "a string");
+            return RPC::expectedFieldError(jss::description, "a string");
         desc = params[jss::description].asString();
     }
 
@@ -51,13 +53,13 @@ doPeerReservationsAdd(RPC::JsonContext& context)
     std::optional<PublicKey> optPk =
         parseBase58<PublicKey>(TokenType::NodePublic, params[jss::public_key].asString());
     if (!optPk)
-        return rpcError(rpcPUBLIC_MALFORMED);
+        return rpcError(RpcPublicMalformed);
     PublicKey const& nodeId = *optPk;
 
-    auto const previous =
-        context.app.getPeerReservations().insert_or_assign(PeerReservation{nodeId, desc});
+    auto const previous = context.app.getPeerReservations().insertOrAssign(
+        PeerReservation{.nodeId = nodeId, .description = desc});
 
-    Json::Value result{Json::objectValue};
+    json::Value result{json::ValueType::Object};
     if (previous)
     {
         result[jss::previous] = previous->toJson();

@@ -1,7 +1,8 @@
 #include <xrpl/protocol/LedgerFormats.h>
+
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SOTemplate.h>
-#include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/jss.h>  // IWYU pragma: keep
 
 #include <vector>
 
@@ -10,12 +11,12 @@ namespace xrpl {
 std::vector<SOElement> const&
 LedgerFormats::getCommonFields()
 {
-    static auto const commonFields = std::vector<SOElement>{
-        {sfLedgerIndex, soeOPTIONAL},
-        {sfLedgerEntryType, soeREQUIRED},
-        {sfFlags, soeREQUIRED},
+    static auto const kCOMMON_FIELDS = std::vector<SOElement>{
+        {sfLedgerIndex, SoeOptional},
+        {sfLedgerEntryType, SoeRequired},
+        {sfFlags, SoeRequired},
     };
-    return commonFields;
+    return kCOMMON_FIELDS;
 }
 
 LedgerFormats::LedgerFormats()
@@ -40,8 +41,8 @@ LedgerFormats::LedgerFormats()
 LedgerFormats const&
 LedgerFormats::getInstance()
 {
-    static LedgerFormats const instance;
-    return instance;
+    static LedgerFormats const kINSTANCE;
+    return kINSTANCE;
 }
 
 }  // namespace xrpl

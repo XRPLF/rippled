@@ -1,4 +1,3 @@
-#include <xrpld/app/ledger/AcceptedLedger.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
@@ -6,11 +5,15 @@
 #include <xrpld/rpc/Context.h>
 
 #include <xrpl/basics/UptimeClock.h>
+#include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/nodestore/Database.h>
-#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
+
+#include <chrono>
+#include <cstddef>
+#include <string>
 
 namespace xrpl {
 
@@ -39,12 +42,12 @@ textTime(
         text += "s";
 }
 
-Json::Value
+json::Value
 getCountsJson(Application& app, int minObjectCount)
 {
     auto objectCounts = CountedObjects::getInstance().getCounts(minObjectCount);
 
-    Json::Value ret(Json::objectValue);
+    json::Value ret(json::ValueType::Object);
 
     for (auto const& [k, v] : objectCounts)
     {
@@ -73,7 +76,7 @@ getCountsJson(Application& app, int minObjectCount)
         {
             std::size_t const c = app.getOPs().getLocalTxCount();
             if (c > 0)
-                ret[jss::local_txs] = static_cast<Json::UInt>(c);
+                ret[jss::local_txs] = static_cast<json::UInt>(c);
         }
     }
 
@@ -82,7 +85,7 @@ getCountsJson(Application& app, int minObjectCount)
     ret[jss::historical_perminute] = static_cast<int>(app.getInboundLedgers().fetchRate());
     ret[jss::SLE_hit_rate] = app.getCachedSLEs().rate();
     ret[jss::ledger_hit_rate] = app.getLedgerMaster().getCacheHitRate();
-    ret[jss::AL_size] = Json::UInt(app.getAcceptedLedgerCache().size());
+    ret[jss::AL_size] = json::UInt(app.getAcceptedLedgerCache().size());
     ret[jss::AL_hit_rate] = app.getAcceptedLedgerCache().getHitRate();
 
     ret[jss::fullbelow_size] = static_cast<int>(app.getNodeFamily().getFullBelowCache()->size());
@@ -107,7 +110,7 @@ getCountsJson(Application& app, int minObjectCount)
 // {
 //   min_count: <number>  // optional, defaults to 10
 // }
-Json::Value
+json::Value
 doGetCounts(RPC::JsonContext& context)
 {
     int minCount = 10;

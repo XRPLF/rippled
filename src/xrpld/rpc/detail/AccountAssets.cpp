@@ -1,5 +1,16 @@
 #include <xrpld/rpc/detail/AccountAssets.h>
 
+#include <xrpld/rpc/detail/AssetCache.h>
+#include <xrpld/rpc/detail/TrustLine.h>
+
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/PathAsset.h>
+#include <xrpl/protocol/UintTypes.h>
+
+#include <memory>
+
 namespace xrpl {
 
 hash_set<PathAsset>
@@ -14,14 +25,14 @@ accountSourceAssets(
     if (includeXRP)
         assets.insert(xrpCurrency());
 
-    if (auto const lines = lrCache->getRippleLines(account, LineDirection::outgoing))
+    if (auto const lines = lrCache->getRippleLines(account, LineDirection::Outgoing))
     {
         for (auto const& rspEntry : *lines)
         {
             auto& saBalance = rspEntry.getBalance();
 
             // Filter out non
-            if (saBalance > beast::zero
+            if (saBalance > beast::kZERO
                 // Have IOUs to send.
                 || (rspEntry.getLimitPeer()
                     // Peer extends credit.
@@ -58,7 +69,7 @@ accountDestAssets(
         assets.insert(xrpCurrency());
     // Even if account doesn't exist
 
-    if (auto const lines = lrCache->getRippleLines(account, LineDirection::outgoing))
+    if (auto const lines = lrCache->getRippleLines(account, LineDirection::Outgoing))
     {
         for (auto const& rspEntry : *lines)
         {

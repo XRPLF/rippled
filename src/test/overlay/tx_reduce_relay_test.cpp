@@ -1,18 +1,51 @@
-#include <test/jtx.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/noop.h>
 
+#include <xrpld/app/main/Application.h>
+#include <xrpld/core/Config.h>
+#include <xrpld/overlay/Message.h>
+#include <xrpld/overlay/Peer.h>
+#include <xrpld/overlay/detail/Handshake.h>
 #include <xrpld/overlay/detail/OverlayImpl.h>
 #include <xrpld/overlay/detail/PeerImp.h>
-#include <xrpld/peerfinder/detail/SlotImp.h>
+#include <xrpld/overlay/detail/ProtocolVersion.h>
+#include <xrpld/peerfinder/Slot.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/make_SSLContext.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/resource/Consumer.h>
+#include <xrpl/server/Handoff.h>
 
-namespace xrpl {
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/address.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/ssl/context.hpp>
+#include <boost/beast/core/multi_buffer.hpp>
+#include <boost/beast/core/tcp_stream.hpp>
+#include <boost/beast/ssl/ssl_stream.hpp>
 
-namespace test {
+#include <xrpl.pb.h>
 
-class tx_reduce_relay_test : public beast::unit_test::suite
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <set>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
+
+namespace xrpl::test {
+
+class tx_reduce_relay_test : public beast::unit_test::Suite
 {
 public:
     using socket_type = boost::asio::ip::tcp::socket;
@@ -93,22 +126,22 @@ private:
             PublicKey const& publicKey,
             ProtocolVersion protocol,
             Resource::Consumer consumer,
-            std::unique_ptr<tx_reduce_relay_test::stream_type>&& stream_ptr,
+            std::unique_ptr<tx_reduce_relay_test::stream_type>&& streamPtr,
             OverlayImpl& overlay)
             : PeerImp(
                   app,
-                  sid_,
+                  sid,
                   slot,
                   std::move(request),
                   publicKey,
                   protocol,
                   consumer,
-                  std::move(stream_ptr),
+                  std::move(streamPtr),
                   overlay)
         {
-            sid_++;
+            sid++;
         }
-        ~PeerTest() = default;
+        ~PeerTest() override = default;
 
         void
         run() override
@@ -117,23 +150,23 @@ private:
         void
         send(std::shared_ptr<Message> const&) override
         {
-            sendTx_++;
+            sendTx++;
         }
         void
         addTxQueue(uint256 const& hash) override
         {
-            queueTx_++;
+            queueTx++;
         }
         static void
         init()
         {
-            queueTx_ = 0;
-            sendTx_ = 0;
-            sid_ = 0;
+            queueTx = 0;
+            sendTx = 0;
+            sid = 0;
         }
-        inline static std::size_t sid_ = 0;
-        inline static std::uint16_t queueTx_ = 0;
-        inline static std::uint16_t sendTx_ = 0;
+        inline static std::size_t sid = 0;
+        inline static std::uint16_t queueTx = 0;
+        inline static std::uint16_t sendTx = 0;
     };
 
     std::uint16_t lid_{0};
@@ -143,7 +176,7 @@ private:
     boost::beast::multi_buffer read_buf_;
 
 public:
-    tx_reduce_relay_test() : context_(make_SSLContext("")), protocolVersion_{1, 7}
+    tx_reduce_relay_test() : context_(makeSslContext("")), protocolVersion_{1, 7}
     {
     }
 
@@ -156,16 +189,16 @@ private:
         (nDisabled == 0)
             ? request.insert("X-Protocol-Ctl", makeFeaturesRequestHeader(false, false, true, false))
             : (void)nDisabled--;
-        auto stream_ptr = std::make_unique<stream_type>(
+        auto streamPtr = std::make_unique<stream_type>(
             socket_type(std::forward<boost::asio::io_context&>(env.app().getIOContext())),
             *context_);
         beast::IP::Endpoint const local(
             boost::asio::ip::make_address("172.1.1." + std::to_string(lid_)));
         beast::IP::Endpoint const remote(
             boost::asio::ip::make_address("172.1.1." + std::to_string(rid_)));
-        PublicKey const key(std::get<0>(randomKeyPair(KeyType::ed25519)));
+        PublicKey const key(std::get<0>(randomKeyPair(KeyType::Ed25519)));
         auto consumer = overlay.resourceManager().newInboundEndpoint(remote);
-        auto [slot, _] = overlay.peerFinder().new_inbound_slot(local, remote);
+        auto [slot, _] = overlay.peerFinder().newInboundSlot(local, remote);
         auto const peer = std::make_shared<PeerTest>(
             env.app(),
             slot,
@@ -173,10 +206,10 @@ private:
             key,
             protocolVersion_,
             consumer,
-            std::move(stream_ptr),
+            std::move(streamPtr),
             overlay);
         BEAST_EXPECT(overlay.findPeerByPublicKey(key) == std::shared_ptr<PeerImp>{});
-        overlay.add_active(peer);
+        overlay.addActive(peer);
         BEAST_EXPECT(overlay.findPeerByPublicKey(key) == peer);
         peers.emplace_back(peer);  // overlay stores week ptr to PeerImp
         lid_ += 2;
@@ -218,7 +251,7 @@ private:
             m.set_deferred(false);
             m.set_status(protocol::TransactionStatus::tsNEW);
             env.app().getOverlay().relay(uint256{0}, m, toSkip);
-            BEAST_EXPECT(PeerTest::sendTx_ == expectRelay && PeerTest::queueTx_ == expectQueue);
+            BEAST_EXPECT(PeerTest::sendTx == expectRelay && PeerTest::queueTx == expectQueue);
         }
     }
 
@@ -264,5 +297,4 @@ private:
 };
 
 BEAST_DEFINE_TESTSUITE(tx_reduce_relay, overlay, xrpl);
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

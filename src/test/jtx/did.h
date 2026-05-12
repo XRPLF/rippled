@@ -4,27 +4,23 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/owners.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
-
 /** DID operations. */
-namespace did {
+namespace xrpl::test::jtx::did {
 
-Json::Value
+json::Value
 set(jtx::Account const& account);
 
-Json::Value
+json::Value
 setValid(jtx::Account const& account);
 
 /** Sets the optional DIDDocument on a DIDSet. */
-class document
+class Document
 {
 private:
     std::string document_;
 
 public:
-    explicit document(std::string const& u) : document_(strHex(u))
+    explicit Document(std::string const& u) : document_(strHex(u))
     {
     }
 
@@ -36,13 +32,13 @@ public:
 };
 
 /** Sets the optional URI on a DIDSet. */
-class uri
+class Uri
 {
 private:
     std::string uri_;
 
 public:
-    explicit uri(std::string const& u) : uri_(strHex(u))
+    explicit Uri(std::string const& u) : uri_(strHex(u))
     {
     }
 
@@ -54,13 +50,13 @@ public:
 };
 
 /** Sets the optional Data on a DIDSet. */
-class data
+class Data
 {
 private:
     std::string data_;
 
 public:
-    explicit data(std::string const& u) : data_(strHex(u))
+    explicit Data(std::string const& u) : data_(strHex(u))
     {
     }
 
@@ -71,12 +67,7 @@ public:
     }
 };
 
-Json::Value
+json::Value
 del(jtx::Account const& account);
 
-}  // namespace did
-
-}  // namespace jtx
-
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::did

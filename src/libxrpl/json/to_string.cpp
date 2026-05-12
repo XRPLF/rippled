@@ -1,9 +1,10 @@
-#include <xrpl/json/json_writer.h>
 #include <xrpl/json/to_string.h>
+
+#include <xrpl/json/json_writer.h>
 
 #include <string>
 
-namespace Json {
+namespace json {
 
 std::string
 to_string(Value const& value)
@@ -17,4 +18,4 @@ pretty(Value const& value)
     return StyledWriter().write(value);
 }
 
-}  // namespace Json
+}  // namespace json

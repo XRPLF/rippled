@@ -1,12 +1,19 @@
-#include <test/jtx.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/amount.h>  // IWYU pragma: keep
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STIssue.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/UintTypes.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
-class STIssue_test : public beast::unit_test::suite
+class STIssue_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -15,7 +22,7 @@ public:
         testcase("Constructor");
         using namespace jtx;
         Account const alice{"alice"};
-        auto const USD = alice["USD"];
+        auto const usd = alice["USD"];
         Issue issue;
 
         try
@@ -32,7 +39,7 @@ public:
 
         try
         {
-            issue = USD;
+            issue = usd;
             issue.account = xrpAccount();
             STIssue const stissue(sfAsset, Asset{issue});
             fail("Inconsistent IOU Issue doesn't fail");
@@ -48,7 +55,7 @@ public:
             auto const data =
                 "00000000000000000000000055534400000000000000000000000000000000"
                 "000000000000000000";
-            base_uint<320> uint;
+            BaseUInt<320> uint;
             (void)uint.parseHex(data);
             SerialIter iter(Slice(uint.data(), uint.size()));
             STIssue const stissue(iter, sfAsset);
@@ -70,7 +77,7 @@ public:
 
         try
         {
-            STIssue const stissue(sfAsset, Asset{USD});
+            STIssue const stissue(sfAsset, Asset{usd});
         }
         catch (...)
         {
@@ -82,11 +89,11 @@ public:
             auto const data =
                 "0000000000000000000000005553440000000000ae123a8556f3cf91154711"
                 "376afb0f894f832b3d";
-            base_uint<320> uint;
+            BaseUInt<320> uint;
             (void)uint.parseHex(data);
             SerialIter iter(Slice(uint.data(), uint.size()));
             STIssue const stissue(iter, sfAsset);
-            BEAST_EXPECT(stissue.value() == USD);
+            BEAST_EXPECT(stissue.value() == usd);
         }
         catch (...)
         {
@@ -96,7 +103,7 @@ public:
         try
         {
             auto const data = "0000000000000000000000000000000000000000";
-            base_uint<160> uint;
+            BaseUInt<160> uint;
             (void)uint.parseHex(data);
             SerialIter iter(Slice(uint.data(), uint.size()));
             STIssue const stissue(iter, sfAsset);
@@ -114,9 +121,9 @@ public:
         testcase("Compare");
         using namespace jtx;
         Account const alice{"alice"};
-        auto const USD = alice["USD"];
+        auto const usd = alice["USD"];
         Asset const asset1{xrpIssue()};
-        Asset const asset2{USD};
+        Asset const asset2{usd};
         Asset const asset3{MPTID{2}};
 
         BEAST_EXPECT(STIssue(sfAsset, asset1) != asset2);
@@ -141,5 +148,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(STIssue, protocol, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

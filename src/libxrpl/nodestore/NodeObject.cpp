@@ -1,13 +1,17 @@
 #include <xrpl/nodestore/NodeObject.h>
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/base_uint.h>
+
 #include <memory>
+#include <utility>
 
 namespace xrpl {
 
 //------------------------------------------------------------------------------
 
 NodeObject::NodeObject(NodeObjectType type, Blob&& data, uint256 const& hash, PrivateAccess)
-    : mType(type), mHash(hash), mData(std::move(data))
+    : type_(type), hash_(hash), data_(std::move(data))
 {
 }
 
@@ -20,19 +24,19 @@ NodeObject::createObject(NodeObjectType type, Blob&& data, uint256 const& hash)
 NodeObjectType
 NodeObject::getType() const
 {
-    return mType;
+    return type_;
 }
 
 uint256 const&
 NodeObject::getHash() const
 {
-    return mHash;
+    return hash_;
 }
 
 Blob const&
 NodeObject::getData() const
 {
-    return mData;
+    return data_;
 }
 
 }  // namespace xrpl

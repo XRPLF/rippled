@@ -1,3 +1,8 @@
+#include <xrpl/tx/transactors/vault/VaultCreate.h>
+
+#include <xrpl/basics/Number.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
@@ -6,16 +11,23 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTakesAsset.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/token/MPTokenAuthorize.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/transactors/token/MPTokenIssuanceCreate.h>
-#include <xrpl/tx/transactors/vault/VaultCreate.h>
+
+#include <cstdint>
+#include <memory>
+#include <optional>
 
 namespace xrpl {
 
@@ -40,19 +52,19 @@ VaultCreate::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 VaultCreate::preflight(PreflightContext const& ctx)
 {
-    if (!validDataLength(ctx.tx[~sfData], maxDataPayloadLength))
+    if (!validDataLength(ctx.tx[~sfData], kMAX_DATA_PAYLOAD_LENGTH))
         return temMALFORMED;
 
     if (auto const withdrawalPolicy = ctx.tx[~sfWithdrawalPolicy])
     {
         // Enforce valid withdrawal policy
-        if (*withdrawalPolicy != vaultStrategyFirstComeFirstServe)
+        if (*withdrawalPolicy != kVAULT_STRATEGY_FIRST_COME_FIRST_SERVE)
             return temMALFORMED;
     }
 
     if (auto const domain = ctx.tx[~sfDomainID])
     {
-        if (*domain == beast::zero)
+        if (*domain == beast::kZERO)
         {
             return temMALFORMED;
         }
@@ -64,13 +76,13 @@ VaultCreate::preflight(PreflightContext const& ctx)
 
     if (auto const assetMax = ctx.tx[~sfAssetsMaximum])
     {
-        if (*assetMax < beast::zero)
+        if (*assetMax < beast::kZERO)
             return temMALFORMED;
     }
 
     if (auto const metadata = ctx.tx[~sfMPTokenMetadata])
     {
-        if (metadata->empty() || metadata->length() > maxMPTokenMetadataLength)
+        if (metadata->empty() || metadata->length() > kMAX_MP_TOKEN_METADATA_LENGTH)
             return temMALFORMED;
     }
 
@@ -80,7 +92,7 @@ VaultCreate::preflight(PreflightContext const& ctx)
         if (vaultAsset.holds<MPTIssue>() || vaultAsset.native())
             return temMALFORMED;
 
-        if (scale > vaultMaximumIOUScale)
+        if (scale > kVAULT_MAXIMUM_IOU_SCALE)
             return temMALFORMED;
     }
 
@@ -118,7 +130,7 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
 
     auto const sequence = ctx.tx.getSeqValue();
     if (auto const accountId = pseudoAccountAddress(ctx.view, keylet::vault(account, sequence).key);
-        accountId == beast::zero)
+        accountId == beast::kZERO)
         return terADDRESS_COLLISION;
 
     return tesSUCCESS;
@@ -159,7 +171,7 @@ VaultCreate::doApply()
 
     std::uint8_t const scale = (asset.holds<MPTIssue>() || asset.native())
         ? 0
-        : ctx_.tx[~sfScale].value_or(vaultDefaultIOUScale);
+        : ctx_.tx[~sfScale].value_or(kVAULT_DEFAULT_IOU_SCALE);
 
     auto txFlags = tx.getFlags();
     std::uint32_t mptFlags = 0;
@@ -181,8 +193,10 @@ VaultCreate::doApply()
             .sequence = 1,
             .flags = mptFlags,
             .assetScale = scale,
+            .transferFee = std::nullopt,
             .metadata = tx[~sfMPTokenMetadata],
             .domainId = tx[~sfDomainID],
+            .mutableFlags = std::nullopt,
         });
     if (!maybeShare)
         return maybeShare.error();  // LCOV_EXCL_LINE
@@ -209,7 +223,7 @@ VaultCreate::doApply()
     }
     else
     {
-        vault->at(sfWithdrawalPolicy) = vaultStrategyFirstComeFirstServe;
+        vault->at(sfWithdrawalPolicy) = kVAULT_STRATEGY_FIRST_COME_FIRST_SERVE;
     }
     if (scale != 0u)
         vault->at(sfScale) = scale;
@@ -233,6 +247,22 @@ VaultCreate::doApply()
     associateAsset(*vault, asset);
 
     return tesSUCCESS;
+}
+
+void
+VaultCreate::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+VaultCreate::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

@@ -1,10 +1,14 @@
+#include <xrpl/protocol/AMMCore.h>
+
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -17,6 +21,7 @@
 #include <cstdint>
 #include <optional>
 #include <utility>
+#include <variant>
 
 namespace xrpl {
 
@@ -24,7 +29,7 @@ Currency
 ammLPTCurrency(Asset const& asset1, Asset const& asset2)
 {
     // AMM LPToken is 0x03 plus 19 bytes of the hash
-    std::int32_t constexpr AMMCurrencyCode = 0x03;
+    std::int32_t constexpr kAMM_CURRENCY_CODE = 0x03;
     auto const& [minA, maxA] = std::minmax(asset1, asset2);
     uint256 const hash = std::visit(
         [](auto&& issue1, auto&& issue2) {
@@ -39,7 +44,7 @@ ammLPTCurrency(Asset const& asset1, Asset const& asset2)
         minA.value(),
         maxA.value());
     Currency currency;
-    *currency.begin() = AMMCurrencyCode;
+    *currency.begin() = kAMM_CURRENCY_CODE;
     std::copy(hash.begin(), hash.begin() + currency.size() - 1, currency.begin() + 1);
     return currency;
 }
@@ -55,7 +60,7 @@ invalidAMMAsset(Asset const& asset, std::optional<std::pair<Asset, Asset>> const
 {
     auto const err = asset.visit(
         [](MPTIssue const& issue) -> std::optional<NotTEC> {
-            if (issue.getIssuer() == beast::zero)
+            if (issue.getIssuer() == beast::kZERO)
                 return temBAD_MPT;
             return std::nullopt;
         },
@@ -96,7 +101,7 @@ invalidAMMAmount(
 {
     if (auto const res = invalidAMMAsset(amount.asset(), pair))
         return res;
-    if (amount < beast::zero || (!validZero && amount == beast::zero))
+    if (amount < beast::kZERO || (!validZero && amount == beast::kZERO))
         return temBAD_AMOUNT;
     return tesSUCCESS;
 }
@@ -108,13 +113,13 @@ ammAuctionTimeSlot(std::uint64_t current, STObject const& auctionSlot)
     // but check just to be safe
     auto const expiration = auctionSlot[sfExpiration];
     XRPL_ASSERT(
-        expiration >= TOTAL_TIME_SLOT_SECS, "xrpl::ammAuctionTimeSlot : minimum expiration");
-    if (expiration >= TOTAL_TIME_SLOT_SECS)
+        expiration >= kTOTAL_TIME_SLOT_SECS, "xrpl::ammAuctionTimeSlot : minimum expiration");
+    if (expiration >= kTOTAL_TIME_SLOT_SECS)
     {
-        if (auto const start = expiration - TOTAL_TIME_SLOT_SECS; current >= start)
+        if (auto const start = expiration - kTOTAL_TIME_SLOT_SECS; current >= start)
         {
-            if (auto const diff = current - start; diff < TOTAL_TIME_SLOT_SECS)
-                return diff / AUCTION_SLOT_INTERVAL_DURATION;
+            if (auto const diff = current - start; diff < kTOTAL_TIME_SLOT_SECS)
+                return diff / kAUCTION_SLOT_INTERVAL_DURATION;
         }
     }
     return std::nullopt;

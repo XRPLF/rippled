@@ -2,20 +2,18 @@
 
 #include <xrpld/core/Config.h>
 #include <xrpld/peerfinder/Slot.h>
+#include <xrpld/peerfinder/detail/Tuning.h>
 
 #include <xrpl/beast/clock/abstract_clock.h>
 #include <xrpl/beast/utility/PropertyStream.h>
 
 #include <boost/asio/ip/tcp.hpp>
 
-#include "xrpld/peerfinder/detail/Tuning.h"
-
 #include <string_view>
 
-namespace xrpl {
-namespace PeerFinder {
+namespace xrpl::PeerFinder {
 
-using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
+using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
 
 /** Represents a set of addresses. */
 using IPAddresses = std::vector<beast::IP::Endpoint>;
@@ -29,7 +27,7 @@ struct Config
         This includes both inbound and outbound, but does not include
         fixed peers.
     */
-    std::size_t maxPeers{Tuning::defaultMaxPeers};
+    std::size_t maxPeers{Tuning::kDEFAULT_MAX_PEERS};
 
     /** The number of automatic outbound connections to maintain.
         Outbound connections are only maintained if autoConnect
@@ -70,7 +68,7 @@ struct Config
     Config();
 
     /** Returns a suitable value for outPeers according to the rules. */
-    std::size_t
+    [[nodiscard]] std::size_t
     calcOutPeers() const;
 
     /** Adjusts the values so they follow the business rules. */
@@ -109,7 +107,7 @@ struct Endpoint
 {
     Endpoint() = default;
 
-    Endpoint(beast::IP::Endpoint const& ep, std::uint32_t hops_);
+    Endpoint(beast::IP::Endpoint ep, std::uint32_t hops);
 
     std::uint32_t hops = 0;
     beast::IP::Endpoint address;
@@ -127,7 +125,7 @@ using Endpoints = std::vector<Endpoint>;
 //------------------------------------------------------------------------------
 
 /** Possible results from activating a slot. */
-enum class Result { inboundDisabled, duplicatePeer, ipLimitExceeded, full, success };
+enum class Result { InboundDisabled, DuplicatePeer, IpLimitExceeded, Full, Success };
 
 /**
  * @brief Converts a `Result` enum value to its string representation.
@@ -148,15 +146,15 @@ to_string(Result result) noexcept
 {
     switch (result)
     {
-        case Result::inboundDisabled:
+        case Result::InboundDisabled:
             return "inbound disabled";
-        case Result::duplicatePeer:
+        case Result::DuplicatePeer:
             return "peer already connected";
-        case Result::ipLimitExceeded:
+        case Result::IpLimitExceeded:
             return "ip limit exceeded";
-        case Result::full:
+        case Result::Full:
             return "slots full";
-        case Result::success:
+        case Result::Success:
             return "success";
     }
 
@@ -175,7 +173,7 @@ public:
         There may be some listener calls made before the
         destructor returns.
     */
-    virtual ~Manager() = default;
+    ~Manager() override = default;
 
     /** Set the configuration for the manager.
         The new settings will be applied asynchronously.
@@ -226,36 +224,36 @@ public:
         Usually this is because of a detected self-connection.
     */
     virtual std::pair<std::shared_ptr<Slot>, Result>
-    new_inbound_slot(
-        beast::IP::Endpoint const& local_endpoint,
-        beast::IP::Endpoint const& remote_endpoint) = 0;
+    newInboundSlot(
+        beast::IP::Endpoint const& localEndpoint,
+        beast::IP::Endpoint const& remoteEndpoint) = 0;
 
     /** Create a new outbound slot with the specified remote endpoint.
         If nullptr is returned, then the slot could not be assigned.
         Usually this is because of a duplicate connection.
     */
     virtual std::pair<std::shared_ptr<Slot>, Result>
-    new_outbound_slot(beast::IP::Endpoint const& remote_endpoint) = 0;
+    newOutboundSlot(beast::IP::Endpoint const& remoteEndpoint) = 0;
 
     /** Called when mtENDPOINTS is received. */
     virtual void
-    on_endpoints(std::shared_ptr<Slot> const& slot, Endpoints const& endpoints) = 0;
+    onEndpoints(std::shared_ptr<Slot> const& slot, Endpoints const& endpoints) = 0;
 
     /** Called when the slot is closed.
         This always happens when the socket is closed, unless the socket
         was canceled.
     */
     virtual void
-    on_closed(std::shared_ptr<Slot> const& slot) = 0;
+    onClosed(std::shared_ptr<Slot> const& slot) = 0;
 
     /** Called when an outbound connection is deemed to have failed */
     virtual void
-    on_failure(std::shared_ptr<Slot> const& slot) = 0;
+    onFailure(std::shared_ptr<Slot> const& slot) = 0;
 
     /** Called when we received redirect IPs from a busy peer. */
     virtual void
     onRedirects(
-        boost::asio::ip::tcp::endpoint const& remote_address,
+        boost::asio::ip::tcp::endpoint const& remoteAddress,
         std::vector<boost::asio::ip::tcp::endpoint> const& eps) = 0;
 
     //--------------------------------------------------------------------------
@@ -268,7 +266,7 @@ public:
         @return `true` if the connection should be kept
     */
     virtual bool
-    onConnected(std::shared_ptr<Slot> const& slot, beast::IP::Endpoint const& local_endpoint) = 0;
+    onConnected(std::shared_ptr<Slot> const& slot, beast::IP::Endpoint const& localEndpoint) = 0;
 
     /** Request an active slot type. */
     virtual Result
@@ -289,8 +287,7 @@ public:
         This should be called once per second.
     */
     virtual void
-    once_per_second() = 0;
+    oncePerSecond() = 0;
 };
 
-}  // namespace PeerFinder
-}  // namespace xrpl
+}  // namespace xrpl::PeerFinder

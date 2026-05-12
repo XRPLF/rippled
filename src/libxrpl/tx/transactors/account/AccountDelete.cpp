@@ -1,21 +1,39 @@
+#include <xrpl/tx/transactors/account/AccountDelete.h>
+
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/Units.h>
-#include <xrpl/tx/transactors/account/AccountDelete.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/transactors/account/SignerListSet.h>
 #include <xrpl/tx/transactors/delegate/DelegateSet.h>
 #include <xrpl/tx/transactors/did/DIDDelete.h>
 #include <xrpl/tx/transactors/oracle/OracleDelete.h>
 #include <xrpl/tx/transactors/payment/DepositPreauth.h>
+
+#include <cstdint>
+#include <memory>
+#include <utility>
 
 namespace xrpl {
 
@@ -161,12 +179,12 @@ TER
 removeDelegateFromLedger(
     ServiceRegistry&,
     ApplyView& view,
-    AccountID const& account,
-    uint256 const& delIndex,
+    AccountID const&,
+    uint256 const&,
     std::shared_ptr<SLE> const& sleDel,
     beast::Journal j)
 {
-    return DelegateSet::deleteDelegate(view, sleDel, account, j);
+    return DelegateSet::deleteDelegate(view, sleDel, j);
 }
 
 // Return nullptr if the LedgerEntryType represents an obligation that can't
@@ -243,8 +261,8 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
         return tecHAS_OBLIGATIONS;
 
     // If the account owns any NFTs it cannot be deleted.
-    Keylet const first = keylet::nftpage_min(account);
-    Keylet const last = keylet::nftpage_max(account);
+    Keylet const first = keylet::nftpageMin(account);
+    Keylet const last = keylet::nftpageMax(account);
 
     auto const cp = ctx.view.read(
         Keylet(ltNFTOKEN_PAGE, ctx.view.succ(first.key, last.key.next()).value_or(last.key)));
@@ -257,8 +275,8 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     //
     // We look at the account's Sequence rather than the transaction's
     // Sequence in preparation for Tickets.
-    constexpr std::uint32_t seqDelta{255};
-    if ((*sleAccount)[sfSequence] + seqDelta > ctx.view.seq())
+    constexpr std::uint32_t kSEQ_DELTA{255};
+    if ((*sleAccount)[sfSequence] + kSEQ_DELTA > ctx.view.seq())
         return tecTOO_SOON;
 
     // We don't allow an account to be deleted if
@@ -273,7 +291,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     // NFTokenSequence of this NFToken is the same as the one that the
     // authorized minter minted in a previous ledger.
     if ((*sleAccount)[~sfFirstNFTokenSequence].value_or(0) +
-            (*sleAccount)[~sfMintedNFTokens].value_or(0) + seqDelta >
+            (*sleAccount)[~sfMintedNFTokens].value_or(0) + kSEQ_DELTA >
         ctx.view.seq())
         return tecTOO_SOON;
 
@@ -285,7 +303,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
 
     std::shared_ptr<SLE const> sleDirNode{};
     unsigned int uDirEntry{0};
-    uint256 dirEntry{beast::zero};
+    uint256 dirEntry{beast::kZERO};
 
     // Account has no directory at all.  This _should_ have been caught
     // by the dirIsEmpty() check earlier, but it's okay to catch it here.
@@ -308,14 +326,14 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
             // LCOV_EXCL_STOP
         }
 
-        LedgerEntryType const nodeType{safe_cast<LedgerEntryType>((*sleItem)[sfLedgerEntryType])};
+        LedgerEntryType const nodeType{safeCast<LedgerEntryType>((*sleItem)[sfLedgerEntryType])};
 
         if (nonObligationDeleter(nodeType) == nullptr)
             return tecHAS_OBLIGATIONS;
 
         // We found a deletable directory entry.  Count it.  If we find too
         // many deletable directory entries then bail out.
-        if (++deletableDirEntryCount > maxDeletableDirEntries)
+        if (++deletableDirEntryCount > kMAX_DELETABLE_DIR_ENTRIES)
             return tefTOO_BIG;
 
     } while (cdirNext(ctx.view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry));
@@ -396,6 +414,27 @@ AccountDelete::doApply()
     view().erase(src);
 
     return tesSUCCESS;
+}
+
+void
+AccountDelete::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+AccountDelete::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

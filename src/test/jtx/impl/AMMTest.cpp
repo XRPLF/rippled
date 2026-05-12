@@ -1,19 +1,34 @@
-#include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
+
+#include <test/jtx/AMM.h>
+#include <test/jtx/Account.h>
 #include <test/jtx/CaptureLogs.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/envconfig.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/ter.h>
 
-#include <xrpld/rpc/RPCHandler.h>
+#include <xrpld/core/Config.h>
 
-#include <xrpl/protocol/ApiVersion.h>
-#include <xrpl/protocol/STParsedJSON.h>
-#include <xrpl/resource/Fees.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <optional>
+#include <utility>
+#include <vector>
+
+namespace xrpl::test::jtx {
 
 [[maybe_unused]] std::vector<STAmount>
 fund(
@@ -50,7 +65,7 @@ fund(
         int i = 0;
         for (auto const& amt : amts)
         {
-            auto amt_ = [&]() {
+            auto amount = [&]() {
                 if (amtsOut.size() == amts.size())
                 {
                     return amtsOut[i++];
@@ -62,11 +77,11 @@ fund(
                 }
                 return amt;
             }();
-            if (amt.holds<Issue>())
-                env.trust(amt_ + amt_, account);
+            if (amount.holds<Issue>())
+                env.trust(amount + amount, account);
             if (amtsOut.size() != amts.size())
-                amtsOut.push_back(amt_);
-            env(pay(amt_.getIssuer(), account, amt_));
+                amtsOut.push_back(amount);
+            env(pay(amount.getIssuer(), account, amount));
         }
     }
     env.close();
@@ -89,15 +104,15 @@ fund(
 }
 
 AMMTestBase::AMMTestBase()
-    : gw("gateway")
-    , carol("carol")
-    , alice("alice")
-    , bob("bob")
-    , USD(gw["USD"])
-    , EUR(gw["EUR"])
-    , GBP(gw["GBP"])
-    , BTC(gw["BTC"])
-    , BAD(jtx::IOU(gw, badCurrency()))
+    : gw_("gateway")
+    , carol_("carol")
+    , alice_("alice")
+    , bob_("bob")
+    , USD(gw_["USD"])
+    , EUR(gw_["EUR"])
+    , GBP(gw_["GBP"])
+    , BTC(gw_["BTC"])
+    , BAD(jtx::IOU(gw_, badCurrency()))
 {
 }
 
@@ -106,7 +121,7 @@ AMMTestBase::testAMM(
     std::function<void(jtx::AMM&, jtx::Env&)> const& cb,
     std::optional<std::pair<STAmount, STAmount>> const& pool,
     std::uint16_t tfee,
-    std::optional<jtx::ter> const& ter,
+    std::optional<jtx::Ter> const& ter,
     std::vector<FeatureBitset> const& vfeatures)
 {
     testAMM(cb, TestAMMArg{.pool = pool, .tfee = tfee, .ter = ter, .features = vfeatures});
@@ -122,7 +137,7 @@ AMMTestBase::testAMM(std::function<void(jtx::AMM&, jtx::Env&)> const& cb, TestAM
     for (auto const& features : arg.features)
     {
         // Use small Number mantissas for the life of this test.
-        NumberMantissaScaleGuard const sg{xrpl::MantissaRange::small};
+        NumberMantissaScaleGuard const sg{xrpl::MantissaRange::MantissaScale::Small};
 
         // For now, just disable SAV entirely, which locks in the small Number
         // mantissas
@@ -156,16 +171,16 @@ AMMTestBase::testAMM(std::function<void(jtx::AMM&, jtx::Env&)> const& cb, TestAM
         std::vector<STAmount> funded;
         if (!asset1.native() && !asset2.native())
         {
-            funded = fund(env, gw, {alice, carol}, {toFund1, toFund2}, Fund::All);
+            funded = fund(env, gw_, {alice_, carol_}, {toFund1, toFund2}, Fund::All);
         }
         else if (asset1.native())
         {
-            funded = fund(env, gw, {alice, carol}, toFund1, {toFund2}, Fund::All);
+            funded = fund(env, gw_, {alice_, carol_}, toFund1, {toFund2}, Fund::All);
             funded.insert(funded.begin(), toFund1);
         }
         else if (asset2.native())
         {
-            funded = fund(env, gw, {alice, carol}, toFund2, {toFund1}, Fund::All);
+            funded = fund(env, gw_, {alice_, carol_}, toFund2, {toFund1}, Fund::All);
             funded.push_back(toFund2);
         }
 
@@ -173,7 +188,7 @@ AMMTestBase::testAMM(std::function<void(jtx::AMM&, jtx::Env&)> const& cb, TestAM
         auto const pool2 = STAmount{funded[1].asset(), static_cast<Number>(asset2)};
 
         AMM ammAlice(
-            env, alice, pool1, pool2, CreateArg{.log = false, .tfee = arg.tfee, .err = arg.ter});
+            env, alice_, pool1, pool2, CreateArg{.log = false, .tfee = arg.tfee, .err = arg.ter});
         if (BEAST_EXPECT(ammAlice.expectBalances(pool1, pool2, ammAlice.tokens())))
             cb(ammAlice, env);
     }
@@ -204,6 +219,5 @@ AMMTest::pathTestEnv()
         return cfg;
     }));
 }
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+
+}  // namespace xrpl::test::jtx

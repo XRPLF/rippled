@@ -1,11 +1,8 @@
 #pragma once
 
-namespace xrpl {
-namespace RPC {
-
 /** Tuned constants. */
 /** @{ */
-namespace Tuning {
+namespace xrpl::RPC::Tuning {
 
 /** Represents RPC limit parameter values that have a min, default and max. */
 struct LimitRange
@@ -14,60 +11,57 @@ struct LimitRange
 };
 
 /** Limits for the account_lines command. */
-static LimitRange constexpr accountLines = {10, 200, 400};
+static LimitRange constexpr kACCOUNT_LINES = {.rmin = 10, .rDefault = 200, .rmax = 400};
 
 /** Limits for the account_channels command. */
-static LimitRange constexpr accountChannels = {10, 200, 400};
+static LimitRange constexpr kACCOUNT_CHANNELS = {.rmin = 10, .rDefault = 200, .rmax = 400};
 
 /** Limits for the account_objects command. */
-static LimitRange constexpr accountObjects = {10, 200, 400};
+static LimitRange constexpr kACCOUNT_OBJECTS = {.rmin = 10, .rDefault = 200, .rmax = 400};
 
 /** Limits for the account_offers command. */
-static LimitRange constexpr accountOffers = {10, 200, 400};
+static LimitRange constexpr kACCOUNT_OFFERS = {.rmin = 10, .rDefault = 200, .rmax = 400};
 
 /** Limits for the account_tx command. */
-static LimitRange constexpr accountTx = {10, 200, 400};
+static LimitRange constexpr kACCOUNT_TX = {.rmin = 10, .rDefault = 200, .rmax = 400};
 
 /** Limits for the book_offers command. */
-static LimitRange constexpr bookOffers = {1, 60, 100};
+static LimitRange constexpr kBOOK_OFFERS = {.rmin = 1, .rDefault = 60, .rmax = 100};
 
 /** Limits for the no_ripple_check command. */
-static LimitRange constexpr noRippleCheck = {10, 300, 400};
+static LimitRange constexpr kNO_RIPPLE_CHECK = {.rmin = 10, .rDefault = 300, .rmax = 400};
 
 /** Limits for the account_nftokens command, in pages. */
-static LimitRange constexpr accountNFTokens = {20, 100, 400};
+static LimitRange constexpr kACCOUNT_NF_TOKENS = {.rmin = 20, .rDefault = 100, .rmax = 400};
 
 /** Limits for the nft_buy_offers & nft_sell_offers commands. */
-static LimitRange constexpr nftOffers = {50, 250, 500};
+static LimitRange constexpr kNFT_OFFERS = {.rmin = 50, .rDefault = 250, .rmax = 500};
 
-static int constexpr defaultAutoFillFeeMultiplier = 10;
-static int constexpr defaultAutoFillFeeDivisor = 1;
-static int constexpr maxPathfindsInProgress = 2;
-static int constexpr maxPathfindJobCount = 50;
-static int constexpr maxJobQueueClients = 500;
-auto constexpr maxValidatedLedgerAge = std::chrono::minutes{2};
-static int constexpr maxRequestSize = 1000000;
+static int constexpr kDEFAULT_AUTO_FILL_FEE_MULTIPLIER = 10;
+static int constexpr kDEFAULT_AUTO_FILL_FEE_DIVISOR = 1;
+static int constexpr kMAX_PATHFINDS_IN_PROGRESS = 2;
+static int constexpr kMAX_PATHFIND_JOB_COUNT = 50;
+static int constexpr kMAX_JOB_QUEUE_CLIENTS = 500;
+auto constexpr kMAX_VALIDATED_LEDGER_AGE = std::chrono::minutes{2};
+static int constexpr kMAX_REQUEST_SIZE = 1000000;
 
 /** Maximum number of pages in one response from a binary LedgerData request. */
-static int constexpr binaryPageLength = 2048;
+static int constexpr kBINARY_PAGE_LENGTH = 2048;
 
 /** Maximum number of pages in one response from a Json LedgerData request. */
-static int constexpr jsonPageLength = 256;
+static int constexpr kJSON_PAGE_LENGTH = 256;
 
 /** Maximum number of pages in a LedgerData response. */
-inline int constexpr pageLength(bool isBinary)
+int constexpr pageLength(bool isBinary)
 {
-    return isBinary ? binaryPageLength : jsonPageLength;
+    return isBinary ? kBINARY_PAGE_LENGTH : kJSON_PAGE_LENGTH;
 }
 
 /** Maximum number of source currencies allowed in a path find request. */
-static int constexpr max_src_cur = 18;
+static int constexpr kMAX_SRC_CUR = 18;
 
 /** Maximum number of auto source currencies in a path find request. */
-static int constexpr max_auto_src_cur = 88;
+static int constexpr kMAX_AUTO_SRC_CUR = 88;
 
-}  // namespace Tuning
+}  // namespace xrpl::RPC::Tuning
 /** @} */
-
-}  // namespace RPC
-}  // namespace xrpl

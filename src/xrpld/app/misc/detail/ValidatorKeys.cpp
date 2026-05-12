@@ -1,10 +1,18 @@
 #include <xrpld/app/misc/ValidatorKeys.h>
+
 #include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base64.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
 #include <xrpl/server/Manifest.h>
+
+#include <utility>
 
 namespace xrpl {
 ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
@@ -22,8 +30,8 @@ ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
         // token is non-const so it can be moved from
         if (auto token = loadValidatorToken(config.section(SECTION_VALIDATOR_TOKEN).lines()))
         {
-            auto const pk = derivePublicKey(KeyType::secp256k1, token->validationSecret);
-            auto const m = deserializeManifest(base64_decode(token->manifest));
+            auto const pk = derivePublicKey(KeyType::Secp256k1, token->validationSecret);
+            auto const m = deserializeManifest(base64Decode(token->manifest));
 
             if (!m || pk != m->signingKey)
             {
@@ -55,8 +63,8 @@ ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
         }
         else
         {
-            SecretKey const sk = generateSecretKey(KeyType::secp256k1, *seed);
-            PublicKey const pk = derivePublicKey(KeyType::secp256k1, sk);
+            SecretKey const sk = generateSecretKey(KeyType::Secp256k1, *seed);
+            PublicKey const pk = derivePublicKey(KeyType::Secp256k1, sk);
             keys.emplace(pk, pk, sk);
             nodeID = calcNodeID(pk);
             sequence = 0;

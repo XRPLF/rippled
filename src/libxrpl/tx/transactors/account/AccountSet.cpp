@@ -1,13 +1,33 @@
+#include <xrpl/tx/transactors/account/AccountSet.h>
+
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Permissions.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Quality.h>
-#include <xrpl/protocol/st.h>
-#include <xrpl/tx/transactors/account/AccountSet.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/applySteps.h>
+
+#include <cstdint>
+#include <memory>
+#include <unordered_set>
 
 namespace xrpl {
 
@@ -19,19 +39,19 @@ AccountSet::makeTxConsequences(PreflightContext const& ctx)
     auto getTxConsequencesCategory = [](STTx const& tx) {
         if (std::uint32_t const uTxFlags = tx.getFlags();
             uTxFlags & (tfRequireAuth | tfOptionalAuth))
-            return TxConsequences::blocker;
+            return TxConsequences::Category::Blocker;
 
         if (auto const uSetFlag = tx[~sfSetFlag]; uSetFlag &&
             (*uSetFlag == asfRequireAuth || *uSetFlag == asfDisableMaster ||
              *uSetFlag == asfAccountTxnID))
-            return TxConsequences::blocker;
+            return TxConsequences::Category::Blocker;
 
         if (auto const uClearFlag = tx[~sfClearFlag]; uClearFlag &&
             (*uClearFlag == asfRequireAuth || *uClearFlag == asfDisableMaster ||
              *uClearFlag == asfAccountTxnID))
-            return TxConsequences::blocker;
+            return TxConsequences::Category::Blocker;
 
-        return TxConsequences::normal;
+        return TxConsequences::Category::Normal;
     };
 
     return TxConsequences{ctx.tx, getTxConsequencesCategory(ctx.tx)};
@@ -123,7 +143,7 @@ AccountSet::preflight(PreflightContext const& ctx)
     {
         auto uTickSize = tx[sfTickSize];
         if ((uTickSize != 0u) &&
-            ((uTickSize < Quality::minTickSize) || (uTickSize > Quality::maxTickSize)))
+            ((uTickSize < Quality::kMIN_TICK_SIZE) || (uTickSize > Quality::kMAX_TICK_SIZE)))
         {
             JLOG(j.trace()) << "Malformed transaction: Bad tick size.";
             return temBAD_TICK_SIZE;
@@ -139,7 +159,7 @@ AccountSet::preflight(PreflightContext const& ctx)
         }
     }
 
-    if (auto const domain = tx[~sfDomain]; domain && domain->size() > maxDomainLength)
+    if (auto const domain = tx[~sfDomain]; domain && domain->size() > kMAX_DOMAIN_LENGTH)
     {
         JLOG(j.trace()) << "domain too long";
         return telBAD_DOMAIN;
@@ -230,7 +250,7 @@ AccountSet::preclaim(PreclaimContext const& ctx)
         if (!dirIsEmpty(ctx.view, keylet::ownerDir(id)))
         {
             JLOG(ctx.j.trace()) << "Retry: Owner directory not empty.";
-            return ((ctx.flags & tapRETRY) != 0u) ? TER{terOWNERS} : TER{tecOWNERS};
+            return ((ctx.flags & TapRetry) != 0u) ? TER{terOWNERS} : TER{tecOWNERS};
         }
     }
 
@@ -554,7 +574,7 @@ AccountSet::doApply()
     if (tx.isFieldPresent(sfTickSize))
     {
         auto uTickSize = tx[sfTickSize];
-        if ((uTickSize == 0) || (uTickSize == Quality::maxTickSize))
+        if ((uTickSize == 0) || (uTickSize == Quality::kMAX_TICK_SIZE))
         {
             JLOG(j_.trace()) << "unset tick size";
             sle->makeFieldAbsent(sfTickSize);
@@ -635,6 +655,22 @@ AccountSet::doApply()
     ctx_.view().update(sle);
 
     return tesSUCCESS;
+}
+
+void
+AccountSet::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+AccountSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

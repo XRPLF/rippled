@@ -1,30 +1,30 @@
-#include <xrpl/beast/net/IPAddressV4.h>
 #include <xrpl/beast/net/IPAddressV6.h>
 
-#include <boost/asio/ip/address_v4.hpp>
+#include <xrpl/beast/net/IPAddressV4.h>
 
-namespace beast {
-namespace IP {
+#include <boost/asio/ip/address_v6.hpp>
+
+namespace beast::IP {
 
 bool
-is_private(AddressV6 const& addr)
+isPrivate(AddressV6 const& addr)
 {
     // fc00::/7 - Unique Local Address (ULA), covers fc00:: and fd00::
     if ((addr.to_bytes()[0] & 0xfe) == 0xfc)
         return true;
     if (addr.is_v4_mapped())
-        return is_private(boost::asio::ip::make_address_v4(boost::asio::ip::v4_mapped, addr));
+        return isPrivate(boost::asio::ip::make_address_v4(boost::asio::ip::v4_mapped, addr));
     return false;
 }
 
 bool
-is_public(AddressV6 const& addr)
+isPublic(AddressV6 const& addr)
 {
     if (addr.is_loopback())
         return false;
     if (addr.is_v4_mapped())
-        return is_public(boost::asio::ip::make_address_v4(boost::asio::ip::v4_mapped, addr));
-    if (is_private(addr))
+        return isPublic(boost::asio::ip::make_address_v4(boost::asio::ip::v4_mapped, addr));
+    if (isPrivate(addr))
         return false;
     if (addr.is_multicast())
         return false;
@@ -56,5 +56,4 @@ is_public(AddressV6 const& addr)
     return true;
 }
 
-}  // namespace IP
-}  // namespace beast
+}  // namespace beast::IP

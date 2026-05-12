@@ -1,40 +1,89 @@
 #include <test/jtx/TestHelpers.h>
+
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>  // IWYU pragma: keep
+#include <test/jtx/envconfig.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/owners.h>
 #include <test/jtx/rate.h>
 #include <test/jtx/trust.h>
 
+#include <xrpld/core/Config.h>
 #include <xrpld/rpc/RPCHandler.h>
+#include <xrpld/rpc/Role.h>
 
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/Job.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/protocol/Book.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/PathAsset.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STParsedJSON.h>
-#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/STPathSet.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/resource/Charge.h>
+#include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/tx/paths/detail/Steps.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+#include <algorithm>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <optional>
+#include <stdexcept>
+#include <tuple>
+#include <utility>
+#include <variant>
+#include <vector>
+
+namespace xrpl::test::jtx {
 
 // Functions used in debugging
-Json::Value
+json::Value
 getAccountOffers(Env& env, AccountID const& acct, bool current)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::account] = to_string(acct);
     return env.rpc("json", "account_offers", to_string(jv))[jss::result];
 }
 
-Json::Value
+json::Value
 getAccountLines(Env& env, AccountID const& acctId)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::account] = to_string(acctId);
     return env.rpc("json", "account_lines", to_string(jv))[jss::result];
 }
 
 bool
-checkArraySize(Json::Value const& val, unsigned int size)
+checkArraySize(json::Value const& val, unsigned int size)
 {
     return val.isArray() && val.size() == size;
 }
@@ -48,15 +97,15 @@ ownerCount(Env const& env, Account const& account)
 /* Path finding */
 /******************************************************************************/
 void
-stpath_append_one(STPath& st, Account const& account)
+stpathAppendOne(STPath& st, Account const& account)
 {
-    st.push_back(STPathElement({account.id(), std::nullopt, std::nullopt}));
+    st.pushBack(STPathElement({account.id(), std::nullopt, std::nullopt}));
 }
 
 void
-stpath_append_one(STPath& st, STPathElement const& pe)
+stpathAppendOne(STPath& st, STPathElement const& pe)
 {
-    st.push_back(pe);
+    st.pushBack(pe);
 }
 
 bool
@@ -65,29 +114,9 @@ equal(STAmount const& sa1, STAmount const& sa2)
     return sa1 == sa2 && sa1.getIssuer() == sa2.getIssuer();
 }
 
-// Issue path element
-STPathElement
-IPE(Issue const& iss)
-{
-    return STPathElement(
-        STPathElement::typeCurrency | STPathElement::typeIssuer,
-        xrpAccount(),
-        PathAsset{iss.currency},
-        iss.account);
-}
-STPathElement
-IPE(MPTIssue const& iss)
-{
-    return STPathElement(
-        STPathElement::typeMPT | STPathElement::typeIssuer,
-        xrpAccount(),
-        PathAsset{iss.getMptID()},
-        iss.getIssuer());
-}
-
 static void
 addSourceAsset(
-    Json::Value& jv,
+    json::Value& jv,
     PathAsset const& srcAsset,
     std::optional<AccountID> const& srcIssuer)
 {
@@ -109,7 +138,7 @@ addSourceAsset(
         srcAsset.value());
 }
 
-Json::Value
+json::Value
 rpf(jtx::Account const& src,
     jtx::Account const& dst,
     STAmount const& dstAmount,
@@ -117,17 +146,17 @@ rpf(jtx::Account const& src,
     std::optional<PathAsset> const& srcAsset,
     std::optional<AccountID> const& srcIssuer)
 {
-    Json::Value jv = Json::objectValue;
+    json::Value jv = json::ValueType::Object;
     jv[jss::command] = "ripple_path_find";
     jv[jss::source_account] = toBase58(src);
     jv[jss::destination_account] = toBase58(dst);
-    jv[jss::destination_amount] = dstAmount.getJson(JsonOptions::none);
+    jv[jss::destination_amount] = dstAmount.getJson(JsonOptions::Values::None);
     if (sendMax)
-        jv[jss::send_max] = sendMax->getJson(JsonOptions::none);
+        jv[jss::send_max] = sendMax->getJson(JsonOptions::Values::None);
     if (srcAsset)
     {
-        auto& sc = jv[jss::source_currencies] = Json::arrayValue;
-        Json::Value j = Json::objectValue;
+        auto& sc = jv[jss::source_currencies] = json::ValueType::Array;
+        json::Value j = json::ValueType::Object;
         addSourceAsset(j, *srcAsset, srcIssuer);
         sc.append(j);
     }
@@ -136,7 +165,7 @@ rpf(jtx::Account const& src,
 }
 
 jtx::Env
-pathTestEnv(beast::unit_test::suite& suite)
+pathTestEnv(beast::unit_test::Suite& suite)
 {
     // These tests were originally written with search parameters that are
     // different from the current defaults. This function creates an env
@@ -150,8 +179,8 @@ pathTestEnv(beast::unit_test::suite& suite)
                }));
 }
 
-Json::Value
-find_paths_request(
+json::Value
+findPathsRequest(
     jtx::Env& env,
     jtx::Account const& src,
     jtx::Account const& dst,
@@ -164,35 +193,35 @@ find_paths_request(
     using namespace jtx;
 
     auto& app = env.app();
-    Resource::Charge loadType = Resource::feeReferenceRPC;
+    Resource::Charge loadType = Resource::kFEE_REFERENCE_RPC;
     Resource::Consumer c;
 
     RPC::JsonContext context{
-        {env.journal,
-         app,
-         loadType,
-         app.getOPs(),
-         app.getLedgerMaster(),
-         c,
-         Role::USER,
-         {},
-         {},
-         RPC::apiVersionIfUnspecified},
+        {.j = env.journal,
+         .app = app,
+         .loadType = loadType,
+         .netOps = app.getOPs(),
+         .ledgerMaster = app.getLedgerMaster(),
+         .consumer = c,
+         .role = Role::USER,
+         .coro = {},
+         .infoSub = {},
+         .apiVersion = RPC::kAPI_VERSION_IF_UNSPECIFIED},
         {},
         {}};
 
-    Json::Value params = Json::objectValue;
+    json::Value params = json::ValueType::Object;
     params[jss::command] = "ripple_path_find";
     params[jss::source_account] = toBase58(src);
     params[jss::destination_account] = toBase58(dst);
-    params[jss::destination_amount] = saDstAmount.getJson(JsonOptions::none);
+    params[jss::destination_amount] = saDstAmount.getJson(JsonOptions::Values::None);
     if (saSendMax)
-        params[jss::send_max] = saSendMax->getJson(JsonOptions::none);
+        params[jss::send_max] = saSendMax->getJson(JsonOptions::Values::None);
 
     if (srcAsset)
     {
-        auto& sc = params[jss::source_currencies] = Json::arrayValue;
-        Json::Value j = Json::objectValue;
+        auto& sc = params[jss::source_currencies] = json::ValueType::Array;
+        json::Value j = json::ValueType::Object;
         addSourceAsset(j, *srcAsset, srcIssuer);
         sc.append(j);
     }
@@ -200,9 +229,9 @@ find_paths_request(
     if (domain)
         params[jss::domain] = to_string(*domain);
 
-    Json::Value result;
-    gate g;
-    app.getJobQueue().postCoro(jtCLIENT, "RPC-Client", [&](auto const& coro) {
+    json::Value result;
+    Gate g;
+    app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
         context.params = std::move(params);
         context.coro = coro;
         RPC::doCommand(context, result);
@@ -211,12 +240,12 @@ find_paths_request(
 
     using namespace std::chrono_literals;
     using namespace beast::unit_test;
-    g.wait_for(5s);
+    g.waitFor(5s);
     return result;
 }
 
 std::tuple<STPathSet, STAmount, STAmount>
-find_paths(
+findPaths(
     jtx::Env& env,
     jtx::Account const& src,
     jtx::Account const& dst,
@@ -226,14 +255,14 @@ find_paths(
     std::optional<AccountID> const& srcIssuer,
     std::optional<uint256> const& domain)
 {
-    Json::Value result =
-        find_paths_request(env, src, dst, saDstAmount, saSendMax, srcAsset, srcIssuer, domain);
+    json::Value result =
+        findPathsRequest(env, src, dst, saDstAmount, saSendMax, srcAsset, srcIssuer, domain);
     if (result.isMember(jss::error))
         return std::make_tuple(STPathSet{}, STAmount{}, STAmount{});
 
     STAmount da;
     if (result.isMember(jss::destination_amount))
-        da = amountFromJson(sfGeneric, result[jss::destination_amount]);
+        da = amountFromJson(kSF_GENERIC, result[jss::destination_amount]);
 
     STAmount sa;
     STPathSet paths;
@@ -245,17 +274,18 @@ find_paths(
             auto const& path = alts[0u];
 
             if (path.isMember(jss::source_amount))
-                sa = amountFromJson(sfGeneric, path[jss::source_amount]);
+                sa = amountFromJson(kSF_GENERIC, path[jss::source_amount]);
 
             if (path.isMember(jss::destination_amount))
-                da = amountFromJson(sfGeneric, path[jss::destination_amount]);
+                da = amountFromJson(kSF_GENERIC, path[jss::destination_amount]);
 
             if (path.isMember(jss::paths_computed))
             {
-                Json::Value p;
+                json::Value p;
                 p["Paths"] = path[jss::paths_computed];
                 STParsedJSONObject po("generic", p);
-                paths = po.object->getFieldPathSet(sfPaths);
+                if (po.object)
+                    paths = po.object->getFieldPathSet(sfPaths);
             }
         }
     }
@@ -264,7 +294,7 @@ find_paths(
 }
 
 std::tuple<STPathSet, STAmount, STAmount>
-find_paths_by_element(
+findPathsByElement(
     jtx::Env& env,
     jtx::Account const& src,
     jtx::Account const& dst,
@@ -274,14 +304,26 @@ find_paths_by_element(
     std::optional<AccountID> const& srcIssuer,
     std::optional<uint256> const& domain)
 {
-    return find_paths(
-        env, src, dst, saDstAmount, saSendMax, srcElement->getPathAsset(), srcIssuer, domain);
+    // srcElement is optional but is expected to always be present
+    XRPL_ASSERT(
+        srcElement.has_value(), "xrpl::test::jtx::findPathsByElement::srcElement : nullptr");
+
+    return findPaths(
+        env,
+        src,
+        dst,
+        saDstAmount,
+        saSendMax,
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+        srcElement->getPathAsset(),
+        srcIssuer,
+        domain);
 }
 
 /******************************************************************************/
 
 XRPAmount
-txfee(Env const& env, std::uint16_t n)
+txFee(Env const& env, std::uint16_t n)
 {
     return env.current()->fees().base * n;
 }
@@ -290,7 +332,7 @@ PrettyAmount
 xrpMinusFee(Env const& env, std::int64_t xrpAmount)
 {
     auto feeDrops = env.current()->fees().base;
-    return drops(dropsPerXRP * xrpAmount - feeDrops);
+    return drops(kJTX_DROPS_PER_XRP * xrpAmount - feeDrops);
 };
 
 [[nodiscard]] bool
@@ -366,7 +408,7 @@ expectOffers(
         if (sle->getType() == ltOFFER)
         {
             ++cnt;
-            if (std::find_if(toMatch.begin(), toMatch.end(), [&](auto const& a) {
+            if (std::ranges::find_if(toMatch, [&](auto const& a) {
                     return a.in == sle->getFieldAmount(sfTakerPays) &&
                         a.out == sle->getFieldAmount(sfTakerGets);
                 }) != toMatch.end())
@@ -377,60 +419,56 @@ expectOffers(
     return size == cnt && ((toMatch.empty() && size != 0) || (matched == toMatch.size()));
 }
 
-Json::Value
+json::Value
 ledgerEntryRoot(Env& env, Account const& acct)
 {
-    Json::Value jvParams;
+    json::Value jvParams;
     jvParams[jss::ledger_index] = "current";
     jvParams[jss::account_root] = acct.human();
     return env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
 }
 
-Json::Value
-ledgerEntryState(
-    Env& env,
-    Account const& acct_a,
-    Account const& acct_b,
-    std::string const& currency)
+json::Value
+ledgerEntryState(Env& env, Account const& acctA, Account const& acctB, std::string const& currency)
 {
-    Json::Value jvParams;
+    json::Value jvParams;
     jvParams[jss::ledger_index] = "current";
     jvParams[jss::ripple_state][jss::currency] = currency;
-    jvParams[jss::ripple_state][jss::accounts] = Json::arrayValue;
-    jvParams[jss::ripple_state][jss::accounts].append(acct_a.human());
-    jvParams[jss::ripple_state][jss::accounts].append(acct_b.human());
+    jvParams[jss::ripple_state][jss::accounts] = json::ValueType::Array;
+    jvParams[jss::ripple_state][jss::accounts].append(acctA.human());
+    jvParams[jss::ripple_state][jss::accounts].append(acctB.human());
     return env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
 }
 
-Json::Value
-ledgerEntryOffer(jtx::Env& env, jtx::Account const& acct, std::uint32_t offer_seq)
+json::Value
+ledgerEntryOffer(jtx::Env& env, jtx::Account const& acct, std::uint32_t offerSeq)
 {
-    Json::Value jvParams;
+    json::Value jvParams;
     jvParams[jss::offer][jss::account] = acct.human();
-    jvParams[jss::offer][jss::seq] = offer_seq;
+    jvParams[jss::offer][jss::seq] = offerSeq;
     return env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
 }
 
-Json::Value
+json::Value
 ledgerEntryMPT(jtx::Env& env, jtx::Account const& acct, MPTID const& mptID)
 {
-    Json::Value jvParams;
+    json::Value jvParams;
     jvParams[jss::mptoken][jss::account] = acct.human();
     jvParams[jss::mptoken][jss::mpt_issuance_id] = to_string(mptID);
     return env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
 }
 
-Json::Value
-getBookOffers(jtx::Env& env, Asset const& taker_pays, Asset const& taker_gets)
+json::Value
+getBookOffers(jtx::Env& env, Asset const& takerPays, Asset const& takerGets)
 {
-    Json::Value jvbp;
+    json::Value jvbp;
     jvbp[jss::ledger_index] = "current";
-    taker_pays.setJson(jvbp[jss::taker_pays]);
-    taker_gets.setJson(jvbp[jss::taker_gets]);
+    takerPays.setJson(jvbp[jss::taker_pays]);
+    takerGets.setJson(jvbp[jss::taker_gets]);
     return env.rpc("json", "book_offers", to_string(jvbp))[jss::result];
 }
 
-Json::Value
+json::Value
 accountBalance(Env& env, Account const& acct)
 {
     auto const jrr = ledgerEntryRoot(env, acct);
@@ -447,7 +485,7 @@ expectLedgerEntryRoot(Env& env, Account const& acct, STAmount const& expectedVal
 /******************************************************************************/
 namespace paychan {
 
-Json::Value
+json::Value
 create(
     AccountID const& account,
     AccountID const& to,
@@ -457,11 +495,11 @@ create(
     std::optional<NetClock::time_point> const& cancelAfter,
     std::optional<std::uint32_t> const& dstTag)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::TransactionType] = jss::PaymentChannelCreate;
     jv[jss::Account] = to_string(account);
     jv[jss::Destination] = to_string(to);
-    jv[jss::Amount] = amount.getJson(JsonOptions::none);
+    jv[jss::Amount] = amount.getJson(JsonOptions::Values::None);
     jv[jss::SettleDelay] = settleDelay.count();
     jv[sfPublicKey.fieldName] = strHex(pk.slice());
     if (cancelAfter)
@@ -471,24 +509,24 @@ create(
     return jv;
 }
 
-Json::Value
+json::Value
 fund(
     AccountID const& account,
     uint256 const& channel,
     STAmount const& amount,
     std::optional<NetClock::time_point> const& expiration)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::TransactionType] = jss::PaymentChannelFund;
     jv[jss::Account] = to_string(account);
     jv[sfChannel.fieldName] = to_string(channel);
-    jv[jss::Amount] = amount.getJson(JsonOptions::none);
+    jv[jss::Amount] = amount.getJson(JsonOptions::Values::None);
     if (expiration)
         jv[sfExpiration.fieldName] = expiration->time_since_epoch().count();
     return jv;
 }
 
-Json::Value
+json::Value
 claim(
     AccountID const& account,
     uint256 const& channel,
@@ -497,14 +535,14 @@ claim(
     std::optional<Slice> const& signature,
     std::optional<PublicKey> const& pk)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::TransactionType] = jss::PaymentChannelClaim;
     jv[jss::Account] = to_string(account);
     jv["Channel"] = to_string(channel);
     if (amount)
-        jv[jss::Amount] = amount->getJson(JsonOptions::none);
+        jv[jss::Amount] = amount->getJson(JsonOptions::Values::None);
     if (balance)
-        jv["Balance"] = balance->getJson(JsonOptions::none);
+        jv["Balance"] = balance->getJson(JsonOptions::Values::None);
     if (signature)
         jv["Signature"] = strHex(*signature);
     if (pk)
@@ -541,7 +579,7 @@ channelExists(ReadView const& view, uint256 const& chan)
 /******************************************************************************/
 
 void
-n_offers(Env& env, std::size_t n, Account const& account, STAmount const& in, STAmount const& out)
+nOffers(Env& env, std::size_t n, Account const& account, STAmount const& in, STAmount const& out)
 {
     auto const ownerCount = env.le(account)->getFieldU32(sfOwnerCount);
     for (std::size_t i = 0; i < n; i++)
@@ -549,7 +587,7 @@ n_offers(Env& env, std::size_t n, Account const& account, STAmount const& in, ST
         env(offer(account, in, out));
         env.close();
     }
-    env.require(owners(account, ownerCount + n));
+    env.require(Owners(account, ownerCount + n));
 }
 
 /* Pay Strand */
@@ -561,10 +599,10 @@ cpe(PathAsset const& pa)
 {
     return pa.visit(
         [](Currency const& currency) {
-            return STPathElement(STPathElement::typeCurrency, xrpAccount(), currency, xrpAccount());
+            return STPathElement(STPathElement::TypeCurrency, xrpAccount(), currency, xrpAccount());
         },
         [](MPTID const& mpt) {
-            return STPathElement(STPathElement::typeMPT, xrpAccount(), mpt, xrpAccount());
+            return STPathElement(STPathElement::TypeMpt, xrpAccount(), mpt, xrpAccount());
         });
 };
 
@@ -581,14 +619,14 @@ ipe(Asset const& asset)
     return asset.visit(
         [](Issue const& issue) {
             return STPathElement(
-                STPathElement::typeCurrency | STPathElement::typeIssuer,
+                STPathElement::TypeCurrency | STPathElement::TypeIssuer,
                 xrpAccount(),
                 issue.currency,
                 issue.account);
         },
         [](MPTIssue const& issue) {
             return STPathElement(
-                STPathElement::typeMPT | STPathElement::typeIssuer,
+                STPathElement::TypeMpt | STPathElement::TypeIssuer,
                 xrpAccount(),
                 issue.getMptID(),
                 issue.getIssuer());
@@ -599,14 +637,14 @@ ipe(Asset const& asset)
 STPathElement
 iape(AccountID const& account)
 {
-    return STPathElement(STPathElement::typeIssuer, xrpAccount(), xrpCurrency(), account);
+    return STPathElement(STPathElement::TypeIssuer, xrpAccount(), xrpCurrency(), account);
 };
 
 // Account path element
 STPathElement
 ape(AccountID const& a)
 {
-    return STPathElement(STPathElement::typeAccount, a, xrpCurrency(), xrpAccount());
+    return STPathElement(STPathElement::TypeAccount, a, xrpCurrency(), xrpAccount());
 };
 
 bool
@@ -689,10 +727,10 @@ issueHelperMPT(IssuerArgs const& args)
 
 namespace loanBroker {
 
-Json::Value
+json::Value
 set(AccountID const& account, uint256 const& vaultId, uint32_t flags)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[sfTransactionType] = jss::LoanBrokerSet;
     jv[sfAccount] = to_string(account);
     jv[sfVaultID] = to_string(vaultId);
@@ -700,10 +738,10 @@ set(AccountID const& account, uint256 const& vaultId, uint32_t flags)
     return jv;
 }
 
-Json::Value
+json::Value
 del(AccountID const& account, uint256 const& brokerID, uint32_t flags)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[sfTransactionType] = jss::LoanBrokerDelete;
     jv[sfAccount] = to_string(account);
     jv[sfLoanBrokerID] = to_string(brokerID);
@@ -711,42 +749,42 @@ del(AccountID const& account, uint256 const& brokerID, uint32_t flags)
     return jv;
 }
 
-Json::Value
+json::Value
 coverDeposit(
     AccountID const& account,
     uint256 const& brokerID,
     STAmount const& amount,
     uint32_t flags)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[sfTransactionType] = jss::LoanBrokerCoverDeposit;
     jv[sfAccount] = to_string(account);
     jv[sfLoanBrokerID] = to_string(brokerID);
-    jv[sfAmount] = amount.getJson(JsonOptions::none);
+    jv[sfAmount] = amount.getJson(JsonOptions::Values::None);
     jv[sfFlags] = flags;
     return jv;
 }
 
-Json::Value
+json::Value
 coverWithdraw(
     AccountID const& account,
     uint256 const& brokerID,
     STAmount const& amount,
     uint32_t flags)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[sfTransactionType] = jss::LoanBrokerCoverWithdraw;
     jv[sfAccount] = to_string(account);
     jv[sfLoanBrokerID] = to_string(brokerID);
-    jv[sfAmount] = amount.getJson(JsonOptions::none);
+    jv[sfAmount] = amount.getJson(JsonOptions::Values::None);
     jv[sfFlags] = flags;
     return jv;
 }
 
-Json::Value
+json::Value
 coverClawback(AccountID const& account, std::uint32_t flags)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[sfTransactionType] = jss::LoanBrokerCoverClawback;
     jv[sfAccount] = to_string(account);
     jv[sfFlags] = flags;
@@ -759,13 +797,13 @@ coverClawback(AccountID const& account, std::uint32_t flags)
 /******************************************************************************/
 namespace loan {
 
-Json::Value
+json::Value
 set(AccountID const& account,
     uint256 const& loanBrokerID,
     Number principalRequested,
     std::uint32_t flags)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[sfTransactionType] = jss::LoanSet;
     jv[sfAccount] = to_string(account);
     jv[sfLoanBrokerID] = to_string(loanBrokerID);
@@ -774,10 +812,10 @@ set(AccountID const& account,
     return jv;
 }
 
-Json::Value
+json::Value
 manage(AccountID const& account, uint256 const& loanID, std::uint32_t flags)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[sfTransactionType] = jss::LoanManage;
     jv[sfAccount] = to_string(account);
     jv[sfLoanID] = to_string(loanID);
@@ -785,10 +823,10 @@ manage(AccountID const& account, uint256 const& loanID, std::uint32_t flags)
     return jv;
 }
 
-Json::Value
+json::Value
 del(AccountID const& account, uint256 const& loanID, std::uint32_t flags)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[sfTransactionType] = jss::LoanDelete;
     jv[sfAccount] = to_string(account);
     jv[sfLoanID] = to_string(loanID);
@@ -796,10 +834,10 @@ del(AccountID const& account, uint256 const& loanID, std::uint32_t flags)
     return jv;
 }
 
-Json::Value
+json::Value
 pay(AccountID const& account, uint256 const& loanID, STAmount const& amount, std::uint32_t flags)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[sfTransactionType] = jss::LoanPay;
     jv[sfAccount] = to_string(account);
     jv[sfLoanID] = to_string(loanID);
@@ -809,6 +847,4 @@ pay(AccountID const& account, uint256 const& loanID, STAmount const& amount, std
 }
 
 }  // namespace loan
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

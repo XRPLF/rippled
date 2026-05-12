@@ -1,12 +1,16 @@
+#include <xrpl/protocol/Asset.h>
+
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/jss.h>
 
+#include <ostream>
 #include <stdexcept>
 #include <string>
 #include <variant>
@@ -26,7 +30,7 @@ Asset::getText() const
 }
 
 void
-Asset::setJson(Json::Value& jv) const
+Asset::setJson(json::Value& jv) const
 {
     std::visit([&](auto&& issue) { issue.setJson(jv); }, issue_);
 }
@@ -44,7 +48,7 @@ to_string(Asset const& asset)
 }
 
 bool
-validJSONAsset(Json::Value const& jv)
+validJSONAsset(json::Value const& jv)
 {
     if (jv.isMember(jss::mpt_issuance_id))
         return !(jv.isMember(jss::currency) || jv.isMember(jss::issuer));
@@ -52,7 +56,7 @@ validJSONAsset(Json::Value const& jv)
 }
 
 Asset
-assetFromJson(Json::Value const& v)
+assetFromJson(json::Value const& v)
 {
     if (!v.isMember(jss::currency) && !v.isMember(jss::mpt_issuance_id))
         Throw<std::runtime_error>("assetFromJson must contain currency or mpt_issuance_id");

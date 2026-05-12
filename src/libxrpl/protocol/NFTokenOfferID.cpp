@@ -1,7 +1,8 @@
+#include <xrpl/protocol/NFTokenOfferID.h>
+
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/NFTokenOfferID.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
@@ -51,7 +52,7 @@ getOfferIDFromCreatedOffer(TxMeta const& transactionMeta)
 
 void
 insertNFTokenOfferID(
-    Json::Value& response,
+    json::Value& response,
     std::shared_ptr<STTx const> const& transaction,
     TxMeta const& transactionMeta)
 {

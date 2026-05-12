@@ -1,3 +1,21 @@
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/core/Job.h>
+#include <xrpl/core/JobQueue.h>
+#include <xrpl/core/ServiceRegistry.h>
+
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+
+#include <soci/blob.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <mutex>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated"
@@ -8,15 +26,13 @@
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/rdb/SociDB.h>
 
-#include <boost/filesystem.hpp>
-
-#include <soci/sqlite3/soci-sqlite3.h>
+#include <soci/sqlite3/soci-sqlite3.h>  // IWYU pragma: keep
 
 #include <memory>
 
 namespace xrpl {
 
-static auto checkpointPageCount = 1000;
+static auto gCheckpointPageCount = 1000;
 
 namespace detail {
 
@@ -50,7 +66,7 @@ getSociInit(BasicConfig const& config, std::string const& dbName)
 
 }  // namespace detail
 
-DBConfig::DBConfig(std::string const& dbPath) : connectionString_(dbPath)
+DBConfig::DBConfig(std::string dbPath) : connectionString_(std::move(dbPath))
 {
 }
 
@@ -222,7 +238,7 @@ public:
     schedule() override
     {
         {
-            std::lock_guard const lock(mutex_);
+            std::scoped_lock const lock(mutex_);
             if (running_)
                 return;
             running_ = true;
@@ -230,7 +246,7 @@ public:
 
         // If the Job is not added to the JobQueue then we're not running_.
         if (!jobQueue_.addJob(
-                jtWAL,
+                JtWal,
                 "WAL",
                 // If the owning DatabaseCon is destroyed, no need to checkpoint
                 // or keep the checkpointer alive so use a weak_ptr to this.
@@ -242,7 +258,7 @@ public:
                         self->checkpoint();
                 }))
         {
-            std::lock_guard const lock(mutex_);
+            std::scoped_lock const lock(mutex_);
             running_ = false;
         }
     }
@@ -256,10 +272,10 @@ public:
             return;
 
         int log = 0, ckpt = 0;
-        int const ret =
-            sqlite3_wal_checkpoint_v2(conn, nullptr, SQLITE_CHECKPOINT_PASSIVE, &log, &ckpt);
+        int const ret = sqlite_api::sqlite3_wal_checkpoint_v2(
+            conn, nullptr, SQLITE_CHECKPOINT_PASSIVE, &log, &ckpt);
 
-        auto fname = sqlite3_db_filename(conn, "main");
+        auto fname = sqlite_api::sqlite3_db_filename(conn, "main");
         if (ret != SQLITE_OK)
         {
             auto jm = (ret == SQLITE_LOCKED) ? j_.trace() : j_.warn();
@@ -270,7 +286,7 @@ public:
             JLOG(j_.trace()) << "WAL(" << fname << "): frames=" << log << ", written=" << ckpt;
         }
 
-        std::lock_guard const lock(mutex_);
+        std::scoped_lock const lock(mutex_);
         running_ = false;
     }
 
@@ -289,7 +305,7 @@ protected:
     static int
     sqliteWALHook(void* cpId, sqlite_api::sqlite3* conn, char const* dbName, int walSize)
     {
-        if (walSize >= checkpointPageCount)
+        if (walSize >= gCheckpointPageCount)
         {
             if (auto checkpointer = checkpointerFromId(reinterpret_cast<std::uintptr_t>(cpId)))
             {

@@ -1,20 +1,29 @@
 #include <test/unit_test/SuiteJournal.h>
 
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/random.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/insight/NullCollector.h>
+#include <xrpl/beast/net/IPAddressV4.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/resource/Charge.h>
 #include <xrpl/resource/Consumer.h>
-#include <xrpl/resource/detail/Entry.h>
+#include <xrpl/resource/Disposition.h>
+#include <xrpl/resource/Gossip.h>
 #include <xrpl/resource/detail/Logic.h>
+#include <xrpl/resource/detail/Tuning.h>
 
 #include <boost/utility/base_from_member.hpp>
 
+#include <chrono>
+#include <cstdint>
 #include <functional>
+#include <string>
 
-namespace xrpl {
-namespace Resource {
+namespace xrpl::Resource {
 
-class ResourceManager_test : public beast::unit_test::suite
+class ResourceManager_test : public beast::unit_test::Suite
 {
 public:
     class TestLogic : private boost::base_from_member<TestStopwatch>, public Logic
@@ -25,7 +34,7 @@ public:
 
     public:
         explicit TestLogic(beast::Journal journal)
-            : Logic(beast::insight::NullCollector::New(), member, journal)
+            : Logic(beast::insight::NullCollector::make(), member, journal)
         {
         }
 
@@ -47,13 +56,13 @@ public:
     static void
     createGossip(Gossip& gossip)
     {
-        std::uint8_t const v(10 + rand_int(9));
-        std::uint8_t const n(10 + rand_int(9));
+        std::uint8_t const v(10 + randInt(9));
+        std::uint8_t const n(10 + randInt(9));
         gossip.items.reserve(n);
         for (std::uint8_t i = 0; i < n; ++i)
         {
             Gossip::Item item;
-            item.balance = 100 + rand_int(499);
+            item.balance = 100 + randInt(499);
             beast::IP::AddressV4::bytes_type const d = {
                 {192, 0, 2, static_cast<std::uint8_t>(v + i)}};
             item.address = beast::IP::Endpoint{beast::IP::AddressV4{d}};
@@ -77,8 +86,8 @@ public:
 
         TestLogic logic(j);
 
-        Charge const fee(dropThreshold + 1);
-        beast::IP::Endpoint const addr(beast::IP::Endpoint::from_string("192.0.2.2"));
+        Charge const fee(kDROP_THRESHOLD + 1);
+        beast::IP::Endpoint const addr(beast::IP::Endpoint::fromString("192.0.2.2"));
 
         std::function<Consumer(beast::IP::Endpoint)> const ep = limited
             ? std::bind(&TestLogic::newInboundEndpoint, &logic, std::placeholders::_1)
@@ -105,7 +114,7 @@ public:
                     return;
                 }
 
-                if (c.charge(fee) == warn)
+                if (c.charge(fee) == Disposition::Warn)
                 {
                     if (limited)
                     {
@@ -136,7 +145,7 @@ public:
                     return;
                 }
 
-                if (c.charge(fee) == drop)
+                if (c.charge(fee) == Disposition::Drop)
                 {
                     // Disconnect abusive Consumer
                     BEAST_EXPECT(c.disconnect(j) == limited);
@@ -150,7 +159,7 @@ public:
         {
             Consumer const c(logic.newInboundEndpoint(addr));
             logic.periodicActivity();
-            if (c.disposition() != drop)
+            if (c.disposition() != Disposition::Drop)
             {
                 if (limited)
                 {
@@ -170,13 +179,13 @@ public:
             using namespace std::chrono_literals;
             // Give Consumer time to become readmitted.  Should never
             // exceed expiration time.
-            auto n = secondsUntilExpiration + 1s;
+            auto n = kSECONDS_UNTIL_EXPIRATION + 1s;
             while (--n > 0s)
             {
                 ++logic.clock();
                 logic.periodicActivity();
                 Consumer const c(logic.newInboundEndpoint(addr));
-                if (c.disposition() != drop)
+                if (c.disposition() != Disposition::Drop)
                 {
                     readmitted = true;
                     break;
@@ -236,10 +245,10 @@ public:
         TestLogic logic(j);
 
         {
-            beast::IP::Endpoint const address(beast::IP::Endpoint::from_string("192.0.2.1"));
+            beast::IP::Endpoint const address(beast::IP::Endpoint::fromString("192.0.2.1"));
             Consumer c(logic.newInboundEndpoint(address));
             Charge const fee(1000);
-            JLOG(j.info()) << "Charging " << c.to_string() << " " << fee << " per second";
+            JLOG(j.info()) << "Charging " << c.toString() << " " << fee << " per second";
             c.charge(fee);
             for (int i = 0; i < 128; ++i)
             {
@@ -250,10 +259,10 @@ public:
         }
 
         {
-            beast::IP::Endpoint const address(beast::IP::Endpoint::from_string("192.0.2.2"));
+            beast::IP::Endpoint const address(beast::IP::Endpoint::fromString("192.0.2.2"));
             Consumer c(logic.newInboundEndpoint(address));
             Charge const fee(1000);
-            JLOG(j.info()) << "Charging " << c.to_string() << " " << fee << " per second";
+            JLOG(j.info()) << "Charging " << c.toString() << " " << fee << " per second";
             for (int i = 0; i < 128; ++i)
             {
                 c.charge(fee);
@@ -269,7 +278,7 @@ public:
     void
     run() override
     {
-        using namespace beast::severities;
+        using beast::Severity;
         test::SuiteJournal journal("ResourceManager_test", *this);
 
         testDrop(journal, true);
@@ -282,5 +291,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(ResourceManager, resource, xrpl);
 
-}  // namespace Resource
-}  // namespace xrpl
+}  // namespace xrpl::Resource

@@ -1,51 +1,58 @@
 #include <xrpld/peerfinder/detail/SourceStrings.h>
 
-namespace xrpl {
-namespace PeerFinder {
+#include <xrpld/peerfinder/detail/Source.h>
+
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/Journal.h>
+
+#include <memory>
+#include <string>
+#include <utility>
+
+namespace xrpl::PeerFinder {
 
 class SourceStringsImp : public SourceStrings
 {
 public:
-    SourceStringsImp(std::string const& name, Strings const& strings)
-        : m_name(name), m_strings(strings)
+    SourceStringsImp(std::string name, Strings strings)
+        : name_(std::move(name)), strings_(std::move(strings))
     {
     }
 
-    ~SourceStringsImp() = default;
+    ~SourceStringsImp() override = default;
 
     std::string const&
     name() override
     {
-        return m_name;
+        return name_;
     }
 
     void
     fetch(Results& results, beast::Journal journal) override
     {
         results.addresses.resize(0);
-        results.addresses.reserve(m_strings.size());
-        for (int i = 0; i < m_strings.size(); ++i)
+        results.addresses.reserve(strings_.size());
+        for (int i = 0; i < strings_.size(); ++i)
         {
-            beast::IP::Endpoint ep(beast::IP::Endpoint::from_string(m_strings[i]));
-            if (is_unspecified(ep))
-                ep = beast::IP::Endpoint::from_string(m_strings[i]);
-            if (!is_unspecified(ep))
+            beast::IP::Endpoint ep(beast::IP::Endpoint::fromString(strings_[i]));
+            if (isUnspecified(ep))
+                ep = beast::IP::Endpoint::fromString(strings_[i]);
+            if (!isUnspecified(ep))
                 results.addresses.push_back(ep);
         }
     }
 
 private:
-    std::string m_name;
-    Strings m_strings;
+    std::string name_;
+    Strings strings_;
 };
 
 //------------------------------------------------------------------------------
 
 std::shared_ptr<Source>
-SourceStrings::New(std::string const& name, Strings const& strings)
+SourceStrings::make(std::string const& name, Strings const& strings)
 {
     return std::make_shared<SourceStringsImp>(name, strings);
 }
 
-}  // namespace PeerFinder
-}  // namespace xrpl
+}  // namespace xrpl::PeerFinder

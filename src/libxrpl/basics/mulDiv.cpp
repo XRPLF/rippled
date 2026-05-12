@@ -1,8 +1,6 @@
 #include <xrpl/basics/mulDiv.h>
 
-#include <boost/multiprecision/cpp_int.hpp>
-#include <boost/multiprecision/detail/default_ops.hpp>
-#include <boost/multiprecision/fwd.hpp>
+#include <boost/multiprecision/cpp_int.hpp>  // IWYU pragma: keep
 
 #include <cstdint>
 #include <optional>
@@ -17,7 +15,7 @@ mulDiv(std::uint64_t value, std::uint64_t mul, std::uint64_t div)
 
     result /= div;
 
-    if (result > xrpl::muldiv_max)
+    if (result > xrpl::kMULDIV_MAX)
         return std::nullopt;
 
     return static_cast<std::uint64_t>(result);

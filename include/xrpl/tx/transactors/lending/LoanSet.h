@@ -1,14 +1,14 @@
 #pragma once
 
+#include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/lending/LendingHelpers.h>
 
 namespace xrpl {
 
 class LoanSet : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+    static constexpr auto kCONSEQUENCES_FACTORY = ConsequencesFactoryType::Normal;
 
     explicit LoanSet(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -38,17 +38,31 @@ public:
     TER
     doApply() override;
 
+    void
+    visitInvariantEntry(
+        bool isDelete,
+        std::shared_ptr<SLE const> const& before,
+        std::shared_ptr<SLE const> const& after) override;
+
+    [[nodiscard]] bool
+    finalizeInvariants(
+        STTx const& tx,
+        TER result,
+        XRPAmount fee,
+        ReadView const& view,
+        beast::Journal const& j) override;
+
 public:
-    static std::uint32_t constexpr minPaymentTotal = 1;
-    static std::uint32_t constexpr defaultPaymentTotal = 1;
-    static_assert(defaultPaymentTotal >= minPaymentTotal);
+    static std::uint32_t constexpr kMIN_PAYMENT_TOTAL = 1;
+    static std::uint32_t constexpr kDEFAULT_PAYMENT_TOTAL = 1;
+    static_assert(kDEFAULT_PAYMENT_TOTAL >= kMIN_PAYMENT_TOTAL);
 
-    static std::uint32_t constexpr minPaymentInterval = 60;
-    static std::uint32_t constexpr defaultPaymentInterval = 60;
-    static_assert(defaultPaymentInterval >= minPaymentInterval);
+    static std::uint32_t constexpr kMIN_PAYMENT_INTERVAL = 60;
+    static std::uint32_t constexpr kDEFAULT_PAYMENT_INTERVAL = 60;
+    static_assert(kDEFAULT_PAYMENT_INTERVAL >= kMIN_PAYMENT_INTERVAL);
 
-    static std::uint32_t constexpr defaultGracePeriod = 60;
-    static_assert(defaultGracePeriod >= minPaymentInterval);
+    static std::uint32_t constexpr kDEFAULT_GRACE_PERIOD = 60;
+    static_assert(kDEFAULT_GRACE_PERIOD >= kMIN_PAYMENT_INTERVAL);
 };
 
 //------------------------------------------------------------------------------

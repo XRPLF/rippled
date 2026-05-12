@@ -7,7 +7,7 @@ namespace xrpl {
 class Change : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+    static constexpr auto kCONSEQUENCES_FACTORY = ConsequencesFactoryType::Normal;
 
     explicit Change(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -17,6 +17,20 @@ public:
     doApply() override;
     void
     preCompute() override;
+
+    void
+    visitInvariantEntry(
+        bool isDelete,
+        std::shared_ptr<SLE const> const& before,
+        std::shared_ptr<SLE const> const& after) override;
+
+    [[nodiscard]] bool
+    finalizeInvariants(
+        STTx const& tx,
+        TER result,
+        XRPAmount fee,
+        ReadView const& view,
+        beast::Journal const& j) override;
 
     static XRPAmount
     calculateBaseFee(ReadView const& view, STTx const& tx)
