@@ -393,7 +393,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
                 0xCD,
                 0xEF};
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(obj.object->getFieldH128(sfEmailHash) == uint128{expected});
+            BEAST_EXPECT(obj.object->getFieldH128(sfEmailHash) == uint128::fromRaw(expected));
         }
 
         // Valid lowercase hex string for UInt128
@@ -488,8 +488,9 @@ class STParsedJSON_test : public beast::unit_test::Suite
             std::array<uint8_t, 20> const expected = {0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD,
                                                       0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB,
                                                       0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67};
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(obj.object->getFieldH160(sfTakerPaysCurrency) == uint160{expected});
+            BEAST_EXPECT(
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+                obj.object->getFieldH160(sfTakerPaysCurrency) == uint160::fromRaw(expected));
         }
         // Valid lowercase hex string for UInt160
         {
@@ -575,8 +576,9 @@ class STParsedJSON_test : public beast::unit_test::Suite
             std::array<uint8_t, 24> const expected = {
                 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
                 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(obj.object->getFieldH192(sfMPTokenIssuanceID) == uint192{expected});
+            BEAST_EXPECT(
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+                obj.object->getFieldH192(sfMPTokenIssuanceID) == uint192::fromRaw(expected));
         }
 
         // Valid lowercase hex string for UInt192
@@ -676,7 +678,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
                 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB,
                 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF};
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(obj.object->getFieldH256(sfLedgerHash) == uint256{expected});
+            BEAST_EXPECT(obj.object->getFieldH256(sfLedgerHash) == uint256::fromRaw(expected));
         }
         // Valid lowercase hex string for UInt256
         {
