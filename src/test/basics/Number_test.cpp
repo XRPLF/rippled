@@ -1069,7 +1069,7 @@ public:
             }
         };
 
-        Number const maxInternalMantissa = power(10, Number::mantissaLog()) * 10 - 1;
+        Number const maxInternalMantissa{getMaxInternalMantissa(), 0, Number::Normalized{}};
 
         auto const cSmall = std::to_array<Number>({
             Number{2},
@@ -1847,7 +1847,7 @@ public:
                 // full value.
                 testSuite(n, 922, 16, 922'337'203'685'477'600, 1, __LINE__);
             else
-                testSuite(n, 922, 16, 922'337'203'685'477'581, 1, __LINE__);
+                testSuite(n, 922, 16, Number::kLARGEST_MANTISSA / 10 + 1, 1, __LINE__);
         }
         {
             // Biggest valid mantissa + 2
@@ -1860,7 +1860,7 @@ public:
                 // full value.
                 testSuite(n, 922, 16, 922'337'203'685'477'600, 1, __LINE__);
             else
-                testSuite(n, 922, 16, 922'337'203'685'477'581, 1, __LINE__);
+                testSuite(n, 922, 16, Number::kLARGEST_MANTISSA / 10 + 1, 1, __LINE__);
         }
         {
             // Biggest valid mantissa + 3
@@ -1873,7 +1873,7 @@ public:
                 // full value.
                 testSuite(n, 922, 16, 922'337'203'685'477'600, 1, __LINE__);
             else
-                testSuite(n, 922, 16, 922'337'203'685'477'581, 1, __LINE__);
+                testSuite(n, 922, 16, Number::kLARGEST_MANTISSA / 10 + 1, 1, __LINE__);
         }
         {
             // int64 min
@@ -1882,7 +1882,7 @@ public:
             if (scale == MantissaRange::MantissaScale::Small)
                 testSuite(n, -922, 16, -922'337'203'685'477'600, 1, __LINE__);
             else
-                testSuite(n, -922, 16, -922'337'203'685'477'581, 1, __LINE__);
+                testSuite(n, -922, 16, -(Number::kLARGEST_MANTISSA / 10 + 1), 1, __LINE__);
         }
         {
             // int64 min + 1
@@ -1891,7 +1891,7 @@ public:
             if (scale == MantissaRange::MantissaScale::Small)
                 testSuite(n, -922, 16, -922'337'203'685'477'600, 1, __LINE__);
             else
-                testSuite(n, -922, 16, -9'223'372'036'854'775'807, 0, __LINE__);
+                testSuite(n, -922, 16, -Number::kLARGEST_MANTISSA, 0, __LINE__);
         }
         {
             // int64 min - 1
@@ -1906,7 +1906,7 @@ public:
             if (scale == MantissaRange::MantissaScale::Small)
                 testSuite(n, -922, 16, -922'337'203'685'477'600, 1, __LINE__);
             else
-                testSuite(n, -922, 16, -922'337'203'685'477'581, 1, __LINE__);
+                testSuite(n, -922, 16, -(Number::kLARGEST_MANTISSA / 10 + 1), 1, __LINE__);
         }
     }
 
