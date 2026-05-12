@@ -67,11 +67,11 @@ hasInvalidMPTAmount(Rules const& rules, STBase const& field)
 
 void
 ValidMPTAmounts::visitEntry(
-    bool,
+    bool isDelete,
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const& after)
 {
-    if (after)
+    if (!isDelete && after)
         afterEntries_.push_back(after);
 }
 
