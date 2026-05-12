@@ -615,7 +615,10 @@ Number::fromInternal(bool negative, Rep mantissa, int exponent)
 Number
 Number::one(MantissaRange const& range)
 {
-    return Number{false, range.min, -range.log, Number::Unchecked{}};
+    XRPL_ASSERT(isPowerOfTen(range.internalMin), "Number::one : valid range internalMin");
+    auto const result = Number{false, range.internalMin, -range.log, Number::Unchecked{}};
+    XRPL_ASSERT(result == 1, "Number::one : One == 1");
+    return result;
 }
 
 Number
