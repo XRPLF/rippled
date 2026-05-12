@@ -1,6 +1,7 @@
 #include <xrpl/protocol/Permissions.h>
 
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
@@ -13,6 +14,7 @@
 #include <cstdint>
 #include <functional>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <tuple>
 #include <unordered_set>
@@ -21,33 +23,34 @@
 
 namespace xrpl {
 
+Permission::GranularPermissionEntry::GranularPermissionEntry(
+    std::string name,
+    TxType txType,
+    std::uint32_t permittedFlags,
+    std::vector<SOElement> permittedFields)
+    : name(std::move(name))
+    , txType(txType)
+    , permittedFlags(permittedFlags)
+    , permittedFields(std::move(permittedFields), TxFormats::getCommonFields())
+{
+}
+
 Permission::Permission()
 {
-    txFeatureMap_ = {
+    {
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define TRANSACTION(tag, value, name, delegable, amendment, ...) {value, amendment},
+#define TRANSACTION(tag, value, name, delegable, amendment, ...) \
+    txDelegationMap_[static_cast<TxType>(value)] = {amendment, delegable};
 
 #include <xrpl/protocol/detail/transactions.macro>
 
 #undef TRANSACTION
 #pragma pop_macro("TRANSACTION")
-    };
+    }
 
-    delegableTx_ = {
-#pragma push_macro("TRANSACTION")
-#undef TRANSACTION
-
-#define TRANSACTION(tag, value, name, delegable, ...) {value, delegable},
-
-#include <xrpl/protocol/detail/transactions.macro>
-
-#undef TRANSACTION
-#pragma pop_macro("TRANSACTION")
-    };
-
-    granularPermissionMap_ = {
+    granularPermissionsByName_ = {
 #pragma push_macro("GRANULAR_PERMISSION")
 #undef GRANULAR_PERMISSION
 
@@ -59,53 +62,17 @@ Permission::Permission()
 #pragma pop_macro("GRANULAR_PERMISSION")
     };
 
-    granularNameMap_ = {
-#pragma push_macro("GRANULAR_PERMISSION")
-#undef GRANULAR_PERMISSION
-
-#define GRANULAR_PERMISSION(type, ...) {type, #type},
-
-#include <xrpl/protocol/detail/permissions.macro>
-
-#undef GRANULAR_PERMISSION
-#pragma pop_macro("GRANULAR_PERMISSION")
-    };
-
-    granularTxTypeMap_ = {
-#pragma push_macro("GRANULAR_PERMISSION")
-#undef GRANULAR_PERMISSION
-
-#define GRANULAR_PERMISSION(type, txType, ...) {type, txType},
-
-#include <xrpl/protocol/detail/permissions.macro>
-
-#undef GRANULAR_PERMISSION
-#pragma pop_macro("GRANULAR_PERMISSION")
-    };
-
-    {
-#pragma push_macro("GRANULAR_PERMISSION")
-#undef GRANULAR_PERMISSION
-
-#define GRANULAR_PERMISSION(type, txType, value, flags, fields) \
-    granularPermittedFlags_[type] = (flags);
-
-#include <xrpl/protocol/detail/permissions.macro>
-
-#undef GRANULAR_PERMISSION
-#pragma pop_macro("GRANULAR_PERMISSION")
-    }
-
     {
 #pragma push_macro("GRANULAR_PERMISSION")
 #undef GRANULAR_PERMISSION
 
 // NOLINTBEGIN(bugprone-macro-parentheses)
 #define GRANULAR_PERMISSION(type, txType, value, flags, fields) \
-    granularTemplates_.emplace(                                 \
+    granularPermissions_.emplace(                               \
         std::piecewise_construct,                               \
-        std::forward_as_tuple(type),                            \
-        std::forward_as_tuple(std::vector<SOElement> fields, TxFormats::getCommonFields()));
+        std::forward_as_tuple(GranularPermissionType::type),    \
+        std::forward_as_tuple(                                  \
+            #type, txType, static_cast<std::uint32_t>(flags), std::vector<SOElement> fields));
         // NOLINTEND(bugprone-macro-parentheses)
 
 #include <xrpl/protocol/detail/permissions.macro>
@@ -114,46 +81,40 @@ Permission::Permission()
 #pragma pop_macro("GRANULAR_PERMISSION")
     }
 
-    XRPL_ASSERT(
-        txFeatureMap_.size() == delegableTx_.size(),
-        "xrpl::Permission::Permission : txFeatureMap_ and delegableTx_ must have same size");
-
-    for ([[maybe_unused]] auto const& permission : granularPermissionMap_)
+    if (granularPermissionsByName_.size() != granularPermissions_.size())
     {
-        XRPL_ASSERT(
-            permission.second > UINT16_MAX,
-            "xrpl::Permission::Permission : granular permission value must exceed the maximum "
-            "uint16_t value");
+        Throw<std::logic_error>(
+            "granularPermissionsByName_ and granularPermissions_ must have same size");
     }
 
-    for (auto const& [gp, txType] : granularTxTypeMap_)
-        granularTxTypes_.insert(txType);
+    for (auto const& [name, type] : granularPermissionsByName_)
+    {
+        if (type <= UINT16_MAX)
+        {
+            Throw<std::logic_error>(
+                "Granular permission value must exceed the maximum uint16_t value: " + name);
+        }
+    }
+
+    for (auto const& [type, entry] : granularPermissions_)
+        granularTxTypes_.insert(entry.txType);
 
     // Validate that all fields listed in permissions.macro exist in the
     // corresponding transaction type's format, catching typos at startup.
+    for (auto const& [type, entry] : granularPermissions_)
     {
-#pragma push_macro("GRANULAR_PERMISSION")
-#undef GRANULAR_PERMISSION
+        if (!txDelegationMap_.contains(entry.txType))
+            Throw<std::logic_error>("Invalid granular permission txType in txDelegationMap_");
 
-// NOLINTBEGIN(bugprone-macro-parentheses)
-#define GRANULAR_PERMISSION(type, txType, value, flags, fields)                                    \
-    {                                                                                              \
-        [[maybe_unused]] auto const* fmt = TxFormats::getInstance().findByType(txType);            \
-        XRPL_ASSERT(                                                                               \
-            fmt != nullptr, "xrpl::Permission::Permission : granular permission txType is valid"); \
-        for ([[maybe_unused]] auto const& field : std::vector<SOElement> fields)                   \
-        {                                                                                          \
-            XRPL_ASSERT(                                                                           \
-                fmt->getSOTemplate().getIndex(field.sField()) != -1,                               \
-                "xrpl::Permission::Permission : granular permission field is valid");              \
-        }                                                                                          \
-    }
-        // NOLINTEND(bugprone-macro-parentheses)
+        auto const* fmt = TxFormats::getInstance().findByType(entry.txType);
+        if (fmt == nullptr)
+            Throw<std::logic_error>("Invalid granular permission txType");
 
-#include <xrpl/protocol/detail/permissions.macro>
-
-#undef GRANULAR_PERMISSION
-#pragma pop_macro("GRANULAR_PERMISSION")
+        for (auto const& field : entry.permittedFields)
+        {
+            if (fmt->getSOTemplate().getIndex(field.sField()) == -1)
+                Throw<std::logic_error>("Invalid granular permission field");
+        }
     }
 }
 
@@ -182,8 +143,8 @@ Permission::getPermissionName(std::uint32_t value) const
 std::optional<std::uint32_t>
 Permission::getGranularValue(std::string const& name) const
 {
-    auto const it = granularPermissionMap_.find(name);
-    if (it != granularPermissionMap_.end())
+    auto const it = granularPermissionsByName_.find(name);
+    if (it != granularPermissionsByName_.end())
         return static_cast<uint32_t>(it->second);
 
     return std::nullopt;
@@ -192,9 +153,9 @@ Permission::getGranularValue(std::string const& name) const
 std::optional<std::string>
 Permission::getGranularName(GranularPermissionType value) const
 {
-    auto const it = granularNameMap_.find(value);
-    if (it != granularNameMap_.end())
-        return it->second;
+    auto const it = granularPermissions_.find(value);
+    if (it != granularPermissions_.end())
+        return it->second.name;
 
     return std::nullopt;
 }
@@ -202,9 +163,9 @@ Permission::getGranularName(GranularPermissionType value) const
 std::optional<TxType>
 Permission::getGranularTxType(GranularPermissionType gpType) const
 {
-    auto const it = granularTxTypeMap_.find(gpType);
-    if (it != granularTxTypeMap_.end())
-        return it->second;
+    auto const it = granularPermissions_.find(gpType);
+    if (it != granularPermissions_.end())
+        return it->second.txType;
 
     return std::nullopt;
 }
@@ -218,36 +179,42 @@ Permission::hasGranularPermissions(TxType txType) const
 std::optional<std::reference_wrapper<uint256 const>>
 Permission::getTxFeature(TxType txType) const
 {
-    auto const txFeaturesIt = txFeatureMap_.find(txType);
+    auto const it = txDelegationMap_.find(txType);
     XRPL_ASSERT(
-        txFeaturesIt != txFeatureMap_.end(),
-        "xrpl::Permission::getTxFeature : tx exists in txFeatureMap_");
+        it != txDelegationMap_.end(),
+        "xrpl::Permission::getTxFeature : tx exists in txDelegationMap_");
 
-    if (txFeaturesIt->second == uint256{})
+    if (it->second.amendment == uint256{})
         return std::nullopt;
 
-    return std::optional{std::cref(txFeaturesIt->second)};
+    return std::optional{std::cref(it->second.amendment)};
 }
 
 bool
 Permission::isDelegable(std::uint32_t permissionValue, Rules const& rules) const
 {
-    // Granular permissions are always delegable.
-    if (getGranularName(static_cast<GranularPermissionType>(permissionValue)))
-        return true;
+    auto const amendmentEnabled = [&rules](TxDelegationEntry const& entry) {
+        return entry.amendment == uint256{} || rules.enabled(entry.amendment);
+    };
+
+    // Granular permissions may authorize a limited subset of a tx type even
+    // when the full tx type is not delegable. They still require the
+    // underlying transaction amendment to be enabled.
+    if (auto const granularIt =
+            granularPermissions_.find(static_cast<GranularPermissionType>(permissionValue));
+        granularIt != granularPermissions_.end())
+    {
+        auto const txIt = txDelegationMap_.find(granularIt->second.txType);
+        return txIt != txDelegationMap_.end() && amendmentEnabled(txIt->second);
+    }
 
     auto const txType = permissionToTxType(permissionValue);
-    auto const it = delegableTx_.find(txType);
+    auto const txIt = txDelegationMap_.find(txType);
 
-    if (it == delegableTx_.end() || it->second == Delegation::NotDelegable)
-        return false;
-
-    // Delegation is only allowed if the required amendment is enabled.
-    // getTxFeature returns nullopt for transactions that don't require an amendment.
-    if (auto const feature = getTxFeature(txType))
-        return rules.enabled(*feature);
-
-    return true;
+    // Tx-level permissions require the transaction type itself to be delegable, and
+    // the corresponding amendment enabled.
+    return txIt != txDelegationMap_.end() && txIt->second.delegable != NotDelegable &&
+        amendmentEnabled(txIt->second);
 }
 
 uint32_t
@@ -273,9 +240,9 @@ Permission::checkGranularSandbox(
     std::uint32_t unionFlags = 0;
     for (auto const& gp : heldPermissions)
     {
-        auto const it = granularPermittedFlags_.find(gp);
-        if (it != granularPermittedFlags_.end())
-            unionFlags |= it->second;
+        auto const it = granularPermissions_.find(gp);
+        if (it != granularPermissions_.end())
+            unionFlags |= it->second.permittedFlags;
     }
 
     // Check if flags are permitted
@@ -290,9 +257,9 @@ Permission::checkGranularSandbox(
             continue;
 
         if (!std::ranges::any_of(heldPermissions, [&](auto const& gp) {
-                auto const it = granularTemplates_.find(gp);
-                return it != granularTemplates_.end() &&
-                    it->second.getIndex(field.getFName()) != -1;
+                auto const it = granularPermissions_.find(gp);
+                return it != granularPermissions_.end() &&
+                    it->second.permittedFields.getIndex(field.getFName()) != -1;
             }))
             return false;
     }

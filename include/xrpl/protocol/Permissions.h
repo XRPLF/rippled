@@ -8,6 +8,7 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 namespace xrpl {
 
@@ -44,16 +45,30 @@ class Permission
 private:
     Permission();
 
-    std::unordered_map<std::uint16_t, uint256> txFeatureMap_;
-    std::unordered_map<std::uint16_t, Delegation> delegableTx_;
-    std::unordered_map<std::string, GranularPermissionType> granularPermissionMap_;
+    struct GranularPermissionEntry
+    {
+        std::string name;
+        TxType txType;
+        std::uint32_t permittedFlags;
+        SOTemplate permittedFields;
 
-    std::unordered_map<GranularPermissionType, std::string> granularNameMap_;
-    std::unordered_map<GranularPermissionType, TxType> granularTxTypeMap_;
+        GranularPermissionEntry(
+            std::string name,
+            TxType txType,
+            std::uint32_t permittedFlags,
+            std::vector<SOElement> fields);
+    };
 
-    std::unordered_map<GranularPermissionType, std::uint32_t> granularPermittedFlags_;
-    std::unordered_map<GranularPermissionType, SOTemplate> granularTemplates_;
+    struct TxDelegationEntry
+    {
+        uint256 amendment;
+        Delegation delegable{NotDelegable};
+    };
+
     std::unordered_set<TxType> granularTxTypes_;
+    std::unordered_map<TxType, TxDelegationEntry> txDelegationMap_;
+    std::unordered_map<std::string, GranularPermissionType> granularPermissionsByName_;
+    std::unordered_map<GranularPermissionType, GranularPermissionEntry> granularPermissions_;
 
 public:
     static Permission const&

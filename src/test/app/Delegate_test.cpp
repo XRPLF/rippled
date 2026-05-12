@@ -5,6 +5,7 @@
 #include <test/jtx/acctdelete.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>
+#include <test/jtx/batch.h>
 #include <test/jtx/delegate.h>
 #include <test/jtx/delivermin.h>
 #include <test/jtx/did.h>
@@ -45,6 +46,7 @@
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
 #include <algorithm>
@@ -2249,6 +2251,22 @@ class Delegate_test : public beast::unit_test::Suite
             for (auto const& tx : txRequiredFeatures)
                 txAmendmentEnabled(tx.first);
         }
+
+        // Granular permissions also require the amendment for their underlying
+        // transaction type.
+        {
+            for (auto const permission : {"MPTokenIssuanceLock", "MPTokenIssuanceUnlock"})
+            {
+                Env env(*this, features - featureMPTokensV1);
+
+                Account const alice{"alice"};
+                Account const bob{"bob"};
+                env.fund(XRP(100000), alice, bob);
+                env.close();
+
+                env(delegate::set(alice, bob, {permission}), Ter(temMALFORMED));
+            }
+        }
     }
 
     void
@@ -2388,14 +2406,14 @@ class Delegate_test : public beast::unit_test::Suite
                     Ter(temINVALID));
             }
 
-            // Batch transaction
+            // Batch transaction: the outer Batch itself is non-delegable.
             {
-                json::Value batchTx;
-                batchTx[jss::TransactionType] = jss::Batch;
-                batchTx[jss::Account] = alice.human();
-                batchTx[jss::RawTransactions] = json::Value{json::ArrayValue};
-                batchTx[jss::Flags] = 0;
-                env(batchTx, delegate::As(bob), Ter(temINVALID));
+                auto const seq = env.seq(alice);
+                auto const batchFee = batch::calcBatchFee(env, 0, 1);
+                env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                    batch::Inner(pay(alice, bob, XRP(1)), seq + 1),
+                    delegate::As(bob),
+                    Ter(temINVALID));
             }
 
             // Lending protocol transactions
