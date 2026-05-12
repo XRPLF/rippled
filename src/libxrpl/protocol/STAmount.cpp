@@ -1506,7 +1506,7 @@ roundToScale(STAmount const& value, std::int32_t scale, Number::RoundingMode rou
     STAmount const referenceValue{value.asset(), STAmount::kMIN_VALUE, scale, value.negative()};
 
     NumberRoundModeGuard const mg(rounding);
-    // With an IOU, the the result of addition will be truncated to the
+    // With an IOU, the result of addition will be truncated to the
     // precision of the larger value, which in this case is referenceValue. Then
     // remove the reference value via subtraction, and we're left with the
     // rounded value.
