@@ -297,7 +297,7 @@ calcNodeID(PublicKey const& pk)
 
     RipeshaHasher h;
     h(pk.data(), pk.size());
-    return NodeID{static_cast<RipeshaHasher::result_type>(h)};
+    return NodeID::fromRaw(static_cast<RipeshaHasher::result_type>(h));
 }
 
 }  // namespace xrpl

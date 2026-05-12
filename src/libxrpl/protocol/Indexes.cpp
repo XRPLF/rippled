@@ -385,7 +385,7 @@ nftpageMin(AccountID const& owner)
 {
     std::array<std::uint8_t, 32> buf{};
     std::memcpy(buf.data(), owner.data(), owner.size());
-    return {ltNFTOKEN_PAGE, uint256{buf}};
+    return {ltNFTOKEN_PAGE, uint256::fromRaw(buf)};
 }
 
 Keylet
