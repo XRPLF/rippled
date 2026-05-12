@@ -91,6 +91,20 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
         }
     }
 
+    if (ctx.view.rules().enabled(fixSecurity3_1_3))
+    {
+        if (coverAvailable > beast::zero)
+        {
+            auto const brokerPseudo = sleBroker->at(sfAccount);
+            if (auto const ter = requireAuth(ctx.view, asset, brokerOwner, AuthType::WeakAuth))
+                return ter;
+            if (auto const ret = checkFrozen(ctx.view, brokerPseudo, asset))
+                return ret;
+            if (auto const ret = checkDeepFrozen(ctx.view, brokerOwner, asset))
+                return ret;
+        }
+    }
+
     return tesSUCCESS;
 }
 
