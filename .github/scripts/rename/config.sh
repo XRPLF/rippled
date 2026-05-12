@@ -62,7 +62,7 @@ ${SED_COMMAND} -i 's@ripple/@xrpld/@g' src/test/core/Config_test.cpp
 ${SED_COMMAND} -i 's/Rippled/File/g' src/test/core/Config_test.cpp
 
 # Restore the old config file name in the code that maintains support for now.
-${SED_COMMAND} -i 's/kCONFIG_LEGACY_NAME = "xrpld.cfg"/kCONFIG_LEGACY_NAME = "rippled.cfg"/g' src/xrpld/core/detail/Config.cpp
+${SED_COMMAND} -i 's/kConfigLegacyName = "xrpld.cfg"/kConfigLegacyName = "rippled.cfg"/g' src/xrpld/core/detail/Config.cpp
 
 # Restore an URL.
 ${SED_COMMAND} -i 's/connect-your-xrpld-to-the-xrp-test-net.html/connect-your-rippled-to-the-xrp-test-net.html/g' cfg/xrpld-example.cfg

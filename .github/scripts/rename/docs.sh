@@ -90,7 +90,7 @@ ${SED_COMMAND} -i 's/www.ripple.com/www.xrpl.org/g' src/test/protocol/Seed_test.
 # Restore specific changes.
 ${SED_COMMAND} -i 's@b5efcc/src/xrpld@b5efcc/src/ripple@' include/xrpl/protocol/README.md
 ${SED_COMMAND} -i 's/dbPrefix_ = "xrpldb"/dbPrefix_ = "rippledb"/' src/xrpld/app/misc/SHAMapStoreImp.h # cspell: disable-line
-${SED_COMMAND} -i 's/kCONFIG_LEGACY_NAME = "xrpld.cfg"/kCONFIG_LEGACY_NAME = "rippled.cfg"/' src/xrpld/core/detail/Config.cpp
+${SED_COMMAND} -i 's/kConfigLegacyName = "xrpld.cfg"/kConfigLegacyName = "rippled.cfg"/' src/xrpld/core/detail/Config.cpp
 
 popd
 echo "Renaming complete."
