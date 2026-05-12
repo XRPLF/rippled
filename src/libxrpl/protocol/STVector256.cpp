@@ -30,7 +30,7 @@ STVector256::STVector256(SerialIter& sit, SField const& name) : STBase(name)
     value_.reserve(cnt);
 
     for (std::size_t i = 0; i != cnt; ++i)
-        value_.emplace_back(slice.substr(i * uint256::size(), uint256::size()));
+        value_.push_back(uint256::fromRaw(slice.substr(i * uint256::size(), uint256::size())));
 }
 
 STBase*
