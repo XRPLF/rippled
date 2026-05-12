@@ -20,6 +20,8 @@ isPrivate(AddressV6 const& addr)
 bool
 isPublic(AddressV6 const& addr)
 {
+    if (addr.is_unspecified())
+        return false;
     if (addr.is_loopback())
         return false;
     if (addr.is_v4_mapped())
