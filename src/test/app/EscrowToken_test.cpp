@@ -899,7 +899,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
             auto const alice = Account("alice");
             auto const bob = Account("bob");
             auto const gw = Account("gw");
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
 
             env.fund(XRP(10'000), alice, bob, gw);
             env.close();
@@ -907,29 +907,29 @@ struct EscrowToken_test : public beast::unit_test::Suite
             env(fset(gw, asfAllowTrustLineLocking));
             env.close();
 
-            env.trust(USD(100'000), alice);
-            env.trust(USD(100'000), bob);
+            env.trust(usd(100'000), alice);
+            env.trust(usd(100'000), bob);
             env.close();
 
-            env(pay(gw, alice, USD(10'000)));
+            env(pay(gw, alice, usd(10'000)));
             env.close();
 
             auto const seq = env.seq(alice);
-            env(escrow::create(alice, bob, USD(1'000)),
+            env(escrow::create(alice, bob, usd(1'000)),
                 escrow::kFINISH_TIME(env.now() + 1s),
                 escrow::kCANCEL_TIME(env.now() + 2s),
                 Fee(baseFee));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, USD) == USD(9'000));
+            BEAST_EXPECT(env.balance(alice, usd) == usd(9'000));
 
-            env(pay(alice, gw, USD(9'000)));
+            env(pay(alice, gw, usd(9'000)));
             env.close();
 
-            env(trust(alice, USD(0)));
+            env(trust(alice, usd(0)));
             env.close();
 
-            auto const trustLineKey = keylet::line(alice.id(), gw.id(), USD.currency);
+            auto const trustLineKey = keylet::line(alice.id(), gw.id(), usd.currency);
             BEAST_EXPECT(!env.current()->exists(trustLineKey));
 
             env.close();
@@ -945,7 +945,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
             {
                 BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), seq)));
                 BEAST_EXPECT(env.current()->exists(trustLineKey));
-                BEAST_EXPECT(env.balance(alice, USD) == USD(1'000));
+                BEAST_EXPECT(env.balance(alice, usd) == usd(1'000));
             }
         }
     }
