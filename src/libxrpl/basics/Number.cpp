@@ -10,9 +10,11 @@
 #include <iterator>
 #include <limits>
 #include <numeric>
+#include <set>
 #include <string>
 #include <string_view>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 
 #ifdef _MSC_VER
@@ -25,7 +27,82 @@ using int128_t = xrpl::detail::int128_t;
 namespace xrpl {
 
 thread_local Number::RoundingMode Number::mode = Number::RoundingMode::ToNearest;
-thread_local std::reference_wrapper<MantissaRange const> Number::kRANGE = kLARGE_RANGE;
+thread_local std::reference_wrapper<MantissaRange const> Number::kRANGE =
+    MantissaRange::getMantissaRange(MantissaRange::MantissaScale::Large);
+
+std::set<MantissaRange::MantissaScale> const&
+MantissaRange::getAllScales()
+{
+    static std::set<MantissaRange::MantissaScale> const kSCALES = {
+        MantissaRange::MantissaScale::Small,
+        MantissaRange::MantissaScale::LargeLegacy,
+        MantissaRange::MantissaScale::Large,
+    };
+    return kSCALES;
+}
+
+std::unordered_map<MantissaRange::MantissaScale, MantissaRange> const&
+MantissaRange::getRanges()
+{
+    static auto const kMAP = []() {
+        std::unordered_map<MantissaScale, MantissaRange> map;
+        for (auto const scale : getAllScales())
+        {
+            map.emplace(scale, scale);
+        }
+
+        // Use these constexpr declarations to do static_asserts to verify the MantissaRanges are
+        // created correctly, but nothing else.
+        {
+            [[maybe_unused]]
+            constexpr static MantissaRange kRANGE{MantissaRange::MantissaScale::Small};
+            static_assert(isPowerOfTen(kRANGE.min));
+            static_assert(isPowerOfTen(kRANGE.internalMin));
+            static_assert(kRANGE.min == 1'000'000'000'000'000LL);
+            static_assert(kRANGE.internalMin == kRANGE.min);
+            static_assert(kRANGE.max == 9'999'999'999'999'999LL);
+            static_assert(kRANGE.log == 15);
+            static_assert(kRANGE.min < Number::kLARGEST_MANTISSA);
+            static_assert(kRANGE.max < Number::kLARGEST_MANTISSA);
+            static_assert(kRANGE.cuspRoundingFixEnabled == CuspRoundingFix::Disabled);
+        }
+        {
+            [[maybe_unused]]
+            constexpr static MantissaRange kRANGE{MantissaRange::MantissaScale::LargeLegacy};
+            static_assert(!isPowerOfTen(kRANGE.min));
+            static_assert(isPowerOfTen(kRANGE.internalMin));
+            static_assert(kRANGE.min == 922'337'203'685'477'581ULL);
+            static_assert(kRANGE.internalMin == 1'000'000'000'000'000'000ULL);
+            static_assert(kRANGE.max == rep(9'223'372'036'854'775'807ULL));
+            static_assert(kRANGE.log == 18);
+            static_assert(kRANGE.min < Number::kLARGEST_MANTISSA);
+            static_assert(kRANGE.max == Number::kLARGEST_MANTISSA);
+            static_assert(kRANGE.cuspRoundingFixEnabled == CuspRoundingFix::Disabled);
+        }
+        {
+            [[maybe_unused]]
+            constexpr static MantissaRange kRANGE{MantissaRange::MantissaScale::Large};
+            static_assert(!isPowerOfTen(kRANGE.min));
+            static_assert(isPowerOfTen(kRANGE.internalMin));
+            static_assert(kRANGE.min == 922'337'203'685'477'581ULL);
+            static_assert(kRANGE.internalMin == 1'000'000'000'000'000'000ULL);
+            static_assert(kRANGE.max == rep(9'223'372'036'854'775'807ULL));
+            static_assert(kRANGE.log == 18);
+            static_assert(kRANGE.min < Number::kLARGEST_MANTISSA);
+            static_assert(kRANGE.max == Number::kLARGEST_MANTISSA);
+            static_assert(kRANGE.cuspRoundingFixEnabled == CuspRoundingFix::Enabled);
+        }
+        return map;
+    }();
+
+    return kMAP;
+}
+
+MantissaRange const&
+MantissaRange::getMantissaRange(MantissaScale scale)
+{
+    return getRanges().at(scale);
+}
 
 Number::RoundingMode
 Number::getround()
@@ -48,10 +125,37 @@ Number::getMantissaScale()
 void
 Number::setMantissaScale(MantissaRange::MantissaScale scale)
 {
-    if (scale != MantissaRange::MantissaScale::Small &&
-        scale != MantissaRange::MantissaScale::Large)
+    if (!MantissaRange::getAllScales().contains(scale))
         logicError("Unknown mantissa scale");
-    kRANGE = scale == MantissaRange::MantissaScale::Small ? kSMALL_RANGE : kLARGE_RANGE;
+    kRANGE = MantissaRange::getMantissaRange(scale);
+}
+
+// Optimization equivalent to:
+// auto r = static_cast<unsigned>(u % 10);
+// u /= 10;
+// return r;
+// Derived from Hacker's Delight Second Edition Chapter 10
+// by Henry S. Warren, Jr.
+static inline unsigned
+divu10(uint128_t& u)
+{
+    // q = u * 0.75
+    auto q = (u >> 1) + (u >> 2);
+    // iterate towards q = u * 0.8
+    q += q >> 4;
+    q += q >> 8;
+    q += q >> 16;
+    q += q >> 32;
+    q += q >> 64;
+    // q /= 8 approximately == u / 10
+    q >>= 3;
+    // r = u - q * 10  approximately == u % 10
+    auto r = static_cast<unsigned>(u - ((q << 3) + (q << 1)));
+    // correction c is 1 if r >= 10 else 0
+    auto c = (r + 6) >> 4;
+    u = q + c;
+    r -= c * 10;
+    return r;
 }
 
 // Guard
@@ -86,6 +190,18 @@ public:
     unsigned
     pop() noexcept;
 
+    /** Drop a digit from the mantissa, and increment the exponent, storing the dropped digit in
+     * this Guard.
+     *
+     * Substitute for:
+                push(mantissa % 10);
+                mantissa /= 10;
+                ++exponent;
+     */
+    template <class T>
+    void
+    doDropDigit(T& mantissa, int& exponent) noexcept;
+
     // Indicate round direction:  1 is up, -1 is down, 0 is even
     // This enables the client to round towards nearest, and on
     // tie, round towards even.
@@ -101,6 +217,7 @@ public:
         int& exponent,
         internalrep const& minMantissa,
         internalrep const& maxMantissa,
+        MantissaRange::CuspRoundingFix cuspRoundingFixEnabled,
         std::string_view location);
 
     // Modify the result to the correctly rounded value
@@ -160,6 +277,27 @@ Number::Guard::pop() noexcept
     unsigned const d = (digits_ & 0xF000'0000'0000'0000) >> 60;
     digits_ <<= 4;
     return d;
+}
+
+template <class T>
+void
+Number::Guard::doDropDigit(T& mantissa, int& exponent) noexcept
+{
+    push(mantissa % 10);
+    mantissa /= 10;
+    ++exponent;
+}
+
+// Use the divu10 optimization for uint128s
+template <>
+void
+Number::Guard::doDropDigit<uint128_t>(uint128_t& mantissa, int& exponent) noexcept
+{
+    // The following is optimization for:
+    // push(static_cast<unsigned>(mantissa % 10));
+    // mantissa /= 10;
+    push(divu10(mantissa));
+    ++exponent;
 }
 
 // Returns:
@@ -234,18 +372,58 @@ Number::Guard::doRoundUp(
     int& exponent,
     internalrep const& minMantissa,
     internalrep const& maxMantissa,
+    MantissaRange::CuspRoundingFix cuspRoundingFixEnabled,
     std::string_view location)
 {
     auto r = round();
     if (r == 1 || (r == 0 && (mantissa & 1) == 1))
     {
-        ++mantissa;
-        // Ensure mantissa after incrementing fits within both the
-        // min/maxMantissa range and is a valid "rep".
-        if (mantissa > maxMantissa)
+        if (cuspRoundingFixEnabled == MantissaRange::CuspRoundingFix::Enabled)
         {
-            mantissa /= 10;
-            ++exponent;
+            // Ensure mantissa after incrementing fits within both the
+            // min/maxMantissa range and is a valid "rep".
+            if (mantissa < maxMantissa && mantissa < kLARGEST_MANTISSA)
+            {
+                // Nothing unusual here, just increment the mantissa
+                ++mantissa;
+            }
+            else
+            {
+                // Incrementing the mantissa will require dividing, which will require rounding. So
+                // _don't_ increment the mantissa. Instead, divide and round recursively. It should
+                // be impossible to recurse more than once, because once the mantissa is divided by
+                // 10, it will be _well_ under maxMantissa and kLARGEST_MANTISSA, so adding 1 will
+                // have no change of bringing it back over.
+                doDropDigit(mantissa, exponent);
+                XRPL_ASSERT_PARTS(
+                    mantissa < maxMantissa,
+                    "xrpl::Number::Guard::doRoundUp",
+                    "can't recurse more than once");
+                // Here be dragons
+                doRoundUp(
+                    negative,
+                    mantissa,
+                    exponent,
+                    minMantissa,
+                    maxMantissa,
+                    cuspRoundingFixEnabled,
+                    location);
+                return;
+            }
+        }
+        else
+        {
+            // Need to preserve the incorrect behavior until the fix amendment can be retired,
+            // because otherwise would risk an unplanned ledger fork.
+            ++mantissa;
+            // Ensure mantissa after incrementing fits within both the
+            // min/maxMantissa range and is a valid "rep".
+            if (mantissa > maxMantissa || mantissa > kLARGEST_MANTISSA)
+            {
+                // Don't use doDropDigit here
+                mantissa /= 10;
+                ++exponent;
+            }
         }
     }
     bringIntoRange(negative, mantissa, exponent, minMantissa);
@@ -286,9 +464,9 @@ Number::Guard::doRound(internalrep& drops, std::string_view location) const
         {
             static_assert(sizeof(internalrep) == sizeof(rep));
             // This should be impossible, because it's impossible to represent
-            // "largestMantissa + 0.6" in Number, regardless of the scale. There aren't
-            // enough digits available. You'd either get a mantissa of "largestMantissa"
-            // or "largestMantissa / 10 + 1", neither of which will round up when
+            // "kLARGEST_MANTISSA + 0.6" in Number, regardless of the scale. There aren't
+            // enough digits available. You'd either get a mantissa of "kLARGEST_MANTISSA"
+            // or "kLARGEST_MANTISSA / 10 + 1", neither of which will round up when
             // converting to rep, though the latter might overflow _before_
             // rounding.
             Throw<std::overflow_error>(std::string(location));  // LCOV_EXCL_LINE
@@ -434,31 +612,10 @@ Number::fromInternal(bool negative, Rep mantissa, int exponent)
     fromInternal(negative, mantissa, exponent, pRange);
 }
 
-constexpr Number
-Number::oneSmall()
-{
-    return Number{
-        false, Number::kSMALL_RANGE.internalMin, -Number::kSMALL_RANGE.log, Number::Unchecked{}};
-};
-
-constexpr Number kONE_SML = Number::oneSmall();
-
-constexpr Number
-Number::oneLarge()
-{
-    return Number{
-        false, Number::kLARGE_RANGE.internalMin, -Number::kLARGE_RANGE.log, Number::Unchecked{}};
-};
-
-constexpr Number kONE_LRG = Number::oneLarge();
-
 Number
 Number::one(MantissaRange const& range)
 {
-    if (&range == &kSMALL_RANGE)
-        return kONE_SML;
-    XRPL_ASSERT(&kRANGE.get() == &kLARGE_RANGE, "Number::one() : valid range");
-    return kONE_LRG;
+    return Number{false, range.min, -range.log, Number::Unchecked{}};
 }
 
 Number
@@ -475,7 +632,8 @@ doNormalize(
     T& mantissa,
     int& exponent,
     MantissaRange::rep const& minMantissa,
-    MantissaRange::rep const& maxMantissa)
+    MantissaRange::rep const& maxMantissa,
+    MantissaRange::CuspRoundingFix cuspRoundingFixEnabled)
 {
     auto constexpr kMIN_EXPONENT = Number::kMIN_EXPONENT;
     auto constexpr kMAX_EXPONENT = Number::kMAX_EXPONENT;
@@ -503,9 +661,7 @@ doNormalize(
     {
         if (exponent >= kMAX_EXPONENT)
             throw std::overflow_error("Number::normalize 1");
-        g.push(m % 10);
-        m /= 10;
-        ++exponent;
+        g.doDropDigit(m, exponent);
     }
     if ((exponent < kMIN_EXPONENT) || (m == 0))
     {
@@ -516,7 +672,14 @@ doNormalize(
     XRPL_ASSERT_PARTS(m <= maxMantissa, "xrpl::doNormalize", "intermediate mantissa fits in int64");
     mantissa = m;
 
-    g.doRoundUp(negative, mantissa, exponent, minMantissa, maxMantissa, "Number::normalize 2");
+    g.doRoundUp(
+        negative,
+        mantissa,
+        exponent,
+        minMantissa,
+        maxMantissa,
+        cuspRoundingFixEnabled,
+        "Number::normalize 2");
 
     XRPL_ASSERT_PARTS(
         mantissa >= minMantissa && mantissa <= maxMantissa,
@@ -535,9 +698,10 @@ Number::normalize<uint128_t>(
     uint128_t& mantissa,
     int& exponent,
     internalrep const& minMantissa,
-    internalrep const& maxMantissa)
+    internalrep const& maxMantissa,
+    MantissaRange::CuspRoundingFix cuspRoundingFixEnabled)
 {
-    doNormalize(negative, mantissa, exponent, minMantissa, maxMantissa);
+    doNormalize(negative, mantissa, exponent, minMantissa, maxMantissa, cuspRoundingFixEnabled);
 }
 
 template <>
@@ -547,9 +711,10 @@ Number::normalize<unsigned long long>(
     unsigned long long& mantissa,
     int& exponent,
     internalrep const& minMantissa,
-    internalrep const& maxMantissa)
+    internalrep const& maxMantissa,
+    MantissaRange::CuspRoundingFix cuspRoundingFixEnabled)
 {
-    doNormalize(negative, mantissa, exponent, minMantissa, maxMantissa);
+    doNormalize(negative, mantissa, exponent, minMantissa, maxMantissa, cuspRoundingFixEnabled);
 }
 
 template <>
@@ -559,9 +724,10 @@ Number::normalize<unsigned long>(
     unsigned long& mantissa,
     int& exponent,
     internalrep const& minMantissa,
-    internalrep const& maxMantissa)
+    internalrep const& maxMantissa,
+    MantissaRange::CuspRoundingFix cuspRoundingFixEnabled)
 {
-    doNormalize(negative, mantissa, exponent, minMantissa, maxMantissa);
+    doNormalize(negative, mantissa, exponent, minMantissa, maxMantissa, cuspRoundingFixEnabled);
 }
 
 void
@@ -569,15 +735,9 @@ Number::normalize(MantissaRange const& range)
 {
     auto [negative, mantissa, exponent] = toInternal(range);
 
-    normalize(negative, mantissa, exponent, range.min, range.max);
+    normalize(negative, mantissa, exponent, range.min, range.max, range.cuspRoundingFixEnabled);
 
     fromInternal(negative, mantissa, exponent, &range);
-}
-
-void
-Number::normalize()
-{
-    normalize(kRANGE);
 }
 
 // Copy the number, but set a new exponent. Because the mantissa doesn't change,
@@ -605,7 +765,7 @@ Number::shiftExponent(int exponentDelta) const
 Number::Number(bool negative, internalrep mantissa, int exponent, Normalized)
 {
     auto const& range = kRANGE.get();
-    normalize(negative, mantissa, exponent, range.min, range.max);
+    normalize(negative, mantissa, exponent, range.min, range.max, range.cuspRoundingFixEnabled);
     fromInternal(negative, mantissa, exponent, &range);
 }
 
@@ -648,9 +808,7 @@ Number::operator+=(Number const& y)
             g.setNegative();
         do
         {
-            g.push(xm % 10);
-            xm /= 10;
-            ++xe;
+            g.doDropDigit(xm, xe);
         } while (xe < ye);
     }
     else if (xe > ye)
@@ -659,25 +817,29 @@ Number::operator+=(Number const& y)
             g.setNegative();
         do
         {
-            g.push(ym % 10);
-            ym /= 10;
-            ++ye;
+            g.doDropDigit(ym, ye);
         } while (xe > ye);
     }
 
     auto const& minMantissa = range.min;
     auto const& maxMantissa = range.max;
+    auto const cuspRoundingFixEnabled = range.cuspRoundingFixEnabled;
 
     if (xn == yn)
     {
         xm += ym;
         if (xm > maxMantissa)
         {
-            g.push(xm % 10);
-            xm /= 10;
-            ++xe;
+            g.doDropDigit(xm, xe);
         }
-        g.doRoundUp(xn, xm, xe, minMantissa, maxMantissa, "Number::addition overflow");
+        g.doRoundUp(
+            xn,
+            xm,
+            xe,
+            minMantissa,
+            maxMantissa,
+            cuspRoundingFixEnabled,
+            "Number::addition overflow");
     }
     else
     {
@@ -700,37 +862,9 @@ Number::operator+=(Number const& y)
         g.doRoundDown(xn, xm, xe, minMantissa);
     }
 
-    normalize(xn, xm, xe, minMantissa, maxMantissa);
+    normalize(xn, xm, xe, minMantissa, maxMantissa, cuspRoundingFixEnabled);
     fromInternal(xn, xm, xe, &range);
     return *this;
-}
-
-// Optimization equivalent to:
-// auto r = static_cast<unsigned>(u % 10);
-// u /= 10;
-// return r;
-// Derived from Hacker's Delight Second Edition Chapter 10
-// by Henry S. Warren, Jr.
-static inline unsigned
-divu10(uint128_t& u)
-{
-    // q = u * 0.75
-    auto q = (u >> 1) + (u >> 2);
-    // iterate towards q = u * 0.8
-    q += q >> 4;
-    q += q >> 8;
-    q += q >> 16;
-    q += q >> 32;
-    q += q >> 64;
-    // q /= 8 approximately == u / 10
-    q >>= 3;
-    // r = u - q * 10  approximately == u % 10
-    auto r = static_cast<unsigned>(u - ((q << 3) + (q << 1)));
-    // correction c is 1 if r >= 10 else 0
-    auto c = (r + 6) >> 4;
-    u = q + c;
-    r -= c * 10;
-    return r;
 }
 
 Number&
@@ -767,15 +901,13 @@ Number::operator*=(Number const& y)
 
     auto const& minMantissa = range.min;
     auto const& maxMantissa = range.max;
+    auto const cuspRoundingFixEnabled = range.cuspRoundingFixEnabled;
 
     while (zm > maxMantissa)
     {
-        // The following is optimization for:
-        // g.push(static_cast<unsigned>(zm % 10));
-        // zm /= 10;
-        g.push(divu10(zm));
-        ++ze;
+        g.doDropDigit(zm, ze);
     }
+
     xm = static_cast<internalrep>(zm);
     xe = ze;
     g.doRoundUp(
@@ -784,9 +916,10 @@ Number::operator*=(Number const& y)
         xe,
         minMantissa,
         maxMantissa,
+        cuspRoundingFixEnabled,
         "Number::multiplication overflow : exponent is " + std::to_string(xe));
 
-    normalize(zn, xm, xe, minMantissa, maxMantissa);
+    normalize(zn, xm, xe, minMantissa, maxMantissa, cuspRoundingFixEnabled);
     fromInternal(zn, xm, xe, &range);
     return *this;
 }
@@ -816,6 +949,7 @@ Number::operator/=(Number const& y)
 
     auto const& minMantissa = range.min;
     auto const& maxMantissa = range.max;
+    auto const cuspRoundingFixEnabled = range.cuspRoundingFixEnabled;
 
     // Shift by 10^17 gives greatest precision while not overflowing
     // uint128_t or the cast back to int64_t
@@ -823,8 +957,6 @@ Number::operator/=(Number const& y)
     // log(2^128,10) ~ 38.5
     // kLARGE_RANGE.log = 18, fits in 10^19
     // f can be up to 10^(38-19) = 10^19 safely
-    static_assert(kSMALL_RANGE.log == 15);
-    static_assert(kLARGE_RANGE.log == 18);
     bool const small = range.scale == MantissaRange::MantissaScale::Small;
     uint128_t const f = small ? 100'000'000'000'000'000 : 10'000'000'000'000'000'000ULL;
     XRPL_ASSERT_PARTS(f >= minMantissa * 10, "Number::operator/=", "factor expected size");
@@ -874,7 +1006,7 @@ Number::operator/=(Number const& y)
             ze -= 3;
         }
     }
-    normalize(zn, zm, ze, minMantissa, maxMantissa);
+    normalize(zn, zm, ze, minMantissa, maxMantissa, cuspRoundingFixEnabled);
     fromInternal(zn, zm, ze, &range);
     XRPL_ASSERT_PARTS(isnormal(range), "xrpl::Number::operator/=", "result is normalized");
 
@@ -885,6 +1017,7 @@ Number::
 operator rep() const
 {
     auto const m = mantissa();
+    // drops will always be non-negative
     internalrep drops = externalToInternal(m);
 
     if (drops == 0)
@@ -897,14 +1030,13 @@ operator rep() const
     {
         g.setNegative();
     }
-    for (; offset < 0; ++offset)
+    while (offset < 0)
     {
-        g.push(drops % 10);
-        drops /= 10;
+        g.doDropDigit(drops, offset);
     }
     for (; offset > 0; --offset)
     {
-        if (drops >= kLARGE_RANGE.min)
+        if (drops > kLARGEST_MANTISSA / 10)
             throw std::overflow_error("Number::operator rep() overflow");
         drops *= 10;
     }
@@ -930,7 +1062,7 @@ Number::truncate() const noexcept
     }
     // We are guaranteed that normalize() will never throw an exception
     // because exponent is either negative or zero at this point.
-    ret.normalize();
+    ret.normalize(kRANGE);
     return ret;
 }
 

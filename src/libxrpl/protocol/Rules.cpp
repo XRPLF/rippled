@@ -38,11 +38,21 @@ setCurrentTransactionRules(std::optional<Rules> r)
     // Make global changes associated with the rules before the value is moved.
     // Push the appropriate setting, instead of having the class pull every time
     // the value is needed. That could get expensive fast.
-    bool const enableLargeNumbers =
-        !r || (r->enabled(featureSingleAssetVault) || r->enabled(featureLendingProtocol));
+
+    // The improved accuracy that will come from enabling large
+    // mantissas is a goal separate from SAV and LP. It was originally
+    // only tied to those two amendments to avoid needing a new
+    // amendment of its own, and because they require that behavior.
+    // Because fixCleanup3_2_0 fixes a separate bug related to the large
+    // mantissas, that can take precedence and activate the large
+    // mantissas even in the absence of the other two amendments.
+    bool const enableCuspRoundingFix = !r || r->enabled(fixCleanup3_2_0);
+    bool const enableVaultNumbers = enableCuspRoundingFix ||
+        (r->enabled(featureSingleAssetVault) || r->enabled(featureLendingProtocol));
     Number::setMantissaScale(
-        enableLargeNumbers ? MantissaRange::MantissaScale::Large
-                           : MantissaRange::MantissaScale::Small);
+        enableCuspRoundingFix ? MantissaRange::MantissaScale::Large
+                              : (enableVaultNumbers ? MantissaRange::MantissaScale::LargeLegacy
+                                                    : MantissaRange::MantissaScale::Small));
 
     *getCurrentTransactionRulesRef() = std::move(r);
 }

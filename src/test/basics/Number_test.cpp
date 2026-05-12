@@ -6,6 +6,8 @@
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <boost/multiprecision/number.hpp>
+
 #include <array>
 #include <cstdint>
 #include <limits>
@@ -19,6 +21,24 @@ namespace xrpl {
 
 class Number_test : public beast::unit_test::Suite
 {
+    using BigInt = boost::multiprecision::cpp_int;
+
+    static std::string
+    fmt(BigInt const& value)
+    {
+        auto s = to_string(value);
+        std::string out;
+        int count = 0;
+        for (auto it = s.rbegin(); it != s.rend(); ++it)
+        {
+            if (count != 0 && count % 3 == 0)
+                out.insert(out.begin(), '_');
+            out.insert(out.begin(), *it);
+            ++count;
+        }
+        return out;
+    }
+
 public:
     void
     testZero()
@@ -212,6 +232,16 @@ public:
                     Number{false, 1'999'999'999'999'999'998ULL, 1, Number::Normalized{}},
                 },
             });
+        auto const cLargeLegacy = std::to_array<Case>({
+            {Number{Number::kLARGEST_MANTISSA},
+             Number{6, -1},
+             Number{Number::kLARGEST_MANTISSA / 10, 1}},
+        });
+        auto const cLargeCorrected = std::to_array<Case>({
+            {Number{Number::kLARGEST_MANTISSA},
+             Number{6, -1},
+             Number{(Number::kLARGEST_MANTISSA / 10) + 1, 1}},
+        });
         auto test = [this](auto const& c) {
             for (auto const& [x, y, z] : c)
             {
@@ -228,6 +258,14 @@ public:
         else
         {
             test(cLarge);
+            if (scale == MantissaRange::MantissaScale::LargeLegacy)
+            {
+                test(cLargeLegacy);
+            }
+            else
+            {
+                test(cLargeCorrected);
+            }
         }
         {
             bool caught = false;
@@ -1396,6 +1434,7 @@ public:
                         "9223372036854775e3");
                 }
                 break;
+            case MantissaRange::MantissaScale::LargeLegacy:
             case MantissaRange::MantissaScale::Large:
                 // Test the edges
                 // ((exponent < -(28)) || (exponent > -(8)))))
@@ -1714,7 +1753,8 @@ public:
                         auto const expectedMantissa,
                         auto const expectedExponent,
                         auto const line) {
-            auto const normalized = n.normalizeToRange(rangeMin, rangeMax);
+            auto const normalized =
+                n.normalizeToRangeImpl(rangeMin, rangeMax, MantissaRange::CuspRoundingFix::Enabled);
             BEAST_EXPECTS(
                 normalized.first == expectedMantissa,
                 "Number " + to_string(n) + " scaled to " + std::to_string(rangeMax) +
@@ -1874,10 +1914,48 @@ public:
     }
 
     void
+    testUpwardRoundsDown()
+    {
+        testcase << "upward rounding produces a value below exact at kLARGEST_MANTISSA cusp";
+
+        NumberMantissaScaleGuard const mg{MantissaRange::MantissaScale::Large};
+        NumberRoundModeGuard const rg{Number::RoundingMode::Upward};
+
+        constexpr std::int64_t kA_VALUE = 1'000'000'000'000'049'863LL;
+        constexpr std::int64_t kB_VALUE = 9'223'372'036'854'315'903LL;
+
+        // Public conversion operator: STAmount::operator Number() const.
+        Number const a = kA_VALUE;
+        Number const b = kB_VALUE;
+        Number const product = a * b;
+
+        // Exact reference in BigInt.
+        BigInt const exactProduct = BigInt(kA_VALUE) * BigInt(kB_VALUE);
+
+        // What Number actually stored.
+        BigInt storedValue = BigInt(product.mantissa());
+        for (int i = 0; i < product.exponent(); ++i)
+            storedValue *= 10;
+
+        BigInt const signedDifference = storedValue - exactProduct;
+
+        log << "\n"
+            << "  a              = " << fmt(BigInt(kA_VALUE)) << "\n"
+            << "  b              = " << fmt(BigInt(kB_VALUE)) << "\n"
+            << "  exact a*b      = " << fmt(exactProduct) << "\n"
+            << "  stored         = " << fmt(storedValue) << "\n"
+            << "  stored - exact = " << fmt(signedDifference) << "\n"
+            << "  upward         = " << (signedDifference >= 0 ? "held" : "VIOLATED") << "\n";
+
+        BEAST_EXPECT(signedDifference >= 0);
+        BEAST_EXPECT(product.mantissa() == (std::numeric_limits<std::int64_t>::max() / 10) + 1);
+        BEAST_EXPECT(product.exponent() == 19);
+    }
+
+    void
     run() override
     {
-        for (auto const scale :
-             {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
+        for (auto const scale : MantissaRange::getAllScales())
         {
             NumberMantissaScaleGuard const sg(scale);
             testZero();
@@ -1903,6 +1981,8 @@ public:
             testInt64();
             testNormalizeToRange();
         }
+        // This test sets its own number range
+        testUpwardRoundsDown();
     }
 };
 
