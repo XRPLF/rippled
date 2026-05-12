@@ -441,6 +441,19 @@ public:
     std::pair<T, int>
     normalizeToRange(T minMantissa, T maxMantissa) const;
 
+    /**
+     * Returns this number if it is mathematically non-zero, otherwise `fallback`.
+     *
+     * @warning Due to the underlying `signum()` implementation, this check
+     * currently evaluates only positive zero (+0) as true zero. A negative
+     * zero (-0) will evaluate as non-zero and return itself.
+     *
+     * @param fallback The value to return if this number is zero.
+     * @return `*this` if `signum() != 0`, otherwise `fallback`.
+     */
+    [[nodiscard]] Number
+    nonZeroOr(Number const& fallback) const noexcept;
+
 private:
     static thread_local RoundingMode mode;
     // The available ranges for mantissa
@@ -754,29 +767,6 @@ squelch(Number const& x, Number const& limit) noexcept
     if (abs(x) < limit)
         return Number{};
     return x;
-}
-
-/** Returns `value` if it is non-zero, otherwise `fallback`.
- *
- * The check is value-level (`signum() == 0`), not representation-level:
- * a true-zero `value` returns `fallback` regardless of what exponent the
- * `Number`'s internal state happens to carry. Useful when picking a
- * representative magnitude across two observations of the same quantity
- * (e.g. the pre- and post-state of a balance) and the primary observation
- * may be zero with a sentinel exponent that has no useful precision
- * interpretation.
- *
- * Returns by value (not by const reference) so callers may pass
- * temporaries for either argument without dangling-reference hazards.
- *
- * @param value     The primary observation.
- * @param fallback  Returned when `value` is true zero.
- * @return `value` if `value.signum() != 0`, else `fallback`.
- */
-[[nodiscard]] constexpr Number
-firstNonzero(Number const& value, Number const& fallback) noexcept
-{
-    return value.signum() == 0 ? fallback : value;
 }
 
 inline std::string

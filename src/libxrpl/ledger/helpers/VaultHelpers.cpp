@@ -316,8 +316,8 @@ depositToVault(
     if (!equalAtAssetScale(
             totalDelta,
             availableDelta,
-            firstNonzero(beforeAssetsTotal, afterAssetsTotal),
-            firstNonzero(beforeAssetsAvailable, afterAssetsAvailable),
+            beforeAssetsTotal.nonZeroOr(afterAssetsTotal),
+            beforeAssetsAvailable.nonZeroOr(afterAssetsAvailable),
             vaultAsset))
     {
         // Catches the post-state edge-cross asymmetric rounding case
@@ -451,8 +451,8 @@ withdrawFromVault(
     if (!equalAtAssetScale(
             totalDelta,
             availableDelta,
-            firstNonzero(beforeAssetsTotal, afterAssetsTotal),
-            firstNonzero(beforeAssetsAvailable, afterAssetsAvailable),
+            beforeAssetsTotal.nonZeroOr(afterAssetsTotal),
+            beforeAssetsAvailable.nonZeroOr(afterAssetsAvailable),
             vaultAsset))
     {
         // Catches post-state edge-cross asymmetric rounding —

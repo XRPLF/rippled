@@ -835,6 +835,12 @@ Number::truncate() const noexcept
     return ret;
 }
 
+[[nodiscard]] Number
+Number::nonZeroOr(Number const& fallback) const noexcept
+{
+    return signum() == 0 ? fallback : *this;
+}
+
 std::string
 to_string(Number const& amount)
 {
@@ -1103,5 +1109,4 @@ power(Number const& f, unsigned n, unsigned d)
         throw std::overflow_error("Number::power nan");
     return root(power(f, n), d);
 }
-
 }  // namespace xrpl

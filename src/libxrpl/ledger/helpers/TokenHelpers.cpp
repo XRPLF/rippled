@@ -1452,8 +1452,8 @@ accountSendExact(
         conserved = equalAtAssetScale(
             senderDelta,
             receiverDelta,
-            firstNonzero(beforeFrom, afterFrom),
-            firstNonzero(beforeTo, afterTo),
+            beforeFrom.nonZeroOr(afterFrom),
+            beforeTo.nonZeroOr(afterTo),
             asset);
     }
 

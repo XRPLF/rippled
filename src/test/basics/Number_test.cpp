@@ -1215,16 +1215,16 @@ public:
         Number const negOne{-1};
 
         // Primary nonzero: returned regardless of fallback.
-        BEAST_EXPECT((firstNonzero(one, ten) == one));
-        BEAST_EXPECT((firstNonzero(one, zero) == one));
-        BEAST_EXPECT((firstNonzero(negOne, ten) == negOne));
+        BEAST_EXPECT((one.nonZeroOr(ten) == one));
+        BEAST_EXPECT((one.nonZeroOr(zero) == one));
+        BEAST_EXPECT((negOne.nonZeroOr(ten) == negOne));
 
         // Primary zero: falls back to second.
-        BEAST_EXPECT((firstNonzero(zero, ten) == ten));
-        BEAST_EXPECT((firstNonzero(zero, negOne) == negOne));
+        BEAST_EXPECT((zero.nonZeroOr(ten) == ten));
+        BEAST_EXPECT((zero.nonZeroOr(negOne) == negOne));
 
         // Both zero: returns zero (the fallback, equivalent to the primary).
-        BEAST_EXPECT((firstNonzero(zero, zero) == zero));
+        BEAST_EXPECT((zero.nonZeroOr(zero) == zero));
 
         // Primary zero with non-canonical exponent: signum-based check still
         // identifies it as zero and falls back. This is the load-bearing
@@ -1235,7 +1235,7 @@ public:
         Number const nonCanonicalZero{false, std::uint64_t{0}, 5, Number::Unchecked{}};
         BEAST_EXPECT(nonCanonicalZero.signum() == 0);
         BEAST_EXPECT(nonCanonicalZero != zero);  // representations differ
-        BEAST_EXPECT((firstNonzero(nonCanonicalZero, ten) == ten));
+        BEAST_EXPECT((nonCanonicalZero.nonZeroOr(ten) == ten));
     }
 
     void
