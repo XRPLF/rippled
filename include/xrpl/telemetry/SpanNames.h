@@ -117,6 +117,11 @@ inline constexpr auto nodeServerState = join(xrplNode, makeStr("server_state"));
 inline constexpr auto txHash = join(join(seg::xrpl, seg::tx), makeStr("hash"));
 inline constexpr auto peerId = join(join(seg::xrpl, seg::peer), makeStr("id"));
 inline constexpr auto ledgerSeq = join(join(seg::xrpl, seg::ledger), makeStr("seq"));
+
+/// Shared close-time attrs — bare names, reused by consensus and ledger.
+inline constexpr auto closeTime = makeStr("close_time");
+inline constexpr auto closeTimeCorrect = makeStr("close_time_correct");
+inline constexpr auto closeResolutionMs = makeStr("close_resolution_ms");
 }  // namespace attr
 
 // ===== Shared attribute values =============================================
