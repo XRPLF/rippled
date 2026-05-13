@@ -340,12 +340,6 @@ private:
     /// Master enable flag; when false all methods are no-ops.
     bool const enabled_;
 
-    /// Reference to Application services for gauge callbacks.
-    ServiceRegistry& app_;
-
-    /// Journal for logging.
-    beast::Journal const journal_;
-
     /// Tracks validation agreement between this node and the network.
     /// Lives outside the XRPL_ENABLE_TELEMETRY guard because it is
     /// always safe to record events; the gauge callback simply won't
@@ -353,6 +347,13 @@ private:
     ValidationTracker validationTracker_;
 
 #ifdef XRPL_ENABLE_TELEMETRY
+    /// Reference to Application services for gauge callbacks.
+    /// Only needed when OTel is compiled in, since observable gauge
+    /// callbacks live entirely inside the XRPL_ENABLE_TELEMETRY guard.
+    ServiceRegistry& app_;
+
+    /// Journal for logging.
+    beast::Journal const journal_;
     /// The SDK MeterProvider that owns the export pipeline.
     std::shared_ptr<opentelemetry::sdk::metrics::MeterProvider> provider_;
 

@@ -65,8 +65,15 @@ namespace resource = opentelemetry::sdk::resource;
 namespace xrpl {
 namespace telemetry {
 
-MetricsRegistry::MetricsRegistry(bool enabled, ServiceRegistry& app, beast::Journal journal)
-    : enabled_(enabled), app_(app), journal_(journal)
+MetricsRegistry::MetricsRegistry(
+    [[maybe_unused]] bool enabled,
+    [[maybe_unused]] ServiceRegistry& app,
+    [[maybe_unused]] beast::Journal journal)
+    : enabled_(enabled)
+#ifdef XRPL_ENABLE_TELEMETRY
+    , app_(app)
+    , journal_(journal)
+#endif
 {
 }
 
