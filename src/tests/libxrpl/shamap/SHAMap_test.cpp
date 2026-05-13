@@ -1,11 +1,7 @@
-#include <test/shamap/common.h>
-#include <test/unit_test/SuiteJournal.h>
-
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/shamap/SHAMap.h>
@@ -15,8 +11,13 @@
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
+#include <gtest/gtest.h>
+#include <helpers/TestSink.h>
+#include <shamap/common.h>
+
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <type_traits>
@@ -100,9 +101,11 @@ operator!=(SHAMapItem const& a, uint256 const& b)
     return a.key() != b;
 }
 
-class SHAMap_test : public beast::unit_test::Suite
+class SHAMapTest : public ::testing::Test
 {
-public:
+protected:
+    beast::Journal const j_{TestSink::instance()};
+
     static Buffer
     intToVuc(int v)
     {
@@ -112,35 +115,15 @@ public:
     }
 
     void
-    run() override
+    run(bool backed)
     {
-        using beast::Severity;
-        test::SuiteJournal journal("SHAMap_test", *this);
-
-        run(true, journal);
-        run(false, journal);
-    }
-
-    void
-    run(bool backed, beast::Journal const& journal)
-    {
-        if (backed)
-        {
-            testcase("add/traverse backed");
-        }
-        else
-        {
-            testcase("add/traverse unbacked");
-        }
-
-        tests::TestNodeFamily f(journal);
+        tests::TestNodeFamily f(j_);
 
         // h3 and h4 differ only in the leaf, same terminal node (level 19)
         constexpr uint256 kH1("092891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
         constexpr uint256 kH2("436ccbac3347baa1f1e53baeef1f43334da88f1f6d70d963b833afd6dfa289fe");
         constexpr uint256 kH3("b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
         constexpr uint256 kH4("b92891fe4ef6cee585fdc6fda2e09eb4d386363158ec3321b8123e5a772c6ca8");
-        constexpr uint256 kH5("a92891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
 
         SHAMap sMap(SHAMapType::FREE, f);
         sMap.invariants();
@@ -151,20 +134,19 @@ public:
         auto i2 = makeShamapitem(kH2, intToVuc(2));
         auto i3 = makeShamapitem(kH3, intToVuc(3));
         auto i4 = makeShamapitem(kH4, intToVuc(4));
-        auto i5 = makeShamapitem(kH5, intToVuc(5));
 
-        unexpected(!sMap.addItem(SHAMapNodeType::TnTransactionNm, makeShamapitem(*i2)), "no add");
+        EXPECT_TRUE(sMap.addItem(SHAMapNodeType::TnTransactionNm, makeShamapitem(*i2))) << "no add";
         sMap.invariants();
-        unexpected(!sMap.addItem(SHAMapNodeType::TnTransactionNm, makeShamapitem(*i1)), "no add");
+        EXPECT_TRUE(sMap.addItem(SHAMapNodeType::TnTransactionNm, makeShamapitem(*i1))) << "no add";
         sMap.invariants();
 
         auto i = sMap.begin();
         auto e = sMap.end();
-        unexpected(i == e || (*i != *i1), "bad traverse");
+        EXPECT_FALSE(i == e || (*i != *i1)) << "bad traverse";
         ++i;
-        unexpected(i == e || (*i != *i2), "bad traverse");
+        EXPECT_FALSE(i == e || (*i != *i2)) << "bad traverse";
         ++i;
-        unexpected(i != e, "bad traverse");
+        EXPECT_FALSE(i != e) << "bad traverse";
         sMap.addItem(SHAMapNodeType::TnTransactionNm, makeShamapitem(*i4));
         sMap.invariants();
         sMap.delItem(i2->key());
@@ -173,54 +155,37 @@ public:
         sMap.invariants();
         i = sMap.begin();
         e = sMap.end();
-        unexpected(i == e || (*i != *i1), "bad traverse");
+        EXPECT_FALSE(i == e || (*i != *i1)) << "bad traverse";
         ++i;
-        unexpected(i == e || (*i != *i3), "bad traverse");
+        EXPECT_FALSE(i == e || (*i != *i3)) << "bad traverse";
         ++i;
-        unexpected(i == e || (*i != *i4), "bad traverse");
+        EXPECT_FALSE(i == e || (*i != *i4)) << "bad traverse";
         ++i;
-        unexpected(i != e, "bad traverse");
-
-        if (backed)
-        {
-            testcase("snapshot backed");
-        }
-        else
-        {
-            testcase("snapshot unbacked");
-        }
+        EXPECT_FALSE(i != e) << "bad traverse";
 
         SHAMapHash const mapHash = sMap.getHash();
         std::shared_ptr<SHAMap> const map2 = sMap.snapShot(false);
         map2->invariants();
-        unexpected(sMap.getHash() != mapHash, "bad snapshot");
-        unexpected(map2->getHash() != mapHash, "bad snapshot");
+        EXPECT_FALSE(sMap.getHash() != mapHash) << "bad snapshot";
+        EXPECT_FALSE(map2->getHash() != mapHash) << "bad snapshot";
 
         SHAMap::Delta delta;
-        BEAST_EXPECT(sMap.compare(*map2, delta, 100));
-        BEAST_EXPECT(delta.empty());
+        ASSERT_TRUE(sMap.compare(*map2, delta, 100));
+        EXPECT_TRUE(delta.empty());
 
-        unexpected(!sMap.delItem(sMap.begin()->key()), "bad mod");
+        EXPECT_TRUE(sMap.delItem(sMap.begin()->key())) << "bad mod";
         sMap.invariants();
-        unexpected(sMap.getHash() == mapHash, "bad snapshot");
-        unexpected(map2->getHash() != mapHash, "bad snapshot");
+        EXPECT_FALSE(sMap.getHash() == mapHash) << "bad snapshot";
+        EXPECT_FALSE(map2->getHash() != mapHash) << "bad snapshot";
 
-        BEAST_EXPECT(sMap.compare(*map2, delta, 100));
-        BEAST_EXPECT(delta.size() == 1);
-        BEAST_EXPECT(delta.begin()->first == kH1);
-        BEAST_EXPECT(delta.begin()->second.first == nullptr);
-        BEAST_EXPECT(delta.begin()->second.second->key() == kH1);
+        ASSERT_TRUE(sMap.compare(*map2, delta, 100));
+        ASSERT_EQ(delta.size(), 1);
+        EXPECT_TRUE(delta.begin()->first == kH1);
+        EXPECT_EQ(delta.begin()->second.first, nullptr);
+        ASSERT_NE(delta.begin()->second.second, nullptr);
+        EXPECT_TRUE(delta.begin()->second.second->key() == kH1);
 
         sMap.dump();
-
-        if (backed)
-        {
-            testcase("build/tear backed");
-        }
-        else
-        {
-            testcase("build/tear unbacked");
-        }
         {
             constexpr std::array kEYS{
                 uint256(
@@ -278,30 +243,22 @@ public:
             if (!backed)
                 map.setUnbacked();
 
-            BEAST_EXPECT(map.getHash() == beast::kZERO);
-            for (int k = 0; k < kEYS.size(); ++k)
+            EXPECT_TRUE(map.getHash() == beast::kZERO);
+            for (std::size_t k = 0; k < kEYS.size(); ++k)
             {
-                BEAST_EXPECT(map.addItem(
-                    SHAMapNodeType::TnTransactionNm, makeShamapitem(kEYS[k], intToVuc(k))));
-                BEAST_EXPECT(map.getHash().asUInt256() == kHASHES[k]);
+                EXPECT_TRUE(map.addItem(
+                    SHAMapNodeType::TnTransactionNm,
+                    makeShamapitem(kEYS[k], intToVuc(static_cast<int>(k)))));
+                EXPECT_TRUE(map.getHash().asUInt256() == kHASHES[k]);
                 map.invariants();
             }
-            for (int k = kEYS.size() - 1; k >= 0; --k)
+            for (std::size_t k = kEYS.size(); k-- > 0;)
             {
-                BEAST_EXPECT(map.getHash().asUInt256() == kHASHES[k]);
-                BEAST_EXPECT(map.delItem(kEYS[k]));
+                EXPECT_TRUE(map.getHash().asUInt256() == kHASHES[k]);
+                EXPECT_TRUE(map.delItem(kEYS[k]));
                 map.invariants();
             }
-            BEAST_EXPECT(map.getHash() == beast::kZERO);
-        }
-
-        if (backed)
-        {
-            testcase("iterate backed");
-        }
-        else
-        {
-            testcase("iterate unbacked");
+            EXPECT_TRUE(map.getHash() == beast::kZERO);
         }
 
         {
@@ -331,7 +288,7 @@ public:
                     "292891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
                     "5a772c6ca8")};
 
-            tests::TestNodeFamily tf{journal};
+            tests::TestNodeFamily tf{j_};
             SHAMap map{SHAMapType::FREE, tf};
             if (!backed)
                 map.setUnbacked();
@@ -344,84 +301,95 @@ public:
             int h = 7;
             for (auto const& k : map)
             {
-                BEAST_EXPECT(k.key() == kEYS[h]);
+                EXPECT_TRUE(k.key() == kEYS[h]);
                 --h;
             }
         }
     }
 };
 
-class SHAMapPathProof_test : public beast::unit_test::Suite
+TEST_F(SHAMapTest, add_traverse_snapshot_build_tear_and_iterate_backed)
 {
-    void
-    run() override
-    {
-        test::SuiteJournal journal("SHAMapPathProof_test", *this);
+    run(true);
+}
 
-        tests::TestNodeFamily tf{journal};
-        SHAMap map{SHAMapType::FREE, tf};
-        map.setUnbacked();
+TEST_F(SHAMapTest, add_traverse_snapshot_build_tear_and_iterate_unbacked)
+{
+    run(false);
+}
 
-        uint256 key;
-        uint256 rootHash;
-        std::vector<Blob> goodPath;
-
-        for (unsigned char c = 1; c < 100; ++c)
-        {
-            uint256 k(c);
-            map.addItem(
-                SHAMapNodeType::TnAccountState, makeShamapitem(k, Slice{k.data(), k.size()}));
-            map.invariants();
-
-            auto root = map.getHash().asUInt256();
-            auto path = map.getProofPath(k);
-            BEAST_EXPECT(path);
-            if (!path)
-                break;
-            BEAST_EXPECT(map.verifyProofPath(root, k, *path));
-            if (c == 1)
-            {
-                // extra node
-                path->insert(path->begin(), path->front());
-                BEAST_EXPECT(!map.verifyProofPath(root, k, *path));
-                // wrong key
-                uint256 const wrongKey(c + 1);
-                BEAST_EXPECT(!map.getProofPath(wrongKey));
-            }
-            if (c == 99)
-            {
-                key = k;
-                rootHash = root;
-                goodPath = std::move(*path);
-            }
-        }
-
-        // still good
-        BEAST_EXPECT(map.verifyProofPath(rootHash, key, goodPath));
-        // empty path
-        std::vector<Blob> badPath;
-        BEAST_EXPECT(!map.verifyProofPath(rootHash, key, badPath));
-        // too long
-        badPath = goodPath;
-        badPath.push_back(goodPath.back());
-        BEAST_EXPECT(!map.verifyProofPath(rootHash, key, badPath));
-        // bad node
-        badPath.clear();
-        badPath.emplace_back(100, 100);
-        BEAST_EXPECT(!map.verifyProofPath(rootHash, key, badPath));
-        // bad node type
-        badPath.clear();
-        badPath.push_back(goodPath.front());
-        badPath.front().back()--;  // change node type
-        BEAST_EXPECT(!map.verifyProofPath(rootHash, key, badPath));
-        // all inner
-        badPath.clear();
-        badPath = goodPath;
-        badPath.erase(badPath.begin());
-        BEAST_EXPECT(!map.verifyProofPath(rootHash, key, badPath));
-    }
+class SHAMapPathProof : public ::testing::Test
+{
+protected:
+    beast::Journal const j_{TestSink::instance()};
 };
 
-BEAST_DEFINE_TESTSUITE(SHAMap, shamap, xrpl);
-BEAST_DEFINE_TESTSUITE(SHAMapPathProof, shamap, xrpl);
+TEST_F(SHAMapPathProof, verify_proof_path)
+{
+    tests::TestNodeFamily tf{j_};
+    SHAMap map{SHAMapType::FREE, tf};
+    map.setUnbacked();
+
+    uint256 key;
+    uint256 rootHash;
+    std::vector<Blob> goodPath;
+
+    for (unsigned char c = 1; c < 100; ++c)
+    {
+        uint256 k(c);
+        map.addItem(SHAMapNodeType::TnAccountState, makeShamapitem(k, Slice{k.data(), k.size()}));
+        map.invariants();
+
+        auto root = map.getHash().asUInt256();
+        auto path = map.getProofPath(k);
+        if (!path)
+        {
+            ADD_FAILURE() << "Missing proof path";
+            return;
+        }
+        auto& proofPath = *path;
+
+        EXPECT_TRUE(map.verifyProofPath(root, k, proofPath));
+        if (c == 1)
+        {
+            // extra node
+            proofPath.insert(proofPath.begin(), proofPath.front());
+            EXPECT_FALSE(map.verifyProofPath(root, k, proofPath));
+            // wrong key
+            uint256 const wrongKey(c + 1);
+            EXPECT_FALSE(map.getProofPath(wrongKey));
+        }
+        if (c == 99)
+        {
+            key = k;
+            rootHash = root;
+            goodPath = std::move(proofPath);
+        }
+    }
+
+    // still good
+    EXPECT_TRUE(map.verifyProofPath(rootHash, key, goodPath));
+    // empty path
+    std::vector<Blob> badPath;
+    EXPECT_FALSE(map.verifyProofPath(rootHash, key, badPath));
+    // too long
+    badPath = goodPath;
+    badPath.push_back(goodPath.back());
+    EXPECT_FALSE(map.verifyProofPath(rootHash, key, badPath));
+    // bad node
+    badPath.clear();
+    badPath.emplace_back(100, 100);
+    EXPECT_FALSE(map.verifyProofPath(rootHash, key, badPath));
+    // bad node type
+    badPath.clear();
+    badPath.push_back(goodPath.front());
+    badPath.front().back()--;  // change node type
+    EXPECT_FALSE(map.verifyProofPath(rootHash, key, badPath));
+    // all inner
+    badPath.clear();
+    badPath = goodPath;
+    badPath.erase(badPath.begin());
+    EXPECT_FALSE(map.verifyProofPath(rootHash, key, badPath));
+}
+
 }  // namespace xrpl::tests

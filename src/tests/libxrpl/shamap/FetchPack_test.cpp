@@ -1,6 +1,3 @@
-#include <test/shamap/common.h>
-#include <test/unit_test/SuiteJournal.h>
-
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/SHAMapHash.h>
@@ -8,7 +5,6 @@
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/random.h>
-#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/protocol/Serializer.h>
@@ -21,6 +17,10 @@
 
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 
+#include <gtest/gtest.h>
+#include <helpers/TestSink.h>
+#include <shamap/common.h>
+
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
@@ -30,9 +30,11 @@
 
 namespace xrpl::tests {
 
-class FetchPack_test : public beast::unit_test::Suite
+class FetchPackTest : public ::testing::Test
 {
-public:
+protected:
+    beast::Journal const j_{TestSink::instance()};
+
     static constexpr auto kTABLE_ITEMS = 100;
     static constexpr auto kTABLE_ITEMS_EXTRA = 20;
 
@@ -45,6 +47,7 @@ public:
         void
         operator()(std::uint32_t refNum) const
         {
+            (void)refNum;
             Throw<std::runtime_error>("missing node");
         }
     };
@@ -63,6 +66,11 @@ public:
             Blob&& nodeData,  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
             SHAMapNodeType type) const override
         {
+            (void)fromFilter;
+            (void)nodeHash;
+            (void)ledgerSeq;
+            (void)nodeData;
+            (void)type;
         }
 
         [[nodiscard]] std::optional<Blob>
@@ -101,69 +109,63 @@ public:
         }
     }
 
-    void
+    static void
     onFetch(Map& map, SHAMapHash const& hash, Blob const& blob)
     {
-        BEAST_EXPECT(sha512Half(makeSlice(blob)) == hash.asUInt256());
+        EXPECT_TRUE(sha512Half(makeSlice(blob)) == hash.asUInt256());
         map.emplace(hash, blob);
-    }
-
-    void
-    run() override
-    {
-        using beast::Severity;
-        test::SuiteJournal journal("FetchPack_test", *this);
-
-        TestNodeFamily f(journal);
-        std::shared_ptr<Table> const t1(std::make_shared<Table>(SHAMapType::FREE, f));
-
-        pass();
-
-        //         beast::Random r;
-        //         add_random_items_ (tableItems, *t1, r);
-        //         std::shared_ptr <Table> t2 (t1->snapShot (true));
-        //
-        //         add_random_items_ (tableItemsExtra, *t1, r);
-        //         add_random_items_ (tableItemsExtra, *t2, r);
-
-        // turn t1 into t2
-        //         Map map;
-        //         t2->getFetchPack (t1.get(), true, 1000000, std::bind (
-        //             &FetchPack_test::on_fetch, this, std::ref (map),
-        //             std::placeholders::_1, std::placeholders::_2));
-        //         t1->getFetchPack (nullptr, true, 1000000, std::bind (
-        //             &FetchPack_test::on_fetch, this, std::ref (map),
-        //             std::placeholders::_1, std::placeholders::_2));
-
-        // try to rebuild t2 from the fetch pack
-        //         std::shared_ptr <Table> t3;
-        //         try
-        //         {
-        //             TestFilter filter (map, beast::Journal());
-        //
-        //             t3 = std::make_shared <Table> (SHAMapType::FREE,
-        //             t2->getHash (),
-        //                 fullBelowCache);
-        //
-        //             BEAST_EXPECT(t3->fetchRoot (t2->getHash (), &filter),
-        //             "unable to get root");
-        //
-        //             // everything should be in the pack, no hashes should be
-        //             needed std::vector <uint256> hashes =
-        //             t3->getNeededHashes(1, &filter);
-        //             BEAST_EXPECT(hashes.empty(), "missing hashes");
-        //
-        //             BEAST_EXPECT(t3->getHash () == t2->getHash (), "root
-        //             hashes do not match"); BEAST_EXPECT(t3->deepCompare
-        //             (*t2), "failed compare");
-        //         }
-        //         catch (std::exception const&)
-        //         {
-        //             fail ("unhandled exception");
-        //         }
     }
 };
 
-BEAST_DEFINE_TESTSUITE(FetchPack, shamap, xrpl);
+TEST_F(FetchPackTest, construct_table)
+{
+    TestNodeFamily f(j_);
+    std::shared_ptr<Table> const t1(std::make_shared<Table>(SHAMapType::FREE, f));
+
+    EXPECT_NE(t1, nullptr);
+
+    //         beast::Random r;
+    //         add_random_items_ (tableItems, *t1, r);
+    //         std::shared_ptr <Table> t2 (t1->snapShot (true));
+    //
+    //         add_random_items_ (tableItemsExtra, *t1, r);
+    //         add_random_items_ (tableItemsExtra, *t2, r);
+
+    // turn t1 into t2
+    //         Map map;
+    //         t2->getFetchPack (t1.get(), true, 1000000, std::bind (
+    //             &FetchPackTest::onFetch, this, std::ref (map),
+    //             std::placeholders::_1, std::placeholders::_2));
+    //         t1->getFetchPack (nullptr, true, 1000000, std::bind (
+    //             &FetchPackTest::onFetch, this, std::ref (map),
+    //             std::placeholders::_1, std::placeholders::_2));
+
+    // try to rebuild t2 from the fetch pack
+    //         std::shared_ptr <Table> t3;
+    //         try
+    //         {
+    //             TestFilter filter (map, beast::Journal());
+    //
+    //             t3 = std::make_shared <Table> (SHAMapType::FREE,
+    //             t2->getHash (),
+    //                 fullBelowCache);
+    //
+    //             EXPECT_TRUE(t3->fetchRoot (t2->getHash (), &filter))
+    //                 << "unable to get root";
+    //
+    //             // everything should be in the pack, no hashes should be
+    //             needed std::vector <uint256> hashes =
+    //             t3->getNeededHashes(1, &filter);
+    //             EXPECT_TRUE(hashes.empty()) << "missing hashes";
+    //
+    //             EXPECT_TRUE(t3->getHash () == t2->getHash ())
+    //                 << "root hashes do not match";
+    //             EXPECT_TRUE(t3->deepCompare (*t2)) << "failed compare";
+    //         }
+    //         catch (std::exception const&)
+    //         {
+    //             FAIL() << "unhandled exception";
+    //         }
+}
 
 }  // namespace xrpl::tests

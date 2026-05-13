@@ -1,12 +1,8 @@
-#include <test/shamap/common.h>
-#include <test/unit_test/SuiteJournal.h>
-
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/random.h>
-#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/protocol/Serializer.h>
@@ -17,20 +13,24 @@
 
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 
+#include <gtest/gtest.h>
+#include <helpers/TestSink.h>
+#include <shamap/common.h>
+
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <list>
-#include <ostream>
 #include <utility>
 #include <vector>
 
 namespace xrpl::tests {
 
-class SHAMapSync_test : public beast::unit_test::Suite
+class SHAMapSyncTest : public ::testing::Test
 {
-public:
-    beast::xor_shift_engine eng;
+protected:
+    beast::Journal const j_{TestSink::instance()};
+    beast::xor_shift_engine eng_;
 
     boost::intrusive_ptr<SHAMapItem>
     makeRandomAS()
@@ -38,7 +38,7 @@ public:
         Serializer s;
 
         for (int d = 0; d < 3; ++d)
-            s.add32(randInt<std::uint32_t>(eng));
+            s.add32(randInt<std::uint32_t>(eng_));
         return makeShamapitem(s.getSHA512Half(), s.slice());
     }
 
@@ -58,7 +58,7 @@ public:
 
             if (!map.addItem(SHAMapNodeType::TnAccountState, item))
             {
-                log << "Unable to add item to map\n";
+                ADD_FAILURE() << "Unable to add item to map";
                 return false;
             }
         }
@@ -67,14 +67,14 @@ public:
         {
             if (!map.delItem(item))
             {
-                log << "Unable to remove item from map\n";
+                ADD_FAILURE() << "Unable to remove item from map";
                 return false;
             }
         }
 
         if (beforeHash != map.getHash())
         {
-            log << "Hashes do not match " << beforeHash << " " << map.getHash() << std::endl;
+            ADD_FAILURE() << "Hashes do not match " << beforeHash << " " << map.getHash();
             return false;
         }
 
@@ -82,12 +82,9 @@ public:
     }
 
     void
-    run() override
+    runSync()
     {
-        using beast::Severity;
-        test::SuiteJournal journal("SHAMapSync_test", *this);
-
-        TestNodeFamily f(journal), f2(journal);
+        TestNodeFamily f(j_), f2(j_);
         SHAMap source(SHAMapType::FREE, f);
         SHAMap destination(SHAMapType::FREE, f2);
 
@@ -100,30 +97,33 @@ public:
         }
 
         source.invariants();
-        BEAST_EXPECT(confuseMap(source, 500));
+        ASSERT_TRUE(confuseMap(source, 500));
         source.invariants();
 
         source.setImmutable();
 
         int count = 0;
-        source.visitLeaves([&count](auto const& item) { ++count; });
-        BEAST_EXPECT(count == items);
+        source.visitLeaves([&count](auto const& item) {
+            (void)item;
+            ++count;
+        });
+        EXPECT_EQ(count, items);
 
         std::vector<SHAMapMissingNode> missingNodes;
         source.walkMap(missingNodes, 2048);
-        BEAST_EXPECT(missingNodes.empty());
+        EXPECT_TRUE(missingNodes.empty());
 
         destination.setSynching();
 
         {
             std::vector<std::pair<SHAMapNodeID, Blob>> a;
 
-            BEAST_EXPECT(source.getNodeFat(SHAMapNodeID(), a, randBool(eng), randInt(eng, 2)));
+            ASSERT_TRUE(source.getNodeFat(SHAMapNodeID(), a, randBool(eng_), randInt(eng_, 2)));
 
-            unexpected(a.empty(), "NodeSize");
+            ASSERT_FALSE(a.empty()) << "NodeSize";
 
-            BEAST_EXPECT(destination.addRootNode(source.getHash(), makeSlice(a[0].second), nullptr)
-                             .isGood());
+            ASSERT_TRUE(destination.addRootNode(source.getHash(), makeSlice(a[0].second), nullptr)
+                            .isGood());
         }
 
         do
@@ -141,38 +141,41 @@ public:
 
             for (auto& it : nodesMissing)
             {
-                // Don't use BEAST_EXPECT here b/c it will be called a
+                // Keep failures fatal here because this loop is data-dependent.
                 // non-deterministic number of times and the number of tests run
                 // should be deterministic
-                if (!source.getNodeFat(it.first, b, randBool(eng), randInt(eng, 2)))
-                    fail("", __FILE__, __LINE__);
+                if (!source.getNodeFat(it.first, b, randBool(eng_), randInt(eng_, 2)))
+                    FAIL() << "Unable to fetch node";
             }
 
-            // Don't use BEAST_EXPECT here b/c it will be called a
+            // Keep failures fatal here because this loop is data-dependent.
             // non-deterministic number of times and the number of tests run
             // should be deterministic
             if (b.empty())
-                fail("", __FILE__, __LINE__);
+                FAIL() << "No nodes returned";
 
             for (std::size_t i = 0; i < b.size(); ++i)
             {
-                // Don't use BEAST_EXPECT here b/c it will be called a
+                // Keep failures fatal here because this loop is data-dependent.
                 // non-deterministic number of times and the number of tests run
                 // should be deterministic
                 if (!destination.addKnownNode(b[i].first, makeSlice(b[i].second), nullptr)
                          .isUseful())
-                    fail("", __FILE__, __LINE__);
+                    FAIL() << "Known node was not useful";
             }
         } while (true);
 
         destination.clearSynching();
 
-        BEAST_EXPECT(source.deepCompare(destination));
+        EXPECT_TRUE(source.deepCompare(destination));
 
         destination.invariants();
     }
 };
 
-BEAST_DEFINE_TESTSUITE(SHAMapSync, shamap, xrpl);
+TEST_F(SHAMapSyncTest, sync)
+{
+    runSync();
+}
 
 }  // namespace xrpl::tests

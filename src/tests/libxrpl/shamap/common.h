@@ -1,9 +1,16 @@
 #pragma once
 
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
 #include <xrpl/shamap/Family.h>
+
+#include <chrono>
+#include <cstdint>
+#include <memory>
+#include <stdexcept>
 
 namespace xrpl::tests {
 
@@ -79,12 +86,16 @@ public:
     void
     missingNodeAcquireBySeq(std::uint32_t refNum, uint256 const& nodeHash) override
     {
+        (void)refNum;
+        (void)nodeHash;
         Throw<std::runtime_error>("missing node");
     }
 
     void
     missingNodeAcquireByHash(uint256 const& refHash, std::uint32_t refNum) override
     {
+        (void)refHash;
+        (void)refNum;
         Throw<std::runtime_error>("missing node");
     }
 

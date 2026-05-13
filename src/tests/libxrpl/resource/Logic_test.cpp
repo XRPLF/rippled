@@ -1,11 +1,8 @@
-#include <test/unit_test/SuiteJournal.h>
-
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/insight/NullCollector.h>
 #include <xrpl/beast/net/IPAddressV4.h>
-#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/resource/Charge.h>
 #include <xrpl/resource/Consumer.h>
@@ -16,6 +13,9 @@
 
 #include <boost/utility/base_from_member.hpp>
 
+#include <gtest/gtest.h>
+#include <helpers/TestSink.h>
+
 #include <chrono>
 #include <cstdint>
 #include <functional>
@@ -23,9 +23,11 @@
 
 namespace xrpl::Resource {
 
-class ResourceManager_test : public beast::unit_test::Suite
+class ResourceManagerTest : public ::testing::Test
 {
-public:
+protected:
+    beast::Journal const j_{TestSink::instance()};
+
     class TestLogic : private boost::base_from_member<TestStopwatch>, public Logic
 
     {
@@ -73,18 +75,9 @@ public:
     //--------------------------------------------------------------------------
 
     void
-    testDrop(beast::Journal j, bool limited)
+    testDrop(bool limited)
     {
-        if (limited)
-        {
-            testcase("Limited warn/drop");
-        }
-        else
-        {
-            testcase("Unlimited warn/drop");
-        }
-
-        TestLogic logic(j);
+        TestLogic logic(j_);
 
         Charge const fee(kDROP_THRESHOLD + 1);
         beast::IP::Endpoint const addr(beast::IP::Endpoint::fromString("192.0.2.2"));
@@ -98,79 +91,49 @@ public:
 
             // Create load until we get a warning
             int n = 10000;
+            bool warned = false;
 
             while (--n >= 0)
             {
-                if (n == 0)
-                {
-                    if (limited)
-                    {
-                        fail("Loop count exceeded without warning");
-                    }
-                    else
-                    {
-                        pass();
-                    }
-                    return;
-                }
-
                 if (c.charge(fee) == Disposition::Warn)
                 {
-                    if (limited)
-                    {
-                        pass();
-                    }
-                    else
-                    {
-                        fail("Should loop forever with no warning");
-                    }
+                    warned = true;
                     break;
                 }
                 ++logic.clock();
             }
+
+            if (!limited)
+            {
+                EXPECT_FALSE(warned) << "Should loop forever with no warning";
+                return;
+            }
+
+            ASSERT_TRUE(warned) << "Loop count exceeded without warning";
 
             // Create load until we get dropped
+            bool dropped = false;
             while (--n >= 0)
             {
-                if (n == 0)
-                {
-                    if (limited)
-                    {
-                        fail("Loop count exceeded without dropping");
-                    }
-                    else
-                    {
-                        pass();
-                    }
-                    return;
-                }
-
                 if (c.charge(fee) == Disposition::Drop)
                 {
+                    dropped = true;
                     // Disconnect abusive Consumer
-                    BEAST_EXPECT(c.disconnect(j) == limited);
+                    EXPECT_TRUE(c.disconnect(j_));
                     break;
                 }
                 ++logic.clock();
             }
+
+            ASSERT_TRUE(dropped) << "Loop count exceeded without dropping";
         }
 
         // Make sure the consumer is on the blacklist for a while.
         {
             Consumer const c(logic.newInboundEndpoint(addr));
             logic.periodicActivity();
-            if (c.disposition() != Disposition::Drop)
-            {
-                if (limited)
-                {
-                    fail("Dropped consumer not put on blacklist");
-                }
-                else
-                {
-                    pass();
-                }
-                return;
-            }
+            EXPECT_EQ(c.disposition(), Disposition::Drop)
+                << "Dropped consumer not put on blacklist";
         }
 
         // Makes sure the Consumer is eventually removed from blacklist
@@ -192,20 +155,13 @@ public:
                 }
             }
         }
-        if (!readmitted)
-        {
-            fail("Dropped Consumer left on blacklist too long");
-            return;
-        }
-        pass();
+        EXPECT_TRUE(readmitted) << "Dropped Consumer left on blacklist too long";
     }
 
     void
-    testImports(beast::Journal j)
+    testImports()
     {
-        testcase("Imports");
-
-        TestLogic logic(j);
+        TestLogic logic(j_);
 
         Gossip g[5];
 
@@ -214,16 +170,12 @@ public:
 
         for (int i = 0; i < 5; ++i)
             logic.importConsumers(std::to_string(i), g[i]);
-
-        pass();
     }
 
     void
-    testImport(beast::Journal j)
+    testImport()
     {
-        testcase("Import");
-
-        TestLogic logic(j);
+        TestLogic logic(j_);
 
         Gossip g;
         Gossip::Item item;
@@ -233,27 +185,23 @@ public:
         g.items.push_back(item);
 
         logic.importConsumers("g", g);
-
-        pass();
     }
 
     void
-    testCharges(beast::Journal j)
+    testCharges()
     {
-        testcase("Charge");
-
-        TestLogic logic(j);
+        TestLogic logic(j_);
 
         {
             beast::IP::Endpoint const address(beast::IP::Endpoint::fromString("192.0.2.1"));
             Consumer c(logic.newInboundEndpoint(address));
             Charge const fee(1000);
-            JLOG(j.info()) << "Charging " << c.toString() << " " << fee << " per second";
+            JLOG(j_.info()) << "Charging " << c.toString() << " " << fee << " per second";
             c.charge(fee);
             for (int i = 0; i < 128; ++i)
             {
-                JLOG(j.info()) << "Time= " << logic.clock().now().time_since_epoch().count()
-                               << ", Balance = " << c.balance();
+                JLOG(j_.info()) << "Time= " << logic.clock().now().time_since_epoch().count()
+                                << ", Balance = " << c.balance();
                 logic.advance();
             }
         }
@@ -262,33 +210,41 @@ public:
             beast::IP::Endpoint const address(beast::IP::Endpoint::fromString("192.0.2.2"));
             Consumer c(logic.newInboundEndpoint(address));
             Charge const fee(1000);
-            JLOG(j.info()) << "Charging " << c.toString() << " " << fee << " per second";
+            JLOG(j_.info()) << "Charging " << c.toString() << " " << fee << " per second";
             for (int i = 0; i < 128; ++i)
             {
                 c.charge(fee);
-                JLOG(j.info()) << "Time= " << logic.clock().now().time_since_epoch().count()
-                               << ", Balance = " << c.balance();
+                JLOG(j_.info()) << "Time= " << logic.clock().now().time_since_epoch().count()
+                                << ", Balance = " << c.balance();
                 logic.advance();
             }
         }
-
-        pass();
-    }
-
-    void
-    run() override
-    {
-        using beast::Severity;
-        test::SuiteJournal journal("ResourceManager_test", *this);
-
-        testDrop(journal, true);
-        testDrop(journal, false);
-        testCharges(journal);
-        testImports(journal);
-        testImport(journal);
     }
 };
 
-BEAST_DEFINE_TESTSUITE(ResourceManager, resource, xrpl);
+TEST_F(ResourceManagerTest, limited_warn_drop)
+{
+    testDrop(true);
+}
+
+TEST_F(ResourceManagerTest, unlimited_warn_drop)
+{
+    testDrop(false);
+}
+
+TEST_F(ResourceManagerTest, charges)
+{
+    testCharges();
+}
+
+TEST_F(ResourceManagerTest, imports)
+{
+    testImports();
+}
+
+TEST_F(ResourceManagerTest, import)
+{
+    testImport();
+}
 
 }  // namespace xrpl::Resource
