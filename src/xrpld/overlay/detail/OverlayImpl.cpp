@@ -1529,7 +1529,7 @@ setupOverlay(BasicConfig const& config, beast::Journal j)
         {
             boost::system::error_code ec;
             setup.publicIp = boost::asio::ip::make_address(ip, ec);
-            if (ec || beast::IP::isPrivate(setup.publicIp))
+            if (ec || !beast::IP::isPublic(setup.publicIp))
                 Throw<std::runtime_error>("Configured public IP is invalid");
         }
 
