@@ -124,6 +124,9 @@ private:
 
 class NumberSO;
 
+bool
+useRulesGuards(Rules const& rules);
+
 void
 createGuards(
     Rules const& rules,
