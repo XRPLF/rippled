@@ -191,6 +191,7 @@ test.toplevel > xrpl.json
 test.unit_test > xrpl.basics
 test.unit_test > xrpl.protocol
 tests.libxrpl > xrpl.basics
+tests.libxrpl > xrpl.core
 tests.libxrpl > xrpld.telemetry
 tests.libxrpl > xrpl.json
 tests.libxrpl > xrpl.net
