@@ -168,11 +168,9 @@ callMethod(JsonContext& context, Method method, std::string const& name, Object&
     span.setAttribute(rpc_span::attr::command, name.c_str());
     span.setAttribute(rpc_span::attr::version, static_cast<int64_t>(context.apiVersion));
     span.setAttribute(
-        rpc_span::attr::role,
+        rpc_span::attr::rpcRole,
         context.role == Role::ADMIN ? std::string_view(rpc_span::val::admin)
                                     : std::string_view(rpc_span::val::user));
-    span.setAttribute(attr::nodeAmendmentBlocked, context.app.getOPs().isAmendmentBlocked());
-    span.setAttribute(attr::nodeServerState, context.app.getOPs().strOperatingMode());
 
     static std::atomic<std::uint64_t> requestId{0};
     auto& perfLog = context.app.getPerfLog();
@@ -189,7 +187,7 @@ callMethod(JsonContext& context, Method method, std::string const& name, Object&
         JLOG(context.j.debug()) << "RPC call " << name << " completed in "
                                 << ((end - start).count() / 1000000000.0) << "seconds";
         perfLog.rpcFinish(name, curId);
-        span.setAttribute(rpc_span::attr::status, rpc_span::val::success);
+        span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::success);
         return ret;
     }
     catch (std::exception& e)
@@ -197,7 +195,7 @@ callMethod(JsonContext& context, Method method, std::string const& name, Object&
         perfLog.rpcError(name, curId);
         JLOG(context.j.info()) << "Caught throw: " << e.what();
         span.recordException(e);
-        span.setAttribute(rpc_span::attr::status, rpc_span::val::error);
+        span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::error);
 
         if (context.loadType == Resource::feeReferenceRPC)
             context.loadType = Resource::feeExceptionRPC;
