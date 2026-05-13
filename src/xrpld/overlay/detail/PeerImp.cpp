@@ -1448,6 +1448,11 @@ PeerImp::handleTransaction(
         span->setAttribute(tx_span::attr::peerId, static_cast<int64_t>(id_));
         if (auto const version = getVersion(); !version.empty())
             span->setAttribute(tx_span::attr::peerVersion, version.c_str());
+        // Set defaults for conditional attributes so they are always present
+        // on the span.  The suppressed path overrides these when the
+        // transaction has already been seen via HashRouter.
+        span->setAttribute(tx_span::attr::suppressed, false);
+        span->setAttribute(tx_span::attr::status, "new");
 
         // Charge strongly for attempting to relay a txn with tfInnerBatchTxn
         // LCOV_EXCL_START
