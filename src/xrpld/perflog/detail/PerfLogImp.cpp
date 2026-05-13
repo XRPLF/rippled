@@ -383,9 +383,13 @@ PerfLogImp::rpcEnd(std::string const& method, std::uint64_t const requestId, boo
     if (auto* mr = app_.getMetricsRegistry())
     {
         if (finish)
+        {
             mr->recordRpcFinished(method, durationUs.count());
+        }
         else
+        {
             mr->recordRpcErrored(method, durationUs.count());
+        }
     }
 }
 
