@@ -5346,19 +5346,14 @@ protected:
         env.fund(XRP(100'000), issuer, alice);
         env.close();
 
-        MPTTester mpt{env, issuer, kMPT_INIT_NO_FUND};
-
-        mpt.create({.flags = tfMPTCanTransfer, .mutableFlags = tmfMPTCanMutateCanTransfer});
-
-        env.close();
-
+        MPTTester mpt(
+            {.env = env,
+             .issuer = issuer,
+             .holders = {alice},
+             .pay = 100,
+             .flags = tfMPTCanTransfer,
+             .mutableFlags = tmfMPTCanMutateCanTransfer});
         PrettyAsset const asset = mpt["MPT"];
-        mpt.authorize({.account = alice});
-        env.close();
-
-        // Issuer can fund the holder even if CanTransfer is not set.
-        env(pay(issuer, alice, asset(100)));
-        env.close();
 
         Vault const vault{env};
         auto const [createTx, vaultKeylet] = vault.create({.owner = alice, .asset = asset});
@@ -5451,13 +5446,13 @@ protected:
         env.fund(XRP(1'000'000), issuer, lender, borrower);
         env.close();
 
-        MPTTester mpt{env, issuer, kMPT_INIT_NO_FUND};
-        mpt.create(
-            {.flags = tfMPTCanTransfer | tfMPTCanLock, .mutableFlags = tmfMPTCanMutateCanTransfer});
+        MPTTester mpt(
+            {.env = env,
+             .issuer = issuer,
+             .holders = {lender, borrower},
+             .flags = tfMPTCanTransfer | tfMPTCanLock,
+             .mutableFlags = tmfMPTCanMutateCanTransfer});
         PrettyAsset const asset = mpt.issuanceID();
-
-        mpt.authorize({.account = lender});
-        mpt.authorize({.account = borrower});
         env(pay(issuer, lender, asset(10'000'000)));
         // Fund the borrower with enough to cover principal+interest+fees
         env(pay(issuer, borrower, asset(100'000)));
@@ -5511,14 +5506,13 @@ protected:
         env.fund(XRP(1'000'000), issuer, lender, borrower);
         env.close();
 
-        MPTTester mpt{env, issuer, kMPT_INIT_NO_FUND};
-        mpt.create(
-            {.flags = tfMPTCanTransfer | tfMPTCanTrade | tfMPTCanLock,
+        MPTTester mpt(
+            {.env = env,
+             .issuer = issuer,
+             .holders = {lender, borrower},
+             .flags = tfMPTCanTransfer | tfMPTCanTrade | tfMPTCanLock,
              .mutableFlags = tmfMPTCanMutateCanTrade});
         PrettyAsset const asset = mpt.issuanceID();
-
-        mpt.authorize({.account = lender});
-        mpt.authorize({.account = borrower});
         env(pay(issuer, lender, asset(10'000'000)));
         env(pay(issuer, borrower, asset(100'000)));
         env.close();
