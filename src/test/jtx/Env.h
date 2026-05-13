@@ -103,15 +103,14 @@ class SuiteLogs : public Logs
     beast::unit_test::Suite& suite_;
 
 public:
-    explicit SuiteLogs(beast::unit_test::Suite& suite)
-        : Logs(beast::severities::KError), suite_(suite)
+    explicit SuiteLogs(beast::unit_test::Suite& suite) : Logs(beast::Severity::Error), suite_(suite)
     {
     }
 
     ~SuiteLogs() override = default;
 
     std::unique_ptr<beast::Journal::Sink>
-    makeSink(std::string const& partition, beast::severities::Severity threshold) override
+    makeSink(std::string const& partition, beast::Severity threshold) override
     {
         return std::make_unique<SuiteJournalSink>(partition, threshold, suite_);
     }
@@ -155,7 +154,7 @@ private:
             beast::unit_test::Suite& suite,
             std::unique_ptr<Config> config,
             std::unique_ptr<Logs> logs,
-            beast::severities::Severity thresh,
+            beast::Severity thresh,
             std::optional<XRPAmount> referenceFee);
         ~AppBundle();
     };
@@ -189,14 +188,14 @@ public:
         std::unique_ptr<Config> config,
         FeatureBitset features,
         std::unique_ptr<Logs> logs = nullptr,
-        std::optional<beast::severities::Severity> thresh = std::nullopt,
+        std::optional<beast::Severity> thresh = std::nullopt,
         std::optional<XRPAmount> referenceFee = std::nullopt)
         : test(suite)
         , bundle_(
               suite,
               std::move(config),
               std::move(logs),
-              thresh.value_or(beast::severities::KError),
+              thresh.value_or(beast::Severity::Error),
               referenceFee)
         , journal{bundle_.app->getJournal("Env")}
     {
@@ -265,7 +264,7 @@ public:
     Env(beast::unit_test::Suite& suite,
         std::unique_ptr<Config> config,
         std::unique_ptr<Logs> logs = nullptr,
-        std::optional<beast::severities::Severity> thresh = std::nullopt,
+        std::optional<beast::Severity> thresh = std::nullopt,
         std::optional<XRPAmount> referenceFee = std::nullopt)
         : Env(suite, std::move(config), testableAmendments(), std::move(logs), thresh, referenceFee)
     {
@@ -315,7 +314,7 @@ public:
      * @param suite the current unit_test::Suite
      */
     Env(beast::unit_test::Suite& suite,
-        beast::severities::Severity thresh = beast::severities::KError,
+        beast::Severity thresh = beast::Severity::Error,
         std::optional<XRPAmount> referenceFee = std::nullopt)
         : Env(suite, envconfig(), nullptr, thresh, referenceFee)
     {
@@ -672,7 +671,7 @@ public:
     void
     signAndSubmit(
         JTx const& jt,
-        json::Value params = json::NullValue,
+        json::Value params = json::ValueType::Null,
         std::source_location const& loc = std::source_location::current());
 
     /** Check expected postconditions

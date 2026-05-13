@@ -400,7 +400,7 @@ RCLConsensus::Adaptor::onClose(
     }
 
     // Needed because of the move below.
-    auto const setHash = initialSet->getHash().asUint256();
+    auto const setHash = initialSet->getHash().asUInt256();
 
     return Result{
         std::move(initialSet),
@@ -499,7 +499,7 @@ RCLConsensus::Adaptor::doAccept(
     // we use the hash of the set.
     //
     // FIXME: Use a std::vector and a custom sorter instead of CanonicalTXSet?
-    CanonicalTXSet retriableTxs{result.txns.map->getHash().asUint256()};
+    CanonicalTXSet retriableTxs{result.txns.map->getHash().asUInt256()};
 
     JLOG(j_.debug()) << "Building canonical tx set: " << retriableTxs.key();
 
@@ -1090,7 +1090,7 @@ RclConsensusLogger::~RclConsensusLogger()
     std::stringstream outSs;
     outSs << header_ << "duration " << (duration.count() / 1000) << '.' << std::setw(3)
           << std::setfill('0') << (duration.count() % 1000) << "s. " << ss_->str();
-    j_.sink().writeAlways(beast::severities::KInfo, outSs.str());
+    j_.sink().writeAlways(beast::Severity::Info, outSs.str());
 }
 
 }  // namespace xrpl

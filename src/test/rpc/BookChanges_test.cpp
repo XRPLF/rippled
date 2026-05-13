@@ -99,7 +99,8 @@ public:
         env(pay(bob, carol, USD(10)), Path(~USD), Sendmax(XRP(10)), Domain(domainID));
         env.close();
 
-        std::string const txHash{env.tx()->getJson(JsonOptions::KNone)[jss::hash].asString()};
+        std::string const txHash{
+            env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString()};
 
         json::Value const txResult = env.rpc("tx", txHash)[jss::result];
         auto const ledgerIndex = txResult[jss::ledger_index].asInt();

@@ -84,7 +84,7 @@ getProcessTxnFn(NetworkOPs& netOPs)
     };
 }
 
-/** Returns a json::objectValue. */
+/** Returns a json::ValueType::Object. */
 json::Value
 transactionSign(
     json::Value params,  // Passed by value so it can be modified locally.
@@ -94,7 +94,7 @@ transactionSign(
     std::chrono::seconds validatedLedgerAge,
     Application& app);
 
-/** Returns a json::objectValue. */
+/** Returns a json::ValueType::Object. */
 json::Value
 transactionSubmit(
     json::Value params,  // Passed by value so it can be modified locally.
@@ -105,7 +105,7 @@ transactionSubmit(
     Application& app,
     ProcessTransactionFn const& processTransaction);
 
-/** Returns a json::objectValue. */
+/** Returns a json::ValueType::Object. */
 json::Value
 transactionSignFor(
     json::Value params,  // Passed by value so it can be modified locally.
@@ -115,7 +115,7 @@ transactionSignFor(
     std::chrono::seconds validatedLedgerAge,
     Application& app);
 
-/** Returns a json::objectValue. */
+/** Returns a json::ValueType::Object. */
 json::Value
 transactionSubmitMultiSigned(
     json::Value params,  // Passed by value so it can be modified locally.
