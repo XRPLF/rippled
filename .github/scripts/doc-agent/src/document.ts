@@ -1,0 +1,114 @@
+/**
+ * Document mode: add Doxygen docs to a file or all files in a directory.
+ */
+
+import { existsSync, readdirSync, statSync } from 'node:fs';
+import { join, relative, resolve } from 'node:path';
+import { query } from '@anthropic-ai/claude-agent-sdk';
+import { MODEL, XRPLD_ROOT } from './config.js';
+import { loadSystemPrompt } from './prompt-loader.js';
+
+const CPP_EXTENSIONS: ReadonlySet<string> = new Set(['.h', '.hpp', '.cpp']);
+
+/**
+ * Recursively find all C++ source files under a target path.
+ *
+ * @param target - File or directory path (relative to xrpld root or absolute)
+ * @returns Absolute paths of all matching files
+ */
+function findCppFiles(target: string): string[] {
+  const absTarget = resolve(XRPLD_ROOT, target);
+  if (!existsSync(absTarget)) {
+    throw new Error(`Target does not exist: ${absTarget}`);
+  }
+
+  const stat = statSync(absTarget);
+  if (stat.isFile()) {
+    return [absTarget];
+  }
+
+  const results: string[] = [];
+  const walk = (dir: string): void => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+      } else if (entry.isFile()) {
+        const dotIdx = entry.name.lastIndexOf('.');
+        if (dotIdx === -1) continue;
+        const ext = entry.name.slice(dotIdx);
+        if (CPP_EXTENSIONS.has(ext)) {
+          results.push(full);
+        }
+      }
+    }
+  };
+  walk(absTarget);
+  return results;
+}
+
+/**
+ * Document a single file by running the documentation agent against it.
+ */
+async function documentFile(absPath: string): Promise<void> {
+  const relPath = relative(XRPLD_ROOT, absPath);
+  console.log(`\n=== Documenting: ${relPath} ===`);
+
+  const systemPrompt = await loadSystemPrompt('document-file', relPath);
+  const userPrompt = `Add Doxygen documentation to: ${relPath}
+
+The file is rooted at ${XRPLD_ROOT}. Use the Read tool to read it, the Edit
+tool to add documentation, and Glob/Grep to find related tests or callers
+when needed.
+
+Do not modify any code logic — only add documentation comments.`;
+
+  const result = query({
+    prompt: userPrompt,
+    options: {
+      model: MODEL,
+      systemPrompt,
+      cwd: XRPLD_ROOT,
+      allowedTools: ['Read', 'Edit', 'Glob', 'Grep', 'Bash'],
+      permissionMode: 'acceptEdits',
+    },
+  });
+
+  for await (const message of result) {
+    if (message.type === 'assistant') {
+      const content = message.message?.content;
+      if (Array.isArray(content)) {
+        for (const block of content) {
+          if (block.type === 'text') {
+            process.stdout.write(block.text);
+          }
+        }
+      }
+    }
+    if (message.type === 'result') {
+      const cost = message.total_cost_usd?.toFixed(4) ?? '?';
+      const inTok = message.usage?.['input_tokens'] ?? 0;
+      const outTok = message.usage?.['output_tokens'] ?? 0;
+      console.log(`\n[Cost: $${cost}, Tokens: ${inTok}/${outTok}]`);
+    }
+  }
+}
+
+/**
+ * Document a file or every C++ file under a directory.
+ *
+ * @param target - File or directory path
+ */
+export async function documentTarget(target: string): Promise<void> {
+  const files = findCppFiles(target);
+  console.log(`Found ${files.length} C++ file(s) to document.`);
+
+  for (const file of files) {
+    try {
+      await documentFile(file);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`Failed to document ${file}: ${message}`);
+    }
+  }
+}
