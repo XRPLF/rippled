@@ -1,5 +1,6 @@
-#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/XRPAmount.h>
+
+#include <xrpl/beast/utility/Zero.h>
 
 #include <gtest/gtest.h>
 

@@ -1,6 +1,7 @@
+#include <xrpl/protocol/IOUAmount.h>
+
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
-#include <xrpl/protocol/IOUAmount.h>
 
 #include <gtest/gtest.h>
 

@@ -1,4 +1,5 @@
 #include <xrpl/basics/Number.h>
+
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/STAmount.h>

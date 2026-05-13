@@ -1,5 +1,6 @@
-#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
+
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/ToString.h>
 
 #include <gtest/gtest.h>

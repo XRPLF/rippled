@@ -1,5 +1,6 @@
-#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/join.h>
+
+#include <xrpl/basics/base_uint.h>
 
 #include <gtest/gtest.h>
 

@@ -1,5 +1,6 @@
-#include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/FileUtilities.h>
+
+#include <xrpl/basics/ByteUtilities.h>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>

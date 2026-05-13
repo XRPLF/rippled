@@ -1,4 +1,5 @@
 #include <xrpl/basics/Buffer.h>
+
 #include <xrpl/basics/Slice.h>
 
 #include <gtest/gtest.h>
