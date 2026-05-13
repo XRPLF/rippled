@@ -1812,7 +1812,7 @@ Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog
     {
         stateStr = "expired";
     }
-    span.setAttribute(cons_span::attr::result, stateStr);
+    span.setAttribute(cons_span::attr::consensusResult, stateStr);
 
     CLOG(clog) << "Consensus has been reached. ";
     // NOLINTEND(bugprone-unchecked-optional-access)

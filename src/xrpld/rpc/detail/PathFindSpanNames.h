@@ -63,24 +63,24 @@ inline constexpr auto rank = makeStr("rank");
 // ===== Attribute keys ======================================================
 
 namespace attr {
-inline constexpr auto xrplPathfind = join(seg::xrpl, makeStr("pathfind"));
-
-/// "xrpl.pathfind.source_account"
-inline constexpr auto sourceAccount = join(xrplPathfind, makeStr("source_account"));
-/// "xrpl.pathfind.dest_account"
-inline constexpr auto destAccount = join(xrplPathfind, makeStr("dest_account"));
-/// "xrpl.pathfind.fast"
-inline constexpr auto fast = join(xrplPathfind, makeStr("fast"));
-/// "xrpl.pathfind.search_level"
-inline constexpr auto searchLevel = join(xrplPathfind, makeStr("search_level"));
-/// "xrpl.pathfind.num_complete_paths"
-inline constexpr auto numCompletePaths = join(xrplPathfind, makeStr("num_complete_paths"));
-/// "xrpl.pathfind.num_paths"
-inline constexpr auto numPaths = join(xrplPathfind, makeStr("num_paths"));
-/// "xrpl.pathfind.num_requests"
-inline constexpr auto numRequests = join(xrplPathfind, makeStr("num_requests"));
-/// "xrpl.pathfind.ledger_index"
-inline constexpr auto ledgerIndex = join(xrplPathfind, makeStr("ledger_index"));
+/// "source_account" — originating account for path search.
+inline constexpr auto sourceAccount = makeStr("source_account");
+/// "dest_account" — destination account.
+inline constexpr auto destAccount = makeStr("dest_account");
+/// "fast" — whether fast pathfinding mode enabled.
+inline constexpr auto fast = makeStr("fast");
+/// "search_level" — depth of graph exploration.
+inline constexpr auto searchLevel = makeStr("search_level");
+/// "num_complete_paths" — complete paths found.
+inline constexpr auto numCompletePaths = makeStr("num_complete_paths");
+/// "num_paths" — total paths returned.
+inline constexpr auto numPaths = makeStr("num_paths");
+/// "num_requests" — active path requests.
+inline constexpr auto numRequests = makeStr("num_requests");
+/// "xrpl.pathfind.ledger_index" — kept qualified (rule 5): pathfind target
+/// ledger is distinct from xrpl.ledger.seq.
+inline constexpr auto ledgerIndex =
+    join(join(seg::xrpl, makeStr("pathfind")), makeStr("ledger_index"));
 }  // namespace attr
 
 }  // namespace xrpl::telemetry::pathfind_span

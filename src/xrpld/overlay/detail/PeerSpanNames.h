@@ -25,22 +25,14 @@ inline constexpr auto validationReceive = makeStr("validation.receive");
 // ===== Attribute keys ========================================================
 
 namespace attr {
-inline constexpr auto xrplPeer = join(seg::xrpl, seg::peer);
+/// Canonical shared constants (defined in SpanNames.h).
+using ::xrpl::telemetry::attr::ledgerHash;
+using ::xrpl::telemetry::attr::peerId;
 
-/// "xrpl.peer.id"
-inline constexpr auto id = join(xrplPeer, makeStr("id"));
-/// "xrpl.peer.proposal.trusted"
-inline constexpr auto proposalTrusted =
-    join(join(xrplPeer, makeStr("proposal")), makeStr("trusted"));
-
-/// "xrpl.peer.validation.ledger_hash"
-inline constexpr auto validationLedgerHash =
-    join(join(xrplPeer, makeStr("validation")), makeStr("ledger_hash"));
-/// "xrpl.peer.validation.full"
-inline constexpr auto validationFull = join(join(xrplPeer, makeStr("validation")), makeStr("full"));
-/// "xrpl.peer.validation.trusted"
-inline constexpr auto validationTrusted =
-    join(join(xrplPeer, makeStr("validation")), makeStr("trusted"));
+/// Domain-owned bare attrs.
+inline constexpr auto proposalTrusted = makeStr("proposal_trusted");
+inline constexpr auto validationFull = makeStr("validation_full");
+inline constexpr auto validationTrusted = makeStr("validation_trusted");
 }  // namespace attr
 
 }  // namespace xrpl::telemetry::peer_span
