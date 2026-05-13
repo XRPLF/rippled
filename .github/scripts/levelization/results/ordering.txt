@@ -154,9 +154,6 @@ test.protocol > test.unit_test
 test.protocol > xrpl.basics
 test.protocol > xrpl.json
 test.protocol > xrpl.protocol
-test.resource > test.unit_test
-test.resource > xrpl.basics
-test.resource > xrpl.resource
 test.rpc > test.jtx
 test.rpc > xrpl.basics
 test.rpc > xrpl.core
@@ -178,11 +175,6 @@ test.server > xrpld.core
 test.server > xrpl.json
 test.server > xrpl.protocol
 test.server > xrpl.server
-test.shamap > test.unit_test
-test.shamap > xrpl.basics
-test.shamap > xrpl.nodestore
-test.shamap > xrpl.protocol
-test.shamap > xrpl.shamap
 test.toplevel > test.csf
 test.toplevel > xrpl.json
 test.unit_test > xrpl.basics
@@ -195,6 +187,7 @@ tests.libxrpl > xrpl.net
 tests.libxrpl > xrpl.nodestore
 tests.libxrpl > xrpl.protocol
 tests.libxrpl > xrpl.protocol_autogen
+tests.libxrpl > xrpl.resource
 tests.libxrpl > xrpl.server
 tests.libxrpl > xrpl.shamap
 tests.libxrpl > xrpl.tx
