@@ -41,25 +41,20 @@ inline constexpr auto process = join(prefix::tx, op::process);
 // ===== Attribute keys ======================================================
 
 namespace attr {
-inline constexpr auto xrplTx = join(seg::xrpl, seg::tx);
+/// Canonical shared constants (defined in SpanNames.h).
+using ::xrpl::telemetry::attr::peerId;
+using ::xrpl::telemetry::attr::txHash;
 
-/// "xrpl.tx.hash"
-inline constexpr auto hash = join(xrplTx, makeStr("hash"));
-/// "xrpl.tx.local"
-inline constexpr auto local = join(xrplTx, makeStr("local"));
-/// "xrpl.tx.path"
-inline constexpr auto path = join(xrplTx, makeStr("path"));
-/// "xrpl.tx.suppressed"
-inline constexpr auto suppressed = join(xrplTx, makeStr("suppressed"));
-/// "xrpl.tx.status"
-inline constexpr auto status = join(xrplTx, makeStr("status"));
-
-inline constexpr auto xrplPeer = join(seg::xrpl, seg::peer);
-
-/// "xrpl.peer.id"
-inline constexpr auto peerId = join(xrplPeer, makeStr("id"));
-/// "xrpl.peer.version"
-inline constexpr auto peerVersion = join(xrplPeer, makeStr("version"));
+/// "local" — whether tx originated locally.
+inline constexpr auto local = makeStr("local");
+/// "path" — sync or async processing path.
+inline constexpr auto path = makeStr("path");
+/// "suppressed" — whether tx was suppressed as duplicate.
+inline constexpr auto suppressed = makeStr("suppressed");
+/// "tx_status" — domain-qualified (collides with rpc_status, txq_status).
+inline constexpr auto txStatus = makeStr("tx_status");
+/// "peer_version" — version of peer that sent the tx.
+inline constexpr auto peerVersion = makeStr("peer_version");
 }  // namespace attr
 
 // ===== Attribute values ====================================================

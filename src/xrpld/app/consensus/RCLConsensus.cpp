@@ -569,7 +569,8 @@ RCLConsensus::Adaptor::doAccept(
         static_cast<int64_t>(
             std::chrono::duration_cast<std::chrono::milliseconds>(closeResolution).count()));
     doAcceptSpan.setAttribute(
-        telemetry::cons_span::attr::state, std::string(consensusFail ? "moved_on" : "finished"));
+        telemetry::cons_span::attr::consensusState,
+        std::string(consensusFail ? "moved_on" : "finished"));
     doAcceptSpan.setAttribute(telemetry::cons_span::attr::proposing, proposing);
     doAcceptSpan.setAttribute(
         telemetry::cons_span::attr::roundTimeMs,

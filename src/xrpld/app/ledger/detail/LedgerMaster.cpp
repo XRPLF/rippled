@@ -460,7 +460,7 @@ LedgerMaster::storeLedger(std::shared_ptr<Ledger const> ledger)
 {
     using namespace telemetry;
     auto span = SpanGuard::span(TraceCategory::Ledger, seg::ledger, ledger_span::op::store);
-    span.setAttribute(ledger_span::attr::seq, static_cast<int64_t>(ledger->header().seq));
+    span.setAttribute(ledger_span::attr::ledgerSeq, static_cast<int64_t>(ledger->header().seq));
 
     bool const validated = ledger->header().validated;
     // Returns true if we already had the ledger
@@ -980,7 +980,7 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
 
     using namespace telemetry;
     auto valSpan = SpanGuard::span(TraceCategory::Ledger, seg::ledger, ledger_span::op::validate);
-    valSpan.setAttribute(ledger_span::attr::seq, static_cast<int64_t>(ledger->header().seq));
+    valSpan.setAttribute(ledger_span::attr::ledgerSeq, static_cast<int64_t>(ledger->header().seq));
     valSpan.setAttribute(ledger_span::attr::validations, static_cast<int64_t>(tvc));
 
     JLOG(m_journal.info()) << "Advancing accepted ledger to " << ledger->header().seq

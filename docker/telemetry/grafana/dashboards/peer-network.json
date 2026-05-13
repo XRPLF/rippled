@@ -11,7 +11,7 @@
   "panels": [
     {
       "title": "Peer Proposal Receive Rate",
-      "description": "Rate of consensus proposals received from network peers. The peer.proposal.receive span (PeerImp.cpp:1667) fires in onMessage(TMProposeSet) for each incoming proposal. Records xrpl.peer.id (sending peer) and xrpl.peer.proposal.trusted (whether the proposer is in our UNL). Requires trace_peer=1 in the telemetry config.",
+      "description": "Rate of consensus proposals received from network peers. The peer.proposal.receive span (PeerImp.cpp:1667) fires in onMessage(TMProposeSet) for each incoming proposal. Records xrpl.peer.id (sending peer) and proposal_trusted (whether the proposer is in our UNL). Requires trace_peer=1 in the telemetry config.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -50,7 +50,7 @@
     },
     {
       "title": "Peer Validation Receive Rate",
-      "description": "Rate of ledger validations received from network peers. The peer.validation.receive span (PeerImp.cpp:2264) fires in onMessage(TMValidation) for each incoming validation message. Records xrpl.peer.id (sending peer) and xrpl.peer.validation.trusted (whether the validator is trusted). Requires trace_peer=1 in the telemetry config.",
+      "description": "Rate of ledger validations received from network peers. The peer.validation.receive span (PeerImp.cpp:2264) fires in onMessage(TMValidation) for each incoming validation message. Records xrpl.peer.id (sending peer) and validation_trusted (whether the validator is trusted). Requires trace_peer=1 in the telemetry config.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -89,7 +89,7 @@
     },
     {
       "title": "Proposals Trusted vs Untrusted",
-      "description": "Pie chart showing the ratio of proposals received from trusted validators (in our UNL) vs untrusted validators. Grouped by the xrpl.peer.proposal.trusted span attribute (true/false). A healthy node connected to a well-configured UNL should see a significant portion of trusted proposals. Note: proposals that fail early validation may not have the trusted attribute set.",
+      "description": "Pie chart showing the ratio of proposals received from trusted validators (in our UNL) vs untrusted validators. Grouped by the proposal_trusted span attribute (true/false). A healthy node connected to a well-configured UNL should see a significant portion of trusted proposals. Note: proposals that fail early validation may not have the trusted attribute set.",
       "type": "piechart",
       "gridPos": {
         "h": 8,
@@ -108,8 +108,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (xrpl_peer_proposal_trusted, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", xrpl_peer_proposal_trusted=~\"$proposal_trusted\", span_name=\"peer.proposal.receive\"}[5m]))",
-          "legendFormat": "Trusted = {{xrpl_peer_proposal_trusted}} [{{exported_instance}}]"
+          "expr": "sum by (proposal_trusted, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", proposal_trusted=~\"$proposal_trusted\", span_name=\"peer.proposal.receive\"}[5m]))",
+          "legendFormat": "Trusted = {{proposal_trusted}} [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -121,7 +121,7 @@
     },
     {
       "title": "Validations Trusted vs Untrusted",
-      "description": "Pie chart showing the ratio of validations received from trusted validators (in our UNL) vs untrusted validators. Grouped by the xrpl.peer.validation.trusted span attribute (true/false). Monitoring this helps detect if the node is receiving validations from the expected set of trusted validators. Note: validations that fail early checks may not have the trusted attribute set.",
+      "description": "Pie chart showing the ratio of validations received from trusted validators (in our UNL) vs untrusted validators. Grouped by the validation_trusted span attribute (true/false). Monitoring this helps detect if the node is receiving validations from the expected set of trusted validators. Note: validations that fail early checks may not have the trusted attribute set.",
       "type": "piechart",
       "gridPos": {
         "h": 8,
@@ -140,8 +140,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (xrpl_peer_validation_trusted, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", xrpl_peer_validation_trusted=~\"$validation_trusted\", span_name=\"peer.validation.receive\"}[5m]))",
-          "legendFormat": "Trusted = {{xrpl_peer_validation_trusted}} [{{exported_instance}}]"
+          "expr": "sum by (validation_trusted, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", validation_trusted=~\"$validation_trusted\", span_name=\"peer.validation.receive\"}[5m]))",
+          "legendFormat": "Trusted = {{validation_trusted}} [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -181,7 +181,7 @@
         "label": "Proposal Trusted",
         "description": "Filter by proposal trust status (true = from trusted validator)",
         "type": "query",
-        "query": "label_values(traces_span_metrics_calls_total{span_name=\"peer.proposal.receive\"}, xrpl_peer_proposal_trusted)",
+        "query": "label_values(traces_span_metrics_calls_total{span_name=\"peer.proposal.receive\"}, proposal_trusted)",
         "datasource": {
           "type": "prometheus",
           "uid": "prometheus"
@@ -201,7 +201,7 @@
         "label": "Validation Trusted",
         "description": "Filter by validation trust status (true = from trusted validator)",
         "type": "query",
-        "query": "label_values(traces_span_metrics_calls_total{span_name=\"peer.validation.receive\"}, xrpl_peer_validation_trusted)",
+        "query": "label_values(traces_span_metrics_calls_total{span_name=\"peer.validation.receive\"}, validation_trusted)",
         "datasource": {
           "type": "prometheus",
           "uid": "prometheus"
