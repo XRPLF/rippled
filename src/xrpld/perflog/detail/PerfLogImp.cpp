@@ -362,17 +362,31 @@ PerfLogImp::rpcEnd(std::string const& method, std::uint64_t const requestId, boo
             // LCOV_EXCL_STOP
         }
     }
-    std::lock_guard const lock(counter->second.mutex);
-    if (finish)
-    {
-        ++counter->second.value.finished;
-    }
-    else
-    {
-        ++counter->second.value.errored;
-    }
-    counter->second.value.duration +=
+    auto const durationUs =
         std::chrono::duration_cast<microseconds>(steady_clock::now() - startTime);
+    {
+        std::lock_guard const lock(counter->second.mutex);
+        if (finish)
+        {
+            ++counter->second.value.finished;
+        }
+        else
+        {
+            ++counter->second.value.errored;
+        }
+        counter->second.value.duration += durationUs;
+    }
+
+    // Task 9.4: Record RPC completion in OTel metrics pipeline.
+    // Mirrors the rpcStart() instrumentation so the finished/errored
+    // counters and duration histogram advance with every call.
+    if (auto* mr = app_.getMetricsRegistry())
+    {
+        if (finish)
+            mr->recordRpcFinished(method, durationUs.count());
+        else
+            mr->recordRpcErrored(method, durationUs.count());
+    }
 }
 
 void

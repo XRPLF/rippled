@@ -147,6 +147,58 @@ class ServiceRegistry;
 
 namespace telemetry {
 
+/** Central OpenTelemetry metric registry.
+
+    Owns all OTel instruments (counters, histograms, observable gauges)
+    that are not covered by the beast::insight StatsD pipeline. See the
+    file-level header comment above for the full dependency diagram,
+    gauge domain list, and usage examples.
+
+    Class / collaborator diagram (ASCII):
+
+        +-----------------+        +-------------------+
+        |   Application   |------->|  MetricsRegistry  |
+        +-----------------+        +-------------------+
+                                    |       |        |
+                    creates/owns    v       v        v
+                        +-----------+  +---------+  +-------------------+
+                        | Meter     |  | Counter |  | ValidationTracker |
+                        | Provider  |  | /Hist.  |  | (rolling windows) |
+                        +-----------+  +---------+  +-------------------+
+                              |
+                              v
+                     Periodic reader thread (~10 s)
+                         -> ObservableGauge callbacks
+                         -> OTLP/HTTP export
+
+    @note Thread safety:
+          - The recordRpc, recordJob, and increment methods are invoked
+            from xrpld hot paths. OTel Counter::Add() and
+            Histogram::Record() are documented thread-safe, and
+            null-guard checks protect uninitialized instruments.
+          - ObservableGauge callbacks run on the OTel SDK background
+            reader thread (~10 s tick), concurrently with writers.
+            Each callback reads only lock-protected or atomic state
+            from Application services and wraps the body in a
+            catch-all try block so a transient failure never crashes
+            the reader thread.
+          - ValidationTracker protects its rolling windows internally.
+          - start() and stop() are NOT thread-safe with each other and
+            must be called from the single Application lifecycle
+            thread.
+
+    @note Lifetime:
+          - Must be constructed AFTER telemetry_ (reads isEnabled()).
+          - Must be stopped BEFORE Application services it observes are
+            destroyed; the Application owns it via unique_ptr so normal
+            teardown guarantees this.
+
+    @note Extending:
+          - Adding a new CountedObject type is auto-picked up by the
+            object_count gauge via iteration.
+          - Adding a new synchronous instrument requires a header field,
+            an initializer in start(), and a record method.
+*/
 class MetricsRegistry
 {
 public:
@@ -407,11 +459,47 @@ private:
         validationMissedCounter_;
 
     /** Register all observable gauge callbacks with the OTel SDK.
-        Called once during start().
+        Dispatches to one helper per metric domain so that each helper
+        stays well under the 80-line-per-function limit.
     */
     void
     registerAsyncGauges();
-#endif  // XRPL_ENABLE_TELEMETRY
+
+    // Per-domain gauge registration helpers. Each creates its instrument
+    // and attaches a single ObservableGauge callback that reads current
+    // values from Application services. The callbacks run on the OTel
+    // PeriodicExportingMetricReader background thread (~10 s tick).
+    void
+    registerCacheHitRateGauge();  // Task 9.2
+    void
+    registerTxqGauge();  // Task 9.3
+    void
+    registerObjectCountGauge();  // Task 9.6
+    void
+    registerLoadFactorGauge();  // Task 9.7
+    void
+    registerNodeStoreGauge();  // Task 9.1
+    void
+    registerServerInfoGauge();  // Task 9.7a
+    void
+    registerBuildInfoGauge();  // Task 9.7b
+    void
+    registerCompleteLedgersGauge();  // Task 9.7c
+    void
+    registerDbMetricsGauge();  // Task 9.7d
+    void
+    registerValidatorHealthGauge();  // Task 7.9
+    void
+    registerPeerQualityGauge();  // Task 7.10
+    void
+    registerLedgerEconomyGauge();  // Task 7.11
+    void
+    registerStateTrackingGauge();  // Task 7.12
+    void
+    registerStorageDetailGauge();  // Task 7.13
+    void
+    registerValidationAgreementGauge();  // Task 7.15
+#endif                                   // XRPL_ENABLE_TELEMETRY
 };
 
 }  // namespace telemetry
