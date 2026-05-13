@@ -53,7 +53,7 @@ jobs:
 
       - name: Generate coverage report (PR branch)
         run: |
-          coverxygen \
+          python3 -m coverxygen \
             --xml-dir build-pr/docs/xml \
             --src-dir . \
             --output doc-coverage.info \
@@ -74,7 +74,7 @@ jobs:
       - name: Generate coverage report (base branch)
         run: |
           if [ -d "build-base/docs/xml" ]; then
-            coverxygen \
+            python3 -m coverxygen \
               --xml-dir build-base/docs/xml \
               --src-dir . \
               --output base-doc-coverage.info \
