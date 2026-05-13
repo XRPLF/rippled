@@ -1,3 +1,19 @@
+/** @file
+ *  Complete arithmetic implementation of `xrpl::Number`, the XRPL ledger's
+ *  custom fixed-precision decimal floating-point type.
+ *
+ *  `Number` was introduced to replace ad-hoc arithmetic embedded in `STAmount`
+ *  and related types, giving the ledger a single, auditable numeric type that
+ *  supports all asset classes — IOU amounts, XRP drops, and MPT amounts — with
+ *  correct, amendment-controlled precision.
+ *
+ *  Two overriding design constraints dominate the implementation:
+ *   - **Exact decimal rounding** to satisfy on-ledger determinism requirements.
+ *   - **Dual mantissa precision** selected at runtime (via thread-local state)
+ *     based on which amendments are active: 16 significant digits (small range)
+ *     for legacy IOU arithmetic, and 19 significant digits (large range) for
+ *     full `int64_t` integer fidelity required by XRP drops and MPT amounts.
+ */
 #include <xrpl/basics/Number.h>
 
 #include <xrpl/basics/contract.h>
@@ -27,7 +43,19 @@ using int128_t = __int128_t;
 
 namespace xrpl {
 
+/** Thread-local rounding mode; defaults to `ToNearest` (round-half-to-even).
+ *
+ *  Each worker thread owns an independent copy so that amendment-gate changes
+ *  at transaction start do not race with arithmetic already in progress.
+ */
 thread_local Number::RoundingMode Number::mode = Number::RoundingMode::ToNearest;
+
+/** Thread-local active mantissa range; defaults to `kLARGE_RANGE`.
+ *
+ *  Stored as a `reference_wrapper` so that switching ranges is a cheap pointer
+ *  swap and so the range constants themselves cannot be mutated accidentally.
+ *  Changed via `setMantissaScale()` at the start of each transaction context.
+ */
 thread_local std::reference_wrapper<MantissaRange const> Number::kRANGE = kLARGE_RANGE;
 
 Number::RoundingMode
@@ -57,20 +85,33 @@ Number::setMantissaScale(MantissaRange::MantissaScale scale)
     kRANGE = scale == MantissaRange::MantissaScale::Small ? kSMALL_RANGE : kLARGE_RANGE;
 }
 
-// Guard
-
-// The Guard class is used to temporarily add extra digits of
-// precision to an operation.  This enables the final result
-// to be correctly rounded to the internal precision of Number.
-
+/** Concept restricting template parameters to unsigned 64-bit or 128-bit integer
+ *  types used as mantissa carriers throughout the arithmetic implementation.
+ */
 template <class T>
 concept UnsignedMantissa = std::is_unsigned_v<T> || std::is_same_v<T, uint128_t>;
 
+/** Accumulates extra decimal digits shed during normalization so the final
+ *  result can be correctly rounded without accumulated truncation error.
+ *
+ *  Guard stores up to 16 decimal guard digits packed as 4-bit BCD nibbles in a
+ *  single `uint64_t`.  A one-bit sticky flag (`xbit_`) records whether any
+ *  non-zero digit was ever shifted off the bottom of the guard register; this
+ *  is used by `round()` to break ties correctly for `ToNearest` mode.
+ *
+ *  The usual protocol is `push(d)` when a digit falls out of the main
+ *  mantissa, then `doRoundUp` or `doRoundDown` once to apply the rounding
+ *  decision.  For subtraction, `pop()` reclaims the most-significant guard
+ *  digit back into the mantissa.
+ */
 class Number::Guard
 {
-    std::uint64_t digits_{0};    // 16 decimal guard digits
-    std::uint8_t xbit_ : 1 {0};  // has a non-zero digit been shifted off the end
-    std::uint8_t sbit_ : 1 {0};  // the sign of the guard digits
+    /** Packed BCD: 16 digits × 4 bits, most-significant digit at bit 63. */
+    std::uint64_t digits_{0};
+    /** Sticky bit: set when any non-zero digit has been shifted off the bottom. */
+    std::uint8_t xbit_ : 1 {0};
+    /** Sign of the operand that owns these guard digits. */
+    std::uint8_t sbit_ : 1 {0};
 
 public:
     explicit Guard() = default;
@@ -83,22 +124,56 @@ public:
     [[nodiscard]] bool
     isNegative() const noexcept;
 
-    // add a digit
+    /** Push one decimal digit into the top of the guard register.
+     *
+     *  Any digit previously at the bottom is OR-ed into `xbit_` before it
+     *  is lost.  Only the lowest 4 bits of `d` are used.
+     *
+     *  @tparam T An unsigned or `uint128_t` type.
+     *  @param d  The digit to store (0–9; higher bits are masked off).
+     */
     template <class T>
     void
     push(T d) noexcept;
 
-    // recover a digit
+    /** Recover the most-significant guard digit, shifting the rest down.
+     *
+     *  Used during subtraction to reclaim precision lost when aligning
+     *  exponents.
+     *
+     *  @return The top digit (0–9).
+     */
     unsigned
     pop() noexcept;
 
-    // Indicate round direction:  1 is up, -1 is down, 0 is even
-    // This enables the client to round towards nearest, and on
-    // tie, round towards even.
+    /** Determine whether the guard digits are above, below, or exactly half.
+     *
+     *  Interprets the current thread-local rounding mode and the packed guard
+     *  value to produce a rounding direction consistent with IEEE 754.
+     *
+     *  @return  1  if the guard value is more than half (round up),
+     *           -1 if the guard value is less than half (round down),
+     *            0 if the guard value is exactly half (tie — round to even).
+     */
     [[nodiscard]] int
     round() const noexcept;
 
-    // Modify the result to the correctly rounded value
+    /** Apply upward rounding to a normalized `(negative, mantissa, exponent)` triple.
+     *
+     *  Increments the mantissa when `round()` indicates an upward adjustment
+     *  (including ties rounded to even).  If the increment pushes the mantissa
+     *  above `maxMantissa` or `kMAX_REP`, divides by 10 and increments the
+     *  exponent to preserve normalization.
+     *
+     *  @tparam T         Unsigned mantissa carrier type.
+     *  @param negative   Sign flag; adjusted if the result collapses to zero.
+     *  @param mantissa   Mantissa to round; updated in place.
+     *  @param exponent   Exponent; updated in place.
+     *  @param minMantissa  Lower bound of the active normalization range.
+     *  @param maxMantissa  Upper bound of the active normalization range.
+     *  @param location   Diagnostic string embedded in the `overflow_error` message.
+     *  @throws std::overflow_error if the rounded exponent exceeds `kMAX_EXPONENT`.
+     */
     template <UnsignedMantissa T>
     void
     doRoundUp(
@@ -109,19 +184,48 @@ public:
         internalrep const& maxMantissa,
         std::string location);
 
-    // Modify the result to the correctly rounded value
+    /** Apply downward rounding to a normalized `(negative, mantissa, exponent)` triple.
+     *
+     *  Decrements the mantissa when `round()` indicates a downward adjustment.
+     *  If the decrement drops the mantissa below `minMantissa`, multiplies by
+     *  10 and decrements the exponent to restore normalization.
+     *
+     *  @tparam T         Unsigned mantissa carrier type.
+     *  @param negative   Sign flag; adjusted if the result collapses to zero.
+     *  @param mantissa   Mantissa to round; updated in place.
+     *  @param exponent   Exponent; updated in place.
+     *  @param minMantissa  Lower bound of the active normalization range.
+     */
     template <UnsignedMantissa T>
     void
     doRoundDown(bool& negative, T& mantissa, int& exponent, internalrep const& minMantissa);
 
-    // Modify the result to the correctly rounded value
+    /** Round a scaled integer `rep` value and apply its sign.
+     *
+     *  Used by `Number::operator rep()` after the mantissa has been fully
+     *  scaled to an integer.  Applies the sign stored in `sbit_` after
+     *  rounding.
+     *
+     *  @param drops    The integer value to round; updated in place.
+     *  @param location Diagnostic string embedded in the `overflow_error` message.
+     *  @throws std::overflow_error if rounding would push `drops` above `kMAX_REP`
+     *      (theoretically impossible given correct normalization, but guarded
+     *      defensively).
+     */
     void
     doRound(rep& drops, std::string location) const;
 
 private:
+    /** Core push implementation; operates on a plain `unsigned`. */
     void
     doPush(unsigned d) noexcept;
 
+    /** Restore normalization after a rounding step changes the mantissa.
+     *
+     *  If rounding caused `mantissa` to drop below `minMantissa`, multiplies
+     *  by 10 and decrements the exponent.  If the exponent underflows
+     *  `kMIN_EXPONENT` the triple is reset to canonical zero.
+     */
     template <UnsignedMantissa T>
     void
     bringIntoRange(bool& negative, T& mantissa, int& exponent, internalrep const& minMantissa);
@@ -168,10 +272,6 @@ Number::Guard::pop() noexcept
     return d;
 }
 
-// Returns:
-//     -1 if Guard is less than half
-//      0 if Guard is exactly half
-//      1 if Guard is greater than half
 int
 Number::Guard::round() const noexcept
 {
@@ -217,8 +317,6 @@ Number::Guard::bringIntoRange(
     int& exponent,
     internalrep const& minMantissa)
 {
-    // Bring mantissa back into the minMantissa / maxMantissa range AFTER
-    // rounding
     if (mantissa < minMantissa)
     {
         mantissa *= 10;
@@ -282,7 +380,6 @@ Number::Guard::doRoundDown(
     bringIntoRange(negative, mantissa, exponent, minMantissa);
 }
 
-// Modify the result to the correctly rounded value
 void
 Number::Guard::doRound(rep& drops, std::string location) const
 {
@@ -308,10 +405,15 @@ Number::Guard::doRound(rep& drops, std::string location) const
 
 // Number
 
-// Safely convert rep (int64) mantissa to internalrep (uint64). If the rep is
-// negative, returns the positive value. This takes a little extra work because
-// converting std::numeric_limits<std::int64_t>::min() flirts with UB, and can
-// vary across compilers.
+/** Convert a signed `int64_t` mantissa to its unsigned absolute value.
+ *
+ *  Converting `INT64_MIN` via negation of `int64_t` is undefined behavior in
+ *  C++; this function handles that edge case safely by routing through
+ *  `int128_t` for the one value that overflows the positive `int64_t` range.
+ *
+ *  @param mantissa  Signed external mantissa, possibly negative.
+ *  @return Unsigned magnitude; always fits in `uint64_t`.
+ */
 Number::internalrep
 Number::externalToInternal(rep mantissa)
 {
@@ -331,6 +433,12 @@ Number::externalToInternal(rep mantissa)
     return static_cast<internalrep>(-temp);
 }
 
+/** Return the value 1 normalized for the small mantissa range (10^15 scale).
+ *
+ *  Constructs 1.0 without normalization overhead so it can be a `constexpr`.
+ *  The mantissa is `kSMALL_RANGE.min` (10^15) and the exponent is
+ *  `−kSMALL_RANGE.log` (−15), giving exactly 1.0 × 10^0.
+ */
 constexpr Number
 Number::oneSmall()
 {
@@ -339,6 +447,12 @@ Number::oneSmall()
 
 constexpr Number kONE_SML = Number::oneSmall();
 
+/** Return the value 1 normalized for the large mantissa range (10^18 scale).
+ *
+ *  Constructs 1.0 without normalization overhead so it can be a `constexpr`.
+ *  The mantissa is `kLARGE_RANGE.min` (10^18) and the exponent is
+ *  `−kLARGE_RANGE.log` (−18), giving exactly 1.0 × 10^0.
+ */
 constexpr Number
 Number::oneLarge()
 {
@@ -347,6 +461,11 @@ Number::oneLarge()
 
 constexpr Number kONE_LRG = Number::oneLarge();
 
+/** Return the value 1 in the currently active mantissa range.
+ *
+ *  Dispatches to the pre-computed `kONE_SML` or `kONE_LRG` constant based on
+ *  the thread-local `kRANGE` setting, avoiding a full normalization pass.
+ */
 Number
 Number::one()
 {
@@ -356,8 +475,37 @@ Number::one()
     return kONE_LRG;
 }
 
-// Use the member names in this static function for now so the diff is cleaner
 // TODO: Rename the function parameters to get rid of the "_" suffix
+
+/** Bring a `(negative, mantissa, exponent)` triple into canonical normalized form.
+ *
+ *  This is the shared implementation invoked by all three explicit
+ *  specializations of `Number::normalize<T>`.  The algorithm:
+ *   1. A zero mantissa is mapped to canonical zero and returns early.
+ *   2. While `mantissa < minMantissa` and `exponent > kMIN_EXPONENT`, the
+ *      mantissa is multiplied by 10 and the exponent decremented.
+ *   3. While `mantissa > maxMantissa` or `mantissa > kMAX_REP`, the last
+ *      digit is pushed into a `Guard` and the mantissa is divided by 10.
+ *   4. An extra division handles the case where the intermediate value exceeds
+ *      `INT64_MAX` but the final stored value must not (relevant for the large
+ *      range, e.g. 9.9 × 10^18 > INT64_MAX).
+ *   5. `Guard::doRoundUp` is called to apply correctly-rounded rounding to the
+ *      result.
+ *
+ *  @tparam T          Mantissa type: `uint128_t`, `unsigned long long`, or
+ *      `unsigned long`.  The 128-bit type is needed for `operator*=`, which
+ *      computes a product that temporarily requires wider storage.
+ *  @param negative    Sign flag; updated to canonical zero sign when result is 0.
+ *  @param mantissa    The raw mantissa to normalize; updated in place.
+ *  @param exponent    The raw exponent; updated in place.
+ *  @param minMantissa Lower bound of the active normalization range.
+ *  @param maxMantissa Upper bound of the active normalization range.
+ *  @throws std::overflow_error if normalization would push `exponent` above
+ *      `kMAX_EXPONENT`.
+ *  @note The function is declared a `friend` of `Number` so it can access the
+ *      `kMIN_EXPONENT`, `kMAX_EXPONENT`, and `kMAX_REP` constants as well as
+ *      the `Guard` inner class.
+ */
 template <class T>
 void
 doNormalize(
@@ -484,9 +632,20 @@ Number::normalize()
     normalize(negative_, mantissa_, exponent_, range.min, range.max);
 }
 
-// Copy the number, but set a new exponent. Because the mantissa doesn't change,
-// the result will be "mostly" normalized, but the exponent could go out of
-// range.
+/** Return a copy of this `Number` with its exponent shifted by `exponentDelta`.
+ *
+ *  The mantissa is unchanged, so the returned value is mathematically equal to
+ *  `*this × 10^exponentDelta`.  Normalization is not re-run; the mantissa
+ *  remains in its existing range as long as the new exponent is valid.  Used
+ *  internally by `root` and `root2` to undo the pre-scaling step without the
+ *  cost of a full normalization pass.
+ *
+ *  @param exponentDelta  Signed amount to add to the current exponent.
+ *  @return  Adjusted `Number`, or zero if `exponent_ + exponentDelta` underflows
+ *      `kMIN_EXPONENT`.
+ *  @throws std::overflow_error if `exponent_ + exponentDelta >= kMAX_EXPONENT`.
+ *  @pre `*this` must satisfy `isnormal()`.
+ */
 Number
 Number::shiftExponent(int exponentDelta) const
 {
@@ -503,6 +662,18 @@ Number::shiftExponent(int exponentDelta) const
     return result;
 }
 
+/** Add `y` to `*this`, rounding the result to the active mantissa range.
+ *
+ *  Operands are aligned to a common exponent by dividing the smaller-exponent
+ *  operand by 10 repeatedly, accumulating shed digits in a `Guard`.  Same-sign
+ *  operands are added via `uint128_t` (avoiding overflow on large mantissas) and
+ *  rounded up.  Opposite-sign operands are subtracted and guard digits are
+ *  reclaimed via `pop()` before rounding down.
+ *
+ *  @param y  Value to add.
+ *  @return   Reference to `*this` after the operation.
+ *  @throws std::overflow_error if the result's exponent exceeds `kMAX_EXPONENT`.
+ */
 Number&
 Number::operator+=(Number const& y)
 {
@@ -602,34 +773,43 @@ Number::operator+=(Number const& y)
     return *this;
 }
 
-// Optimization equivalent to:
-// auto r = static_cast<unsigned>(u % 10);
-// u /= 10;
-// return r;
-// Derived from Hacker's Delight Second Edition Chapter 10
-// by Henry S. Warren, Jr.
+/** Divide a `uint128_t` by 10 in place and return the remainder.
+ *
+ *  Equivalent to `r = u % 10; u /= 10; return r;` but avoids the native
+ *  128-bit modulo instruction, which is expensive on common architectures.
+ *  The algorithm approximates `u / 10` using bit-shifts and a correction
+ *  step derived from Hacker's Delight (2nd ed., §10) by Henry S. Warren Jr.
+ *
+ *  @param u  Value to divide; updated in place to `u / 10`.
+ *  @return   The remainder `u % 10` (0–9) before the division.
+ */
 static inline unsigned
 divu10(uint128_t& u)
 {
-    // q = u * 0.75
     auto q = (u >> 1) + (u >> 2);
-    // iterate towards q = u * 0.8
     q += q >> 4;
     q += q >> 8;
     q += q >> 16;
     q += q >> 32;
     q += q >> 64;
-    // q /= 8 approximately == u / 10
     q >>= 3;
-    // r = u - q * 10  approximately == u % 10
     auto r = static_cast<unsigned>(u - ((q << 3) + (q << 1)));
-    // correction c is 1 if r >= 10 else 0
     auto c = (r + 6) >> 4;
     u = q + c;
     r -= c * 10;
     return r;
 }
 
+/** Multiply `*this` by `y`, rounding the result to the active mantissa range.
+ *
+ *  The two mantissas are multiplied as `uint128_t` to avoid overflow, the
+ *  exponents are summed, and the 128-bit product is trimmed into range using
+ *  `divu10` — which is cheaper than the native 128-bit modulo instruction.
+ *
+ *  @param y  Multiplier.
+ *  @return   Reference to `*this` after the operation.
+ *  @throws std::overflow_error if the product's exponent exceeds `kMAX_EXPONENT`.
+ */
 Number&
 Number::operator*=(Number const& y)
 {
@@ -693,6 +873,21 @@ Number::operator*=(Number const& y)
     return *this;
 }
 
+/** Divide `*this` by `y`, rounding the result to the active mantissa range.
+ *
+ *  The numerator is pre-scaled by a power of 10 before integer division to
+ *  preserve precision: 10^17 for the small range, 10^19 for the large range.
+ *  For the large range an additional 1000× correction term is computed from
+ *  the division remainder (because the combined scale factor would overflow
+ *  `uint128_t`) and folded in before normalization.
+ *
+ *  @param y  Divisor.
+ *  @return   Reference to `*this` after the operation.
+ *  @throws std::overflow_error if `y` is zero.
+ *  @note The pre-scale factor for the large range is 10^19 rather than the
+ *      10^17 used for the small range; a comment in the source tracks an open
+ *      question about whether a larger factor could be used safely.
+ */
 Number&
 Number::operator/=(Number const& y)
 {
@@ -788,6 +983,17 @@ Number::operator/=(Number const& y)
     return *this;
 }
 
+/** Convert this `Number` to a signed 64-bit integer, rounding to the active mode.
+ *
+ *  Scales the mantissa to an integer by repeatedly dividing (when the exponent
+ *  is negative, pushing each dropped digit into a `Guard`) or multiplying
+ *  (when the exponent is positive, checking for overflow), then calls
+ *  `Guard::doRound` to apply the thread-local rounding mode and sign.  This
+ *  is the primary way XRP drop values are materialized from `Number` arithmetic.
+ *
+ *  @return  The rounded integer value of this `Number`.
+ *  @throws std::overflow_error if scaling overflows `int64_t`.
+ */
 Number::
 operator rep() const
 {
@@ -817,6 +1023,17 @@ operator rep() const
     return drops;
 }
 
+/** Remove the fractional part of this `Number` without rounding.
+ *
+ *  Repeatedly divides the internal mantissa by 10 and increments the exponent
+ *  until `exponent_ >= 0`, then renormalizes.  Unlike `operator rep()`, this
+ *  does not apply any rounding mode — the result is always truncated toward zero.
+ *
+ *  @return  A `Number` whose value is the integer part of `*this`.
+ *  @note The `noexcept` guarantee holds because the resulting exponent is never
+ *      positive (the loop terminates at 0) and normalization cannot throw when
+ *      the exponent is non-positive.
+ */
 Number
 Number::truncate() const noexcept
 {
@@ -835,6 +1052,18 @@ Number::truncate() const noexcept
     return ret;
 }
 
+/** Format a `Number` as a human-readable decimal string.
+ *
+ *  For values whose exponent falls outside a window centered on the active
+ *  `mantissaLog()`, scientific notation is used (`Me+E`).  Otherwise, the
+ *  function constructs a zero-padded string of the integer mantissa, locates
+ *  the decimal point via pointer arithmetic, and strips leading and trailing
+ *  zeros to produce a compact decimal representation.
+ *
+ *  @param amount  The value to format.
+ *  @return  Human-readable decimal string, e.g. `"1.5"`, `"-0.001"`,
+ *      `"1e+20"`, or `"0"` for the zero value.
+ */
 std::string
 to_string(Number const& amount)
 {
@@ -911,7 +1140,6 @@ to_string(Number const& amount)
     if (negative)
         ret.append(1, '-');
 
-    // Assemble the output:
     if (preFrom == preTo)
     {
         ret.append(1, '0');
@@ -930,9 +1158,15 @@ to_string(Number const& amount)
     return ret;
 }
 
-// Returns f^n
-// Uses a log_2(n) number of multiplications
-
+/** Raise `f` to the non-negative integer power `n`.
+ *
+ *  Uses binary (fast) exponentiation, requiring O(log₂ n) multiplications.
+ *  Returns `Number::one()` for `n == 0` and `f` itself for `n == 1`.
+ *
+ *  @param f  Base value.
+ *  @param n  Non-negative integer exponent.
+ *  @return   f^n, rounded to the active mantissa range.
+ */
 Number
 power(Number const& f, unsigned n)
 {
@@ -947,15 +1181,28 @@ power(Number const& f, unsigned n)
     return r;
 }
 
-// Returns f^(1/d)
-// Uses Newton–Raphson iterations until the result stops changing
-// to find the non-negative root of the polynomial g(x) = x^d - f
-
-// This function, and power(Number f, unsigned n, unsigned d)
-// treat corner cases such as 0 roots as advised by Annex F of
-// the C standard, which itself is consistent with the IEEE
-// floating point standards.
-
+/** Compute the `d`-th root of `f` (i.e. f^(1/d)) via Newton–Raphson iteration.
+ *
+ *  Finds the non-negative root of g(x) = x^d − f.  To ensure rapid convergence
+ *  regardless of scale, `f` is first shifted so that its exponent is a multiple
+ *  of `d` and the value lies in (0, 1).  A quadratic least-squares curve fit
+ *  provides the initial guess; the iteration `r ← ((d−1)r + f/r^(d−1)) / d`
+ *  continues until the result is stable or oscillates between two values (a
+ *  cycle-of-2 detector prevents infinite loops near the rounding boundary).
+ *  The exponent shift is reversed with `shiftExponent` before returning.
+ *
+ *  Corner cases follow IEEE 754 Annex F / C standard Annex F conventions:
+ *   - `d == 0`, `f == ±one`: returns `one`.
+ *   - `d == 0`, `abs(f) < one`: returns zero.
+ *   - `d == 0`, `abs(f) > one`: throws (infinity).
+ *   - Even `d` with negative `f`: throws (NaN).
+ *   - `f == zero`: returns zero.
+ *
+ *  @param f  Radicand.  May be negative only when `d` is odd.
+ *  @param d  Root degree.
+ *  @return   f^(1/d), rounded to the active mantissa range.
+ *  @throws std::overflow_error for semantically infinite or NaN results.
+ */
 Number
 root(Number f, unsigned d)
 {
@@ -977,7 +1224,6 @@ root(Number f, unsigned d)
     if (f == kZERO)
         return f;
 
-    // Scale f into the range (0, 1) such that f's exponent is a multiple of d
     auto e = f.exponent_ + Number::mantissaLog() + 1;
     auto const di = static_cast<int>(d);
     auto ex = [e = e, di = di]()  // Euclidean remainder of e/d
@@ -999,7 +1245,6 @@ root(Number f, unsigned d)
         f = -f;
     }
 
-    // Quadratic least squares curve fit of f^(1/d) in the range [0, 1]
     auto const D = (((6 * di + 11) * di + 6) * di) + 1;  // NOLINT(readability-identifier-naming)
     auto const a0 = 3 * di * ((2 * di - 3) * di + 1);
     auto const a1 = 24 * di * (2 * di - 1);
@@ -1011,8 +1256,6 @@ root(Number f, unsigned d)
         r = -r;
     }
 
-    //  Newton–Raphson iteration of f^(1/d) with initial guess r
-    //  halt when r stops changing, checking for bouncing on the last iteration
     Number rm1{};
     Number rm2{};
     do
@@ -1022,12 +1265,22 @@ root(Number f, unsigned d)
         r = (Number(d - 1) * r + f / power(r, d - 1)) / Number(d);
     } while (r != rm1 && r != rm2);
 
-    //  return r * 10^(e/d) to reverse scaling
     auto const result = r.shiftExponent(e / di);
     XRPL_ASSERT_PARTS(result.isnormal(), "xrpl::root(Number, unsigned)", "result is normalized");
     return result;
 }
 
+/** Compute the square root of `f` using a specialised Newton–Raphson loop.
+ *
+ *  Functionally equivalent to `root(f, 2)` but uses hardcoded coefficients
+ *  (D=105, a0=18, a1=144, a2=−60) for the initial quadratic guess and the
+ *  simplified iteration `r ← (r + f/r) / 2`, making it faster than the
+ *  general `root` for the common `d == 2` case.
+ *
+ *  @param f  Non-negative radicand.
+ *  @return   √f, rounded to the active mantissa range.
+ *  @throws std::overflow_error if `f` is negative (NaN semantics).
+ */
 Number
 root2(Number f)
 {
@@ -1041,22 +1294,18 @@ root2(Number f)
     if (f == kZERO)
         return f;
 
-    // Scale f into the range (0, 1) such that f's exponent is a multiple of d
     auto e = f.exponent_ + Number::mantissaLog() + 1;
     if (e % 2 != 0)
         ++e;
     f = f.shiftExponent(-e);  // f /= 10^e;
     XRPL_ASSERT_PARTS(f.isnormal(), "xrpl::root2(Number)", "f is normalized");
 
-    // Quadratic least squares curve fit of f^(1/d) in the range [0, 1]
     auto const D = 105;  // NOLINT(readability-identifier-naming)
     auto const a0 = 18;
     auto const a1 = 144;
     auto const a2 = -60;
     Number r = ((Number{a2} * f + Number{a1}) * f + Number{a0}) / Number{D};
 
-    //  Newton–Raphson iteration of f^(1/2) with initial guess r
-    //  halt when r stops changing, checking for bouncing on the last iteration
     Number rm1{};
     Number rm2{};
     do
@@ -1066,15 +1315,28 @@ root2(Number f)
         r = (r + f / r) / Number(2);
     } while (r != rm1 && r != rm2);
 
-    //  return r * 10^(e/2) to reverse scaling
     auto const result = r.shiftExponent(e / 2);
     XRPL_ASSERT_PARTS(result.isnormal(), "xrpl::root2(Number)", "result is normalized");
 
     return result;
 }
 
-// Returns f^(n/d)
-
+/** Raise `f` to the rational power `n/d`.
+ *
+ *  Reduces the fraction `n/d` by their GCD, then computes `root(power(f, n), d)`.
+ *  Corner cases follow IEEE 754 Annex F / C standard Annex F conventions:
+ *   - `f == one`: returns `one`.
+ *   - `n == 0` (after GCD reduction): returns `one`.
+ *   - `d == 0` after GCD reduction: infinite or NaN depending on `abs(f)`.
+ *   - Odd numerator, even denominator, negative `f`: throws (NaN).
+ *   - Both `n` and `d` zero (`gcd == 0`): throws (NaN).
+ *
+ *  @param f  Base value.
+ *  @param n  Numerator of the exponent.
+ *  @param d  Denominator of the exponent.
+ *  @return   f^(n/d), rounded to the active mantissa range.
+ *  @throws std::overflow_error for semantically infinite or NaN results.
+ */
 Number
 power(Number const& f, unsigned n, unsigned d)
 {

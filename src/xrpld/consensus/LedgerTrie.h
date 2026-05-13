@@ -1,3 +1,17 @@
+/** @file
+ *  Compressed ancestry trie for consensus support tracking.
+ *
+ *  Implements `LedgerTrie<Ledger>`, the core data structure powering the
+ *  preferred-ledger calculation in XRPL's consensus algorithm. The trie
+ *  exploits the fact that ledger history is a string over the alphabet of
+ *  ledger IDs: two ledgers sharing ancestry share a common string prefix,
+ *  so their validator support can be tracked on shared branches of a
+ *  compressed prefix trie.
+ *
+ *  Also defines the helper types `SpanTip<Ledger>` (return type of
+ *  `getPreferred()`) and the internal `ledger_trie_detail::Span<Ledger>`
+ *  and `ledger_trie_detail::Node<Ledger>` that form the trie's structure.
+ */
 #pragma once
 
 #include <xrpl/basics/ToString.h>
@@ -15,7 +29,15 @@
 
 namespace xrpl {
 
-/** The tip of a span of ledger ancestry
+/** Identifies the tip of a span of ledger ancestry.
+ *
+ *  A lightweight value type returned by `LedgerTrie::getPreferred()` and
+ *  `Span::tip()`. Carries the sequence number and ID of the tip ledger and
+ *  retains a copy of the ledger so that ancestor IDs at earlier sequence
+ *  numbers can be retrieved via `ancestor()` without reaching back into the
+ *  trie.
+ *
+ *  @tparam Ledger A type satisfying the LedgerTrie `Ledger` concept.
  */
 template <class Ledger>
 class SpanTip
@@ -28,10 +50,8 @@ public:
     {
     }
 
-    // The sequence number of the tip ledger
-    Seq seq;
-    // The ID of the tip ledger
-    ID id;
+    Seq seq;  /**< Sequence number of the tip ledger. */
+    ID id;    /**< Hash / ID of the tip ledger. */
 
     /** Lookup the ID of an ancestor of the tip ledger
 
@@ -54,7 +74,21 @@ private:
 
 namespace ledger_trie_detail {
 
-// Represents a span of ancestry of a ledger
+/** A contiguous half-open interval `[start_, end_)` of ledger sequence numbers.
+ *
+ *  A `Span` is backed by a single `Ledger` instance from which ancestor IDs can
+ *  be retrieved via `operator[](Seq)`. It represents the range of sequence
+ *  positions that a single trie node covers. Spans are cheap to copy because
+ *  `Ledger` is required to be lightweight.
+ *
+ *  The key design principle is a clean separation of concerns: the `Ledger`
+ *  value owns "what ID exists at each position", while `[start_, end_)` owns
+ *  "which range of positions this node covers". The `diff()` method delegates to
+ *  the free function `mismatch()` to find the first position where two ledger
+ *  histories diverge.
+ *
+ *  @tparam Ledger A type satisfying the LedgerTrie `Ledger` concept.
+ */
 template <class Ledger>
 class Span
 {
@@ -67,12 +101,22 @@ class Span
     Ledger ledger_;
 
 public:
+    /** Construct the genesis span `[0, 1)`.
+     *
+     *  The default-constructed span represents the genesis ledger, which is
+     *  the common ancestor prefix of all ledger histories. Asserts that the
+     *  genesis ledger has sequence number 0.
+     */
     Span() : ledger_{typename Ledger::MakeGenesis{}}
     {
         // Require default ledger to be genesis seq
         XRPL_ASSERT(ledger_.seq() == start_, "xrpl::Span::Span : ledger is genesis");
     }
 
+    /** Construct a span `[0, ledger.seq()+1)` backed by `ledger`.
+     *
+     *  @param ledger The ledger whose full history this span represents.
+     */
     Span(Ledger ledger) : end_{ledger.seq() + Seq{1}}, ledger_{std::move(ledger)}
     {
     }
@@ -84,48 +128,81 @@ public:
     Span&
     operator=(Span&&) = default;
 
+    /** Return the inclusive lower bound of the interval. */
     [[nodiscard]] Seq
     start() const
     {
         return start_;
     }
 
+    /** Return the exclusive upper bound of the interval. */
     [[nodiscard]] Seq
     end() const
     {
         return end_;
     }
 
-    // Return the Span from [spot,end_) or none if no such valid span
+    /** Return the sub-span `[spot, end_)`, or `std::nullopt` if empty.
+     *
+     *  `spot` is clamped to `[start_, end_]` before slicing, so values
+     *  outside the current interval never produce a span that extends beyond
+     *  the original bounds.
+     *
+     *  @param spot The desired new start sequence number.
+     *  @return The sub-span, or `std::nullopt` if `spot >= end_`.
+     */
     [[nodiscard]] std::optional<Span>
     from(Seq spot) const
     {
         return sub(spot, end_);
     }
 
-    // Return the Span from [start_,spot) or none if no such valid span
+    /** Return the sub-span `[start_, spot)`, or `std::nullopt` if empty.
+     *
+     *  `spot` is clamped to `[start_, end_]` before slicing.
+     *
+     *  @param spot The desired exclusive end sequence number.
+     *  @return The sub-span, or `std::nullopt` if `spot <= start_`.
+     */
     [[nodiscard]] std::optional<Span>
     before(Seq spot) const
     {
         return sub(start_, spot);
     }
 
-    // Return the ID of the ledger that starts this span
+    /** Return the ledger ID at the start of this span.
+     *
+     *  Used as a deterministic tie-breaker in `getPreferred()` when two
+     *  children have equal branch support.
+     *
+     *  @return The ID of the ancestor ledger at sequence `start_`.
+     */
     [[nodiscard]] ID
     startID() const
     {
         return ledger_[start_];
     }
 
-    // Return the ledger sequence number of the first possible difference
-    // between this span and a given ledger.
+    /** Return the first sequence number where this span may differ from `o`.
+     *
+     *  Delegates to `mismatch(ledger_, o)` and clamps the result to
+     *  `[start_, end_]` so callers receive a position always within the span.
+     *
+     *  @param o The ledger to compare against.
+     *  @return The first sequence number in this span that could diverge from `o`.
+     */
     [[nodiscard]] Seq
     diff(Ledger const& o) const
     {
         return clamp(mismatch(ledger_, o));
     }
 
-    //  The tip of this span
+    /** Return a `SpanTip` describing the last position in this span.
+     *
+     *  The tip sequence is `end_ - 1`.
+     *
+     *  @return `SpanTip` with the tip's sequence number, ID, and ledger copy.
+     */
     [[nodiscard]] SpanTip<Ledger>
     tip() const
     {
@@ -146,7 +223,6 @@ private:
         return std::min(std::max(start_, val), end_);
     }
 
-    // Return a span of this over the half-open interval [from,to)
     [[nodiscard]] std::optional<Span>
     sub(Seq from, Seq to) const
     {
@@ -163,10 +239,20 @@ private:
         return o << s.tip().id << "[" << s.start_ << "," << s.end_ << ")";
     }
 
+    /** Combine two overlapping spans into one.
+     *
+     *  The merged span covers `[min(a.start_, b.start_), max(a.end_, b.end_))`.
+     *  The backing ledger is taken from whichever span has the higher `end_`,
+     *  since that ledger's history reaches further back and knows all ancestors
+     *  within the combined range.
+     *
+     *  @param a The first span.
+     *  @param b The second span.
+     *  @return A span covering the union of both intervals.
+     */
     friend Span
     merge(Span const& a, Span const& b)
     {
-        // Return combined span, using ledger_ from higher sequence span
         if (a.end_ < b.end_)
             return Span(std::min(a.start_, b.start_), b.end_, b.ledger_);
 
@@ -174,7 +260,17 @@ private:
     }
 };
 
-// A node in the trie
+/** A node in the compressed ancestry trie.
+ *
+ *  Each node owns the `Span` it covers, two support counters that are
+ *  maintained incrementally on every `insert`/`remove`, a raw non-owning
+ *  pointer to its parent, and an owned list of child nodes.
+ *
+ *  The ownership model is strictly top-down: each node owns its children via
+ *  `std::unique_ptr` but holds only a raw pointer to its parent.
+ *
+ *  @tparam Ledger A type satisfying the LedgerTrie `Ledger` concept.
+ */
 template <class Ledger>
 struct Node
 {
@@ -188,12 +284,20 @@ struct Node
     {
     }
 
-    Span<Ledger> span;
+    Span<Ledger> span;  /**< The half-open sequence interval this node covers. */
+
+    /** Number of current validations whose exact ledger matches this node's tip. */
     std::uint32_t tipSupport = 0;
+
+    /** `tipSupport` plus the sum of all descendants' `branchSupport`.
+     *
+     *  Counts every validator that has validated this ledger or any of its
+     *  descendants. Propagated up the parent chain on every insert and remove.
+     */
     std::uint32_t branchSupport = 0;
 
-    std::vector<std::unique_ptr<Node>> children;
-    Node* parent = nullptr;
+    std::vector<std::unique_ptr<Node>> children;  /**< Owned child nodes. */
+    Node* parent = nullptr;  /**< Non-owning pointer to the parent node; null for the root. */
 
     /** Remove the given node from this Node's children
 
@@ -219,6 +323,14 @@ struct Node
         return o << s.span << "(T:" << s.tipSupport << ",B:" << s.branchSupport << ")";
     }
 
+    /** Return a JSON representation of this node and its subtree.
+     *
+     *  Emits `span`, `startID`, `seq`, `tipSupport`, `branchSupport`, and an
+     *  optional `children` array. Primarily used by `LedgerTrie::getJson()` for
+     *  diagnostics and debugging.
+     *
+     *  @return A `json::Value` object tree rooted at this node.
+     */
     [[nodiscard]] json::Value
     getJson() const
     {
@@ -329,11 +441,22 @@ class LedgerTrie
     using Node = ledger_trie_detail::Node<Ledger>;
     using Span = ledger_trie_detail::Span<Ledger>;
 
-    // The root of the trie. The root is allowed to break the no-single child
-    // invariant.
+    /** Root node of the trie.
+     *
+     *  Represents the genesis ledger and is always present even when the trie
+     *  is logically empty (`root_->branchSupport == 0`). The root is exempt from
+     *  the compression invariant: it may have zero or one child.
+     */
     std::unique_ptr<Node> root_;
 
-    // Count of the tip support for each sequence number
+    /** Per-sequence-number count of tip support.
+     *
+     *  Maps each sequence number to the total number of validators whose last
+     *  validation tip has exactly that sequence number. This ordered map is
+     *  iterated in sequence order by `getPreferred()` to accumulate the
+     *  "uncommitted" validator count — validators who have not yet expressed a
+     *  preference at the current frontier.
+     */
     std::map<Seq, std::uint32_t> seqSupport_;
 
     /** Find the node in the trie that represents the longest common ancestry
@@ -418,10 +541,23 @@ public:
     {
     }
 
-    /** Insert and/or increment the support for the given ledger.
-
-        @param ledger A ledger and its ancestry
-        @param count The count of support for this ledger
+    /** Insert a ledger into the trie and increment its tip support.
+     *
+     *  Locates the longest common-prefix match in the trie and, if needed,
+     *  performs up to two structural modifications:
+     *
+     *  1. **Split** — if the found node's span extends beyond the divergence
+     *     point, its suffix is extracted into a new child that inherits the
+     *     node's existing children and support counts.
+     *  2. **Branch** — if the new ledger extends beyond the divergence point,
+     *     a new leaf node is appended for the remainder.
+     *
+     *  After any structural changes, `tipSupport` is incremented on the target
+     *  node and `branchSupport` is propagated up to the root. `seqSupport_` is
+     *  also updated for `ledger.seq()`.
+     *
+     *  @param ledger A ledger and its full ancestry to insert.
+     *  @param count  The amount of tip support to add; defaults to 1.
      */
     void
     insert(Ledger const& ledger, std::uint32_t count = 1)
@@ -502,13 +638,26 @@ public:
         seqSupport_[ledger.seq()] += count;
     }
 
-    /** Decrease support for a ledger, removing and compressing if possible.
-
-        @param ledger The ledger history to remove
-        @param count The amount of tip support to remove
-
-        @return Whether a matching node was decremented and possibly removed.
-    */
+    /** Decrease tip support for a ledger and re-compress the trie if needed.
+     *
+     *  Uses an O(n) exact-match search (`findByLedgerID`) rather than the
+     *  prefix-based `find()`, because only the exact-tip node should have its
+     *  `tipSupport` decremented. `count` is clamped to the node's current
+     *  `tipSupport` so it is safe to pass a value larger than what was inserted.
+     *
+     *  After decrementing, the compression walk restores the invariant that no
+     *  non-root node with zero `tipSupport` has fewer than two children:
+     *  - A leaf with zero `tipSupport` is deleted.
+     *  - A node with zero `tipSupport` and exactly one child is merged with that
+     *    child via `merge()`.
+     *  - A node with zero `tipSupport` and multiple children is left in place.
+     *
+     *  @param ledger The ledger whose tip support should be decremented.
+     *  @param count  The amount of tip support to remove; clamped to the node's
+     *      current `tipSupport`. Defaults to 1.
+     *  @return `true` if a matching node with non-zero `tipSupport` was found and
+     *      decremented; `false` if the ledger is absent or has zero `tipSupport`.
+     */
     bool
     remove(Ledger const& ledger, std::uint32_t count = 1)
     {
@@ -562,10 +711,13 @@ public:
         return true;
     }
 
-    /** Return count of tip support for the specific ledger.
-
-        @param ledger The ledger to lookup
-        @return The number of entries in the trie for this *exact* ledger
+    /** Return the number of validations for this exact ledger (tip only).
+     *
+     *  Unlike `branchSupport()`, this counts only validators whose last
+     *  validation matches `ledger` precisely, not any of its descendants.
+     *
+     *  @param ledger The ledger to look up.
+     *  @return The tip support count, or 0 if the ledger is not in the trie.
      */
     [[nodiscard]] std::uint32_t
     tipSupport(Ledger const& ledger) const
@@ -575,11 +727,16 @@ public:
         return 0;
     }
 
-    /** Return the count of branch support for the specific ledger
-
-        @param ledger The ledger to lookup
-        @return The number of entries in the trie for this ledger or a
-                descendant
+    /** Return the total number of validations for this ledger or any descendant.
+     *
+     *  Returns the `branchSupport` of the exact matching node when found.
+     *  If no exact match exists but `ledger` is a proper prefix of a trie node's
+     *  span (i.e., the ledger is an ancestor of the node's tip), returns that
+     *  node's `branchSupport` instead. Returns 0 if `ledger` is not in the trie
+     *  at all.
+     *
+     *  @param ledger The ledger to look up.
+     *  @return The branch support count, or 0 if no match is found.
      */
     [[nodiscard]] std::uint32_t
     branchSupport(Ledger const& ledger) const
@@ -756,7 +913,13 @@ public:
         return curr->span.tip();
     }
 
-    /** Return whether the trie is tracking any ledgers
+    /** Return whether the trie has any active support.
+     *
+     *  The root node always exists; "empty" means `root_->branchSupport == 0`,
+     *  i.e., no ledger has been inserted (or all inserts have been balanced by
+     *  removes).
+     *
+     *  @return `true` if no ledger currently has support; `false` otherwise.
      */
     [[nodiscard]] bool
     empty() const
@@ -764,7 +927,12 @@ public:
         return !root_ || root_->branchSupport == 0;
     }
 
-    /** Dump an ascii representation of the trie to the stream
+    /** Write an ASCII diagram of the trie to `o` for debugging.
+     *
+     *  Each node is printed with its span, tip support, and branch support.
+     *  Children are indented relative to their parent.
+     *
+     *  @param o The output stream to write to.
      */
     void
     dump(std::ostream& o) const
@@ -772,7 +940,12 @@ public:
         dumpImpl(o, root_, 0);
     }
 
-    /** Dump JSON representation of trie state
+    /** Return a JSON snapshot of the full trie state.
+     *
+     *  Emits the recursive node tree under `"trie"` and the `seqSupport_` map
+     *  under `"seq_support"`. Intended for diagnostics and RPC inspection.
+     *
+     *  @return A `json::Value` with `"trie"` and `"seq_support"` fields.
      */
     [[nodiscard]] json::Value
     getJson() const
@@ -785,7 +958,20 @@ public:
         return res;
     }
 
-    /** Check the compressed trie and support invariants.
+    /** Validate the compressed trie structure and all support invariants.
+     *
+     *  Performs a full DFS of the trie and verifies:
+     *  1. No non-root node with zero `tipSupport` has fewer than two children
+     *     (compression invariant).
+     *  2. Every node's `branchSupport` equals its `tipSupport` plus the sum of
+     *     its children's `branchSupport`.
+     *  3. Every child's `parent` pointer refers back to the correct parent node.
+     *  4. The `seqSupport_` map matches the sum of `tipSupport` values grouped by
+     *     the tip sequence number of each node.
+     *
+     *  Called after every mutation in the consensus test suite.
+     *
+     *  @return `true` if all invariants hold; `false` if any violation is found.
      */
     [[nodiscard]] bool
     checkInvariants() const

@@ -31,6 +31,26 @@
 
 namespace xrpl::NodeStore {
 
+/** Construct the node store and start the async read thread pool.
+ *
+ *  Validates three configuration parameters, then spawns and detaches
+ *  `readThreads` worker threads:
+ *  - `earliest_seq`: minimum ledger sequence the store will serve;
+ *      defaults to `kXRP_LEDGER_EARLIEST_SEQ` (32570). Must be >= 1.
+ *  - `rq_bundle`: batch dequeue size per lock acquisition; clamped [1, 64],
+ *      defaults to 4. Amortises mutex overhead under load.
+ *
+ *  Threads are detached rather than joined; their lifetime is controlled by
+ *  `readStopping_`. `stop()` spin-waits until `readThreads_` reaches zero,
+ *  providing a bounded shutdown guarantee (asserted within 30 s).
+ *
+ *  @param scheduler Task scheduler for async I/O dispatch and telemetry callbacks.
+ *  @param readThreads Number of prefetch worker threads to create. Must be > 0.
+ *  @param config Section from the node configuration, read for `earliest_seq`
+ *      and `rq_bundle` keys.
+ *  @param journal Logging sink.
+ *  @throws std::runtime_error if `earliest_seq` < 1 or `rq_bundle` is outside [1, 64].
+ */
 Database::Database(
     Scheduler& scheduler,
     int readThreads,
@@ -78,8 +98,8 @@ Database::Database(
                         if (isStopping())
                             break;
 
-                        // extract multiple object at a time to minimize the
-                        // overhead of acquiring the mutex.
+                        // Extract up to requestBundle_ entries per lock acquisition
+                        // to amortise mutex overhead without starving other threads.
                         for (int cnt = 0; !read_.empty() && cnt != requestBundle_; ++cnt)
                             read.insert(read_.extract(read_.begin()));
                     }
@@ -122,23 +142,48 @@ Database::Database(
     }
 }
 
+/** Destroy the node store.
+ *
+ *  Calls `stop()` as a safety net to drain the read queue and wait for worker
+ *  threads to exit. However, derived classes **must** call `stop()` in their
+ *  own destructors before this base destructor runs. Worker threads hold a raw
+ *  `this` pointer and invoke the virtual `fetchNodeObject()`; if the derived
+ *  vtable has already been dismantled when a thread wakes, the call resolves
+ *  against a destroyed object, causing undefined behaviour.
+ */
 Database::~Database()
 {
-    // NOTE!
-    // Any derived class should call the stop() method in its
-    // destructor.  Otherwise, occasionally, the derived class may
-    // crash during shutdown when its members are accessed by one of
-    // these threads after the derived class is destroyed but before
-    // this base class is destroyed.
     stop();
 }
 
+/** Return whether a stop has been requested.
+ *
+ *  Uses a relaxed load — only the `readStopping_` flag itself need be
+ *  observed; surrounding operations are not required to be sequentially
+ *  consistent with this check.
+ *
+ *  @return `true` once `stop()` has been called.
+ */
 bool
 Database::isStopping() const
 {
     return readStopping_.load(std::memory_order_relaxed);
 }
 
+/** Signal all worker threads to stop and block until they have fully exited.
+ *
+ *  On the first call, sets `readStopping_`, clears the pending read queue,
+ *  and broadcasts on `readCondVar_` so all blocked threads wake immediately.
+ *  Then spin-waits (yielding the CPU) until `readThreads_` drops to zero,
+ *  confirming every thread has fully exited.
+ *
+ *  Idempotent: subsequent calls are no-ops (the `exchange` guards against
+ *  double-clear).
+ *
+ *  @note Safe to call from any thread. The 30-second assertion in the
+ *      spin-wait is a hard upper bound; exceeding it indicates a deadlock
+ *      in `fetchNodeObject()` or the scheduler.
+ */
 void
 Database::stop()
 {
@@ -173,6 +218,24 @@ Database::stop()
         << " milliseconds";
 }
 
+/** Schedule a non-blocking fetch and invoke a callback on completion.
+ *
+ *  Appends `(ledgerSeq, cb)` to the entry in `read_` keyed by `hash`,
+ *  creating the entry if absent. Multiple callers requesting the same hash
+ *  coalesce into a single backend read — all their callbacks fire when the
+ *  single I/O completes. Wakes exactly one worker thread via
+ *  `readCondVar_.notify_one()`.
+ *
+ *  Silently discards the request (without invoking `cb`) if `isStopping()`
+ *  is already true at the point of the lock acquisition.
+ *
+ *  @param hash The 256-bit hash key of the desired `NodeObject`.
+ *  @param ledgerSeq Ledger sequence associated with this request; used by
+ *      `isSameDB()` to decide whether a cached fetch result can be reused
+ *      across multi-backend configurations.
+ *  @param cb Callback invoked on the worker thread when the fetch completes.
+ *      Receives the fetched `NodeObject`, or `nullptr` on cache miss.
+ */
 void
 Database::asyncFetch(
     uint256 const& hash,
@@ -188,6 +251,22 @@ Database::asyncFetch(
     }
 }
 
+/** Copy all objects from `srcDB` into `dstBackend` in batches.
+ *
+ *  Iterates `srcDB` via `forEach()` and accumulates `NodeObject`s into a
+ *  `Batch`. When the batch reaches `kBATCH_WRITE_PREALLOCATION_SIZE`, it is
+ *  flushed to `dstBackend.storeBatch()` and byte statistics are recorded via
+ *  `storeStats()`. Any remaining objects after iteration are flushed in a
+ *  final partial batch.
+ *
+ *  Exceptions from `storeBatch()` are caught and logged but do not abort the
+ *  import — partial progress is preferred over a complete rollback in what may
+ *  be a long-running migration.
+ *
+ *  @param dstBackend Destination backend to write objects into.
+ *  @param srcDB Source database to read objects from; `forEach()` is called
+ *      on this object and must not be called concurrently.
+ */
 void
 Database::importInternal(Backend& dstBackend, Database& srcDB)
 {
@@ -225,7 +304,24 @@ Database::importInternal(Backend& dstBackend, Database& srcDB)
         storeBatch();
 }
 
-// Perform a fetch and report the time it took
+/** Instrumentation shim around the private virtual `fetchNodeObject`.
+ *
+ *  Delegates to the subclass implementation, then records wall-clock elapsed
+ *  time in `fetchDurationUs_`, increments `fetchHitCount_` and `fetchSz_` on
+ *  a hit, increments `fetchTotalCount_` unconditionally, and reports the
+ *  completed fetch to the `Scheduler` via `scheduler_.onFetch()`. The
+ *  scheduler hook allows the task-prioritisation layer to monitor backend
+ *  performance dynamically.
+ *
+ *  @param hash The 256-bit hash key of the desired `NodeObject`.
+ *  @param ledgerSeq Ledger sequence passed through to the backend; used by
+ *      rotating-backend implementations to select writable vs. archive.
+ *  @param fetchType Whether the fetch originates from a synchronous or
+ *      asynchronous code path; passed through to `FetchReport`.
+ *  @param duplicate When `true`, the caller already has a copy of this object;
+ *      the backend may skip promotion to the writable store.
+ *  @return The retrieved `NodeObject`, or `nullptr` on cache miss or error.
+ */
 std::shared_ptr<NodeObject>
 Database::fetchNodeObject(
     uint256 const& hash,
@@ -253,6 +349,23 @@ Database::fetchNodeObject(
     return nodeObject;
 }
 
+/** Populate a JSON object with live operational metrics for this database.
+ *
+ *  Writes the following keys into `obj`:
+ *  - `read_queue`: current depth of the pending async read map.
+ *  - `read_threads_total` / `read_threads_running`: total and actively
+ *      processing worker thread counts.
+ *  - `read_request_bundle`: configured batch dequeue size (`rq_bundle`).
+ *  - `node_writes`, `node_written_bytes`: cumulative store count and bytes.
+ *  - `node_reads_total`, `node_reads_hit`, `node_read_bytes`: fetch counts
+ *      and bytes, distinguishing hits from total attempts.
+ *  - `node_reads_duration_us`: cumulative backend read latency in microseconds.
+ *
+ *  This data surfaces via the `get_counts` RPC command and is valuable for
+ *  diagnosing I/O bottlenecks in production nodes.
+ *
+ *  @param obj A JSON object to populate; must satisfy `obj.isObject()`.
+ */
 void
 Database::getCountsJson(json::Value& obj)
 {

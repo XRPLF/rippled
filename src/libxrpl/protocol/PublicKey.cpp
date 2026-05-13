@@ -1,3 +1,14 @@
+/** @file
+ *  Implementation of XRPL public key construction, type detection,
+ *  signature canonicality enforcement, signature verification, and
+ *  node identity derivation.
+ *
+ *  Both supported elliptic curve systems — secp256k1 and Ed25519 — are
+ *  handled here. The 33-byte inline buffer in `PublicKey` unifies them:
+ *  secp256k1 compressed keys are natively 33 bytes (0x02/0x03 prefix),
+ *  while Ed25519 keys are 32 bytes prefixed with the XRPL-specific 0xED
+ *  marker. The lead byte therefore acts as a self-describing type tag.
+ */
 #include <xrpl/protocol/PublicKey.h>
 
 #include <xrpl/basics/Slice.h>
@@ -31,6 +42,19 @@ operator<<(std::ostream& os, PublicKey const& pk)
     return os;
 }
 
+/** Decode a Base58Check-encoded public key.
+ *
+ *  Validates both the Base58 token-type framing and the decoded key bytes
+ *  via `publicKeyType`. Safe to call on untrusted input: any malformed or
+ *  unrecognized encoding returns `std::nullopt` rather than throwing.
+ *
+ *  @param type The expected `TokenType` prefix (e.g. `NodePublic` or
+ *      `AccountPublic`).
+ *  @param s The Base58Check-encoded string to decode.
+ *  @return A `PublicKey` on success, or `std::nullopt` if the string is
+ *      not valid Base58Check for the given type or the decoded bytes do
+ *      not represent a recognized key type.
+ */
 template <>
 std::optional<PublicKey>
 parseBase58(TokenType type, std::string const& s)
@@ -44,8 +68,18 @@ parseBase58(TokenType type, std::string const& s)
 
 //------------------------------------------------------------------------------
 
-// Parse a length-prefixed number
-//  Format: 0x02 <length-byte> <number>
+/** Parse and consume one DER integer component from a signature buffer.
+ *
+ *  Expects the encoding `0x02 <length> <value>` at the start of `buf`.
+ *  Advances `buf` past the consumed bytes on success. Rejects values
+ *  that are negative (high bit set), zero, or carry unnecessary zero
+ *  padding — all real DER malformations observed in practice.
+ *
+ *  @param buf Buffer positioned at the start of the integer tag; advanced
+ *      in place past the consumed component on success.
+ *  @return A `Slice` over the integer bytes, or `std::nullopt` if the
+ *      encoding is invalid.
+ */
 static std::optional<Slice>
 sigPart(Slice& buf)
 {
@@ -55,15 +89,15 @@ sigPart(Slice& buf)
     buf += 2;
     if (len > buf.size() || len < 1 || len > 33)
         return std::nullopt;
-    // Can't be negative
     if ((buf[0] & 0x80) != 0)
         return std::nullopt;
     if (buf[0] == 0)
     {
-        // Can't be zero
+        // A single zero byte is not a valid integer encoding.
         if (len == 1)
             return std::nullopt;
-        // Can't be padded
+        // A leading zero is only valid when it prevents the high bit
+        // from being interpreted as a sign bit.
         if ((buf[1] & 0x80) == 0)
             return std::nullopt;
     }
@@ -72,6 +106,17 @@ sigPart(Slice& buf)
     return number;
 }
 
+/** Convert a raw byte slice to a non-negative hex literal for big-integer parsing.
+ *
+ *  Produces a `"0x..."` string suitable for constructing a
+ *  `boost::multiprecision::number`. When the high bit of the first byte is
+ *  set the output is prefixed with `"0x00"` to ensure the value is treated
+ *  as a non-negative integer by the multiprecision parser.
+ *
+ *  @param slice The big-endian byte sequence to encode.
+ *  @return A hex string starting with `"0x"` representing the unsigned
+ *      integer value of `slice`.
+ */
 static std::string
 sliceToHex(Slice const& slice)
 {
@@ -95,18 +140,34 @@ sliceToHex(Slice const& slice)
     return s;
 }
 
-/** Determine whether a signature is canonical.
-    Canonical signatures are important to protect against signature morphing
-    attacks.
-    @param vSig the signature data
-    @param sigLen the length of the signature
-    @param strict_param whether to enforce strictly canonical semantics
-
-    @note For more details please see:
-    https://xrpl.org/transaction-malleability.html
-    https://bitcointalk.org/index.php?topic=8392.msg127623#msg127623
-    https://github.com/sipa/bitcoin/commit/58bc86e37fda1aec270bccb3df6c20fbd2a6591c
-*/
+/** Classify the canonicality of a DER-encoded secp256k1 ECDSA signature.
+ *
+ *  For any signed message, `(R, S)` and `(R, G-S)` are both mathematically
+ *  valid ECDSA signatures. Allowing both forms enables transaction
+ *  malleability: an attacker can flip S to produce a different serialization
+ *  — and thus a different transaction ID — without invalidating the
+ *  signature. XRPL addresses this by defining a *fully canonical* signature
+ *  as one where `S <= G/2` (equivalently `S <= G-S`). Signatures where
+ *  `S > G/2` are *canonical* but not fully canonical; callers may choose
+ *  whether to accept them.
+ *
+ *  The DER structure checked is:
+ *  `0x30 <total-len> 0x02 <lenR> <R> 0x02 <lenS> <S>`
+ *
+ *  Only the structure and canonicality of the encoding are checked; no
+ *  cryptographic verification is performed.
+ *
+ *  @param sig DER-encoded ECDSA signature to examine.
+ *  @return `ECDSACanonicality::FullyCanonical` if `S <= G-S`,
+ *      `ECDSACanonicality::Canonical` if `S > G-S` but the signature is
+ *      otherwise structurally valid, or `std::nullopt` if the encoding is
+ *      malformed (wrong header bytes, invalid integer components, R or S
+ *      outside the curve order, trailing bytes, etc.).
+ *
+ *  @note See https://xrpl.org/transaction-malleability.html for the
+ *      broader context on malleability and the rationale for requiring
+ *      fully canonical signatures.
+ */
 std::optional<ECDSACanonicality>
 ecdsaCanonicality(Slice const& sig)
 {
@@ -117,11 +178,11 @@ ecdsaCanonicality(Slice const& sig)
         boost::multiprecision::unchecked,
         void>>;
 
+    // secp256k1 curve order G.
     static uint264 const kG(
         "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");  // NOLINT(readability-identifier-naming)
 
-    // The format of a signature should be:
-    // <30> <len> [ <02> <lenR> <R> ] [ <02> <lenS> <S> ]
+    // DER structure: 0x30 <len> [ 0x02 <lenR> <R> ] [ 0x02 <lenS> <S> ]
     if ((sig.size() < 8) || (sig.size() > 72))
         return std::nullopt;
     if ((sig[0] != 0x30) || (sig[1] != (sig.size() - 2)))
@@ -140,37 +201,58 @@ ecdsaCanonicality(Slice const& sig)
     if (sNum >= kG)
         return std::nullopt;
 
-    // (R,S) and (R,G-S) are canonical,
-    // but is fully canonical when S <= G-S
+    // Both (R,S) and (R,G-S) are canonical; only S <= G-S is fully canonical.
     auto const Sp = kG - sNum;  // NOLINT(readability-identifier-naming)
     if (sNum > Sp)
         return ECDSACanonicality::Canonical;
     return ECDSACanonicality::FullyCanonical;
 }
 
+/** Check whether an Ed25519 signature's scalar S is in canonical form.
+ *
+ *  Per the Ed25519 spec, the second 32 bytes of a signature encode the
+ *  scalar S in little-endian order. S must be strictly less than the
+ *  Ed25519 subgroup order `l` to be canonical; signatures with `S >= l`
+ *  are rejected to prevent malleability analogous to ECDSA.
+ *
+ *  @param sig The 64-byte Ed25519 signature to check.
+ *  @return `true` if the signature is exactly 64 bytes and `S < l`,
+ *      `false` otherwise.
+ */
 static bool
 ed25519Canonical(Slice const& sig)
 {
     if (sig.size() != 64)
         return false;
-    // Big-endian Order, the Ed25519 subgroup order
+    // Big-endian representation of the Ed25519 subgroup order l.
     // NOLINTNEXTLINE(readability-identifier-naming)
     std::uint8_t const Order[] = {
         0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x14, 0xDE, 0xF9, 0xDE, 0xA2, 0xF7,
         0x9C, 0xD6, 0x58, 0x12, 0x63, 0x1A, 0x5C, 0xF5, 0xD3, 0xED,
     };
-    // Take the second half of signature
-    // and byte-reverse it to big-endian.
+    // S is the second 32 bytes of the signature, stored little-endian;
+    // byte-reverse to big-endian for lexicographic comparison.
     auto const le = sig.data() + 32;
     std::uint8_t S[32];  // NOLINT(readability-identifier-naming)
     std::reverse_copy(le, le + 32, S);
-    // Must be less than Order
     return std::lexicographical_compare(S, S + 32, Order, Order + 32);
 }
 
 //------------------------------------------------------------------------------
 
+/** Construct a `PublicKey` from a raw byte slice.
+ *
+ *  Copies exactly `kSIZE` (33) bytes from `slice` after validating that
+ *  the bytes represent a recognised key type (secp256k1 or Ed25519).
+ *  Calls `logicError` — which terminates the process — rather than
+ *  throwing, because receiving an invalid key here indicates a
+ *  programming error (e.g., bypassed deserialization), not a recoverable
+ *  runtime condition.
+ *
+ *  @param slice Byte sequence to construct from; must be at least 33 bytes
+ *      long and satisfy `publicKeyType(slice) != std::nullopt`.
+ */
 PublicKey::PublicKey(Slice const& slice)
 {
     if (slice.size() < kSIZE)
@@ -185,11 +267,13 @@ PublicKey::PublicKey(Slice const& slice)
     std::memcpy(buf_, slice.data(), kSIZE);
 }
 
+/** Copy-construct a `PublicKey` using a direct 33-byte `memcpy`. */
 PublicKey::PublicKey(PublicKey const& other)
 {
     std::memcpy(buf_, other.buf_, kSIZE);
 }
 
+/** Copy-assign a `PublicKey` using a direct 33-byte `memcpy`. */
 PublicKey&
 PublicKey::operator=(PublicKey const& other)
 {
@@ -203,6 +287,17 @@ PublicKey::operator=(PublicKey const& other)
 
 //------------------------------------------------------------------------------
 
+/** Determine the key type encoded in a raw 33-byte key slice.
+ *
+ *  Uses the lead byte as a self-describing type tag: `0xED` signals an
+ *  Ed25519 key (XRPL's prefix convention); `0x02` or `0x03` signal a
+ *  secp256k1 compressed public key. Any other lead byte, or a slice that
+ *  is not exactly 33 bytes, is unrecognised.
+ *
+ *  @param slice Raw bytes to inspect.
+ *  @return The detected `KeyType`, or `std::nullopt` if the slice does
+ *      not represent a known key type.
+ */
 std::optional<KeyType>
 publicKeyType(Slice const& slice)
 {

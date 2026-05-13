@@ -1,3 +1,27 @@
+/** @file
+ *  Implements `xrpl::Cluster`, the in-process registry of trusted cluster
+ *  peers for an XRPL node.
+ *
+ *  Cluster membership is loaded once at startup from the `[cluster_nodes]`
+ *  configuration section and then kept up to date via `TMCluster` gossip
+ *  messages received from overlay peers. Being registered here grants a peer
+ *  elevated trust: its load-fee gossip is propagated network-wide and it is
+ *  exempt from anonymous-peer throttling.
+ *
+ *  Storage is a `std::set<ClusterNode, Comparator>` with a transparent
+ *  comparator that supports `find(PublicKey)` without constructing a temporary
+ *  `ClusterNode`. Because `std::set` elements are logically immutable after
+ *  insertion, state updates (name, load fee, report time) use an
+ *  erase-then-reinsert pattern rather than in-place mutation.
+ *
+ *  All public methods are guarded by `mutex_` (non-recursive). The `forEach`
+ *  callback must not call `update` — both would attempt to acquire the same
+ *  mutex on the same thread, causing a deadlock.
+ *
+ *  @see Cluster
+ *  @see ClusterNode
+ */
+
 #include <xrpld/overlay/Cluster.h>
 
 #include <xrpld/overlay/ClusterNode.h>

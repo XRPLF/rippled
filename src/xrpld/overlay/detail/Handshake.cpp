@@ -1,3 +1,21 @@
+/** @file
+ *  Application-layer handshake exchanged immediately after TLS connection.
+ *
+ *  Responsibilities of this translation unit:
+ *  - Derive a TLS-channel-bound shared value (`makeSharedValue`) that ties
+ *    the node-identity proof to the specific TLS session, preventing MITM
+ *    attacks even though TLS certificate verification is disabled.
+ *  - Build (`buildHandshake`) and verify (`verifyHandshake`) the HTTP upgrade
+ *    headers carrying node public keys, signatures, clock values, and IP
+ *    cross-checks.
+ *  - Negotiate optional protocol features (LZ4 compression, ledger replay,
+ *    TX reduce-relay, VP reduce-relay) via `X-Protocol-Ctl` headers.
+ *  - Assemble the outbound HTTP upgrade request (`makeRequest`) and the 101
+ *    Switching Protocols response (`makeResponse`).
+ *
+ *  Neither side begins exchanging XRPL protocol messages until
+ *  `verifyHandshake` succeeds.
+ */
 #include <xrpld/overlay/detail/Handshake.h>
 
 #include <xrpld/app/ledger/LedgerMaster.h>
@@ -47,6 +65,16 @@
 
 namespace xrpl {
 
+/** Extract the raw value string for a named feature from `X-Protocol-Ctl`.
+ *
+ *  Searches the `X-Protocol-Ctl` header for a `feature=<value>` token using
+ *  a regex that stops at `;` or whitespace, matching only the first occurrence.
+ *
+ *  @param headers HTTP headers to search.
+ *  @param feature Feature name (e.g. `"compr"`, `"txrr"`).
+ *  @return The value string if found; `std::nullopt` if the header is absent
+ *      or the feature is not present.
+ */
 std::optional<std::string>
 getFeatureValue(boost::beast::http::fields const& headers, std::string const& feature)
 {
@@ -61,6 +89,18 @@ getFeatureValue(boost::beast::http::fields const& headers, std::string const& fe
     return {};
 }
 
+/** Check whether a feature's value matches a given string using RFC 2616
+ *  token-list semantics.
+ *
+ *  Delegates to `beast::rfc2616::tokenInList`, which correctly handles
+ *  comma-separated value lists (e.g. `compr=lz4,zstd`).
+ *
+ *  @param headers HTTP headers to inspect.
+ *  @param feature Feature name to look up.
+ *  @param value   Single token to match against (not a list itself).
+ *  @return `true` if the feature is present and its value list contains
+ *      `value`; `false` if absent or no match.
+ */
 bool
 isFeatureValue(
     boost::beast::http::fields const& headers,
@@ -73,12 +113,32 @@ isFeatureValue(
     return false;
 }
 
+/** Return `true` if the named feature is present with value `"1"`.
+ *
+ *  Thin wrapper over `isFeatureValue(..., "1")` — the conventional
+ *  boolean-enable sentinel used in `X-Protocol-Ctl`.
+ *
+ *  @param headers HTTP headers to inspect.
+ *  @param feature Feature name to look up.
+ */
 bool
 featureEnabled(boost::beast::http::fields const& headers, std::string const& feature)
 {
     return isFeatureValue(headers, feature, "1");
 }
 
+/** Build the `X-Protocol-Ctl` value for an outbound connection request.
+ *
+ *  The initiator unconditionally advertises every locally enabled feature.
+ *  The responder will echo back only those it also supports (see
+ *  `makeFeaturesResponseHeader`), achieving single-round-trip negotiation.
+ *
+ *  @param comprEnabled          Advertise LZ4 compression (`compr=lz4`).
+ *  @param ledgerReplayEnabled   Advertise ledger-replay (`ledgerreplay=1`).
+ *  @param txReduceRelayEnabled  Advertise TX reduce-relay (`txrr=1`).
+ *  @param vpReduceRelayEnabled  Advertise VP reduce-relay (`vprr=1`).
+ *  @return Semicolon-delimited feature string, empty if no features enabled.
+ */
 std::string
 makeFeaturesRequestHeader(
     bool comprEnabled,
@@ -98,6 +158,19 @@ makeFeaturesRequestHeader(
     return str.str();
 }
 
+/** Build the `X-Protocol-Ctl` value for a 101 Switching Protocols response.
+ *
+ *  A feature is echoed back only when it is both locally configured *and*
+ *  present in the peer's request header. This AND-gate ensures both sides
+ *  converge on the same enabled feature set without an extra round-trip.
+ *
+ *  @param headers               The incoming HTTP upgrade request headers.
+ *  @param comprEnabled          Accept LZ4 compression if peer requested it.
+ *  @param ledgerReplayEnabled   Accept ledger-replay if peer requested it.
+ *  @param txReduceRelayEnabled  Accept TX reduce-relay if peer requested it.
+ *  @param vpReduceRelayEnabled  Accept VP reduce-relay if peer requested it.
+ *  @return Semicolon-delimited feature string, empty if no features agreed.
+ */
 std::string
 makeFeaturesResponseHeader(
     http_request_type const& headers,
@@ -118,20 +191,27 @@ makeFeaturesResponseHeader(
     return str.str();
 }
 
-/** Hashes the latest finished message from an SSL stream.
-
-    @param ssl the session to get the message from.
-    @param get a pointer to the function to call to retrieve the finished
-               message. This can be either:
-               - `SSL_get_finished` or
-               - `SSL_get_peer_finished`.
-    @return `true` if successful, `false` otherwise.
-
-    @note This construct is non-standard. There are potential "standard"
-          alternatives that should be considered. For a discussion, on
-          this topic, see https://github.com/openssl/openssl/issues/5509 and
-          https://github.com/XRPLF/rippled/issues/2413.
-*/
+/** Retrieve and SHA-512 hash a TLS finished message.
+ *
+ *  Calls `get` (either `SSL_get_finished` or `SSL_get_peer_finished`) to
+ *  copy the raw TLS finished message into a stack buffer, then computes its
+ *  SHA-512 digest. The finished message is derived from the full TLS
+ *  handshake transcript, so it is unique to this specific TLS session.
+ *
+ *  Returns `std::nullopt` if the finished message is shorter than the
+ *  RFC-mandated minimum (12 bytes), which indicates the TLS handshake has
+ *  not yet completed on that side.
+ *
+ *  @param ssl The SSL session to query.
+ *  @param get Function pointer — either `SSL_get_finished` (local side) or
+ *      `SSL_get_peer_finished` (remote side).
+ *  @return 512-bit digest of the finished message, or `std::nullopt` if the
+ *      handshake is not yet complete.
+ *
+ *  @note This approach is non-standard. For alternatives and discussion, see
+ *      https://github.com/openssl/openssl/issues/5509 and
+ *      https://github.com/XRPLF/rippled/issues/2413.
+ */
 static std::optional<BaseUInt<512>>
 hashLastMessage(SSL const* ssl, size_t (*get)(const SSL*, void*, size_t))
 {
@@ -150,6 +230,29 @@ hashLastMessage(SSL const* ssl, size_t (*get)(const SSL*, void*, size_t))
     return cookie;
 }
 
+/** Derive a 256-bit value that is cryptographically bound to this TLS session.
+ *
+ *  Algorithm:
+ *  1. SHA-512 hash our own TLS finished message (`SSL_get_finished`).
+ *  2. SHA-512 hash the peer's TLS finished message (`SSL_get_peer_finished`).
+ *  3. XOR the two 512-bit digests.
+ *  4. Reduce to 256 bits via `sha512Half`.
+ *
+ *  Because TLS finished messages are derived from a transcript of the entire
+ *  TLS handshake, both endpoints compute the same value only when they share
+ *  the same session. A man-in-the-middle terminates two separate TLS sessions,
+ *  producing different finished messages and therefore a different shared
+ *  value — which causes `verifyHandshake` to reject the signature.
+ *
+ *  A degenerate edge case — both finished messages hashing to the same
+ *  512-bit value, yielding an all-zero XOR — is treated as a hard failure to
+ *  avoid a trivially forgeable shared value.
+ *
+ *  @param ssl     The established TLS stream whose finished messages are read.
+ *  @param journal For error logging when either finished message is unavailable
+ *      or the degenerate zero case is detected.
+ *  @return The 256-bit shared value, or `std::nullopt` on any failure.
+ */
 std::optional<uint256>
 makeSharedValue(stream_type& ssl, beast::Journal journal)
 {
@@ -169,8 +272,6 @@ makeSharedValue(stream_type& ssl, beast::Journal journal)
 
     auto const result = (*cookie1 ^ *cookie2);
 
-    // Both messages hash to the same value and the cookie
-    // is 0. Don't allow this.
     if (result == beast::kZERO)
     {
         JLOG(journal.error()) << "Cookie generation: identical finished messages";
@@ -180,6 +281,32 @@ makeSharedValue(stream_type& ssl, beast::Journal journal)
     return sha512Half(Slice(result.data(), result.size()));
 }
 
+/** Populate HTTP upgrade headers with node identity, authentication, and hints.
+ *
+ *  Inserts the following fields:
+ *  - `Network-ID` — if configured, allows early cross-network detection
+ *    before spending resources on full negotiation.
+ *  - `Network-Time` — local XRPL clock value; recipient enforces ±20 s
+ *    tolerance to prevent replay and clock-skew attacks.
+ *  - `Public-Key` — base58-encoded secp256k1 node identity key.
+ *  - `Session-Signature` — `sharedValue` signed by the node private key,
+ *    base64-encoded. Proves key possession and binds identity to this TLS
+ *    session (see `verifyHandshake`).
+ *  - `Instance-Cookie` — runtime-unique identifier for duplicate-connection
+ *    detection.
+ *  - `Server-Domain` — optional TOML domain hint (omitted if unconfigured).
+ *  - `Remote-IP` — peer's observed IP, if public; aids NAT diagnostics.
+ *  - `Local-IP` — our public IP, if known; aids NAT diagnostics.
+ *  - `Closed-Ledger` / `Previous-Ledger` — hex hashes of the most recent
+ *    closed ledger header, if available.
+ *
+ *  @param h           Header fields container to populate (request or response).
+ *  @param sharedValue TLS-channel-bound value from `makeSharedValue`.
+ *  @param networkID   Optional network identifier from configuration.
+ *  @param publicIp    Our public IP address (may be unspecified).
+ *  @param remoteIp    The peer's IP address as seen from our socket.
+ *  @param app         Application reference for clock, identity, and config.
+ */
 void
 buildHandshake(
     boost::beast::http::fields& h,
@@ -191,9 +318,6 @@ buildHandshake(
 {
     if (networkID)
     {
-        // The network identifier, if configured, can be used to specify
-        // what network we intend to connect to and detect if the remote
-        // end connects to the same network.
         h.insert("Network-ID", std::to_string(*networkID));
     }
 
@@ -225,6 +349,36 @@ buildHandshake(
     }
 }
 
+/** Validate peer identity headers and return the peer's public key.
+ *
+ *  Performs layered checks, cheapest first:
+ *  1. `Server-Domain` — must be a well-formed TOML domain if present.
+ *  2. `Network-ID` — must match our configured network identifier if both
+ *     sides supply one; mismatch is an early reject before crypto work.
+ *  3. `Network-Time` — must be within ±20 s of our local XRPL clock.
+ *  4. `Public-Key` — must parse as a valid secp256k1 node public key.
+ *  5. `Session-Signature` — the peer's signature of `sharedValue` under
+ *     its claimed public key. This check simultaneously proves:
+ *     (a) the peer holds the private key matching the claimed identity, and
+ *     (b) the TLS session is end-to-end with that node — a MITM terminating
+ *         two separate TLS sessions would produce a different `sharedValue`
+ *         and therefore an invalid signature.
+ *  6. Self-connection guard — rejects a connection to our own node key.
+ *  7. `Local-IP` cross-check — if the peer's observed public IP is known,
+ *     it must match what the peer claims as its own local IP.
+ *  8. `Remote-IP` cross-check — if both our public IP and the peer's public
+ *     address are known, the peer's reported remote IP must match ours.
+ *
+ *  @param headers     HTTP headers from the upgrade request or response.
+ *  @param sharedValue TLS-channel-bound value from `makeSharedValue`.
+ *  @param networkID   Our configured network identifier, if any.
+ *  @param publicIp    Our public IP address (may be unspecified).
+ *  @param remote      The peer's IP address as seen from our socket.
+ *  @param app         Application reference for clock, identity, and config.
+ *  @return The peer's authenticated public key.
+ *  @throws std::runtime_error on any validation failure; callers should
+ *      catch and tear down the connection.
+ */
 PublicKey
 verifyHandshake(
     boost::beast::http::fields const& headers,
@@ -301,12 +455,6 @@ verifyHandshake(
         throw std::runtime_error("Bad node public key");
     }();
 
-    // This check gets two birds with one stone:
-    //
-    // 1) it verifies that the node we are talking to has access to the
-    //    private key corresponding to the public node identity it claims.
-    // 2) it verifies that our SSL session is end-to-end with that node
-    //    and not through a proxy that establishes two separate sessions.
     {
         auto const iter = headers.find("Session-Signature");
 
@@ -347,8 +495,6 @@ verifyHandshake(
 
         if (beast::IP::isPublic(remote) && !beast::IP::isUnspecified(publicIp))
         {
-            // We know our public IP and peer reports our connection came
-            // from some other IP.
             if (remoteIp != publicIp)
             {
                 throw std::runtime_error(
@@ -361,6 +507,22 @@ verifyHandshake(
     return publicKey;
 }
 
+/** Build the outbound HTTP/1.1 upgrade request that initiates a peer connection.
+ *
+ *  Uses the WebSocket-style protocol upgrade pattern so the handshake looks
+ *  like a standard HTTP upgrade to any intermediate infrastructure:
+ *  `Connection: Upgrade`, `Upgrade: <supported protocol versions>`,
+ *  `Connect-As: Peer`. The `X-Protocol-Ctl` header is populated with all
+ *  locally enabled features via `makeFeaturesRequestHeader` — the responder
+ *  will echo back only the intersection.
+ *
+ *  @param crawlPublic           If `true`, advertise `Crawl: public`.
+ *  @param comprEnabled          Advertise LZ4 compression support.
+ *  @param ledgerReplayEnabled   Advertise ledger-replay support.
+ *  @param txReduceRelayEnabled  Advertise TX reduce-relay support.
+ *  @param vpReduceRelayEnabled  Advertise VP reduce-relay support.
+ *  @return An HTTP request with empty body ready for async write.
+ */
 auto
 makeRequest(
     bool crawlPublic,
@@ -385,6 +547,23 @@ makeRequest(
     return m;
 }
 
+/** Build the 101 Switching Protocols response that accepts a peer connection.
+ *
+ *  Sets the agreed `ProtocolVersion` in the `Upgrade` header (narrowing from
+ *  the list of versions the initiator offered), echoes only the mutually
+ *  supported features via `makeFeaturesResponseHeader`, and then populates
+ *  all identity and authentication fields via `buildHandshake`.
+ *
+ *  @param crawlPublic  If `true`, advertise `Crawl: public`.
+ *  @param req          The incoming HTTP upgrade request.
+ *  @param publicIp     Our public IP address (may be unspecified).
+ *  @param remoteIp     The peer's IP address as seen from our socket.
+ *  @param sharedValue  TLS-channel-bound value from `makeSharedValue`.
+ *  @param networkID    Our configured network identifier, if any.
+ *  @param protocol     The single agreed protocol version to echo back.
+ *  @param app          Application reference for config, clock, and identity.
+ *  @return A complete HTTP response ready for async write.
+ */
 http_response_type
 makeResponse(
     bool crawlPublic,

@@ -1,3 +1,13 @@
+/** @file
+ *  Implements the `ValidLoan` invariant checker for `ltLOAN` ledger objects
+ *  introduced by the XLS-66d Lending Protocol.
+ *
+ *  This checker runs after every transaction — including failing ones — and
+ *  enforces five numeric and state-consistency invariants on every `ltLOAN`
+ *  entry touched by the transaction. A `false` return from `finalize` causes
+ *  the transaction to be rolled back and escalated to `tecINVARIANT_FAILED`.
+ *  See `LoanInvariant.h` for the full invariant specification.
+ */
 #include <xrpl/tx/invariants/LoanInvariant.h>
 
 #include <xrpl/basics/Log.h>
@@ -41,8 +51,9 @@ ValidLoan::finalize(
 
     for (auto const& [before, after] : loans_)
     {
+        // XLS-66d §3.2.2.3: sfPaymentRemaining == 0 iff all outstanding
+        // balance fields are zero (payment schedule and balances must agree).
         // https://github.com/Tapanito/XRPL-Standards/blob/xls-66-lending-protocol/XLS-0066d-lending-protocol/README.md#3223-invariants
-        // If `Loan.PaymentRemaining = 0` then the loan MUST be fully paid off
         if (after->at(sfPaymentRemaining) == 0 &&
             (after->at(sfTotalValueOutstanding) != beast::kZERO ||
              after->at(sfPrincipalOutstanding) != beast::kZERO ||
@@ -52,8 +63,6 @@ ValidLoan::finalize(
                                "remaining has not been paid off";
             return false;
         }
-        // If `Loan.PaymentRemaining != 0` then the loan MUST NOT be fully paid
-        // off
         if (after->at(sfPaymentRemaining) != 0 &&
             after->at(sfTotalValueOutstanding) == beast::kZERO &&
             after->at(sfPrincipalOutstanding) == beast::kZERO &&

@@ -1,3 +1,33 @@
+/** @file
+ *  Compression codec for NodeStore blobs written to and read from NuDB.
+ *
+ *  Every `NodeObject` value stored in the NuDB backend passes through either
+ *  `nodeobjectCompress` or `nodeobjectDecompress`. The on-disk format is a
+ *  leading varint type tag followed by a type-specific payload:
+ *
+ *  | Tag | Format |
+ *  |-----|--------|
+ *  | 0   | Uncompressed (legacy; readable but never written) |
+ *  | 1   | LZ4-compressed payload |
+ *  | 2   | Sparse inner-node (16-bit presence bitmask + non-zero hashes) |
+ *  | 3   | Full inner-node (all 16 hashes, no bitmask) |
+ *
+ *  SHAMap inner nodes (exactly 525 bytes with `HashPrefix::InnerNode`) receive
+ *  a specialized encoding that out-performs LZ4 on their typical hash density.
+ *  All other objects are LZ4-compressed (type 1). The codec reconstructs inner
+ *  nodes with `index`, `unused`, and `kind` fields zeroed, so those fields are
+ *  not preserved across a round-trip.
+ *
+ *  All functions follow the `BufferFactory` pattern: callers supply a callable
+ *  `void*(std::size_t)` that allocates output memory. The codec never frees
+ *  memory; ownership remains with the caller's factory object.
+ *
+ *  @note This header is an implementation detail of the NuDB backend and the
+ *      NodeStore import tool. It is not part of the public NodeStore API.
+ *
+ *  @see nodeobjectCompress, nodeobjectDecompress, filterInner
+ */
+
 #pragma once
 
 // Disable lz4 deprecation warning due to incompatibility with clang attributes
@@ -19,6 +49,25 @@
 
 namespace xrpl::NodeStore {
 
+/** Decompress an LZ4-compressed blob produced by `lz4Compress`.
+ *
+ *  Reads a leading varint that encodes the original uncompressed size,
+ *  allocates exactly that many bytes via `bf`, then calls
+ *  `LZ4_decompress_safe` into the allocated buffer.
+ *
+ *  @tparam BufferFactory Callable with signature `void*(std::size_t n)` that
+ *      allocates `n` bytes and returns a pointer to them. The codec does not
+ *      free this memory; lifetime is governed by the caller.
+ *  @param in Pointer to the compressed input buffer (varint prefix + LZ4 data).
+ *  @param inSize Number of bytes at `in`.
+ *  @param bf Factory used to allocate the decompressed output buffer.
+ *  @return Pair of (pointer to decompressed data, decompressed byte count).
+ *      The pointer is the buffer returned by `bf`.
+ *  @throws std::runtime_error if `inSize` would overflow `int`, if the leading
+ *      varint is missing or occupies the entire buffer, if the decompressed
+ *      size would overflow `int`, or if `LZ4_decompress_safe` returns a byte
+ *      count that does not match the expected output size.
+ */
 template <class BufferFactory>
 std::pair<void const*, std::size_t>
 lz4Decompress(void const* in, std::size_t inSize, BufferFactory&& bf)
@@ -48,6 +97,24 @@ lz4Decompress(void const* in, std::size_t inSize, BufferFactory&& bf)
     return {out, outSize};
 }
 
+/** Compress a raw blob using LZ4 and prepend the uncompressed size as a varint.
+ *
+ *  Allocates a single output buffer via `bf` sized for the varint prefix plus
+ *  `LZ4_compressBound(inSize)` bytes (worst-case LZ4 output), then writes the
+ *  varint followed by the compressed payload. The returned size reflects the
+ *  actual compressed size, not the worst-case bound.
+ *
+ *  @tparam BufferFactory Callable with signature `void*(std::size_t n)` that
+ *      allocates `n` bytes and returns a pointer to them. The codec does not
+ *      free this memory; lifetime is governed by the caller.
+ *  @param in Pointer to the uncompressed input data.
+ *  @param inSize Number of bytes at `in`.
+ *  @param bf Factory used to allocate the output buffer.
+ *  @return Pair of (pointer to compressed output, compressed byte count
+ *      including the varint prefix). The pointer is the buffer returned by `bf`.
+ *  @throws std::runtime_error if `LZ4_compress_default` returns 0 (compression
+ *      failure).
+ */
 template <class BufferFactory>
 std::pair<void const*, std::size_t>
 lz4Compress(void const* in, std::size_t inSize, BufferFactory&& bf)
@@ -69,17 +136,29 @@ lz4Compress(void const* in, std::size_t inSize, BufferFactory&& bf)
     return result;
 }
 
-//------------------------------------------------------------------------------
-
-/*
-    object types:
-
-    0 = Uncompressed
-    1 = lz4 compressed
-    2 = inner node compressed
-    3 = full inner node
-*/
-
+/** Decompress a NodeStore blob encoded by `nodeobjectCompress`.
+ *
+ *  Reads the leading varint type tag and dispatches to the appropriate decoder:
+ *  - Type 0: uncompressed legacy data — returned as a non-owning view into `in`.
+ *  - Type 1: delegates to `lz4Decompress`.
+ *  - Type 2: sparse inner-node — reads a 16-bit bitmask, then reconstructs a
+ *      525-byte SHAMap inner-node blob with only the non-zero child hashes
+ *      filled in and `index`/`unused`/`kind` fields zeroed.
+ *  - Type 3: full inner-node — reads all 512 bytes of child hashes directly and
+ *      reconstructs the 525-byte blob with metadata fields zeroed.
+ *
+ *  @tparam BufferFactory Callable with signature `void*(std::size_t n)` that
+ *      allocates `n` bytes and returns a pointer to them. Not invoked for type 0
+ *      (the returned pointer into `in` is valid only as long as `in` is alive).
+ *  @param in Pointer to the encoded input buffer.
+ *  @param inSize Number of bytes at `in`.
+ *  @param bf Factory used to allocate decoded output for types 1–3.
+ *  @return Pair of (pointer to decoded data, decoded byte count).
+ *  @throws std::runtime_error if the type varint is missing, if any size check
+ *      fails during inner-node reconstruction, or if the type tag is unrecognized.
+ *  @note For type 0 the returned pointer aliases `in`; for types 1–3 it points
+ *      into the buffer supplied by `bf`.
+ */
 template <class BufferFactory>
 std::pair<void const*, std::size_t>
 nodeobjectDecompress(void const* in, std::size_t inSize, BufferFactory&& bf)
@@ -184,6 +263,14 @@ nodeobjectDecompress(void const* in, std::size_t inSize, BufferFactory&& bf)
     return result;
 }
 
+/** Return a pointer to a zero-initialized 32-byte static buffer.
+ *
+ *  Used by `nodeobjectCompress` as a sentinel to detect empty child-hash
+ *  slots in a SHAMap inner node via `memcmp`. The buffer is function-local
+ *  static so it is initialized exactly once and lives for the process lifetime.
+ *
+ *  @return Pointer to a 32-byte buffer whose contents are all zero bytes.
+ */
 template <class = void>
 void const*
 zero32()
@@ -192,6 +279,31 @@ zero32()
     return kV.data();
 }
 
+/** Compress a raw NodeStore blob into the NodeStore on-disk wire format.
+ *
+ *  Detects SHAMap inner nodes (exactly 525 bytes with `HashPrefix::InnerNode`
+ *  at byte offset 9) and applies a specialized encoding:
+ *  - Sparse (type 2): fewer than 16 child slots occupied — stores a 16-bit
+ *      presence bitmask (bit 0x8000 = slot 0) followed by only the non-zero
+ *      hashes packed contiguously.
+ *  - Full (type 3): all 16 slots occupied — stores all 512 hash bytes directly,
+ *      skipping the bitmask.
+ *
+ *  All other blobs are LZ4-compressed (type 1) via `lz4Compress`. Type 0
+ *  (uncompressed) is never written; the `kCODEC_TYPE` constant is fixed at 1.
+ *
+ *  @tparam BufferFactory Callable with signature `void*(std::size_t n)` that
+ *      allocates `n` bytes and returns a pointer to them. The codec does not
+ *      free this memory; lifetime is governed by the caller.
+ *  @param in Pointer to the uncompressed NodeStore blob.
+ *  @param inSize Number of bytes at `in`.
+ *  @param bf Factory used to allocate the encoded output buffer.
+ *  @return Pair of (pointer to encoded data, encoded byte count).
+ *  @throws std::runtime_error if LZ4 compression fails.
+ *  @note Inner-node reconstruction zeros `index`, `unused`, and `kind` fields,
+ *      so those fields are not preserved across a compress/decompress round-trip.
+ *      Call `filterInner` on the source blob before round-trip verification.
+ */
 template <class BufferFactory>
 std::pair<void const*, std::size_t>
 nodeobjectCompress(void const* in, std::size_t inSize, BufferFactory&& bf)
@@ -199,7 +311,6 @@ nodeobjectCompress(void const* in, std::size_t inSize, BufferFactory&& bf)
     using std::runtime_error;
     using namespace nudb::detail;
 
-    // Check for inner node v1
     if (inSize == 525)
     {
         istream is(in, inSize);
@@ -228,7 +339,6 @@ nodeobjectCompress(void const* in, std::size_t inSize, BufferFactory&& bf)
             std::pair<void const*, std::size_t> result;
             if (n < 16)
             {
-                // 2 = v1 inner node compressed
                 auto const type = 2U;
                 auto const vs = sizeVarint(type);
                 result.second = vs + field<std::uint16_t>::size +  // mask
@@ -241,7 +351,6 @@ nodeobjectCompress(void const* in, std::size_t inSize, BufferFactory&& bf)
                 write(os, vh.data(), n * 32);
                 return result;
             }
-            // 3 = full v1 inner node
             auto const type = 3U;
             auto const vs = sizeVarint(type);
             result.second = vs + (n * 32);  // hashes
@@ -261,7 +370,6 @@ nodeobjectCompress(void const* in, std::size_t inSize, BufferFactory&& bf)
     std::pair<void const*, std::size_t> result;
     switch (kCODEC_TYPE)
     {
-        // case 0 was uncompressed data; we always compress now.
         case 1:  // lz4
         {
             std::uint8_t* p = nullptr;
@@ -280,17 +388,29 @@ nodeobjectCompress(void const* in, std::size_t inSize, BufferFactory&& bf)
     return result;
 }
 
-// Modifies an inner node to erase the ledger
-// sequence and type information so the codec
-// verification can pass.
-//
+/** Normalize an inner-node blob in place before codec round-trip verification.
+ *
+ *  `nodeobjectCompress` reconstructs inner nodes with `index`, `unused`, and
+ *  `kind` zeroed (those fields are not stored on disk). Comparing a raw source
+ *  blob against the decompressed output would therefore fail unless the source
+ *  is first normalized by zeroing the same fields. This function performs that
+ *  normalization in place.
+ *
+ *  The function is a no-op for any blob that is not exactly 525 bytes or does
+ *  not carry the `HashPrefix::InnerNode` marker at byte offset 9.
+ *
+ *  @param in Pointer to the blob to normalize. Modified in place when the blob
+ *      is identified as a SHAMap inner node.
+ *  @param inSize Number of bytes at `in`.
+ *  @note This function is used by the NodeStore import tool prior to calling
+ *      `nodeobjectCompress` so that the verification `memcmp` succeeds.
+ */
 template <class = void>
 void
 filterInner(void* in, std::size_t inSize)
 {
     using namespace nudb::detail;
 
-    // Check for inner node
     if (inSize == 525)
     {
         istream is(in, inSize);

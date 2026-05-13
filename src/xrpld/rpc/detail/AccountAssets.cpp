@@ -1,3 +1,15 @@
+/** @file
+ *  @brief Asset eligibility helpers for the XRPL path-finding subsystem.
+ *
+ *  Implements `accountSourceAssets` and `accountDestAssets`, which classify
+ *  which assets an account can send or receive.  Both functions read from a
+ *  shared `AssetCache` (a ledger-snapshot cache) to avoid redundant SLE
+ *  lookups during a path-finding session and return a `hash_set<PathAsset>`
+ *  that seeds the `Pathfinder` before the expensive graph traversal begins.
+ *
+ *  See `AccountAssets.h` for full behavioral contracts.
+ */
+
 #include <xrpld/rpc/detail/AccountAssets.h>
 
 #include <xrpld/rpc/detail/AssetCache.h>
@@ -31,18 +43,18 @@ accountSourceAssets(
         {
             auto& saBalance = rspEntry.getBalance();
 
-            // Filter out non
-            if (saBalance > beast::kZERO
-                // Have IOUs to send.
-                || (rspEntry.getLimitPeer()
-                    // Peer extends credit.
-                    && ((-saBalance) < rspEntry.getLimitPeer())))  // Credit left.
+            // Include if the account holds a positive balance (IOUs to push)
+            // or is a borrower with room left under the peer's credit limit.
+            if (saBalance > beast::kZERO ||
+                (rspEntry.getLimitPeer() &&
+                 ((-saBalance) < rspEntry.getLimitPeer())))
             {
                 assets.insert(saBalance.get<Issue>().currency);
             }
         }
     }
 
+    // Remove the reserved sentinel to guard against malformed trust-line entries.
     assets.erase(badCurrency());
 
     if (auto const mpts = lrCache->getMPTs(account))
@@ -65,9 +77,11 @@ accountDestAssets(
 {
     hash_set<PathAsset> assets;
 
+    // XRP is always a valid destination — even if the account does not yet
+    // exist — because account creation itself requires receiving XRP above
+    // the base reserve.
     if (includeXRP)
         assets.insert(xrpCurrency());
-    // Even if account doesn't exist
 
     if (auto const lines = lrCache->getRippleLines(account, LineDirection::Outgoing))
     {
@@ -75,17 +89,21 @@ accountDestAssets(
         {
             auto& saBalance = rspEntry.getBalance();
 
-            if (saBalance < rspEntry.getLimit())  // Can take more
+            // Include if the account's own trust limit has not been reached.
+            if (saBalance < rspEntry.getLimit())
                 assets.insert(saBalance.get<Issue>().currency);
         }
     }
 
+    // Remove the reserved sentinel to guard against malformed trust-line entries.
     assets.erase(badCurrency());
 
     if (auto const mpts = lrCache->getMPTs(account))
     {
         for (auto const& rspEntry : *mpts)
         {
+            // Zero balance means fresh capacity; !isMaxedOut() confirms the
+            // issuer's supply ceiling permits new transfers.
             if (rspEntry.isZeroBalance() && !rspEntry.isMaxedOut())
                 assets.insert(rspEntry.getMptID());
         }

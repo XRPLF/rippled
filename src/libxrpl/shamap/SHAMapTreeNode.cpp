@@ -1,3 +1,20 @@
+/** @file
+ *  Static factory methods for deserializing `SHAMapTreeNode` subclass objects
+ *  from raw bytes.
+ *
+ *  Two serialization formats are handled here:
+ *
+ *  - **Wire format** (`makeFromWire`): the type discriminant is a single byte
+ *    appended to the *end* of the buffer.  No pre-computed hash is available,
+ *    so leaf constructors call `updateHash()` internally (`hashValid = false`).
+ *
+ *  - **Prefixed format** (`makeFromPrefix`): a 4-byte big-endian `HashPrefix`
+ *    constant leads the buffer.  The caller supplies the already-verified hash,
+ *    so leaf constructors skip recomputation (`hashValid = true`).
+ *
+ *  All nodes are constructed with `cowid = 0`, marking them as unowned and
+ *  immediately shareable across multiple `SHAMap` instances.
+ */
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
 #include <xrpl/basics/IntrusivePointer.h>    // IWYU pragma: keep
@@ -28,6 +45,9 @@ namespace xrpl {
 intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMapTreeNode::makeTransaction(Slice data, SHAMapHash const& hash, bool hashValid)
 {
+    // The item key IS the transaction ID: sha512Half(prefix, payload).
+    // It is derived from the content, not stored in the payload, so no tail
+    // extraction is needed here (unlike makeTransactionWithMeta/makeAccountState).
     auto item = makeShamapitem(sha512Half(HashPrefix::TransactionId, data), data);
 
     if (hashValid)
@@ -43,6 +63,9 @@ SHAMapTreeNode::makeTransactionWithMeta(Slice data, SHAMapHash const& hash, bool
 
     uint256 tag;
 
+    // The 32-byte item key is appended to the *tail* of the serialized payload
+    // by serializeForWire().  Extract it, then chop it off before creating the
+    // SHAMapItem so that item->slice() contains only the tx+meta blob.
     if (s.size() < tag.kBYTES)
         Throw<std::runtime_error>("Short TXN+MD node");
 
@@ -67,6 +90,8 @@ SHAMapTreeNode::makeAccountState(Slice data, SHAMapHash const& hash, bool hashVa
 
     uint256 tag;
 
+    // The 32-byte ledger-object key is appended to the tail of the payload by
+    // serializeForWire().  Extract and chop it, leaving only the state blob.
     if (s.size() < tag.kBYTES)
         Throw<std::runtime_error>("short AS node");
 
@@ -76,6 +101,7 @@ SHAMapTreeNode::makeAccountState(Slice data, SHAMapHash const& hash, bool hashVa
 
     s.chop(tag.kBYTES);
 
+    // A zero key is not a valid ledger-object identity; reject it as corrupt.
     if (tag.isZero())
         Throw<std::runtime_error>("Invalid AS node");
 
@@ -93,10 +119,13 @@ SHAMapTreeNode::makeFromWire(Slice rawNode)
     if (rawNode.empty())
         return {};
 
+    // The wire format appends the kWIRE_TYPE_* discriminant as the final byte.
     auto const type = rawNode[rawNode.size() - 1];
 
     rawNode.removeSuffix(1);
 
+    // The wire format carries no pre-computed hash, so every concrete node
+    // constructor must call updateHash() to derive it from the payload.
     bool const hashValid = false;
     SHAMapHash const hash;
 
@@ -125,13 +154,16 @@ SHAMapTreeNode::makeFromPrefix(Slice rawNode, SHAMapHash const& hash)
         Throw<std::runtime_error>("prefix: short node");
 
     // FIXME: Use SerialIter::get32?
-    // Extract the prefix
+    // Extract the 4-byte big-endian HashPrefix that leads the buffer.
     auto const type = safeCast<HashPrefix>(
         (safeCast<std::uint32_t>(rawNode[0]) << 24) + (safeCast<std::uint32_t>(rawNode[1]) << 16) +
         (safeCast<std::uint32_t>(rawNode[2]) << 8) + (safeCast<std::uint32_t>(rawNode[3])));
 
     rawNode.removePrefix(4);
 
+    // The caller has already verified the hash (e.g., matched against a parent
+    // branch entry or a trusted node store record), so leaf constructors can
+    // skip updateHash() and use the supplied hash directly.
     bool const hashValid = true;
 
     if (type == HashPrefix::TransactionId)

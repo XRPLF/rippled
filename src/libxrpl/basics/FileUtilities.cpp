@@ -1,3 +1,11 @@
+/** @file
+ *  Implements whole-file I/O utilities with uniform error-code reporting.
+ *
+ *  Provides `getFileContents` and `writeFileContents` as a single, consistent
+ *  layer over `std::ifstream`/`std::ofstream` so that callers (Config, ValidatorList,
+ *  WorkFile) do not each need to replicate error-handling boilerplate. All errors are
+ *  communicated through `boost::system::error_code`; neither function throws.
+ */
 #include <xrpl/basics/FileUtilities.h>
 
 #include <boost/filesystem/operations.hpp>

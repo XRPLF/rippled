@@ -1,3 +1,19 @@
+/** @file
+ *  Orchestration hub for the XRPL transaction processing pipeline.
+ *
+ *  Every transaction passes through four entry points in order: `preflight`,
+ *  `preclaim`, `calculateBaseFee`, and `doApply`.  This file contains no
+ *  transaction-specific business logic; its sole responsibility is the
+ *  compile-time type-dispatch machinery (`withTxnType`) that routes each
+ *  transaction to the correct `Transactor` subclass, and the assembly of the
+ *  structured `PreflightResult`, `PreclaimResult`, and `ApplyResult` tokens
+ *  that higher layers consume.
+ *
+ *  @note Transactor headers must not be included directly here.  All
+ *      type-specific behavior is accessed through the X-macro dispatch in
+ *      `transactions.macro`.  See the comment at line 37 and the macro file
+ *      itself for the rationale.
+ */
 #include <xrpl/tx/applySteps.h>
 
 #include <xrpl/basics/Log.h>
@@ -44,6 +60,13 @@ namespace xrpl {
 
 namespace {
 
+/** Internal sentinel thrown when a runtime `TxType` has no entry in
+ *  `transactions.macro`.
+ *
+ *  All four public entry points catch this; the catch blocks are marked
+ *  `LCOV_EXCL` because an unrecognised type should have been rejected well
+ *  before reaching this layer.
+ */
 struct UnknownTxnType : std::exception
 {
     TxType txnType;
@@ -52,8 +75,35 @@ struct UnknownTxnType : std::exception
     }
 };
 
-// Call a lambda with the concrete transaction type as a template parameter
-// throw an "UnknownTxnType" exception on error
+/** Invoke a generic callable with the concrete `Transactor` subclass as a
+ *  compile-time template parameter, selected by runtime `txnType`.
+ *
+ *  The switch statement is generated at compile time by re-including
+ *  `transactions.macro` with `TRANSACTION` defined to emit one `case` label
+ *  per known transaction type.  Each case calls
+ *  `f.template operator()<NamedTransactor>()`, resolving all type-specific
+ *  behavior without virtual dispatch and without requiring this translation
+ *  unit to include any transactor headers.
+ *
+ *  Before dispatch, thread-local RAII guards configure numeric precision for
+ *  the entire processing step:
+ *  - When `featureSingleAssetVault` or `featureLendingProtocol` is active:
+ *    `CurrentTransactionRulesGuard` installs `rules` into a thread-local slot,
+ *    and `NumberSO` configures floating-point-style arithmetic (or legacy mode
+ *    when `fixUniversalNumber` is absent).
+ *  - Otherwise: `NumberMantissaScaleGuard` forces the legacy small-mantissa
+ *    behavior to preserve historical correctness across all three pipeline
+ *    phases.
+ *
+ *  @tparam F  A generic callable whose `operator()<T>()` will be invoked with
+ *      `T` bound to the concrete transactor for `txnType`.
+ *  @param rules  Amendment rules for the current ledger, used to select the
+ *      numeric precision mode.
+ *  @param txnType  The runtime transaction type to dispatch on.
+ *  @param f  The callable to invoke.
+ *  @return The return value of `f.template operator()<T>()`.
+ *  @throws UnknownTxnType if `txnType` does not appear in `transactions.macro`.
+ */
 template <class F>
 auto
 withTxnType(Rules const& rules, TxType txnType, F&& f)
@@ -76,14 +126,12 @@ withTxnType(Rules const& rules, TxType txnType, F&& f)
     std::optional<NumberMantissaScaleGuard> mantissaScaleGuard;
     if (rules.enabled(featureSingleAssetVault) || rules.enabled(featureLendingProtocol))
     {
-        // raii classes for the current ledger rules.
         // fixUniversalNumber predates the rulesGuard and should be replaced.
         stNumberSO.emplace(rules.enabled(fixUniversalNumber));
         rulesGuard.emplace(rules);
     }
     else
     {
-        // Without those features enabled, always use the old number rules.
         mantissaScaleGuard.emplace(MantissaRange::MantissaScale::Small);
     }
 
@@ -106,16 +154,17 @@ withTxnType(Rules const& rules, TxType txnType, F&& f)
 }
 }  // namespace
 
-// Templates so preflight does the right thing with T::kCONSEQUENCES_FACTORY.
-//
-// This could be done more easily using if constexpr, but Visual Studio
-// 2017 doesn't handle if constexpr correctly.  So once we're no longer
-// building with Visual Studio 2017 we can consider replacing the four
-// templates with a single template function that uses if constexpr.
-//
-// For ConsequencesFactoryType::Normal
-//
-
+/** Build a `TxConsequences` for a transaction whose transactor declares
+ *  `ConsequencesFactory = Normal`.
+ *
+ *  Constructs standard fee-and-sequence consequences from the raw `STTx`.
+ *  Selected at compile time by the C++20 `requires` clause on
+ *  `T::kCONSEQUENCES_FACTORY`.
+ *
+ *  @tparam T  The concrete `Transactor` subclass.
+ *  @param ctx  The preflight context carrying the transaction.
+ *  @return A default `TxConsequences` summarising the fee and sequence.
+ */
 template <class T>
     requires(T::kCONSEQUENCES_FACTORY == Transactor::ConsequencesFactoryType::Normal)
 TxConsequences
@@ -124,7 +173,17 @@ consequencesHelper(PreflightContext const& ctx)
     return TxConsequences(ctx.tx);
 };
 
-// For ConsequencesFactoryType::Blocker
+/** Build a `TxConsequences` for a transaction whose transactor declares
+ *  `ConsequencesFactory = Blocker`.
+ *
+ *  Sets `Category::Blocker`, signalling to the TxQ that this transaction
+ *  (e.g. `SetRegularKey`, `AccountDelete`, `SignerListSet`) may invalidate
+ *  the signatures on subsequent queued transactions from the same account.
+ *
+ *  @tparam T  The concrete `Transactor` subclass.
+ *  @param ctx  The preflight context carrying the transaction.
+ *  @return A `TxConsequences` marked as a blocker.
+ */
 template <class T>
     requires(T::kCONSEQUENCES_FACTORY == Transactor::ConsequencesFactoryType::Blocker)
 TxConsequences
@@ -133,7 +192,19 @@ consequencesHelper(PreflightContext const& ctx)
     return TxConsequences(ctx.tx, TxConsequences::Category::Blocker);
 };
 
-// For ConsequencesFactoryType::Custom
+/** Build a `TxConsequences` for a transaction whose transactor declares
+ *  `ConsequencesFactory = Custom`.
+ *
+ *  Delegates entirely to `T::makeTxConsequences(ctx)`, which the transactor
+ *  must implement.  Used by `Payment` (`sfSendMax` XRP spend), `OfferCreate`
+ *  (XRP `TakerGets`), `TicketCreate` (multi-sequence), `AccountSet`
+ *  (conditional blocker), and `LoanSet` (counterparty signers).
+ *
+ *  @tparam T  The concrete `Transactor` subclass; must provide a static
+ *      `makeTxConsequences(PreflightContext const&)`.
+ *  @param ctx  The preflight context carrying the transaction.
+ *  @return The `TxConsequences` produced by `T::makeTxConsequences`.
+ */
 template <class T>
     requires(T::kCONSEQUENCES_FACTORY == Transactor::ConsequencesFactoryType::Custom)
 TxConsequences
@@ -142,6 +213,16 @@ consequencesHelper(PreflightContext const& ctx)
     return T::makeTxConsequences(ctx);
 };
 
+/** Run the preflight phase for the transaction in `ctx`.
+ *
+ *  Dispatches to `Transactor::invokePreflight<T>` for the concrete transactor
+ *  type, then builds `TxConsequences` via `consequencesHelper<T>` on success,
+ *  or from the error code on failure.
+ *
+ *  @param ctx  The preflight context.
+ *  @return A pair of `(NotTEC, TxConsequences)`: the validation result and the
+ *      worst-case queue cost estimate.
+ */
 static std::pair<NotTEC, TxConsequences>
 invokePreflight(PreflightContext const& ctx)
 {
@@ -164,26 +245,30 @@ invokePreflight(PreflightContext const& ctx)
     }
 }
 
+/** Run the preclaim phase for the transaction in `ctx`.
+ *
+ *  Executes a fixed sequence of static checks via compile-time name hiding
+ *  (not virtual dispatch): `checkSeqProxy`, `checkPriorTxAndLastLedger`,
+ *  `checkPermission`, `checkSign`, then `checkFee`, and finally
+ *  `T::preclaim(ctx)` for transactor-specific ledger validation.
+ *
+ *  @param ctx  The preclaim context, carrying a read-only ledger view.
+ *  @return A `TER` result: `tesSUCCESS`, a `tec*` fee-claiming failure, or a
+ *      non-claiming `tem*`/`tef*`/`ter*` code.
+ *
+ *  @note **Security invariant:** every check up to and including `checkSign`
+ *      must return `NotTEC` (never a `tec*` code).  A `tec*` result from a
+ *      pre-signature check would cause a fee to be charged before the sender's
+ *      identity is authenticated, enabling theft or destruction of funds.
+ *      Only `checkFee` and the transactor-specific `preclaim` may return the
+ *      full `TER` range.
+ */
 static TER
 invokePreclaim(PreclaimContext const& ctx)
 {
     try
     {
-        // use name hiding to accomplish compile-time polymorphism of static
-        // class functions for Transactor and derived classes.
         return withTxnType(ctx.view.rules(), ctx.tx.getTxnType(), [&]<typename T>() -> TER {
-            // preclaim functionality is divided into two sections:
-            // 1. Up to and including the signature check: returns NotTEC.
-            //    All transaction checks before and including checkSign
-            //    MUST return NotTEC, or something more restrictive.
-            //    Allowing tec results in these steps risks theft or
-            //    destruction of funds, as a fee will be charged before the
-            //    signature is checked.
-            // 2. After the signature check: returns TER.
-
-            // If the transactor requires a valid account and the
-            // transaction doesn't list one, preflight will have already
-            // a flagged a failure.
             auto const id = ctx.tx.getAccountID(sfAccount);
 
             if (id != beast::kZERO)
@@ -223,21 +308,14 @@ invokePreclaim(PreclaimContext const& ctx)
     }
 }
 
-/**
- * @brief Calculates the base fee for a given transaction.
+/** Compute the base fee for `tx` by dispatching to the concrete transactor's
+ *  `calculateBaseFee` static method.
  *
- * This function determines the base fee required for the specified transaction
- * by invoking the appropriate fee calculation logic based on the transaction
- * type. It uses a type-dispatch mechanism to select the correct calculation
- * method.
- *
- * @param view The ledger view to use for fee calculation.
- * @param tx The transaction for which the base fee is to be calculated.
- * @return The calculated base fee as an XRPAmount.
- *
- * @throws std::exception If an error occurs during fee calculation, including
- * but not limited to unknown transaction types or internal errors, the function
- * logs an error and returns an XRPAmount of zero.
+ *  @param view  Read-only ledger view used by fee overrides (e.g. multi-signer
+ *      count from `SignerListSet`).
+ *  @param tx    The transaction whose fee is being calculated.
+ *  @return The base fee in drops.  Returns zero if the transaction type is
+ *      unrecognised (unreachable in production).
  */
 static XRPAmount
 invokeCalculateBaseFee(ReadView const& view, STTx const& tx)
@@ -257,6 +335,7 @@ invokeCalculateBaseFee(ReadView const& view, STTx const& tx)
     }
 }
 
+/** @see TxConsequences::TxConsequences(NotTEC) */
 TxConsequences::TxConsequences(NotTEC pfResult)
     : isBlocker_(false)
     , fee_(beast::kZERO)
@@ -268,6 +347,12 @@ TxConsequences::TxConsequences(NotTEC pfResult)
         !isTesSuccess(pfResult), "xrpl::TxConsequences::TxConsequences : is not tesSUCCESS");
 }
 
+/** @see TxConsequences::TxConsequences(STTx const&)
+ *
+ *  @note `fee_` is extracted from `sfFee` only when the amount is native XRP
+ *      and non-negative — a defensive guard against malformed or exotic fee
+ *      fields that would otherwise corrupt queue accounting.
+ */
 TxConsequences::TxConsequences(STTx const& tx)
     : isBlocker_(false)
     , fee_(tx[sfFee].native() && !tx[sfFee].negative() ? tx[sfFee].xrp() : beast::kZERO)
@@ -277,21 +362,36 @@ TxConsequences::TxConsequences(STTx const& tx)
 {
 }
 
+/** @see TxConsequences::TxConsequences(STTx const&, Category) */
 TxConsequences::TxConsequences(STTx const& tx, Category category) : TxConsequences(tx)
 {
     isBlocker_ = (category == TxConsequences::Category::Blocker);
 }
 
+/** @see TxConsequences::TxConsequences(STTx const&, XRPAmount) */
 TxConsequences::TxConsequences(STTx const& tx, XRPAmount potentialSpend) : TxConsequences(tx)
 {
     potentialSpend_ = potentialSpend;
 }
 
+/** @see TxConsequences::TxConsequences(STTx const&, std::uint32_t) */
 TxConsequences::TxConsequences(STTx const& tx, std::uint32_t sequencesConsumed) : TxConsequences(tx)
 {
     sequencesConsumed_ = sequencesConsumed;
 }
 
+/** Instantiate the concrete `Transactor` for the transaction in `ctx` and
+ *  execute it.
+ *
+ *  Dispatches to `withTxnType`, which constructs `T p(ctx)` and calls `p()`.
+ *  The call operator in `Transactor::operator()()` runs `preCompute`,
+ *  `consumeSeqProxy`, `payFee`, `doApply`, and invariant checking in sequence,
+ *  returning an `ApplyResult` that reflects whether the transaction was
+ *  committed to the ledger.
+ *
+ *  @param ctx  The mutable apply context wrapping the open ledger view.
+ *  @return An `ApplyResult` with the `TER` and `applied` flag.
+ */
 static ApplyResult
 invokeApply(ApplyContext& ctx)
 {
@@ -313,9 +413,16 @@ invokeApply(ApplyContext& ctx)
     }
 }
 
-// Test-only factory — not part of the public API.
-// The returned Transactor holds a raw reference to ctx; the caller must ensure
-// the ApplyContext outlives the Transactor.
+/** Construct a concrete `Transactor` for the transaction in `ctx`.
+ *
+ *  Test-only factory — not part of the public API.  Allows unit tests to
+ *  instantiate and inspect a transactor without running the full apply loop.
+ *
+ *  @param ctx  The apply context; must outlive the returned object because the
+ *      transactor holds a raw reference to it.
+ *  @return A heap-allocated `Transactor` subclass for the transaction type.
+ *  @throws UnknownTxnType if the transaction type is not in `transactions.macro`.
+ */
 std::unique_ptr<Transactor>
 makeTransactor(ApplyContext& ctx)
 {
@@ -366,6 +473,14 @@ preflight(
     }
 }
 
+/** @copydoc preclaim(PreflightResult const&, ServiceRegistry&, OpenView const&)
+ *
+ *  @note If the amendment rules recorded in `preflightResult` differ from
+ *      `view.rules()` (the ledger advanced between preflight and preclaim),
+ *      this function silently re-runs `preflight` with the new rules before
+ *      constructing the `PreclaimContext`.  Callers do not need to handle
+ *      this race; the result always reflects the current ledger's rules.
+ */
 PreclaimResult
 preclaim(PreflightResult const& preflightResult, ServiceRegistry& registry, OpenView const& view)
 {
@@ -438,6 +553,14 @@ calculateDefaultBaseFee(ReadView const& view, STTx const& tx)
     return Transactor::calculateBaseFee(view, tx);
 }
 
+/** @copydoc doApply(PreclaimResult const&, ServiceRegistry&, OpenView&)
+ *
+ *  @note Returns `{tefEXCEPTION, false}` immediately — without applying — if
+ *      the ledger sequence recorded in `preclaimResult.view` does not match
+ *      `view.seq()`.  This represents a caller logic error (preclaim and
+ *      doApply were called against different ledger generations) from which
+ *      there is insufficient context to recover.
+ */
 ApplyResult
 doApply(PreclaimResult const& preclaimResult, ServiceRegistry& registry, OpenView& view)
 {

@@ -1,3 +1,15 @@
+/** @file
+ *  Implements `delivered_amount` resolution and injection for RPC transaction
+ *  metadata responses.
+ *
+ *  The `GetLedgerIndex` and `GetCloseTime` callables used throughout this file
+ *  are intentionally lazy: ledger index and close time are only evaluated when
+ *  the historical fallback branch is reached. In the common case — a modern
+ *  ledger whose `TxMeta` already contains `sfDeliveredAmount` — neither value
+ *  is ever computed, avoiding a potentially expensive `LedgerMaster` lookup by
+ *  sequence number.
+ */
+
 #include <xrpld/rpc/DeliveredAmount.h>
 
 #include <xrpld/app/ledger/LedgerMaster.h>
@@ -18,15 +30,35 @@
 
 namespace xrpl::RPC {
 
-/*
-  GetLedgerIndex and GetCloseTime are lambdas that allow the close time and
-  ledger index to be lazily calculated. Without these lambdas, these values
-  would be calculated even when not needed, and in some circumstances they are
-  not trivial to compute.
-
-  GetLedgerIndex is a callable that returns a LedgerIndex
-  GetCloseTime is a callable that returns a
-               std::optional<NetClock::time_point>
+/** Resolve the actual delivered amount for a transaction using lazy accessors.
+ *
+ *  Implements the three-tier resolution strategy:
+ *  1. Return `TxMeta::getDeliveredAmount()` directly if present — authoritative
+ *     for all ledgers from sequence 4594095 onward.
+ *  2. If the metadata field is absent but the ledger postdates the
+ *     `DeliveredAmount` deployment (index >= 4594095 **or** close time >
+ *     446000000s ≈ February 2014), return the transaction's `sfAmount` — a
+ *     missing field in a post-deployment ledger means full delivery.
+ *  3. Return `std::nullopt` for pre-deployment ledgers where the delivered
+ *     amount cannot be determined; callers emit the `"unavailable"` sentinel.
+ *
+ *  @tparam GetLedgerIndex Callable with signature `LedgerIndex ()`.
+ *  @tparam GetCloseTime   Callable with signature
+ *      `std::optional<NetClock::time_point> ()`.
+ *  @param getLedgerIndex Lazy accessor for the ledger sequence number; only
+ *      called when `transactionMeta` lacks `sfDeliveredAmount`.
+ *  @param getCloseTime   Lazy accessor for the ledger close time; only called
+ *      when `transactionMeta` lacks `sfDeliveredAmount` and the ledger index
+ *      alone does not cross the historical threshold.
+ *  @param serializedTx   The transaction to inspect; returns `std::nullopt`
+ *      immediately if null.
+ *  @param transactionMeta Metadata for `serializedTx`; the primary source for
+ *      `sfDeliveredAmount`.
+ *  @return The resolved delivered amount, or `std::nullopt` if the ledger
+ *      predates the `DeliveredAmount` feature and no authoritative value exists.
+ *  @note Both threshold conditions (`getLedgerIndex() >= 4594095` and
+ *      `getCloseTime() > 446000000s`) identify the same era; the close-time
+ *      check is a fallback for ledgers whose sequence alone is ambiguous.
  */
 template <class GetLedgerIndex, class GetCloseTime>
 std::optional<STAmount>
@@ -49,14 +81,6 @@ getDeliveredAmount(
     {
         using namespace std::chrono_literals;
 
-        // Ledger 4594095 is the first ledger in which the DeliveredAmount field
-        // was present when a partial payment was made and its absence indicates
-        // that the amount delivered is listed in the Amount field.
-        //
-        // If the ledger closed long after the DeliveredAmount code was deployed
-        // then its absence indicates that the amount delivered is listed in the
-        // Amount field. DeliveredAmount went live January 24, 2014.
-        // 446000000 is in Feb 2014, well after DeliveredAmount went live
         if (getLedgerIndex() >= 4594095 || getCloseTime() > NetClock::time_point{446000000s})
         {
             return serializedTx->getFieldAmount(sfAmount);
@@ -66,8 +90,18 @@ getDeliveredAmount(
     return {};
 }
 
-// Returns true if transaction meta could contain a delivered amount field,
-// based on transaction type and transaction result
+/** Determine whether a transaction can carry a `delivered_amount` field.
+ *
+ *  Acts as a cheap type-and-result gate before the more expensive amount
+ *  resolution logic runs. Only `ttPAYMENT`, `ttCHECK_CASH`, and
+ *  `ttACCOUNT_DELETE` transactions that completed with `tesSUCCESS` are
+ *  eligible; failed transactions deliver nothing and must not have the field.
+ *
+ *  @param serializedTx   The transaction to test; returns `false` if null.
+ *  @param transactionMeta Metadata carrying the transaction result code.
+ *  @return `true` if the transaction type and result allow a
+ *      `delivered_amount` field to be present in the metadata.
+ */
 bool
 canHaveDeliveredAmount(
     std::shared_ptr<STTx const> const& serializedTx,
@@ -77,8 +111,6 @@ canHaveDeliveredAmount(
         return false;
 
     TxType const tt{serializedTx->getTxnType()};
-    // Transaction type should be ttPAYMENT, ttACCOUNT_DELETE or ttCHECK_CASH
-    // and if the transaction failed nothing could have been delivered.
     return (tt == ttPAYMENT || tt == ttCHECK_CASH || tt == ttACCOUNT_DELETE) &&
         transactionMeta.getResultTER() == tesSUCCESS;
 }
@@ -111,6 +143,23 @@ insertDeliveredAmount(
     }
 }
 
+/** Internal bridge: gates on eligibility, then calls the lazy-accessor overload.
+ *
+ *  Constructs a `getCloseTime` lambda that delegates to
+ *  `context.ledgerMaster.getCloseTimeBySeq()`, keeping the potentially
+ *  expensive DB lookup deferred until the historical-fallback branch is
+ *  actually reached. Returns `std::nullopt` immediately for ineligible
+ *  transactions without touching `LedgerMaster` at all.
+ *
+ *  @tparam GetLedgerIndex Callable with signature `LedgerIndex ()`.
+ *  @param context       RPC context; `context.ledgerMaster` is used only
+ *      when the close-time lazy lambda is invoked.
+ *  @param serializedTx  The transaction to resolve.
+ *  @param transactionMeta Metadata for `serializedTx`.
+ *  @param getLedgerIndex Lazy accessor for the ledger sequence number.
+ *  @return The resolved delivered amount, or `std::nullopt` if ineligible or
+ *      the ledger predates the `DeliveredAmount` feature.
+ */
 template <class GetLedgerIndex>
 static std::optional<STAmount>
 getDeliveredAmount(

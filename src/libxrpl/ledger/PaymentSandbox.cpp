@@ -1,3 +1,13 @@
+/** @file
+ *  Implements `detail::DeferredCredits` and `PaymentSandbox` — the deferred
+ *  credit accounting layer that makes multi-hop IOU and MPT payments safe.
+ *
+ *  The core invariant: a credit recorded during one step of a payment must
+ *  not become visible as spendable balance to any subsequent step in the same
+ *  payment. `DeferredCredits` enforces this by intercepting every credit via
+ *  `creditIOU`/`creditMPT` and returning a pre-credit balance whenever a step
+ *  calls `balanceHookIOU`/`balanceHookMPT`.
+ */
 #include <xrpl/ledger/PaymentSandbox.h>
 
 #include <xrpl/basics/base_uint.h>
@@ -22,6 +32,17 @@ namespace xrpl {
 
 namespace detail {
 
+/** Build a canonical, direction-independent map key for an IOU trust-line pair.
+ *
+ *  The lower `AccountID` is always placed first so that the pair (A→B) and
+ *  (B→A) share a single `creditsIOU_` entry, mirroring the ledger's own
+ *  bidirectional `RippleState` storage convention.
+ *
+ *  @param a1 One endpoint of the trust line.
+ *  @param a2 The other endpoint.
+ *  @param c  The currency in question.
+ *  @return A `(min, max, currency)` tuple suitable as a `creditsIOU_` key.
+ */
 auto
 DeferredCredits::makeKeyIOU(AccountID const& a1, AccountID const& a2, Currency const& c) -> KeyIOU
 {
@@ -33,6 +54,21 @@ DeferredCredits::makeKeyIOU(AccountID const& a1, AccountID const& a2, Currency c
     return std::make_tuple(a2, a1, c);
 }
 
+/** Record a deferred IOU credit from `sender` to `receiver`.
+ *
+ *  On the first call for a given (sender, receiver, currency) triple the
+ *  sender's pre-credit balance snapshot is captured in `lowAcctOrigBalance`.
+ *  Subsequent calls for the same triple accumulate the credit amount but do
+ *  **not** update the snapshot — this is the post-switchover invariant that
+ *  avoids floating-point cancellation when `amount` is large relative to the
+ *  original balance.
+ *
+ *  @param sender               Account delivering the funds.
+ *  @param receiver             Account receiving the funds.
+ *  @param amount               Positive IOU amount being credited.
+ *  @param preCreditSenderBalance  Sender's balance on the trust line before
+ *      this credit is applied; captured only on the first call per pair.
+ */
 void
 DeferredCredits::creditIOU(
     AccountID const& sender,
@@ -82,6 +118,24 @@ DeferredCredits::creditIOU(
     }
 }
 
+/** Record a deferred MPT credit from `sender` to `receiver`.
+ *
+ *  Maintains per-holder debits and, for issuer→holder transfers, a running
+ *  `credit` total against the issuer's `OutstandingAmount`.  The issuer's
+ *  original `OutstandingAmount` (`preCreditBalanceIssuer`) and each holder's
+ *  original balance (`preCreditBalanceHolder`) are captured only on the first
+ *  call for each MPTID / holder pair; later calls accumulate debits without
+ *  overwriting snapshots.
+ *
+ *  @param sender                   Account delivering the MPT.
+ *  @param receiver                 Account receiving the MPT.
+ *  @param amount                   Positive MPT amount being credited.
+ *  @param preCreditBalanceHolder   Receiver's MPToken balance before this
+ *      credit; captured only on first call per holder.
+ *  @param preCreditBalanceIssuer   Issuer's `OutstandingAmount` before this
+ *      credit (may temporarily exceed `MaximumAmount` during reverse-path
+ *      execution); captured only on first call per MPTID.
+ */
 void
 DeferredCredits::creditMPT(
     AccountID const& sender,
@@ -147,6 +201,19 @@ DeferredCredits::creditMPT(
     }
 }
 
+/** Record an MPT issuer self-debit arising from a sell offer owned by the issuer.
+ *
+ *  The payment engine executes paths in reverse (credit before debit).  When
+ *  the issuer owns a sell offer, the credit step temporarily inflates
+ *  `OutstandingAmount` beyond `MaximumAmount`.  `selfDebit` accumulates the
+ *  total amount the issuer has self-debited so that `balanceHookSelfIssueMPT`
+ *  can cap issuable supply to `origBalance - selfDebit`.
+ *
+ *  @param issue        Identifies the MPT issuance.
+ *  @param amount       Positive amount the issuer is self-debiting this step.
+ *  @param origBalance  Issuer's `OutstandingAmount` before any path execution;
+ *      captured only on the first call per MPTID.
+ */
 void
 DeferredCredits::issuerSelfDebitMPT(
     MPTIssue const& issue,
@@ -169,6 +236,18 @@ DeferredCredits::issuerSelfDebitMPT(
     }
 }
 
+/** Update the peak owner count recorded for `id`.
+ *
+ *  Stores `max(cur, next)` and then takes the running maximum with any
+ *  previously recorded value.  Using the maximum rather than the final count
+ *  ensures that reserve checks during the payment reflect the highest
+ *  obligation incurred at any point, even if trust lines created mid-payment
+ *  are subsequently deleted.
+ *
+ *  @param id   Account whose owner count is changing.
+ *  @param cur  Owner count before the adjustment.
+ *  @param next Owner count after the adjustment.
+ */
 void
 DeferredCredits::ownerCount(AccountID const& id, std::uint32_t cur, std::uint32_t next)
 {
@@ -181,6 +260,12 @@ DeferredCredits::ownerCount(AccountID const& id, std::uint32_t cur, std::uint32_
     }
 }
 
+/** Return the peak owner count recorded for `id`, if any.
+ *
+ *  @param id Account to query.
+ *  @return The maximum owner count seen for this account during the payment,
+ *      or `std::nullopt` if no adjustment has been recorded for `id`.
+ */
 std::optional<std::uint32_t>
 DeferredCredits::ownerCount(AccountID const& id) const
 {
@@ -190,7 +275,19 @@ DeferredCredits::ownerCount(AccountID const& id) const
     return std::nullopt;
 }
 
-// Get the adjustments for the balance between main and other.
+/** Return the recorded IOU adjustments for the trust line between `main` and `other`.
+ *
+ *  The returned `AdjustmentIOU` is oriented from `main`'s perspective:
+ *  `debits` is what `main` has sent, `credits` is what `main` has received,
+ *  and `origBalance` is `main`'s balance before any deferred credit was
+ *  recorded.
+ *
+ *  @param main     The account whose perspective the adjustment is expressed in.
+ *  @param other    The counterparty on the trust line.
+ *  @param currency The IOU currency.
+ *  @return Adjustments from `main`'s perspective, or `std::nullopt` if no
+ *      credit has been recorded for this triple.
+ */
 auto
 DeferredCredits::adjustmentsIOU(
     AccountID const& main,
@@ -216,6 +313,13 @@ DeferredCredits::adjustmentsIOU(
     return result;
 }
 
+/** Return the recorded MPT adjustments for the given issuance.
+ *
+ *  @param mptID Identifier of the MPT issuance.
+ *  @return The full `IssuerValueMPT` record (aliased as `AdjustmentMPT`)
+ *      containing per-holder debits and the issuer's credit/self-debit totals,
+ *      or `std::nullopt` if no credit has been recorded for this MPTID.
+ */
 auto
 DeferredCredits::adjustmentsMPT(xrpl::MPTID const& mptID) const -> std::optional<AdjustmentMPT>
 {
@@ -225,6 +329,15 @@ DeferredCredits::adjustmentsMPT(xrpl::MPTID const& mptID) const -> std::optional
     return i->second;
 }
 
+/** Merge this sandbox's deferred-credit tables into a parent `DeferredCredits`.
+ *
+ *  Credits and debits are accumulated additively into `to`.  Existing
+ *  `origBalance` snapshots in `to` are **never** overwritten — the parent
+ *  recorded the true pre-payment balance first, and that must remain
+ *  authoritative.  Owner counts are merged by taking the per-account maximum.
+ *
+ *  @param to Destination table, typically belonging to a parent `PaymentSandbox`.
+ */
 void
 DeferredCredits::apply(DeferredCredits& to)
 {
@@ -237,7 +350,6 @@ DeferredCredits::apply(DeferredCredits& to)
             auto const& fromVal = i.second;
             toVal.lowAcctDebits += fromVal.lowAcctDebits;
             toVal.highAcctDebits += fromVal.highAcctDebits;
-            // Do not update the orig balance, it's already correct
         }
     }
 
@@ -261,7 +373,6 @@ DeferredCredits::apply(DeferredCredits& to)
                     toVal.holders[k].debit += v.debit;
                 }
             }
-            // Do not update the orig balance, it's already correct
         }
     }
 
@@ -279,6 +390,28 @@ DeferredCredits::apply(DeferredCredits& to)
 
 }  // namespace detail
 
+/** Return `account`'s IOU balance adjusted for deferred credits recorded in
+ *  this sandbox and all ancestor sandboxes.
+ *
+ *  Uses the post-switchover algorithm: rather than computing `(B+C) - C`
+ *  (which suffers catastrophic cancellation when the credit `C` dwarfs the
+ *  original balance `B`), the first `creditIOU` call for a pair captures `B`
+ *  directly.  This function walks the `ps_` chain accumulating the total
+ *  debit `delta` and the earliest-seen original balance `lastBal`, then
+ *  returns `min(amount, lastBal - delta, minBal)` to prevent the adjusted
+ *  amount from ever exceeding any ancestor's pre-credit snapshot.
+ *
+ *  @param account Account whose available IOU balance is being queried.
+ *  @param issuer  Issuer of the IOU currency.
+ *  @param amount  Post-credit balance as reported by the underlying ledger
+ *      view (i.e. `B+C`).
+ *  @return Pre-credit available balance, clamped to zero for XRP when the
+ *      arithmetic produces a negative value due to large mid-payment credits.
+ *
+ *  @note A calculated negative XRP result is not an error: it can arise when
+ *      a large XRP credit is recorded and then debited within the same path.
+ *      The negative value is clamped to zero rather than treated as a fault.
+ */
 STAmount
 PaymentSandbox::balanceHookIOU(
     AccountID const& account,
@@ -286,17 +419,6 @@ PaymentSandbox::balanceHookIOU(
     STAmount const& amount) const
 {
     XRPL_ASSERT(amount.holds<Issue>(), "balanceHookIOU: amount is for Issue");
-
-    /*
-    There are two algorithms here. The pre-switchover algorithm takes the
-    current amount and subtracts the recorded credits. The post-switchover
-    algorithm remembers the original balance, and subtracts the debits. The
-    post-switchover algorithm should be more numerically stable. Consider a
-    large credit with a small initial balance. The pre-switchover algorithm
-    computes (B+C)-C (where B+C will the amount passed in). The
-    post-switchover algorithm returns B. When B and C differ by large
-    magnitudes, (B+C)-C may not equal B.
-    */
 
     auto const& currency = amount.get<Issue>().currency;
 
@@ -314,25 +436,31 @@ PaymentSandbox::balanceHookIOU(
         }
     }
 
-    // The adjusted amount should never be larger than the balance. In
-    // some circumstances, it is possible for the deferred credits table
-    // to compute usable balance just slightly above what the ledger
-    // calculates (but always less than the actual balance).
     auto adjustedAmt = std::min({amount, lastBal - delta, minBal});
     adjustedAmt.get<Issue>().account = amount.getIssuer();
 
     if (isXRP(issuer) && adjustedAmt < beast::kZERO)
     {
-        // A calculated negative XRP balance is not an error case. Consider a
-        // payment snippet that credits a large XRP amount and then debits the
-        // same amount. The credit can't be used, but we subtract the debit and
-        // calculate a negative value. It's not an error case.
         adjustedAmt.clear();
     }
 
     return adjustedAmt;
 }
 
+/** Return `account`'s MPT balance adjusted for deferred credits in this sandbox chain.
+ *
+ *  Walks the `ps_` ancestor chain accumulating total debits (`delta`) and the
+ *  earliest pre-credit snapshot (`lastBal`), then returns
+ *  `min(amount, lastBal - delta, minBal)`.  For holders `delta` is the sum of
+ *  per-holder debits; for the issuer `delta` is the running `credit` total
+ *  against `OutstandingAmount`.
+ *
+ *  @param account Account being queried (holder or issuer).
+ *  @param issue   The MPT issuance.
+ *  @param amount  Current raw balance as seen by the underlying ledger view.
+ *  @return Pre-credit available balance as an `STAmount`, or zero if the
+ *      adjusted amount would be non-positive.
+ */
 STAmount
 PaymentSandbox::balanceHookMPT(AccountID const& account, MPTIssue const& issue, std::int64_t amount)
     const
@@ -364,13 +492,24 @@ PaymentSandbox::balanceHookMPT(AccountID const& account, MPTIssue const& issue, 
         }
     }
 
-    // The adjusted amount should never be larger than the balance.
-
     auto const adjustedAmt = std::min({amount, lastBal - delta, minBal});
 
     return adjustedAmt > 0 ? STAmount{issue, adjustedAmt} : STAmount{issue};
 }
 
+/** Return the issuer's available MPT issuance capacity adjusted for self-debits.
+ *
+ *  When the issuer owns a sell offer, the payment engine credits the buyer
+ *  before debiting the issuer, which can transiently inflate
+ *  `OutstandingAmount` beyond `MaximumAmount`.  This hook caps the issuer's
+ *  available issuance to `origBalance - selfDebit`, where `selfDebit`
+ *  accumulates across the sandbox chain via `issuerSelfDebitMPT`.
+ *
+ *  @param issue  The MPT issuance for which the issuer's capacity is queried.
+ *  @param amount Current `OutstandingAmount` as reported by the underlying
+ *      ledger view.
+ *  @return Adjusted available issuance, or zero if `selfDebit >= origBalance`.
+ */
 STAmount
 PaymentSandbox::balanceHookSelfIssueMPT(xrpl::MPTIssue const& issue, std::int64_t amount) const
 {
@@ -391,6 +530,17 @@ PaymentSandbox::balanceHookSelfIssueMPT(xrpl::MPTIssue const& issue, std::int64_
     return STAmount{issue};
 }
 
+/** Return the peak owner count for `account` seen across the sandbox chain.
+ *
+ *  Walks all ancestor sandboxes and returns the maximum of `count` and any
+ *  recorded peak, ensuring reserve checks reflect the highest owner count
+ *  incurred at any point during the payment even if trust lines created
+ *  mid-payment have since been deleted.
+ *
+ *  @param account Account being queried.
+ *  @param count   Current owner count from the underlying ledger view.
+ *  @return Maximum of `count` and the peak recorded across all sandboxes.
+ */
 std::uint32_t
 PaymentSandbox::ownerCountHook(AccountID const& account, std::uint32_t count) const
 {
@@ -403,6 +553,18 @@ PaymentSandbox::ownerCountHook(AccountID const& account, std::uint32_t count) co
     return result;
 }
 
+/** Intercept an IOU credit and record it in the deferred-credit table.
+ *
+ *  Called by the payment engine whenever an IOU amount flows from `from` to
+ *  `to`.  Forwards directly to `tab_.creditIOU` so the credit is deferred
+ *  and invisible to subsequent balance queries within the same payment.
+ *
+ *  @param from              Sending account.
+ *  @param to                Receiving account.
+ *  @param amount            Positive IOU amount being credited.
+ *  @param preCreditBalance  Sender's trust-line balance before this credit;
+ *      used as the original-balance snapshot on first call per pair.
+ */
 void
 PaymentSandbox::creditHookIOU(
     AccountID const& from,
@@ -415,6 +577,17 @@ PaymentSandbox::creditHookIOU(
     tab_.creditIOU(from, to, amount, preCreditBalance);
 }
 
+/** Intercept an MPT credit and record it in the deferred-credit table.
+ *
+ *  Called by the payment engine whenever an MPT amount flows from `from` to
+ *  `to`.  Forwards directly to `tab_.creditMPT`.
+ *
+ *  @param from                    Sending account (issuer or holder).
+ *  @param to                      Receiving account.
+ *  @param amount                  Positive MPT amount being credited.
+ *  @param preCreditBalanceHolder  Receiver's MPToken balance before this credit.
+ *  @param preCreditBalanceIssuer  Issuer's `OutstandingAmount` before this credit.
+ */
 void
 PaymentSandbox::creditHookMPT(
     AccountID const& from,
@@ -428,6 +601,16 @@ PaymentSandbox::creditHookMPT(
     tab_.creditMPT(from, to, amount, preCreditBalanceHolder, preCreditBalanceIssuer);
 }
 
+/** Intercept an MPT issuer self-debit and record it in the deferred-credit table.
+ *
+ *  Called when the issuer executes a sell offer for their own MPT.  Forwards
+ *  to `tab_.issuerSelfDebitMPT` so `balanceHookSelfIssueMPT` can later cap
+ *  available issuance correctly.
+ *
+ *  @param issue       Identifies the MPT issuance.
+ *  @param amount      Positive amount the issuer is self-debiting.
+ *  @param origBalance Issuer's `OutstandingAmount` before path execution began.
+ */
 void
 PaymentSandbox::issuerSelfDebitHookMPT(
     MPTIssue const& issue,
@@ -439,6 +622,15 @@ PaymentSandbox::issuerSelfDebitHookMPT(
     tab_.issuerSelfDebitMPT(issue, amount, origBalance);
 }
 
+/** Record an owner-count change for `account` in this sandbox's peak table.
+ *
+ *  Forwards to `tab_.ownerCount(account, cur, next)`, which stores
+ *  `max(cur, next)` and retains the running maximum across calls.
+ *
+ *  @param account Account whose owner count is changing.
+ *  @param cur     Owner count before the adjustment.
+ *  @param next    Owner count after the adjustment.
+ */
 void
 PaymentSandbox::adjustOwnerCountHook(
     AccountID const& account,
@@ -448,6 +640,14 @@ PaymentSandbox::adjustOwnerCountHook(
     tab_.ownerCount(account, cur, next);
 }
 
+/** Commit this sandbox's ledger state changes to the underlying raw view.
+ *
+ *  Terminal form: asserts that `ps_ == nullptr`, confirming this is the
+ *  outermost sandbox with no unresolved parent.  The deferred-credit table
+ *  is not forwarded here; only `items_` (ledger object mutations) are flushed.
+ *
+ *  @param to Destination raw view (typically the `ApplyView` for the tx).
+ */
 void
 PaymentSandbox::apply(RawView& to)
 {
@@ -455,6 +655,14 @@ PaymentSandbox::apply(RawView& to)
     items_.apply(to);
 }
 
+/** Merge this sandbox into a parent `PaymentSandbox`.
+ *
+ *  Propagates both ledger state changes (`items_`) and the deferred-credit
+ *  tables (`tab_`) into the parent.  Asserts that `ps_ == &to`, enforcing
+ *  that only the direct parent may be the merge target.
+ *
+ *  @param to Parent sandbox into which this sandbox's state is merged.
+ */
 void
 PaymentSandbox::apply(PaymentSandbox& to)
 {
@@ -463,6 +671,10 @@ PaymentSandbox::apply(PaymentSandbox& to)
     tab_.apply(to.tab_);
 }
 
+/** Return the total XRP destroyed (burned as fees) within this sandbox.
+ *
+ *  @return Drop count forwarded from `items_.dropsDestroyed()`.
+ */
 XRPAmount
 PaymentSandbox::xrpDestroyed() const
 {

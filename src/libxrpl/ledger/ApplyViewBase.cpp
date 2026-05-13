@@ -1,3 +1,25 @@
+/** @file
+ *  Implements `ApplyViewBase`, the shared concrete base for all mutable
+ *  ledger views that buffer per-transaction state changes.
+ *
+ *  The file contains only thin delegation: every `ReadView` query that does
+ *  not need awareness of pending writes forwards directly to `base_`, while
+ *  every change-aware read and every mutation routes through `items_` (an
+ *  `ApplyStateTable`).
+ *
+ *  Two design choices here are non-obvious:
+ *  - `slesBegin`, `slesEnd`, and `slesUpperBound` bypass `items_` and forward
+ *    to `base_` directly.  The apply phase never needs to iterate over its own
+ *    pending inserts; bypassing the buffer keeps SLE iteration consistent with
+ *    the base snapshot and avoids materialising the full merged key space.
+ *  - `rawInsert` and `rawErase` use *different* `ApplyStateTable` entry points.
+ *    `rawInsert` calls `items_.insert()` — the same validated path as the
+ *    high-level `insert()`.  `rawErase` calls `items_.rawErase()`, which
+ *    bypasses the pointer-identity ownership check enforced by `items_.erase()`.
+ *    This asymmetry exists because `RawView` callers (e.g., `Sandbox::apply`)
+ *    flush changes from another view's table and cannot satisfy the
+ *    same-pointer ownership invariant.
+ */
 #include <xrpl/ledger/detail/ApplyViewBase.h>
 
 #include <xrpl/basics/base_uint.h>

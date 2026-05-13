@@ -22,14 +22,54 @@
 
 namespace xrpl {
 
-// This code is used to compare another node's transaction tree
-// to our own. It returns a map containing all items that are different
-// between two SHA maps. It is optimized not to descend down tree
-// branches with the same branch hash. A limit can be passed so
-// that we will abort early if a node sends a map to us that
-// makes no sense at all. (And our sync algorithm will avoid
-// synchronizing matching branches too.)
+/** @file
+ *  Implements SHAMap comparison (delta) and completeness-check (walkMap)
+ *  operations. These are logically separate from the core map mechanics
+ *  (insert, fetch, hash) and answer two questions: how do two trees differ,
+ *  and what nodes are missing from this tree?
+ *
+ *  The delta algorithm short-circuits at matching subtree hashes, giving
+ *  O(d) complexity in the number of differences rather than O(n) in total
+ *  items. Missing-node detection uses iterative DFS (sequential) or
+ *  depth-1-partitioned parallel traversal.
+ */
 
+/** Walk a subtree that is paired with an empty branch or single item from
+ *  the other map, collecting all differences into `differences`.
+ *
+ *  This is the asymmetric-case helper for `compare`. One side of the
+ *  traversal has a full subtree rooted at `node`; the other side has either
+ *  nothing (`otherMapItem == nullptr`) or a single leaf item.
+ *
+ *  For each leaf found in the subtree three outcomes are possible:
+ *  - No counterpart (`emptyBranch` is true or keys differ): the leaf is
+ *      recorded as unmatched (one half of the `DeltaItem` pair is null).
+ *  - Same key, different payload: recorded as a modification; `emptyBranch`
+ *      is set to suppress a trailing entry for `otherMapItem`.
+ *  - Exact match (same key and payload): silently consumed; `emptyBranch`
+ *      is set.
+ *
+ *  After the walk, if `otherMapItem` was never matched it is inserted as its
+ *  own unmatched entry.
+ *
+ *  `isFirstMap` determines which half of the `DeltaItem` pair receives `this`
+ *  map's item versus the other map's item, so the semantic ordering
+ *  (first-map version, second-map version) is preserved regardless of which
+ *  direction the asymmetry runs.
+ *
+ *  @param node          Root of the subtree to walk. Must not be null.
+ *  @param otherMapItem  The single item from the opposite side, or null if
+ *      that side has no branch here.
+ *  @param isFirstMap    `true` if `this` map is the first operand of the
+ *      enclosing `compare` call; controls `DeltaItem` pair ordering.
+ *  @param differences   Accumulator; entries are appended.
+ *  @param maxCount      Shared budget counter; decremented per insertion.
+ *      Passed by reference so the budget is shared across all delegations
+ *      from `compare`.
+ *  @return `true` if the walk completed within budget; `false` if `maxCount`
+ *      was exhausted (diff is truncated).
+ *  @throws SHAMapMissingNode if a referenced node cannot be fetched.
+ */
 bool
 SHAMap::walkBranch(
     SHAMapTreeNode* node,
@@ -38,8 +78,6 @@ SHAMap::walkBranch(
     Delta& differences,
     int& maxCount) const
 {
-    // Walk a branch of a SHAMap that's matched by an empty branch or single
-    // item in the other map
     std::stack<SHAMapTreeNode*, std::vector<SHAMapTreeNode*>> nodeStack;
     nodeStack.push(node);
 
@@ -52,7 +90,6 @@ SHAMap::walkBranch(
 
         if (node->isInner())
         {
-            // This is an inner node, add all non-empty branches
             auto inner = safeDowncast<SHAMapInnerNode*>(node);
             for (int i = 0; i < 16; ++i)
             {
@@ -62,12 +99,10 @@ SHAMap::walkBranch(
         }
         else
         {
-            // This is a leaf node, process its item
             auto item = safeDowncast<SHAMapLeafNode*>(node)->peekItem();
 
             if (emptyBranch || (item->key() != otherMapItem->key()))
             {
-                // unmatched
                 if (isFirstMap)
                 {
                     differences.insert(std::make_pair(item->key(), DeltaRef(item, nullptr)));
@@ -82,7 +117,6 @@ SHAMap::walkBranch(
             }
             else if (item->slice() != otherMapItem->slice())
             {
-                // non-matching items with same tag
                 if (isFirstMap)
                 {
                     differences.insert(std::make_pair(item->key(), DeltaRef(item, otherMapItem)));
@@ -99,7 +133,6 @@ SHAMap::walkBranch(
             }
             else
             {
-                // exact match
                 emptyBranch = true;
             }
         }
@@ -107,9 +140,9 @@ SHAMap::walkBranch(
 
     if (!emptyBranch)
     {
-        // otherMapItem was unmatched, must add
+        // otherMapItem's key did not appear anywhere in the subtree — record it as unmatched
         if (isFirstMap)
-        {  // this is first map, so other item is from second
+        {
             differences.insert(
                 std::make_pair(otherMapItem->key(), DeltaRef(nullptr, otherMapItem)));
         }
@@ -129,11 +162,6 @@ SHAMap::walkBranch(
 bool
 SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
 {
-    // compare two hash trees, add up to maxCount differences to the difference
-    // table return value: true=complete table of differences given, false=too
-    // many differences throws on corrupt tables or missing nodes CAUTION:
-    // otherMap is not locked and must be immutable
-
     XRPL_ASSERT(
         isValid() && otherMap.isValid(), "xrpl::SHAMap::compare : valid state and valid input");
 
@@ -141,7 +169,7 @@ SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
         return true;
 
     using StackEntry = std::pair<SHAMapTreeNode*, SHAMapTreeNode*>;
-    std::stack<StackEntry, std::vector<StackEntry>> nodeStack;  // track nodes we've pushed
+    std::stack<StackEntry, std::vector<StackEntry>> nodeStack;
 
     nodeStack.emplace(root_.get(), otherMap.root_.get());
     while (!nodeStack.empty())
@@ -159,7 +187,6 @@ SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
 
         if (ourNode->isLeaf() && otherNode->isLeaf())
         {
-            // two leaves
             auto ours = safeDowncast<SHAMapLeafNode*>(ourNode);
             auto other = safeDowncast<SHAMapLeafNode*>(otherNode);
             if (ours->peekItem()->key() == other->peekItem()->key())

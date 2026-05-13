@@ -1,3 +1,12 @@
+/** @file
+ *  Central dispatch registry mapping RPC method names to handler functions.
+ *
+ *  Defines the static handler table (`kHANDLER_ARRAY`), the `HandlerTable`
+ *  singleton that owns the live multimap, and the two public lookup functions
+ *  `getHandler()` and `getHandlerNames()`. Version overlap between same-named
+ *  handlers is a fatal `LogicError` detected at startup.
+ */
+
 #include <xrpld/rpc/detail/Handler.h>
 
 #include <xrpld/rpc/Context.h>
@@ -21,7 +30,19 @@
 namespace xrpl::RPC {
 namespace {
 
-/** Adjust an old-style handler to be call-by-reference. */
+/** Adapt an old-style free-function handler to the canonical by-reference signature.
+ *
+ *  Old-style handlers return `Json::Value` by value. The dispatch layer requires
+ *  `Status(JsonContext&, Json::Value&)`. This shim calls `f`, assigns the result
+ *  to `result`, and verifies that the return value is a JSON object. If it is not
+ *  — which is a programming error, not a user error — `makeObjectValue()` wraps it
+ *  defensively. That branch is excluded from coverage because correct handlers
+ *  never reach it.
+ *
+ *  @tparam Function  An old-style handler callable: `Json::Value(JsonContext&)`.
+ *  @param f  The old-style handler to wrap.
+ *  @return A `Handler::Method<json::Value>` suitable for storage in `Handler::valueMethod`.
+ */
 template <typename Function>
 Handler::Method<json::Value>
 byRef(Function const& f)
@@ -40,6 +61,20 @@ byRef(Function const& f)
     };
 }
 
+/** Drive a new-style class-based handler through its two-phase dispatch.
+ *
+ *  Asserts that `context.apiVersion` is within `[HandlerImpl::minApiVer,
+ *  HandlerImpl::maxApiVer]`, then constructs `HandlerImpl`, runs `check()`,
+ *  and either injects the error status into `object` or calls `writeResult()`.
+ *
+ *  @tparam Object      The JSON output type (typically `json::Value`).
+ *  @tparam HandlerImpl A class with static `minApiVer`/`maxApiVer`, a
+ *      `check()` method returning `Status`, and a `writeResult(Object&)` method.
+ *  @param context  The dispatched RPC context.
+ *  @param object   Output parameter populated by `writeResult()` on success,
+ *      or by `Status::inject()` on failure.
+ *  @return The `Status` returned by `check()`, or `Status()` on success.
+ */
 template <class Object, class HandlerImpl>
 Status
 handle(JsonContext& context, Object& object)
@@ -62,6 +97,16 @@ handle(JsonContext& context, Object& object)
     return status;
 }
 
+/** Construct a `Handler` value-struct from a new-style class-based handler.
+ *
+ *  Reads the static metadata fields (`name`, `role`, `condition`,
+ *  `minApiVer`, `maxApiVer`) from `HandlerImpl` and binds `handle<>` as
+ *  the callable, producing a `Handler` ready for insertion into the table.
+ *
+ *  @tparam HandlerImpl A new-style handler class (e.g. `LedgerHandler`,
+ *      `VersionHandler`) with the required static metadata fields.
+ *  @return A fully populated `Handler` struct.
+ */
 template <typename HandlerImpl>
 Handler
 handlerFrom()
@@ -75,6 +120,22 @@ handlerFrom()
         HandlerImpl::maxApiVer};
 }
 
+/** Static registry of all old-style RPC handlers.
+ *
+ *  Each entry specifies the method name, the wrapped handler callable,
+ *  the required role (`USER` or `ADMIN`), the network/ledger condition
+ *  that must be satisfied before dispatch, and an optional API version
+ *  range (defaults to `[kAPI_MINIMUM_SUPPORTED_VERSION, kAPI_MAXIMUM_VALID_VERSION]`).
+ *
+ *  Entries with explicit `minApiVer`/`maxApiVer` (e.g. `ledger_header`,
+ *  `tx_history`) are hidden from clients using API versions outside that
+ *  range. `LedgerHandler` and `VersionHandler` are new-style handlers
+ *  registered separately via `HandlerTable::addHandler()` and are not
+ *  listed here.
+ *
+ *  @note Adding a handler here without also ensuring no version overlap
+ *      with an existing same-named entry causes `logicError()` at startup.
+ */
 Handler const kHANDLER_ARRAY[]{
     // Some handlers not specified here are added to the table via addHandler()
     // Request-response methods
@@ -367,13 +428,34 @@ Handler const kHANDLER_ARRAY[]{
      .condition = Condition::NoCondition},
 };
 
+/** Immutable dispatch table mapping RPC method names to `Handler` entries.
+ *
+ *  Built once at startup from `kHANDLER_ARRAY` plus the two new-style
+ *  handlers (`LedgerHandler`, `VersionHandler`). The backing store is a
+ *  `std::multimap` so that a single method name may have multiple entries
+ *  covering non-overlapping API version ranges. Any version overlap detected
+ *  during construction causes `logicError()`, crashing the process before it
+ *  accepts any requests.
+ *
+ *  Access the singleton via `HandlerTable::instance()`. The object is
+ *  const after construction and requires no locking.
+ */
 class HandlerTable
 {
 private:
     using handler_table_t = std::multimap<std::string, Handler>;
 
-    // Use with equal_range to enforce that API range of a newly added handler
-    // does not overlap with API range of an existing handler with same name
+    /** Check whether a candidate version range overlaps any existing entry for the same name.
+     *
+     *  Uses the standard interval-overlap test: two ranges `[a,b]` and `[c,d]` overlap
+     *  iff `a <= d && b >= c`. Called during construction to enforce the invariant that
+     *  each `(name, version)` pair maps to at most one handler.
+     *
+     *  @param range   The `equal_range` result for the method name being inserted.
+     *  @param minVer  Lower bound of the candidate version range (inclusive).
+     *  @param maxVer  Upper bound of the candidate version range (inclusive).
+     *  @return `true` if any existing entry for the name overlaps `[minVer, maxVer]`.
+     */
     [[nodiscard]] static bool
     overlappingApiVersion(
         std::pair<handler_table_t::iterator, handler_table_t::iterator> range,
@@ -393,6 +475,16 @@ private:
             });
     }
 
+    /** Construct the table from a compile-time array of `Handler` entries.
+     *
+     *  Inserts every entry from `entries` into `table_`, calling `logicError()`
+     *  on any version overlap. After processing the array, registers the two
+     *  new-style handlers (`LedgerHandler`, `VersionHandler`) via `addHandler()`.
+     *
+     *  @tparam N  Size of the handler array (deduced).
+     *  @param entries  Array of old-style `Handler` descriptors (typically `kHANDLER_ARRAY`).
+     *  @throws LogicError if any two entries for the same name have overlapping version ranges.
+     */
     template <std::size_t N>
     explicit HandlerTable(Handler const (&entries)[N])
     {
@@ -415,6 +507,13 @@ private:
     }
 
 public:
+    /** Return the process-wide singleton instance, initializing it on first call.
+     *
+     *  Thread-safe by C++11 static-local initialization guarantees.
+     *  The returned reference is valid for the lifetime of the process.
+     *
+     *  @return A const reference to the single `HandlerTable`.
+     */
     static HandlerTable const&
     instance()
     {
@@ -422,6 +521,22 @@ public:
         return kHANDLER_TABLE;
     }
 
+    /** Look up the handler for a given API version and method name.
+     *
+     *  Returns `nullptr` immediately if `version` falls outside the supported
+     *  range: below `kAPI_MINIMUM_SUPPORTED_VERSION`, above
+     *  `kAPI_MAXIMUM_SUPPORTED_VERSION` (or `kAPI_BETA_VERSION` when
+     *  `betaEnabled` is true). This hides beta-only handlers from non-beta
+     *  nodes at the lookup level rather than inside each handler.
+     *
+     *  @param version      The API version of the incoming request.
+     *  @param betaEnabled  Whether to extend the upper version bound to
+     *      `kAPI_BETA_VERSION` for this node.
+     *  @param name         The RPC method name (e.g. `"account_info"`).
+     *  @return Pointer to the matching `Handler` in the immutable table, or
+     *      `nullptr` if the version is unsupported or no handler is registered
+     *      for `name` at `version`.
+     */
     [[nodiscard]] Handler const*
     getHandler(unsigned version, bool betaEnabled, std::string const& name) const
     {
@@ -437,6 +552,14 @@ public:
         return i == range.second ? nullptr : &i->second;
     }
 
+    /** Return the names of all registered RPC methods.
+     *
+     *  Returns raw string pointers into the table entries. Callers must treat
+     *  these as interned constants — they are valid for the lifetime of the
+     *  process and must not be freed or compared by address.
+     *
+     *  @return A `std::set` of `char const*` pointing into the handler name fields.
+     */
     [[nodiscard]] std::set<char const*>
     getHandlerNames() const
     {
@@ -450,6 +573,16 @@ public:
 private:
     handler_table_t table_;
 
+    /** Register a new-style class-based handler in the table.
+     *
+     *  Performs compile-time bounds checks on the handler's version range and
+     *  a runtime overlap check against existing entries. Calls `logicError()`
+     *  if any overlap is detected.
+     *
+     *  @tparam HandlerImpl  A new-style handler class with static metadata fields
+     *      (`name`, `minApiVer`, `maxApiVer`, `role`, `condition`).
+     *  @throws LogicError if `HandlerImpl`'s version range overlaps an existing entry.
+     */
     template <class HandlerImpl>
     void
     addHandler()
@@ -474,12 +607,34 @@ private:
 
 }  // namespace
 
+/** Look up the handler for an incoming RPC request.
+ *
+ *  Delegates to `HandlerTable::instance().getHandler()`. Returns `nullptr`
+ *  when `version` is outside the supported range or no handler is registered
+ *  for `name` at that version. The returned pointer is into the immutable
+ *  singleton table and remains valid for the lifetime of the process.
+ *
+ *  @param version      The API version of the incoming request.
+ *  @param betaEnabled  Whether beta API versions are enabled on this node.
+ *  @param name         The RPC method name string.
+ *  @return Pointer to the matching `Handler`, or `nullptr` if not found.
+ *  @see HandlerTable::getHandler
+ */
 Handler const*
 getHandler(unsigned version, bool betaEnabled, std::string const& name)
 {
     return HandlerTable::instance().getHandler(version, betaEnabled, name);
 }
 
+/** Return the names of every registered RPC method.
+ *
+ *  Used by introspection paths (e.g. `server_info`, tests) to enumerate the
+ *  full method surface. The returned pointers are interned into the singleton
+ *  table and are valid for the process lifetime; do not free them.
+ *
+ *  @return A `std::set<char const*>` of method name strings.
+ *  @see HandlerTable::getHandlerNames
+ */
 std::set<char const*>
 getHandlerNames()
 {

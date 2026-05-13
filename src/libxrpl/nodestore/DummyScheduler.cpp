@@ -1,3 +1,11 @@
+/** @file
+ *  Synchronous no-op implementation of the NodeStore `Scheduler` interface.
+ *
+ *  All three virtual methods are trivial: `scheduleTask` runs the task
+ *  inline on the calling thread; the two telemetry hooks are empty. See
+ *  `DummyScheduler.h` for the full behavioral contract and usage guidance.
+ */
+
 #include <xrpl/nodestore/DummyScheduler.h>
 
 #include <xrpl/nodestore/Scheduler.h>
@@ -8,7 +16,6 @@ namespace xrpl::NodeStore {
 void
 DummyScheduler::scheduleTask(Task& task)
 {
-    // Invoke the task synchronously.
     task.performScheduledTask();
 }
 

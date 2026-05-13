@@ -1,3 +1,16 @@
+/** @file
+ *  Implements `OpenView`, the mutable in-memory ledger scratchpad used during
+ *  transaction processing.
+ *
+ *  `OpenView` maintains two independent delta layers over an immutable base
+ *  `ReadView`: a `RawStateTable` for SLE mutations and a PMR `std::map` for
+ *  transaction records. Neither layer touches the base until `apply()` is
+ *  called, making speculative execution and rollback straightforward.
+ *
+ *  Both maps are backed by a 256 KB `monotonic_buffer_resource`. The resource
+ *  must outlive the maps; the `unique_ptr` member ordering guarantees this via
+ *  reverse-declaration-order destruction.
+ */
 #include <xrpl/ledger/OpenView.h>
 
 #include <xrpl/basics/base_uint.h>
@@ -24,6 +37,22 @@
 
 namespace xrpl {
 
+/** Polymorphic iterator adapter over `OpenView`'s flat `txs_map`.
+ *
+ *  Implements the `TxsType::iter_base` interface expected by `ReadView`'s
+ *  range adapters. Two constructors are not exposed — the only entry point
+ *  is via `txsBegin()`/`txsEnd()`, both of which pass `!open()` as the
+ *  `metadata` flag.
+ *
+ *  When `metadata_` is `false` (open ledger), `dereference()` only
+ *  deserialises the transaction body and leaves the metadata slot null.
+ *  When `metadata_` is `true` (closed-ledger view), both the transaction
+ *  and its `sfMetadata` object are deserialised on demand.
+ *
+ *  `equal()` uses `dynamic_cast` to guard against cross-type comparison:
+ *  if the operand is not a `TxsIterImpl` the iterators are considered
+ *  unequal, preventing undefined behaviour when mixing iterator types.
+ */
 class OpenView::TxsIterImpl : public TxsType::iter_base
 {
 private:

@@ -1,3 +1,8 @@
+/** @file
+ *  Implements `extractTarLz4`, the decompression primitive used when
+ *  bootstrapping an XRPL node from a pre-built ledger database snapshot.
+ */
+
 #include <xrpl/basics/Archive.h>
 
 #include <xrpl/basics/contract.h>
@@ -14,6 +19,37 @@
 
 namespace xrpl {
 
+/** Decompress and extract a `.tar.lz4` archive into a destination directory.
+ *
+ *  Uses the libarchive two-handle idiom: a read handle (`ar`) for
+ *  decompression and TAR parsing, and a disk-write handle (`aw`) for
+ *  filesystem output. Both handles are managed by RAII `unique_ptr` with
+ *  custom deleters so they are released on any exit path, including throws.
+ *
+ *  The reader is narrowed explicitly to TAR + LZ4 rather than using
+ *  auto-detect, so passing a different archive format fails early with a
+ *  clear error. The writer restores timestamps, permissions, ACLs, and file
+ *  flags (`ARCHIVE_EXTRACT_TIME | ARCHIVE_EXTRACT_PERM | ARCHIVE_EXTRACT_ACL
+ *  | ARCHIVE_EXTRACT_FFLAGS`) and resolves user/group names via the local
+ *  system's user database.
+ *
+ *  Every stored entry pathname is prefixed with `dst` before writing, so all
+ *  output lands under the caller-supplied destination regardless of the paths
+ *  recorded in the archive.
+ *
+ *  @param src Path to the `.tar.lz4` source file; must be a regular file.
+ *  @param dst Destination directory under which all entries are extracted.
+ *  @throws std::runtime_error if `src` is not a regular file, if any
+ *      libarchive call fails, or if a filesystem write error occurs. On
+ *      error mid-extraction the destination is left in a partial state;
+ *      callers that require atomicity must clean up themselves.
+ *  @note The pathname rewrite prepends `dst` but does not strip `..`
+ *      components from stored entry names. Archives from untrusted sources
+ *      could use paths such as `../../etc/cron.d/evil` to escape `dst`.
+ *      This is acceptable for the trusted first-party snapshots this
+ *      function was designed for, but callers should be aware of the
+ *      limitation before using it against untrusted input.
+ */
 void
 extractTarLz4(boost::filesystem::path const& src, boost::filesystem::path const& dst)
 {
@@ -31,7 +67,7 @@ extractTarLz4(boost::filesystem::path const& src, boost::filesystem::path const&
     if (archive_read_support_filter_lz4(ar.get()) < ARCHIVE_OK)
         Throw<std::runtime_error>(archive_error_string(ar.get()));
 
-    // Examples suggest this block size
+    // 10 240-byte block size matches libarchive's own example code.
     if (archive_read_open_filename(ar.get(), src.string().c_str(), 10240) < ARCHIVE_OK)
     {
         Throw<std::runtime_error>(archive_error_string(ar.get()));

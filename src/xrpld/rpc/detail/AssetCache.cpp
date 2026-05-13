@@ -1,3 +1,23 @@
+/** @file
+ *  Implementation of `AssetCache`: a per-ledger, thread-safe cache of trust
+ *  lines and MPT holdings used by the pathfinding engine.
+ *
+ *  The cache sits between `Pathfinder` and the ledger SLE store.  Because the
+ *  pathfinder may query the same account's trust lines many times during a
+ *  single search pass, the cache amortises the cost of repeated SLE reads
+ *  across all traversal steps.  It is scoped to a single immutable `ReadView`,
+ *  so its contents are always consistent with one ledger version and can never
+ *  become stale during the lifetime of a path request.
+ *
+ *  Key design points documented here:
+ *   - Direction-superset optimisation in `getRippleLines()` keeps at most one
+ *     trust-line vector per account in memory (always the outgoing superset).
+ *   - `nullptr` sentinels in both maps avoid allocating empty vectors for the
+ *     estimated >90 % of accounts that have no usable lines for a given search.
+ *   - Both `getRippleLines()` and `getMPTs()` hold `lock_` for their entire
+ *     operation; concurrency is handled by coarse mutual exclusion.
+ */
+
 #include <xrpld/rpc/detail/AssetCache.h>
 
 #include <xrpld/rpc/detail/MPT.h>
@@ -22,12 +42,27 @@
 
 namespace xrpl {
 
+/** Construct the cache for a specific ledger snapshot.
+ *
+ *  Logs a `debug`-level message recording the ledger sequence so that
+ *  cache lifetimes can be correlated with path-search activity.
+ *
+ *  @param ledger The immutable ledger view this cache is bound to.  Kept
+ *      alive by the `shared_ptr` for the lifetime of the cache.
+ *  @param j Journal used for diagnostic logging.
+ */
 AssetCache::AssetCache(std::shared_ptr<ReadView const> const& ledger, beast::Journal j)
     : ledger_(ledger), journal_(j)
 {
     JLOG(journal_.debug()) << "created for ledger " << ledger_->header().seq;
 }
 
+/** Log cache statistics at destruction.
+ *
+ *  Emits a `debug`-level message with the final account count and total
+ *  distinct trust-line count, giving operators insight into path-search
+ *  memory workload for the associated ledger sequence.
+ */
 AssetCache::~AssetCache()
 {
     JLOG(journal_.debug()) << "destroyed for ledger " << ledger_->header().seq << " with "
@@ -35,6 +70,39 @@ AssetCache::~AssetCache()
                            << " distinct trust lines.";
 }
 
+/** Return the cached trust lines for `accountID` under the direction-superset
+ *  optimisation.
+ *
+ *  The outgoing set (all trust lines) is always a superset of the incoming set
+ *  (only rippling-enabled lines).  To avoid storing the same data twice the
+ *  cache converges to at most one entry per account:
+ *
+ *   - If the **outgoing** set is requested and an **incoming** subset is already
+ *     cached: the smaller subset is erased and the full outgoing set is built
+ *     and stored in its place.  `totalLineCount_` is decremented by the erased
+ *     count before the new count is added, and an `XRPL_ASSERT` guards against
+ *     underflow.
+ *   - If the **incoming** set is requested and an **outgoing** superset is
+ *     already cached: the superset is returned directly (the key is redirected
+ *     to the existing outgoing entry).  Non-rippling lines that it contains are
+ *     harmlessly ignored by the pathfinder.
+ *   - On the first request for either direction: a `nullptr` sentinel is
+ *     emplaced and then replaced by the result of
+ *     `PathFindTrustLine::getItems()`.  A second `XRPL_ASSERT` ensures the
+ *     emplace only fires when the slot was genuinely unoccupied.
+ *
+ *  A `nullptr` return value means the account has no usable trust lines for
+ *  the given direction; the pathfinder treats this identically to an empty
+ *  vector but at lower memory cost.
+ *
+ *  @param accountID The account whose trust lines are requested.
+ *  @param direction `Outgoing` to obtain all lines; `Incoming` to obtain only
+ *      rippling-enabled lines (though the superset may be returned if already
+ *      cached).
+ *  @return A shared pointer to the trust-line vector, or `nullptr` if the
+ *      account has no usable lines.  The pointer may safely be shared across
+ *      threads; the underlying vector is never mutated after insertion.
+ */
 std::shared_ptr<std::vector<PathFindTrustLine>>
 AssetCache::getRippleLines(AccountID const& accountID, LineDirection direction)
 {
@@ -114,6 +182,31 @@ AssetCache::getRippleLines(AccountID const& accountID, LineDirection direction)
     return it->second;
 }
 
+/** Return the cached MPT holdings for `account`, populating on first access.
+ *
+ *  On the first call for a given account the function scans the account's
+ *  owner directory via `forEachItem()` and collects two SLE categories:
+ *
+ *   - `ltMPTOKEN_ISSUANCE` — the account is the issuer.  `zeroBalance` is
+ *     always `false` for issuers; `maxedOut` is `true` when
+ *     `sfOutstandingAmount` equals `maxMPTAmount()`.
+ *   - `ltMPTOKEN` — the account is a holder.  `zeroBalance` is `true` when
+ *     `sfMPTAmount == 0`.  `maxedOut` is derived from the corresponding
+ *     issuance SLE; if the issuance SLE cannot be found (e.g. it was deleted),
+ *     `maxedOut` defaults conservatively to `true`.
+ *
+ *  Like `getRippleLines()`, accounts with no MPTs are stored as `nullptr`
+ *  rather than an empty vector to reduce allocations for the common case.
+ *
+ *  @param account The account whose MPT holdings and issuances are requested.
+ *  @return A const reference to the internal `shared_ptr` holding the MPT
+ *      vector, or a reference to a `nullptr` if the account has no MPTs.
+ *      Returning by `const&` avoids an unnecessary reference-count increment
+ *      on the hot path.
+ *  @note The returned reference is valid only while `lock_` is not re-acquired
+ *      by another thread that could rehash `mpts_`; callers must copy the
+ *      `shared_ptr` if they need to hold it past the current call frame.
+ */
 std::shared_ptr<std::vector<PathFindMPT>> const&
 AssetCache::getMPTs(xrpl::AccountID const& account)
 {
@@ -123,7 +216,6 @@ AssetCache::getMPTs(xrpl::AccountID const& account)
         return it->second;
 
     std::vector<PathFindMPT> mpts;
-    // Get issued/authorized tokens
     forEachItem(*ledger_, account, [&](std::shared_ptr<SLE const> const& sle) {
         if (sle->getType() == ltMPTOKEN_ISSUANCE)
         {
@@ -140,6 +232,8 @@ AssetCache::getMPTs(xrpl::AccountID const& account)
                 {
                     return sleIssuance->at(sfOutstandingAmount) == maxMPTAmount(*sleIssuance);
                 }
+                // Conservative default: treat missing issuance as maxed out so
+                // the pathfinder does not attempt to route through a defunct MPT.
                 return true;
             }();
 

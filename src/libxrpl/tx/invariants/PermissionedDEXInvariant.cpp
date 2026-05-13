@@ -1,3 +1,13 @@
+/** @file
+ *  Implements ValidPermissionedDEX, the invariant checker for the
+ *  Permissioned DEX amendment.
+ *
+ *  Enforces domain isolation for successful ttPAYMENT and ttOFFER_CREATE
+ *  transactions: every ltDIR_NODE and ltOFFER touched must carry the same
+ *  sfDomainID as the transaction, no regular offers may be affected, the
+ *  referenced ltPERMISSIONED_DOMAIN must exist, and all hybrid offers must be
+ *  structurally well-formed (exactly one sfAdditionalBooks entry).
+ */
 #include <xrpl/tx/invariants/PermissionedDEXInvariant.h>
 
 #include <xrpl/basics/Log.h>
@@ -41,14 +51,11 @@ ValidPermissionedDEX::visitEntry(
             regularOffers_ = true;
         }
 
-        // pre-fixSecurity3_1_3: hybrid offer missing domain, missing
-        // sfAdditionalBooks, or sfAdditionalBooks has more than one entry
         if (after->isFlag(lsfHybrid) &&
             (!after->isFieldPresent(sfDomainID) || !after->isFieldPresent(sfAdditionalBooks) ||
              after->getFieldArray(sfAdditionalBooks).size() > 1))
             badHybridsOld_ = true;
 
-        // post-fixSecurity3_1_3: same as above but also catches size == 0
         if (after->isFlag(lsfHybrid) &&
             (!after->isFieldPresent(sfDomainID) || !after->isFieldPresent(sfAdditionalBooks) ||
              after->getFieldArray(sfAdditionalBooks).size() != 1))
@@ -68,8 +75,6 @@ ValidPermissionedDEX::finalize(
     if ((txType != ttPAYMENT && txType != ttOFFER_CREATE) || !isTesSuccess(result))
         return true;
 
-    // For each offercreate transaction, check if
-    // permissioned offers are valid
     bool const isMalformed = view.rules().enabled(fixSecurity3_1_3) ? badHybrids_ : badHybridsOld_;
     if (txType == ttOFFER_CREATE && isMalformed)
     {
@@ -88,8 +93,6 @@ ValidPermissionedDEX::finalize(
         return false;
     }
 
-    // for both payment and offercreate, there shouldn't be another domain
-    // that's different from the domain specified
     for (auto const& d : domains_)
     {
         if (d != domain)

@@ -51,20 +51,48 @@
 
 namespace xrpl {
 
+/** CRTP base class for an order-book exchange step in the payment/offer-crossing engine.
+ *
+ *  A `BookStep` converts one asset to another by consuming offers from the
+ *  Central Limit Order Book (CLOB) and/or an AMM pool whose in/out assets
+ *  match `book_`.  It sits between endpoint steps and is responsible for
+ *  price discovery and execution at the ledger level.
+ *
+ *  `TIn` and `TOut` encode the amount types (`XRPAmount`, `IOUAmount`,
+ *  `MPTAmount`), eliminating virtual dispatch on the hot iteration path.
+ *  `TDerived` supplies policy hooks for transfer-fee handling, self-cross
+ *  logic, and quality-threshold enforcement; two concrete sub-classes exist:
+ *  `BookPaymentStep` (regular payments) and `BookOfferCrossingStep`.
+ *
+ *  All CRTP dispatch uses `static_cast<TDerived const*>(this)->method()`.
+ *
+ *  @tparam TIn      Amount type flowing into the book (taker-pays side).
+ *  @tparam TOut     Amount type flowing out of the book (taker-gets side).
+ *  @tparam TDerived Concrete sub-class providing payment/crossing policy.
+ */
 template <class TIn, class TOut, class TDerived>
 class BookStep : public StepImp<TIn, TOut, BookStep<TIn, TOut, TDerived>>
 {
 protected:
+    /** Discriminates whether the best available offer comes from the AMM or CLOB. */
     enum class OfferType { Amm, Clob };
 
+    /** Maximum number of CLOB offers (funded or not) consumed per pass before
+     *  the step is marked inactive to prevent DoS via a dense order book.
+     */
     static constexpr uint32_t kMAX_OFFERS_TO_CONSUME{1000};
     Book book_;
     AccountID strandSrc_;
     AccountID strandDst_;
-    // Charge transfer fees when the prev step redeems
+    /** Pointer to the immediately preceding step; used to determine debt
+     *  direction and to compute transfer rates for offer crossing.
+     *  Null when this is the first step in the strand.
+     */
     Step const* const prevStep_ = nullptr;
     bool const ownerPaysTransferFee_;
-    // Mark as inactive (dry) if too many offers are consumed
+    /** True once `kMAX_OFFERS_TO_CONSUME` offers have been visited in a single
+     *  pass; signals the strand solver to abandon this strand rather than loop.
+     */
     bool inactive_ = false;
     /** Number of offers consumed or partially consumed the last time
         the step ran, including expired and unfunded offers.
@@ -74,13 +102,18 @@ protected:
         be partially consumed multiple times during a payment.
     */
     std::uint32_t offersUsed_ = 0;
-    // If set, AMM liquidity might be available
-    // if AMM offer quality is better than CLOB offer
-    // quality or there is no CLOB offer.
+    /** AMM liquidity for `book_`, if an AMM with nonzero LP-token balance
+     *  exists for this asset pair.  When set, each offer-iteration pass
+     *  checks whether the AMM offers better quality than the CLOB tip.
+     */
     std::optional<AMMLiquidity<TIn, TOut>> ammLiquidity_;
     beast::Journal const j_;
     Asset const strandDeliver_;
 
+    /** Holds the (in, out) amounts produced by the most recent `revImp` or
+     *  `fwdImp` call.  `fwdImp` asserts this is set before running, so
+     *  reverse must always precede forward.
+     */
     struct Cache
     {
         TIn in;
@@ -94,6 +127,16 @@ protected:
     std::optional<Cache> cache_;
 
 private:
+    /** Construct a BookStep for the given strand context and asset pair.
+     *
+     *  If an AMM SLE exists for `(in, out)` and its LP-token balance is
+     *  nonzero, `ammLiquidity_` is emplaced so subsequent passes can
+     *  compare AMM quality against the CLOB tip.
+     *
+     *  @param ctx  Strand construction context (view, src/dst, flags, etc.).
+     *  @param in   Asset on the taker-pays side of the book.
+     *  @param out  Asset on the taker-gets side of the book.
+     */
     BookStep(StrandContext const& ctx, Asset const& in, Asset const& out)
         : book_(in, out, ctx.domainID)
         , strandSrc_(ctx.strandSrc)
@@ -118,12 +161,16 @@ private:
     }
 
 public:
+    /** Returns the order book this step operates on. */
     [[nodiscard]] Book const&
     book() const
     {
         return book_;
     }
 
+    /** Returns the cached input amount from the last pass, or `nullopt` if no
+     *  pass has run yet.
+     */
     [[nodiscard]] std::optional<EitherAmount>
     cachedIn() const override
     {
@@ -132,6 +179,9 @@ public:
         return EitherAmount(cache_->in);
     }
 
+    /** Returns the cached output amount from the last pass, or `nullopt` if no
+     *  pass has run yet.
+     */
     [[nodiscard]] std::optional<EitherAmount>
     cachedOut() const override
     {
@@ -140,27 +190,64 @@ public:
         return EitherAmount(cache_->out);
     }
 
+    /** Returns `Issues` when the offer owner pays the transfer fee (i.e.
+     *  downstream steps receive the book-out asset without a trust-line
+     *  redemption); `Redeems` otherwise.
+     */
     [[nodiscard]] DebtDirection
     debtDirection(ReadView const& sb, StrandDirection dir) const override
     {
         return ownerPaysTransferFee_ ? DebtDirection::Issues : DebtDirection::Redeems;
     }
 
+    /** Returns the book for this step, allowing callers to identify it as a
+     *  book step (vs. a direct or endpoint step).
+     */
     [[nodiscard]] std::optional<Book>
     bookStepBook() const override
     {
         return book_;
     }
 
+    /** Returns a conservative upper bound on the quality deliverable by this
+     *  step, taking transfer fees into account, plus the resulting debt
+     *  direction.  Returns `nullopt` quality when the book and AMM are both
+     *  empty.
+     *
+     *  @param v            Read-only view of the current ledger state.
+     *  @param prevStepDir  Debt direction reported by the preceding step.
+     */
     [[nodiscard]] std::pair<std::optional<Quality>, DebtDirection>
     qualityUpperBound(ReadView const& v, DebtDirection prevStepDir) const override;
 
+    /** Returns the quality function for the best available offer (AMM or
+     *  CLOB), adjusted for transfer fees.  AMM quality functions are
+     *  non-constant (price moves with size); CLOB functions are constant.
+     *
+     *  @param v            Read-only view of the current ledger state.
+     *  @param prevStepDir  Debt direction reported by the preceding step.
+     */
     [[nodiscard]] std::pair<std::optional<QualityFunction>, DebtDirection>
     getQualityFunc(ReadView const& v, DebtDirection prevStepDir) const override;
 
+    /** Returns the number of offers (funded, unfunded, or expired) touched
+     *  during the most recent `revImp` or `fwdImp` call.
+     */
     [[nodiscard]] std::uint32_t
     offersUsed() const override;
 
+    /** Backward (reverse) simulation pass.
+     *
+     *  Iterates CLOB/AMM offers starting from the desired output `out`,
+     *  accumulates consumed amounts into a cache, and returns the total
+     *  `(in, out)` pair.  Offer IDs to remove are appended to `ofrsToRm`.
+     *
+     *  @param sb       Payment sandbox (mutable layered view).
+     *  @param afView   Apply view used for the offer stream.
+     *  @param ofrsToRm Accumulates keys of unfunded/bad offers to erase.
+     *  @param out      Desired output amount this step should deliver.
+     *  @return         Actual `(in, out)` amounts consumed/produced.
+     */
     std::pair<TIn, TOut>
     revImp(
         PaymentSandbox& sb,
@@ -168,6 +255,20 @@ public:
         boost::container::flat_set<uint256>& ofrsToRm,
         TOut const& out);
 
+    /** Forward pass.
+     *
+     *  Re-runs offer consumption from the actual available input `in`.
+     *  Requires `cache_` to be set (i.e., `revImp` must have run first).
+     *  A subtle normalization adjustment reconciles cases where IOU mantissa
+     *  subtraction yields zero, making an offer appear fully consumed when
+     *  it is not.
+     *
+     *  @param sb       Payment sandbox (mutable layered view).
+     *  @param afView   Apply view used for the offer stream.
+     *  @param ofrsToRm Accumulates keys of unfunded/bad offers to erase.
+     *  @param in       Actual input amount available for this step.
+     *  @return         Actual `(in, out)` amounts consumed/produced.
+     */
     std::pair<TIn, TOut>
     fwdImp(
         PaymentSandbox& sb,
@@ -175,13 +276,33 @@ public:
         boost::container::flat_set<uint256>& ofrsToRm,
         TIn const& in);
 
+    /** Validates the forward pass by re-running `fwdImp` and comparing the
+     *  result against the cached reverse output via `checkNear`.  Returns
+     *  `false` (rejecting the strand) if amounts diverge, which can happen
+     *  when ledger state changes between pathfinding reverse and apply forward.
+     *
+     *  @param sb     Payment sandbox.
+     *  @param afView Apply view.
+     *  @param in     Input amount to validate.
+     *  @return       `{true, out}` on success; `{false, zero}` on mismatch.
+     */
     std::pair<bool, EitherAmount>
     validFwd(PaymentSandbox& sb, ApplyView& afView, EitherAmount const& in) override;
 
-    // Check for errors frozen constraints.
+    /** Validates structural invariants for this book step before a strand is
+     *  committed.  Checks: same-asset book, issuer existence, loop detection
+     *  via `seenBookOuts`, NoRipple flag on the preceding trust line (IOU),
+     *  and MPT tradability.
+     *
+     *  @param ctx  Strand construction context.
+     *  @return     `tesSUCCESS` or an appropriate error code.
+     */
     [[nodiscard]] TER
     check(StrandContext const& ctx) const;
 
+    /** Returns true if too many offers were consumed on the last pass, causing
+     *  the strand solver to abandon this strand.
+     */
     [[nodiscard]] bool
     inactive() const override
     {
@@ -189,6 +310,12 @@ public:
     }
 
 protected:
+    /** Formats book issuers and currencies into a human-readable string for
+     *  logging.  Called by `logString()` in each derived class.
+     *
+     *  @param name  Class name prefix (e.g. `"BookPaymentStep"`).
+     *  @return      Multi-line diagnostic string.
+     */
     std::string
     logStringImpl(char const* name) const
     {
@@ -199,6 +326,14 @@ protected:
         return ostr.str();
     }
 
+    /** Returns the transfer rate for `asset` when sending to `dstAccount`.
+     *  Returns parity (`kPARITY_RATE`) for XRP or when the issuer is the
+     *  destination (self-transfer).
+     *
+     *  @param view        Read-only ledger view.
+     *  @param asset       Asset whose issuer's transfer rate is queried.
+     *  @param dstAccount  Destination account for this hop.
+     */
     [[nodiscard]] Rate
     rate(ReadView const& view, Asset const& asset, AccountID const& dstAccount) const;
 

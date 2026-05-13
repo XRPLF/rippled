@@ -1,3 +1,11 @@
+/** @file
+ *  Implements the `ValidLoanBroker` post-transaction invariant checker for
+ *  the Lending Protocol (XLS-66). Verifies that every `LoanBroker` ledger
+ *  object touched (directly or via its pseudo-account) by a transaction
+ *  remains internally consistent: non-negative accounting fields, monotonic
+ *  loan sequence, valid vault reference, and cover/balance agreement.
+ */
+
 #include <xrpl/tx/invariants/LoanBrokerInvariant.h>
 
 #include <xrpl/basics/Log.h>
@@ -19,6 +27,25 @@
 
 namespace xrpl {
 
+/** Collect ledger entries that may involve a LoanBroker.
+ *
+ *  Classifies each modified SLE into one of four buckets for deferred
+ *  validation in `finalize`:
+ *
+ *  - `ltLOAN_BROKER` — stored in `brokers_` with before/after snapshots.
+ *  - `ltACCOUNT_ROOT` carrying `sfLoanBrokerID` — the broker's pseudo-account;
+ *    creates a placeholder `BrokerInfo{}` entry in `brokers_` if none exists,
+ *    so the broker is checked even when its own SLE was not modified.
+ *  - `ltRIPPLE_STATE` — appended to `lines_` for issuer lookup in `finalize`.
+ *  - `ltMPTOKEN` — appended to `mpts_` for account lookup in `finalize`.
+ *
+ *  The `isDelete` flag is not used; the post-state `after` drives all checks
+ *  except the sequence-monotonicity comparison, which uses both snapshots.
+ *
+ *  @param isDelete True if the entry is being deleted (unused in this checker).
+ *  @param before   Pre-transaction SLE snapshot; may be null for new entries.
+ *  @param after    Post-transaction SLE snapshot; may be null for deletions.
+ */
 void
 ValidLoanBroker::visitEntry(
     bool isDelete,
@@ -50,6 +77,18 @@ ValidLoanBroker::visitEntry(
     }
 }
 
+/** Validate the owner directory of a broker whose `sfOwnerCount` is zero.
+ *
+ *  Per XLS-66 §3.12.3, a broker with no outstanding obligations must have a
+ *  single-page owner directory containing at most one entry, and that entry
+ *  may only be an `ltRIPPLE_STATE` or `ltMPTOKEN` object — the trust line or
+ *  MPToken through which the cover collateral is held.
+ *
+ *  @param view The current read-only ledger view.
+ *  @param dir  The owner directory root SLE for the broker's pseudo-account.
+ *  @param j    Journal for fatal-level diagnostics on failure.
+ *  @return True if the directory satisfies the zero-owner-count constraint.
+ */
 bool
 ValidLoanBroker::goodZeroDirectory(
     ReadView const& view,
@@ -91,6 +130,36 @@ ValidLoanBroker::goodZeroDirectory(
     return true;
 }
 
+/** Validate all LoanBroker objects touched by the transaction.
+ *
+ *  First performs indirect broker discovery: iterates `lines_` and `mpts_`
+ *  collected during `visitEntry`, reads each issuer/holder account root, and
+ *  registers any account carrying `sfLoanBrokerID` in `brokers_`. This catches
+ *  transactions that modify broker collateral without touching the
+ *  `ltLOAN_BROKER` SLE directly.
+ *
+ *  For each discovered broker the following invariants are enforced:
+ *  - `sfLoanSequence` must be monotonically non-decreasing (prevents loan-ID
+ *    replay).
+ *  - `sfDebtTotal` and `sfCoverAvailable` must be ≥ 0 (`STNumber` fields can
+ *    represent negative values, which would indicate a bookkeeping bug).
+ *  - `sfVaultID` must reference an existing `Vault` object.
+ *  - `sfCoverAvailable` must not exceed the pseudo-account's on-ledger asset
+ *    balance (`accountHolds` with freeze and auth both ignored, since
+ *    pseudo-accounts are exempt from those controls).
+ *  - Under `fixSecurity3_1_3`, `sfCoverAvailable` must equal the
+ *    pseudo-account balance exactly, except during `ttLOAN_BROKER_DELETE`
+ *    where the field is not zeroed before removal.
+ *
+ *  @note No amendment gate is needed here: `ltLOAN_BROKER` objects can only
+ *      exist after the Lending Protocol amendment is enabled, so reaching this
+ *      loop with live broker state implicitly confirms the amendment is active.
+ *
+ *  @param tx   The transaction that was applied.
+ *  @param view The post-transaction ledger view.
+ *  @param j    Journal for fatal-level diagnostics on failure.
+ *  @return True if every tracked broker satisfies all invariants.
+ */
 bool
 ValidLoanBroker::finalize(
     STTx const& tx,
@@ -99,8 +168,8 @@ ValidLoanBroker::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
-    // Loan Brokers will not exist on ledger if the Lending Protocol amendment
-    // is not enabled, so there's no need to check it.
+    // LoanBroker objects cannot exist unless the Lending Protocol amendment is
+    // enabled, so there is no need to gate on it explicitly.
 
     for (auto const& line : lines_)
     {

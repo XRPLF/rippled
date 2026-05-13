@@ -1,3 +1,17 @@
+/** @file
+ *  Post-transaction invariant-checking machinery for the XRP Ledger.
+ *
+ *  Every time a transaction is applied, the framework scans all modified
+ *  ledger entries via the two-phase visitor pattern: `visitEntry` accumulates
+ *  per-entry state, and `finalize` renders a pass/fail verdict.  If any
+ *  checker fails, the transaction is overridden with `tecINVARIANT_FAILED`
+ *  (fee charged, all other mutations reverted) or `tefINVARIANT_FAILED` if
+ *  even that minimal commit breaks an invariant.
+ *
+ *  This file implements the checkers declared in `InvariantCheck.h` and the
+ *  `hasPrivilege` helper.  The dispatch loop lives in
+ *  `ApplyContext::checkInvariantsHelper`.
+ */
 #include <xrpl/tx/invariants/InvariantCheck.h>
 
 #include <xrpl/basics/Log.h>
@@ -47,6 +61,18 @@ namespace xrpl {
         return (privileges) & priv;                                          \
     }
 
+/** Test whether a transaction type holds a given `Privilege` bit.
+ *
+ *  Privilege assignments are co-located with transaction type definitions in
+ *  `transactions.macro`.  The X-macro expansion above generates one switch
+ *  case per transaction type; each case performs a bitwise AND against the
+ *  compile-time `privileges` bitmask embedded in the macro row.  Deprecated
+ *  or unknown transaction types return `false`.
+ *
+ *  @param tx   The transaction whose type is tested.
+ *  @param priv The privilege bit (or OR-combination of bits) to test for.
+ *  @return `true` if every bit in `priv` is set in `tx`'s privilege mask.
+ */
 bool
 hasPrivilege(STTx const& tx, Privilege priv)
 {
@@ -203,12 +229,9 @@ XRPBalanceChecks::visitEntry(
 
         auto const drops = balance.xrp();
 
-        // Can't have more than the number of drops instantiated
-        // in the genesis ledger.
         if (drops > kINITIAL_XRP)
             return true;
 
-        // Can't have a negative balance (0 is OK)
         if (drops < XRPAmount{0})
             return true;
 
@@ -248,14 +271,12 @@ NoBadOffers::visitEntry(
     std::shared_ptr<SLE const> const& after)
 {
     auto isBad = [](STAmount const& pays, STAmount const& gets) {
-        // An offer should never be negative
         if (pays < beast::kZERO)
             return true;
 
         if (gets < beast::kZERO)
             return true;
 
-        // Can't have an XRP to XRP offer:
         return pays.native() && gets.native();
     };
 
