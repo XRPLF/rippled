@@ -28,7 +28,7 @@ namespace xrpl {
 std::string
 sqlBlobLiteral(Blob const& blob);
 
-namespace impl {
+namespace detail {
 
 template <typename T>
 concept SomeChar = std::same_as<std::remove_cvref_t<T>, int8_t> ||
@@ -55,7 +55,7 @@ hexCharToInt(SomeChar auto hexChar)
     return kDIGIT_LOOKUP_TABLE[static_cast<uint8_t>(hexChar)];
 }
 
-}  // namespace impl
+}  // namespace detail
 
 template <class Iterator>
 std::optional<Blob>
@@ -69,7 +69,7 @@ strUnHex(std::size_t strSize, Iterator begin, Iterator end)
 
     if (strSize & 1)
     {
-        auto const c = impl::hexCharToInt(*iter++);
+        auto const c = detail::hexCharToInt(*iter++);
         if (!c.has_value())
             return {};
 
@@ -78,12 +78,12 @@ strUnHex(std::size_t strSize, Iterator begin, Iterator end)
 
     while (iter != end)
     {
-        auto const cHigh = impl::hexCharToInt(*iter++);
+        auto const cHigh = detail::hexCharToInt(*iter++);
 
         if (!cHigh.has_value())
             return {};
 
-        auto const cLow = impl::hexCharToInt(*iter++);
+        auto const cLow = detail::hexCharToInt(*iter++);
 
         if (!cLow.has_value())
             return {};
