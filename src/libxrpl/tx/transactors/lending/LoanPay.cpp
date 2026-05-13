@@ -147,7 +147,7 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
     std::int64_t constexpr kMAX_FEE_INCREMENTS =
         kLOAN_MAXIMUM_PAYMENTS_PER_TRANSACTION / kLOAN_PAYMENTS_PER_FEE_INCREMENT;
 
-    if (view.rules().enabled(fixSecurity3_1_3) &&
+    if (view.rules().enabled(fixCleanup3_1_3) &&
         amount >= regularPayment * kLOAN_MAXIMUM_PAYMENTS_PER_TRANSACTION)
     {
         // The payment handler will never process more than
@@ -169,7 +169,7 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
         std::int64_t(1),
         static_cast<std::int64_t>(numPaymentEstimate / kLOAN_PAYMENTS_PER_FEE_INCREMENT));
     XRPL_ASSERT(
-        !view.rules().enabled(fixSecurity3_1_3) || feeIncrements <= kMAX_FEE_INCREMENTS,
+        !view.rules().enabled(fixCleanup3_1_3) || feeIncrements <= kMAX_FEE_INCREMENTS,
         "xrpl::LoanPay::calculateBaseFee : number of fee increments is in "
         "range");
 
@@ -201,7 +201,7 @@ LoanPay::preclaim(PreclaimContext const& ctx)
     if (tx.isFlag(tfLoanOverpayment) && !loanSle->isFlag(lsfLoanOverpayment))
     {
         JLOG(ctx.j.warn()) << "Requested overpayment on a loan that doesn't allow it";
-        return ctx.view.rules().enabled(fixSecurity3_1_3) ? TER{tecNO_PERMISSION} : temINVALID_FLAG;
+        return ctx.view.rules().enabled(fixCleanup3_1_3) ? TER{tecNO_PERMISSION} : temINVALID_FLAG;
     }
 
     auto const principalOutstanding = loanSle->at(sfPrincipalOutstanding);
