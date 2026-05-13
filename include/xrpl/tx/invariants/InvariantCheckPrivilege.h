@@ -25,7 +25,7 @@ not have the relevant amendments enabled_. It's intentionally a pain in the neck
 so that bad code gets caught and fixed as early as possible.
 */
 
-// Bitwise flags, 86 files
+// Bitwise flags, 86 files, used in macros files
 // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum Privilege {
     NoPriv = 0x0000,              // The transaction can not do any of the enumerated operations

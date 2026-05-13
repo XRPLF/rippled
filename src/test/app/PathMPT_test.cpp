@@ -48,14 +48,14 @@ rpf(jtx::Account const& src,
     xrpl::test::jtx::MPT const& usd,
     std::vector<MPTID> const& numSrc)
 {
-    json::Value jv = json::ObjectValue;
+    json::Value jv = json::ValueType::Object;
     jv[jss::command] = "ripple_path_find";
     jv[jss::source_account] = toBase58(src);
 
     if (!numSrc.empty())
     {
-        auto& sc = (jv[jss::source_currencies] = json::ArrayValue);
-        json::Value j = json::ObjectValue;
+        auto& sc = (jv[jss::source_currencies] = json::ValueType::Array);
+        json::Value j = json::ValueType::Object;
         for (auto const& id : numSrc)
         {
             j[jss::mpt_issuance_id] = to_string(id);
@@ -66,7 +66,7 @@ rpf(jtx::Account const& src,
     auto const d = toBase58(dst);
     jv[jss::destination_account] = d;
 
-    json::Value& j = (jv[jss::destination_amount] = json::ObjectValue);
+    json::Value& j = (jv[jss::destination_amount] = json::ValueType::Object);
     j[jss::mpt_issuance_id] = to_string(usd.mpt());
     j[jss::value] = "1";
 

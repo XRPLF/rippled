@@ -59,7 +59,7 @@ doPeerReservationsAdd(RPC::JsonContext& context)
     auto const previous = context.app.getPeerReservations().insertOrAssign(
         PeerReservation{.nodeId = nodeId, .description = desc});
 
-    json::Value result{json::ObjectValue};
+    json::Value result{json::ValueType::Object};
     if (previous)
     {
         result[jss::previous] = previous->toJson();

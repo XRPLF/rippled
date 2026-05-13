@@ -77,9 +77,10 @@ rngcpy(void* buffer, std::size_t bytes, Generator& g)
 class Sequence
 {
 private:
-    // Need to be named before converting
-    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-    enum { MinLedger = 1, MaxLedger = 1000000, MinSize = 250, MaxSize = 1250 };
+    static constexpr auto kMIN_LEDGER = 1;
+    static constexpr auto kMAX_LEDGER = 1000000;
+    static constexpr auto kMIN_SIZE = 250;
+    static constexpr auto kMAX_SIZE = 1250;
 
     beast::xor_shift_engine gen_;
     std::uint8_t prefix_;
@@ -92,7 +93,7 @@ public:
         // uniform distribution over hotLEDGER - hotTRANSACTION_NODE
         // but exclude  hotTRANSACTION = 2 (removed)
         , d_type_({1, 1, 0, 1, 1})
-        , d_size_(MinSize, MaxSize)
+        , d_size_(kMIN_SIZE, kMAX_SIZE)
     {
     }
 
@@ -137,12 +138,7 @@ public:
 class Timing_test : public beast::unit_test::Suite
 {
 public:
-    // Need to be named before converting
-    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-    enum {
-        // percent of fetches for missing nodes
-        MissingNodePercent = 20
-    };
+    static constexpr auto kMISSING_NODE_PERCENT = 20;  // percent of fetches for missing nodes
 
     std::size_t const default_repeat = 3;
 #ifndef NDEBUG
@@ -466,7 +462,7 @@ public:
             {
                 try
                 {
-                    if (rand_(gen_) < MissingNodePercent)
+                    if (rand_(gen_) < kMISSING_NODE_PERCENT)
                     {
                         auto const hash = seq2_.key(dist_(gen_));
                         std::shared_ptr<NodeObject> result;
@@ -653,7 +649,7 @@ public:
             log << ss.str() << std::endl;
         }
 
-        using namespace beast::severities;
+        using beast::Severity;
         test::SuiteJournal journal("Timing_test", *this);
 
         for (auto const& configString : configStrings)

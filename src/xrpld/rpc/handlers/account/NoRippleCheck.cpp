@@ -99,7 +99,7 @@ doNoRippleCheck(RPC::JsonContext& context)
 
     json::Value dummy;  // NOLINT(misc-const-correctness)
     json::Value& jvTransactions =
-        transactions ? (result[jss::transactions] = json::ArrayValue) : dummy;
+        transactions ? (result[jss::transactions] = json::ValueType::Array) : dummy;
 
     auto id = parseBase58<AccountID>(params[jss::account].asString());
     if (!id)
@@ -114,7 +114,7 @@ doNoRippleCheck(RPC::JsonContext& context)
 
     std::uint32_t seq = sle->getFieldU32(sfSequence);
 
-    json::Value& problems = (result["problems"] = json::ArrayValue);
+    json::Value& problems = (result["problems"] = json::ValueType::Array);
 
     bool const bDefaultRipple = (sle->getFieldU32(sfFlags) & lsfDefaultRipple) != 0u;
 
@@ -130,7 +130,7 @@ doNoRippleCheck(RPC::JsonContext& context)
         problems.append("You should immediately set your default ripple flag");
         if (transactions)
         {
-            json::Value& tx = jvTransactions.append(json::ObjectValue);
+            json::Value& tx = jvTransactions.append(json::ValueType::Object);
             tx["TransactionType"] = jss::AccountSet;
             tx["SetFlag"] = 8;
             fillTransaction(context, tx, accountID, seq, *ledger);
@@ -173,9 +173,9 @@ doNoRippleCheck(RPC::JsonContext& context)
                         ownedItem->getFieldAmount(bLow ? sfLowLimit : sfHighLimit));
                     limitAmount.get<Issue>().account = peer;
 
-                    json::Value& tx = jvTransactions.append(json::ObjectValue);
+                    json::Value& tx = jvTransactions.append(json::ValueType::Object);
                     tx["TransactionType"] = jss::TrustSet;
-                    tx["LimitAmount"] = limitAmount.getJson(JsonOptions::KNone);
+                    tx["LimitAmount"] = limitAmount.getJson(JsonOptions::Values::None);
                     tx["Flags"] = bNoRipple ? tfClearNoRipple : tfSetNoRipple;
                     fillTransaction(context, tx, accountID, seq, *ledger);
 
