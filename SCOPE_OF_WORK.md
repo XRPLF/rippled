@@ -207,38 +207,32 @@ Four developer-facing commands in [.claude/commands/](.claude/commands/):
 ### 3.8 Full Codebase Documentation
 
 The initial documentation pass covers 1,183 C++ files organized into 21
-module-level PRs (see Section 5). The doc-agent `document` mode is the
-tool that produces each PR; each file's output is then domain-expert
-reviewed before merge.
-
-**Status: Pending execution.** Tooling is built; the per-module PRs are
-the primary remaining work.
+module-level PRs (see Section 5). The doc-agent `document` mode produces
+each PR in parallel across modules; each file's output is then
+domain-expert reviewed before merge.
 
 ## 4. Resources Required
 
 ### 4.1 People
 
-| Role | Responsibility | Estimated Time |
-|------|---------------|----------------|
-| **Documentation lead** (1 person) | Runs `doc-agent document` per module, reviews output, submits PRs, iterates on prompts in [prompts/](.github/scripts/doc-agent/prompts/) | 50–60% for 15 weeks |
-| **Domain reviewers** (3–5 people, rotating) | Review doc PRs for semantic accuracy in their area of expertise. Each reviewer handles 3–5 PRs. | 2–4 hours per PR |
-| **CI/infrastructure** (1 person) | Deploys workflows, monitors costs, tunes false-positive rate on doc-review action | 10–15% for 15 weeks |
-
-**Total estimated effort:** ~1 FTE for 15 weeks + ~80–120 hours of
-reviewer time spread across 3–5 engineers.
+| Role | Responsibility |
+|------|---------------|
+| **Documentation lead** | Runs `doc-agent document` per module, reviews output, submits PRs, iterates on prompts in [prompts/](.github/scripts/doc-agent/prompts/) |
+| **Domain reviewers** (rotating) | Review doc PRs for semantic accuracy in their area of expertise |
+| **CI/infrastructure** | Deploys workflows, monitors costs, tunes false-positive rate on doc-review action |
 
 ### 4.2 Infrastructure & Tools
 
-| Resource | Purpose | Cost |
-|----------|---------|------|
-| **Anthropic API access** | Powers the doc-agent (`document`, `review`, `regen-skills`) and the doc-review GitHub Action | ~$50–150/month steady state |
-| **Claude Agent SDK** | `@anthropic-ai/claude-agent-sdk` Node package | Free |
-| **Node.js >= 20.12** | Native `--env-file` support; runs the doc-agent | Free |
-| **GitHub Actions minutes** | Doc-coverage workflow (Doxygen XML build + coverxygen) and doc-review workflow | ~5–10 min per PR on existing runners |
-| **Coverxygen** | Python package, open source (MIT) | Free |
-| **Doxygen** | Already configured — uses existing `ghcr.io/xrplf/ci/tools-rippled-documentation` container | Free (already in CI) |
-| **GitHub Actions secret** | `ANTHROPIC_API_KEY` — for doc-review workflow | N/A |
-| **athenah-ai pipeline output** | Generates `.ai.md` sidecar context files consumed by `doc-agent document` | Upstream — gitignored, removed post-pass |
+| Resource | Purpose |
+|----------|---------|
+| **Anthropic API access** | Powers the doc-agent (`document`, `review`, `regen-skills`) and the doc-review GitHub Action |
+| **Claude Agent SDK** | `@anthropic-ai/claude-agent-sdk` Node package |
+| **Node.js >= 20.12** | Native `--env-file` support; runs the doc-agent |
+| **GitHub Actions minutes** | Doc-coverage workflow (Doxygen XML build + coverxygen) and doc-review workflow |
+| **Coverxygen** | Python package, open source (MIT) |
+| **Doxygen** | Already configured — uses existing `ghcr.io/xrplf/ci/tools-rippled-documentation` container |
+| **GitHub Actions secret** | `ANTHROPIC_API_KEY` — for doc-review workflow |
+| **athenah-ai pipeline output** | Generates `.ai.md` sidecar context files consumed by `doc-agent document`; gitignored, removed post-pass |
 
 ### 4.3 Access & Permissions
 
@@ -248,6 +242,11 @@ reviewer time spread across 3–5 engineers.
   warning to required)
 
 ## 5. Execution Plan
+
+Module passes run in parallel — the doc-agent operates per-module
+independently, so foundation, protocol, and application layers are
+generated concurrently rather than sequentially. Module groupings below
+reflect dependency layering for review purposes, not a serial schedule.
 
 ### Phase 0: Infrastructure — Complete
 
@@ -270,9 +269,9 @@ Tooling shipped as the foundation PR:
 renders correctly. Doc-review action posts comments without false positives
 on a sample PR.
 
-### Phase 1: Foundation Modules — Weeks 2–4
+### Phase 1: Foundation Modules
 
-Document the lowest-level modules first (everything else depends on these):
+Lowest-level modules — everything else depends on these:
 
 | PR | Module | ~Files | ~Lines |
 |----|--------|--------|--------|
@@ -290,10 +289,7 @@ Document the lowest-level modules first (everything else depends on these):
 4. Run Doxygen build to validate no doc errors.
 5. Merge; ratchet that module's threshold up to actual coverage level.
 
-**Exit criteria:** 4 PRs merged. Coverage for these modules at 60%+.
-Doc-review action running in warning mode on all subsequent PRs.
-
-### Phase 2: Protocol & Transaction Engine — Weeks 4–8
+### Phase 2: Protocol & Transaction Engine
 
 | PR | Module | ~Files |
 |----|--------|--------|
@@ -307,10 +303,7 @@ Doc-review action running in warning mode on all subsequent PRs.
 | 12 | Other transactors (NFT, token, vault, check, etc.) | 60 |
 | 13 | Pathfinding + invariants | 30 |
 
-**Exit criteria:** 9 PRs merged. Global coverage at 40%+. Doc-review
-false-positive rate tracked and < 10%.
-
-### Phase 3: Server & Application Layer — Weeks 8–13
+### Phase 3: Server & Application Layer
 
 | PR | Module | ~Files |
 |----|--------|--------|
@@ -323,62 +316,52 @@ false-positive rate tracked and < 10%.
 | 20 | Application core (ledger, main, misc, rdb) | 133 |
 | 21 | RPC handlers | 131 |
 
-**Exit criteria:** 8 PRs merged. Global coverage at 60%+. Doc-review
-action promoted from warning to **required check**.
+Once Phases 1–3 are merged, the doc-review action is promoted from
+warning to a **required check**.
 
-### Phase 4: Tests & Polish — Weeks 13–15
+### Phase 4: Tests & Polish
 
 - Document test files (brief docs only — test name + what it validates)
-- Global threshold at 70%
-- Full coverage trend reporting on GitHub Pages
 - Remove `.ai.md` sidecar files (they were transitional input only)
-- Retrospective: review false-positive rate, API costs, contributor
-  feedback
+- Retrospective: false-positive rate, API costs, contributor feedback
 
-**Exit criteria:** 70% global doc coverage. Doc-review required check
-with < 5% false-positive rate. Coverage trend visible on GitHub Pages.
+## 6. Coverage Threshold Ratchet
 
-## 6. Threshold Ratchet Schedule
+Coverage thresholds are enforced per-module via
+[.github/doc-coverage-thresholds.json](.github/doc-coverage-thresholds.json):
 
-Coverage thresholds increase quarterly to prevent regression and drive
-gradual improvement:
+- **`no_decrease` ratchet** — no PR may reduce coverage on a module
+  below its current level.
+- **New files** require ≥ 80% doc coverage regardless of module threshold.
+- **Per-module floors** are raised manually as each module's PR lands,
+  pinning the achieved coverage as the new floor.
 
-| Quarter | Global Minimum | Enforcement |
-|---------|---------------|-------------|
-| Launch (2026-Q2) | 0% | `no_decrease` ratchet only |
-| 2026-Q3 | 30% | Blocks PRs below threshold |
-| 2026-Q4 | 40% | |
-| 2027-Q1 | 50% | |
-| 2027-Q2 | 60% | |
-| 2027-Q3 | 70% | Target steady state |
-
-New files always require 80% coverage regardless of the global threshold.
+There is no calendar-based ratchet; thresholds advance with the work.
 
 ## 7. Risk Assessment
 
 | Risk | Likelihood | Impact | Mitigation |
 |------|-----------|--------|------------|
 | LLM generates plausible but wrong docs | Medium | High | Every doc PR requires human domain expert review. `.ai.md` sidecars (athenah-ai) ground the agent in source-derived intent rather than free generation. |
-| Doc-review action false positives annoy contributors | Medium | Medium | Warning-only mode for 3 months. Promote to required only when FP rate < 5%. Prompts live in markdown ([prompts/](.github/scripts/doc-agent/prompts/)) and can be tuned without a code release. |
-| Coverage enforcement blocks unrelated PRs | Low | Medium | Start at 0% threshold with `no_decrease` only. Quarterly increases announced in advance. |
-| Reviewer bandwidth bottleneck | Medium | Medium | PRs scoped to single modules. Reviewers rotate. 2–4 hours per PR is manageable. |
-| API costs exceed budget | Low | Low | Only diff hunks processed. ~$0.05–0.15/PR. Monthly budget cap of $200 with alerting. |
-| Doxygen XML build adds CI time | Low | Low | Runs in parallel with existing checks. Uses existing documentation container. ~5 min. |
+| Doc-review action false positives annoy contributors | Medium | Medium | Warning-only mode initially. Promote to required only when FP rate < 5%. Prompts live in markdown ([prompts/](.github/scripts/doc-agent/prompts/)) and can be tuned without a code release. |
+| Coverage enforcement blocks unrelated PRs | Low | Medium | `no_decrease` ratchet only; per-module floors raised manually as modules land. |
+| Reviewer bandwidth bottleneck | Medium | Medium | PRs scoped to single modules. Reviewers rotate. |
+| API costs exceed budget | Low | Low | Only diff hunks processed. Monthly budget cap with alerting. |
+| Doxygen XML build adds CI time | Low | Low | Runs in parallel with existing checks. Uses existing documentation container. |
 | Doc comments add code noise | Low | Low | Terse style enforced by standards. 2–5 lines per class, 1–3 per function. |
 | Skill files drift from code | Medium | Medium | `doc-agent regen-skills <module>` rebuilds a skill from current `.ai.md` files; intended to be run periodically. |
-| Initial pass takes longer than 15 weeks | Medium | Low | Modules are independent. Can parallelize with multiple contributors. Lower-priority modules can slip. |
 
 ## 8. Success Metrics
 
-| Metric | Target | Measurement |
-|--------|--------|-------------|
-| Documentation coverage (public API) | 70% | Coverxygen LCOV reports in CI |
-| Doc drift catch rate | > 90% of behavioral changes flagged | Sample audit of merged PRs vs doc-review output |
-| False positive rate (doc-review action) | < 5% | Track dismissed vs accepted suggestions |
-| Zero spec-vs-code contradictions | 0 incidents | Bug reports citing wrong documentation |
-| Contributor satisfaction | > 4/5 rating | Quarterly survey: "docs helped me understand the code" |
-| Onboarding time reduction | 30% faster first meaningful PR | Measure across new contributors before/after |
-| API cost | < $150/month steady state | Anthropic API billing dashboard |
+| Metric | Measurement |
+|--------|-------------|
+| Documentation coverage (public API) | Coverxygen LCOV reports in CI |
+| Doc drift catch rate | Sample audit of merged PRs vs doc-review output |
+| False positive rate (doc-review action) | Track dismissed vs accepted suggestions |
+| Spec-vs-code contradictions | Bug reports citing wrong documentation |
+| Contributor satisfaction | Periodic survey: "docs helped me understand the code" |
+| Onboarding time | Measure across new contributors before/after |
+| API cost | Anthropic API billing dashboard |
 
 ## 9. What This Replaces
 
@@ -402,23 +385,8 @@ the "source of truth" for how xrpld behaves:
   not prove correctness. Formal verification is a separate discipline.
 - **External-facing API documentation.** This covers the C++ source code,
   not the JSON-RPC API documentation on xrpl.org.
-- **Test coverage.** Test file documentation (Phase 4) is brief and
-  optional. Test coverage measurement is handled by existing Codecov
-  integration.
+- **Test coverage.** Test file documentation is brief and optional. Test
+  coverage measurement is handled by existing Codecov integration.
 - **Architectural decision records.** Module-level READMEs already exist
   for key subsystems. This project adds function/class-level docs and the
   module skills layer, not system-level ADRs.
-
-## 11. Timeline Summary
-
-```
-Week 1        Phase 0: Infrastructure (tooling, workflows, standards, skills) — COMPLETE
-Weeks 2-4     Phase 1: Foundation modules (basics, crypto, json, beast)
-Weeks 4-8     Phase 2: Protocol & TX engine (protocol, ledger, tx, paths)
-Weeks 8-13    Phase 3: Server & application (overlay, consensus, rpc, app)
-Weeks 13-15   Phase 4: Tests & polish, promote to required check, drop .ai.md sidecars
-```
-
-**Total duration:** 15 weeks
-**Total effort:** ~1 FTE + 80–120 hours reviewer time
-**Ongoing cost:** ~$50–150/month API + negligible CI compute
