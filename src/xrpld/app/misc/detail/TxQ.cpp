@@ -744,6 +744,9 @@ TxQ::apply(
     if (auto directApplied = tryDirectApply(app, view, tx, flags, j))
         return *directApplied;
 
+    if ((flags & TapDryRun) != 0u)
+        return {telCAN_NOT_QUEUE, false};
+
     // If we get past tryDirectApply() without returning then we expect
     // one of the following to occur:
     //
