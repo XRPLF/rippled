@@ -260,10 +260,10 @@ resource::SemanticConventions::SERVICE_INSTANCE_ID = <node_public_key_base58>
 #### RPC Attributes
 
 ```cpp
-"xrpl.rpc.command"     = string   // Command name
-"xrpl.rpc.version"     = int64    // API version
-"xrpl.rpc.role"        = string   // "admin" or "user"
-"xrpl.rpc.params"      = string   // Sanitized parameters (optional)
+"command"              = string   // Command name
+"version"              = int64    // API version
+"rpc_role"             = string   // "admin" or "user"
+"xrpl.rpc.params"      = string   // Sanitized parameters (optional, planned)
 ```
 
 #### Peer & Message Attributes
@@ -293,10 +293,10 @@ resource::SemanticConventions::SERVICE_INSTANCE_ID = <node_public_key_base58>
 #### PathFinding Attributes
 
 ```cpp
-"xrpl.pathfind.source_currency"  = string   // Source currency code
-"xrpl.pathfind.dest_currency"    = string   // Destination currency code
-"xrpl.pathfind.path_count"       = int64    // Number of paths found
-"xrpl.pathfind.cache_hit"        = bool     // RippleLineCache hit
+"source_currency"  = string   // Source currency code (planned, not yet implemented)
+"dest_currency"    = string   // Destination currency code (planned, not yet implemented)
+"path_count"       = int64    // Number of paths found (planned, not yet implemented)
+"cache_hit"        = bool     // RippleLineCache hit (planned, not yet implemented)
 ```
 
 #### TxQ Attributes

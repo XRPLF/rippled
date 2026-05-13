@@ -27,8 +27,8 @@
 
 - `RCLConsensus::Adaptor::startRoundTracing()` creates `consensus.round` span
   via `SpanGuard::hashSpan()` (deterministic) or `SpanGuard::span()` (attribute strategy)
-- Attributes set: `xrpl.consensus.ledger_id`, `xrpl.consensus.ledger.seq`,
-  `xrpl.consensus.mode`, `xrpl.consensus.trace_strategy`, `xrpl.consensus.round_id`
+- Attributes set: `xrpl.consensus.ledger_id`, `xrpl.ledger.seq`,
+  `xrpl.consensus.mode`, `trace_strategy`, `xrpl.consensus.round_id`
 - Round span stored as `roundSpan_` member in `RCLConsensus::Adaptor`
 - `roundSpanContext_` snapshot captured for cross-thread span linking
 
@@ -57,9 +57,9 @@
 
 **Design notes**:
 
-- `xrpl.consensus.phase` attribute — phases are distinguished by span names instead
+- `phase` attribute — phases are distinguished by span names instead
 - `phase.enter` / `phase.exit` events — not added (span start/end serves this purpose)
-- `xrpl.consensus.phase_duration_ms` attribute — not set (span duration captures this)
+- `phase_duration_ms` attribute — not set (span duration captures this)
 
 **Key modified files**:
 
@@ -82,11 +82,11 @@
 
 - In `Adaptor::propose()`:
   - Creates `consensus.proposal.send` span via `SpanGuard::span()`
-  - Sets `xrpl.consensus.round` attribute
+  - Sets `xrpl.consensus.round` attribute (kept — rule 5)
 
 - In `PeerImp::onMessage(TMProposeSet)`:
   - Creates `consensus.proposal.receive` span
-  - Sets `xrpl.consensus.proposal.trusted` attribute (bool)
+  - Sets `trusted` attribute (bool)
 
 **Not implemented** (deferred to Phase 4b — cross-node propagation):
 
@@ -117,12 +117,12 @@
   - Uses `SpanGuard::linkedSpan()` to create a follows-from link to the round span
   - Thread-safe: uses `roundSpanContext_` snapshot (captured on consensus thread,
     read on jtACCEPT thread)
-  - Sets `xrpl.consensus.ledger.seq` and `xrpl.consensus.proposing` attributes
+  - Sets `xrpl.ledger.seq` and `proposing` attributes
 
 - In `PeerImp::onMessage(TMValidation)`:
   - Creates `consensus.validation.receive` span
-  - Sets `xrpl.consensus.validation.trusted` attribute (bool)
-  - Sets `xrpl.consensus.validation.ledger_seq` attribute
+  - Sets `trusted` attribute (bool)
+  - Sets `xrpl.ledger.seq` attribute
 
 **Not implemented** (deferred to Phase 4b — cross-node propagation):
 
@@ -142,18 +142,18 @@
 
 **Implemented attributes** (across various spans):
 
-- `xrpl.consensus.ledger.seq` — on `consensus.round`, `consensus.accept.apply`
+- `xrpl.ledger.seq` — on `consensus.round`, `consensus.accept.apply`
 - `xrpl.consensus.round` — on `consensus.proposal.send`
 - `xrpl.consensus.mode` — on `consensus.round`, `consensus.ledger_close`
-- `xrpl.consensus.proposers` — on `consensus.accept`, `consensus.establish`, `consensus.update_positions`
-- `xrpl.consensus.converge_percent` — on `consensus.establish`, `consensus.update_positions`, `consensus.check`
-- `xrpl.consensus.tx_count` — on `consensus.accept.apply` span (in `doAccept()`)
-- `xrpl.consensus.disputes_count` — on `consensus.update_positions` span (in `updateOurPositions()`)
+- `proposers` — on `consensus.accept`, `consensus.establish`, `consensus.update_positions`
+- `converge_percent` — on `consensus.establish`, `consensus.update_positions`, `consensus.check`
+- `tx_count` — on `consensus.accept.apply` span (in `doAccept()`)
+- `disputes_count` — on `consensus.update_positions` span (in `updateOurPositions()`)
 
 **Design notes**:
 
-- `xrpl.consensus.phase` — phases distinguished by span names instead
-- `xrpl.consensus.phase_duration_ms` — span duration captures this
+- `phase` — phases distinguished by span names instead
+- `phase_duration_ms` — span duration captures this
 
 **Key modified files**:
 
@@ -221,8 +221,8 @@
     - Add `xrpl.validation.ledger_hash` (string) — the ledger hash being validated
     - Add `xrpl.validation.full` (bool) — whether this is a full validation (not partial)
   - On the `consensus.accept` span (in `onAccept()`):
-    - Add `xrpl.consensus.validation_quorum` (int64) — from `app_.validators().quorum()`
-    - Add `xrpl.consensus.proposers_validated` (int64) — from `result.proposers`
+    - Add `validation_quorum` (int64) — from `app_.validators().quorum()`
+    - Add `proposers_validated` (int64) — from `result.proposers`
 
 - Edit `src/xrpld/overlay/detail/PeerImp.cpp`:
   - On the `peer.validation.receive` span:
@@ -231,14 +231,14 @@
 
 **New span attributes**:
 
-| Span                        | Attribute                            | Type   | Source                            |
-| --------------------------- | ------------------------------------ | ------ | --------------------------------- |
-| `consensus.validation.send` | `xrpl.validation.ledger_hash`        | string | Ledger hash from validate() args  |
-| `consensus.validation.send` | `xrpl.validation.full`               | bool   | Full vs partial validation        |
-| `peer.validation.receive`   | `xrpl.peer.validation.ledger_hash`   | string | From STValidation deserialization |
-| `peer.validation.receive`   | `xrpl.peer.validation.full`          | bool   | From STValidation flags           |
-| `consensus.accept`          | `xrpl.consensus.validation_quorum`   | int64  | `app_.validators().quorum()`      |
-| `consensus.accept`          | `xrpl.consensus.proposers_validated` | int64  | `result.proposers`                |
+| Span                        | Attribute                          | Type   | Source                            |
+| --------------------------- | ---------------------------------- | ------ | --------------------------------- |
+| `consensus.validation.send` | `xrpl.validation.ledger_hash`      | string | Ledger hash from validate() args  |
+| `consensus.validation.send` | `xrpl.validation.full`             | bool   | Full vs partial validation        |
+| `peer.validation.receive`   | `xrpl.peer.validation.ledger_hash` | string | From STValidation deserialization |
+| `peer.validation.receive`   | `xrpl.peer.validation.full`        | bool   | From STValidation flags           |
+| `consensus.accept`          | `validation_quorum`                | int64  | `app_.validators().quorum()`      |
+| `consensus.accept`          | `proposers_validated`              | int64  | `result.proposers`                |
 
 **Rationale**: The external dashboard's most valuable feature is validation agreement tracking. By recording the ledger hash on both outgoing and incoming validation spans, we create the raw data for agreement analysis at the trace level. Example Tempo query:
 
@@ -257,7 +257,7 @@ Phase 7's `ValidationTracker` builds metric-level aggregation (1h/24h agreement 
 
 - [ ] `consensus.validation.send` spans carry `xrpl.validation.ledger_hash` and `xrpl.validation.full`
 - [ ] `peer.validation.receive` spans carry `xrpl.peer.validation.ledger_hash` and `xrpl.peer.validation.full`
-- [ ] `consensus.accept` spans carry `xrpl.consensus.validation_quorum` and `xrpl.consensus.proposers_validated`
+- [ ] `consensus.accept` spans carry `validation_quorum` and `proposers_validated`
 - [ ] Ledger hash attributes match between send and receive for the same ledger
 - [ ] No impact on consensus performance
 
@@ -283,26 +283,26 @@ Phase 7's `ValidationTracker` builds metric-level aggregation (1h/24h agreement 
 | Span Name                   | Method                             | Key Attributes                                                                                                                                                                                                        |
 | --------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `consensus.proposal.send`   | `Adaptor::propose`                 | `xrpl.consensus.round`                                                                                                                                                                                                |
-| `consensus.ledger_close`    | `Adaptor::onClose`                 | `xrpl.consensus.ledger.seq`, `xrpl.consensus.mode`                                                                                                                                                                    |
-| `consensus.accept`          | `Adaptor::onAccept`                | `xrpl.consensus.proposers`, `xrpl.consensus.round_time_ms`                                                                                                                                                            |
-| `consensus.accept.apply`    | `Adaptor::doAccept`                | `xrpl.consensus.close_time`, `close_time_correct`, `close_resolution_ms`, `state`, `proposing`, `round_time_ms`, `ledger.seq`, `parent_close_time`, `close_time_self`, `close_time_vote_bins`, `resolution_direction` |
-| `consensus.validation.send` | `Adaptor::onAccept` (via validate) | `xrpl.consensus.proposing`                                                                                                                                                                                            |
+| `consensus.ledger_close`    | `Adaptor::onClose`                 | `xrpl.ledger.seq`, `xrpl.consensus.mode`                                                                                                                                                                              |
+| `consensus.accept`          | `Adaptor::onAccept`                | `proposers`, `round_time_ms`                                                                                                                                                                                          |
+| `consensus.accept.apply`    | `Adaptor::doAccept`                | `close_time`, `close_time_correct`, `close_resolution_ms`, `consensus_state`, `proposing`, `round_time_ms`, `xrpl.ledger.seq`, `parent_close_time`, `close_time_self`, `close_time_vote_bins`, `resolution_direction` |
+| `consensus.validation.send` | `Adaptor::onAccept` (via validate) | `proposing`                                                                                                                                                                                                           |
 
 #### Close Time Attributes (consensus.accept.apply)
 
 The `consensus.accept.apply` span captures ledger close time agreement details
 driven by `avCT_CONSENSUS_PCT` (75% validator agreement threshold):
 
-- **`xrpl.consensus.close_time`** — Agreed-upon ledger close time (epoch seconds). When validators disagree (`consensusCloseTime == epoch`), this is synthetically set to `prevCloseTime + 1s`.
-- **`xrpl.consensus.close_time_correct`** — `true` if validators reached agreement, `false` if they "agreed to disagree" (close time forced to prev+1s).
-- **`xrpl.consensus.close_resolution_ms`** — Rounding granularity for close time (starts at 30s, decreases as ledger interval stabilizes).
-- **`xrpl.consensus.state`** — `"finished"` (normal) or `"moved_on"` (consensus failed, adopted best available).
-- **`xrpl.consensus.proposing`** — Whether this node was proposing.
-- **`xrpl.consensus.round_time_ms`** — Total consensus round duration.
-- **`xrpl.consensus.parent_close_time`** — Previous ledger's close time (epoch seconds). Enables computing close-time deltas across consecutive rounds without correlating separate spans.
-- **`xrpl.consensus.close_time_self`** — This node's own proposed close time before consensus voting.
-- **`xrpl.consensus.close_time_vote_bins`** — Number of distinct close-time vote bins from peer proposals. Higher values indicate less agreement among validators.
-- **`xrpl.consensus.resolution_direction`** — Whether close-time resolution `"increased"` (coarser), `"decreased"` (finer), or stayed `"unchanged"` relative to the previous ledger.
+- **`close_time`** — Agreed-upon ledger close time (epoch seconds). When validators disagree (`consensusCloseTime == epoch`), this is synthetically set to `prevCloseTime + 1s`.
+- **`close_time_correct`** — `true` if validators reached agreement, `false` if they "agreed to disagree" (close time forced to prev+1s).
+- **`close_resolution_ms`** — Rounding granularity for close time (starts at 30s, decreases as ledger interval stabilizes).
+- **`consensus_state`** — `"finished"` (normal) or `"moved_on"` (consensus failed, adopted best available).
+- **`proposing`** — Whether this node was proposing.
+- **`round_time_ms`** — Total consensus round duration.
+- **`parent_close_time`** — Previous ledger's close time (epoch seconds). Enables computing close-time deltas across consecutive rounds without correlating separate spans.
+- **`close_time_self`** — This node's own proposed close time before consensus voting.
+- **`close_time_vote_bins`** — Number of distinct close-time vote bins from peer proposals. Higher values indicate less agreement among validators.
+- **`resolution_direction`** — Whether close-time resolution `"increased"` (coarser), `"decreased"` (finer), or stayed `"unchanged"` relative to the previous ledger.
 
 **Exit Criteria** (from [06-implementation-phases.md §6.11.4](./06-implementation-phases.md)):
 
@@ -504,7 +504,7 @@ spans in `Consensus.h`.
   - Reads `consensus_trace_strategy` via `app_.getTelemetry().getConsensusTraceStrategy()`
   - **Deterministic**: uses `SpanGuard::hashSpan()` with `prevLgr.id()` data
   - **Attribute**: uses `SpanGuard::span(TraceCategory::Consensus, seg::consensus, "round")`
-  - Sets attributes: `ledger_id`, `ledger.seq`, `mode`, `trace_strategy`, `round_id`
+  - Sets attributes: `xrpl.consensus.ledger_id`, `xrpl.ledger.seq`, `xrpl.consensus.mode`, `trace_strategy`, `xrpl.consensus.round_id`
   - Captures `roundSpanContext_` snapshot for cross-thread span linking
   - Saves `prevRoundContext_` from previous round for follows-from links
 
@@ -585,9 +585,9 @@ with attributes for convergence progress.
   `SpanGuard::span()` returns a no-op guard when telemetry is disabled.
 
 - `updateEstablishTracing()` — sets attributes on each `phaseEstablish()` call:
-  - `xrpl.consensus.converge_percent` — `convergePercent_`
-  - `xrpl.consensus.establish_count` — `establishCounter_`
-  - `xrpl.consensus.proposers` — `currPeerPositions_.size()`
+  - `converge_percent` — `convergePercent_`
+  - `establish_count` — `establishCounter_`
+  - `proposers` — `currPeerPositions_.size()`
 
 - `endEstablishTracing()` — calls `establishSpan_.reset()` on phase exit.
 
@@ -614,11 +614,11 @@ details.
   ```
 
 - Attributes set:
-  - `xrpl.consensus.converge_percent` — current convergence
-  - `xrpl.consensus.proposers` — `currPeerPositions_.size()`
-  - `xrpl.consensus.have_close_time_consensus` — close time consensus state
-  - `xrpl.consensus.close_time_threshold` — `avCT_CONSENSUS_PCT`
-  - `xrpl.consensus.disputes_count` — number of active disputes
+  - `converge_percent` — current convergence
+  - `proposers` — `currPeerPositions_.size()`
+  - `have_close_time_consensus` — close time consensus state
+  - `close_time_threshold` — `avCT_CONSENSUS_PCT`
+  - `disputes_count` — number of active disputes
 
 - Dispute events recorded via direct `span.addEvent()` call with yays/nays:
   ```cpp
@@ -632,7 +632,7 @@ details.
 
 **Not implemented**:
 
-- `xrpl.consensus.proposers_agreed` / `xrpl.consensus.proposers_total` attributes — not set
+- `proposers_agreed` / `proposers_total` attributes — not set
 
 **Key modified files**:
 
@@ -658,13 +658,13 @@ including the avalanche threshold.
   ```
 
 - Attributes set:
-  - `xrpl.consensus.agree_count` — peers that agree with our position
-  - `xrpl.consensus.disagree_count` — peers that disagree
-  - `xrpl.consensus.converge_percent` — convergence percentage
-  - `xrpl.consensus.have_close_time_consensus` — close time consensus state
-  - `xrpl.consensus.threshold_percent` — set to `avCT_CONSENSUS_PCT` (75%)
-  - `xrpl.consensus.result` — "yes", "no", or "moved_on"
-  - `xrpl.consensus.avalanche_threshold` — the escalated weight from `getNeededWeight()` on the `consensus.update_positions` span
+  - `agree_count` — peers that agree with our position
+  - `disagree_count` — peers that disagree
+  - `converge_percent` — convergence percentage
+  - `have_close_time_consensus` — close time consensus state
+  - `threshold_percent` — set to `avCT_CONSENSUS_PCT` (75%)
+  - `consensus_result` — "yes", "no", or "moved_on"
+  - `avalanche_threshold` — the escalated weight from `getNeededWeight()` on the `consensus.update_positions` span
 
 **Key modified files**:
 
@@ -687,8 +687,8 @@ wrongLedger, switchedLedger).
   ```cpp
   auto span = telemetry::SpanGuard::span(
       telemetry::TraceCategory::Consensus, telemetry::seg::consensus, "mode_change");
-  span.setAttribute(cons_span::attr::modeOld, to_string(before).c_str());
-  span.setAttribute(cons_span::attr::modeNew, to_string(after).c_str());
+  span.setAttribute(cons_span::attr::modeOld, to_string(before).c_str());   // "mode_old"
+  span.setAttribute(cons_span::attr::modeNew, to_string(after).c_str());   // "mode_new"
   ```
 
 - `MonitoredMode::set()` in `Consensus.h` calls `adaptor_.onModeChange(before, after)`.
@@ -773,48 +773,48 @@ and OFF, and don't affect consensus timing.
 
 | Span Name                    | Location           | Key Attributes (actually set)                                                                                                 |
 | ---------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
-| `consensus.round`            | `RCLConsensus.cpp` | `round_id`, `ledger_id`, `ledger.seq`, `mode`, `trace_strategy`                                                               |
+| `consensus.round`            | `RCLConsensus.cpp` | `xrpl.consensus.round_id`, `xrpl.consensus.ledger_id`, `xrpl.ledger.seq`, `xrpl.consensus.mode`, `trace_strategy`             |
 | `consensus.establish`        | `Consensus.h`      | `converge_percent`, `establish_count`, `proposers`                                                                            |
 | `consensus.update_positions` | `Consensus.h`      | `converge_percent`, `proposers`, `have_close_time_consensus`, `close_time_threshold`, `disputes_count`, `avalanche_threshold` |
-| `consensus.check`            | `Consensus.h`      | `agree_count`, `disagree_count`, `converge_percent`, `have_close_time_consensus`, `threshold_percent`, `result`               |
-| `consensus.mode_change`      | `RCLConsensus.cpp` | `mode.old`, `mode.new`                                                                                                        |
+| `consensus.check`            | `Consensus.h`      | `agree_count`, `disagree_count`, `converge_percent`, `have_close_time_consensus`, `threshold_percent`, `consensus_result`     |
+| `consensus.mode_change`      | `RCLConsensus.cpp` | `mode_old`, `mode_new`                                                                                                        |
 
 ### New Events (Phase 4a)
 
-| Event Name        | Parent Span                  | Attributes (actually set)           |
-| ----------------- | ---------------------------- | ----------------------------------- |
-| `dispute.resolve` | `consensus.update_positions` | `tx_id`, `our_vote`, `yays`, `nays` |
-| `tx.included`     | `consensus.accept.apply`     | `tx_id`                             |
+| Event Name        | Parent Span                  | Attributes (actually set)                                        |
+| ----------------- | ---------------------------- | ---------------------------------------------------------------- |
+| `dispute.resolve` | `consensus.update_positions` | `xrpl.tx.id`, `dispute_our_vote`, `dispute_yays`, `dispute_nays` |
+| `tx.included`     | `consensus.accept.apply`     | `xrpl.tx.id`                                                     |
 
 ### New Attributes (Phase 4a)
 
 ```cpp
 // Round-level (on consensus.round) — ALL IMPLEMENTED
-"xrpl.consensus.round_id"              = int64    // Consensus round number
-"xrpl.consensus.ledger_id"             = string   // previousLedger.id() hash
-"xrpl.consensus.trace_strategy"        = string   // "deterministic" or "attribute"
+"xrpl.consensus.round_id"             = int64    // Consensus round number (kept — rule 5)
+"xrpl.consensus.ledger_id"            = string   // previousLedger.id() hash (kept — rule 5)
+"trace_strategy"                       = string   // "deterministic" or "attribute"
 
 // Establish-level — IMPLEMENTED
-"xrpl.consensus.converge_percent"      = int64    // Convergence % (0-100+)
-"xrpl.consensus.establish_count"       = int64    // Number of establish iterations
-"xrpl.consensus.agree_count"           = int64    // Peers that agree (haveConsensus)
-"xrpl.consensus.disagree_count"        = int64    // Peers that disagree
-"xrpl.consensus.threshold_percent"     = int64    // Current threshold (avCT_CONSENSUS_PCT = 75%)
-"xrpl.consensus.result"                = string   // "yes", "no", "moved_on"
-"xrpl.consensus.have_close_time_consensus" = bool // Close time consensus reached
-"xrpl.consensus.close_time_threshold"  = int64    // Close time voting threshold
+"converge_percent"                     = int64    // Convergence % (0-100+)
+"establish_count"                      = int64    // Number of establish iterations
+"agree_count"                          = int64    // Peers that agree (haveConsensus)
+"disagree_count"                       = int64    // Peers that disagree
+"threshold_percent"                    = int64    // Current threshold (avCT_CONSENSUS_PCT = 75%)
+"consensus_result"                     = string   // "yes", "no", "moved_on"
+"have_close_time_consensus"            = bool     // Close time consensus reached
+"close_time_threshold"                 = int64    // Close time voting threshold
 
 // Establish-level — IMPLEMENTED
-"xrpl.consensus.disputes_count"        = int64    // Active disputes (on update_positions)
-"xrpl.consensus.avalanche_threshold"   = int64    // Escalated weight (on update_positions)
+"disputes_count"                       = int64    // Active disputes (on update_positions)
+"avalanche_threshold"                  = int64    // Escalated weight (on update_positions)
 
 // Establish-level — NOT IMPLEMENTED
-// "xrpl.consensus.proposers_agreed"   = int64    // Peers agreeing with us — not set
-// "xrpl.consensus.proposers_total"    = int64    // Total peer positions — not set (not defined)
+// "proposers_agreed"                  = int64    // Peers agreeing with us — not set
+// "proposers_total"                   = int64    // Total peer positions — not set (not defined)
 
 // Mode change — ALL IMPLEMENTED
-"xrpl.consensus.mode.old"              = string   // Previous mode
-"xrpl.consensus.mode.new"              = string   // New mode
+"mode_old"                             = string   // Previous mode
+"mode_new"                             = string   // New mode
 ```
 
 ### Implementation Notes
