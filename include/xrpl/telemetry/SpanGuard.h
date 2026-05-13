@@ -50,7 +50,7 @@
         auto span = SpanGuard::span(
             TraceCategory::Rpc, rpc_span::prefix::command, "submit");
         span.setAttribute(rpc_span::attr::command, "submit");
-        span.setAttribute(rpc_span::attr::status, rpc_span::val::success);
+        span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::success);
         // span ended automatically on scope exit
     @endcode
 
@@ -83,7 +83,7 @@
             TraceCategory::Rpc, rpc_span::prefix::rpc, "request");
         if (span) {
             // expensive attribute computation only when active
-            span.setAttribute(rpc_span::attr::payloadSize, computeSize());
+            span.setAttribute(rpc_span::attr::requestPayloadSize, computeSize());
         }
     @endcode
 

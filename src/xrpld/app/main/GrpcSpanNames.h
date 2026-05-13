@@ -11,7 +11,7 @@
  *    +-------------------------------------------------------+
  *    | grpc.request                                          |
  *    | CallData::process(coro)                               |
- *    |   attrs: method, role, status                         |
+ *    |   attrs: method, grpc_role, grpc_status               |
  *    +-------------------------------------------------------+
  *
  *  Unlike the HTTP/WS RPC path, gRPC has a flat single-span structure
@@ -38,14 +38,12 @@ inline constexpr auto request = makeStr("request");
 // ===== Attribute keys ======================================================
 
 namespace attr {
-inline constexpr auto xrplGrpc = join(seg::xrpl, makeStr("grpc"));
-
-/// "xrpl.grpc.method"
-inline constexpr auto method = join(xrplGrpc, makeStr("method"));
-/// "xrpl.grpc.role"
-inline constexpr auto role = join(xrplGrpc, makeStr("role"));
-/// "xrpl.grpc.status"
-inline constexpr auto status = join(xrplGrpc, makeStr("status"));
+/// "method" — gRPC method name (e.g. GetLedger).
+inline constexpr auto method = makeStr("method");
+/// "grpc_role" — Domain-qualified: collides with rpc_role.
+inline constexpr auto grpcRole = makeStr("grpc_role");
+/// "grpc_status" — Domain-qualified: avoids OTel reserved span status.
+inline constexpr auto grpcStatus = makeStr("grpc_status");
 }  // namespace attr
 
 // ===== Attribute values ====================================================
