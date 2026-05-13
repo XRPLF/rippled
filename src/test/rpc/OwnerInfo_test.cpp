@@ -56,8 +56,8 @@ class OwnerInfo_test : public beast::unit_test::Suite
             json::Value params;
             params[jss::account] = Account{"bob"}.human();
             auto const result = env.rpc("json", "owner_info", to_string(params))[jss::result];
-            BEAST_EXPECT(result[jss::accepted] == json::ObjectValue);
-            BEAST_EXPECT(result[jss::current] == json::ObjectValue);
+            BEAST_EXPECT(result[jss::accepted] == json::ValueType::Object);
+            BEAST_EXPECT(result[jss::current] == json::ValueType::Object);
             BEAST_EXPECT(result[jss::status] == "success");
         }
     }
@@ -103,21 +103,23 @@ class OwnerInfo_test : public beast::unit_test::Suite
         BEAST_EXPECT(
             lines[0u][sfBalance.fieldName] ==
             (STAmount{Issue{toCurrency("CNY"), noAccount()}, 0}.value().getJson(
-                JsonOptions::KNone)));
+                JsonOptions::Values::None)));
         BEAST_EXPECT(
             lines[0u][sfHighLimit.fieldName] ==
-            alice["CNY"](1000).value().getJson(JsonOptions::KNone));
+            alice["CNY"](1000).value().getJson(JsonOptions::Values::None));
         BEAST_EXPECT(
-            lines[0u][sfLowLimit.fieldName] == gw["CNY"](0).value().getJson(JsonOptions::KNone));
+            lines[0u][sfLowLimit.fieldName] ==
+            gw["CNY"](0).value().getJson(JsonOptions::Values::None));
 
         BEAST_EXPECT(
             lines[1u][sfBalance.fieldName] ==
             (STAmount{Issue{toCurrency("USD"), noAccount()}, 0}.value().getJson(
-                JsonOptions::KNone)));
+                JsonOptions::Values::None)));
         BEAST_EXPECT(
             lines[1u][sfHighLimit.fieldName] ==
-            alice["USD"](1000).value().getJson(JsonOptions::KNone));
-        BEAST_EXPECT(lines[1u][sfLowLimit.fieldName] == usd(0).value().getJson(JsonOptions::KNone));
+            alice["USD"](1000).value().getJson(JsonOptions::Values::None));
+        BEAST_EXPECT(
+            lines[1u][sfLowLimit.fieldName] == usd(0).value().getJson(JsonOptions::Values::None));
 
         if (!BEAST_EXPECT(result[jss::accepted].isMember(jss::offers)))
             return;
@@ -127,9 +129,10 @@ class OwnerInfo_test : public beast::unit_test::Suite
 
         BEAST_EXPECT(offers[0u][jss::Account] == alice.human());
         BEAST_EXPECT(
-            offers[0u][sfTakerGets.fieldName] == XRP(1000).value().getJson(JsonOptions::KNone));
+            offers[0u][sfTakerGets.fieldName] ==
+            XRP(1000).value().getJson(JsonOptions::Values::None));
         BEAST_EXPECT(
-            offers[0u][sfTakerPays.fieldName] == usd(1).value().getJson(JsonOptions::KNone));
+            offers[0u][sfTakerPays.fieldName] == usd(1).value().getJson(JsonOptions::Values::None));
 
         // current ledger entry
         if (!BEAST_EXPECT(result[jss::current].isMember(jss::ripple_lines)))
@@ -141,22 +144,24 @@ class OwnerInfo_test : public beast::unit_test::Suite
         BEAST_EXPECT(
             lines[0u][sfBalance.fieldName] ==
             (STAmount{Issue{toCurrency("CNY"), noAccount()}, -50}.value().getJson(
-                JsonOptions::KNone)));
+                JsonOptions::Values::None)));
         BEAST_EXPECT(
             lines[0u][sfHighLimit.fieldName] ==
-            alice["CNY"](1000).value().getJson(JsonOptions::KNone));
+            alice["CNY"](1000).value().getJson(JsonOptions::Values::None));
         BEAST_EXPECT(
-            lines[0u][sfLowLimit.fieldName] == gw["CNY"](0).value().getJson(JsonOptions::KNone));
+            lines[0u][sfLowLimit.fieldName] ==
+            gw["CNY"](0).value().getJson(JsonOptions::Values::None));
 
         BEAST_EXPECT(
             lines[1u][sfBalance.fieldName] ==
             (STAmount{Issue{toCurrency("USD"), noAccount()}, -50}.value().getJson(
-                JsonOptions::KNone)));
+                JsonOptions::Values::None)));
         BEAST_EXPECT(
             lines[1u][sfHighLimit.fieldName] ==
-            alice["USD"](1000).value().getJson(JsonOptions::KNone));
+            alice["USD"](1000).value().getJson(JsonOptions::Values::None));
         BEAST_EXPECT(
-            lines[1u][sfLowLimit.fieldName] == gw["USD"](0).value().getJson(JsonOptions::KNone));
+            lines[1u][sfLowLimit.fieldName] ==
+            gw["USD"](0).value().getJson(JsonOptions::Values::None));
 
         if (!BEAST_EXPECT(result[jss::current].isMember(jss::offers)))
             return;
@@ -168,9 +173,10 @@ class OwnerInfo_test : public beast::unit_test::Suite
         BEAST_EXPECT(offers[1u] == result[jss::accepted][jss::offers][0u]);
         BEAST_EXPECT(offers[0u][jss::Account] == alice.human());
         BEAST_EXPECT(
-            offers[0u][sfTakerGets.fieldName] == XRP(1000).value().getJson(JsonOptions::KNone));
+            offers[0u][sfTakerGets.fieldName] ==
+            XRP(1000).value().getJson(JsonOptions::Values::None));
         BEAST_EXPECT(
-            offers[0u][sfTakerPays.fieldName] == cny(2).value().getJson(JsonOptions::KNone));
+            offers[0u][sfTakerPays.fieldName] == cny(2).value().getJson(JsonOptions::Values::None));
     }
 
 public:

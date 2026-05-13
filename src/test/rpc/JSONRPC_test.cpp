@@ -2602,7 +2602,7 @@ public:
                 result[jss::tx_json].isMember(jss::Fee) && result[jss::tx_json][jss::Fee] == "10");
             BEAST_EXPECT(
                 result[jss::tx_json].isMember(jss::Sequence) &&
-                result[jss::tx_json][jss::Sequence].isConvertibleTo(json::ValueType::UintValue));
+                result[jss::tx_json][jss::Sequence].isConvertibleTo(json::ValueType::UInt));
         }
 
         {
@@ -2629,7 +2629,7 @@ public:
                 result[jss::tx_json][jss::Fee] == "7813");
             BEAST_EXPECT(
                 result[jss::tx_json].isMember(jss::Sequence) &&
-                result[jss::tx_json][jss::Sequence].isConvertibleTo(json::ValueType::UintValue));
+                result[jss::tx_json][jss::Sequence].isConvertibleTo(json::ValueType::UInt));
 
             env.close();
         }
@@ -2655,7 +2655,7 @@ public:
                 result[jss::tx_json].isMember(jss::Fee) && result[jss::tx_json][jss::Fee] == "47");
             BEAST_EXPECT(
                 result[jss::tx_json].isMember(jss::Sequence) &&
-                result[jss::tx_json][jss::Sequence].isConvertibleTo(json::ValueType::UintValue));
+                result[jss::tx_json][jss::Sequence].isConvertibleTo(json::ValueType::UInt));
         }
 
         {
@@ -2687,7 +2687,7 @@ public:
                 result[jss::tx_json][jss::Fee] == "6806");
             BEAST_EXPECT(
                 result[jss::tx_json].isMember(jss::Sequence) &&
-                result[jss::tx_json][jss::Sequence].isConvertibleTo(json::ValueType::UintValue));
+                result[jss::tx_json][jss::Sequence].isConvertibleTo(json::ValueType::UInt));
         }
     }
 

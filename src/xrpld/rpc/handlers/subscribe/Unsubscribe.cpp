@@ -21,7 +21,7 @@ json::Value
 doUnsubscribe(RPC::JsonContext& context)
 {
     InfoSub::pointer ispSub;
-    json::Value jvResult(json::ObjectValue);
+    json::Value jvResult(json::ValueType::Object);
     bool removeUrl{false};
 
     if (!context.infoSub && !context.params.isMember(jss::url))

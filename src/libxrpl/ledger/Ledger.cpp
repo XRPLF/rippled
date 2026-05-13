@@ -315,8 +315,8 @@ Ledger::setImmutable(bool rehash)
     // place the hash transitions to valid
     if (!immutable_ && rehash)
     {
-        header_.txHash = txMap_.getHash().asUint256();
-        header_.accountHash = stateMap_.getHash().asUint256();
+        header_.txHash = txMap_.getHash().asUInt256();
+        header_.accountHash = stateMap_.getHash().asUInt256();
     }
 
     if (rehash)
@@ -480,7 +480,7 @@ Ledger::digest(key_type const& key) const -> std::optional<digest_type>
     //        from the NodeStore needlessly.
     if (!stateMap_.peekItem(key, digest))
         return std::nullopt;
-    return digest.asUint256();
+    return digest.asUInt256();
 }
 
 //------------------------------------------------------------------------------
@@ -795,9 +795,9 @@ Ledger::isSensible() const
         return false;
     if (header_.accountHash.isZero())
         return false;
-    if (header_.accountHash != stateMap_.getHash().asUint256())
+    if (header_.accountHash != stateMap_.getHash().asUInt256())
         return false;
-    if (header_.txHash != txMap_.getHash().asUint256())
+    if (header_.txHash != txMap_.getHash().asUInt256())
         return false;
     return true;
 }

@@ -16,7 +16,7 @@ class STBitString final : public STBase, public CountedObject<STBitString<Bits>>
     static_assert(Bits > 0, "Number of bits must be positive");
 
 public:
-    using value_type = BaseUint<Bits>;
+    using value_type = BaseUInt<Bits>;
 
 private:
     value_type value_{};
@@ -46,7 +46,7 @@ public:
 
     template <typename Tag>
     void
-    setValue(BaseUint<Bits, Tag> const& v);
+    setValue(BaseUInt<Bits, Tag> const& v);
 
     [[nodiscard]] value_type const&
     value() const;
@@ -157,7 +157,7 @@ STBitString<Bits>::add(Serializer& s) const
 template <int Bits>
 template <typename Tag>
 void
-STBitString<Bits>::setValue(BaseUint<Bits, Tag> const& v)
+STBitString<Bits>::setValue(BaseUInt<Bits, Tag> const& v)
 {
     value_ = v;
 }

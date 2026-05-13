@@ -7,7 +7,7 @@ namespace xrpl {
 class TicketCreate : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Custom};
+    static constexpr auto kCONSEQUENCES_FACTORY = ConsequencesFactoryType::Custom;
 
     constexpr static std::uint32_t kMIN_VALID_COUNT = 1;
 
