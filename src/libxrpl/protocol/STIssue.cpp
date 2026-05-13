@@ -30,7 +30,7 @@ STIssue::STIssue(SerialIter& sit, SField const& name) : STBase{name}
 {
     auto const currencyOrAccount = sit.get160();
 
-    if (isXRP(static_cast<Currency>(currencyOrAccount)))
+    if (isXRP(Currency::fromRaw(currencyOrAccount)))
     {
         asset_ = xrpIssue();
     }
@@ -52,7 +52,7 @@ STIssue::STIssue(SerialIter& sit, SField const& name) : STBase{name}
     //   makeMptID() reach the wire untouched.
     else
     {
-        AccountID const account = static_cast<AccountID>(sit.get160());
+        AccountID const account = AccountID::fromRaw(sit.get160());
         if (account == noAccount() || account == xrpAccount())
         {
             MPTID mptID{};

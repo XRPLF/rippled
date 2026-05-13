@@ -81,12 +81,12 @@ public:
 
     public:
         explicit TestSink(beast::unit_test::Suite& suite)
-            : Sink(beast::severities::KWarning, false), suite_(suite)
+            : Sink(beast::Severity::Warning, false), suite_(suite)
         {
         }
 
         void
-        write(beast::severities::Severity level, std::string const& text) override
+        write(beast::Severity level, std::string const& text) override
         {
             if (level < threshold())
                 return;
@@ -95,7 +95,7 @@ public:
         }
 
         void
-        writeAlways(beast::severities::Severity level, std::string const& text) override
+        writeAlways(beast::Severity level, std::string const& text) override
         {
             suite_.log << text << std::endl;
         }
@@ -295,7 +295,7 @@ public:
         testcase("Basic client/server");
         TestSink sink{*this};
         TestThread thread;
-        sink.threshold(beast::severities::Severity::KAll);
+        sink.threshold(beast::Severity::All);
         beast::Journal const journal{sink};
         TestHandler handler;
         auto s = makeServer(handler, thread.getIoContext(), journal);
@@ -365,7 +365,7 @@ public:
             }
         };
 
-        using namespace beast::severities;
+        using beast::Severity;
         SuiteJournal journal("Server_test", *this);
 
         NullHandler h;

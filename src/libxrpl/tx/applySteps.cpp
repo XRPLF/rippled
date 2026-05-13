@@ -113,29 +113,29 @@ withTxnType(Rules const& rules, TxType txnType, F&& f)
 // building with Visual Studio 2017 we can consider replacing the four
 // templates with a single template function that uses if constexpr.
 //
-// For Transactor::Normal
+// For ConsequencesFactoryType::Normal
 //
 
 template <class T>
-    requires(T::kCONSEQUENCES_FACTORY == Transactor::Normal)
+    requires(T::kCONSEQUENCES_FACTORY == Transactor::ConsequencesFactoryType::Normal)
 TxConsequences
 consequencesHelper(PreflightContext const& ctx)
 {
     return TxConsequences(ctx.tx);
 };
 
-// For Transactor::Blocker
+// For ConsequencesFactoryType::Blocker
 template <class T>
-    requires(T::kCONSEQUENCES_FACTORY == Transactor::Blocker)
+    requires(T::kCONSEQUENCES_FACTORY == Transactor::ConsequencesFactoryType::Blocker)
 TxConsequences
 consequencesHelper(PreflightContext const& ctx)
 {
     return TxConsequences(ctx.tx, TxConsequences::Category::Blocker);
 };
 
-// For Transactor::Custom
+// For ConsequencesFactoryType::Custom
 template <class T>
-    requires(T::kCONSEQUENCES_FACTORY == Transactor::Custom)
+    requires(T::kCONSEQUENCES_FACTORY == Transactor::ConsequencesFactoryType::Custom)
 TxConsequences
 consequencesHelper(PreflightContext const& ctx)
 {
@@ -158,7 +158,7 @@ invokePreflight(PreflightContext const& ctx)
         // Should never happen
         // LCOV_EXCL_START
         JLOG(ctx.j.fatal()) << "Unknown transaction type in preflight: " << e.txnType;
-        UNREACHABLE("xrpl::invoke_preflight : unknown transaction type");
+        UNREACHABLE("xrpl::invokePreflight : unknown transaction type");
         return {temUNKNOWN, TxConsequences{temUNKNOWN}};
         // LCOV_EXCL_STOP
     }
@@ -217,7 +217,7 @@ invokePreclaim(PreclaimContext const& ctx)
         // Should never happen
         // LCOV_EXCL_START
         JLOG(ctx.j.fatal()) << "Unknown transaction type in preclaim: " << e.txnType;
-        UNREACHABLE("xrpl::invoke_preclaim : unknown transaction type");
+        UNREACHABLE("xrpl::invokePreclaim : unknown transaction type");
         return temUNKNOWN;
         // LCOV_EXCL_STOP
     }
@@ -307,7 +307,7 @@ invokeApply(ApplyContext& ctx)
         // Should never happen
         // LCOV_EXCL_START
         JLOG(ctx.journal.fatal()) << "Unknown transaction type in apply: " << e.txnType;
-        UNREACHABLE("xrpl::invoke_apply : unknown transaction type");
+        UNREACHABLE("xrpl::invokeApply : unknown transaction type");
         return {temUNKNOWN, false};
         // LCOV_EXCL_STOP
     }

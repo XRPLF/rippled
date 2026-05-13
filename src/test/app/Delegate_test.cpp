@@ -195,7 +195,7 @@ class Delegate_test : public beast::unit_test::Suite
             jv[jss::TransactionType] = jss::DelegateSet;
             jv[jss::Account] = gw.human();
             jv[sfAuthorize.jsonName] = alice.human();
-            json::Value permissionsJson(json::ArrayValue);
+            json::Value permissionsJson(json::ValueType::Array);
             json::Value permissionValue;
             permissionValue[sfPermissionValue.jsonName] = "Payment";
             json::Value permissionObj;
@@ -1898,7 +1898,7 @@ class Delegate_test : public beast::unit_test::Suite
             jv[jss::Account] = alice.human();
             jv[sfAuthorize.jsonName] = bob.human();
 
-            json::Value permissionsJson(json::ArrayValue);
+            json::Value permissionsJson(json::ValueType::Array);
             json::Value permissionValue;
             permissionValue[sfPermissionValue.jsonName] = value;
             json::Value permissionObj;

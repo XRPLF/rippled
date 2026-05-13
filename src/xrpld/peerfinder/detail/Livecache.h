@@ -499,7 +499,7 @@ Livecache<Allocator>::HopsT::insert(Element& e)
 {
     XRPL_ASSERT(
         e.endpoint.hops <= Tuning::kMAX_HOPS + 1,
-        "xrpl::PeerFinder::Livecache::hops_t::insert : maximum input hops");
+        "xrpl::PeerFinder::Livecache::HopsT::insert : maximum input hops");
     // This has security implications without a shuffle
     lists_[e.endpoint.hops].push_front(e);
     ++hist_[e.endpoint.hops];
@@ -511,7 +511,7 @@ Livecache<Allocator>::HopsT::reinsert(Element& e, std::uint32_t numHops)
 {
     XRPL_ASSERT(
         numHops <= Tuning::kMAX_HOPS + 1,
-        "xrpl::PeerFinder::Livecache::hops_t::reinsert : maximum hops input");
+        "xrpl::PeerFinder::Livecache::HopsT::reinsert : maximum hops input");
 
     auto& list = lists_[e.endpoint.hops];
     list.erase(list.iterator_to(e));

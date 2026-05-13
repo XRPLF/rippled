@@ -692,7 +692,7 @@ public:
         {
             aliceSeq = env.seq(alice);
             json::Value jv = setupTx();
-            jv[jss::tx_json][sfSigners.fieldName] = json::Value{json::ArrayValue};
+            jv[jss::tx_json][sfSigners.fieldName] = json::Value{json::ValueType::Array};
             beckySign(jv);
             auto jrr = env.rpc("json", "submit_multisigned", to_string(jv))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "error");
@@ -1420,8 +1420,8 @@ public:
 
         uint8_t tag2[] = "hello world some ascii 32b long";  // including 1 byte for NUL
 
-        uint256 bogieTag = xrpl::BaseUint<256>::fromVoid(tag1);
-        uint256 demonTag = xrpl::BaseUint<256>::fromVoid(tag2);
+        uint256 bogieTag = xrpl::BaseUInt<256>::fromVoid(tag1);
+        uint256 demonTag = xrpl::BaseUInt<256>::fromVoid(tag2);
 
         // Attach phantom signers to alice and use them for a transaction.
         env(signers(alice, 1, {{bogie_, 1, bogieTag}, {demon_, 1, demonTag}}));
