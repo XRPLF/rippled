@@ -14,7 +14,7 @@
  *      auto span = SpanGuard::span(
  *          TraceCategory::Rpc, rpc_span::prefix::command, "submit");
  *      span.setAttribute(rpc_span::attr::command, "submit");
- *      span.setAttribute(rpc_span::attr::status, rpc_span::val::success);
+ *      span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::success);
  *  @endcode
  *
  *  Span hierarchy (automatic nesting via OTel thread-local context):
@@ -32,7 +32,7 @@
  *    |  |  +---------------------------------------------+ | |
  *    |  |  | rpc.command.{name}                          | | |
  *    |  |  | RPC::callMethod()                           | | |
- *    |  |  | attrs: command, version, role, status       | | |
+ *    |  |  | attrs: command, version, rpc_role, rpc_status | | |
  *    |  |  +---------------------------------------------+ | |
  *    |  +--------------------------------------------------+ |
  *    +-------------------------------------------------------+
@@ -60,7 +60,7 @@
  *    |  +--------------------------------------------------+ |
  *    |  | rpc.command.{name}                               | |
  *    |  | RPC::callMethod()                                | |
- *    |  | attrs: command, version, role, status             | |
+ *    |  | attrs: command, version, rpc_role, rpc_status     | |
  *    |  +--------------------------------------------------+ |
  *    +-------------------------------------------------------+
  *
@@ -88,7 +88,7 @@
  *    +-------------------------------------------------------+
  *    | grpc.request                                          |
  *    | CallData::process(coro)                               |
- *    |   attrs: method, status                               |
+ *    |   attrs: method, grpc_status                           |
  *    +-------------------------------------------------------+
  *
  *  Covered paths:
@@ -134,18 +134,16 @@ inline constexpr auto process = makeStr("process");
 // ===== Attribute keys ======================================================
 
 namespace attr {
-inline constexpr auto xrplRpc = join(seg::xrpl, seg::rpc);
-
-/// "xrpl.rpc.command"
-inline constexpr auto command = join(xrplRpc, makeStr("command"));
-/// "xrpl.rpc.version"
-inline constexpr auto version = join(xrplRpc, makeStr("version"));
-/// "xrpl.rpc.role"
-inline constexpr auto role = join(xrplRpc, makeStr("role"));
-/// "xrpl.rpc.status"
-inline constexpr auto status = join(xrplRpc, makeStr("status"));
-/// "xrpl.rpc.payload_size"
-inline constexpr auto payloadSize = join(xrplRpc, makeStr("payload_size"));
+/// "command" — RPC method name.
+inline constexpr auto command = makeStr("command");
+/// "version" — api_version per request.
+inline constexpr auto version = makeStr("version");
+/// "rpc_role" — admin|user. Domain-qualified: collides with grpc_role.
+inline constexpr auto rpcRole = makeStr("rpc_role");
+/// "rpc_status" — success|error. Domain-qualified: avoids OTel reserved span status.
+inline constexpr auto rpcStatus = makeStr("rpc_status");
+/// "request_payload_size" — bytes of inbound request payload.
+inline constexpr auto requestPayloadSize = makeStr("request_payload_size");
 }  // namespace attr
 
 // ===== Attribute values ====================================================
