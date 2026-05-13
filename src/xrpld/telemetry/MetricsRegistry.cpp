@@ -295,6 +295,29 @@ MetricsRegistry::recordJobFinished(std::string_view jobType, std::int64_t runnin
 void
 MetricsRegistry::registerAsyncGauges()
 {
+    // Each helper creates one observable instrument and attaches one
+    // callback. Keeping the registration bodies in separate methods
+    // preserves the 80-line-per-function limit enforced by CLAUDE.md.
+    registerCacheHitRateGauge();
+    registerTxqGauge();
+    registerObjectCountGauge();
+    registerLoadFactorGauge();
+    registerNodeStoreGauge();
+    registerServerInfoGauge();
+    registerBuildInfoGauge();
+    registerCompleteLedgersGauge();
+    registerDbMetricsGauge();
+    registerValidatorHealthGauge();
+    registerPeerQualityGauge();
+    registerLedgerEconomyGauge();
+    registerStateTrackingGauge();
+    registerStorageDetailGauge();
+    registerValidationAgreementGauge();
+}
+
+void
+MetricsRegistry::registerCacheHitRateGauge()
+{
     // --- Task 9.2: Cache hit rate and size gauges ---
     cacheHitRateGauge_ =
         meter_->CreateDoubleObservableGauge("xrpld_cache_metrics", "Cache hit rates and sizes");
@@ -359,7 +382,11 @@ MetricsRegistry::registerAsyncGauges()
             }
         },
         this);
+}
 
+void
+MetricsRegistry::registerTxqGauge()
+{
     // --- Task 9.3: TxQ metrics gauges ---
     txqGauge_ =
         meter_->CreateDoubleObservableGauge("xrpld_txq_metrics", "Transaction queue metrics");
@@ -401,7 +428,11 @@ MetricsRegistry::registerAsyncGauges()
             }
         },
         this);
+}
 
+void
+MetricsRegistry::registerObjectCountGauge()
+{
     // --- Task 9.6: Counted object instance gauges ---
     objectCountGauge_ = meter_->CreateInt64ObservableGauge(
         "xrpld_object_count", "Live instance counts for key internal object types");
@@ -426,7 +457,11 @@ MetricsRegistry::registerAsyncGauges()
             }
         },
         this);
+}
 
+void
+MetricsRegistry::registerLoadFactorGauge()
+{
     // --- Task 9.7: Load factor breakdown gauges ---
     loadFactorGauge_ = meter_->CreateDoubleObservableGauge(
         "xrpld_load_factor_metrics", "Fee load factor breakdown");
@@ -492,7 +527,11 @@ MetricsRegistry::registerAsyncGauges()
             }
         },
         this);
+}
 
+void
+MetricsRegistry::registerNodeStoreGauge()
+{
     // --- Task 9.1: NodeStore I/O gauges ---
     // The cumulative counters (reads, writes, bytes) are also exposed here
     // as observable gauges.  This avoids adding an xrpld dependency into the
@@ -563,7 +602,11 @@ MetricsRegistry::registerAsyncGauges()
             }
         },
         this);
+}
 
+void
+MetricsRegistry::registerServerInfoGauge()
+{
     // --- Task 9.7a: Server info gauges ---
     serverInfoGauge_ =
         meter_->CreateInt64ObservableGauge("xrpld_server_info", "Server-level health metrics");
@@ -626,7 +669,11 @@ MetricsRegistry::registerAsyncGauges()
             }
         },
         this);
+}
 
+void
+MetricsRegistry::registerBuildInfoGauge()
+{
     // --- Task 9.7b: Build info gauge ---
     buildInfoGauge_ =
         meter_->CreateInt64ObservableGauge("xrpld_build_info", "Build version information");
@@ -643,7 +690,11 @@ MetricsRegistry::registerAsyncGauges()
             }
         },
         nullptr);
+}
 
+void
+MetricsRegistry::registerCompleteLedgersGauge()
+{
     // --- Task 9.7c: Complete ledgers range gauge ---
     completeLedgersGauge_ = meter_->CreateInt64ObservableGauge(
         "xrpld_complete_ledgers", "Complete ledger range start/end pairs");
@@ -696,7 +747,11 @@ MetricsRegistry::registerAsyncGauges()
             }
         },
         this);
+}
 
+void
+MetricsRegistry::registerDbMetricsGauge()
+{
     // --- Task 9.7d: Database size and fetch rate gauges ---
     dbMetricsGauge_ = meter_->CreateInt64ObservableGauge(
         "xrpld_db_metrics", "Database storage sizes and fetch rates");
@@ -729,7 +784,11 @@ MetricsRegistry::registerAsyncGauges()
             }
         },
         this);
+}
 
+void
+MetricsRegistry::registerValidatorHealthGauge()
+{
     // --- Task 7.9: Validator health gauges ---
     validatorHealthGauge_ = meter_->CreateDoubleObservableGauge(
         "xrpld_validator_health", "Validator health indicators");
@@ -770,7 +829,11 @@ MetricsRegistry::registerAsyncGauges()
             }
         },
         this);
+}
 
+void
+MetricsRegistry::registerPeerQualityGauge()
+{
     // --- Task 7.10: Peer quality gauges ---
     // Uses Peer::json() to read latency and version since those accessors
     // are not on the abstract Peer interface (they live on PeerImp).
@@ -847,7 +910,11 @@ MetricsRegistry::registerAsyncGauges()
             }
         },
         this);
+}
 
+void
+MetricsRegistry::registerLedgerEconomyGauge()
+{
     // --- Task 7.11: Ledger economy gauges ---
     ledgerEconomyGauge_ = meter_->CreateDoubleObservableGauge(
         "xrpld_ledger_economy", "Ledger fee and economy metrics");
@@ -901,7 +968,11 @@ MetricsRegistry::registerAsyncGauges()
             }
         },
         this);
+}
 
+void
+MetricsRegistry::registerStateTrackingGauge()
+{
     // --- Task 7.12: State tracking gauges ---
     stateTrackingGauge_ =
         meter_->CreateDoubleObservableGauge("xrpld_state_tracking", "Node state and mode tracking");
@@ -943,7 +1014,11 @@ MetricsRegistry::registerAsyncGauges()
             }
         },
         this);
+}
 
+void
+MetricsRegistry::registerStorageDetailGauge()
+{
     // --- Task 7.13: Storage detail gauges ---
     // Reports NuDB on-disk size via the NodeStore JSON counters interface.
     storageDetailGauge_ =
@@ -971,7 +1046,11 @@ MetricsRegistry::registerAsyncGauges()
             }
         },
         this);
+}
 
+void
+MetricsRegistry::registerValidationAgreementGauge()
+{
     // --- Task 7.15: Validation agreement gauges ---
     // Reports rolling-window agreement percentages and counts from
     // ValidationTracker.  reconcile() is called at the start of the
