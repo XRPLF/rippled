@@ -437,21 +437,21 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_nodestore_state{exported_instance=~\"$node\", metric=\"node_reads_total\"}",
+          "expr": "xrpld_nodestore_state{exported_instance=~\"$node\", metric=\"node_reads_total\"}",
           "legendFormat": "Reads Total [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_nodestore_state{exported_instance=~\"$node\", metric=\"node_reads_hit\"}",
+          "expr": "xrpld_nodestore_state{exported_instance=~\"$node\", metric=\"node_reads_hit\"}",
           "legendFormat": "Reads Hit (cache) [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_nodestore_state{exported_instance=~\"$node\", metric=\"node_writes\"}",
+          "expr": "xrpld_nodestore_state{exported_instance=~\"$node\", metric=\"node_writes\"}",
           "legendFormat": "Writes Total [{{exported_instance}}]"
         }
       ],
@@ -492,14 +492,14 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_nodestore_state{exported_instance=~\"$node\", metric=\"write_load\"}",
+          "expr": "xrpld_nodestore_state{exported_instance=~\"$node\", metric=\"write_load\"}",
           "legendFormat": "Write Load [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_nodestore_state{exported_instance=~\"$node\", metric=\"read_queue\"}",
+          "expr": "xrpld_nodestore_state{exported_instance=~\"$node\", metric=\"read_queue\"}",
           "legendFormat": "Read Queue [{{exported_instance}}]"
         }
       ],
@@ -568,21 +568,21 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_cache_metrics{exported_instance=~\"$node\", metric=\"SLE_hit_rate\"}",
+          "expr": "xrpld_cache_metrics{exported_instance=~\"$node\", metric=\"SLE_hit_rate\"}",
           "legendFormat": "SLE Hit Rate [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_cache_metrics{exported_instance=~\"$node\", metric=\"ledger_hit_rate\"}",
+          "expr": "xrpld_cache_metrics{exported_instance=~\"$node\", metric=\"ledger_hit_rate\"}",
           "legendFormat": "Ledger Hit Rate [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_cache_metrics{exported_instance=~\"$node\", metric=\"AL_hit_rate\"}",
+          "expr": "xrpld_cache_metrics{exported_instance=~\"$node\", metric=\"AL_hit_rate\"}",
           "legendFormat": "AcceptedLedger Hit Rate [{{exported_instance}}]"
         }
       ],
@@ -629,21 +629,21 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_cache_metrics{exported_instance=~\"$node\", metric=\"treenode_cache_size\"}",
+          "expr": "xrpld_cache_metrics{exported_instance=~\"$node\", metric=\"treenode_cache_size\"}",
           "legendFormat": "TreeNode Cache [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_cache_metrics{exported_instance=~\"$node\", metric=\"treenode_track_size\"}",
+          "expr": "xrpld_cache_metrics{exported_instance=~\"$node\", metric=\"treenode_track_size\"}",
           "legendFormat": "TreeNode Track [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_cache_metrics{exported_instance=~\"$node\", metric=\"fullbelow_size\"}",
+          "expr": "xrpld_cache_metrics{exported_instance=~\"$node\", metric=\"fullbelow_size\"}",
           "legendFormat": "FullBelow [{{exported_instance}}]"
         }
       ],
@@ -701,7 +701,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "topk(15, rippled_object_count{exported_instance=~\"$node\", type=~\"$type\"})",
+          "expr": "topk(15, xrpld_object_count{exported_instance=~\"$node\", type=~\"$type\"})",
           "legendFormat": "{{type}} [{{exported_instance}}]"
         }
       ],
@@ -754,7 +754,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_server_info{exported_instance=~\"$node\", metric=\"server_state\"}",
+          "expr": "xrpld_server_info{exported_instance=~\"$node\", metric=\"server_state\"}",
           "legendFormat": "State [{{exported_instance}}]"
         }
       ],
@@ -809,7 +809,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_server_info{exported_instance=~\"$node\", metric=\"uptime\"}",
+          "expr": "xrpld_server_info{exported_instance=~\"$node\", metric=\"uptime\"}",
           "legendFormat": "Uptime [{{exported_instance}}]"
         }
       ],
@@ -842,7 +842,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_server_info{exported_instance=~\"$node\", metric=\"peers\"}",
+          "expr": "xrpld_server_info{exported_instance=~\"$node\", metric=\"peers\"}",
           "legendFormat": "Peers [{{exported_instance}}]"
         }
       ],
@@ -875,7 +875,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_server_info{exported_instance=~\"$node\", metric=\"validated_ledger_seq\"}",
+          "expr": "xrpld_server_info{exported_instance=~\"$node\", metric=\"validated_ledger_seq\"}",
           "legendFormat": "Seq [{{exported_instance}}]"
         }
       ],
@@ -908,14 +908,14 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_server_info{exported_instance=~\"$node\", metric=\"last_close_proposers\"}",
+          "expr": "xrpld_server_info{exported_instance=~\"$node\", metric=\"last_close_proposers\"}",
           "legendFormat": "Proposers [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_server_info{exported_instance=~\"$node\", metric=\"last_close_converge_time_ms\"}",
+          "expr": "xrpld_server_info{exported_instance=~\"$node\", metric=\"last_close_converge_time_ms\"}",
           "legendFormat": "Converge Time ms [{{exported_instance}}]"
         }
       ],
@@ -956,7 +956,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_build_info{exported_instance=~\"$node\"}",
+          "expr": "xrpld_build_info{exported_instance=~\"$node\"}",
           "legendFormat": "v{{version}} [{{exported_instance}}]"
         }
       ],
@@ -998,7 +998,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_complete_ledgers{exported_instance=~\"$node\"}",
+          "expr": "xrpld_complete_ledgers{exported_instance=~\"$node\"}",
           "legendFormat": "{{bound}} [range {{index}}] [{{exported_instance}}]",
           "format": "table",
           "instant": true
@@ -1033,21 +1033,21 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_db_metrics{exported_instance=~\"$node\", metric=\"db_kb_total\"}",
+          "expr": "xrpld_db_metrics{exported_instance=~\"$node\", metric=\"db_kb_total\"}",
           "legendFormat": "Total KB [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_db_metrics{exported_instance=~\"$node\", metric=\"db_kb_ledger\"}",
+          "expr": "xrpld_db_metrics{exported_instance=~\"$node\", metric=\"db_kb_ledger\"}",
           "legendFormat": "Ledger KB [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_db_metrics{exported_instance=~\"$node\", metric=\"db_kb_transaction\"}",
+          "expr": "xrpld_db_metrics{exported_instance=~\"$node\", metric=\"db_kb_transaction\"}",
           "legendFormat": "Transaction KB [{{exported_instance}}]"
         }
       ],
@@ -1088,7 +1088,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_db_metrics{exported_instance=~\"$node\", metric=\"historical_perminute\"}",
+          "expr": "xrpld_db_metrics{exported_instance=~\"$node\", metric=\"historical_perminute\"}",
           "legendFormat": "Fetches/min [{{exported_instance}}]"
         }
       ],
@@ -1121,7 +1121,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_server_info{exported_instance=~\"$node\", metric=\"peer_disconnects_resources\"}",
+          "expr": "xrpld_server_info{exported_instance=~\"$node\", metric=\"peer_disconnects_resources\"}",
           "legendFormat": "Resource Disconnects [{{exported_instance}}]"
         }
       ],
@@ -1173,7 +1173,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_ledger_economy{metric=\"base_fee_xrp\",exported_instance=~\"$node\"}",
+          "expr": "xrpld_ledger_economy{metric=\"base_fee_xrp\",exported_instance=~\"$node\"}",
           "legendFormat": "Base Fee [{{exported_instance}}]"
         }
       ],
@@ -1206,7 +1206,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_ledger_economy{metric=\"reserve_base_xrp\",exported_instance=~\"$node\"}",
+          "expr": "xrpld_ledger_economy{metric=\"reserve_base_xrp\",exported_instance=~\"$node\"}",
           "legendFormat": "Reserve Base [{{exported_instance}}]"
         }
       ],
@@ -1239,7 +1239,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_ledger_economy{metric=\"reserve_inc_xrp\",exported_instance=~\"$node\"}",
+          "expr": "xrpld_ledger_economy{metric=\"reserve_inc_xrp\",exported_instance=~\"$node\"}",
           "legendFormat": "Reserve Inc [{{exported_instance}}]"
         }
       ],
@@ -1272,7 +1272,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_ledger_economy{metric=\"ledger_age_seconds\",exported_instance=~\"$node\"}",
+          "expr": "xrpld_ledger_economy{metric=\"ledger_age_seconds\",exported_instance=~\"$node\"}",
           "legendFormat": "Ledger Age [{{exported_instance}}]"
         }
       ],
@@ -1321,7 +1321,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_ledger_economy{metric=\"transaction_rate\",exported_instance=~\"$node\"}",
+          "expr": "xrpld_ledger_economy{metric=\"transaction_rate\",exported_instance=~\"$node\"}",
           "legendFormat": "Tx Rate [{{exported_instance}}]"
         }
       ],
@@ -1375,7 +1375,7 @@
         "label": "Object Type",
         "description": "Filter by internal object type (CountedObject<T> class name)",
         "type": "query",
-        "query": "label_values(rippled_object_count, type)",
+        "query": "label_values(xrpld_object_count, type)",
         "datasource": {
           "type": "prometheus",
           "uid": "prometheus"

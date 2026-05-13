@@ -42,7 +42,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_validation_agreement{metric=\"agreement_pct_1h\",exported_instance=~\"$node\"}",
+          "expr": "xrpld_validation_agreement{metric=\"agreement_pct_1h\",exported_instance=~\"$node\"}",
           "legendFormat": "Agreement 1h [{{exported_instance}}]"
         }
       ],
@@ -93,7 +93,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_validation_agreement{metric=\"agreement_pct_24h\",exported_instance=~\"$node\"}",
+          "expr": "xrpld_validation_agreement{metric=\"agreement_pct_24h\",exported_instance=~\"$node\"}",
           "legendFormat": "Agreement 24h [{{exported_instance}}]"
         }
       ],
@@ -146,14 +146,14 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_validation_agreement{metric=\"agreements_1h\",exported_instance=~\"$node\"}",
+          "expr": "xrpld_validation_agreement{metric=\"agreements_1h\",exported_instance=~\"$node\"}",
           "legendFormat": "Agreements 1h [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_validation_agreement{metric=\"missed_1h\",exported_instance=~\"$node\"}",
+          "expr": "xrpld_validation_agreement{metric=\"missed_1h\",exported_instance=~\"$node\"}",
           "legendFormat": "Missed 1h [{{exported_instance}}]"
         }
       ],
@@ -212,14 +212,14 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_validation_agreement{metric=\"agreements_24h\",exported_instance=~\"$node\"}",
+          "expr": "xrpld_validation_agreement{metric=\"agreements_24h\",exported_instance=~\"$node\"}",
           "legendFormat": "Agreements 24h [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_validation_agreement{metric=\"missed_24h\",exported_instance=~\"$node\"}",
+          "expr": "xrpld_validation_agreement{metric=\"missed_24h\",exported_instance=~\"$node\"}",
           "legendFormat": "Missed 24h [{{exported_instance}}]"
         }
       ],
@@ -288,7 +288,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(rippled_validations_sent_total{exported_instance=~\"$node\"}[5m]) * 60",
+          "expr": "rate(xrpld_validations_sent_total{exported_instance=~\"$node\"}[5m]) * 60",
           "legendFormat": "Sent/min [{{exported_instance}}]"
         }
       ],
@@ -337,7 +337,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(rippled_validations_checked_total{exported_instance=~\"$node\"}[5m]) * 60",
+          "expr": "rate(xrpld_validations_checked_total{exported_instance=~\"$node\"}[5m]) * 60",
           "legendFormat": "Checked/min [{{exported_instance}}]"
         }
       ],
@@ -370,7 +370,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_validator_health{metric=\"amendment_blocked\",exported_instance=~\"$node\"}",
+          "expr": "xrpld_validator_health{metric=\"amendment_blocked\",exported_instance=~\"$node\"}",
           "legendFormat": "Blocked [{{exported_instance}}]"
         }
       ],
@@ -429,7 +429,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_validator_health{metric=\"unl_expiry_days\",exported_instance=~\"$node\"}",
+          "expr": "xrpld_validator_health{metric=\"unl_expiry_days\",exported_instance=~\"$node\"}",
           "legendFormat": "UNL Expiry [{{exported_instance}}]"
         }
       ],
@@ -490,7 +490,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_validator_health{metric=\"validation_quorum\",exported_instance=~\"$node\"}",
+          "expr": "xrpld_validator_health{metric=\"validation_quorum\",exported_instance=~\"$node\"}",
           "legendFormat": "Quorum [{{exported_instance}}]"
         }
       ],
@@ -523,7 +523,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_state_tracking{metric=\"state_value\",exported_instance=~\"$node\"}",
+          "expr": "xrpld_state_tracking{metric=\"state_value\",exported_instance=~\"$node\"}",
           "legendFormat": "State [{{exported_instance}}]"
         }
       ],
@@ -568,7 +568,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_state_tracking{metric=\"time_in_current_state_seconds\",exported_instance=~\"$node\"}",
+          "expr": "xrpld_state_tracking{metric=\"time_in_current_state_seconds\",exported_instance=~\"$node\"}",
           "legendFormat": "Time in State [{{exported_instance}}]"
         }
       ],
@@ -601,7 +601,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(rippled_state_changes_total{exported_instance=~\"$node\"}[1h])",
+          "expr": "rate(xrpld_state_changes_total{exported_instance=~\"$node\"}[1h])",
           "legendFormat": "Changes/hr [{{exported_instance}}]"
         }
       ],
@@ -650,7 +650,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(rippled_ledgers_closed_total{exported_instance=~\"$node\"}[5m]) * 60",
+          "expr": "rate(xrpld_ledgers_closed_total{exported_instance=~\"$node\"}[5m]) * 60",
           "legendFormat": "Closed/min [{{exported_instance}}]"
         }
       ],
@@ -688,7 +688,7 @@
         "label": "Node",
         "description": "Filter by rippled node (service.instance.id)",
         "type": "query",
-        "query": "label_values(rippled_validation_agreement, exported_instance)",
+        "query": "label_values(xrpld_validation_agreement, exported_instance)",
         "datasource": {
           "type": "prometheus",
           "uid": "prometheus"

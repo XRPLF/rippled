@@ -665,31 +665,46 @@ check_otel_metric() {
 }
 
 # Task 9.1: NodeStore I/O
-check_otel_metric 'rippled_nodestore_state{metric="node_reads_total"}'
-check_otel_metric 'rippled_nodestore_state{metric="write_load"}'
+check_otel_metric 'xrpld_nodestore_state{metric="node_reads_total"}'
+check_otel_metric 'xrpld_nodestore_state{metric="write_load"}'
 
 # Task 9.2: Cache hit rates
-check_otel_metric 'rippled_cache_metrics{metric="SLE_hit_rate"}'
-check_otel_metric 'rippled_cache_metrics{metric="treenode_cache_size"}'
+check_otel_metric 'xrpld_cache_metrics{metric="SLE_hit_rate"}'
+check_otel_metric 'xrpld_cache_metrics{metric="treenode_cache_size"}'
 
 # Task 9.3: TxQ metrics
-check_otel_metric 'rippled_txq_metrics{metric="txq_count"}'
-check_otel_metric 'rippled_txq_metrics{metric="txq_reference_fee_level"}'
+check_otel_metric 'xrpld_txq_metrics{metric="txq_count"}'
+check_otel_metric 'xrpld_txq_metrics{metric="txq_reference_fee_level"}'
 
 # Task 9.4: Per-RPC metrics
-check_otel_metric "rippled_rpc_method_started_total"
-check_otel_metric "rippled_rpc_method_finished_total"
+check_otel_metric "xrpld_rpc_method_started_total"
+check_otel_metric "xrpld_rpc_method_finished_total"
 
 # Task 9.5: Per-job metrics
-check_otel_metric "rippled_job_queued_total"
-check_otel_metric "rippled_job_finished_total"
+check_otel_metric "xrpld_job_queued_total"
+check_otel_metric "xrpld_job_finished_total"
 
 # Task 9.6: Counted object instances
-check_otel_metric "rippled_object_count"
+check_otel_metric "xrpld_object_count"
 
 # Task 9.7: Load factor breakdown
-check_otel_metric 'rippled_load_factor_metrics{metric="load_factor"}'
-check_otel_metric 'rippled_load_factor_metrics{metric="load_factor_server"}'
+check_otel_metric 'xrpld_load_factor_metrics{metric="load_factor"}'
+check_otel_metric 'xrpld_load_factor_metrics{metric="load_factor_server"}'
+
+# Task 7.15 / Phase 9: ValidationTracker rolling-window agreement gauge.
+# MetricsRegistry::registerValidationAgreementGauge() publishes
+# xrpld_validation_agreement with a `metric` label for each window
+# (1h / 24h / 7d) plus the matching agreement/miss counts. The 7-day
+# window matches the external xrpl-validator-dashboard parity target.
+check_otel_metric 'xrpld_validation_agreement{metric="agreement_pct_1h"}'
+check_otel_metric 'xrpld_validation_agreement{metric="agreement_pct_24h"}'
+check_otel_metric 'xrpld_validation_agreement{metric="agreement_pct_7d"}'
+check_otel_metric 'xrpld_validation_agreement{metric="agreements_1h"}'
+check_otel_metric 'xrpld_validation_agreement{metric="missed_1h"}'
+check_otel_metric 'xrpld_validation_agreement{metric="agreements_24h"}'
+check_otel_metric 'xrpld_validation_agreement{metric="missed_24h"}'
+check_otel_metric 'xrpld_validation_agreement{metric="agreements_7d"}'
+check_otel_metric 'xrpld_validation_agreement{metric="missed_7d"}'
 
 # ---------------------------------------------------------------------------
 # Step 11: Summary
