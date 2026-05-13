@@ -164,16 +164,16 @@ Every span can carry key-value attributes that provide context for filtering and
 
 #### RPC Attributes
 
-| Attribute                | Type   | Set On          | Description                                      |
-| ------------------------ | ------ | --------------- | ------------------------------------------------ |
-| `xrpl.rpc.command`       | string | `rpc.command.*` | RPC command name (e.g., `server_info`, `ledger`) |
-| `xrpl.rpc.version`       | int64  | `rpc.command.*` | API version number                               |
-| `xrpl.rpc.role`          | string | `rpc.command.*` | Caller role: `"admin"` or `"user"`               |
-| `xrpl.rpc.status`        | string | `rpc.command.*` | Result: `"success"` or `"error"`                 |
-| `xrpl.rpc.duration_ms`   | int64  | `rpc.command.*` | Command execution time in milliseconds           |
-| `xrpl.rpc.error_message` | string | `rpc.command.*` | Error details (only set on failure)              |
+| Attribute       | Type   | Set On          | Description                                      |
+| --------------- | ------ | --------------- | ------------------------------------------------ |
+| `command`       | string | `rpc.command.*` | RPC command name (e.g., `server_info`, `ledger`) |
+| `version`       | int64  | `rpc.command.*` | API version number                               |
+| `rpc_role`      | string | `rpc.command.*` | Caller role: `"admin"` or `"user"`               |
+| `rpc_status`    | string | `rpc.command.*` | Result: `"success"` or `"error"`                 |
+| `duration_ms`   | int64  | `rpc.command.*` | Command execution time in milliseconds           |
+| `error_message` | string | `rpc.command.*` | Error details (only set on failure)              |
 
-**Tempo query**: `{span.xrpl.rpc.command="server_info"}` to find all `server_info` calls.
+**Tempo query**: `{span.command="server_info"}` to find all `server_info` calls.
 
 **Prometheus label**: `xrpl_rpc_command` (dots converted to underscores by SpanMetrics).
 
@@ -252,8 +252,8 @@ The OTel Collector's SpanMetrics connector automatically generates RED (Rate, Er
 
 | Span Attribute                 | Prometheus Label               | Applies To                |
 | ------------------------------ | ------------------------------ | ------------------------- |
-| `xrpl.rpc.command`             | `xrpl_rpc_command`             | `rpc.command.*`           |
-| `xrpl.rpc.status`              | `xrpl_rpc_status`              | `rpc.command.*`           |
+| `command`                      | `xrpl_rpc_command`             | `rpc.command.*`           |
+| `rpc_status`                   | `xrpl_rpc_status`              | `rpc.command.*`           |
 | `xrpl.consensus.mode`          | `xrpl_consensus_mode`          | `consensus.ledger_close`  |
 | `xrpl.tx.local`                | `xrpl_tx_local`                | `tx.process`              |
 | `xrpl.peer.proposal.trusted`   | `xrpl_peer_proposal_trusted`   | `peer.proposal.receive`   |
@@ -415,7 +415,7 @@ For each of the 45+ overlay traffic categories (defined in `TrafficCount.h`), fo
 | All RPC calls            | `{resource.service.name="xrpld" && name="rpc.request"}`                        |
 | Specific RPC command     | `{resource.service.name="xrpld" && name="rpc.command.server_info"}`            |
 | Slow RPC calls           | `{resource.service.name="xrpld" && name=~"rpc.command.*"} \| duration > 100ms` |
-| Failed RPC calls         | `{span.xrpl.rpc.status="error"}`                                               |
+| Failed RPC calls         | `{span.rpc_status="error"}`                                                    |
 | Specific transaction     | `{span.xrpl.tx.hash="<hex_hash>"}`                                             |
 | Local transactions only  | `{span.xrpl.tx.local=true}`                                                    |
 | Consensus rounds         | `{resource.service.name="xrpld" && name="consensus.accept"}`                   |

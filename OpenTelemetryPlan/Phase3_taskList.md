@@ -89,13 +89,13 @@
   - In `onMessage(TMTransaction)` / `handleTransaction()`:
     - Extract parent trace context from incoming `TMTransaction::trace_context` field (if present)
     - Create `tx.receive` span as child of extracted context (or new root if none)
-    - Set attributes: `xrpl.tx.hash`, `xrpl.peer.id`, `xrpl.tx.status`
-    - On HashRouter suppression (duplicate): set `xrpl.tx.suppressed=true`, add `tx.duplicate` event
+    - Set attributes: `xrpl.tx.hash`, `xrpl.peer.id`, `tx_status`
+    - On HashRouter suppression (duplicate): set `suppressed=true`, add `tx.duplicate` event
     - Wrap validation call with child span `tx.validate`
     - Wrap relay with `tx.relay` span
   - When relaying to peers:
     - Inject current trace context into outgoing `TMTransaction::trace_context`
-    - Set `xrpl.tx.relay_count` attribute
+    - Set `relay_count` attribute
 
 - Use `SpanGuard::span(TraceCategory::Transactions, "tx", "receive")` factory
   (Phase 1c replaced macros with the SpanGuard factory pattern)
@@ -121,7 +121,7 @@
 - Edit `src/xrpld/app/misc/NetworkOPs.cpp`:
   - In `processTransaction()`:
     - Create `tx.process` span
-    - Set attributes: `xrpl.tx.hash`, `xrpl.tx.type`, `xrpl.tx.local` (whether from RPC or peer)
+    - Set attributes: `xrpl.tx.hash`, `tx_type`, `local` (whether from RPC or peer)
     - Record whether sync or async path is taken
 
   - In `doTransactionAsync()`:
@@ -152,8 +152,8 @@
 
 - Edit `src/xrpld/overlay/detail/PeerImp.cpp` (in handleTransaction):
   - After calling `HashRouter::shouldProcess()` or `addSuppressionPeer()`:
-    - Record `xrpl.tx.suppressed` attribute (true/false)
-    - Record `xrpl.tx.flags` showing current HashRouter state (SAVED, TRUSTED, etc.)
+    - Record `suppressed` attribute (true/false)
+    - Record `tx_flags` showing current HashRouter state (SAVED, TRUSTED, etc.)
     - Add `tx.first_seen` or `tx.duplicate` event
 
 - This is NOT a modification to HashRouter itself — just recording its decisions as span attributes in the existing PeerImp instrumentation from Task 3.3.
@@ -257,14 +257,14 @@
 
 - Edit `src/xrpld/overlay/detail/PeerImp.cpp`:
   - In the `tx.receive` span block (after existing `xrpl.peer.id` setAttribute call):
-    - Add `xrpl.peer.version` (string) — from `this->getVersion()`
+    - Add `peer_version` (string) — from `this->getVersion()`
     - Only set if `getVersion()` returns a non-empty string (avoid empty-string attributes)
 
 **New span attribute**:
 
-| Attribute           | Type   | Source               | Example         |
-| ------------------- | ------ | -------------------- | --------------- |
-| `xrpl.peer.version` | string | `peer->getVersion()` | `"xrpld-2.4.0"` |
+| Attribute      | Type   | Source               | Example         |
+| -------------- | ------ | -------------------- | --------------- |
+| `peer_version` | string | `peer->getVersion()` | `"xrpld-2.4.0"` |
 
 **Rationale**: Transaction relay is where version mismatches cause subtle serialization or validation bugs. Tracing "this tx came from a v2.3.0 peer" helps diagnose compatibility issues. The community dashboard tracks peer versions externally; this brings version awareness into the trace itself.
 
@@ -274,7 +274,7 @@
 
 **Exit Criteria**:
 
-- [ ] `tx.receive` spans carry `xrpl.peer.version` attribute with a non-empty version string
+- [ ] `tx.receive` spans carry `peer_version` attribute with a non-empty version string
 - [ ] Attribute is omitted (not set to empty string) when `getVersion()` returns empty
 - [ ] Attribute visible in Tempo trace detail view
 
@@ -387,8 +387,8 @@ This gives the best of both worlds: guaranteed cross-node correlation via determ
   - No protobuf context to extract here (NetworkOPs is intra-node), so
     deterministic context alone is sufficient.
 
-- Add `tx_trace_strategy` attribute to spans:
-  - Add `inline constexpr auto traceStrategy = join(xrplTx, makeStr("trace_strategy"));`
+- Add `trace_strategy` attribute to spans:
+  - Add `inline constexpr auto traceStrategy = "trace_strategy";`
     to `TxSpanNames.h`.
   - Set on each tx span: `span.setAttribute(tx_span::attr::traceStrategy, "deterministic")`.
 
@@ -419,7 +419,7 @@ This gives the best of both worlds: guaranteed cross-node correlation via determ
 - [ ] All nodes handling the same transaction produce spans under the same trace_id
 - [x] Protobuf `span_id` propagation still works when available (parent-child ordering)
 - [ ] Missing protobuf context (old peer) degrades gracefully to sibling spans, not lost traces
-- [ ] `xrpl.tx.trace_strategy` attribute set to `"deterministic"` on all tx spans
+- [ ] `trace_strategy` attribute set to `"deterministic"` on all tx spans
 - [ ] Trace queryable by tx hash (truncate hash → trace_id → direct lookup in Tempo)
 
 **Deliverables implemented (not in original plan)**:
