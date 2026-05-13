@@ -124,96 +124,51 @@ inline constexpr auto phaseOpen = join(seg::consensus, op::phaseOpen);
 // ===== Attribute keys ========================================================
 
 namespace attr {
-inline constexpr auto xrplConsensus = join(seg::xrpl, seg::consensus);
+/// Canonical shared constants (defined in SpanNames.h).
+using ::xrpl::telemetry::attr::closeResolutionMs;
+using ::xrpl::telemetry::attr::closeTime;
+using ::xrpl::telemetry::attr::closeTimeCorrect;
+using ::xrpl::telemetry::attr::ledgerSeq;
 
-/// "xrpl.consensus.ledger_id"
-inline constexpr auto ledgerId = join(xrplConsensus, makeStr("ledger_id"));
-/// "xrpl.consensus.ledger.seq"
-inline constexpr auto ledgerSeq = join(join(xrplConsensus, makeStr("ledger")), makeStr("seq"));
-/// "xrpl.consensus.mode"
-inline constexpr auto mode = join(xrplConsensus, makeStr("mode"));
-/// "xrpl.consensus.round"
-inline constexpr auto round = join(xrplConsensus, makeStr("round"));
-/// "xrpl.consensus.proposers"
-inline constexpr auto proposers = join(xrplConsensus, makeStr("proposers"));
-/// "xrpl.consensus.round_time_ms"
-inline constexpr auto roundTimeMs = join(xrplConsensus, makeStr("round_time_ms"));
-/// "xrpl.consensus.proposing"
-inline constexpr auto proposing = join(xrplConsensus, makeStr("proposing"));
-/// "xrpl.consensus.state"
-inline constexpr auto state = join(xrplConsensus, makeStr("state"));
+/// Kept qualified (rule 5 — bare name ambiguous across domains).
+inline constexpr auto ledgerId = join(join(seg::xrpl, seg::consensus), makeStr("ledger_id"));
+inline constexpr auto mode = join(join(seg::xrpl, seg::consensus), makeStr("mode"));
+inline constexpr auto round = join(join(seg::xrpl, seg::consensus), makeStr("round"));
+inline constexpr auto roundId = join(join(seg::xrpl, seg::consensus), makeStr("round_id"));
 
-// Close time attributes
-/// "xrpl.consensus.close_time"
-inline constexpr auto closeTime = join(xrplConsensus, makeStr("close_time"));
-/// "xrpl.consensus.close_time_correct"
-inline constexpr auto closeTimeCorrect = join(xrplConsensus, makeStr("close_time_correct"));
-/// "xrpl.consensus.close_resolution_ms"
-inline constexpr auto closeResolutionMs = join(xrplConsensus, makeStr("close_resolution_ms"));
-/// "xrpl.consensus.parent_close_time"
-inline constexpr auto parentCloseTime = join(xrplConsensus, makeStr("parent_close_time"));
-/// "xrpl.consensus.close_time_self"
-inline constexpr auto closeTimeSelf = join(xrplConsensus, makeStr("close_time_self"));
-/// "xrpl.consensus.close_time_vote_bins"
-inline constexpr auto closeTimeVoteBins = join(xrplConsensus, makeStr("close_time_vote_bins"));
-/// "xrpl.consensus.resolution_direction"
-inline constexpr auto resolutionDirection = join(xrplConsensus, makeStr("resolution_direction"));
+/// Domain-owned bare attrs.
+inline constexpr auto proposers = makeStr("proposers");
+inline constexpr auto roundTimeMs = makeStr("round_time_ms");
+inline constexpr auto proposing = makeStr("proposing");
+/// "consensus_state" — domain-qualified (collides with other domains' state).
+inline constexpr auto consensusState = makeStr("consensus_state");
+inline constexpr auto parentCloseTime = makeStr("parent_close_time");
+inline constexpr auto closeTimeSelf = makeStr("close_time_self");
+inline constexpr auto closeTimeVoteBins = makeStr("close_time_vote_bins");
+inline constexpr auto resolutionDirection = makeStr("resolution_direction");
+inline constexpr auto convergePercent = makeStr("converge_percent");
+inline constexpr auto establishCount = makeStr("establish_count");
+inline constexpr auto avalancheThreshold = makeStr("avalanche_threshold");
+inline constexpr auto closeTimeThreshold = makeStr("close_time_threshold");
+inline constexpr auto haveCloseTimeConsensus = makeStr("have_close_time_consensus");
+inline constexpr auto agreeCount = makeStr("agree_count");
+inline constexpr auto disagreeCount = makeStr("disagree_count");
+inline constexpr auto thresholdPercent = makeStr("threshold_percent");
+/// "consensus_result" — domain-qualified (collides with generic result).
+inline constexpr auto consensusResult = makeStr("consensus_result");
+inline constexpr auto quorum = makeStr("quorum");
+inline constexpr auto traceStrategy = makeStr("trace_strategy");
+inline constexpr auto modeOld = makeStr("mode_old");
+inline constexpr auto modeNew = makeStr("mode_new");
 
-// Establish/convergence attributes
-/// "xrpl.consensus.converge_percent"
-inline constexpr auto convergePercent = join(xrplConsensus, makeStr("converge_percent"));
-/// "xrpl.consensus.establish_count"
-inline constexpr auto establishCount = join(xrplConsensus, makeStr("establish_count"));
-// Avalanche threshold attributes
-/// "xrpl.consensus.avalanche_threshold"
-inline constexpr auto avalancheThreshold = join(xrplConsensus, makeStr("avalanche_threshold"));
-/// "xrpl.consensus.close_time_threshold"
-inline constexpr auto closeTimeThreshold = join(xrplConsensus, makeStr("close_time_threshold"));
-/// "xrpl.consensus.have_close_time_consensus"
-inline constexpr auto haveCloseTimeConsensus =
-    join(xrplConsensus, makeStr("have_close_time_consensus"));
-
-// Consensus check attributes
-/// "xrpl.consensus.agree_count"
-inline constexpr auto agreeCount = join(xrplConsensus, makeStr("agree_count"));
-/// "xrpl.consensus.disagree_count"
-inline constexpr auto disagreeCount = join(xrplConsensus, makeStr("disagree_count"));
-/// "xrpl.consensus.threshold_percent"
-inline constexpr auto thresholdPercent = join(xrplConsensus, makeStr("threshold_percent"));
-/// "xrpl.consensus.result"
-inline constexpr auto result = join(xrplConsensus, makeStr("result"));
-/// "xrpl.consensus.quorum"
-inline constexpr auto quorum = join(xrplConsensus, makeStr("quorum"));
-
-// Trace strategy attribute
-/// "xrpl.consensus.trace_strategy"
-inline constexpr auto traceStrategy = join(xrplConsensus, makeStr("trace_strategy"));
-/// "xrpl.consensus.round_id"
-inline constexpr auto roundId = join(xrplConsensus, makeStr("round_id"));
-
-// Mode change attributes
-/// "xrpl.consensus.mode.old"
-inline constexpr auto modeOld = join(join(xrplConsensus, makeStr("mode")), makeStr("old"));
-/// "xrpl.consensus.mode.new"
-inline constexpr auto modeNew = join(join(xrplConsensus, makeStr("mode")), makeStr("new"));
-
-// Dispute event attributes
-/// "xrpl.tx.id"
+/// Transaction/dispute attrs used in consensus accept spans.
 inline constexpr auto txId = join(join(seg::xrpl, seg::tx), makeStr("id"));
-/// "xrpl.dispute.our_vote"
-inline constexpr auto disputeOurVote =
-    join(join(seg::xrpl, makeStr("dispute")), makeStr("our_vote"));
-/// "xrpl.dispute.yays"
-inline constexpr auto disputeYays = join(join(seg::xrpl, makeStr("dispute")), makeStr("yays"));
-/// "xrpl.dispute.nays"
-inline constexpr auto disputeNays = join(join(seg::xrpl, makeStr("dispute")), makeStr("nays"));
-
-/// "xrpl.consensus.tx_count"
-inline constexpr auto txCount = join(xrplConsensus, makeStr("tx_count"));
-/// "xrpl.consensus.disputes_count"
-inline constexpr auto disputesCount = join(xrplConsensus, makeStr("disputes_count"));
-/// "xrpl.consensus.trusted"
-inline constexpr auto trusted = join(xrplConsensus, makeStr("trusted"));
+inline constexpr auto disputeOurVote = makeStr("dispute_our_vote");
+inline constexpr auto disputeYays = makeStr("dispute_yays");
+inline constexpr auto disputeNays = makeStr("dispute_nays");
+inline constexpr auto txCount = makeStr("tx_count");
+inline constexpr auto disputesCount = makeStr("disputes_count");
+inline constexpr auto trusted = makeStr("trusted");
 }  // namespace attr
 
 // ===== Event names ===========================================================

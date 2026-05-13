@@ -1325,7 +1325,7 @@ NetworkOPsImp::processTransaction(
 {
     using namespace telemetry;
     auto span = std::make_shared<SpanGuard>(txProcessSpan(transaction->getID()));
-    span->setAttribute(tx_span::attr::hash, to_string(transaction->getID()).c_str());
+    span->setAttribute(tx_span::attr::txHash, to_string(transaction->getID()).c_str());
     span->setAttribute(tx_span::attr::local, bLocal);
 
     auto ev = m_job_queue.makeLoadEvent(jtTXN_PROC, "ProcessTXN");

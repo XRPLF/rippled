@@ -513,7 +513,7 @@ ServerHandler::processSession(
         JLOG(m_journal.error()) << "Exception while processing WS: " << ex.what() << "\n"
                                 << "Input JSON: " << Json::Compact{Json::Value{jv}};
         span.recordException(ex);
-        span.setAttribute(rpc_span::attr::status, rpc_span::val::error);
+        span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::error);
         // LCOV_EXCL_STOP
     }
 
@@ -904,7 +904,7 @@ ServerHandler::processRequest(
                 << "Internal error : " << ex.what()
                 << " when processing request: " << Json::Compact{Json::Value{params}};
             span.recordException(ex);
-            span.setAttribute(rpc_span::attr::status, rpc_span::val::error);
+            span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::error);
             // LCOV_EXCL_STOP
         }
 
