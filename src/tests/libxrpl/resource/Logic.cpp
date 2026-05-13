@@ -1,3 +1,5 @@
+#include <xrpl/resource/detail/Logic.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/random.h>
@@ -8,7 +10,6 @@
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/Disposition.h>
 #include <xrpl/resource/Gossip.h>
-#include <xrpl/resource/detail/Logic.h>
 #include <xrpl/resource/detail/Tuning.h>
 
 #include <boost/utility/base_from_member.hpp>
@@ -79,7 +80,7 @@ protected:
     {
         TestLogic logic(j_);
 
-        Charge const fee(kDROP_THRESHOLD + 1);
+        Charge const fee(kDropThreshold + 1);
         beast::IP::Endpoint const addr(beast::IP::Endpoint::fromString("192.0.2.2"));
 
         std::function<Consumer(beast::IP::Endpoint)> const ep = limited
@@ -142,7 +143,7 @@ protected:
             using namespace std::chrono_literals;
             // Give Consumer time to become readmitted.  Should never
             // exceed expiration time.
-            auto n = kSECONDS_UNTIL_EXPIRATION + 1s;
+            auto n = kSecondsUntilExpiration + 1s;
             while (--n > 0s)
             {
                 ++logic.clock();
