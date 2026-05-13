@@ -61,7 +61,7 @@ Tempo/Prometheus.
   - `rpc.command.server_info` spans (callMethod)
   - `rpc.command.server_state` spans (callMethod)
   - `rpc.command.ledger` spans (callMethod)
-- Verify `xrpl.rpc.command` attribute present on `rpc.command.*` spans
+- Verify `command` attribute present on `rpc.command.*` spans
 
 **Verification**:
 
