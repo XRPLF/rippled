@@ -111,6 +111,12 @@ inline constexpr auto xrplNode = join(seg::xrpl, makeStr("node"));
 inline constexpr auto nodeAmendmentBlocked = join(xrplNode, makeStr("amendment_blocked"));
 /// "xrpl.node.server_state" — resource attribute key.
 inline constexpr auto nodeServerState = join(xrplNode, makeStr("server_state"));
+
+/// Canonical shared attrs (rule 5 — kept xrpl.<domain>.* form).
+/// Defined once here, aliased by domain-specific headers.
+inline constexpr auto txHash = join(join(seg::xrpl, seg::tx), makeStr("hash"));
+inline constexpr auto peerId = join(join(seg::xrpl, seg::peer), makeStr("id"));
+inline constexpr auto ledgerSeq = join(join(seg::xrpl, seg::ledger), makeStr("seq"));
 }  // namespace attr
 
 // ===== Shared attribute values =============================================
