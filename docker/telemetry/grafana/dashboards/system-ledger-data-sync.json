@@ -523,5 +523,6 @@
     "to": "now"
   },
   "title": "Ledger Data & Sync (System Metrics)",
-  "uid": "rippled-system-ledger-sync"
+  "uid": "rippled-system-ledger-sync",
+  "refresh": "5s"
 }

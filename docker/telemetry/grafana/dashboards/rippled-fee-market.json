@@ -339,5 +339,6 @@
   "timezone": "browser",
   "title": "Fee Market & TxQ",
   "uid": "rippled-fee-market",
-  "version": 1
+  "version": 1,
+  "refresh": "5s"
 }

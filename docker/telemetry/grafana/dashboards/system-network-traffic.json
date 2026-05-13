@@ -688,5 +688,6 @@
     "to": "now"
   },
   "title": "Network Traffic (System Metrics)",
-  "uid": "rippled-system-network"
+  "uid": "rippled-system-network",
+  "refresh": "5s"
 }

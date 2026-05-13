@@ -202,13 +202,19 @@
             {
               "type": "value",
               "options": {
-                "0": { "text": "No", "color": "green" }
+                "0": {
+                  "text": "No",
+                  "color": "green"
+                }
               }
             },
             {
               "type": "value",
               "options": {
-                "1": { "text": "Yes", "color": "red" }
+                "1": {
+                  "text": "Yes",
+                  "color": "red"
+                }
               }
             }
           ],
@@ -387,5 +393,6 @@
     "to": "now"
   },
   "title": "Peer Quality",
-  "uid": "rippled-peer-quality"
+  "uid": "rippled-peer-quality",
+  "refresh": "5s"
 }

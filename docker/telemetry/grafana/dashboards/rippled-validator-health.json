@@ -381,13 +381,19 @@
             {
               "type": "value",
               "options": {
-                "0": { "text": "OK", "color": "green" }
+                "0": {
+                  "text": "OK",
+                  "color": "green"
+                }
               }
             },
             {
               "type": "value",
               "options": {
-                "1": { "text": "BLOCKED", "color": "red" }
+                "1": {
+                  "text": "BLOCKED",
+                  "color": "red"
+                }
               }
             }
           ],
@@ -710,5 +716,6 @@
     "to": "now"
   },
   "title": "Validator Health",
-  "uid": "rippled-validator-health"
+  "uid": "rippled-validator-health",
+  "refresh": "5s"
 }

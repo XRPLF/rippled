@@ -214,7 +214,7 @@
             "drawStyle": "line",
             "lineWidth": 2,
             "fillOpacity": 5,
-            "axisLabel": "Duration (μs)",
+            "axisLabel": "Duration (\u03bcs)",
             "spanNulls": true,
             "insertNulls": false,
             "showPoints": "auto",
@@ -273,7 +273,7 @@
             "drawStyle": "line",
             "lineWidth": 2,
             "fillOpacity": 5,
-            "axisLabel": "Duration (μs)",
+            "axisLabel": "Duration (\u03bcs)",
             "spanNulls": true,
             "insertNulls": false,
             "showPoints": "auto",
@@ -323,7 +323,7 @@
             "drawStyle": "line",
             "lineWidth": 1,
             "fillOpacity": 5,
-            "axisLabel": "Duration (μs)",
+            "axisLabel": "Duration (\u03bcs)",
             "spanNulls": true,
             "insertNulls": false,
             "showPoints": "auto",
@@ -391,5 +391,6 @@
   "timezone": "browser",
   "title": "Job Queue Analysis",
   "uid": "rippled-job-queue",
-  "version": 1
+  "version": 1,
+  "refresh": "5s"
 }

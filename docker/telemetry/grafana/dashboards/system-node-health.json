@@ -162,7 +162,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "µs",
+          "unit": "\u00b5s",
           "custom": {
             "axisLabel": "Duration",
             "spanNulls": true,
@@ -289,7 +289,7 @@
     },
     {
       "title": "Job Queue Depth",
-      "description": "Current number of jobs waiting in the job queue. Sourced from the job_count gauge (JobQueue.cpp:26). A sustained high value indicates the node cannot process work fast enough — common during ledger replay or heavy RPC load.",
+      "description": "Current number of jobs waiting in the job queue. Sourced from the job_count gauge (JobQueue.cpp:26). A sustained high value indicates the node cannot process work fast enough \u2014 common during ledger replay or heavy RPC load.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -764,23 +764,48 @@
           "mappings": [
             {
               "type": "value",
-              "options": { "0": { "text": "DISCONNECTED", "color": "red" } }
+              "options": {
+                "0": {
+                  "text": "DISCONNECTED",
+                  "color": "red"
+                }
+              }
             },
             {
               "type": "value",
-              "options": { "1": { "text": "CONNECTED", "color": "orange" } }
+              "options": {
+                "1": {
+                  "text": "CONNECTED",
+                  "color": "orange"
+                }
+              }
             },
             {
               "type": "value",
-              "options": { "2": { "text": "SYNCING", "color": "yellow" } }
+              "options": {
+                "2": {
+                  "text": "SYNCING",
+                  "color": "yellow"
+                }
+              }
             },
             {
               "type": "value",
-              "options": { "3": { "text": "TRACKING", "color": "blue" } }
+              "options": {
+                "3": {
+                  "text": "TRACKING",
+                  "color": "blue"
+                }
+              }
             },
             {
               "type": "value",
-              "options": { "4": { "text": "FULL", "color": "green" } }
+              "options": {
+                "4": {
+                  "text": "FULL",
+                  "color": "green"
+                }
+              }
             }
           ],
           "custom": {}
@@ -1397,5 +1422,6 @@
     "to": "now"
   },
   "title": "Node Health (System Metrics)",
-  "uid": "rippled-system-node-health"
+  "uid": "rippled-system-node-health",
+  "refresh": "5s"
 }

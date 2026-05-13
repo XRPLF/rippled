@@ -214,7 +214,7 @@
             "drawStyle": "line",
             "lineWidth": 2,
             "fillOpacity": 5,
-            "axisLabel": "Duration (μs)",
+            "axisLabel": "Duration (\u03bcs)",
             "spanNulls": true,
             "insertNulls": false,
             "showPoints": "auto",
@@ -264,7 +264,7 @@
             "drawStyle": "line",
             "lineWidth": 1,
             "fillOpacity": 5,
-            "axisLabel": "Duration (μs)",
+            "axisLabel": "Duration (\u03bcs)",
             "spanNulls": true,
             "insertNulls": false,
             "showPoints": "auto",
@@ -400,5 +400,6 @@
   "timezone": "browser",
   "title": "RPC Performance (OTel)",
   "uid": "rippled-rpc-perf",
-  "version": 1
+  "version": 1,
+  "refresh": "5s"
 }

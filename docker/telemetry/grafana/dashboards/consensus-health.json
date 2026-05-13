@@ -772,5 +772,6 @@
     "to": "now"
   },
   "title": "Consensus Health",
-  "uid": "rippled-consensus"
+  "uid": "rippled-consensus",
+  "refresh": "5s"
 }

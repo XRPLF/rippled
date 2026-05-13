@@ -336,7 +336,7 @@
       {
         "name": "node",
         "label": "Node",
-        "description": "Filter by rippled node (service.instance.id — e.g. Node-1)",
+        "description": "Filter by rippled node (service.instance.id \u2014 e.g. Node-1)",
         "type": "query",
         "query": "label_values(traces_span_metrics_calls_total, exported_instance)",
         "datasource": {
@@ -380,5 +380,6 @@
     "to": "now"
   },
   "title": "Transaction Overview",
-  "uid": "rippled-transactions"
+  "uid": "rippled-transactions",
+  "refresh": "5s"
 }

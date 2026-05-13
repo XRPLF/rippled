@@ -349,5 +349,6 @@
     "to": "now"
   },
   "title": "Ledger Operations",
-  "uid": "rippled-ledger-ops"
+  "uid": "rippled-ledger-ops",
+  "refresh": "5s"
 }
