@@ -102,7 +102,7 @@
     },
     {
       "title": "Transaction Path Distribution",
-      "description": "Breakdown of transactions by origin path. The xrpl.tx.local attribute indicates whether the transaction was submitted locally (true) or received from a peer (false). Helps understand the ratio of locally-originated vs relayed transactions.",
+      "description": "Breakdown of transactions by origin path. The local attribute indicates whether the transaction was submitted locally (true) or received from a peer (false). Helps understand the ratio of locally-originated vs relayed transactions.",
       "type": "piechart",
       "gridPos": {
         "h": 8,
@@ -121,8 +121,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (xrpl_tx_local, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", xrpl_tx_local=~\"$tx_origin\", span_name=\"tx.process\"}[5m]))",
-          "legendFormat": "Local = {{xrpl_tx_local}} [{{exported_instance}}]"
+          "expr": "sum by (local, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", local=~\"$tx_origin\", span_name=\"tx.process\"}[5m]))",
+          "legendFormat": "Local = {{local}} [{{exported_instance}}]"
         }
       ]
     },
@@ -282,7 +282,7 @@
     },
     {
       "title": "Transaction Apply Failed Rate",
-      "description": "Rate of tx.apply spans completing with error status, indicating transaction application failures during ledger building. The span records xrpl.ledger.tx_failed as an attribute. Thresholds: green < 0.1/sec, yellow 0.1-1/sec, red > 1/sec. Some failures are normal (e.g. conflicting offers) but sustained high rates may indicate issues.",
+      "description": "Rate of tx.apply spans completing with error status, indicating transaction application failures during ledger building. The span records tx_failed as an attribute. Thresholds: green < 0.1/sec, yellow 0.1-1/sec, red > 1/sec. Some failures are normal (e.g. conflicting offers) but sustained high rates may indicate issues.",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -358,7 +358,7 @@
         "label": "TX Origin",
         "description": "Filter by transaction origin (true = local submit, false = peer relay)",
         "type": "query",
-        "query": "label_values(traces_span_metrics_calls_total{span_name=\"tx.process\"}, xrpl_tx_local)",
+        "query": "label_values(traces_span_metrics_calls_total{span_name=\"tx.process\"}, local)",
         "datasource": {
           "type": "prometheus",
           "uid": "prometheus"

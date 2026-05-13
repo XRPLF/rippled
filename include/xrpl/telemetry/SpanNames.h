@@ -122,6 +122,7 @@ inline constexpr auto ledgerSeq = join(join(seg::xrpl, seg::ledger), makeStr("se
 inline constexpr auto closeTime = makeStr("close_time");
 inline constexpr auto closeTimeCorrect = makeStr("close_time_correct");
 inline constexpr auto closeResolutionMs = makeStr("close_resolution_ms");
+inline constexpr auto ledgerHash = join(join(seg::xrpl, seg::ledger), makeStr("hash"));
 }  // namespace attr
 
 // ===== Shared attribute values =============================================

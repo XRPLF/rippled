@@ -82,7 +82,7 @@ buildLedgerImpl(
         built->header().seq < XRP_LEDGER_EARLIEST_FEES || built->read(keylet::fees()),
         "xrpl::buildLedgerImpl : valid ledger fees");
     built->setAccepted(closeTime, closeResolution, closeTimeCorrect);
-    buildSpan.setAttribute(ledger_span::attr::seq, static_cast<int64_t>(built->header().seq));
+    buildSpan.setAttribute(ledger_span::attr::ledgerSeq, static_cast<int64_t>(built->header().seq));
     buildSpan.setAttribute(
         ledger_span::attr::closeTime, static_cast<int64_t>(closeTime.time_since_epoch().count()));
     buildSpan.setAttribute(ledger_span::attr::closeTimeCorrect, closeTimeCorrect);

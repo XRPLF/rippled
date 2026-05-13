@@ -1875,7 +1875,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
 {
     using namespace telemetry;
     auto span = SpanGuard::span(TraceCategory::Peer, seg::peer, peer_span::op::proposalReceive);
-    span.setAttribute(peer_span::attr::id, static_cast<int64_t>(id_));
+    span.setAttribute(peer_span::attr::peerId, static_cast<int64_t>(id_));
 
     protocol::TMProposeSet const& set = *m;
 
@@ -2484,7 +2484,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
     using namespace telemetry;
     auto valSpan =
         SpanGuard::span(TraceCategory::Peer, seg::peer, peer_span::op::validationReceive);
-    valSpan.setAttribute(peer_span::attr::id, static_cast<int64_t>(id_));
+    valSpan.setAttribute(peer_span::attr::peerId, static_cast<int64_t>(id_));
 
     if (m->validation().size() < 50)
     {
@@ -2508,8 +2508,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
                 false);
             val->setSeen(closeTime);
         }
-        valSpan.setAttribute(
-            peer_span::attr::validationLedgerHash, to_string(val->getLedgerHash()).c_str());
+        valSpan.setAttribute(peer_span::attr::ledgerHash, to_string(val->getLedgerHash()).c_str());
         valSpan.setAttribute(peer_span::attr::validationFull, val->isFull());
 
         if (!isCurrent(
