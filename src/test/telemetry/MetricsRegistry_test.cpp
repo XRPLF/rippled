@@ -20,11 +20,20 @@
 
 #include <xrpld/telemetry/MetricsRegistry.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 
-namespace xrpl {
-namespace test {
+#include <boost/asio/io_context.hpp>
+
+#include <optional>
+#include <stdexcept>
+#include <string>
+
+namespace xrpl::test {
 
 /** Minimal mock ServiceRegistry for MetricsRegistry testing.
 
@@ -194,12 +203,12 @@ public:
     {
         throwUnimplemented();
     }
-    OpenLedger&
+    [[nodiscard]] OpenLedger&
     getOpenLedger() override
     {
         throwUnimplemented();
     }
-    OpenLedger const&
+    [[nodiscard]] OpenLedger const&
     getOpenLedger() const override
     {
         throwUnimplemented();
@@ -249,7 +258,7 @@ public:
     {
         return nullptr;
     }
-    bool
+    [[nodiscard]] bool
     isStopping() const override
     {
         return false;
@@ -269,7 +278,7 @@ public:
     {
         throwUnimplemented();
     }
-    std::optional<uint256> const&
+    [[nodiscard]] std::optional<uint256> const&
     getTrapTxID() const override
     {
         static std::optional<uint256> const empty;
@@ -295,10 +304,10 @@ class MetricsRegistry_test : public beast::unit_test::suite
         testcase("Disabled construction");
 
         MockServiceRegistry mockApp;
-        beast::Journal j(beast::Journal::getNullSink());
+        beast::Journal const j(beast::Journal::getNullSink());
 
         // Construct with enabled=false; should be a no-op.
-        telemetry::MetricsRegistry registry(false, mockApp, j);
+        telemetry::MetricsRegistry const registry(false, mockApp, j);
         BEAST_EXPECT(!registry.isEnabled());
     }
 
@@ -308,7 +317,7 @@ class MetricsRegistry_test : public beast::unit_test::suite
         testcase("Disabled start/stop");
 
         MockServiceRegistry mockApp;
-        beast::Journal j(beast::Journal::getNullSink());
+        beast::Journal const j(beast::Journal::getNullSink());
 
         telemetry::MetricsRegistry registry(false, mockApp, j);
 
@@ -328,7 +337,7 @@ class MetricsRegistry_test : public beast::unit_test::suite
         testcase("Disabled recording methods");
 
         MockServiceRegistry mockApp;
-        beast::Journal j(beast::Journal::getNullSink());
+        beast::Journal const j(beast::Journal::getNullSink());
 
         telemetry::MetricsRegistry registry(false, mockApp, j);
         registry.start("http://localhost:4318/v1/metrics");
@@ -352,7 +361,7 @@ class MetricsRegistry_test : public beast::unit_test::suite
         testcase("Destructor calls stop");
 
         MockServiceRegistry mockApp;
-        beast::Journal j(beast::Journal::getNullSink());
+        beast::Journal const j(beast::Journal::getNullSink());
 
         {
             // Let the destructor handle cleanup.
@@ -377,5 +386,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(MetricsRegistry, telemetry, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test
