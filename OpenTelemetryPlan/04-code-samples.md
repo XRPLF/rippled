@@ -346,11 +346,11 @@ void ServerHandler::onRequest(...)
     // Factory creates a span if RPC tracing is enabled, no-op otherwise.
     // No Telemetry& reference needed -- accessed via global singleton.
     auto span = telemetry::SpanGuard::rpcSpan("rpc.request");
-    span.setAttribute("xrpl.rpc.command", command);
+    span.setAttribute("command", command);
 
     auto result = processRequest(req);
 
-    span.setAttribute("xrpl.rpc.status", result.status());
+    span.setAttribute("rpc_status", result.status());
     span.setOk();
     // span ended automatically when it goes out of scope
 }
@@ -841,7 +841,7 @@ ServerHandler::onRequest(
                 ? jv["method"].asString()
                 : "unknown";
 
-        span.setAttribute("xrpl.rpc.command", command);
+        span.setAttribute("command", command);
 
         // Create child span for command execution
         {
@@ -854,7 +854,7 @@ ServerHandler::onRequest(
             // Record result attributes
             if (result.isMember("status"))
             {
-                cmdSpan.setAttribute("xrpl.rpc.status",
+                cmdSpan.setAttribute("rpc_status",
                     result["status"].asString());
             }
 

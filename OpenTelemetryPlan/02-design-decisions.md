@@ -244,10 +244,10 @@ resource::SemanticConventions::SERVICE_INSTANCE_ID = <node_public_key_base58>
 #### RPC Attributes
 
 ```cpp
-"xrpl.rpc.command"     = string   // Command name
-"xrpl.rpc.version"     = int64    // API version
-"xrpl.rpc.role"        = string   // "admin" or "user"
-"xrpl.rpc.params"      = string   // Sanitized parameters (optional)
+"command"              = string   // Command name
+"version"              = int64    // API version
+"rpc_role"             = string   // "admin" or "user"
+"xrpl.rpc.params"      = string   // Sanitized parameters (optional, planned)
 ```
 
 #### Peer & Message Attributes

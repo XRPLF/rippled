@@ -247,14 +247,14 @@ flowchart TB
     subgraph request["rpc.request (root span)"]
         http["HTTP Request — POST /<br/>traceparent:<br/>00-abc123...-def456...-01"]
 
-        attrs["Attributes:<br/>http.method = POST<br/>net.peer.ip = 192.168.1.100<br/>xrpl.rpc.command = submit"]
+        attrs["Attributes:<br/>http.method = POST<br/>net.peer.ip = 192.168.1.100<br/>command = submit"]
 
         subgraph enqueue["jobqueue.enqueue"]
             job_attr["xrpl.job.type = jtCLIENT_RPC"]
         end
 
         subgraph command["rpc.command.submit"]
-            cmd_attrs["xrpl.rpc.version = 2<br/>xrpl.rpc.role = user"]
+            cmd_attrs["version = 2<br/>rpc_role = user"]
             cmd_children["├── tx.deserialize<br/>├── tx.validate_local<br/>└── tx.submit_to_network"]
         end
 
@@ -359,7 +359,7 @@ After implementing OpenTelemetry, operators and developers will gain visibility 
 | **Transaction Lifecycle**  | Full journey from RPC submission through validation, relay, consensus, and ledger inclusion | `{service.name="xrpld" && xrpl.tx.hash="ABC123..."}` |
 | **Cross-Node Propagation** | Transaction path across multiple xrpld nodes with timing                                    | `{xrpl.tx.relay_count > 0}`                          |
 | **Consensus Rounds**       | Complete round with all phases (open, establish, accept)                                    | `{span.name=~"consensus.round.*"}`                   |
-| **RPC Request Processing** | Individual command execution with timing breakdown                                          | `{xrpl.rpc.command="account_info"}`                  |
+| **RPC Request Processing** | Individual command execution with timing breakdown                                          | `{command="account_info"}`                           |
 | **Ledger Acquisition**     | Peer-to-peer ledger data requests and responses                                             | `{span.name="ledger.acquire"}`                       |
 | **PathFinding Latency**    | Path computation time and cache effectiveness for payment RPCs                              | `{span.name="pathfind.compute"}`                     |
 | **TxQ Behavior**           | Queue depth, eviction patterns, fee escalation during congestion                            | `{span.name=~"txq.*"}`                               |
@@ -458,7 +458,7 @@ xychart-beta
 
 1. **Find Transaction**: Query by `xrpl.tx.hash` to get full trace
 2. **Identify Bottleneck**: Look at span durations to find slowest component
-3. **Check Attributes**: Review `xrpl.tx.validity`, `xrpl.rpc.status` for errors
+3. **Check Attributes**: Review `xrpl.tx.validity`, `rpc_status` for errors
 4. **Correlate Logs**: Use `trace_id` to find related PerfLog entries
 5. **Compare Nodes**: Filter by `service.instance.id` to compare behavior across nodes
 

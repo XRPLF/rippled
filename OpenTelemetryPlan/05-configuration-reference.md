@@ -480,7 +480,7 @@ processors:
             - name: rpc-spans
               type: string_attribute
               string_attribute:
-                key: xrpl.rpc.command
+                key: command
                 values: [".*"]
                 enabled_regex_matching: true
             - name: latency
@@ -738,7 +738,7 @@ providers:
       "targets": [
         {
           "queryType": "traceql",
-          "query": "{resource.service.name=\"xrpld\" && span.xrpl.rpc.command != \"\"} | histogram_over_time(duration) by (span.xrpl.rpc.command)"
+          "query": "{resource.service.name=\"xrpld\" && span.command != \"\"} | histogram_over_time(duration) by (span.command)"
         }
       ],
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 }
@@ -750,7 +750,7 @@ providers:
       "targets": [
         {
           "queryType": "traceql",
-          "query": "{resource.service.name=\"xrpld\" && status.code=error} | rate() by (span.xrpl.rpc.command)"
+          "query": "{resource.service.name=\"xrpld\" && status.code=error} | rate() by (span.command)"
         }
       ],
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 }
@@ -762,7 +762,7 @@ providers:
       "targets": [
         {
           "queryType": "traceql",
-          "query": "{resource.service.name=\"xrpld\" && span.xrpl.rpc.command != \"\"} | avg(duration) by (span.xrpl.rpc.command) | topk(10)"
+          "query": "{resource.service.name=\"xrpld\" && span.command != \"\"} | avg(duration) by (span.command) | topk(10)"
         }
       ],
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 }
