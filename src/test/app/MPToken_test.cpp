@@ -57,6 +57,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
+#include <array>
 #include <cstdint>
 #include <functional>
 #include <initializer_list>
@@ -66,6 +67,7 @@
 #include <set>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -2115,10 +2117,45 @@ class MPToken_test : public beast::unit_test::Suite
         Account const bob{"bob"};
         Account const gw{"gw"};
 
-        auto const nonCanonicalMPTMantissa =
-            static_cast<std::uint64_t>(std::numeric_limits<MPTAmount::value_type>::max()) + 1;
-        auto const nonCanonicalMPTAmount = [&](MPTIssue const& issue) {
-            return STAmount{issue, nonCanonicalMPTMantissa, 0, false, STAmount::Unchecked{}};
+        using MPTValue = MPTAmount::value_type;
+        MPTValue const mptMin = std::numeric_limits<MPTValue>::min();
+        MPTValue const mptMax = std::numeric_limits<MPTValue>::max();
+        std::uint64_t const u64Max = std::numeric_limits<std::uint64_t>::max();
+        std::uint64_t const firstInvalidMPTMantissa = static_cast<std::uint64_t>(mptMax) + 1;
+        MPTValue const alice0 = 10'000;
+        MPTValue const gw0 = -20'000;
+        TER const success = tesSUCCESS;
+        TER const invariantFailed = tecINVARIANT_FAILED;
+        TER const pathPartial = tecPATH_PARTIAL;
+        TER const badAmountTer = temBAD_AMOUNT;
+
+        struct BadMPTAmount
+        {
+            std::string_view name;
+            std::uint64_t mantissa;
+            bool negative;
+            MPTValue mptValue;
+            TER issuerToHolderPreFixTer;
+            TER holderSourcePreFixTer;
+            MPTValue issuerToHolderAliceAfterPreFix;
+            MPTValue issuerToHolderIssuerAfterPreFix;
+            MPTValue issuerToHolderAliceAfterPostFix;
+            MPTValue issuerToHolderIssuerAfterPostFix;
+        };
+        // clang-format off
+        std::array<BadMPTAmount, 7> const badMPTAmounts = {{
+            //  name                    mantissa                    neg    mptValue          i->h TER         holder TER    alice pre       gw pre         alice post       gw post
+            {   "INT64_MAX + 1",        firstInvalidMPTMantissa,     false, mptMin,           invariantFailed, pathPartial,  alice0,         gw0,           alice0 - 1,      gw0 + 1},
+            {   "INT64_MAX + 10",       firstInvalidMPTMantissa + 9, false, mptMin + 9,       invariantFailed, pathPartial,  alice0,         gw0,           alice0 - 1,      gw0 + 1},
+            {   "UINT64_MAX - 9998",    u64Max - 9'998,              false, MPTValue{-9'999}, success,         pathPartial,  alice0 - 9'999, gw0 + 9'999,   alice0 - 10'000, gw0 + 10'000},
+            {   "UINT64_MAX - 9",       u64Max - 9,                  false, MPTValue{-10},    success,         pathPartial,  alice0 - 10,    gw0 + 10,      alice0 - 11,     gw0 + 11},
+            {   "UINT64_MAX - 1",       u64Max - 1,                  false, MPTValue{-2},     success,         pathPartial,  alice0 - 2,     gw0 + 2,       alice0 - 3,      gw0 + 3},
+            {   "UINT64_MAX",           u64Max,                      false, MPTValue{-1},     success,         pathPartial,  alice0 - 1,     gw0 + 1,       alice0 - 2,      gw0 + 2},
+            {   "-2",                   std::uint64_t{2},            true,  MPTValue{-2},     badAmountTer,    badAmountTer, alice0,         gw0,           alice0 - 1,      gw0 + 1}
+        }};
+        // clang-format on
+        auto const badMPTAmount = [&](MPTIssue const& issue, BadMPTAmount const& bad) {
+            return STAmount{issue, bad.mantissa, 0, bad.negative, STAmount::Unchecked{}};
         };
         auto const makeIssue = [&](Env& env) {
             MPTTester const mpt{
@@ -2126,7 +2163,7 @@ class MPToken_test : public beast::unit_test::Suite
                  .issuer = gw,
                  .holders = {alice, bob},
                  .pay = 10'000,
-                 .flags = tfMPTCanTransfer | tfMPTCanTrade | tfMPTCanEscrow}};
+                 .flags = tfMPTCanTransfer | tfMPTCanTrade | tfMPTCanEscrow | tfMPTCanClawback}};
             return MPTIssue{mpt.issuanceID()};
         };
         auto const withNonCanonicalMPTAmount =
@@ -2143,359 +2180,509 @@ class MPToken_test : public beast::unit_test::Suite
             SerialIter sit{s.slice()};
             return STTx{sit};
         };
-        auto const expectRoundTripNonCanonicalMPT = [&](JTx const& jt, SField const& field) {
-            auto const roundTripped = roundTrip(*jt.stx);
-            auto const persisted = roundTripped.getFieldAmount(field);
-            BEAST_EXPECT(persisted.holds<MPTIssue>());
-            BEAST_EXPECT(persisted.mantissa() == nonCanonicalMPTMantissa);
-            BEAST_EXPECT(persisted.exponent() == 0);
-            BEAST_EXPECT(!persisted.negative());
-            BEAST_EXPECT(persisted.mantissa() > kMAX_MP_TOKEN_AMOUNT);
-        };
-
-        testcase("fixCleanup3_2_0 rejects non-canonical MPT Payment amounts");
-        {
-            Env env{*this, withoutFixAndV2};
-            env.fund(XRP(100'000), alice, bob, gw);
-            env.close();
-            auto const issue = makeIssue(env);
-
-            auto const badAmount = nonCanonicalMPTAmount(issue);
-            auto malformedHolderToHolder = withNonCanonicalMPTAmount(
-                env.jt(pay(alice, bob, STAmount{issue, std::uint64_t{1}})),
-                sfAmount,
-                badAmount,
-                alice);
-            expectRoundTripNonCanonicalMPT(malformedHolderToHolder, sfAmount);
-            malformedHolderToHolder.ter = tecPATH_PARTIAL;
-            env.submit(malformedHolderToHolder);
-            env.close();
-            BEAST_EXPECT((env.balance(alice, issue).value() == STAmount{MPTAmount{10'000}, issue}));
-            BEAST_EXPECT((env.balance(bob, issue).value() == STAmount{MPTAmount{10'000}, issue}));
-            BEAST_EXPECT((env.balance(gw, issue).value() == STAmount{MPTAmount{-20'000}, issue}));
-
-            env.enableFeature(fixCleanup3_2_0);
-            env.close();
-            env(env.jt(pay(bob, alice, STAmount{issue, std::uint64_t{1}})), Ter{tesSUCCESS});
-            env.close();
-            BEAST_EXPECT((env.balance(alice, issue).value() == STAmount{MPTAmount{10'001}, issue}));
-            BEAST_EXPECT((env.balance(bob, issue).value() == STAmount{MPTAmount{9'999}, issue}));
-            BEAST_EXPECT((env.balance(gw, issue).value() == STAmount{MPTAmount{-20'000}, issue}));
-        }
-        {
-            Env env{*this, envconfig(), withoutFixAndV2, nullptr, beast::Severity::Disabled};
-            env.fund(XRP(100'000), alice, bob, gw);
-            env.close();
-            auto const issue = makeIssue(env);
-
-            auto const badAmount = nonCanonicalMPTAmount(issue);
-            auto malformedIssuerToHolder = withNonCanonicalMPTAmount(
-                env.jt(pay(gw, alice, STAmount{issue, std::uint64_t{1}})), sfAmount, badAmount, gw);
-            expectRoundTripNonCanonicalMPT(malformedIssuerToHolder, sfAmount);
-            malformedIssuerToHolder.ter = tecINVARIANT_FAILED;
-            env.submit(malformedIssuerToHolder);
-            env.close();
-            BEAST_EXPECT((env.balance(alice, issue).value() == STAmount{MPTAmount{10'000}, issue}));
-            BEAST_EXPECT((env.balance(bob, issue).value() == STAmount{MPTAmount{10'000}, issue}));
-            BEAST_EXPECT((env.balance(gw, issue).value() == STAmount{MPTAmount{-20'000}, issue}));
-
-            env.enableFeature(fixCleanup3_2_0);
-            env.close();
-            env(env.jt(pay(alice, gw, STAmount{issue, std::uint64_t{1}})), Ter{tesSUCCESS});
-            env.close();
-            BEAST_EXPECT((env.balance(alice, issue).value() == STAmount{MPTAmount{9'999}, issue}));
-            BEAST_EXPECT((env.balance(bob, issue).value() == STAmount{MPTAmount{10'000}, issue}));
-            BEAST_EXPECT((env.balance(gw, issue).value() == STAmount{MPTAmount{-19'999}, issue}));
-        }
-        {
-            Env env{*this, withoutFixAndV2};
-            env.fund(XRP(100'000), alice, bob, gw);
-            env.close();
-            auto const issue = makeIssue(env);
-
-            auto const badAmount = nonCanonicalMPTAmount(issue);
-            auto malformedHolderToIssuer = withNonCanonicalMPTAmount(
-                env.jt(pay(alice, gw, STAmount{issue, std::uint64_t{1}})),
-                sfAmount,
-                badAmount,
-                alice);
-            expectRoundTripNonCanonicalMPT(malformedHolderToIssuer, sfAmount);
-            malformedHolderToIssuer.ter = tecPATH_PARTIAL;
-            env.submit(malformedHolderToIssuer);
-            env.close();
-            BEAST_EXPECT((env.balance(alice, issue).value() == STAmount{MPTAmount{10'000}, issue}));
-            BEAST_EXPECT((env.balance(bob, issue).value() == STAmount{MPTAmount{10'000}, issue}));
-            BEAST_EXPECT((env.balance(gw, issue).value() == STAmount{MPTAmount{-20'000}, issue}));
-
-            env.enableFeature(fixCleanup3_2_0);
-            env.close();
-            env(env.jt(pay(gw, alice, STAmount{issue, std::uint64_t{1}})), Ter{tesSUCCESS});
-            env.close();
-            BEAST_EXPECT((env.balance(alice, issue).value() == STAmount{MPTAmount{10'001}, issue}));
-            BEAST_EXPECT((env.balance(bob, issue).value() == STAmount{MPTAmount{10'000}, issue}));
-            BEAST_EXPECT((env.balance(gw, issue).value() == STAmount{MPTAmount{-20'001}, issue}));
-        }
-        {
-            Env env{*this, withFixAndWithoutV2};
-            env.fund(XRP(100'000), alice, bob, gw);
-            env.close();
-            auto const issue = makeIssue(env);
-
-            auto const badAmount = nonCanonicalMPTAmount(issue);
-            auto tx = withNonCanonicalMPTAmount(
-                env.jt(pay(alice, bob, STAmount{issue, std::uint64_t{1}})),
-                sfAmount,
-                badAmount,
-                alice);
-            tx.ter = temBAD_AMOUNT;
-            env.submit(tx);
-        }
-        {
-            Env env{*this, withFixAndWithoutV2};
-            env.fund(XRP(100'000), alice, bob, gw);
-            env.close();
-            auto const issue = makeIssue(env);
-
-            auto const badAmount = nonCanonicalMPTAmount(issue);
-            auto tx = withNonCanonicalMPTAmount(
-                env.jt(pay(gw, alice, STAmount{issue, std::uint64_t{1}})), sfAmount, badAmount, gw);
-            tx.ter = temBAD_AMOUNT;
-            env.submit(tx);
-        }
-        {
-            Env env{*this, withFixAndWithoutV2};
-            env.fund(XRP(100'000), alice, bob, gw);
-            env.close();
-            auto const issue = makeIssue(env);
-
-            auto const badAmount = nonCanonicalMPTAmount(issue);
-            auto tx = withNonCanonicalMPTAmount(
-                env.jt(pay(alice, gw, STAmount{issue, std::uint64_t{1}})),
-                sfAmount,
-                badAmount,
-                alice);
-            tx.ter = temBAD_AMOUNT;
-            env.submit(tx);
-        }
-
-        testcase("fixCleanup3_2_0 rejects non-canonical MPT Check amounts");
-        {
-            Env env{*this, withoutFix};
-            env.fund(XRP(100'000), alice, bob, gw);
-            env.close();
-            auto const issue = makeIssue(env);
-
-            auto const badSendMax = nonCanonicalMPTAmount(issue);
-            auto const checkSeq = env.seq(alice);
-            auto tx = withNonCanonicalMPTAmount(
-                env.jt(check::create(alice, bob, STAmount{issue, std::uint64_t{10}})),
-                sfSendMax,
-                badSendMax,
-                alice);
-            tx.ter = tesSUCCESS;
-            env.submit(tx);
-            env.close();
-
-            auto const checkKeylet = keylet::check(alice.id(), checkSeq);
-            auto const sleCheck = env.le(checkKeylet);
-            BEAST_EXPECT(sleCheck != nullptr);
-            if (sleCheck)
-            {
-                auto const persisted = sleCheck->getFieldAmount(sfSendMax);
+        auto const expectRoundTripBadMPT =
+            [&](JTx const& jt, SField const& field, BadMPTAmount const& bad) {
+                auto const roundTripped = roundTrip(*jt.stx);
+                auto const persisted = roundTripped.getFieldAmount(field);
                 BEAST_EXPECT(persisted.holds<MPTIssue>());
-                BEAST_EXPECT(persisted.mantissa() == nonCanonicalMPTMantissa);
+                BEAST_EXPECT(persisted.mantissa() == bad.mantissa);
+                BEAST_EXPECT(persisted.exponent() == 0);
+                BEAST_EXPECT(persisted.negative() == bad.negative);
+                BEAST_EXPECT(persisted.mpt().value() == bad.mptValue);
+                if (!bad.negative)
+                    BEAST_EXPECT(persisted.mantissa() > kMAX_MP_TOKEN_AMOUNT);
+            };
+
+        for (auto const& bad : badMPTAmounts)
+        {
+            testcase("fixCleanup3_2_0 rejects non-canonical MPT Payment amounts");
+            {
+                Env env{*this, withoutFixAndV2};
+                env.fund(XRP(100'000), alice, bob, gw);
+                env.close();
+                auto const issue = makeIssue(env);
+
+                auto const badAmount = badMPTAmount(issue, bad);
+                auto malformedHolderToHolder = withNonCanonicalMPTAmount(
+                    env.jt(pay(alice, bob, STAmount{issue, std::uint64_t{1}})),
+                    sfAmount,
+                    badAmount,
+                    alice);
+                expectRoundTripBadMPT(malformedHolderToHolder, sfAmount, bad);
+                malformedHolderToHolder.ter = bad.holderSourcePreFixTer;
+                env.submit(malformedHolderToHolder);
+                env.close();
+                BEAST_EXPECT(
+                    (env.balance(alice, issue).value() == STAmount{MPTAmount{10'000}, issue}));
+                BEAST_EXPECT(
+                    (env.balance(bob, issue).value() == STAmount{MPTAmount{10'000}, issue}));
+                BEAST_EXPECT(
+                    (env.balance(gw, issue).value() == STAmount{MPTAmount{-20'000}, issue}));
+
+                env.enableFeature(fixCleanup3_2_0);
+                env.close();
+                env(env.jt(pay(bob, alice, STAmount{issue, std::uint64_t{1}})), Ter{tesSUCCESS});
+                env.close();
+                BEAST_EXPECT(
+                    (env.balance(alice, issue).value() == STAmount{MPTAmount{10'001}, issue}));
+                BEAST_EXPECT(
+                    (env.balance(bob, issue).value() == STAmount{MPTAmount{9'999}, issue}));
+                BEAST_EXPECT(
+                    (env.balance(gw, issue).value() == STAmount{MPTAmount{-20'000}, issue}));
             }
-        }
-        {
-            Env env{*this, withoutFix};
-            env.fund(XRP(100'000), alice, bob, gw);
-            env.close();
-            auto const issue = makeIssue(env);
+            {
+                Env env{*this, envconfig(), withoutFixAndV2, nullptr, beast::Severity::Disabled};
+                env.fund(XRP(100'000), alice, bob, gw);
+                env.close();
+                auto const issue = makeIssue(env);
 
-            auto const badSendMax = nonCanonicalMPTAmount(issue);
-            auto const checkSeq = env.seq(alice);
-            auto tx = withNonCanonicalMPTAmount(
-                env.jt(check::create(alice, bob, STAmount{issue, std::uint64_t{10}})),
-                sfSendMax,
-                badSendMax,
-                alice);
-            tx.ter = tesSUCCESS;
-            env.submit(tx);
-            env.close();
+                auto const badAmount = badMPTAmount(issue, bad);
+                auto malformedIssuerToHolder = withNonCanonicalMPTAmount(
+                    env.jt(pay(gw, alice, STAmount{issue, std::uint64_t{1}})),
+                    sfAmount,
+                    badAmount,
+                    gw);
+                expectRoundTripBadMPT(malformedIssuerToHolder, sfAmount, bad);
+                malformedIssuerToHolder.ter = bad.issuerToHolderPreFixTer;
+                env.submit(malformedIssuerToHolder);
+                env.close();
+                BEAST_EXPECT(
+                    (env.balance(alice, issue).value() ==
+                     STAmount{MPTAmount{bad.issuerToHolderAliceAfterPreFix}, issue}));
+                BEAST_EXPECT(
+                    (env.balance(bob, issue).value() == STAmount{MPTAmount{10'000}, issue}));
+                BEAST_EXPECT(
+                    (env.balance(gw, issue).value() ==
+                     STAmount{MPTAmount{bad.issuerToHolderIssuerAfterPreFix}, issue}));
 
-            auto const checkKeylet = keylet::check(alice.id(), checkSeq);
-            BEAST_EXPECT(env.le(checkKeylet) != nullptr);
+                env.enableFeature(fixCleanup3_2_0);
+                env.close();
+                env(env.jt(pay(alice, gw, STAmount{issue, std::uint64_t{1}})), Ter{tesSUCCESS});
+                env.close();
+                BEAST_EXPECT(
+                    (env.balance(alice, issue).value() ==
+                     STAmount{MPTAmount{bad.issuerToHolderAliceAfterPostFix}, issue}));
+                BEAST_EXPECT(
+                    (env.balance(bob, issue).value() == STAmount{MPTAmount{10'000}, issue}));
+                BEAST_EXPECT(
+                    (env.balance(gw, issue).value() ==
+                     STAmount{MPTAmount{bad.issuerToHolderIssuerAfterPostFix}, issue}));
+            }
+            {
+                Env env{*this, withoutFixAndV2};
+                env.fund(XRP(100'000), alice, bob, gw);
+                env.close();
+                auto const issue = makeIssue(env);
 
-            env.enableFeature(fixCleanup3_2_0);
-            env.close();
+                auto const badAmount = badMPTAmount(issue, bad);
+                auto malformedHolderToIssuer = withNonCanonicalMPTAmount(
+                    env.jt(pay(alice, gw, STAmount{issue, std::uint64_t{1}})),
+                    sfAmount,
+                    badAmount,
+                    alice);
+                expectRoundTripBadMPT(malformedHolderToIssuer, sfAmount, bad);
+                malformedHolderToIssuer.ter = bad.holderSourcePreFixTer;
+                env.submit(malformedHolderToIssuer);
+                env.close();
+                BEAST_EXPECT(
+                    (env.balance(alice, issue).value() == STAmount{MPTAmount{10'000}, issue}));
+                BEAST_EXPECT(
+                    (env.balance(bob, issue).value() == STAmount{MPTAmount{10'000}, issue}));
+                BEAST_EXPECT(
+                    (env.balance(gw, issue).value() == STAmount{MPTAmount{-20'000}, issue}));
 
-            auto const cashAmount = STAmount{sfAmount, issue, std::uint64_t{1}, 0, false};
-            env(env.jt(check::cash(bob, checkKeylet.key, cashAmount)), Ter{temBAD_AMOUNT});
-            env.close();
-            BEAST_EXPECT(env.le(checkKeylet) != nullptr);
-        }
-        {
-            Env env{*this, withoutFix};
-            env.fund(XRP(100'000), alice, bob, gw);
-            env.close();
-            auto const issue = makeIssue(env);
+                env.enableFeature(fixCleanup3_2_0);
+                env.close();
+                env(env.jt(pay(gw, alice, STAmount{issue, std::uint64_t{1}})), Ter{tesSUCCESS});
+                env.close();
+                BEAST_EXPECT(
+                    (env.balance(alice, issue).value() == STAmount{MPTAmount{10'001}, issue}));
+                BEAST_EXPECT(
+                    (env.balance(bob, issue).value() == STAmount{MPTAmount{10'000}, issue}));
+                BEAST_EXPECT(
+                    (env.balance(gw, issue).value() == STAmount{MPTAmount{-20'001}, issue}));
+            }
+            {
+                Env env{*this, withFixAndWithoutV2};
+                env.fund(XRP(100'000), alice, bob, gw);
+                env.close();
+                auto const issue = makeIssue(env);
 
-            auto const sendMax = STAmount{sfSendMax, issue, std::uint64_t{10}, 0, false};
-            auto const checkSeq = env.seq(alice);
-            env(env.jt(check::create(alice, bob, sendMax)), Ter{tesSUCCESS});
-            env.close();
+                auto const badAmount = badMPTAmount(issue, bad);
+                auto tx = withNonCanonicalMPTAmount(
+                    env.jt(pay(alice, bob, STAmount{issue, std::uint64_t{1}})),
+                    sfAmount,
+                    badAmount,
+                    alice);
+                tx.ter = temBAD_AMOUNT;
+                env.submit(tx);
+            }
+            {
+                Env env{*this, withFixAndWithoutV2};
+                env.fund(XRP(100'000), alice, bob, gw);
+                env.close();
+                auto const issue = makeIssue(env);
 
-            auto const badCashAmount = nonCanonicalMPTAmount(issue);
-            auto tx = withNonCanonicalMPTAmount(
-                env.jt(
-                    check::cash(
-                        bob,
-                        keylet::check(alice.id(), checkSeq).key,
-                        STAmount{issue, std::uint64_t{1}})),
-                sfAmount,
-                badCashAmount,
-                bob);
-            expectRoundTripNonCanonicalMPT(tx, sfAmount);
-            tx.ter = tecPATH_PARTIAL;
-            env.submit(tx);
-            env.close();
-            BEAST_EXPECT(env.le(keylet::check(alice.id(), checkSeq)) != nullptr);
-            BEAST_EXPECT((env.balance(alice, issue).value() == STAmount{MPTAmount{10'000}, issue}));
-            BEAST_EXPECT((env.balance(bob, issue).value() == STAmount{MPTAmount{10'000}, issue}));
-            BEAST_EXPECT((env.balance(gw, issue).value() == STAmount{MPTAmount{-20'000}, issue}));
-        }
-        {
-            Env env{*this, withFix};
-            env.fund(XRP(100'000), alice, bob, gw);
-            env.close();
-            auto const issue = makeIssue(env);
+                auto const badAmount = badMPTAmount(issue, bad);
+                auto tx = withNonCanonicalMPTAmount(
+                    env.jt(pay(gw, alice, STAmount{issue, std::uint64_t{1}})),
+                    sfAmount,
+                    badAmount,
+                    gw);
+                tx.ter = temBAD_AMOUNT;
+                env.submit(tx);
+            }
+            {
+                Env env{*this, withFixAndWithoutV2};
+                env.fund(XRP(100'000), alice, bob, gw);
+                env.close();
+                auto const issue = makeIssue(env);
 
-            auto const sendMax = STAmount{sfSendMax, issue, std::uint64_t{10}, 0, false};
-            auto const checkSeq = env.seq(alice);
-            env(env.jt(check::create(alice, bob, sendMax)), Ter{tesSUCCESS});
-            env.close();
+                auto const badAmount = badMPTAmount(issue, bad);
+                auto tx = withNonCanonicalMPTAmount(
+                    env.jt(pay(alice, gw, STAmount{issue, std::uint64_t{1}})),
+                    sfAmount,
+                    badAmount,
+                    alice);
+                tx.ter = temBAD_AMOUNT;
+                env.submit(tx);
+            }
 
-            auto const badCashAmount = nonCanonicalMPTAmount(issue);
-            auto tx = withNonCanonicalMPTAmount(
-                env.jt(
-                    check::cash(
-                        bob,
-                        keylet::check(alice.id(), checkSeq).key,
-                        STAmount{issue, std::uint64_t{1}})),
-                sfAmount,
-                badCashAmount,
-                bob);
-            tx.ter = temBAD_AMOUNT;
-            env.submit(tx);
-        }
+            testcase("fixCleanup3_2_0 rejects non-canonical MPT Check amounts");
+            {
+                Env env{*this, withoutFix};
+                env.fund(XRP(100'000), alice, bob, gw);
+                env.close();
+                auto const issue = makeIssue(env);
 
-        testcase("fixCleanup3_2_0 rejects non-canonical MPT Escrow amounts");
-        {
-            Env env{*this, withoutFix};
-            env.fund(XRP(100'000), alice, bob, gw);
-            env.close();
-            auto const issue = makeIssue(env);
+                auto const badSendMax = badMPTAmount(issue, bad);
+                auto const checkSeq = env.seq(alice);
+                auto tx = withNonCanonicalMPTAmount(
+                    env.jt(check::create(alice, bob, STAmount{issue, std::uint64_t{10}})),
+                    sfSendMax,
+                    badSendMax,
+                    alice);
+                tx.ter = bad.negative ? TER{temBAD_AMOUNT} : TER{tesSUCCESS};
+                env.submit(tx);
+                env.close();
 
-            auto const escrowSeq = env.seq(alice);
-            auto const badAmount = nonCanonicalMPTAmount(issue);
-            auto tx = withNonCanonicalMPTAmount(
-                env.jt(
-                    escrow::create(alice, bob, STAmount{issue, std::uint64_t{1}}),
-                    escrow::kFINISH_TIME(env.now() + 1s)),
-                sfAmount,
-                badAmount,
-                alice);
-            tx.ter = tecINSUFFICIENT_FUNDS;
-            env.submit(tx);
-            env.close();
-            BEAST_EXPECT(env.le(keylet::escrow(alice.id(), escrowSeq)) == nullptr);
-        }
-        {
-            Env env{*this, withFix};
-            env.fund(XRP(100'000), alice, bob, gw);
-            env.close();
-            auto const issue = makeIssue(env);
+                auto const checkKeylet = keylet::check(alice.id(), checkSeq);
+                auto const sleCheck = env.le(checkKeylet);
+                BEAST_EXPECT((sleCheck != nullptr) == !bad.negative);
+                if (sleCheck && !bad.negative)
+                {
+                    auto const persisted = sleCheck->getFieldAmount(sfSendMax);
+                    BEAST_EXPECT(persisted.holds<MPTIssue>());
+                    BEAST_EXPECT(persisted.mantissa() == bad.mantissa);
+                    BEAST_EXPECT(persisted.negative() == bad.negative);
+                }
+            }
+            {
+                Env env{*this, withoutFix};
+                env.fund(XRP(100'000), alice, bob, gw);
+                env.close();
+                auto const issue = makeIssue(env);
 
-            auto const badAmount = nonCanonicalMPTAmount(issue);
-            auto tx = withNonCanonicalMPTAmount(
-                env.jt(
-                    escrow::create(alice, bob, STAmount{issue, std::uint64_t{1}}),
-                    escrow::kFINISH_TIME(env.now() + 1s)),
-                sfAmount,
-                badAmount,
-                alice);
-            tx.ter = temBAD_AMOUNT;
-            env.submit(tx);
-        }
+                auto const badSendMax = badMPTAmount(issue, bad);
+                auto const checkSeq = env.seq(alice);
+                auto tx = withNonCanonicalMPTAmount(
+                    env.jt(check::create(alice, bob, STAmount{issue, std::uint64_t{10}})),
+                    sfSendMax,
+                    badSendMax,
+                    alice);
+                tx.ter = bad.negative ? TER{temBAD_AMOUNT} : TER{tesSUCCESS};
+                env.submit(tx);
+                env.close();
 
-        testcase("featureMPTokensV2 disabled rejects MPT OfferCreate amounts");
-        {
-            Env env{*this, withoutFixAndV2};
-            env.fund(XRP(100'000), alice, bob, gw);
-            env.close();
-            auto const issue = makeIssue(env);
+                auto const checkKeylet = keylet::check(alice.id(), checkSeq);
+                BEAST_EXPECT((env.le(checkKeylet) != nullptr) == !bad.negative);
+                if (!bad.negative)
+                {
+                    // CheckCancel has no amount fields, but it must be able to
+                    // remove a malformed legacy Check while the fix is disabled.
+                    env(env.jt(check::cancel(alice, checkKeylet.key)), Ter{tesSUCCESS});
+                    env.close();
+                    BEAST_EXPECT(env.le(checkKeylet) == nullptr);
+                }
+            }
+            {
+                Env env{*this, withoutFix};
+                env.fund(XRP(100'000), alice, bob, gw);
+                env.close();
+                auto const issue = makeIssue(env);
 
-            auto const badTakerPays = nonCanonicalMPTAmount(issue);
-            auto tx = withNonCanonicalMPTAmount(
-                env.jt(offer(alice, STAmount{issue, std::uint64_t{1}}, XRP(10))),
-                sfTakerPays,
-                badTakerPays,
-                alice);
-            expectRoundTripNonCanonicalMPT(tx, sfTakerPays);
-            tx.ter = temDISABLED;
-            env.submit(tx);
-        }
-        {
-            Env env{*this, withFixAndWithoutV2};
-            env.fund(XRP(100'000), alice, bob, gw);
-            env.close();
-            auto const issue = makeIssue(env);
+                auto const badSendMax = badMPTAmount(issue, bad);
+                auto const checkSeq = env.seq(alice);
+                auto tx = withNonCanonicalMPTAmount(
+                    env.jt(check::create(alice, bob, STAmount{issue, std::uint64_t{10}})),
+                    sfSendMax,
+                    badSendMax,
+                    alice);
+                tx.ter = bad.negative ? TER{temBAD_AMOUNT} : TER{tesSUCCESS};
+                env.submit(tx);
+                env.close();
 
-            auto const badTakerPays = nonCanonicalMPTAmount(issue);
-            auto tx = withNonCanonicalMPTAmount(
-                env.jt(offer(alice, STAmount{issue, std::uint64_t{1}}, XRP(10))),
-                sfTakerPays,
-                badTakerPays,
-                alice);
-            tx.ter = temDISABLED;
-            env.submit(tx);
-        }
+                auto const checkKeylet = keylet::check(alice.id(), checkSeq);
+                BEAST_EXPECT((env.le(checkKeylet) != nullptr) == !bad.negative);
+                if (!bad.negative)
+                {
+                    env.enableFeature(fixCleanup3_2_0);
+                    env.close();
 
-        testcase("featureMPTokensV2 disabled rejects MPT AMMCreate amounts");
-        {
-            Env env{*this, withoutFixAndV2};
-            env.fund(XRP(100'000), alice, bob, gw);
-            env.close();
-            auto const issue = makeIssue(env);
+                    // Once the fix is enabled, CheckCancel should still remove
+                    // a legacy Check because it does not consume the bad amount.
+                    env(env.jt(check::cancel(alice, checkKeylet.key)), Ter{tesSUCCESS});
+                    env.close();
+                    BEAST_EXPECT(env.le(checkKeylet) == nullptr);
+                }
+            }
+            {
+                Env env{*this, withoutFix};
+                env.fund(XRP(100'000), alice, bob, gw);
+                env.close();
+                auto const issue = makeIssue(env);
 
-            auto const badAmount = nonCanonicalMPTAmount(issue);
-            auto tx = withNonCanonicalMPTAmount(
-                env.jt(
-                    AMM::createJv(alice.id(), STAmount{issue, std::uint64_t{1}}, XRP(1), 0),
-                    Fee(static_cast<std::uint64_t>(env.current()->fees().increment.drops()))),
-                sfAmount,
-                badAmount,
-                alice);
-            expectRoundTripNonCanonicalMPT(tx, sfAmount);
-            tx.ter = temDISABLED;
-            env.submit(tx);
-        }
-        {
-            Env env{*this, withFixAndWithoutV2};
-            env.fund(XRP(100'000), alice, bob, gw);
-            env.close();
-            auto const issue = makeIssue(env);
+                auto const badSendMax = badMPTAmount(issue, bad);
+                auto const checkSeq = env.seq(alice);
+                auto tx = withNonCanonicalMPTAmount(
+                    env.jt(check::create(alice, bob, STAmount{issue, std::uint64_t{10}})),
+                    sfSendMax,
+                    badSendMax,
+                    alice);
+                tx.ter = bad.negative ? TER{temBAD_AMOUNT} : TER{tesSUCCESS};
+                env.submit(tx);
+                env.close();
 
-            auto const badAmount = nonCanonicalMPTAmount(issue);
-            auto tx = withNonCanonicalMPTAmount(
-                env.jt(
-                    AMM::createJv(alice.id(), STAmount{issue, std::uint64_t{1}}, XRP(1), 0),
-                    Fee(static_cast<std::uint64_t>(env.current()->fees().increment.drops()))),
-                sfAmount,
-                badAmount,
-                alice);
-            tx.ter = temDISABLED;
-            env.submit(tx);
+                auto const checkKeylet = keylet::check(alice.id(), checkSeq);
+                BEAST_EXPECT((env.le(checkKeylet) != nullptr) == !bad.negative);
+                if (!bad.negative)
+                {
+                    env.enableFeature(fixCleanup3_2_0);
+                    env.close();
+
+                    auto const cashAmount = STAmount{sfAmount, issue, std::uint64_t{1}, 0, false};
+                    env(env.jt(check::cash(bob, checkKeylet.key, cashAmount)), Ter{temBAD_AMOUNT});
+                    env.close();
+                    BEAST_EXPECT(env.le(checkKeylet) != nullptr);
+                }
+            }
+            {
+                Env env{*this, withoutFix};
+                env.fund(XRP(100'000), alice, bob, gw);
+                env.close();
+                auto const issue = makeIssue(env);
+
+                auto const sendMax = STAmount{sfSendMax, issue, std::uint64_t{10}, 0, false};
+                auto const checkSeq = env.seq(alice);
+                env(env.jt(check::create(alice, bob, sendMax)), Ter{tesSUCCESS});
+                env.close();
+
+                auto const badCashAmount = badMPTAmount(issue, bad);
+                auto tx = withNonCanonicalMPTAmount(
+                    env.jt(
+                        check::cash(
+                            bob,
+                            keylet::check(alice.id(), checkSeq).key,
+                            STAmount{issue, std::uint64_t{1}})),
+                    sfAmount,
+                    badCashAmount,
+                    bob);
+                expectRoundTripBadMPT(tx, sfAmount, bad);
+                tx.ter = bad.holderSourcePreFixTer;
+                env.submit(tx);
+                env.close();
+                BEAST_EXPECT(env.le(keylet::check(alice.id(), checkSeq)) != nullptr);
+                BEAST_EXPECT(
+                    (env.balance(alice, issue).value() == STAmount{MPTAmount{10'000}, issue}));
+                BEAST_EXPECT(
+                    (env.balance(bob, issue).value() == STAmount{MPTAmount{10'000}, issue}));
+                BEAST_EXPECT(
+                    (env.balance(gw, issue).value() == STAmount{MPTAmount{-20'000}, issue}));
+            }
+            {
+                Env env{*this, withFix};
+                env.fund(XRP(100'000), alice, bob, gw);
+                env.close();
+                auto const issue = makeIssue(env);
+
+                auto const sendMax = STAmount{sfSendMax, issue, std::uint64_t{10}, 0, false};
+                auto const checkSeq = env.seq(alice);
+                env(env.jt(check::create(alice, bob, sendMax)), Ter{tesSUCCESS});
+                env.close();
+
+                auto const badCashAmount = badMPTAmount(issue, bad);
+                auto tx = withNonCanonicalMPTAmount(
+                    env.jt(
+                        check::cash(
+                            bob,
+                            keylet::check(alice.id(), checkSeq).key,
+                            STAmount{issue, std::uint64_t{1}})),
+                    sfAmount,
+                    badCashAmount,
+                    bob);
+                tx.ter = temBAD_AMOUNT;
+                env.submit(tx);
+            }
+
+            testcase("fixCleanup3_2_0 rejects non-canonical MPT Escrow amounts");
+            {
+                Env env{*this, withoutFix};
+                env.fund(XRP(100'000), alice, bob, gw);
+                env.close();
+                auto const issue = makeIssue(env);
+
+                auto const escrowSeq = env.seq(alice);
+                auto const badAmount = badMPTAmount(issue, bad);
+                auto tx = withNonCanonicalMPTAmount(
+                    env.jt(
+                        escrow::create(alice, bob, STAmount{issue, std::uint64_t{1}}),
+                        escrow::kFINISH_TIME(env.now() + 1s)),
+                    sfAmount,
+                    badAmount,
+                    alice);
+                tx.ter = bad.negative ? TER{temBAD_AMOUNT} : TER{tecINSUFFICIENT_FUNDS};
+                env.submit(tx);
+                env.close();
+                BEAST_EXPECT(env.le(keylet::escrow(alice.id(), escrowSeq)) == nullptr);
+            }
+            {
+                Env env{*this, withFix};
+                env.fund(XRP(100'000), alice, bob, gw);
+                env.close();
+                auto const issue = makeIssue(env);
+
+                auto const badAmount = badMPTAmount(issue, bad);
+                auto tx = withNonCanonicalMPTAmount(
+                    env.jt(
+                        escrow::create(alice, bob, STAmount{issue, std::uint64_t{1}}),
+                        escrow::kFINISH_TIME(env.now() + 1s)),
+                    sfAmount,
+                    badAmount,
+                    alice);
+                tx.ter = temBAD_AMOUNT;
+                env.submit(tx);
+            }
+
+            testcase("fixCleanup3_2_0 rejects non-canonical MPT Clawback amounts");
+            {
+                Env env{*this, withoutFix};
+                env.fund(XRP(100'000), alice, bob, gw);
+                env.close();
+                auto const issue = makeIssue(env);
+
+                auto const badAmount = badMPTAmount(issue, bad);
+                auto tx = withNonCanonicalMPTAmount(
+                    env.jt(claw(gw, STAmount{issue, std::uint64_t{1}}, bob)),
+                    sfAmount,
+                    badAmount,
+                    gw);
+                expectRoundTripBadMPT(tx, sfAmount, bad);
+                tx.ter = bad.negative ? TER{temBAD_AMOUNT} : TER{tesSUCCESS};
+                env.submit(tx);
+                env.close();
+
+                MPTValue const bobAfter = bad.negative ? MPTValue{10'000} : MPTValue{0};
+                MPTValue const gwAfter = bad.negative ? MPTValue{-20'000} : MPTValue{-10'000};
+                BEAST_EXPECT(
+                    (env.balance(alice, issue).value() == STAmount{MPTAmount{10'000}, issue}));
+                BEAST_EXPECT(
+                    (env.balance(bob, issue).value() == STAmount{MPTAmount{bobAfter}, issue}));
+                BEAST_EXPECT(
+                    (env.balance(gw, issue).value() == STAmount{MPTAmount{gwAfter}, issue}));
+            }
+            {
+                Env env{*this, withFix};
+                env.fund(XRP(100'000), alice, bob, gw);
+                env.close();
+                auto const issue = makeIssue(env);
+
+                auto const badAmount = badMPTAmount(issue, bad);
+                auto tx = withNonCanonicalMPTAmount(
+                    env.jt(claw(gw, STAmount{issue, std::uint64_t{1}}, bob)),
+                    sfAmount,
+                    badAmount,
+                    gw);
+                tx.ter = temBAD_AMOUNT;
+                env.submit(tx);
+                env.close();
+
+                BEAST_EXPECT(
+                    (env.balance(alice, issue).value() == STAmount{MPTAmount{10'000}, issue}));
+                BEAST_EXPECT(
+                    (env.balance(bob, issue).value() == STAmount{MPTAmount{10'000}, issue}));
+                BEAST_EXPECT(
+                    (env.balance(gw, issue).value() == STAmount{MPTAmount{-20'000}, issue}));
+            }
+
+            testcase("featureMPTokensV2 disabled rejects MPT OfferCreate amounts");
+            {
+                Env env{*this, withoutFixAndV2};
+                env.fund(XRP(100'000), alice, bob, gw);
+                env.close();
+                auto const issue = makeIssue(env);
+
+                auto const badTakerPays = badMPTAmount(issue, bad);
+                auto tx = withNonCanonicalMPTAmount(
+                    env.jt(offer(alice, STAmount{issue, std::uint64_t{1}}, XRP(10))),
+                    sfTakerPays,
+                    badTakerPays,
+                    alice);
+                expectRoundTripBadMPT(tx, sfTakerPays, bad);
+                tx.ter = temDISABLED;
+                env.submit(tx);
+            }
+            {
+                Env env{*this, withFixAndWithoutV2};
+                env.fund(XRP(100'000), alice, bob, gw);
+                env.close();
+                auto const issue = makeIssue(env);
+
+                auto const badTakerPays = badMPTAmount(issue, bad);
+                auto tx = withNonCanonicalMPTAmount(
+                    env.jt(offer(alice, STAmount{issue, std::uint64_t{1}}, XRP(10))),
+                    sfTakerPays,
+                    badTakerPays,
+                    alice);
+                tx.ter = temDISABLED;
+                env.submit(tx);
+            }
+
+            testcase("featureMPTokensV2 disabled rejects MPT AMMCreate amounts");
+            {
+                Env env{*this, withoutFixAndV2};
+                env.fund(XRP(100'000), alice, bob, gw);
+                env.close();
+                auto const issue = makeIssue(env);
+
+                auto const badAmount = badMPTAmount(issue, bad);
+                auto tx = withNonCanonicalMPTAmount(
+                    env.jt(
+                        AMM::createJv(alice.id(), STAmount{issue, std::uint64_t{1}}, XRP(1), 0),
+                        Fee(static_cast<std::uint64_t>(env.current()->fees().increment.drops()))),
+                    sfAmount,
+                    badAmount,
+                    alice);
+                expectRoundTripBadMPT(tx, sfAmount, bad);
+                tx.ter = temDISABLED;
+                env.submit(tx);
+            }
+            {
+                Env env{*this, withFixAndWithoutV2};
+                env.fund(XRP(100'000), alice, bob, gw);
+                env.close();
+                auto const issue = makeIssue(env);
+
+                auto const badAmount = badMPTAmount(issue, bad);
+                auto tx = withNonCanonicalMPTAmount(
+                    env.jt(
+                        AMM::createJv(alice.id(), STAmount{issue, std::uint64_t{1}}, XRP(1), 0),
+                        Fee(static_cast<std::uint64_t>(env.current()->fees().increment.drops()))),
+                    sfAmount,
+                    badAmount,
+                    alice);
+                tx.ter = temDISABLED;
+                env.submit(tx);
+            }
         }
     }
 
