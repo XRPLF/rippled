@@ -11,7 +11,9 @@ XRPL supports secp256k1 (ECDSA) and ed25519 key types. All crypto uses OpenSSL +
 - Base58 encoding includes a type byte prefix and 4-byte checksum (double SHA-256)
 - All randomness for cryptographic material flows through `crypto_prng()`; never call OpenSSL's `RAND_bytes` directly and never use `std::rand`/`rand()`
 - `csprng_engine` is non-copyable and non-movable by deleted ops; the singleton must be accessed by reference via `crypto_prng()`
+- `csprng_engine` satisfies the C++ *UniformRandomNumberEngine* named requirement (`result_type` = `std::uint64_t`, `operator()()`, `constexpr min()`/`max()`) — plugs into `std::uniform_int_distribution`, `beast::rngfill`, etc.
 - RFC 1751 dictionary has exactly 2^11 = 2048 entries; entries 0–570 are 1–3 char words, 571–2047 are exactly 4 chars (used to split binary search range in `wsrch`)
+- Each RFC 1751 word encodes exactly 11 bits; a 64-bit block uses 6 words (66 bits = 64 data + 2 parity); a 128-bit key uses two such blocks → 12 words
 
 ## Common Bug Patterns
 
@@ -24,6 +26,9 @@ XRPL supports secp256k1 (ECDSA) and ed25519 key types. All crypto uses OpenSSL +
 - Constructing a second `csprng_engine` instance: forbidden by deleted ctors; sharing one OpenSSL pool through the singleton is required
 - Passing `mix_entropy` a buffer and assuming OpenSSL credits it as entropy — the entropy estimate is always 0 (deliberately conservative)
 - RFC 1751 decode: distinguish `0` (unknown word), `-1` (malformed input), `-2` (parity failure) — don't collapse all failures into a single error
+- Forgetting that `insert()` in RFC1751 uses bitwise OR, not assignment — output buffer must start zero-initialized
+- Treating RFC 1751 parity as cryptographic integrity — it's a 2-bit transcription check, not a MAC
+- Using `getWordFromBlob` for anything cryptographic — it's a Jenkins hash and explicitly insecure
 
 ## Review Checklist
 
@@ -32,6 +37,7 @@ XRPL supports secp256k1 (ECDSA) and ed25519 key types. All crypto uses OpenSSL +
 - Verify that key type dispatch handles both secp256k1 and ed25519 (or explicitly rejects one with a clear error)
 - Any new sensitive type should follow the `SecretKey`/`Seed` pattern: destructor calls `secure_erase` as its first/only action
 - New OpenSSL touchpoints should respect the `OPENSSL_VERSION_NUMBER < 0x10100000L` thread-safety guard pattern used in `csprng.cpp`
+- CSPRNG failures (`RAND_bytes`/`RAND_poll` ≠ 1) must propagate via `Throw<>` (logs stack trace) — never silently fall back
 
 ## Key Patterns
 
@@ -49,7 +55,7 @@ SecretKey sk(Slice{buf, sizeof(buf)});
 secure_erase(buf, sizeof(buf));  // MUST erase raw buffer
 ```
 
-`secure_erase` delegates to `OPENSSL_cleanse`, which uses volatile writes / opaque function-pointer calls to defeat dead-store elimination. Lives in a separate TU (`secure_erase.cpp`) so the call site cannot inline it away. It does **not** clear CPU registers or caches — it is best-effort for heap/stack only (see Percival 2014).
+`secure_erase` delegates to `OPENSSL_cleanse`, which uses volatile writes / opaque function-pointer calls to defeat dead-store elimination. Lives in a separate TU (`secure_erase.cpp`) so the call site cannot inline it away — the out-of-line call alone forces the compiler to treat it as an opaque side effect. It does **not** clear CPU registers or caches — it is best-effort for heap/stack only (see Percival 2014). Takes raw `void*` + byte count with no null/zero guards; callers must supply valid arguments.
 
 ### CSPRNG Usage
 ```cpp
@@ -64,7 +70,7 @@ rng(buf, sizeof(buf));            // operator()(void*, size_t)
 beast::rngfill(buf, sizeof(buf), crypto_prng());
 ```
 
-`csprng_engine` satisfies the C++ *UniformRandomNumberEngine* named requirement, so it plugs directly into `std::uniform_int_distribution` and similar. Failure (insufficient entropy) throws `std::runtime_error` via `Throw<>`; callers generally do not catch — propagation halts the operation, which is correct.
+Failure (insufficient entropy) throws `std::runtime_error("CSPRNG: Insufficient entropy")` via `Throw<>`; callers generally do not catch — propagation halts the operation, which is correct. Generating cryptographic material from an entropy-exhausted pool would be worse than crashing.
 
 ### Key Type Dispatch
 ```cpp
@@ -90,6 +96,8 @@ int rc = RFC1751::getKeyFromEnglish(roundTrip, words);
 
 `Seed.cpp` reverses the 16 bytes before/after RFC 1751 encoding to match the RFC's big-endian convention. `standard()` normalizes input by uppercasing and applying visual substitutions `1→L`, `0→O`, `5→S` for handwritten/OCR tolerance. The 2-bit parity per 8-byte half is a transcription check, **not** a cryptographic integrity check.
 
+`getKeyFromEnglish` uses `boost::algorithm::split` with `token_compress_on` for whitespace tolerance. The asymmetry between encoder (no return code — cannot fail on valid input) and decoder (4-valued return code) is intentional: encoding is lossless, decoding must validate user input.
+
 `getWordFromBlob` is a separate utility: Jenkins one-at-a-time hash → `% 2048` → one dictionary word. Explicitly **not** cryptographically secure; used in `NetworkOPs.cpp` for `shroudedHostId` (privacy-preserving node label in logs/RPC).
 
 ## Module Layout
@@ -108,26 +116,29 @@ These three are used together by the protocol-level key/seed types (`SecretKey`,
 
 - Constructor calls `RAND_poll()` eagerly to surface OS entropy failures at startup, not at first key gen
 - Destructor calls `RAND_cleanup()` only for OpenSSL `< 1.1.0` (modern versions clean up via `atexit`)
-- Thread-safety mutex is compile-time gated: `#if (OPENSSL_VERSION_NUMBER < 0x10100000L) || !defined(OPENSSL_THREADS)` — modern builds elide the lock on the hot path because `RAND_bytes` is internally thread-safe
-- `mix_entropy` always holds the mutex around `RAND_add`; reads from `std::random_device` happen before locking (independently thread-safe)
-- `mix_entropy` passes entropy estimate `0` to `RAND_add` — never claim entropy for `std::random_device` or caller-supplied buffers (they may be weak on some platforms)
+- Thread-safety mutex is compile-time gated: `#if (OPENSSL_VERSION_NUMBER < 0x10100000L) || !defined(OPENSSL_THREADS)` — modern builds elide the lock on the hot path because `RAND_bytes` is internally thread-safe. The mutex is *always* held around `RAND_add` in `mix_entropy` regardless of version.
+- `mix_entropy` reads 128 values from `std::random_device` *before* locking (independently thread-safe), then locks for `RAND_add`
+- `mix_entropy` passes entropy estimate `0` to `RAND_add` — never claim entropy for `std::random_device` or caller-supplied buffers (they may be weak on some platforms; conservative accounting prevents prematurely satisfying OpenSSL's seeding threshold)
 - Called on a timer from `Application.cpp` to stir fresh OS entropy during the node's lifetime
 - Singleton is a function-local `static` (Meyers singleton); C++11 guarantees thread-safe one-time init
+- Scalar `operator()()` delegates to buffer-fill overload with `sizeof(result_type)` (8 bytes) — both paths share validation/error handling
+- Wrapping behind a single `xrpl::secure_erase` function lets the strategy change (e.g., to `explicit_bzero`) at one auditable choke point without touching call sites
 
 ### RFC 1751 Internals Worth Knowing
 
-- `extract(s, start, length)` / `insert(s, x, start, length)`: read/write `length ≤ 11` bits at arbitrary offset across a 9-byte buffer; guarded by `XRPL_ASSERT` (stripped in release)
+- `extract(s, start, length)` / `insert(s, x, start, length)`: read/write `length ≤ 11` bits at arbitrary offset across a 9-byte buffer; guarded by `XRPL_ASSERT` (stripped in release). Both work across byte boundaries by assembling 2–3 adjacent bytes.
 - `insert` uses bitwise OR (not assignment), so the output buffer must start zero-initialized; partial writes accumulate safely
 - `btoe` adds a 9th byte for the 2-bit parity computed by summing all 32 pairs of bits across the 64-bit payload; parity occupies bit positions 64–65
-- `etob` validates: exactly 6 words, each 1–4 chars, all in dictionary, parity matches — distinct error codes per failure mode
-- `getKeyFromEnglish` uses `boost::algorithm::split` with `token_compress_on` for whitespace tolerance
+- `etob` validates: exactly 6 words, each 1–4 chars, all in dictionary, parity matches — distinct error codes per failure mode (`0` unknown, `-1` malformed, `-2` parity)
+- `wsrch` halves the binary search range based on input word length: `[0, 571)` for 1–3 char words, `[571, 2048)` for 4-char words
+- No exceptions used anywhere in RFC1751 — all errors are integer return codes
 
 ## Key Files
 
 - `include/xrpl/protocol/SecretKey.h` / `PublicKey.h` — key types
 - `src/libxrpl/protocol/SecretKey.cpp` — signing, key generation; canonical example of CSPRNG + `secure_erase` discipline
 - `src/libxrpl/protocol/PublicKey.cpp` — verification
-- `src/libxrpl/protocol/Seed.cpp` — 128-bit seed; uses RFC 1751 for mnemonic encoding
+- `src/libxrpl/protocol/Seed.cpp` — 128-bit seed; uses RFC 1751 for mnemonic encoding (reverses bytes for big-endian convention)
 - `include/xrpl/protocol/digest.h` — hash functions (`sha512Half`, `ripesha_hasher`, etc.)
 - `include/xrpl/crypto/csprng.h` + `src/libxrpl/crypto/csprng.cpp` — CSPRNG engine and singleton
 - `include/xrpl/crypto/secure_erase.h` + `src/libxrpl/crypto/secure_erase.cpp` — memory wipe primitive
