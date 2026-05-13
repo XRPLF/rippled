@@ -215,29 +215,29 @@ Every span can carry key-value attributes that provide context for filtering and
 
 #### RPC Attributes
 
-| Attribute               | Type   | Set On          | Description                                      |
-| ----------------------- | ------ | --------------- | ------------------------------------------------ |
-| `xrpl.rpc.command`      | string | `rpc.command.*` | RPC command name (e.g., `server_info`, `ledger`) |
-| `xrpl.rpc.version`      | int64  | `rpc.command.*` | API version number                               |
-| `xrpl.rpc.role`         | string | `rpc.command.*` | Caller role: `"admin"` or `"user"`               |
-| `xrpl.rpc.status`       | string | `rpc.command.*` | Result: `"success"` or `"error"`                 |
-| `xrpl.rpc.payload_size` | int64  | `rpc.command.*` | Request payload size in bytes                    |
+| Attribute              | Type   | Set On          | Description                                      |
+| ---------------------- | ------ | --------------- | ------------------------------------------------ |
+| `command`              | string | `rpc.command.*` | RPC command name (e.g., `server_info`, `ledger`) |
+| `version`              | int64  | `rpc.command.*` | API version number                               |
+| `rpc_role`             | string | `rpc.command.*` | Caller role: `"admin"` or `"user"`               |
+| `rpc_status`           | string | `rpc.command.*` | Result: `"success"` or `"error"`                 |
+| `request_payload_size` | int64  | `rpc.command.*` | Request payload size in bytes                    |
 
-**Tempo query**: `{span.xrpl.rpc.command="server_info"}` to find all `server_info` calls.
+**Tempo query**: `{span.command="server_info"}` to find all `server_info` calls.
 
 **Prometheus label**: `xrpl_rpc_command` (dots converted to underscores by SpanMetrics).
 
 #### Transaction Attributes
 
-| Attribute            | Type    | Set On                     | Description                                          |
-| -------------------- | ------- | -------------------------- | ---------------------------------------------------- |
-| `xrpl.tx.hash`       | string  | `tx.process`, `tx.receive` | Transaction hash (hex-encoded)                       |
-| `xrpl.tx.local`      | boolean | `tx.process`               | `true` if locally submitted, `false` if peer-relayed |
-| `xrpl.tx.path`       | string  | `tx.process`               | Submission path: `"sync"` or `"async"`               |
-| `xrpl.tx.suppressed` | boolean | `tx.receive`               | `true` if transaction was suppressed (duplicate)     |
-| `xrpl.tx.status`     | string  | `tx.receive`               | Transaction status (e.g., `"known_bad"`)             |
-| `xrpl.peer.id`       | int64   | `tx.receive`               | Peer identifier (also set on peer spans)             |
-| `xrpl.peer.version`  | string  | `tx.receive`               | Peer protocol version string                         |
+| Attribute           | Type    | Set On                     | Description                                          |
+| ------------------- | ------- | -------------------------- | ---------------------------------------------------- |
+| `xrpl.tx.hash`      | string  | `tx.process`, `tx.receive` | Transaction hash (hex-encoded)                       |
+| `local`             | boolean | `tx.process`               | `true` if locally submitted, `false` if peer-relayed |
+| `path`              | string  | `tx.process`               | Submission path: `"sync"` or `"async"`               |
+| `suppressed`        | boolean | `tx.receive`               | `true` if transaction was suppressed (duplicate)     |
+| `tx_status`         | string  | `tx.receive`               | Transaction status (e.g., `"known_bad"`)             |
+| `xrpl.peer.id`      | int64   | `tx.receive`               | Peer identifier (also set on peer spans)             |
+| `xrpl.peer.version` | string  | `tx.receive`               | Peer protocol version string                         |
 
 **Tempo query**: `{span.xrpl.tx.hash="<hash>"}` to trace a specific transaction across nodes.
 
@@ -245,86 +245,86 @@ Every span can carry key-value attributes that provide context for filtering and
 
 #### PathFind Attributes
 
-| Attribute                          | Type    | Set On                | Description                                     |
-| ---------------------------------- | ------- | --------------------- | ----------------------------------------------- |
-| `xrpl.pathfind.source_account`     | string  | `pathfind.request`    | Source account address                          |
-| `xrpl.pathfind.dest_account`       | string  | `pathfind.request`    | Destination account address                     |
-| `xrpl.pathfind.fast`               | boolean | `pathfind.compute`    | Whether this is a fast (non-full) pathfind      |
-| `xrpl.pathfind.search_level`       | int64   | `pathfind.compute`    | Search depth level                              |
-| `xrpl.pathfind.num_complete_paths` | int64   | `pathfind.compute`    | Number of complete paths found                  |
-| `xrpl.pathfind.num_paths`          | int64   | `pathfind.compute`    | Total number of paths explored                  |
-| `xrpl.pathfind.num_requests`       | int64   | `pathfind.update_all` | Number of active path requests being recomputed |
-| `xrpl.pathfind.ledger_index`       | int64   | `pathfind.update_all` | Ledger index used for recomputation             |
+| Attribute                    | Type    | Set On                | Description                                     |
+| ---------------------------- | ------- | --------------------- | ----------------------------------------------- |
+| `source_account`             | string  | `pathfind.request`    | Source account address                          |
+| `dest_account`               | string  | `pathfind.request`    | Destination account address                     |
+| `fast`                       | boolean | `pathfind.compute`    | Whether this is a fast (non-full) pathfind      |
+| `search_level`               | int64   | `pathfind.compute`    | Search depth level                              |
+| `num_complete_paths`         | int64   | `pathfind.compute`    | Number of complete paths found                  |
+| `num_paths`                  | int64   | `pathfind.compute`    | Total number of paths explored                  |
+| `num_requests`               | int64   | `pathfind.update_all` | Number of active path requests being recomputed |
+| `xrpl.pathfind.ledger_index` | int64   | `pathfind.update_all` | Ledger index used for recomputation             |
 
-**Tempo query**: `{span.xrpl.pathfind.source_account="rHb9..."}` to find pathfind requests from a specific account.
+**Tempo query**: `{span.source_account="rHb9..."}` to find pathfind requests from a specific account.
 
 #### TxQ Attributes
 
-| Attribute                     | Type    | Set On                         | Description                                                |
-| ----------------------------- | ------- | ------------------------------ | ---------------------------------------------------------- |
-| `xrpl.txq.tx_hash`            | string  | `txq.enqueue`, `txq.accept.tx` | Transaction hash in the queue                              |
-| `xrpl.txq.status`             | string  | `txq.enqueue`                  | Queue result: `"queued"`, `"applied_direct"`, `"rejected"` |
-| `xrpl.txq.fee_level_paid`     | int64   | `txq.enqueue`                  | Fee level paid by the transaction                          |
-| `xrpl.txq.required_fee_level` | int64   | `txq.enqueue`                  | Minimum fee level required for queue admission             |
-| `xrpl.txq.queue_size`         | int64   | `txq.accept`                   | Queue depth at start of accept                             |
-| `xrpl.txq.ledger_changed`     | boolean | `txq.accept`                   | Whether the open ledger changed since last accept          |
-| `xrpl.txq.ledger_seq`         | int64   | `txq.cleanup`                  | Ledger sequence for cleanup                                |
-| `xrpl.txq.expired_count`      | int64   | `txq.cleanup`                  | Number of expired transactions removed                     |
-| `xrpl.txq.ter_code`           | string  | `txq.accept.tx`                | Transaction engine result code                             |
-| `xrpl.txq.retries_remaining`  | int64   | `txq.accept.tx`                | Remaining retry attempts for this transaction              |
-| `xrpl.txq.num_cleared`        | int64   | `txq.batch_clear`              | Number of transactions cleared in batch                    |
+| Attribute            | Type    | Set On                         | Description                                                |
+| -------------------- | ------- | ------------------------------ | ---------------------------------------------------------- |
+| `xrpl.tx.hash`       | string  | `txq.enqueue`, `txq.accept.tx` | Transaction hash in the queue                              |
+| `txq_status`         | string  | `txq.enqueue`                  | Queue result: `"queued"`, `"applied_direct"`, `"rejected"` |
+| `fee_level_paid`     | int64   | `txq.enqueue`                  | Fee level paid by the transaction                          |
+| `required_fee_level` | int64   | `txq.enqueue`                  | Minimum fee level required for queue admission             |
+| `queue_size`         | int64   | `txq.accept`                   | Queue depth at start of accept                             |
+| `ledger_changed`     | boolean | `txq.accept`                   | Whether the open ledger changed since last accept          |
+| `xrpl.ledger.seq`    | int64   | `txq.cleanup`                  | Ledger sequence for cleanup                                |
+| `expired_count`      | int64   | `txq.cleanup`                  | Number of expired transactions removed                     |
+| `ter_code`           | string  | `txq.accept.tx`                | Transaction engine result code                             |
+| `retries_remaining`  | int64   | `txq.accept.tx`                | Remaining retry attempts for this transaction              |
+| `num_cleared`        | int64   | `txq.batch_clear`              | Number of transactions cleared in batch                    |
 
-**Tempo query**: `{span.xrpl.txq.status="rejected"}` to find rejected queue attempts.
+**Tempo query**: `{span.txq_status="rejected"}` to find rejected queue attempts.
 
 #### gRPC Attributes
 
-| Attribute          | Type   | Set On         | Description                                                  |
-| ------------------ | ------ | -------------- | ------------------------------------------------------------ |
-| `xrpl.grpc.method` | string | `grpc.request` | gRPC method name (e.g., `GetLedger`, `GetLedgerData`)        |
-| `xrpl.grpc.role`   | string | `grpc.request` | Caller role: `"admin"` or `"user"`                           |
-| `xrpl.grpc.status` | string | `grpc.request` | Result: `"success"`, `"error"`, `"resource_exhausted"`, etc. |
+| Attribute    | Type   | Set On         | Description                                                  |
+| ------------ | ------ | -------------- | ------------------------------------------------------------ |
+| `method`     | string | `grpc.request` | gRPC method name (e.g., `GetLedger`, `GetLedgerData`)        |
+| `rpc_role`   | string | `grpc.request` | Caller role: `"admin"` or `"user"`                           |
+| `rpc_status` | string | `grpc.request` | Result: `"success"`, `"error"`, `"resource_exhausted"`, etc. |
 
-**Tempo query**: `{span.xrpl.grpc.method="GetLedger"}` to find gRPC ledger requests.
+**Tempo query**: `{span.method="GetLedger"}` to find gRPC ledger requests.
 
 #### Consensus Attributes
 
-| Attribute                                  | Type    | Set On                                                                                                                 | Description                                                           |
-| ------------------------------------------ | ------- | ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| `xrpl.consensus.ledger_id`                 | string  | `consensus.round`                                                                                                      | Previous ledger hash (used for deterministic trace ID)                |
-| `xrpl.consensus.ledger.seq`                | int64   | `consensus.round`, `consensus.ledger_close`, `consensus.accept`, `consensus.validation.send`, `consensus.accept.apply` | Ledger sequence number                                                |
-| `xrpl.consensus.mode`                      | string  | `consensus.round`, `consensus.proposal.send`, `consensus.ledger_close`                                                 | Node mode via `toDisplayString()`: `"Proposing"`, `"Observing"`, etc. |
-| `xrpl.consensus.round`                     | int64   | `consensus.proposal.send`                                                                                              | Consensus round number                                                |
-| `xrpl.consensus.proposers`                 | int64   | `consensus.proposal.send`, `consensus.accept`                                                                          | Number of proposers in the round                                      |
-| `xrpl.consensus.round_time_ms`             | int64   | `consensus.accept`, `consensus.accept.apply`                                                                           | Total consensus round duration in milliseconds                        |
-| `xrpl.consensus.proposing`                 | boolean | `consensus.validation.send`                                                                                            | Whether this node was a proposer                                      |
-| `xrpl.consensus.state`                     | string  | `consensus.accept.apply`                                                                                               | Consensus outcome: `"finished"` or `"moved_on"`                       |
-| `xrpl.consensus.close_time`                | int64   | `consensus.accept.apply`                                                                                               | Agreed-upon ledger close time (epoch seconds)                         |
-| `xrpl.consensus.close_time_correct`        | boolean | `consensus.accept.apply`                                                                                               | Whether validators reached agreement on close time                    |
-| `xrpl.consensus.close_resolution_ms`       | int64   | `consensus.accept.apply`                                                                                               | Close time rounding granularity in milliseconds                       |
-| `xrpl.consensus.parent_close_time`         | int64   | `consensus.accept.apply`                                                                                               | Parent ledger's close time (epoch seconds)                            |
-| `xrpl.consensus.close_time_self`           | int64   | `consensus.accept.apply`                                                                                               | This node's proposed close time                                       |
-| `xrpl.consensus.close_time_vote_bins`      | string  | `consensus.accept.apply`                                                                                               | Histogram of close time votes from validators                         |
-| `xrpl.consensus.resolution_direction`      | string  | `consensus.accept.apply`                                                                                               | Resolution change: `"increased"`, `"decreased"`, or `"unchanged"`     |
-| `xrpl.consensus.converge_percent`          | int64   | `consensus.establish`                                                                                                  | Convergence percentage threshold                                      |
-| `xrpl.consensus.establish_count`           | int64   | `consensus.establish`                                                                                                  | Number of establish iterations completed                              |
-| `xrpl.consensus.proposers_agreed`          | int64   | `consensus.establish`                                                                                                  | Number of proposers that agreed on this round                         |
-| `xrpl.consensus.avalanche_threshold`       | int64   | `consensus.update_positions`                                                                                           | Avalanche threshold for dispute resolution                            |
-| `xrpl.consensus.close_time_threshold`      | int64   | `consensus.update_positions`                                                                                           | Close time agreement threshold                                        |
-| `xrpl.consensus.have_close_time_consensus` | boolean | `consensus.update_positions`                                                                                           | Whether close time consensus has been reached                         |
-| `xrpl.consensus.agree_count`               | int64   | `consensus.check`                                                                                                      | Number of proposers that agree with our position                      |
-| `xrpl.consensus.disagree_count`            | int64   | `consensus.check`                                                                                                      | Number of proposers that disagree with our position                   |
-| `xrpl.consensus.threshold_percent`         | int64   | `consensus.check`                                                                                                      | Required agreement threshold percentage                               |
-| `xrpl.consensus.result`                    | string  | `consensus.check`                                                                                                      | Check result: `"yes"`, `"no"`, or `"expired"`                         |
-| `xrpl.consensus.quorum`                    | int64   | `consensus.check`                                                                                                      | Required quorum for validation                                        |
-| `xrpl.consensus.validation_count`          | int64   | `consensus.check`                                                                                                      | Number of validations received                                        |
-| `xrpl.consensus.trace_strategy`            | string  | `consensus.round`                                                                                                      | Trace sampling strategy used for this round                           |
-| `xrpl.consensus.round_id`                  | string  | `consensus.round`                                                                                                      | Deterministic round identifier                                        |
-| `xrpl.consensus.mode.old`                  | string  | `consensus.mode_change`                                                                                                | Previous consensus mode                                               |
-| `xrpl.consensus.mode.new`                  | string  | `consensus.mode_change`                                                                                                | New consensus mode                                                    |
-| `xrpl.tx.id`                               | string  | `consensus.update_positions`                                                                                           | Disputed transaction ID                                               |
-| `xrpl.dispute.our_vote`                    | boolean | `consensus.update_positions`                                                                                           | Our vote on the disputed transaction                                  |
-| `xrpl.dispute.yays`                        | int64   | `consensus.update_positions`                                                                                           | Number of proposers voting to include                                 |
-| `xrpl.dispute.nays`                        | int64   | `consensus.update_positions`                                                                                           | Number of proposers voting to exclude                                 |
+| Attribute                   | Type    | Set On                                                                                                                 | Description                                                           |
+| --------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `xrpl.consensus.ledger_id`  | string  | `consensus.round`                                                                                                      | Previous ledger hash (used for deterministic trace ID)                |
+| `xrpl.ledger.seq`           | int64   | `consensus.round`, `consensus.ledger_close`, `consensus.accept`, `consensus.validation.send`, `consensus.accept.apply` | Ledger sequence number                                                |
+| `xrpl.consensus.mode`       | string  | `consensus.round`, `consensus.proposal.send`, `consensus.ledger_close`                                                 | Node mode via `toDisplayString()`: `"Proposing"`, `"Observing"`, etc. |
+| `xrpl.consensus.round`      | int64   | `consensus.proposal.send`                                                                                              | Consensus round number                                                |
+| `proposers`                 | int64   | `consensus.proposal.send`, `consensus.accept`                                                                          | Number of proposers in the round                                      |
+| `round_time_ms`             | int64   | `consensus.accept`, `consensus.accept.apply`                                                                           | Total consensus round duration in milliseconds                        |
+| `proposing`                 | boolean | `consensus.validation.send`                                                                                            | Whether this node was a proposer                                      |
+| `consensus_state`           | string  | `consensus.accept.apply`                                                                                               | Consensus outcome: `"finished"` or `"moved_on"`                       |
+| `close_time`                | int64   | `consensus.accept.apply`                                                                                               | Agreed-upon ledger close time (epoch seconds)                         |
+| `close_time_correct`        | boolean | `consensus.accept.apply`                                                                                               | Whether validators reached agreement on close time                    |
+| `close_resolution_ms`       | int64   | `consensus.accept.apply`                                                                                               | Close time rounding granularity in milliseconds                       |
+| `parent_close_time`         | int64   | `consensus.accept.apply`                                                                                               | Parent ledger's close time (epoch seconds)                            |
+| `close_time_self`           | int64   | `consensus.accept.apply`                                                                                               | This node's proposed close time                                       |
+| `close_time_vote_bins`      | string  | `consensus.accept.apply`                                                                                               | Histogram of close time votes from validators                         |
+| `resolution_direction`      | string  | `consensus.accept.apply`                                                                                               | Resolution change: `"increased"`, `"decreased"`, or `"unchanged"`     |
+| `converge_percent`          | int64   | `consensus.establish`                                                                                                  | Convergence percentage threshold                                      |
+| `establish_count`           | int64   | `consensus.establish`                                                                                                  | Number of establish iterations completed                              |
+| `proposers_agreed`          | int64   | `consensus.establish`                                                                                                  | Number of proposers that agreed on this round                         |
+| `avalanche_threshold`       | int64   | `consensus.update_positions`                                                                                           | Avalanche threshold for dispute resolution                            |
+| `close_time_threshold`      | int64   | `consensus.update_positions`                                                                                           | Close time agreement threshold                                        |
+| `have_close_time_consensus` | boolean | `consensus.update_positions`                                                                                           | Whether close time consensus has been reached                         |
+| `agree_count`               | int64   | `consensus.check`                                                                                                      | Number of proposers that agree with our position                      |
+| `disagree_count`            | int64   | `consensus.check`                                                                                                      | Number of proposers that disagree with our position                   |
+| `threshold_percent`         | int64   | `consensus.check`                                                                                                      | Required agreement threshold percentage                               |
+| `consensus_result`          | string  | `consensus.check`                                                                                                      | Check result: `"yes"`, `"no"`, or `"expired"`                         |
+| `quorum`                    | int64   | `consensus.check`                                                                                                      | Required quorum for validation                                        |
+| `validation_count`          | int64   | `consensus.check`                                                                                                      | Number of validations received                                        |
+| `trace_strategy`            | string  | `consensus.round`                                                                                                      | Trace sampling strategy used for this round                           |
+| `xrpl.consensus.round_id`   | string  | `consensus.round`                                                                                                      | Deterministic round identifier                                        |
+| `xrpl.consensus.mode.old`   | string  | `consensus.mode_change`                                                                                                | Previous consensus mode                                               |
+| `xrpl.consensus.mode.new`   | string  | `consensus.mode_change`                                                                                                | New consensus mode                                                    |
+| `xrpl.tx.id`                | string  | `consensus.update_positions`                                                                                           | Disputed transaction ID                                               |
+| `dispute_our_vote`          | boolean | `consensus.update_positions`                                                                                           | Our vote on the disputed transaction                                  |
+| `dispute_yays`              | int64   | `consensus.update_positions`                                                                                           | Number of proposers voting to include                                 |
+| `dispute_nays`              | int64   | `consensus.update_positions`                                                                                           | Number of proposers voting to exclude                                 |
 
 **Tempo query**: `{span.xrpl.consensus.mode="Proposing"}` to find rounds where node was proposing.
 
@@ -332,27 +332,27 @@ Every span can carry key-value attributes that provide context for filtering and
 
 #### Ledger Attributes
 
-| Attribute                         | Type    | Set On                                                        | Description                                      |
-| --------------------------------- | ------- | ------------------------------------------------------------- | ------------------------------------------------ |
-| `xrpl.ledger.seq`                 | int64   | `ledger.build`, `ledger.validate`, `ledger.store`, `tx.apply` | Ledger sequence number                           |
-| `xrpl.ledger.close_time`          | int64   | `ledger.build`                                                | Ledger close time (epoch seconds)                |
-| `xrpl.ledger.close_time_correct`  | boolean | `ledger.build`                                                | Whether close time was agreed upon by validators |
-| `xrpl.ledger.close_resolution_ms` | int64   | `ledger.build`                                                | Close time rounding granularity in milliseconds  |
-| `xrpl.ledger.tx_count`            | int64   | `ledger.build`, `tx.apply`                                    | Transactions in the ledger                       |
-| `xrpl.ledger.tx_failed`           | int64   | `ledger.build`, `tx.apply`                                    | Failed transactions in the ledger                |
-| `xrpl.ledger.validations`         | int64   | `ledger.validate`                                             | Number of validations received for this ledger   |
+| Attribute             | Type    | Set On                                                        | Description                                      |
+| --------------------- | ------- | ------------------------------------------------------------- | ------------------------------------------------ |
+| `xrpl.ledger.seq`     | int64   | `ledger.build`, `ledger.validate`, `ledger.store`, `tx.apply` | Ledger sequence number                           |
+| `close_time`          | int64   | `ledger.build`                                                | Ledger close time (epoch seconds)                |
+| `close_time_correct`  | boolean | `ledger.build`                                                | Whether close time was agreed upon by validators |
+| `close_resolution_ms` | int64   | `ledger.build`                                                | Close time rounding granularity in milliseconds  |
+| `tx_count`            | int64   | `ledger.build`, `tx.apply`                                    | Transactions in the ledger                       |
+| `tx_failed`           | int64   | `ledger.build`, `tx.apply`                                    | Failed transactions in the ledger                |
+| `validations`         | int64   | `ledger.validate`                                             | Number of validations received for this ledger   |
 
 **Tempo query**: `{span.xrpl.ledger.seq=12345}` to find all spans for a specific ledger.
 
 #### Peer Attributes
 
-| Attribute                          | Type    | Set On                                                           | Description                                          |
-| ---------------------------------- | ------- | ---------------------------------------------------------------- | ---------------------------------------------------- |
-| `xrpl.peer.id`                     | int64   | `tx.receive`, `peer.proposal.receive`, `peer.validation.receive` | Peer identifier                                      |
-| `xrpl.peer.proposal.trusted`       | boolean | `peer.proposal.receive`                                          | Whether the proposal came from a trusted validator   |
-| `xrpl.peer.validation.ledger_hash` | string  | `peer.validation.receive`                                        | Ledger hash the validation refers to                 |
-| `xrpl.peer.validation.full`        | boolean | `peer.validation.receive`                                        | Whether this is a full (not partial) validation      |
-| `xrpl.peer.validation.trusted`     | boolean | `peer.validation.receive`                                        | Whether the validation came from a trusted validator |
+| Attribute            | Type    | Set On                                                           | Description                                          |
+| -------------------- | ------- | ---------------------------------------------------------------- | ---------------------------------------------------- |
+| `xrpl.peer.id`       | int64   | `tx.receive`, `peer.proposal.receive`, `peer.validation.receive` | Peer identifier                                      |
+| `proposal_trusted`   | boolean | `peer.proposal.receive`                                          | Whether the proposal came from a trusted validator   |
+| `xrpl.ledger.hash`   | string  | `peer.validation.receive`                                        | Ledger hash the validation refers to                 |
+| `validation_full`    | boolean | `peer.validation.receive`                                        | Whether this is a full (not partial) validation      |
+| `validation_trusted` | boolean | `peer.validation.receive`                                        | Whether the validation came from a trusted validator |
 
 **Prometheus labels**: `xrpl_peer_proposal_trusted`, `xrpl_peer_validation_trusted` (SpanMetrics dimensions).
 
@@ -375,14 +375,14 @@ The OTel Collector's SpanMetrics connector automatically generates RED (Rate, Er
 
 **Additional dimension labels** (configured in `otel-collector-config.yaml`):
 
-| Span Attribute                 | Prometheus Label               | Applies To                |
-| ------------------------------ | ------------------------------ | ------------------------- |
-| `xrpl.rpc.command`             | `xrpl_rpc_command`             | `rpc.command.*`           |
-| `xrpl.rpc.status`              | `xrpl_rpc_status`              | `rpc.command.*`           |
-| `xrpl.consensus.mode`          | `xrpl_consensus_mode`          | `consensus.ledger_close`  |
-| `xrpl.tx.local`                | `xrpl_tx_local`                | `tx.process`              |
-| `xrpl.peer.proposal.trusted`   | `xrpl_peer_proposal_trusted`   | `peer.proposal.receive`   |
-| `xrpl.peer.validation.trusted` | `xrpl_peer_validation_trusted` | `peer.validation.receive` |
+| Span Attribute        | Prometheus Label               | Applies To                |
+| --------------------- | ------------------------------ | ------------------------- |
+| `command`             | `xrpl_rpc_command`             | `rpc.command.*`           |
+| `rpc_status`          | `xrpl_rpc_status`              | `rpc.command.*`           |
+| `xrpl.consensus.mode` | `xrpl_consensus_mode`          | `consensus.ledger_close`  |
+| `local`               | `xrpl_tx_local`                | `tx.process`              |
+| `proposal_trusted`    | `xrpl_peer_proposal_trusted`   | `peer.proposal.receive`   |
+| `validation_trusted`  | `xrpl_peer_validation_trusted` | `peer.validation.receive` |
 
 **Where to query**: Prometheus → `traces_span_metrics_calls_total{span_name="rpc.command.server_info"}`
 
@@ -545,13 +545,13 @@ Special job types (`limit=0`: `peerCommand`, `diskAccess`, `processTransaction`,
 
 The Consensus Health dashboard includes 5 close-time panels added in Phase 4:
 
-| Panel                        | Metric / Attribute                                              | Description                                                              |
-| ---------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| Close Time Correctness       | `xrpl.consensus.close_time_correct`                             | Percentage of rounds with agreed-upon close time                         |
-| Resolution Direction         | `xrpl.consensus.resolution_direction`                           | Rate of resolution increases, decreases, and unchanged per time interval |
-| Close Time Drift             | `xrpl.consensus.close_time` vs `xrpl.consensus.close_time_self` | Difference between agreed close time and node's own proposed close time  |
-| Resolution Change Timeline   | `xrpl.consensus.close_resolution_ms`                            | Close time resolution granularity over time                              |
-| Close Time Vote Distribution | `xrpl.consensus.close_time_vote_bins`                           | Histogram of validator close time votes per round                        |
+| Panel                        | Metric / Attribute                | Description                                                              |
+| ---------------------------- | --------------------------------- | ------------------------------------------------------------------------ |
+| Close Time Correctness       | `close_time_correct`              | Percentage of rounds with agreed-upon close time                         |
+| Resolution Direction         | `resolution_direction`            | Rate of resolution increases, decreases, and unchanged per time interval |
+| Close Time Drift             | `close_time` vs `close_time_self` | Difference between agreed close time and node's own proposed close time  |
+| Resolution Change Timeline   | `close_resolution_ms`             | Close time resolution granularity over time                              |
+| Close Time Vote Distribution | `close_time_vote_bins`            | Histogram of validator close time votes per round                        |
 
 **Template variables** (Consensus Health dashboard):
 
@@ -580,13 +580,13 @@ The Consensus Health dashboard includes 5 close-time panels added in Phase 4:
 | All RPC calls            | `{resource.service.name="xrpld" && name="rpc.http_request"}`                   |
 | Specific RPC command     | `{resource.service.name="xrpld" && name="rpc.command.server_info"}`            |
 | Slow RPC calls           | `{resource.service.name="xrpld" && name=~"rpc.command.*"} \| duration > 100ms` |
-| Failed RPC calls         | `{span.xrpl.rpc.status="error"}`                                               |
+| Failed RPC calls         | `{span.rpc_status="error"}`                                                    |
 | Specific transaction     | `{span.xrpl.tx.hash="<hex_hash>"}`                                             |
-| Local transactions only  | `{span.xrpl.tx.local=true}`                                                    |
+| Local transactions only  | `{span.local=true}`                                                            |
 | Consensus rounds         | `{resource.service.name="xrpld" && name="consensus.accept"}`                   |
 | Rounds by mode           | `{span.xrpl.consensus.mode="proposing"}`                                       |
 | Specific ledger          | `{span.xrpl.ledger.seq=12345}`                                                 |
-| Peer proposals (trusted) | `{span.xrpl.peer.proposal.trusted=true}`                                       |
+| Peer proposals (trusted) | `{span.proposal_trusted=true}`                                                 |
 
 ### Trace Structure
 
