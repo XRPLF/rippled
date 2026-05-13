@@ -186,11 +186,11 @@ json::Value
 JobQueue::getJson(int c)
 {
     using namespace std::chrono_literals;
-    json::Value ret(json::ObjectValue);
+    json::Value ret(json::ValueType::Object);
 
     ret["threads"] = workers_.getNumberOfThreads();
 
-    json::Value priorities = json::ArrayValue;
+    json::Value priorities = json::ValueType::Array;
 
     std::scoped_lock const lock(mutex_);
 
@@ -210,7 +210,7 @@ JobQueue::getJson(int c)
 
         if ((stats.count != 0) || (waiting != 0) || (stats.latencyPeak != 0ms) || (running != 0))
         {
-            json::Value& pri = priorities.append(json::ObjectValue);
+            json::Value& pri = priorities.append(json::ValueType::Object);
 
             pri["job_type"] = data.name();
 

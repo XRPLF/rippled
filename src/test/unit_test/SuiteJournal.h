@@ -14,7 +14,7 @@ class SuiteJournalSink : public beast::Journal::Sink
 public:
     SuiteJournalSink(
         std::string const& partition,
-        beast::severities::Severity threshold,
+        beast::Severity threshold,
         beast::unit_test::Suite& suite)
         : Sink(threshold, false), partition_(partition + " "), suite_(suite)
     {
@@ -22,20 +22,20 @@ public:
 
     // For unit testing, always generate logging text.
     [[nodiscard]] bool
-    active(beast::severities::Severity level) const override
+    active(beast::Severity level) const override
     {
         return true;
     }
 
     void
-    write(beast::severities::Severity level, std::string const& text) override;
+    write(beast::Severity level, std::string const& text) override;
 
     void
-    writeAlways(beast::severities::Severity level, std::string const& text) override;
+    writeAlways(beast::Severity level, std::string const& text) override;
 };
 
 inline void
-SuiteJournalSink::write(beast::severities::Severity level, std::string const& text)
+SuiteJournalSink::write(beast::Severity level, std::string const& text)
 {
     // Only write the string if the level at least equals the threshold.
     if (level >= threshold())
@@ -43,26 +43,26 @@ SuiteJournalSink::write(beast::severities::Severity level, std::string const& te
 }
 
 inline void
-SuiteJournalSink::writeAlways(beast::severities::Severity level, std::string const& text)
+SuiteJournalSink::writeAlways(beast::Severity level, std::string const& text)
 {
-    using namespace beast::severities;
+    using beast::Severity;
 
     char const* const s = [level]() {
         switch (level)
         {
-            case KTrace:
+            case Severity::Trace:
                 return "TRC:";
-            case KDebug:
+            case Severity::Debug:
                 return "DBG:";
-            case KInfo:
+            case Severity::Info:
                 return "INF:";
-            case KWarning:
+            case Severity::Warning:
                 return "WRN:";
-            case KError:
+            case Severity::Error:
                 return "ERR:";
             default:
                 break;
-            case KFatal:
+            case Severity::Fatal:
                 break;
         }
         return "FTL:";
@@ -82,7 +82,7 @@ public:
     SuiteJournal(
         std::string const& partition,
         beast::unit_test::Suite& suite,
-        beast::severities::Severity threshold = beast::severities::KFatal)
+        beast::Severity threshold = beast::Severity::Fatal)
         : sink_(partition, threshold, suite), journal_(sink_)
     {
     }
@@ -100,13 +100,12 @@ class StreamSink : public beast::Journal::Sink
     std::stringstream strm_;
 
 public:
-    StreamSink(beast::severities::Severity threshold = beast::severities::KDebug)
-        : Sink(threshold, false)
+    StreamSink(beast::Severity threshold = beast::Severity::Debug) : Sink(threshold, false)
     {
     }
 
     void
-    write(beast::severities::Severity level, std::string const& text) override
+    write(beast::Severity level, std::string const& text) override
     {
         if (level < threshold())
             return;
@@ -114,7 +113,7 @@ public:
     }
 
     void
-    writeAlways(beast::severities::Severity level, std::string const& text) override
+    writeAlways(beast::Severity level, std::string const& text) override
     {
         strm_ << text << std::endl;
     }

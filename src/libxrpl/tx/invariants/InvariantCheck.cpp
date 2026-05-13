@@ -467,7 +467,7 @@ AccountRootsDeletedClean::finalize(
     // transaction processing results, however unlikely, only fail if the
     // feature is enabled. Enabled, or not, though, a fatal-level message will
     // be logged
-    [[maybe_unused]] bool const enforce = view.rules().enabled(featureInvariantsV1_1) ||
+    [[maybe_unused]] bool const enforce = view.rules().enabled(fixCleanup3_2_0) ||
         view.rules().enabled(featureSingleAssetVault) ||
         view.rules().enabled(featureLendingProtocol);
 

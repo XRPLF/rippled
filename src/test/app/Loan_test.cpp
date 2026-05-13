@@ -25,6 +25,8 @@
 #include <test/jtx/utility.h>
 #include <test/jtx/vault.h>
 
+#include <xrpld/rpc/detail/Handler.h>
+
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
@@ -368,16 +370,11 @@ protected:
                         env.balance(vaultPseudo, broker.asset).number());
                     if (ownerCount == 0)
                     {
-                        // Allow some slop for rounding IOUs
-
-                        // TODO: This needs to be an exact match once all the
-                        // other rounding issues are worked out.
+                        // The Vault must be perfectly balanced if there
+                        // are no loans outstanding
                         auto const total = vaultSle->at(sfAssetsTotal);
                         auto const available = vaultSle->at(sfAssetsAvailable);
-                        env.test.BEAST_EXPECT(
-                            total == available ||
-                            (!broker.asset.integral() && available != 0 &&
-                             ((total - available) / available < Number(1, -6))));
+                        env.test.BEAST_EXPECT(total == available);
                         env.test.BEAST_EXPECT(vaultSle->at(sfLossUnrealized) == 0);
                     }
                 }
@@ -3590,7 +3587,7 @@ protected:
 
         // Adding an empty counterparty signature object also fails, but
         // at the RPC level.
-        createJson = env.json(createJson, Json(sfCounterpartySignature, json::ObjectValue));
+        createJson = env.json(createJson, Json(sfCounterpartySignature, json::ValueType::Object));
         env(createJson, Ter(telENV_RPC_FAILED));
 
         if (auto const jt = env.jt(createJson); BEAST_EXPECT(jt.stx))
@@ -3608,7 +3605,7 @@ protected:
         }
 
         // Copy the transaction signature into the counterparty signature.
-        json::Value counterpartyJson{json::ObjectValue};
+        json::Value counterpartyJson{json::ValueType::Object};
         counterpartyJson[sfTxnSignature] = createJson[sfTxnSignature];
         counterpartyJson[sfSigningPubKey] = createJson[sfSigningPubKey];
         if (!BEAST_EXPECT(!createJson.isMember(jss::Signers)))
@@ -3640,7 +3637,7 @@ protected:
             }
         }
         auto const loanID = [&]() {
-            json::Value params(json::ObjectValue);
+            json::Value params(json::ValueType::Object);
             params[jss::account] = lender.human();
             params[jss::type] = "Loan";
             auto const res = env.rpc("json", "account_objects", to_string(params));
@@ -3717,9 +3714,9 @@ protected:
 
         auto forgedLoanSet = set(borrower, broker.brokerID, principalRequest, 0);
 
-        json::Value randomData{json::ObjectValue};
+        json::Value randomData{json::ValueType::Object};
         randomData[jss::SigningPubKey] = json::StaticString{"2600"};
-        json::Value sigObject{json::ObjectValue};
+        json::Value sigObject{json::ValueType::Object};
         sigObject[jss::SigningPubKey] = strHex(lender.pk().slice());
         Serializer ss;
         ss.add32(HashPrefix::TxSign);
@@ -3743,7 +3740,7 @@ protected:
 
         // ? Check that the loan was NOT created
         {
-            json::Value params(json::ObjectValue);
+            json::Value params(json::ValueType::Object);
             params[jss::account] = borrower.human();
             params[jss::type] = "Loan";
             auto const res = env.rpc("json", "account_objects", to_string(params));
@@ -3786,7 +3783,7 @@ protected:
 
         auto createJson = env.json(set(lender, broker.brokerID, principalRequest), Fee(loanSetFee));
 
-        json::Value counterpartyJson{json::ObjectValue};
+        json::Value counterpartyJson{json::ValueType::Object};
         counterpartyJson[sfTxnSignature] = createJson[sfTxnSignature];
         counterpartyJson[sfSigningPubKey] = createJson[sfSigningPubKey];
         if (!BEAST_EXPECT(!createJson.isMember(jss::Signers)))
@@ -3833,7 +3830,7 @@ protected:
             Fee(loanSetFee),
             kLOAN_SERVICE_FEE(serviceFee),
             kPAYMENT_TOTAL(numPayments),
-            Json(sfCounterpartySignature, json::ObjectValue));
+            Json(sfCounterpartySignature, json::ValueType::Object));
 
         createJson["CloseInterestRate"] = 55374;
         createJson["ClosePaymentFee"] = "3825205248";
@@ -3902,12 +3899,12 @@ protected:
 
         {
             testcase("RPC AccountSet");
-            json::Value txJson{json::ObjectValue};
+            json::Value txJson{json::ValueType::Object};
             txJson[sfTransactionType] = "AccountSet";
             txJson[sfAccount] = borrower.human();
 
             auto const signParams = [&]() {
-                json::Value signParams{json::ObjectValue};
+                json::Value signParams{json::ValueType::Object};
                 signParams[jss::passphrase] = borrowerPass;
                 signParams[jss::key_type] = "ed25519";
                 signParams[jss::tx_json] = txJson;
@@ -3936,12 +3933,12 @@ protected:
         {
             testcase("RPC LoanSet - illegal signature_target");
 
-            json::Value txJson{json::ObjectValue};
+            json::Value txJson{json::ValueType::Object};
             txJson[sfTransactionType] = "AccountSet";
             txJson[sfAccount] = borrower.human();
 
             auto const borrowerSignParams = [&]() {
-                json::Value params{json::ObjectValue};
+                json::Value params{json::ValueType::Object};
                 params[jss::passphrase] = borrowerPass;
                 params[jss::key_type] = "ed25519";
                 params[jss::signature_target] = "Destination";
@@ -3959,7 +3956,7 @@ protected:
         {
             testcase("RPC LoanSet - sign and submit borrower initiated");
             // 1. Borrower creates the transaction
-            json::Value txJson{json::ObjectValue};
+            json::Value txJson{json::ValueType::Object};
             txJson[sfTransactionType] = "LoanSet";
             txJson[sfAccount] = borrower.human();
             txJson[sfCounterparty] = lender.human();
@@ -3976,7 +3973,7 @@ protected:
 
             // 2. Borrower signs the transaction
             auto const borrowerSignParams = [&]() {
-                json::Value params{json::ObjectValue};
+                json::Value params{json::ValueType::Object};
                 params[jss::passphrase] = borrowerPass;
                 params[jss::key_type] = "ed25519";
                 params[jss::tx_json] = txJson;
@@ -4008,7 +4005,7 @@ protected:
             // 3. Borrower sends the signed transaction to the lender
             // 4. Lender signs the transaction
             auto const lenderSignParams = [&]() {
-                json::Value params{json::ObjectValue};
+                json::Value params{json::ValueType::Object};
                 params[jss::passphrase] = lenderPass;
                 params[jss::key_type] = "ed25519";
                 params[jss::signature_target] = "CounterpartySignature";
@@ -4066,7 +4063,7 @@ protected:
         {
             testcase("RPC LoanSet - sign and submit lender initiated");
             // 1. Lender creates the transaction
-            json::Value txJson{json::ObjectValue};
+            json::Value txJson{json::ValueType::Object};
             txJson[sfTransactionType] = "LoanSet";
             txJson[sfAccount] = lender.human();
             txJson[sfCounterparty] = borrower.human();
@@ -4083,7 +4080,7 @@ protected:
 
             // 2. Lender signs the transaction
             auto const lenderSignParams = [&]() {
-                json::Value params{json::ObjectValue};
+                json::Value params{json::ValueType::Object};
                 params[jss::passphrase] = lenderPass;
                 params[jss::key_type] = "ed25519";
                 params[jss::tx_json] = txJson;
@@ -4114,7 +4111,7 @@ protected:
             // 3. Lender sends the signed transaction to the Borrower
             // 4. Borrower signs the transaction
             auto const borrowerSignParams = [&]() {
-                json::Value params{json::ObjectValue};
+                json::Value params{json::ValueType::Object};
                 params[jss::passphrase] = borrowerPass;
                 params[jss::key_type] = "ed25519";
                 params[jss::signature_target] = "CounterpartySignature";
@@ -4582,7 +4579,7 @@ protected:
         auto createJson = env.json(
             set(borrower, broker.brokerID, principalRequest),
             Fee(loanSetFee),
-            Json(sfCounterpartySignature, json::ObjectValue));
+            Json(sfCounterpartySignature, json::ValueType::Object));
 
         createJson["CloseInterestRate"] = 76671;
         createJson["ClosePaymentFee"] = "2061925410";
@@ -4646,7 +4643,7 @@ protected:
         auto createJson = env.json(
             set(borrower, broker.brokerID, principalRequest),
             Fee(loanSetFee),
-            Json(sfCounterpartySignature, json::ObjectValue));
+            Json(sfCounterpartySignature, json::ValueType::Object));
 
         createJson["ClosePaymentFee"] = "0";
         createJson["GracePeriod"] = 60;
@@ -4736,7 +4733,7 @@ protected:
         auto createJson = env.json(
             set(borrower, broker.brokerID, principalRequest),
             Fee(loanSetFee),
-            Json(sfCounterpartySignature, json::ObjectValue));
+            Json(sfCounterpartySignature, json::ValueType::Object));
 
         createJson["CloseInterestRate"] = 47299;
         createJson["ClosePaymentFee"] = "3985819770";
@@ -4803,7 +4800,7 @@ protected:
         auto const createJson = env.json(
             set(borrower, broker.brokerID, principalRequest),
             Fee(loanSetFee),
-            Json(sfCounterpartySignature, json::ObjectValue),
+            Json(sfCounterpartySignature, json::ValueType::Object),
             kCLOSE_PAYMENT_FEE(0),
             kGRACE_PERIOD(60),
             kINTEREST_RATE(TenthBips32(20930)),
@@ -4950,7 +4947,7 @@ protected:
         auto createJson = env.json(
             set(borrower, broker.brokerID, principalRequest),
             Fee(loanSetFee),
-            Json(sfCounterpartySignature, json::ObjectValue));
+            Json(sfCounterpartySignature, json::ValueType::Object));
 
         createJson["ClosePaymentFee"] = "0";
         createJson["InterestRate"] = 24346;
@@ -5056,7 +5053,7 @@ protected:
         auto createJson = env.json(
             set(borrower, broker.brokerID, principalRequest),
             Fee(loanSetFee),
-            Json(sfCounterpartySignature, json::ObjectValue));
+            Json(sfCounterpartySignature, json::ValueType::Object));
 
         createJson["ClosePaymentFee"] = "0";
         createJson["InterestRate"] = 12833;
@@ -5149,7 +5146,7 @@ protected:
                 kLATE_INTEREST_RATE(TenthBips32(77048)),
                 kLATE_PAYMENT_FEE(0),
                 kLOAN_ORIGINATION_FEE(218),
-                Json(sfCounterpartySignature, json::ObjectValue));
+                Json(sfCounterpartySignature, json::ValueType::Object));
 
             createJson.removeMember(sfSequence.getJsonName());
 
@@ -6639,7 +6636,7 @@ protected:
 
         auto const assetType = AssetType::XRP;
 
-        Env env(*this, makeConfig(), all_, nullptr, beast::severities::Severity::KWarning);
+        Env env(*this, makeConfig(), all_, nullptr, beast::Severity::Warning);
 
         auto loanResult =
             createLoan(env, assetType, brokerParams, loanParams, issuer, lender, borrower);
@@ -7175,6 +7172,144 @@ protected:
         BEAST_EXPECT(afterSecondCoverAvailable == 0);
     }
 
+    void
+    testYieldTheftRounding(std::uint32_t flags)
+    {
+        testcase("Rounding manipulation does not permit yield theft");
+        using namespace jtx;
+        using namespace loan;
+
+        // 1. Setup Environment
+        Env env(*this, all_);
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(1000), issuer, lender, borrower);
+        env.close();
+
+        // 2. Asset Selection
+        PrettyAsset const iou = issuer["USD"];
+        env(trust(lender, iou(100'000'000)));
+        env(trust(borrower, iou(100'000'000)));
+        env(pay(issuer, lender, iou(100'000'000)));
+        env(pay(issuer, borrower, iou(100'000'000)));
+        env.close();
+
+        // 3. Create Vault and Broker with High Debt Limit (100M)
+        auto const brokerInfo = createVaultAndBroker(
+            env,
+            iou,
+            lender,
+            {
+                .vaultDeposit = 5'000'000,
+                .debtMax = Number{100'000'000},
+                .coverDeposit = 500'000,
+            });
+        auto const [currentSeq, vaultKeylet] = [&]() {
+            auto const brokerSle = env.le(keylet::loanbroker(brokerInfo.brokerID));
+            if (!BEAST_EXPECT(brokerSle))
+                return std::make_tuple(0u, keylet::unchecked(beast::kZERO));
+            auto const currentSeq = brokerSle->at(sfLoanSequence);
+            auto const vaultKeylet = keylet::vault(brokerSle->at(sfVaultID));
+            return std::make_tuple(currentSeq, vaultKeylet);
+        }();
+
+        // 4. Loan Parameters (Attack Vector)
+        Number const principal = 1'000'000;
+        TenthBips32 const interestRate = TenthBips32{1};  // 0.001%
+        std::uint32_t const paymentInterval = 86400;
+        std::uint32_t const paymentTotal = 3650;
+
+        auto const loanSetFee = Fee(env.current()->fees().base * 2);
+        env(set(borrower, brokerInfo.brokerID, iou(principal).value(), flags),
+            Sig(sfCounterpartySignature, lender),
+            loan::kINTEREST_RATE(interestRate),
+            loan::kPAYMENT_INTERVAL(paymentInterval),
+            loan::kPAYMENT_TOTAL(paymentTotal),
+            Fee(loanSetFee));
+        env.close();
+
+        // --- RETRIEVE OBJECTS & SETUP ATTACK ---
+
+        auto borrowerBalance = [&]() { return env.balance(borrower, iou); };
+        auto const borrowerScale = static_cast<STAmount const&>(borrowerBalance()).exponent();
+
+        auto const loanKeylet = keylet::loan(brokerInfo.brokerID, currentSeq);
+        auto const maybePeriodicPayment = [&]() -> std::optional<STAmount> {
+            auto const loanSle = env.le(loanKeylet);
+            if (!BEAST_EXPECT(loanSle))
+                return std::nullopt;
+            // Construct Payment
+            return STAmount{iou, loanSle->at(sfPeriodicPayment)};
+        }();
+        if (!maybePeriodicPayment)
+            return;
+        auto const periodicPayment = *maybePeriodicPayment;
+        auto const roundedPayment =
+            roundToScale(periodicPayment, borrowerScale, Number::RoundingMode::Upward);
+
+        // ATTACK: Add dust buffer (1e-9) to force 'excess' logic execution
+        STAmount const paymentBuffer{iou, Number(1, -9)};
+        STAmount const attackPayment = periodicPayment + paymentBuffer;
+
+        auto const maybeInitialVaultAssets = [&]() -> std::optional<Number> {
+            auto const vault = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(vault))
+                return std::nullopt;
+            return vault->at(sfAssetsTotal);
+        }();
+        if (!maybeInitialVaultAssets)
+            return;
+        auto const initialVaultAssets = *maybeInitialVaultAssets;
+
+        // 5. Execution Loop
+        int yieldTheftCount = 0;
+        auto previousAssetsTotal = initialVaultAssets;
+
+        for (int i = 0; i < 100; ++i)
+        {
+            auto const balanceBefore = borrowerBalance();
+            env(pay(borrower, loanKeylet.key, attackPayment, flags));
+            env.close();
+            auto const borrowerDelta = balanceBefore - borrowerBalance();
+            BEAST_EXPECT(borrowerDelta.signum() == roundedPayment.signum());
+
+            auto const loanSle = env.le(loanKeylet);
+            if (!BEAST_EXPECT(loanSle))
+                break;
+            auto const updatedPayment = STAmount{iou, loanSle->at(sfPeriodicPayment)};
+            BEAST_EXPECT(
+                (roundToScale(updatedPayment, borrowerScale, Number::RoundingMode::Upward) ==
+                 roundedPayment));
+            BEAST_EXPECT(
+                (updatedPayment == periodicPayment) ||
+                (flags == tfLoanOverpayment && i >= 2 && updatedPayment < periodicPayment));
+
+            auto const currentVaultSle = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(currentVaultSle))
+                break;
+
+            auto const currentAssetsTotal = currentVaultSle->at(sfAssetsTotal);
+            auto const delta = currentAssetsTotal - previousAssetsTotal;
+
+            BEAST_EXPECT(
+                (delta == beast::kZERO && borrowerDelta <= roundedPayment) ||
+                (delta > beast::kZERO && borrowerDelta > roundedPayment));
+
+            // If tx succeeded but Assets Total didn't change, interest was
+            // stolen.
+            if (delta == beast::kZERO && borrowerDelta > roundedPayment)
+            {
+                yieldTheftCount++;
+            }
+
+            previousAssetsTotal = currentAssetsTotal;
+        }
+
+        BEAST_EXPECTS(yieldTheftCount == 0, std::to_string(yieldTheftCount));
+    }
+
     // Tests that vault withdrawals work correctly when the vault has unrealized
     // loss from an impaired loan, ensuring the invariant check properly
     // accounts for the loss.
@@ -7354,7 +7489,7 @@ protected:
         auto createJson = env.json(
             set(borrower, broker.brokerID, principalRequest),
             Fee(loanSetFee),
-            Json(sfCounterpartySignature, json::ObjectValue));
+            Json(sfCounterpartySignature, json::ValueType::Object));
 
         createJson["InterestRate"] = 1;  // minimum non-zero rate
         createJson["PaymentTotal"] = 3;
@@ -7438,7 +7573,7 @@ protected:
         auto createJson = env.json(
             set(borrower, broker.brokerID, principalRequest),
             Fee(loanSetFee),
-            Json(sfCounterpartySignature, json::ObjectValue));
+            Json(sfCounterpartySignature, json::ValueType::Object));
         createJson["InterestRate"] = 1;
         createJson["PaymentTotal"] = 3;
         createJson["PaymentInterval"] = 600;
@@ -7495,6 +7630,10 @@ public:
         testLoanPayLateFullPaymentBypassesPenalties();
         testLoanCoverMinimumRoundingExploit();
 #endif
+        for (auto const flags : {0u, tfLoanOverpayment})
+        {
+            testYieldTheftRounding(flags);
+        }
 
         testBugInterestDueDeltaCrash();
         testFullLifecycleVaultPnLNearZeroRate();
