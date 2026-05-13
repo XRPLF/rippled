@@ -15,7 +15,7 @@ package/
     xrpld.sysusers      sysusers.d config (used by both RPM and DEB)
     xrpld.tmpfiles      tmpfiles.d config (used by both RPM and DEB)
     xrpld.logrotate     logrotate config (installed to /etc/logrotate.d/xrpld)
-    update-xrpld.sh     auto-update script (installed to /usr/libexec/xrpld/, run by update-xrpld.timer)
+    update-xrpld        auto-update script (installed to /usr/libexec/xrpld/, run by update-xrpld.timer)
   test/
     smoketest.sh            Package install smoke test
     check_install_paths.sh  Verify install paths and compat symlinks

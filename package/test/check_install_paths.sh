@@ -16,7 +16,7 @@ check -x /usr/bin/xrpld
 check -f /etc/xrpld/xrpld.cfg
 check -f /etc/xrpld/validators.txt
 check -f /etc/logrotate.d/xrpld
-check -x /usr/libexec/xrpld/update-xrpld.sh
+check -x /usr/libexec/xrpld/update-xrpld
 check -f /usr/share/doc/xrpld/README.md
 check -f /usr/share/doc/xrpld/LICENSE.md
 

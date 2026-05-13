@@ -1,5 +1,0 @@
-xrpld            usr/bin/
-xrpld.cfg        etc/xrpld/
-validators.txt   etc/xrpld/
-
-update-xrpld.sh  usr/libexec/xrpld/

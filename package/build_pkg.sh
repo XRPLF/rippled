@@ -119,7 +119,7 @@ stage_common() {
     cp "${SHARED}/xrpld.sysusers"               "${dest}/xrpld.sysusers"
     cp "${SHARED}/xrpld.tmpfiles"               "${dest}/xrpld.tmpfiles"
     cp "${SHARED}/xrpld.logrotate"              "${dest}/xrpld.logrotate"
-    cp "${SHARED}/update-xrpld.sh"              "${dest}/update-xrpld.sh"
+    cp "${SHARED}/update-xrpld"                 "${dest}/update-xrpld"
     cp "${SHARED}/update-xrpld.service"         "${dest}/update-xrpld.service"
     cp "${SHARED}/update-xrpld.timer"           "${dest}/update-xrpld.timer"
     cp "${SHARED}/50-xrpld.preset"              "${dest}/50-xrpld.preset"

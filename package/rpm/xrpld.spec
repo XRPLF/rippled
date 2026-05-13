@@ -45,7 +45,7 @@ install -Dm0644 %{_sourcedir}/50-xrpld.preset      %{buildroot}%{_presetdir}/50-
 install -Dm0644 %{_sourcedir}/xrpld.logrotate      %{buildroot}%{_sysconfdir}/logrotate.d/%{name}
 
 # Update helper
-install -Dm0755 %{_sourcedir}/update-xrpld.sh      %{buildroot}%{_libexecdir}/%{name}/update-xrpld.sh
+install -Dm0755 %{_sourcedir}/update-xrpld         %{buildroot}%{_libexecdir}/%{name}/update-xrpld
 
 # Docs
 install -Dm0644 %{_sourcedir}/LICENSE.md %{buildroot}%{_docdir}/%{name}/LICENSE.md
@@ -82,7 +82,7 @@ systemd-tmpfiles --create %{_tmpfilesdir}/xrpld.conf || :
 %config(noreplace) %{_sysconfdir}/%{name}/validators.txt
 %config(noreplace) %{_sysconfdir}/logrotate.d/%{name}
 
-%{_libexecdir}/%{name}/update-xrpld.sh
+%{_libexecdir}/%{name}/update-xrpld
 
 %{_unitdir}/xrpld.service
 %{_unitdir}/update-xrpld.service
