@@ -18,12 +18,12 @@
 
 namespace xrpl {
 
-TestSink::TestSink(beast::severities::Severity threshold) : Sink(threshold, false)
+TestSink::TestSink(beast::Severity threshold) : Sink(threshold, false)
 {
 }
 
 void
-TestSink::write(beast::severities::Severity level, std::string const& text)
+TestSink::write(beast::Severity level, std::string const& text)
 {
     if (level < threshold())
         return;
@@ -31,7 +31,7 @@ TestSink::write(beast::severities::Severity level, std::string const& text)
 }
 
 void
-TestSink::writeAlways(beast::severities::Severity level, std::string const& text)
+TestSink::writeAlways(beast::Severity level, std::string const& text)
 {
     auto supportsColor = [] {
         // 1. Check for "NO_COLOR" environment variable (Standard convention)
@@ -64,17 +64,17 @@ TestSink::writeAlways(beast::severities::Severity level, std::string const& text
     auto color = [level]() {
         switch (level)
         {
-            case beast::severities::KTrace:
+            case beast::Severity::Trace:
                 return "\033[34m";  // blue
-            case beast::severities::KDebug:
+            case beast::Severity::Debug:
                 return "\033[32m";  // green
-            case beast::severities::KInfo:
+            case beast::Severity::Info:
                 return "\033[36m";  // cyan
-            case beast::severities::KWarning:
+            case beast::Severity::Warning:
                 return "\033[33m";  // yellow
-            case beast::severities::KError:
+            case beast::Severity::Error:
                 return "\033[31m";  // red
-            case beast::severities::KFatal:
+            case beast::Severity::Fatal:
             default:
                 break;
         }
@@ -84,17 +84,17 @@ TestSink::writeAlways(beast::severities::Severity level, std::string const& text
     auto prefix = [level]() {
         switch (level)
         {
-            case beast::severities::KTrace:
+            case beast::Severity::Trace:
                 return "TRC:";
-            case beast::severities::KDebug:
+            case beast::Severity::Debug:
                 return "DBG:";
-            case beast::severities::KInfo:
+            case beast::Severity::Info:
                 return "INF:";
-            case beast::severities::KWarning:
+            case beast::Severity::Warning:
                 return "WRN:";
-            case beast::severities::KError:
+            case beast::Severity::Error:
                 return "ERR:";
-            case beast::severities::KFatal:
+            case beast::Severity::Fatal:
             default:
                 break;
         }
@@ -104,8 +104,8 @@ TestSink::writeAlways(beast::severities::Severity level, std::string const& text
     auto& stream = [level]() -> std::ostream& {
         switch (level)
         {
-            case beast::severities::KError:
-            case beast::severities::KFatal:
+            case beast::Severity::Error:
+            case beast::Severity::Fatal:
                 return std::cerr;
             default:
                 return std::cout;
