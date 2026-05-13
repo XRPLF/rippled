@@ -1893,12 +1893,14 @@ loanMakePayment(
         // totalValueOutstanding, because that would have been processed as
         // another normal payment. But cap it just in case.
         Number const overpaymentRaw = std::min(amount - totalPaid, *totalValueOutstandingProxy);
-        Number const overpayment = view.rules().enabled(fixCleanup3_2_0)
+        bool const fixEnabled = view.rules().enabled(fixCleanup3_2_0);
+        Number const overpayment = fixEnabled
             ? roundToAsset(asset, overpaymentRaw, loanScale, Number::RoundingMode::Downward)
             : overpaymentRaw;
 
-        // Due to rounding, overpayment could be zero
-        if (overpayment > 0)
+        // Post-amendment, the rounded overpayment can be zero; pre-amendment
+        // it's always positive given the surrounding guards.
+        if (!fixEnabled || overpayment > 0)
         {
             detail::ExtendedPaymentComponents const overpaymentComponents =
                 detail::computeOverpaymentComponents(
