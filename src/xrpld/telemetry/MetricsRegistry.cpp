@@ -21,6 +21,12 @@
 
 #include <xrpld/telemetry/MetricsRegistry.h>
 
+#include <xrpl/beast/utility/Journal.h>
+
+#include <cstdint>
+#include <string>
+#include <string_view>
+
 #ifdef XRPL_ENABLE_TELEMETRY
 
 #include <xrpld/app/ledger/AcceptedLedger.h>
@@ -62,8 +68,7 @@ namespace resource = opentelemetry::sdk::resource;
 
 #endif  // XRPL_ENABLE_TELEMETRY
 
-namespace xrpl {
-namespace telemetry {
+namespace xrpl::telemetry {
 
 MetricsRegistry::MetricsRegistry(
     [[maybe_unused]] bool enabled,
@@ -166,6 +171,8 @@ MetricsRegistry::start(std::string const& endpoint, std::string const& instanceI
     JLOG(journal_.info()) << "MetricsRegistry: started successfully";
 #else
     (void)endpoint;
+    (void)instanceId;
+    (void)enabled_;
 #endif  // XRPL_ENABLE_TELEMETRY
 }
 
@@ -202,6 +209,7 @@ MetricsRegistry::recordRpcStarted(std::string_view method)
     rpcStartedCounter_->Add(1, {{"method", std::string(method)}});
 #else
     (void)method;
+    (void)enabled_;
 #endif
 }
 
@@ -220,6 +228,7 @@ MetricsRegistry::recordRpcFinished(std::string_view method, std::int64_t duratio
 #else
     (void)method;
     (void)durationUs;
+    (void)enabled_;
 #endif
 }
 
@@ -238,6 +247,7 @@ MetricsRegistry::recordRpcErrored(std::string_view method, std::int64_t duration
 #else
     (void)method;
     (void)durationUs;
+    (void)enabled_;
 #endif
 }
 
@@ -254,6 +264,7 @@ MetricsRegistry::recordJobQueued(std::string_view jobType)
     jobQueuedCounter_->Add(1, {{"job_type", std::string(jobType)}});
 #else
     (void)jobType;
+    (void)enabled_;
 #endif
 }
 
@@ -272,6 +283,7 @@ MetricsRegistry::recordJobStarted(std::string_view jobType, std::int64_t queuedD
 #else
     (void)jobType;
     (void)queuedDurUs;
+    (void)enabled_;
 #endif
 }
 
@@ -290,6 +302,7 @@ MetricsRegistry::recordJobFinished(std::string_view jobType, std::int64_t runnin
 #else
     (void)jobType;
     (void)runningDurUs;
+    (void)enabled_;
 #endif
 }
 
@@ -1164,5 +1177,4 @@ MetricsRegistry::incrementJqTransOverflow()
 #endif
 }
 
-}  // namespace telemetry
-}  // namespace xrpl
+}  // namespace xrpl::telemetry

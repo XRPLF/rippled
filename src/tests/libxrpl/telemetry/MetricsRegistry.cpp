@@ -19,9 +19,18 @@
 
 #include <xrpld/telemetry/MetricsRegistry.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/protocol/uint256.h>
+
+#include <boost/asio/io_context.hpp>
 
 #include <gtest/gtest.h>
+
+#include <optional>
+#include <stdexcept>
+#include <string>
 
 using namespace xrpl;
 
@@ -37,8 +46,8 @@ namespace {
  */
 class MockServiceRegistry : public ServiceRegistry
 {
-    [[noreturn]] void
-    throwUnimplemented() const
+    [[noreturn]] static void
+    throwUnimplemented()
     {
         throw std::logic_error("MockServiceRegistry: method not implemented");
     }
@@ -195,12 +204,12 @@ public:
     {
         throwUnimplemented();
     }
-    OpenLedger&
+    [[nodiscard]] OpenLedger&
     getOpenLedger() override
     {
         throwUnimplemented();
     }
-    OpenLedger const&
+    [[nodiscard]] OpenLedger const&
     getOpenLedger() const override
     {
         throwUnimplemented();
@@ -250,7 +259,7 @@ public:
     {
         return nullptr;
     }
-    bool
+    [[nodiscard]] bool
     isStopping() const override
     {
         return false;
@@ -270,7 +279,7 @@ public:
     {
         throwUnimplemented();
     }
-    std::optional<uint256> const&
+    [[nodiscard]] std::optional<uint256> const&
     getTrapTxID() const override
     {
         static std::optional<uint256> const empty;
@@ -301,7 +310,7 @@ protected:
 TEST_F(MetricsRegistryTest, disabled_construction)
 {
     // Construct with enabled=false; should be a no-op.
-    telemetry::MetricsRegistry registry(false, mockApp_, j_);
+    telemetry::MetricsRegistry const registry(false, mockApp_, j_);
     EXPECT_FALSE(registry.isEnabled());
 }
 
