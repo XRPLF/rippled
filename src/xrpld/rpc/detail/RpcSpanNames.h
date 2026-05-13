@@ -14,8 +14,99 @@
  *      auto span = SpanGuard::span(
  *          TraceCategory::Rpc, rpc_span::prefix::command, "submit");
  *      span.setAttribute(rpc_span::attr::command, "submit");
- *      span.setAttribute(rpc_span::attr::status, rpc_span::val::success);
+ *      span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::success);
  *  @endcode
+ *
+ *  Span hierarchy (automatic nesting via OTel thread-local context):
+ *
+ *  HTTP JSON-RPC path (single request):
+ *
+ *    +-------------------------------------------------------+
+ *    | rpc.http_request                                      |
+ *    | ServerHandler::processSession(Session)                |
+ *    |                                                       |
+ *    |  +--------------------------------------------------+ |
+ *    |  | rpc.process                                      | |
+ *    |  | ServerHandler::processRequest()                  | |
+ *    |  |                                                  | |
+ *    |  |  +---------------------------------------------+ | |
+ *    |  |  | rpc.command.{name}                          | | |
+ *    |  |  | RPC::callMethod()                           | | |
+ *    |  |  | attrs: command, version, rpc_role, rpc_status | | |
+ *    |  |  +---------------------------------------------+ | |
+ *    |  +--------------------------------------------------+ |
+ *    +-------------------------------------------------------+
+ *
+ *  HTTP batch path (multiple commands per request):
+ *
+ *    +-------------------------------------------------------+
+ *    | rpc.http_request                                      |
+ *    |                                                       |
+ *    |  +--------------------------------------------------+ |
+ *    |  | rpc.process                                      | |
+ *    |  |                                                  | |
+ *    |  |  +------------------+  +------------------+      | |
+ *    |  |  | rpc.command.{a}  |  | rpc.command.{b}  | ...  | |
+ *    |  |  +------------------+  +------------------+      | |
+ *    |  +--------------------------------------------------+ |
+ *    +-------------------------------------------------------+
+ *
+ *  WebSocket path:
+ *
+ *    +-------------------------------------------------------+
+ *    | rpc.ws_message                                        |
+ *    | ServerHandler::processSession(WSSession)              |
+ *    |                                                       |
+ *    |  +--------------------------------------------------+ |
+ *    |  | rpc.command.{name}                               | |
+ *    |  | RPC::callMethod()                                | |
+ *    |  | attrs: command, version, rpc_role, rpc_status     | |
+ *    |  +--------------------------------------------------+ |
+ *    +-------------------------------------------------------+
+ *
+ *  WebSocket error paths:
+ *
+ *    +-------------------------------------------------------+
+ *    | rpc.ws_message (error: invalid_json)                  |
+ *    | ServerHandler::onWSMessage() — parse failure           |
+ *    +-------------------------------------------------------+
+ *
+ *    +-------------------------------------------------------+
+ *    | rpc.ws_upgrade                                        |
+ *    | ServerHandler::onHandoff() — upgrade try/catch         |
+ *    +-------------------------------------------------------+
+ *
+ *  Command dispatch error path:
+ *
+ *    +-------------------------------------------------------+
+ *    | rpc.command.{name} (error: too_busy/unknown/etc)       |
+ *    | RPC::doCommand() — fillHandler() rejection             |
+ *    +-------------------------------------------------------+
+ *
+ *  gRPC path (see GrpcSpanNames.h for constants):
+ *
+ *    +-------------------------------------------------------+
+ *    | grpc.request                                          |
+ *    | CallData::process(coro)                               |
+ *    |   attrs: method, grpc_status                          |
+ *    +-------------------------------------------------------+
+ *
+ *  Covered paths:
+ *    - HTTP JSON-RPC (single and batch requests)
+ *    - WebSocket RPC commands
+ *    - WebSocket message parse errors (invalid JSON, oversized)
+ *    - WebSocket upgrade failures (protocol handshake errors)
+ *    - Admin CLI (connects via HTTP internally)
+ *    - Command dispatch rejections (unknown cmd, too busy, no perm)
+ *    - gRPC endpoints (GetLedger, GetLedgerData, GetLedgerDiff,
+ *      GetLedgerEntry)
+ *    - Command execution: timing, success/failure, exceptions
+ *    - Per-command attributes: name, API version, rpc_role, rpc_status
+ *
+ *  Known gaps (not yet instrumented):
+ *    - Early validation errors in processRequest() before rpc.process
+ *      span (malformed JSON, auth failures, oversized requests)
+ *    - Subscription push notifications (server-initiated, not RPC)
  */
 
 #include <xrpl/telemetry/SpanNames.h>
@@ -43,18 +134,16 @@ inline constexpr auto process = makeStr("process");
 // ===== Attribute keys ======================================================
 
 namespace attr {
-inline constexpr auto xrplRpc = join(seg::xrpl, seg::rpc);
-
-/// "xrpl.rpc.command"
-inline constexpr auto command = join(xrplRpc, makeStr("command"));
-/// "xrpl.rpc.version"
-inline constexpr auto version = join(xrplRpc, makeStr("version"));
-/// "xrpl.rpc.role"
-inline constexpr auto role = join(xrplRpc, makeStr("role"));
-/// "xrpl.rpc.status"
-inline constexpr auto status = join(xrplRpc, makeStr("status"));
-/// "xrpl.rpc.payload_size"
-inline constexpr auto payloadSize = join(xrplRpc, makeStr("payload_size"));
+/// "command" — RPC method name.
+inline constexpr auto command = makeStr("command");
+/// "version" — api_version per request.
+inline constexpr auto version = makeStr("version");
+/// "rpc_role" — admin|user. Domain-qualified: collides with grpc_role.
+inline constexpr auto rpcRole = makeStr("rpc_role");
+/// "rpc_status" — success|error. Domain-qualified: avoids OTel reserved span status.
+inline constexpr auto rpcStatus = makeStr("rpc_status");
+/// "request_payload_size" — bytes of inbound request payload.
+inline constexpr auto requestPayloadSize = makeStr("request_payload_size");
 }  // namespace attr
 
 // ===== Attribute values ====================================================
