@@ -17,9 +17,7 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
-#include <xrpl/server/NetworkOPs.h>
 #include <xrpl/telemetry/SpanGuard.h>
-#include <xrpl/telemetry/SpanNames.h>
 
 #include <atomic>
 #include <chrono>
