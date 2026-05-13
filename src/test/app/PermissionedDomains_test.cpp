@@ -49,14 +49,10 @@ exceptionExpected(Env& env, json::Value const& jv)
 
 class PermissionedDomains_test : public beast::unit_test::Suite
 {
-    FeatureBitset withoutFeature_{testableAmendments() - featurePermissionedDomains};
     FeatureBitset withFeature_{
-        testableAmendments()  //
-        | featurePermissionedDomains | featureCredentials};
-
+        (testableAmendments() | featurePermissionedDomains | featureCredentials) - fixCleanup3_1_3};
     FeatureBitset withFix_{
-        testableAmendments()  //
-        | featurePermissionedDomains | featureCredentials};
+        testableAmendments() | featurePermissionedDomains | featureCredentials | fixCleanup3_1_3};
 
     // Verify that each tx type can execute if the feature is enabled.
     void
@@ -98,7 +94,7 @@ class PermissionedDomains_test : public beast::unit_test::Suite
     {
         testcase("Disabled");
         Account const alice("alice");
-        Env env(*this, withoutFeature_);
+        Env env(*this, testableAmendments() - featurePermissionedDomains);
         env.fund(XRP(1000), alice);
         pdomain::Credentials const credentials{{alice, "first credential"}};
         env(pdomain::setTx(alice, credentials), Ter(temDISABLED));

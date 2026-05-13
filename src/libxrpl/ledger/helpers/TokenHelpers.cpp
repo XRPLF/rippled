@@ -1222,9 +1222,9 @@ directSendNoLimitMultiMPT(
 
                 std::uint64_t const sendAmount = amount.mpt().value();
 
-                if (view.rules().enabled(fixSecurity3_1_3))
+                if (view.rules().enabled(fixCleanup3_1_3))
                 {
-                    // Post-fixSecurity3_1_3: aggregate MaximumAmount
+                    // Post-fixCleanup3_1_3: aggregate MaximumAmount
                     // check. WARNING: the order of conditions is
                     // critical — each guards the subtraction in the
                     // next against unsigned underflow. Do not reorder.
@@ -1242,7 +1242,7 @@ directSendNoLimitMultiMPT(
                 }
                 else
                 {
-                    // Pre-fixSecurity3_1_3: per-iteration MaximumAmount
+                    // Pre-fixCleanup3_1_3: per-iteration MaximumAmount
                     // check. Reads sfOutstandingAmount from a stale
                     // view.read() snapshot — incorrect for multi-destination
                     // sends but retained for ledger replay compatibility.
