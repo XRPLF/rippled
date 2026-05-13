@@ -64,11 +64,11 @@ connectors:
       explicit:
         buckets: [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 5s]
     dimensions:
-      - name: xrpl.rpc.command
-      - name: xrpl.rpc.status
+      - name: command
+      - name: rpc_status
       - name: xrpl.consensus.mode
-      - name: xrpl.consensus.close_time_correct
-      - name: xrpl.tx.local
+      - name: close_time_correct
+      - name: local
       - name: xrpl.tx.suppressed
       - name: xrpl.peer.proposal.trusted
       - name: xrpl.peer.validation.trusted

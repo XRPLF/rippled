@@ -102,17 +102,17 @@ datasources:
             type: static
           # Phase 2: RPC tracing filters
           - id: rpc-command
-            tag: xrpl.rpc.command
+            tag: command
             operator: "="
             scope: span
             type: static
           - id: rpc-status
-            tag: xrpl.rpc.status
+            tag: rpc_status
             operator: "="
             scope: span
             type: dynamic
           - id: rpc-role
-            tag: xrpl.rpc.role
+            tag: rpc_role
             operator: "="
             scope: span
             type: dynamic
@@ -216,12 +216,12 @@ datasources:
             scope: span
             type: dynamic
           - id: txq-status
-            tag: xrpl.txq.status
+            tag: txq_status
             operator: "="
             scope: span
             type: dynamic
           - id: txq-ter-code
-            tag: xrpl.txq.ter_code
+            tag: ter_code
             operator: "="
             scope: span
             type: dynamic

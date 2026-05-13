@@ -302,9 +302,9 @@ resource::SemanticConventions::SERVICE_INSTANCE_ID = <node_public_key_base58>
 #### TxQ Attributes
 
 ```cpp
-"xrpl.txq.queue_depth"      = int64    // Current queue depth
-"xrpl.txq.fee_level"        = int64    // Fee level of transaction
-"xrpl.txq.eviction_reason"  = string   // Why transaction was evicted
+"queue_depth"      = int64    // Current queue depth (planned, not yet implemented)
+"fee_level"        = int64    // Fee level of transaction (planned, not yet implemented)
+"eviction_reason"  = string   // Why transaction was evicted (planned, not yet implemented)
 ```
 
 #### Fee Attributes
