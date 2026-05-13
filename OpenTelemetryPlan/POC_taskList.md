@@ -302,8 +302,8 @@
     // Each factory checks the global Telemetry instance internally.
     // No Telemetry& reference needed at the call site.
     auto span = telemetry::SpanGuard::rpcSpan("rpc.request");
-    span.setAttribute("xrpl.rpc.command", command);
-    span.setAttribute("xrpl.rpc.status", status);
+    span.setAttribute("command", command);
+    span.setAttribute("rpc_status", status);
     ```
 
   - Factory methods: `rpcSpan()`, `txSpan()`, `consensusSpan()`, `peerSpan()`, `ledgerSpan()`, `span()`
@@ -336,12 +336,12 @@
   - `#include <xrpl/telemetry/SpanGuard.h>`
   - In `ServerHandler::onRequest(Session& session)`:
     - At the top of the method, add: `auto span = telemetry::SpanGuard::rpcSpan("rpc.request");`
-    - After the RPC command name is extracted, set attribute: `span.setAttribute("xrpl.rpc.command", command);`
+    - After the RPC command name is extracted, set attribute: `span.setAttribute("command", command);`
     - After the response status is known, set: `span.setAttribute("http.status_code", static_cast<int64_t>(statusCode));`
     - Wrap error paths with: `span.recordException(e);`
   - In `ServerHandler::processRequest(...)`:
     - Add a child span: `auto span = telemetry::SpanGuard::rpcSpan("rpc.process");`
-    - Set method attribute: `span.setAttribute("xrpl.rpc.method", request_method);`
+    - Set method attribute: `span.setAttribute("method", request_method);`
   - In `ServerHandler::onWSMessage(...)` (WebSocket path):
     - Add: `auto span = telemetry::SpanGuard::rpcSpan("rpc.ws.message");`
 
@@ -362,7 +362,7 @@
 - [01-architecture-analysis.md §1.5](./01-architecture-analysis.md) — RPC request flow diagram: HTTP request -> attributes -> jobqueue.enqueue -> rpc.command -> response
 - [01-architecture-analysis.md §1.6](./01-architecture-analysis.md) — Key trace points table: `rpc.request` in `ServerHandler.cpp::onRequest()` (Priority: High)
 - [02-design-decisions.md §2.3](./02-design-decisions.md) — Span naming convention: `rpc.request`, `rpc.command.*`
-- [02-design-decisions.md §2.4.2](./02-design-decisions.md) — RPC span attributes: `xrpl.rpc.command`, `xrpl.rpc.version`, `xrpl.rpc.role`, `xrpl.rpc.params`
+- [02-design-decisions.md §2.4.2](./02-design-decisions.md) — RPC span attributes: `command`, `version`, `rpc_role`, `xrpl.rpc.params`
 - [03-implementation-strategy.md §3.9.2](./03-implementation-strategy.md) — File impact: `ServerHandler.cpp` ~40 lines added, ~10 changed (Low risk)
 
 ---
@@ -378,17 +378,17 @@
   - In `doCommand(RPC::JsonContext& context, Json::Value& result)`:
     - At the top: `auto span = telemetry::SpanGuard::rpcSpan("rpc.command." + context.method);`
     - Set attributes:
-      - `span.setAttribute("xrpl.rpc.command", context.method);`
-      - `span.setAttribute("xrpl.rpc.version", static_cast<int64_t>(context.apiVersion));`
-      - `span.setAttribute("xrpl.rpc.role", (context.role == Role::ADMIN) ? "admin" : "user");`
-    - On success: `span.setAttribute("xrpl.rpc.status", "success");`
-    - On error: `span.setAttribute("xrpl.rpc.status", "error");` and set the error message
+      - `span.setAttribute("command", context.method);`
+      - `span.setAttribute("version", static_cast<int64_t>(context.apiVersion));`
+      - `span.setAttribute("rpc_role", (context.role == Role::ADMIN) ? "admin" : "user");`
+    - On success: `span.setAttribute("rpc_status", "success");`
+    - On error: `span.setAttribute("rpc_status", "error");` and set the error message
 
 - After this, traces in Tempo/Grafana should look like:
   ```
-  rpc.request  (xrpl.rpc.command=account_info)
+  rpc.request  (command=account_info)
     └── rpc.process
-          └── rpc.command.account_info  (xrpl.rpc.version=2, xrpl.rpc.role=user, xrpl.rpc.status=success)
+          └── rpc.command.account_info  (version=2, rpc_role=user, rpc_status=success)
   ```
 
 **Key modified file**:
@@ -399,7 +399,7 @@
 
 - [04-code-samples.md §4.5.3](./04-code-samples.md) — `ServerHandler::onRequest()` code sample (includes child span pattern for `rpc.command.*`)
 - [02-design-decisions.md §2.3](./02-design-decisions.md) — Span naming: `rpc.command.*` pattern with dynamic command name (e.g., `rpc.command.server_info`)
-- [02-design-decisions.md §2.4.2](./02-design-decisions.md) — RPC attribute schema: `xrpl.rpc.command`, `xrpl.rpc.version`, `xrpl.rpc.role`, `xrpl.rpc.status`
+- [02-design-decisions.md §2.4.2](./02-design-decisions.md) — RPC attribute schema: `command`, `version`, `rpc_role`, `rpc_status`
 - [01-architecture-analysis.md §1.6](./01-architecture-analysis.md) — Key trace points table: `rpc.command.*` in `RPCHandler.cpp::doCommand()` (Priority: High)
 - [02-design-decisions.md §2.6.5](./02-design-decisions.md) — Correlation with PerfLog: how `doCommand()` can link trace_id with existing PerfLog entries
 - [03-implementation-strategy.md §3.4.4](./03-implementation-strategy.md) — RPC request overhead budget: ~1.75 μs total per request
@@ -472,7 +472,7 @@
    - Navigate to Explore → select Tempo datasource
    - Search for service `xrpld`
    - Confirm you see traces with spans: `rpc.request` -> `rpc.process` -> `rpc.command.server_info`
-   - Click into a trace and verify attributes: `xrpl.rpc.command`, `xrpl.rpc.status`, `xrpl.rpc.version`
+   - Click into a trace and verify attributes: `command`, `rpc_status`, `version`
 
 7. **Verify zero-overhead when disabled**:
    - Rebuild with `XRPL_ENABLE_TELEMETRY=OFF`, or set `enabled=0` in config
@@ -486,7 +486,7 @@
 - [ ] xrpld starts and connects to OTel Collector (check xrpld logs for telemetry messages)
 - [ ] Traces appear in Grafana/Tempo under service "xrpld"
 - [ ] Span hierarchy is correct (parent-child relationships)
-- [ ] Span attributes are populated (`xrpl.rpc.command`, `xrpl.rpc.status`, etc.)
+- [ ] Span attributes are populated (`command`, `rpc_status`, etc.)
 - [ ] Error spans show error status and message
 - [ ] Building with `XRPL_ENABLE_TELEMETRY=OFF` produces no regressions
 - [ ] Setting `enabled=0` at runtime produces no traces and no errors
@@ -572,8 +572,8 @@ The current POC exports **traces only**. Grafana's Explore view can query Tempo 
          explicit:
            buckets: [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 5s]
        dimensions:
-         - name: xrpl.rpc.command
-         - name: xrpl.rpc.status
+         - name: command
+         - name: rpc_status
 
    exporters:
      prometheus:
