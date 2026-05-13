@@ -1801,7 +1801,7 @@ class Invariants_test : public beast::unit_test::Suite
         using namespace test::jtx;
 
         bool const fixPDEnabled = features[fixPermissionedDomainInvariant];
-        bool const fixS313Enabled = features[fixSecurity3_1_3];
+        bool const fixS313Enabled = features[fixCleanup3_1_3];
 
         testcase << "PermissionedDEX" + std::string(fixPDEnabled ? " fixPD" : "") +
                 std::string(fixS313Enabled ? " fixS313" : "");
@@ -2387,7 +2387,7 @@ class Invariants_test : public beast::unit_test::Suite
             }
 
             // Test: cover available greater than pseudo-account asset balance
-            // (requires fixSecurity3_1_3)
+            // (requires fixCleanup3_1_3)
             doInvariantCheck(
                 {{"Loan Broker cover available is greater than pseudo-account asset balance"}},
                 [&](Account const&, Account const&, ApplyContext& ac) {
@@ -3401,7 +3401,7 @@ class Invariants_test : public beast::unit_test::Suite
 
                 sleShares->at(sfFlags) = 0;
                 // Setting wrong pseudo account ID
-                sleShares->at(sfIssuer) = AccountID(uint160(42));
+                sleShares->at(sfIssuer) = AccountID(42);
                 sleShares->at(sfOutstandingAmount) = 0;
                 sleShares->at(sfSequence) = sequence;
 
@@ -4116,7 +4116,7 @@ class Invariants_test : public beast::unit_test::Suite
     testInvariantOverwrite(FeatureBitset features)
     {
         using namespace test::jtx;
-        bool const fixEnabled = features[fixSecurity3_1_3];
+        bool const fixEnabled = features[fixCleanup3_1_3];
         std::initializer_list<TER> const failTers = {tecINVARIANT_FAILED, tefINVARIANT_FAILED};
         std::initializer_list<TER> const passTers = {tesSUCCESS, tesSUCCESS};
 
@@ -4384,16 +4384,15 @@ public:
         testPermissionedDomainInvariants(defaultAmendments() - fixPermissionedDomainInvariant);
         testPermissionedDEX(defaultAmendments());
         testPermissionedDEX(defaultAmendments() - fixPermissionedDomainInvariant);
-        testPermissionedDEX(defaultAmendments() - fixSecurity3_1_3);
-        testPermissionedDEX(
-            defaultAmendments() - fixPermissionedDomainInvariant - fixSecurity3_1_3);
+        testPermissionedDEX(defaultAmendments() - fixCleanup3_1_3);
+        testPermissionedDEX(defaultAmendments() - fixPermissionedDomainInvariant - fixCleanup3_1_3);
         testNoModifiedUnmodifiableFields();
         testValidPseudoAccounts();
         testValidLoanBroker();
         testVault();
         testMPT();
         testInvariantOverwrite(defaultAmendments());
-        testInvariantOverwrite(defaultAmendments() - fixSecurity3_1_3);
+        testInvariantOverwrite(defaultAmendments() - fixCleanup3_1_3);
         testVaultComputeCoarsestScale();
     }
 };
