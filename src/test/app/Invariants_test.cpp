@@ -3401,7 +3401,7 @@ class Invariants_test : public beast::unit_test::Suite
 
                 sleShares->at(sfFlags) = 0;
                 // Setting wrong pseudo account ID
-                sleShares->at(sfIssuer) = AccountID(uint160(42));
+                sleShares->at(sfIssuer) = AccountID(42);
                 sleShares->at(sfOutstandingAmount) = 0;
                 sleShares->at(sfSequence) = sequence;
 

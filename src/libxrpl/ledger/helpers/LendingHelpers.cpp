@@ -1963,8 +1963,18 @@ loanMakePayment(
 
     // -------------------------------------------------------------
     // overpayment handling
+    //
+    // If the "fixSecurity3_1_3" amendment is enabled, truncate "amount",
+    // at the loan scale. If the raw value is used, the overpayment
+    // amount could be meaningless dust. Trying to process such a small
+    // amount will, at best, waste time when all the result values round
+    // to zero. At worst, it can cause logical errors with tiny amounts
+    // of interest that don't add up correctly.
+    auto const roundedAmount = view.rules().enabled(fixSecurity3_1_3)
+        ? roundToAsset(asset, amount, loanScale, Number::RoundingMode::TowardsZero)
+        : amount;
     if (paymentType == LoanPaymentType::Overpayment && loan->isFlag(lsfLoanOverpayment) &&
-        paymentRemainingProxy > 0 && totalPaid < amount &&
+        paymentRemainingProxy > 0 && totalPaid < roundedAmount &&
         numPayments < kLOAN_MAXIMUM_PAYMENTS_PER_TRANSACTION)
     {
         TenthBips32 const overpaymentInterestRate{loan->at(sfOverpaymentInterestRate)};
@@ -1973,7 +1983,7 @@ loanMakePayment(
         // It shouldn't be possible for the overpayment to be greater than
         // totalValueOutstanding, because that would have been processed as
         // another normal payment. But cap it just in case.
-        Number const overpayment = std::min(amount - totalPaid, *totalValueOutstandingProxy);
+        Number const overpayment = std::min(roundedAmount - totalPaid, *totalValueOutstandingProxy);
 
         detail::ExtendedPaymentComponents const overpaymentComponents =
             detail::computeOverpaymentComponents(
