@@ -1592,31 +1592,31 @@ class LoanBroker_test : public beast::unit_test::Suite
         Account const issuer("issuer");
         Account const alice("alice");
 
-        auto const withFix = features[fixSecurity3_1_3];
+        auto const withFix = features[fixCleanup3_2_0];
         Env env(*this, features);
         env.fund(XRP(100'000), issuer, alice);
         env.close();
 
         // Create MPT with locking enabled
-        MPTTester mptt{env, issuer, mptInitNoFund};
+        MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
         mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
 
-        PrettyAsset const MPT{mptt.issuanceID()};
+        PrettyAsset const mpt{mptt.issuanceID()};
 
         // Fund alice
         mptt.authorize({.account = alice});
         env.close();
-        env(pay(issuer, alice, MPT(100'000)));
+        env(pay(issuer, alice, mpt(100'000)));
         env.close();
 
         // Create vault
         Vault const vault{env};
-        auto [tx, vaultKeylet] = vault.create({.owner = alice, .asset = MPT});
+        auto [tx, vaultKeylet] = vault.create({.owner = alice, .asset = mpt});
         env(tx);
         env.close();
 
         // Deposit into vault
-        env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = MPT(10'000)}));
+        env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = mpt(10'000)}));
         env.close();
 
         // Create loan broker
@@ -1625,7 +1625,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         env.close();
 
         // Deposit cover
-        env(coverDeposit(alice, brokerKeylet.key, MPT(5'000).value()));
+        env(coverDeposit(alice, brokerKeylet.key, mpt(5'000).value()));
         env.close();
 
         // Verify cover is deposited
@@ -1645,7 +1645,7 @@ class LoanBroker_test : public beast::unit_test::Suite
 
         // Issuer locks the broker pseudo-account's individual MPToken
         {
-            Json::Value jv;
+            json::Value jv;
             jv[jss::Account] = issuer.human();
             jv[sfMPTokenIssuanceID] = to_string(mptt.issuanceID());
             jv[jss::Holder] = toBase58(brokerPseudoID);
@@ -1664,22 +1664,22 @@ class LoanBroker_test : public beast::unit_test::Suite
         }
 
         // Record alice's balance before deletion
-        auto const aliceBalanceBefore = env.balance(alice, MPT);
+        auto const aliceBalanceBefore = env.balance(alice, mpt);
 
-        // With fixSecurity3_1_3, preclaim() checks the broker pseudo-account's
+        // With fixCleanup3_2_0, preclaim() checks the broker pseudo-account's
         // freeze/lock state via checkFrozen(), so deletion is blocked.
         // Without the fix, the check is missing and the locked cover is
         // returned to the owner.
         if (withFix)
         {
-            env(del(alice, brokerKeylet.key), ter(tecLOCKED));
+            env(del(alice, brokerKeylet.key), Ter(tecLOCKED));
             env.close();
 
             // Verify the broker is not deleted
             BEAST_EXPECT(env.le(brokerKeylet) != nullptr);
 
             // Verify alice did not receive the cover despite the lock
-            auto const aliceBalanceAfter = env.balance(alice, MPT);
+            auto const aliceBalanceAfter = env.balance(alice, mpt);
             BEAST_EXPECT(aliceBalanceAfter == aliceBalanceBefore);
 
             // Verify the locked MPToken was not deleted
@@ -1687,14 +1687,14 @@ class LoanBroker_test : public beast::unit_test::Suite
         }
         else
         {
-            env(del(alice, brokerKeylet.key), ter(tesSUCCESS));
+            env(del(alice, brokerKeylet.key), Ter(tesSUCCESS));
             env.close();
 
             // Verify the broker is deleted
             BEAST_EXPECT(env.le(brokerKeylet) == nullptr);
 
             // Verify alice received the cover despite the lock
-            auto const aliceBalanceAfter = env.balance(alice, MPT);
+            auto const aliceBalanceAfter = env.balance(alice, mpt);
             BEAST_EXPECT(aliceBalanceAfter > aliceBalanceBefore);
 
             // Verify the locked MPToken was deleted
@@ -1712,27 +1712,27 @@ class LoanBroker_test : public beast::unit_test::Suite
         Account const issuer("issuer");
         Account const alice("alice");
 
-        auto const withFix = features[fixSecurity3_1_3];
+        auto const withFix = features[fixCleanup3_2_0];
         Env env(*this, features);
         env.fund(XRP(100'000), issuer, alice);
         env.close();
 
-        auto const IOU = issuer["IOU"];
+        auto const iou = issuer["IOU"];
 
         // Set up trust lines and fund alice
-        env(trust(alice, IOU(1'000'000)));
+        env(trust(alice, iou(1'000'000)));
         env.close();
-        env(pay(issuer, alice, IOU(100'000)));
+        env(pay(issuer, alice, iou(100'000)));
         env.close();
 
         // Create vault
         Vault const vault{env};
-        auto [tx, vaultKeylet] = vault.create({.owner = alice, .asset = IOU.asset()});
+        auto [tx, vaultKeylet] = vault.create({.owner = alice, .asset = iou.asset()});
         env(tx);
         env.close();
 
         // Deposit into vault
-        env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = IOU(10'000)}));
+        env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = iou(10'000)}));
         env.close();
 
         // Create loan broker
@@ -1741,7 +1741,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         env.close();
 
         // Deposit cover
-        env(coverDeposit(alice, brokerKeylet.key, IOU(5'000)));
+        env(coverDeposit(alice, brokerKeylet.key, iou(5'000)));
         env.close();
 
         // Verify cover is deposited
@@ -1759,9 +1759,9 @@ class LoanBroker_test : public beast::unit_test::Suite
         env.close();
 
         // Record alice's balance before deletion attempt
-        auto const aliceBalanceBefore = env.balance(alice, IOU);
+        auto const aliceBalanceBefore = env.balance(alice, iou);
 
-        // With fixSecurity3_1_3, preclaim() checks the broker
+        // With fixCleanup3_2_0, preclaim() checks the broker
         // pseudo-account's freeze state via checkFrozen(), so
         // deletion is blocked early with tecFROZEN.
         // Without the fix, preclaim() does not check the pseudo-account,
@@ -1770,11 +1770,11 @@ class LoanBroker_test : public beast::unit_test::Suite
         // Either way, the broker survives and alice's balance is unchanged.
         if (withFix)
         {
-            env(del(alice, brokerKeylet.key), ter(tecFROZEN));
+            env(del(alice, brokerKeylet.key), Ter(tecFROZEN));
         }
         else
         {
-            env(del(alice, brokerKeylet.key), ter(tecINVARIANT_FAILED));
+            env(del(alice, brokerKeylet.key), Ter(tecINVARIANT_FAILED));
         }
         env.close();
 
@@ -1782,7 +1782,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         BEAST_EXPECT(env.le(brokerKeylet) != nullptr);
 
         // Alice's balance unchanged
-        auto const aliceBalanceAfter = env.balance(alice, IOU);
+        auto const aliceBalanceAfter = env.balance(alice, iou);
         BEAST_EXPECT(aliceBalanceAfter == aliceBalanceBefore);
     }
 
@@ -2054,11 +2054,11 @@ public:
 
         testRIPD4274();
 
-        testLoanBrokerDeleteLockedMPT(all);
-        testLoanBrokerDeleteLockedMPT(all - fixSecurity3_1_3);
+        testLoanBrokerDeleteLockedMPT(all_);
+        testLoanBrokerDeleteLockedMPT(all_ - fixCleanup3_2_0);
 
-        testLoanBrokerDeleteFrozenIOU(all);
-        testLoanBrokerDeleteFrozenIOU(all - fixSecurity3_1_3);
+        testLoanBrokerDeleteFrozenIOU(all_);
+        testLoanBrokerDeleteFrozenIOU(all_ - fixCleanup3_2_0);
 
         // TODO: Write clawback failure tests with an issuer / MPT that doesn't
         // have the right flags set.

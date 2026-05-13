@@ -106,9 +106,9 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    if (ctx.view.rules().enabled(fixSecurity3_1_3))
+    if (ctx.view.rules().enabled(fixCleanup3_2_0))
     {
-        if (coverAvailable > beast::zero)
+        if (coverAvailable > beast::kZERO)
         {
             auto const brokerPseudo = sleBroker->at(sfAccount);
             if (auto const ter = requireAuth(ctx.view, asset, brokerOwner, AuthType::WeakAuth))
