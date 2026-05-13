@@ -59,15 +59,13 @@ struct Results
     // pointers from different memory spaces do not co-mingle
     using run_time = std::pair<static_string, typename clock_type::duration>;
 
-    // Need to be named before converting
-    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-    enum { MaxTop = 10 };
+    static constexpr auto kMAX_TOP = 10;
 
     std::size_t suites = 0;
     std::size_t cases = 0;
     std::size_t total = 0;
     std::size_t failed = 0;
-    boost::container::static_vector<run_time, MaxTop> top;
+    boost::container::static_vector<run_time, kMAX_TOP> top;
     typename clock_type::time_point start = clock_type::now();
 
     void

@@ -14,19 +14,20 @@
 #include <iostream>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
 
 namespace xrpl {
 
-Logs::Sink::Sink(std::string partition, beast::severities::Severity thresh, Logs& logs)
+Logs::Sink::Sink(std::string partition, beast::Severity thresh, Logs& logs)
     : beast::Journal::Sink(thresh, false), logs_(logs), partition_(std::move(partition))
 {
 }
 
 void
-Logs::Sink::write(beast::severities::Severity level, std::string const& text)
+Logs::Sink::write(beast::Severity level, std::string const& text)
 {
     if (level < threshold())
         return;
@@ -35,7 +36,7 @@ Logs::Sink::write(beast::severities::Severity level, std::string const& text)
 }
 
 void
-Logs::Sink::writeAlways(beast::severities::Severity level, std::string const& text)
+Logs::Sink::writeAlways(beast::Severity level, std::string const& text)
 {
     logs_.write(level, partition_, text, console());
 }
@@ -107,7 +108,7 @@ Logs::File::writeln(char const* text)
 
 //------------------------------------------------------------------------------
 
-Logs::Logs(beast::severities::Severity thresh) : thresh_(thresh)  // default severity
+Logs::Logs(beast::Severity thresh) : thresh_(thresh)  // default severity
 {
 }
 
@@ -137,14 +138,14 @@ Logs::journal(std::string const& name)
     return beast::Journal(get(name));
 }
 
-beast::severities::Severity
+beast::Severity
 Logs::threshold() const
 {
     return thresh_;
 }
 
 void
-Logs::threshold(beast::severities::Severity thresh)
+Logs::threshold(beast::Severity thresh)
 {
     std::scoped_lock const lock(mutex_);
     thresh_ = thresh;
@@ -159,13 +160,13 @@ Logs::partitionSeverities() const
     std::scoped_lock const lock(mutex_);
     list.reserve(sinks_.size());
     for (auto const& [name, sink] : sinks_)
-        list.emplace_back(name, toString(fromSeverity(sink->threshold())));
+        list.emplace_back(name, toString(sink->threshold()));
     return list;
 }
 
 void
 Logs::write(
-    beast::severities::Severity level,
+    beast::Severity level,
     std::string const& partition,
     std::string const& text,
     bool console)
@@ -192,84 +193,27 @@ Logs::rotate()
 }
 
 std::unique_ptr<beast::Journal::Sink>
-Logs::makeSink(std::string const& name, beast::severities::Severity threshold)
+Logs::makeSink(std::string const& name, beast::Severity threshold)
 {
     return std::make_unique<Sink>(name, threshold, *this);
 }
 
-LogSeverity
-Logs::fromSeverity(beast::severities::Severity level)
-{
-    using namespace beast::severities;
-    switch (level)
-    {
-        case KTrace:
-            return LSTrace;
-        case KDebug:
-            return LSDebug;
-        case KInfo:
-            return LSInfo;
-        case KWarning:
-            return LSWarning;
-        case KError:
-            return LSError;
-
-        // LCOV_EXCL_START
-        default:
-            UNREACHABLE("xrpl::Logs::fromSeverity : invalid severity");
-            [[fallthrough]];
-        // LCOV_EXCL_STOP
-        case KFatal:
-            break;
-    }
-
-    return LSFatal;
-}
-
-beast::severities::Severity
-Logs::toSeverity(LogSeverity level)
-{
-    using namespace beast::severities;
-    switch (level)
-    {
-        case LSTrace:
-            return KTrace;
-        case LSDebug:
-            return KDebug;
-        case LSInfo:
-            return KInfo;
-        case LSWarning:
-            return KWarning;
-        case LSError:
-            return KError;
-        // LCOV_EXCL_START
-        default:
-            UNREACHABLE("xrpl::Logs::toSeverity : invalid severity");
-            [[fallthrough]];
-        // LCOV_EXCL_STOP
-        case LSFatal:
-            break;
-    }
-
-    return KFatal;
-}
-
 std::string
-Logs::toString(LogSeverity s)
+Logs::toString(beast::Severity s)
 {
     switch (s)
     {
-        case LSTrace:
+        case beast::Severity::Trace:
             return "Trace";
-        case LSDebug:
+        case beast::Severity::Debug:
             return "Debug";
-        case LSInfo:
+        case beast::Severity::Info:
             return "Info";
-        case LSWarning:
+        case beast::Severity::Warning:
             return "Warning";
-        case LSError:
+        case beast::Severity::Error:
             return "Error";
-        case LSFatal:
+        case beast::Severity::Fatal:
             return "Fatal";
         // LCOV_EXCL_START
         default:
@@ -279,35 +223,35 @@ Logs::toString(LogSeverity s)
     }
 }
 
-LogSeverity
+std::optional<beast::Severity>
 Logs::fromString(std::string const& s)
 {
     if (boost::iequals(s, "trace"))
-        return LSTrace;
+        return beast::Severity::Trace;
 
     if (boost::iequals(s, "debug"))
-        return LSDebug;
+        return beast::Severity::Debug;
 
     if (boost::iequals(s, "info") || boost::iequals(s, "information"))
-        return LSInfo;
+        return beast::Severity::Info;
 
     if (boost::iequals(s, "warn") || boost::iequals(s, "warning") || boost::iequals(s, "warnings"))
-        return LSWarning;
+        return beast::Severity::Warning;
 
     if (boost::iequals(s, "error") || boost::iequals(s, "errors"))
-        return LSError;
+        return beast::Severity::Error;
 
     if (boost::iequals(s, "fatal") || boost::iequals(s, "fatals"))
-        return LSFatal;
+        return beast::Severity::Fatal;
 
-    return LSInvalid;
+    return std::nullopt;
 }
 
 void
 Logs::format(
     std::string& output,
     std::string const& message,
-    beast::severities::Severity severity,
+    beast::Severity severity,
     std::string const& partition)
 {
     output.reserve(message.size() + partition.size() + 100);
@@ -318,22 +262,22 @@ Logs::format(
     if (!partition.empty())
         output += partition + ":";
 
-    using namespace beast::severities;
+    using beast::Severity;
     switch (severity)
     {
-        case KTrace:
+        case Severity::Trace:
             output += "TRC ";
             break;
-        case KDebug:
+        case Severity::Debug:
             output += "DBG ";
             break;
-        case KInfo:
+        case Severity::Info:
             output += "NFO ";
             break;
-        case KWarning:
+        case Severity::Warning:
             output += "WRN ";
             break;
-        case KError:
+        case Severity::Error:
             output += "ERR ";
             break;
         // LCOV_EXCL_START
@@ -341,7 +285,7 @@ Logs::format(
             UNREACHABLE("xrpl::Logs::format : invalid severity");
             [[fallthrough]];
         // LCOV_EXCL_STOP
-        case KFatal:
+        case Severity::Fatal:
             output += "FTL ";
             break;
     }
@@ -349,9 +293,9 @@ Logs::format(
     output += message;
 
     // Limit the maximum length of the output
-    if (output.size() > MaximumMessageCharacters)
+    if (output.size() > kMAXIMUM_MESSAGE_CHARACTERS)
     {
-        output.resize(MaximumMessageCharacters - 3);
+        output.resize(kMAXIMUM_MESSAGE_CHARACTERS - 3);
         output += "...";
     }
 

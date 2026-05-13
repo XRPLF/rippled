@@ -44,7 +44,7 @@ outer(jtx::Account const& account, uint32_t seq, STAmount const& fee, std::uint3
     json::Value jv;
     jv[jss::TransactionType] = jss::Batch;
     jv[jss::Account] = account.human();
-    jv[jss::RawTransactions] = json::Value{json::ArrayValue};
+    jv[jss::RawTransactions] = json::Value{json::ValueType::Array};
     jv[jss::Sequence] = seq;
     jv[jss::Flags] = flags;
     jv[jss::Fee] = to_string(fee);

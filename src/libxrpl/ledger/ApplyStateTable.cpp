@@ -169,7 +169,7 @@ ApplyStateTable::apply(
                 {
                     // go through the original node for
                     // modified  fields saved on modification
-                    if (obj.getFName().shouldMeta(SField::SMdChangeOrig) &&
+                    if (obj.getFName().shouldMeta(SField::kSMD_CHANGE_ORIG) &&
                         !curNode->hasMatchingEntry(obj))
                         prevs.emplaceBack(obj);
                 }
@@ -181,7 +181,7 @@ ApplyStateTable::apply(
                 for (auto const& obj : *curNode)
                 {
                     // go through the final node for final fields
-                    if (obj.getFName().shouldMeta(SField::SMdAlways | SField::SMdDeleteFinal))
+                    if (obj.getFName().shouldMeta(SField::kSMD_ALWAYS | SField::kSMD_DELETE_FINAL))
                         finals.emplaceBack(obj);
                 }
 
@@ -205,7 +205,7 @@ ApplyStateTable::apply(
                 for (auto const& obj : *origNode)
                 {
                     // search the original node for values saved on modify
-                    if (obj.getFName().shouldMeta(SField::SMdChangeOrig) &&
+                    if (obj.getFName().shouldMeta(SField::kSMD_CHANGE_ORIG) &&
                         !curNode->hasMatchingEntry(obj))
                         prevs.emplaceBack(obj);
                 }
@@ -217,7 +217,7 @@ ApplyStateTable::apply(
                 for (auto const& obj : *curNode)
                 {
                     // search the final node for values saved always
-                    if (obj.getFName().shouldMeta(SField::SMdAlways | SField::SMdChangeNew))
+                    if (obj.getFName().shouldMeta(SField::kSMD_ALWAYS | SField::kSMD_CHANGE_NEW))
                         finals.emplaceBack(obj);
                 }
 
@@ -240,7 +240,7 @@ ApplyStateTable::apply(
                 {
                     // save non-default values
                     if (!obj.isDefault() &&
-                        obj.getFName().shouldMeta(SField::SMdCreate | SField::SMdAlways))
+                        obj.getFName().shouldMeta(SField::kSMD_CREATE | SField::kSMD_ALWAYS))
                         news.emplaceBack(obj);
                 }
 
@@ -269,7 +269,7 @@ ApplyStateTable::apply(
 
         // VFALCO For diagnostics do we want to show
         //        metadata even when the base view is open?
-        JLOG(j.trace()) << "metadata " << meta.getJson(JsonOptions::KNone);
+        JLOG(j.trace()) << "metadata " << meta.getJson(JsonOptions::Values::None);
 
         metadata = meta;
     }

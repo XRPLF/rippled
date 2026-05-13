@@ -122,4 +122,13 @@ private:
     std::optional<Rules> saved_;
 };
 
+class NumberSO;
+
+void
+createGuards(
+    Rules const& rules,
+    std::optional<NumberSO>& stNumberSO,
+    std::optional<CurrentTransactionRulesGuard>& rulesGuard,
+    std::optional<NumberMantissaScaleGuard>& mantissaScaleGuard);
+
 }  // namespace xrpl

@@ -7,6 +7,7 @@
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/STVector256.h>
 
 #include <memory>
@@ -46,6 +47,9 @@ setCurrentTransactionRules(std::optional<Rules> r)
     // Because fixCleanup3_2_0 fixes a separate bug related to the large
     // mantissas, that can take precedence and activate the large
     // mantissas even in the absence of the other two amendments.
+    //
+    // If any new conditions with new amendments are added, those amendments must also be added to
+    // createGuards.
     bool const enableCuspRoundingFix = !r || r->enabled(fixCleanup3_2_0);
     bool const enableVaultNumbers = enableCuspRoundingFix ||
         (r->enabled(featureSingleAssetVault) || r->enabled(featureLendingProtocol));
@@ -55,6 +59,34 @@ setCurrentTransactionRules(std::optional<Rules> r)
                                                     : MantissaRange::MantissaScale::Small));
 
     *getCurrentTransactionRulesRef() = std::move(r);
+}
+
+void
+createGuards(
+    Rules const& rules,
+    std::optional<NumberSO>& stNumberSO,
+    std::optional<CurrentTransactionRulesGuard>& rulesGuard,
+    std::optional<NumberMantissaScaleGuard>& mantissaScaleGuard)
+{
+    // The list amendments used to decide which guard(s) to create must be a superset of the list
+    // used to figure out which mantissa scale to use in setCurrentTransactionRules. Additional
+    // amendments can be added if desired.
+    //
+    // As soon as any one of these amendments is retired, this whole function can be removed, and
+    // the first set of guards can be created directly at the call site, without using optional.
+    if (rules.enabled(fixCleanup3_2_0) || rules.enabled(featureSingleAssetVault) ||
+        rules.enabled(featureLendingProtocol))
+    {
+        // raii classes for the current ledger rules.
+        // fixUniversalNumber predates the rulesGuard and should be replaced.
+        stNumberSO.emplace(rules.enabled(fixUniversalNumber));
+        rulesGuard.emplace(rules);
+    }
+    else
+    {
+        // Without those features enabled, always use the old number rules.
+        mantissaScaleGuard.emplace(MantissaRange::MantissaScale::Small);
+    }
 }
 
 class Rules::Impl

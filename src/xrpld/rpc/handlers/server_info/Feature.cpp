@@ -47,7 +47,7 @@ doFeature(RPC::JsonContext& context)
             features[to_string(h)][jss::majority] = t.time_since_epoch().count();
         }
 
-        json::Value jvReply = json::ObjectValue;
+        json::Value jvReply = json::ValueType::Object;
         jvReply[jss::features] = features;
         return jvReply;
     }

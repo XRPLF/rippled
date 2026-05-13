@@ -66,26 +66,15 @@ withTxnType(Rules const& rules, TxType txnType, F&& f)
     // so these need to be more global.
     //
     // To prevent unintentional side effects on existing checks, they will be
-    // set for every operation only once SingleAssetVault (or later
-    // LendingProtocol) are enabled.
+    // set for every operation only once at least one of the relevant amendments
+    // are enabled.
     //
     // See also Transactor::operator().
     //
     std::optional<NumberSO> stNumberSO;
     std::optional<CurrentTransactionRulesGuard> rulesGuard;
     std::optional<NumberMantissaScaleGuard> mantissaScaleGuard;
-    if (rules.enabled(featureSingleAssetVault) || rules.enabled(featureLendingProtocol))
-    {
-        // raii classes for the current ledger rules.
-        // fixUniversalNumber predates the rulesGuard and should be replaced.
-        stNumberSO.emplace(rules.enabled(fixUniversalNumber));
-        rulesGuard.emplace(rules);
-    }
-    else
-    {
-        // Without those features enabled, always use the old number rules.
-        mantissaScaleGuard.emplace(MantissaRange::MantissaScale::Small);
-    }
+    createGuards(rules, stNumberSO, rulesGuard, mantissaScaleGuard);
 
     switch (txnType)
     {
@@ -113,29 +102,29 @@ withTxnType(Rules const& rules, TxType txnType, F&& f)
 // building with Visual Studio 2017 we can consider replacing the four
 // templates with a single template function that uses if constexpr.
 //
-// For Transactor::Normal
+// For ConsequencesFactoryType::Normal
 //
 
 template <class T>
-    requires(T::kCONSEQUENCES_FACTORY == Transactor::Normal)
+    requires(T::kCONSEQUENCES_FACTORY == Transactor::ConsequencesFactoryType::Normal)
 TxConsequences
 consequencesHelper(PreflightContext const& ctx)
 {
     return TxConsequences(ctx.tx);
 };
 
-// For Transactor::Blocker
+// For ConsequencesFactoryType::Blocker
 template <class T>
-    requires(T::kCONSEQUENCES_FACTORY == Transactor::Blocker)
+    requires(T::kCONSEQUENCES_FACTORY == Transactor::ConsequencesFactoryType::Blocker)
 TxConsequences
 consequencesHelper(PreflightContext const& ctx)
 {
     return TxConsequences(ctx.tx, TxConsequences::Category::Blocker);
 };
 
-// For Transactor::Custom
+// For ConsequencesFactoryType::Custom
 template <class T>
-    requires(T::kCONSEQUENCES_FACTORY == Transactor::Custom)
+    requires(T::kCONSEQUENCES_FACTORY == Transactor::ConsequencesFactoryType::Custom)
 TxConsequences
 consequencesHelper(PreflightContext const& ctx)
 {

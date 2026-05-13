@@ -333,7 +333,7 @@ public:
                 jv[jss::TransactionType] = jss::EscrowCreate;
                 jv[jss::Account] = Account{"bob5"}.human();
                 jv[jss::Destination] = Account{"bob6"}.human();
-                jv[jss::Amount] = XRP(50).value().getJson(JsonOptions::KNone);
+                jv[jss::Amount] = XRP(50).value().getJson(JsonOptions::Values::None);
                 jv[sfFinishAfter.fieldName] =
                     NetClock::time_point{env.now() + 10s}.time_since_epoch().count();
                 env(jv);
@@ -344,7 +344,7 @@ public:
                 jv[jss::TransactionType] = jss::PaymentChannelCreate;
                 jv[jss::Account] = Account{"bob6"}.human();
                 jv[jss::Destination] = Account{"bob7"}.human();
-                jv[jss::Amount] = XRP(100).value().getJson(JsonOptions::KNone);
+                jv[jss::Amount] = XRP(100).value().getJson(JsonOptions::Values::None);
                 jv[jss::SettleDelay] = NetClock::duration{10s}.count();
                 jv[sfPublicKey.fieldName] = strHex(Account{"bob6"}.pk().slice());
                 jv[sfCancelAfter.fieldName] =

@@ -2789,7 +2789,7 @@ public:
         auto const aliceSeq = env.seq(alice);
         auto const lastLedgerSeq = env.current()->header().seq + 2;
 
-        auto submitParams = json::Value(json::ObjectValue);
+        auto submitParams = json::Value(json::ValueType::Object);
         for (int i = 0; i < 5; ++i)
         {
             if (i == 2)
@@ -2974,7 +2974,7 @@ public:
             BEAST_EXPECT(!queueData.isMember(jss::transactions));
         }
 
-        auto submitParams = json::Value(json::ObjectValue);
+        auto submitParams = json::Value(json::ValueType::Object);
         envs(noop(alice), Fee(baseFee * 10), Seq(kNONE), Ter(terQUEUED))(submitParams);
         envs(noop(alice), Fee(baseFee * 10), Seq(kNONE), Ter(terQUEUED))(submitParams);
         envs(noop(alice), Fee(baseFee * 10), Seq(kNONE), Ter(terQUEUED))(submitParams);
@@ -3220,7 +3220,7 @@ public:
         checkMetrics(*this, env, 0, 6, 4, 3);
 
         auto aliceSeq = env.seq(alice);
-        auto submitParams = json::Value(json::ObjectValue);
+        auto submitParams = json::Value(json::ValueType::Object);
         for (auto i = 0; i < 4; ++i)
             envs(noop(alice), Fee(baseFee * 10), Seq(aliceSeq + i), Ter(terQUEUED))(submitParams);
         checkMetrics(*this, env, 4, 6, 4, 3);
@@ -3407,7 +3407,7 @@ public:
         auto const baseFee = env.current()->fees().base.drops();
 
         json::Value stream;
-        stream[jss::streams] = json::ArrayValue;
+        stream[jss::streams] = json::ValueType::Array;
         stream[jss::streams].append("server");
         auto wsc = makeWSClient(env.app().config());
         {
