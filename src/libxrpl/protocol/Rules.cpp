@@ -53,12 +53,29 @@ setCurrentTransactionRules(std::optional<Rules> r)
     bool const enableCuspRoundingFix = !r || r->enabled(fixCleanup3_2_0);
     bool const enableVaultNumbers = enableCuspRoundingFix ||
         (r->enabled(featureSingleAssetVault) || r->enabled(featureLendingProtocol));
+    XRPL_ASSERT(
+        !r || useRulesGuards(*r) == (enableCuspRoundingFix || enableVaultNumbers),
+        "setCurrentTransactionRules : rule decisions match");
     Number::setMantissaScale(
         enableCuspRoundingFix ? MantissaRange::MantissaScale::Large
                               : (enableVaultNumbers ? MantissaRange::MantissaScale::LargeLegacy
                                                     : MantissaRange::MantissaScale::Small));
 
     *getCurrentTransactionRulesRef() = std::move(r);
+}
+
+bool
+useRulesGuards(Rules const& rules)
+{
+    // The list of amendments used here - to decide whether to create a RulesGuard - must be a
+    // superset of the list used to figure out which mantissa scale to use in
+    // setCurrentTransactionRules. Additional amendments can be added if desired.
+    //
+    // As soon as any one of these amendments is retired, this whole function can be removed, along
+    // with createGuards, and any other callers, and the first set of guards can be created directly
+    // at the call site, without using optional.
+    return rules.enabled(fixCleanup3_2_0) || rules.enabled(featureSingleAssetVault) ||
+        rules.enabled(featureLendingProtocol);
 }
 
 void
@@ -68,14 +85,7 @@ createGuards(
     std::optional<CurrentTransactionRulesGuard>& rulesGuard,
     std::optional<NumberMantissaScaleGuard>& mantissaScaleGuard)
 {
-    // The list amendments used to decide which guard(s) to create must be a superset of the list
-    // used to figure out which mantissa scale to use in setCurrentTransactionRules. Additional
-    // amendments can be added if desired.
-    //
-    // As soon as any one of these amendments is retired, this whole function can be removed, and
-    // the first set of guards can be created directly at the call site, without using optional.
-    if (rules.enabled(fixCleanup3_2_0) || rules.enabled(featureSingleAssetVault) ||
-        rules.enabled(featureLendingProtocol))
+    if (useRulesGuards(rules))
     {
         // raii classes for the current ledger rules.
         // fixUniversalNumber predates the rulesGuard and should be replaced.
