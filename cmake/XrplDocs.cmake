@@ -89,3 +89,30 @@ add_custom_target(
     DEPENDS "${doxygen_index_file}"
     SOURCES "${dependencies}"
 )
+
+# Documentation coverage target using coverxygen.
+# Generates LCOV-format coverage report from Doxygen XML output.
+# Requires: pip install coverxygen
+set(doxygen_xml_dir "${doxygen_output_directory}/xml")
+set(doc_coverage_file "${CMAKE_BINARY_DIR}/doc-coverage.info")
+
+add_custom_command(
+    OUTPUT "${doc_coverage_file}"
+    COMMAND
+        coverxygen
+        --xml-dir "${doxygen_xml_dir}"
+        --src-dir "${CMAKE_CURRENT_SOURCE_DIR}"
+        --output "${doc_coverage_file}"
+        --kind class,struct,function,enum,typedef,variable
+        --scope public
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    DEPENDS docs
+    COMMENT "Generating documentation coverage report"
+)
+add_custom_target(
+    docs-coverage
+    DEPENDS "${doc_coverage_file}"
+    COMMAND
+        "${CMAKE_COMMAND}" -E echo
+        "Documentation coverage report: ${doc_coverage_file}"
+)
