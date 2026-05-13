@@ -30,7 +30,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_peer_quality{metric=\"peer_latency_p90_ms\",exported_instance=~\"$node\"}",
+          "expr": "xrpld_peer_quality{metric=\"peer_latency_p90_ms\",exported_instance=~\"$node\"}",
           "legendFormat": "P90 Latency [{{exported_instance}}]"
         }
       ],
@@ -91,7 +91,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_peer_quality{metric=\"peers_insane_count\",exported_instance=~\"$node\"}",
+          "expr": "xrpld_peer_quality{metric=\"peers_insane_count\",exported_instance=~\"$node\"}",
           "legendFormat": "Insane Peers [{{exported_instance}}]"
         }
       ],
@@ -140,7 +140,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_peer_quality{metric=\"peers_higher_version_pct\",exported_instance=~\"$node\"}",
+          "expr": "xrpld_peer_quality{metric=\"peers_higher_version_pct\",exported_instance=~\"$node\"}",
           "legendFormat": "Higher Version % [{{exported_instance}}]"
         }
       ],
@@ -191,7 +191,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_peer_quality{metric=\"upgrade_recommended\",exported_instance=~\"$node\"}",
+          "expr": "xrpld_peer_quality{metric=\"upgrade_recommended\",exported_instance=~\"$node\"}",
           "legendFormat": "Upgrade [{{exported_instance}}]"
         }
       ],
@@ -250,7 +250,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_server_info{metric=\"peer_disconnects_resources\",exported_instance=~\"$node\"}",
+          "expr": "xrpld_server_info{metric=\"peer_disconnects_resources\",exported_instance=~\"$node\"}",
           "legendFormat": "Disconnects [{{exported_instance}}]"
         }
       ],
@@ -365,7 +365,7 @@
         "label": "Node",
         "description": "Filter by rippled node (service.instance.id)",
         "type": "query",
-        "query": "label_values(rippled_peer_quality, exported_instance)",
+        "query": "label_values(xrpld_peer_quality, exported_instance)",
         "datasource": {
           "type": "prometheus",
           "uid": "prometheus"
