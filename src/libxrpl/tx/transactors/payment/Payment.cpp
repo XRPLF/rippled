@@ -390,7 +390,7 @@ Payment::preclaim(PreclaimContext const& ctx)
 
     if (ctx.tx.isFieldPresent(sfDomainID))
     {
-        if (ctx.view.rules().enabled(fixSecurity3_1_3))
+        if (ctx.view.rules().enabled(fixCleanup3_2_0))
         {
             auto const domainID = ctx.tx[sfDomainID];
             auto const sleDomain = ctx.view.read(keylet::permissionedDomain(domainID));
@@ -435,12 +435,12 @@ Payment::doApply()
 {
     // If a DomainID is present, verify both sender and destination are still in
     // the domain and delete any expired credential SLEs from the ledger.
-    if (ctx_.tx.isFieldPresent(sfDomainID) && ctx_.view().rules().enabled(fixSecurity3_1_3))
+    if (ctx_.tx.isFieldPresent(sfDomainID) && ctx_.view().rules().enabled(fixCleanup3_2_0))
     {
         auto const domainID = ctx_.tx[sfDomainID];
         auto const sleDomain = ctx_.view().read(keylet::permissionedDomain(domainID));
         if (!sleDomain)
-            return tecNO_PERMISSION;
+            return tecINTERNAL;  // LCOV_EXCL_LINE
 
         auto const cleanupFor = [&](AccountID const& acct) -> TER {
             if (sleDomain->getAccountID(sfOwner) == acct)
