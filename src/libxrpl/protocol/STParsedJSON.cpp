@@ -137,6 +137,15 @@ arrayExpected(std::string const& object, std::string const& field)
 }
 
 static inline json::Value
+arrayTooBig(std::string const& object, std::string const& field)
+{
+    return RPC::makeError(
+        RpcInvalidParams,
+        "Field '" + makeName(object, field) + "' exceeds allowed JSON array size of " +
+            std::to_string(kMAX_PARSED_JSON_ARRAY_SIZE) + " elements per field.");
+}
+
+static inline json::Value
 stringExpected(std::string const& object, std::string const& field)
 {
     return RPC::makeError(
@@ -681,9 +690,15 @@ parseLeaf(
             break;
 
         case STI_VECTOR256:
-            if (!value.isArrayOrNull())
+            if (not value.isArrayOrNull())
             {
                 error = arrayExpected(jsonName, fieldName);
+                return ret;
+            }
+
+            if (not value.isNull() and value.size() > kMAX_PARSED_JSON_ARRAY_SIZE)
+            {
+                error = arrayTooBig(jsonName, fieldName);
                 return ret;
             }
 
@@ -708,9 +723,15 @@ parseLeaf(
             break;
 
         case STI_PATHSET:
-            if (!value.isArrayOrNull())
+            if (not value.isArrayOrNull())
             {
                 error = arrayExpected(jsonName, fieldName);
+                return ret;
+            }
+
+            if (not value.isNull() and value.size() > kMAX_PARSED_JSON_ARRAY_SIZE)
+            {
+                error = arrayTooBig(jsonName, fieldName);
                 return ret;
             }
 
@@ -722,11 +743,19 @@ parseLeaf(
                 {
                     STPath p;
 
-                    if (!value[i].isArrayOrNull())
+                    if (not value[i].isArrayOrNull())
                     {
                         std::stringstream ss;
                         ss << fieldName << "[" << i << "]";
                         error = arrayExpected(jsonName, ss.str());
+                        return ret;
+                    }
+
+                    if (not value[i].isNull() and value[i].size() > kMAX_PARSED_JSON_ARRAY_SIZE)
+                    {
+                        std::stringstream ss;
+                        ss << fieldName << "[" << i << "]";
+                        error = arrayTooBig(jsonName, ss.str());
                         return ret;
                     }
 
@@ -946,8 +975,6 @@ parseLeaf(
     return ret;
 }
 
-static int const kMAX_DEPTH = 64;
-
 // Forward declaration since parseObject() and parseArray() call each other.
 static std::optional<detail::STVar>
 parseArray(
@@ -965,13 +992,13 @@ parseObject(
     int depth,
     json::Value& error)
 {
-    if (!json.isObjectOrNull())
+    if (not json.isObjectOrNull())
     {
         error = notAnObject(jsonName);
         return std::nullopt;
     }
 
-    if (depth > kMAX_DEPTH)
+    if (depth > kMAX_PARSED_JSON_DEPTH)
     {
         error = tooDeep(jsonName);
         return std::nullopt;
@@ -984,7 +1011,6 @@ parseObject(
         for (auto const& fieldName : json.getMemberNames())
         {
             json::Value const& value = json[fieldName];
-
             auto const& field = SField::getField(fieldName);
 
             if (field == kSF_INVALID)
@@ -1079,15 +1105,21 @@ parseArray(
     int depth,
     json::Value& error)
 {
-    if (!json.isArrayOrNull())
+    if (not json.isArrayOrNull())
     {
         error = notAnArray(jsonName);
         return std::nullopt;
     }
 
-    if (depth > kMAX_DEPTH)
+    if (depth > kMAX_PARSED_JSON_DEPTH)
     {
         error = tooDeep(jsonName);
+        return std::nullopt;
+    }
+
+    if (not json.isNull() and json.size() > kMAX_PARSED_JSON_ARRAY_SIZE)
+    {
+        error = arrayTooBig(jsonName, "");
         return std::nullopt;
     }
 
@@ -1108,10 +1140,8 @@ parseArray(
             }
 
             // TODO: There doesn't seem to be a nice way to get just the
-            // first/only key in an object without copying all keys into
-            // a vector
+            // first/only key in an object without copying all keys into a vector
             std::string const memberName(json[i].getMemberNames()[0]);
-            ;
             auto const& nameField(SField::getField(memberName));
 
             if (nameField == kSF_INVALID)
