@@ -2536,7 +2536,7 @@ NetworkOPsImp::setMode(OperatingMode om)
     accounting_.mode(om);
 
     // Record state change for OTel dashboard parity counter.
-    if (auto* mr = registry_.getMetricsRegistry())
+    if (auto* mr = registry_.get().getMetricsRegistry())
         mr->incrementStateChanges();
 
     JLOG(m_journal.info()) << "STATE->" << strOperatingMode();
@@ -2547,7 +2547,7 @@ bool
 NetworkOPsImp::recvValidation(std::shared_ptr<STValidation> const& val, std::string const& source)
 {
     JLOG(m_journal.trace()) << "recvValidation " << val->getLedgerHash() << " from " << source;
-    if (auto* mr = registry_.getMetricsRegistry())
+    if (auto* mr = registry_.get().getMetricsRegistry())
         mr->incrementValidationsChecked();
 
     std::unique_lock lock(validationsMutex_);
