@@ -192,7 +192,7 @@ void
 Database::importInternal(Backend& dstBackend, Database& srcDB)
 {
     Batch batch;
-    batch.reserve(BatchWritePreallocationSize);
+    batch.reserve(kBATCH_WRITE_PREALLOCATION_SIZE);
     auto storeBatch = [&, fname = __func__]() {
         try
         {
@@ -217,7 +217,7 @@ Database::importInternal(Backend& dstBackend, Database& srcDB)
             return;
 
         batch.emplace_back(std::move(nodeObject));
-        if (batch.size() >= BatchWritePreallocationSize)
+        if (batch.size() >= kBATCH_WRITE_PREALLOCATION_SIZE)
             storeBatch();
     });
 
