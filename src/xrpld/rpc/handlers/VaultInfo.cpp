@@ -27,7 +27,8 @@ parseVault(json::Value const& params, json::Value& jvResult)
     {
         if (!params[jss::vault_id].isString())
         {
-            return RPC::expectedFieldError(jss::vault_id, "string");
+            jvResult = RPC::expectedFieldError(jss::vault_id, "string");
+            return std::nullopt;
         }
         if (!uNodeIndex.parseHex(params[jss::vault_id].asString()))
         {
@@ -40,7 +41,8 @@ parseVault(json::Value const& params, json::Value& jvResult)
     {
         if (!params[jss::owner].isString())
         {
-            return RPC::expectedFieldError(jss::owner, "string");
+            jvResult = RPC::expectedFieldError(jss::owner, "string");
+            return std::nullopt;
         }
         auto const id = parseBase58<AccountID>(params[jss::owner].asString());
         if (!id)
