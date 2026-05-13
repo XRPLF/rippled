@@ -30,8 +30,8 @@ TEST(SpanGuardFactory, category_span_returns_null_when_disabled)
     auto span = SpanGuard::span(TraceCategory::Rpc, "rpc", "test");
     EXPECT_FALSE(span);
 
-    span.setAttribute("xrpl.rpc.command", "test");
-    span.setAttribute("xrpl.rpc.status", "success");
+    span.setAttribute("command", "test");
+    span.setAttribute("rpc_status", "success");
 }
 
 TEST(SpanGuardFactory, child_span_null_when_no_parent)

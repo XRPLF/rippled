@@ -27,13 +27,11 @@
       "category": "rpc",
       "parent": "rpc.process",
       "required_attributes": [
-        "xrpl.rpc.command",
-        "xrpl.rpc.version",
-        "xrpl.rpc.role",
-        "xrpl.rpc.status",
-        "xrpl.rpc.duration_ms",
-        "xrpl.node.amendment_blocked",
-        "xrpl.node.server_state"
+        "command",
+        "version",
+        "rpc_role",
+        "rpc_status",
+        "duration_ms"
       ],
       "config_flag": "trace_rpc",
       "note": "Wildcard — matches rpc.command.server_info, rpc.command.ledger, etc."
@@ -42,7 +40,7 @@
       "name": "tx.process",
       "category": "transaction",
       "parent": null,
-      "required_attributes": ["xrpl.tx.hash", "xrpl.tx.local", "xrpl.tx.path"],
+      "required_attributes": ["xrpl.tx.hash", "local", "path"],
       "config_flag": "trace_transactions"
     },
     {
@@ -52,8 +50,8 @@
       "required_attributes": [
         "xrpl.peer.id",
         "xrpl.tx.hash",
-        "xrpl.tx.suppressed",
-        "xrpl.tx.status"
+        "suppressed",
+        "tx_status"
       ],
       "config_flag": "trace_transactions"
     },
@@ -61,11 +59,7 @@
       "name": "tx.apply",
       "category": "transaction",
       "parent": "ledger.build",
-      "required_attributes": [
-        "xrpl.ledger.seq",
-        "xrpl.ledger.tx_count",
-        "xrpl.ledger.tx_failed"
-      ],
+      "required_attributes": ["xrpl.ledger.seq", "tx_count", "tx_failed"],
       "config_flag": "trace_transactions"
     },
     {
@@ -79,10 +73,7 @@
       "name": "consensus.ledger_close",
       "category": "consensus",
       "parent": null,
-      "required_attributes": [
-        "xrpl.consensus.ledger.seq",
-        "xrpl.consensus.mode"
-      ],
+      "required_attributes": ["xrpl.ledger.seq", "xrpl.consensus.mode"],
       "config_flag": "trace_consensus"
     },
     {
@@ -90,9 +81,9 @@
       "category": "consensus",
       "parent": null,
       "required_attributes": [
-        "xrpl.consensus.proposers",
-        "xrpl.consensus.validation_quorum",
-        "xrpl.consensus.proposers_validated"
+        "proposers",
+        "validation_quorum",
+        "proposers_validated"
       ],
       "config_flag": "trace_consensus"
     },
@@ -101,10 +92,10 @@
       "category": "consensus",
       "parent": null,
       "required_attributes": [
-        "xrpl.consensus.ledger.seq",
-        "xrpl.consensus.proposing",
-        "xrpl.validation.ledger_hash",
-        "xrpl.validation.full"
+        "xrpl.ledger.seq",
+        "proposing",
+        "xrpl.ledger.hash",
+        "validation_full"
       ],
       "config_flag": "trace_consensus"
     },
@@ -113,12 +104,12 @@
       "category": "consensus",
       "parent": null,
       "required_attributes": [
-        "xrpl.consensus.close_time",
-        "xrpl.consensus.ledger.seq",
-        "xrpl.consensus.parent_close_time",
-        "xrpl.consensus.close_time_self",
-        "xrpl.consensus.close_time_vote_bins",
-        "xrpl.consensus.resolution_direction"
+        "close_time",
+        "xrpl.ledger.seq",
+        "parent_close_time",
+        "close_time_self",
+        "close_time_vote_bins",
+        "resolution_direction"
       ],
       "config_flag": "trace_consensus"
     },
@@ -128,11 +119,11 @@
       "parent": null,
       "required_attributes": [
         "xrpl.ledger.seq",
-        "xrpl.ledger.tx_count",
-        "xrpl.ledger.tx_failed",
-        "xrpl.ledger.close_time",
-        "xrpl.ledger.close_time_correct",
-        "xrpl.ledger.close_resolution_ms"
+        "tx_count",
+        "tx_failed",
+        "close_time",
+        "close_time_correct",
+        "close_resolution_ms"
       ],
       "config_flag": "trace_ledger"
     },
@@ -140,7 +131,7 @@
       "name": "ledger.validate",
       "category": "ledger",
       "parent": null,
-      "required_attributes": ["xrpl.ledger.seq", "xrpl.ledger.validations"],
+      "required_attributes": ["xrpl.ledger.seq", "validations"],
       "config_flag": "trace_ledger"
     },
     {
@@ -154,7 +145,7 @@
       "name": "peer.proposal.receive",
       "category": "peer",
       "parent": null,
-      "required_attributes": ["xrpl.peer.id", "xrpl.peer.proposal.trusted"],
+      "required_attributes": ["xrpl.peer.id", "proposal_trusted"],
       "config_flag": "trace_peer"
     },
     {
@@ -163,9 +154,9 @@
       "parent": null,
       "required_attributes": [
         "xrpl.peer.id",
-        "xrpl.peer.validation.trusted",
-        "xrpl.peer.validation.ledger_hash",
-        "xrpl.peer.validation.full"
+        "validation_trusted",
+        "xrpl.ledger.hash",
+        "validation_full"
       ],
       "config_flag": "trace_peer"
     }

@@ -381,8 +381,8 @@ All 16 production span names instrumented across Phases 2-5:
 | `rpc.request`               | ServerHandler.cpp:271 | 2     | --                                                                                       | Any HTTP RPC call         |
 | `rpc.process`               | ServerHandler.cpp:573 | 2     | --                                                                                       | Any HTTP RPC call         |
 | `rpc.ws_message`            | ServerHandler.cpp:384 | 2     | --                                                                                       | WebSocket RPC message     |
-| `rpc.command.<name>`        | RPCHandler.cpp:161    | 2     | `xrpl.rpc.command`, `xrpl.rpc.version`, `xrpl.rpc.role`                                  | Any RPC command           |
-| `tx.process`                | NetworkOPs.cpp:1227   | 3     | `xrpl.tx.hash`, `xrpl.tx.local`, `xrpl.tx.path`                                          | Submit transaction        |
+| `rpc.command.<name>`        | RPCHandler.cpp:161    | 2     | `command`, `version`, `rpc_role`                                                         | Any RPC command           |
+| `tx.process`                | NetworkOPs.cpp:1227   | 3     | `xrpl.tx.hash`, `local`, `path`                                                          | Submit transaction        |
 | `tx.receive`                | PeerImp.cpp:1273      | 3     | `xrpl.peer.id`                                                                           | Peer relays transaction   |
 | `consensus.proposal.send`   | RCLConsensus.cpp:177  | 4     | `xrpl.consensus.round`                                                                   | Consensus proposing phase |
 | `consensus.ledger_close`    | RCLConsensus.cpp:282  | 4     | `xrpl.consensus.ledger.seq`, `xrpl.consensus.mode`                                       | Ledger close event        |
@@ -444,7 +444,7 @@ curl -s "$PROM/api/v1/query?query=traces_span_metrics_duration_milliseconds_coun
 
 # RPC calls by command
 curl -s "$PROM/api/v1/query?query=traces_span_metrics_calls_total{span_name=~\"rpc.command.*\"}" \
-  | jq '.data.result[] | {command: .metric["xrpl.rpc.command"], count: .value[1]}'
+  | jq '.data.result[] | {command: .metric["command"], count: .value[1]}'
 ```
 
 ### Grafana
