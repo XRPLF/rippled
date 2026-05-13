@@ -130,7 +130,10 @@ add_module(xrpl resource)
 target_link_libraries(xrpl.libxrpl.resource PUBLIC xrpl.libxrpl.protocol)
 
 add_module(xrpl peerfinder)
-target_link_libraries(xrpl.libxrpl.peerfinder PUBLIC xrpl.libxrpl.basics)
+target_link_libraries(
+    xrpl.libxrpl.peerfinder
+    PUBLIC xrpl.libxrpl.basics xrpl.libxrpl.protocol
+)
 
 # Level 08
 add_module(xrpl net)

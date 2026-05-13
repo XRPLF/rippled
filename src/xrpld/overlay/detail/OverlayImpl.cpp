@@ -504,7 +504,7 @@ OverlayImpl::remove(std::shared_ptr<PeerFinder::Slot> const& slot)
 void
 OverlayImpl::start()
 {
-    PeerFinder::Config const config = PeerFinder::Config::makeConfig(
+    PeerFinder::Config const config = PeerFinder::makeConfig(
         app_.config(),
         serverHandler_.setup().overlay.port(),
         app_.getValidationPublicKey().has_value(),

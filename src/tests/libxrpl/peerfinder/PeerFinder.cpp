@@ -1,12 +1,10 @@
-#include <xrpld/core/Config.h>
-#include <xrpld/peerfinder/PeerfinderManager.h>
-#include <xrpld/peerfinder/detail/Counts.h>
-#include <xrpld/peerfinder/detail/Logic.h>
-#include <xrpld/peerfinder/detail/Store.h>
-
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/peerfinder/Config.h>
+#include <xrpl/peerfinder/detail/Counts.h>
+#include <xrpl/peerfinder/detail/Logic.h>
+#include <xrpl/peerfinder/detail/Store.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
@@ -394,36 +392,11 @@ TEST(PeerFinderConfig, applies_legacy_and_explicit_peer_limits)
     {
         SCOPED_TRACE(testCase.name);
 
-        xrpl::Config serverConfig;
-        std::string configText;
-        auto max = 0;
-        if (testCase.maxPeers)
-        {
-            max = *testCase.maxPeers;
-            configText += "[peers_max]\n" + std::to_string(max) + "\n[peers_in_max]\n" +
-                std::to_string(testCase.maxIn.value_or(0)) + "\n[peers_out_max]\n" +
-                std::to_string(testCase.maxOut.value_or(0)) + "\n";
-        }
-        else if (testCase.maxIn && testCase.maxOut)
-        {
-            configText += "[peers_in_max]\n" + std::to_string(*testCase.maxIn) +
-                "\n[peers_out_max]\n" + std::to_string(*testCase.maxOut) + "\n";
-        }
+        PeerLimitConfig const limits{
+            .maxPeers = testCase.maxPeers, .inPeers = testCase.maxIn, .outPeers = testCase.maxOut};
 
-        serverConfig.loadFromString(configText);
-        if (testCase.maxPeers || (!testCase.maxIn && !testCase.maxOut))
-        {
-            EXPECT_EQ(serverConfig.PEERS_MAX, static_cast<std::size_t>(max));
-            EXPECT_EQ(serverConfig.PEERS_IN_MAX, 0u);
-            EXPECT_EQ(serverConfig.PEERS_OUT_MAX, 0u);
-        }
-        else
-        {
-            EXPECT_EQ(serverConfig.PEERS_IN_MAX, testCase.maxIn.value_or(0));
-            EXPECT_EQ(serverConfig.PEERS_OUT_MAX, testCase.maxOut.value_or(0));
-        }
-
-        Config const config = Config::makeConfig(serverConfig, testCase.port, false, 0);
+        Config const config =
+            Config::makeConfig(false, false, limits, testCase.port, false, 0, true);
 
         Counts counts;
         counts.onConfig(config);
@@ -444,38 +417,17 @@ TEST(PeerFinderConfig, applies_legacy_and_explicit_peer_limits)
 
 TEST(PeerFinderConfig, rejects_incomplete_or_out_of_range_peer_limits)
 {
-    std::vector<std::string> const configs{
-        R"xrpldConfig(
-[peers_in_max]
-100
-)xrpldConfig",
-        R"xrpldConfig(
-[peers_out_max]
-100
-)xrpldConfig",
-        R"xrpldConfig(
-[peers_in_max]
-100
-[peers_out_max]
-5
-)xrpldConfig",
-        R"xrpldConfig(
-[peers_in_max]
-1001
-[peers_out_max]
-10
-)xrpldConfig",
-        R"xrpldConfig(
-[peers_in_max]
-10
-[peers_out_max]
-1001
-)xrpldConfig"};
+    std::vector<PeerLimitConfig> const configs{
+        {.inPeers = 100},
+        {.outPeers = 100},
+        {.inPeers = 100, .outPeers = 5},
+        {.inPeers = 1001, .outPeers = 10},
+        {.inPeers = 10, .outPeers = 1001}};
 
-    for (auto const& configText : configs)
+    for (auto const& limits : configs)
     {
-        xrpl::Config config;
-        EXPECT_THROW(config.loadFromString(configText), std::exception);
+        EXPECT_THROW(
+            Config::makeConfig(false, false, limits, 4000, false, 0, true), std::exception);
     }
 }
 

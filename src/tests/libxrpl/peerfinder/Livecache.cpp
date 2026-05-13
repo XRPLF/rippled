@@ -149,7 +149,7 @@ TEST(Livecache, expire_removes_entries_after_ttl)
     cache.expire();
     EXPECT_EQ(cache.size(), 1u);
 
-    clock.advance(Tuning::kLIVE_CACHE_SECONDS_TO_LIVE - 1s);
+    clock.advance(Tuning::kLiveCacheSecondsToLive - 1s);
     cache.expire();
     EXPECT_EQ(cache.size(), 1u);
 
@@ -192,11 +192,11 @@ TEST(Livecache, shuffle_preserves_bucket_contents)
     for (auto i = 0; i < 100; ++i)
     {
         addEndpoint(
-            endpoint(static_cast<std::uint16_t>(i)), cache, xrpl::randInt(Tuning::kMAX_HOPS + 1));
+            endpoint(static_cast<std::uint16_t>(i)), cache, xrpl::randInt(Tuning::kMaxHops + 1));
     }
 
     using AtHop = std::vector<Endpoint>;
-    using AllHops = std::array<AtHop, 1 + Tuning::kMAX_HOPS + 1>;
+    using AllHops = std::array<AtHop, 1 + Tuning::kMaxHops + 1>;
 
     auto const compareEndpoint = [](Endpoint const& lhs, Endpoint const& rhs) {
         return rhs.hops < lhs.hops || (rhs.hops == lhs.hops && rhs.address < lhs.address);
