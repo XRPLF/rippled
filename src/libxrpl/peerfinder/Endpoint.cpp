@@ -1,0 +1,13 @@
+#include <xrpl/peerfinder/Types.h>
+
+#include <algorithm>
+#include <utility>
+
+namespace xrpl::PeerFinder {
+
+Endpoint::Endpoint(beast::IP::Endpoint ep, std::uint32_t hops)
+    : hops(std::min(hops, Tuning::kMAX_HOPS + 1)), address(std::move(ep))
+{
+}
+
+}  // namespace xrpl::PeerFinder

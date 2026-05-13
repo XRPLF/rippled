@@ -1,7 +1,4 @@
-#include <xrpld/peerfinder/detail/Livecache.h>
-
-#include <xrpld/peerfinder/PeerfinderManager.h>
-#include <xrpld/peerfinder/detail/Tuning.h>
+#include <xrpl/peerfinder/detail/Livecache.h>
 
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/random.h>
@@ -9,6 +6,8 @@
 #include <xrpl/beast/net/IPAddressV6.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/peerfinder/Types.h>
+#include <xrpl/peerfinder/detail/Tuning.h>
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>

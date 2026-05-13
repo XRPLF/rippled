@@ -2,23 +2,16 @@
 
 #include <xrpld/core/Config.h>
 #include <xrpld/peerfinder/Slot.h>
-#include <xrpld/peerfinder/detail/Tuning.h>
 
-#include <xrpl/beast/clock/abstract_clock.h>
 #include <xrpl/beast/utility/PropertyStream.h>
+#include <xrpl/peerfinder/Types.h>
+#include <xrpl/peerfinder/detail/Tuning.h>
 
 #include <boost/asio/ip/tcp.hpp>
 
 #include <string_view>
 
 namespace xrpl::PeerFinder {
-
-using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
-
-/** Represents a set of addresses. */
-using IPAddresses = std::vector<beast::IP::Endpoint>;
-
-//------------------------------------------------------------------------------
 
 /** PeerFinder configuration settings. */
 struct Config
@@ -99,28 +92,6 @@ struct Config
     friend bool
     operator==(Config const& lhs, Config const& rhs) = default;
 };
-
-//------------------------------------------------------------------------------
-
-/** Describes a connectable peer address along with some metadata. */
-struct Endpoint
-{
-    Endpoint() = default;
-
-    Endpoint(beast::IP::Endpoint ep, std::uint32_t hops);
-
-    std::uint32_t hops = 0;
-    beast::IP::Endpoint address;
-};
-
-inline bool
-operator<(Endpoint const& lhs, Endpoint const& rhs)
-{
-    return lhs.address < rhs.address;
-}
-
-/** A set of Endpoint used for connecting. */
-using Endpoints = std::vector<Endpoint>;
 
 //------------------------------------------------------------------------------
 
