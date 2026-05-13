@@ -27,7 +27,7 @@ export const PROMPTS_DIR: string = resolve(AGENT_DIR, 'prompts');
 export const XRPLD_ROOT: string = process.env['XRPLD_ROOT'] ?? resolve(AGENT_DIR, '..', '..', '..');
 
 /** Model used for documentation generation and review. */
-export const MODEL: string = process.env['DOC_AGENT_MODEL'] ?? 'claude-opus-4-7';
+export const MODEL: string = process.env['DOC_AGENT_MODEL'] ?? 'claude-sonnet-4-6';
 
 /** Absolute path to the skills directory inside the xrpld repo. */
 export const SKILLS_DIR: string = resolve(XRPLD_ROOT, 'docs', 'skills');
