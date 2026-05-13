@@ -158,7 +158,7 @@ private:
             beast::Journal journal,
             std::chrono::milliseconds interval,
             boost::asio::io_context& ios)
-            : m_event(std::move(ev)), m_journal(journal), m_probe(interval, ios)
+            : m_event(std::move(ev)), m_journal(journal), m_probe(interval, ios), firstSample_(true)
         {
         }
 

@@ -29,22 +29,17 @@ inline constexpr auto apply = makeStr("apply");
 // ===== Attribute keys ========================================================
 
 namespace attr {
-inline constexpr auto xrplLedger = join(seg::xrpl, seg::ledger);
+/// Canonical shared constants (defined in SpanNames.h).
+using ::xrpl::telemetry::attr::closeResolutionMs;
+using ::xrpl::telemetry::attr::closeTime;
+using ::xrpl::telemetry::attr::closeTimeCorrect;
+using ::xrpl::telemetry::attr::ledgerHash;
+using ::xrpl::telemetry::attr::ledgerSeq;
 
-/// "xrpl.ledger.seq"
-inline constexpr auto seq = join(xrplLedger, makeStr("seq"));
-/// "xrpl.ledger.close_time"
-inline constexpr auto closeTime = join(xrplLedger, makeStr("close_time"));
-/// "xrpl.ledger.close_time_correct"
-inline constexpr auto closeTimeCorrect = join(xrplLedger, makeStr("close_time_correct"));
-/// "xrpl.ledger.close_resolution_ms"
-inline constexpr auto closeResolutionMs = join(xrplLedger, makeStr("close_resolution_ms"));
-/// "xrpl.ledger.tx_count"
-inline constexpr auto txCount = join(xrplLedger, makeStr("tx_count"));
-/// "xrpl.ledger.tx_failed"
-inline constexpr auto txFailed = join(xrplLedger, makeStr("tx_failed"));
-/// "xrpl.ledger.validations"
-inline constexpr auto validations = join(xrplLedger, makeStr("validations"));
+/// Domain-owned bare attrs.
+inline constexpr auto txCount = makeStr("tx_count");
+inline constexpr auto txFailed = makeStr("tx_failed");
+inline constexpr auto validations = makeStr("validations");
 }  // namespace attr
 
 }  // namespace xrpl::telemetry::ledger_span

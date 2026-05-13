@@ -10,7 +10,7 @@
   "panels": [
     {
       "title": "Consensus Round Duration",
-      "description": "p95 and p50 duration of consensus accept rounds. The consensus.accept span (RCLConsensus.cpp:395) measures the time to process an accepted ledger including transaction application and state finalization. The span carries xrpl.consensus.proposers and xrpl.consensus.round_time_ms attributes. Normal range is 3-6 seconds on mainnet.",
+      "description": "p95 and p50 duration of consensus accept rounds. The consensus.accept span (RCLConsensus.cpp:395) measures the time to process an accepted ledger including transaction application and state finalization. The span carries proposers and round_time_ms attributes. Normal range is 3-6 seconds on mainnet.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -95,7 +95,7 @@
     },
     {
       "title": "Ledger Close Duration",
-      "description": "p95 duration of the ledger close event. The consensus.ledger_close span (RCLConsensus.cpp:282) measures the time from when consensus triggers a ledger close to completion. Carries xrpl.consensus.ledger.seq and xrpl.consensus.mode attributes. Compare with Consensus Round Duration to understand how close timing relates to overall round time.",
+      "description": "p95 duration of the ledger close event. The consensus.ledger_close span (RCLConsensus.cpp:282) measures the time from when consensus triggers a ledger close to completion. Carries xrpl.ledger.seq and xrpl.consensus.mode attributes. Compare with Consensus Round Duration to understand how close timing relates to overall round time.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -134,7 +134,7 @@
     },
     {
       "title": "Validation Send Rate",
-      "description": "Rate at which this node sends ledger validations to the network. Sourced from the consensus.validation.send span (RCLConsensus.cpp:753). Each validation confirms the node has fully validated a ledger. The span carries xrpl.consensus.ledger.seq and xrpl.consensus.proposing. Should closely track the ledger close rate when the node is healthy.",
+      "description": "Rate at which this node sends ledger validations to the network. Sourced from the consensus.validation.send span (RCLConsensus.cpp:753). Each validation confirms the node has fully validated a ledger. The span carries xrpl.ledger.seq and proposing. Should closely track the ledger close rate when the node is healthy.",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -206,7 +206,7 @@
     },
     {
       "title": "Close Time Agreement",
-      "description": "Rate of close time agreement vs disagreement across consensus rounds. Based on xrpl.consensus.close_time_correct attribute (true = validators agreed, false = agreed to disagree per avCT_CONSENSUS_PCT).",
+      "description": "Rate of close time agreement vs disagreement across consensus rounds. Based on close_time_correct attribute (true = validators agreed, false = agreed to disagree per avCT_CONSENSUS_PCT).",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -219,8 +219,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (xrpl_consensus_close_time_correct, exported_instance) (rate(traces_span_metrics_calls_total{span_name=\"consensus.accept.apply\", xrpl_consensus_mode=~\"$consensus_mode\", exported_instance=~\"$node\"}[$__rate_interval]))",
-          "legendFormat": "Close Time Correct={{xrpl_consensus_close_time_correct}} [{{exported_instance}}]"
+          "expr": "sum by (close_time_correct, exported_instance) (rate(traces_span_metrics_calls_total{span_name=\"consensus.accept.apply\", xrpl_consensus_mode=~\"$consensus_mode\", exported_instance=~\"$node\"}[$__rate_interval]))",
+          "legendFormat": "Close Time Correct={{close_time_correct}} [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -400,7 +400,7 @@
     },
     {
       "title": "Close Time: Raw Proposals (Per Node)",
-      "description": "Each node's raw proposed close time (xrpl.consensus.close_time_self) \u2014 the unrounded wall clock value at the moment the node closed its ledger. Compare across nodes to see clock drift.",
+      "description": "Each node's raw proposed close time (close_time_self) \u2014 the unrounded wall clock value at the moment the node closed its ledger. Compare across nodes to see clock drift.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -436,14 +436,14 @@
             "type": "tempo"
           },
           "queryType": "traceql",
-          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.xrpl.consensus.close_time_correct=~\"$close_time_correct\"} | select(span.xrpl.consensus.close_time_self)",
+          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.close_time_correct=~\"$close_time_correct\"} | select(span.close_time_self)",
           "refId": "A"
         }
       ]
     },
     {
       "title": "Close Time: Effective / Quantized",
-      "description": "The consensus-agreed close time after rounding to the current resolution bin (xrpl.consensus.close_time). This is the value written to the ledger header. All nodes in agreement produce the same value.",
+      "description": "The consensus-agreed close time after rounding to the current resolution bin (close_time). This is the value written to the ledger header. All nodes in agreement produce the same value.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -479,14 +479,14 @@
             "type": "tempo"
           },
           "queryType": "traceql",
-          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.xrpl.consensus.close_time_correct=~\"$close_time_correct\"} | select(span.xrpl.consensus.close_time)",
+          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.close_time_correct=~\"$close_time_correct\"} | select(span.close_time)",
           "refId": "A"
         }
       ]
     },
     {
       "title": "Close Time Vote Bins & Resolution",
-      "description": "Number of distinct close time vote bins (xrpl.consensus.close_time_vote_bins) and the bin size / resolution in ms (xrpl.consensus.close_resolution_ms). More bins = more clock disagreement. Resolution adapts: finer (10s) when validators agree, coarser (120s) when they disagree.",
+      "description": "Number of distinct close time vote bins (close_time_vote_bins) and the bin size / resolution in ms (close_resolution_ms). More bins = more clock disagreement. Resolution adapts: finer (10s) when validators agree, coarser (120s) when they disagree.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -555,7 +555,7 @@
             "type": "tempo"
           },
           "queryType": "traceql",
-          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.xrpl.consensus.close_time_correct=~\"$close_time_correct\"} | select(span.xrpl.consensus.close_time_vote_bins)",
+          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.close_time_correct=~\"$close_time_correct\"} | select(span.close_time_vote_bins)",
           "refId": "A"
         },
         {
@@ -563,14 +563,14 @@
             "type": "tempo"
           },
           "queryType": "traceql",
-          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.xrpl.consensus.close_time_correct=~\"$close_time_correct\"} | select(span.xrpl.consensus.close_resolution_ms)",
+          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.close_time_correct=~\"$close_time_correct\"} | select(span.close_resolution_ms)",
           "refId": "B"
         }
       ]
     },
     {
       "title": "Close Time Resolution Direction",
-      "description": "Whether close time resolution increased (coarser bins, more disagreement), decreased (finer bins, better agreement), or stayed unchanged relative to the previous ledger. Based on xrpl.consensus.resolution_direction attribute.",
+      "description": "Whether close time resolution increased (coarser bins, more disagreement), decreased (finer bins, better agreement), or stayed unchanged relative to the previous ledger. Based on resolution_direction attribute.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -606,7 +606,7 @@
             "type": "tempo"
           },
           "queryType": "traceql",
-          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.xrpl.consensus.close_time_correct=~\"$close_time_correct\" && span.xrpl.consensus.resolution_direction=~\"$resolution_direction\"} | select(span.xrpl.consensus.resolution_direction)",
+          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.close_time_correct=~\"$close_time_correct\" && span.resolution_direction=~\"$resolution_direction\"} | select(span.resolution_direction)",
           "refId": "A"
         }
       ]
@@ -650,7 +650,7 @@
             "type": "tempo"
           },
           "queryType": "traceql",
-          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.xrpl.consensus.close_time_correct=~\"$close_time_correct\"} | select(span.xrpl.consensus.close_time, span.xrpl.consensus.close_time_vote_bins)",
+          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.close_time_correct=~\"$close_time_correct\"} | select(span.close_time, span.close_time_vote_bins)",
           "refId": "A"
         }
       ]
