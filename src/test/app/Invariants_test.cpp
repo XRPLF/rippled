@@ -4515,6 +4515,24 @@ class Invariants_test : public beast::unit_test::Suite
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseConfidential);
 
+        // Send/MergeInbox and zero-COA-delta confidential transactions must not
+        // change public holder MPTAmount.
+        doInvariantCheck(
+            {"Invariant failed: MPTAmount changed by confidential "
+             "transaction that should not modify this field."},
+            [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
+                if (!sleToken)
+                    return false;
+                sleToken->setFieldU64(sfMPTAmount, sleToken->getFieldU64(sfMPTAmount) + 1);
+                ac.view().update(sleToken);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttCONFIDENTIAL_MPT_SEND, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseConfidential);
+
         // badVersion
         doInvariantCheck(
             {"MPToken sfConfidentialBalanceVersion not updated when sfConfidentialBalanceSpending "
