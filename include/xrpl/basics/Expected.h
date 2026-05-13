@@ -159,7 +159,7 @@ public:
         return Base::error();
     }
 
-    constexpr E&&
+    [[nodiscard]] constexpr E&&
     error() &&
     {
         return std::move(Base::error());
@@ -232,7 +232,7 @@ public:
         return Base::error();
     }
 
-    constexpr E&&
+    [[nodiscard]] constexpr E&&
     error() &&
     {
         return std::move(Base::error());
