@@ -91,7 +91,7 @@
 
 - `http.method` is always POST for JSON-RPC
 - `net.peer.ip` is debug-level info available in logs
-- `xrpl.rpc.duration_ms` is redundant with span duration (OTel captures start/end time natively)
+- `duration_ms` is redundant with span duration (OTel captures start/end time natively)
 
 These can be added later if dashboard queries specifically need them. The node health attributes (Task 2.8) provide far more operational value and were prioritized instead.
 
@@ -130,9 +130,8 @@ These can be added later if dashboard queries specifically need them. The node h
 **What to do**:
 
 - Edit `src/xrpld/rpc/detail/RPCHandler.cpp`:
-  - In the `rpc.command.*` span creation block (after existing `setAttribute` calls for `xrpl.rpc.command`, `xrpl.rpc.version`, etc.):
-    - Add `xrpl.node.amendment_blocked` (bool) — from `context.app.getOPs().isAmendmentBlocked()`
-    - Add `xrpl.node.server_state` (string) — from `context.app.getOPs().strOperatingMode()`
+  - In the `rpc.command.*` span creation block (after existing `setAttribute` calls for `command`, `version`, etc.):
+    - Node health attrs (`xrpl.node.amendment_blocked`, `xrpl.node.server_state`) are now resource-level attrs, not per-span. They are set at Tracer init.
 
 **New span attributes**:
 

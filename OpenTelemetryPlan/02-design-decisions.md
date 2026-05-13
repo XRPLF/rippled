@@ -277,10 +277,10 @@ resource::SemanticConventions::SERVICE_INSTANCE_ID = <node_public_key_base58>
 #### PathFinding Attributes
 
 ```cpp
-"xrpl.pathfind.source_currency"  = string   // Source currency code
-"xrpl.pathfind.dest_currency"    = string   // Destination currency code
-"xrpl.pathfind.path_count"       = int64    // Number of paths found
-"xrpl.pathfind.cache_hit"        = bool     // RippleLineCache hit
+"source_currency"  = string   // Source currency code (planned, not yet implemented)
+"dest_currency"    = string   // Destination currency code (planned, not yet implemented)
+"path_count"       = int64    // Number of paths found (planned, not yet implemented)
+"cache_hit"        = bool     // RippleLineCache hit (planned, not yet implemented)
 ```
 
 #### TxQ Attributes
