@@ -166,7 +166,7 @@ private:
     std::string m_name;
     GaugeImpl::value_type m_last_value{0};
     GaugeImpl::value_type m_value{0};
-    bool m_dirty{false};
+    bool m_dirty{true};
 };
 
 //------------------------------------------------------------------------------
@@ -583,6 +583,9 @@ StatsDEventImpl::do_notify(EventImpl::value_type const& value)
 StatsDGaugeImpl::StatsDGaugeImpl(std::string name, std::shared_ptr<StatsDCollectorImp> const& impl)
     : m_impl(impl), m_name(std::move(name))
 {
+    // Start dirty so the initial value (0) is emitted on the first flush.
+    // Without this, gauges whose value never changes from 0 would never
+    // appear in downstream metric stores (e.g. Prometheus via StatsD).
     m_impl->add(*this);
 }
 

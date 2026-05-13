@@ -185,15 +185,15 @@ Traced RPC operations produce a span hierarchy like:
 
 ```
 rpc.request
-  └── rpc.command.server_info  (xrpl.rpc.command=server_info, xrpl.rpc.status=success)
+  └── rpc.command.server_info  (command=server_info, rpc_status=success)
 ```
 
 Each span includes attributes:
 
-- `xrpl.rpc.command` — the RPC method name
-- `xrpl.rpc.version` — API version
-- `xrpl.rpc.role` — `admin` or `user`
-- `xrpl.rpc.status` — `success` or `error`
+- `command` — the RPC method name
+- `version` — API version
+- `rpc_role` — `admin` or `user`
+- `rpc_status` — `success` or `error`
 
 ## Running Tests
 

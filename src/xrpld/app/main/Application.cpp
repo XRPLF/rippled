@@ -149,6 +149,7 @@ private:
         beast::Journal m_journal;
         beast::io_latency_probe<std::chrono::steady_clock> m_probe;
         std::atomic<std::chrono::milliseconds> lastSample_;
+        std::atomic<bool> firstSample_;
 
     public:
         io_latency_sampler(
@@ -156,7 +157,7 @@ private:
             beast::Journal journal,
             std::chrono::milliseconds interval,
             boost::asio::io_context& ios)
-            : m_event(std::move(ev)), m_journal(journal), m_probe(interval, ios)
+            : m_event(std::move(ev)), m_journal(journal), m_probe(interval, ios), firstSample_(true)
         {
         }
 
@@ -175,7 +176,10 @@ private:
 
             lastSample_ = lastSample;
 
-            if (lastSample >= 10ms)
+            // Always emit the first sample so the metric is registered in
+            // downstream stores (Prometheus via StatsD).  After that, only
+            // report latency >= 10 ms to avoid flooding with sub-ms values.
+            if (firstSample_.exchange(false) || lastSample >= 10ms)
                 m_event.notify(lastSample);
             if (lastSample >= 500ms)
             {

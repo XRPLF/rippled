@@ -88,7 +88,7 @@
     },
     {
       "title": "Ledger Validation Rate",
-      "description": "Rate at which ledgers pass the validation threshold and are accepted as fully validated. The ledger.validate span (LedgerMaster.cpp:915) fires in checkAccept() only after the ledger receives sufficient trusted validations (>= quorum). Records xrpl.ledger.seq and xrpl.ledger.validations (the number of validations received).",
+      "description": "Rate at which ledgers pass the validation threshold and are accepted as fully validated. The ledger.validate span (LedgerMaster.cpp:915) fires in checkAccept() only after the ledger receives sufficient trusted validations (>= quorum). Records xrpl.ledger.seq and validations (the number of validations received).",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -156,7 +156,7 @@
     },
     {
       "title": "Transaction Apply Duration",
-      "description": "p95 and p50 duration of applying the consensus transaction set during ledger building. The tx.apply span (BuildLedger.cpp:88) wraps applyTransactions() which iterates through the CanonicalTXSet with multiple retry passes. Records xrpl.ledger.tx_count (successful) and xrpl.ledger.tx_failed (failed) as attributes.",
+      "description": "p95 and p50 duration of applying the consensus transaction set during ledger building. The tx.apply span (BuildLedger.cpp:88) wraps applyTransactions() which iterates through the CanonicalTXSet with multiple retry passes. Records tx_count (successful) and tx_failed (failed) as attributes.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,

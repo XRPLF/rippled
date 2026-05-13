@@ -10,7 +10,7 @@
   "panels": [
     {
       "title": "RPC Request Rate by Command",
-      "description": "Per-second rate of RPC command executions, broken down by command name (e.g. server_info, submit). Calculated as rate(traces_span_metrics_calls_total{span_name=~\"rpc.command.*\"}) over a 5m window, grouped by the xrpl.rpc.command span attribute.",
+      "description": "Per-second rate of RPC command executions, broken down by command name (e.g. server_info, submit). Calculated as rate(traces_span_metrics_calls_total{span_name=~\"rpc.command.*\"}) over a 5m window, grouped by the command span attribute.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -29,8 +29,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (xrpl_rpc_command, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", xrpl_rpc_command=~\"$command\", span_name=~\"rpc.command.*\"}[5m]))",
-          "legendFormat": "{{xrpl_rpc_command}} [{{exported_instance}}]"
+          "expr": "sum by (command, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", command=~\"$command\", span_name=~\"rpc.command.*\"}[5m]))",
+          "legendFormat": "{{command}} [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -49,7 +49,7 @@
     },
     {
       "title": "RPC Latency P95 by Command",
-      "description": "95th percentile response time for each RPC command. Computed from the spanmetrics duration histogram using histogram_quantile(0.95) over rpc.command.* spans, grouped by xrpl.rpc.command. High values indicate slow commands that may need optimization.",
+      "description": "95th percentile response time for each RPC command. Computed from the spanmetrics duration histogram using histogram_quantile(0.95) over rpc.command.* spans, grouped by command. High values indicate slow commands that may need optimization.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -68,8 +68,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.95, sum by (le, xrpl_rpc_command, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", xrpl_rpc_command=~\"$command\", span_name=~\"rpc.command.*\"}[5m])))",
-          "legendFormat": "P95 {{xrpl_rpc_command}} [{{exported_instance}}]"
+          "expr": "histogram_quantile(0.95, sum by (le, command, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", command=~\"$command\", span_name=~\"rpc.command.*\"}[5m])))",
+          "legendFormat": "P95 {{command}} [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -107,8 +107,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (xrpl_rpc_command, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", xrpl_rpc_command=~\"$command\", span_name=~\"rpc.command.*\", status_code=\"STATUS_CODE_ERROR\"}[5m])) / sum by (xrpl_rpc_command, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", xrpl_rpc_command=~\"$command\", span_name=~\"rpc.command.*\"}[5m])) * 100",
-          "legendFormat": "{{xrpl_rpc_command}} [{{exported_instance}}]"
+          "expr": "sum by (command, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", command=~\"$command\", span_name=~\"rpc.command.*\", status_code=\"STATUS_CODE_ERROR\"}[5m])) / sum by (command, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", command=~\"$command\", span_name=~\"rpc.command.*\"}[5m])) * 100",
+          "legendFormat": "{{command}} [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -158,7 +158,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum(increase(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", xrpl_rpc_command=~\"$command\", span_name=~\"rpc.command.*\"}[5m])) by (le)",
+          "expr": "sum(increase(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", command=~\"$command\", span_name=~\"rpc.command.*\"}[5m])) by (le)",
           "legendFormat": "{{le}}",
           "format": "heatmap"
         }
@@ -185,14 +185,14 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", xrpl_rpc_command=~\"$command\", span_name=\"rpc.request\"}[5m]))",
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", command=~\"$command\", span_name=\"rpc.request\"}[5m]))",
           "legendFormat": "rpc.request / Sec [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", xrpl_rpc_command=~\"$command\", span_name=\"rpc.process\"}[5m]))",
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", command=~\"$command\", span_name=\"rpc.process\"}[5m]))",
           "legendFormat": "rpc.process / Sec [{{exported_instance}}]"
         }
       ],
@@ -231,14 +231,14 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", xrpl_rpc_command=~\"$command\", span_name=~\"rpc.command.*\", status_code=\"STATUS_CODE_UNSET\"}[5m]))",
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", command=~\"$command\", span_name=~\"rpc.command.*\", status_code=\"STATUS_CODE_UNSET\"}[5m]))",
           "legendFormat": "Success [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", xrpl_rpc_command=~\"$command\", span_name=~\"rpc.command.*\", status_code=\"STATUS_CODE_ERROR\"}[5m]))",
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", command=~\"$command\", span_name=~\"rpc.command.*\", status_code=\"STATUS_CODE_ERROR\"}[5m]))",
           "legendFormat": "Error [{{exported_instance}}]"
         }
       ],
@@ -277,8 +277,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "topk(10, sum by (xrpl_rpc_command, exported_instance) (increase(traces_span_metrics_calls_total{exported_instance=~\"$node\", xrpl_rpc_command=~\"$command\", span_name=~\"rpc.command.*\"}[5m])))",
-          "legendFormat": "{{xrpl_rpc_command}} [{{exported_instance}}]"
+          "expr": "topk(10, sum by (command, exported_instance) (increase(traces_span_metrics_calls_total{exported_instance=~\"$node\", command=~\"$command\", span_name=~\"rpc.command.*\"}[5m])))",
+          "legendFormat": "{{command}} [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -309,7 +309,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", xrpl_rpc_command=~\"$command\", span_name=\"rpc.ws_message\"}[5m]))",
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", command=~\"$command\", span_name=\"rpc.ws_message\"}[5m]))",
           "legendFormat": "WS Messages / Sec [{{exported_instance}}]"
         }
       ],
@@ -350,7 +350,7 @@
         "label": "RPC Command",
         "description": "Filter by RPC command name (e.g., server_info, submit)",
         "type": "query",
-        "query": "label_values(traces_span_metrics_calls_total{span_name=~\"rpc.command.*\"}, xrpl_rpc_command)",
+        "query": "label_values(traces_span_metrics_calls_total{span_name=~\"rpc.command.*\"}, command)",
         "datasource": {
           "type": "prometheus",
           "uid": "prometheus"
