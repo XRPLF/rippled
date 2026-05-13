@@ -14,17 +14,17 @@ namespace xrpl {
 
 // These are wire-protocol identifiers used during serialization to encode the
 // type of a node. They should not be arbitrarily be changed.
-static constexpr unsigned char const wireTypeTransaction = 0;
-static constexpr unsigned char const wireTypeAccountState = 1;
-static constexpr unsigned char const wireTypeInner = 2;
-static constexpr unsigned char const wireTypeCompressedInner = 3;
-static constexpr unsigned char const wireTypeTransactionWithMeta = 4;
+static constexpr unsigned char const kWIRE_TYPE_TRANSACTION = 0;
+static constexpr unsigned char const kWIRE_TYPE_ACCOUNT_STATE = 1;
+static constexpr unsigned char const kWIRE_TYPE_INNER = 2;
+static constexpr unsigned char const kWIRE_TYPE_COMPRESSED_INNER = 3;
+static constexpr unsigned char const kWIRE_TYPE_TRANSACTION_WITH_META = 4;
 
 enum class SHAMapNodeType {
-    tnINNER = 1,
-    tnTRANSACTION_NM = 2,  // transaction, no metadata
-    tnTRANSACTION_MD = 3,  // transaction, with metadata
-    tnACCOUNT_STATE = 4
+    TnInner = 1,
+    TnTransactionNm = 2,  // transaction, no metadata
+    TnTransactionMd = 3,  // transaction, with metadata
+    TnAccountState = 4
 };
 
 class SHAMapTreeNode : public IntrusiveRefCounts
@@ -39,11 +39,6 @@ protected:
         SHAMap instances.
      */
     std::uint32_t cowid_;
-
-protected:
-    SHAMapTreeNode(SHAMapTreeNode const&) = delete;
-    SHAMapTreeNode&
-    operator=(SHAMapTreeNode const&) = delete;
 
     /** Construct a node
 
@@ -62,7 +57,11 @@ protected:
     /** @} */
 
 public:
-    virtual ~SHAMapTreeNode() noexcept = default;
+    ~SHAMapTreeNode() noexcept override = default;
+
+    SHAMapTreeNode(SHAMapTreeNode const&) = delete;
+    SHAMapTreeNode&
+    operator=(SHAMapTreeNode const&) = delete;
 
     // Needed to support weak intrusive pointers
     virtual void
@@ -148,7 +147,7 @@ public:
     getString(SHAMapNodeID const&) const;
 
     virtual void
-    invariants(bool is_root = false) const = 0;
+    invariants(bool isRoot = false) const = 0;
 
     static intr_ptr::SharedPtr<SHAMapTreeNode>
     makeFromPrefix(Slice rawNode, SHAMapHash const& hash);

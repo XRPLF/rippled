@@ -37,10 +37,10 @@
  * 5) If a supported feature (`Supported::yes`) was _ever_ in a released
  *     version, it can never be changed back to `Supported::no`, because
  *     it _may_ still become enabled at any time. This would cause newer
- *     versions of `rippled` to become amendment blocked.
+ *     versions of `xrpld` to become amendment blocked.
  *     Instead, to prevent newer versions from voting on the feature, use
  *     `VoteBehavior::Obsolete`. Obsolete features can not be voted for
- *     by any versions of `rippled` built with that setting, but will still
+ *     by any versions of `xrpld` built with that setting, but will still
  *     work correctly if they get enabled. If a feature remains obsolete
  *     for long enough that _all_ clients that could vote for it are
  *     amendment blocked, the feature can be removed from the code
@@ -65,11 +65,11 @@
 namespace xrpl {
 
 // Feature names must not exceed this length (in characters, excluding the null terminator).
-static constexpr std::size_t maxFeatureNameSize = 63;
+static constexpr std::size_t kMAX_FEATURE_NAME_SIZE = 63;
 // Reserve this exact feature-name length (in characters/bytes, excluding the null terminator)
 // so that a 32-byte uint256 (for example, in WASM or other interop contexts) can be used
 // as a compact, fixed-size feature selector without conflicting with human-readable names.
-static constexpr std::size_t reservedFeatureNameSize = 32;
+static constexpr std::size_t kRESERVED_FEATURE_NAME_SIZE = 32;
 
 // Both validFeatureNameSize and validFeatureName are consteval functions that can be used in
 // static_asserts to validate feature names at compile time. They are only used inside
@@ -79,27 +79,27 @@ static constexpr std::size_t reservedFeatureNameSize = 32;
 consteval auto
 validFeatureNameSize(auto fn) -> bool
 {
-    constexpr char const* n = fn();
+    constexpr char const* kN = fn();
     // Note, std::strlen is not constexpr, we need to implement our own here.
-    constexpr std::size_t N = [](auto n) {
+    constexpr std::size_t kLEN = [](auto n) {
         std::size_t ret = 0;
         for (auto ptr = n; *ptr != '\0'; ret++, ++ptr)
             ;
         return ret;
-    }(n);
-    return N != reservedFeatureNameSize &&  //
-        N <= maxFeatureNameSize;
+    }(kN);
+    return kLEN != kRESERVED_FEATURE_NAME_SIZE &&  //
+        kLEN <= kMAX_FEATURE_NAME_SIZE;
 }
 
 consteval auto
 validFeatureName(auto fn) -> bool
 {
-    constexpr char const* n = fn();
+    constexpr char const* kN = fn();
     // Prevent the use of visually confusable characters and enforce that feature names
     // are always valid ASCII. This is needed because C++ allows Unicode identifiers.
     // Characters below 0x20 are nonprintable control characters, and characters with the 0x80 bit
     // set are non-ASCII (e.g. UTF-8 encoding of Unicode), so both are disallowed.
-    for (auto ptr = n; *ptr != '\0'; ++ptr)
+    for (auto ptr = kN; *ptr != '\0'; ++ptr)
     {
         if (*ptr & 0x80 || *ptr < 0x20)
             return false;
@@ -107,8 +107,8 @@ validFeatureName(auto fn) -> bool
     return true;
 }
 
-enum class VoteBehavior : int { Obsolete = -1, DefaultNo = 0, DefaultYes };
-enum class AmendmentSupport : int { Retired = -1, Supported = 0, Unsupported };
+enum class VoteBehavior : int { Obsolete = -1, DefaultNo = 0, DefaultYes = 1 };
+enum class AmendmentSupport : int { Retired = -1, Supported = 0, Unsupported = 1 };
 
 /** All amendments libxrpl knows about. */
 std::map<std::string, AmendmentSupport> const&
@@ -125,16 +125,18 @@ namespace detail {
 #pragma push_macro("XRPL_RETIRE_FIX")
 #undef XRPL_RETIRE_FIX
 
+// NOLINTBEGIN(bugprone-macro-parentheses)
 #define XRPL_FEATURE(name, supported, vote) +1
 #define XRPL_FIX(name, supported, vote) +1
 #define XRPL_RETIRE_FEATURE(name) +1
 #define XRPL_RETIRE_FIX(name) +1
+// NOLINTEND(bugprone-macro-parentheses)
 
 // This value SHOULD be equal to the number of amendments registered in
 // Feature.cpp. Because it's only used to reserve storage, and determine how
 // large to make the FeatureBitset, it MAY be larger. It MUST NOT be less than
 // the actual number of amendments. A LogicError on startup will verify this.
-static constexpr std::size_t numFeatures =
+static constexpr std::size_t kNUM_FEATURES =
     (0 +
 #include <xrpl/protocol/detail/features.macro>
     );
@@ -182,9 +184,9 @@ bitsetIndexToFeature(size_t i);
 std::string
 featureToName(uint256 const& f);
 
-class FeatureBitset : private std::bitset<detail::numFeatures>
+class FeatureBitset : private std::bitset<detail::kNUM_FEATURES>
 {
-    using base = std::bitset<detail::numFeatures>;
+    using base = std::bitset<detail::kNUM_FEATURES>;
 
     template <class... Fs>
     void
@@ -373,8 +375,10 @@ void
 foreachFeature(FeatureBitset bs, F&& f)
 {
     for (size_t i = 0; i < bs.size(); ++i)
+    {
         if (bs[i])
             f(bitsetIndexToFeature(i));
+    }
 }
 
 #pragma push_macro("XRPL_FEATURE")

@@ -1,17 +1,46 @@
 #include <xrpl/tx/transactors/lending/LoanSet.h>
-//
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTakesAsset.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/lending/LendingHelpers.h>
+#include <xrpl/protocol/Units.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <limits>
+#include <memory>
+#include <optional>
+#include <type_traits>
+#include <vector>
 
 namespace xrpl {
 
 bool
 LoanSet::checkExtraFeatures(PreflightContext const& ctx)
 {
-    return checkLendingProtocolDependencies(ctx);
+    return checkLendingProtocolDependencies(ctx.rules, ctx.tx);
 }
 
 std::uint32_t
@@ -56,7 +85,7 @@ LoanSet::preflight(PreflightContext const& ctx)
     }
 
     if (auto const data = tx[~sfData];
-        data && !data->empty() && !validDataLength(tx[~sfData], maxDataPayloadLength))
+        data && !data->empty() && !validDataLength(tx[~sfData], kMAX_DATA_PAYLOAD_LENGTH))
         return temINVALID;
     for (auto const& field : {&sfLoanServiceFee, &sfLatePaymentFee, &sfClosePaymentFee})
     {
@@ -69,27 +98,27 @@ LoanSet::preflight(PreflightContext const& ctx)
         return temINVALID;
     if (!validNumericRange(tx[~sfLoanOriginationFee], p))
         return temINVALID;
-    if (!validNumericRange(tx[~sfInterestRate], maxInterestRate))
+    if (!validNumericRange(tx[~sfInterestRate], kMAX_INTEREST_RATE))
         return temINVALID;
-    if (!validNumericRange(tx[~sfOverpaymentFee], maxOverpaymentFee))
+    if (!validNumericRange(tx[~sfOverpaymentFee], kMAX_OVERPAYMENT_FEE))
         return temINVALID;
-    if (!validNumericRange(tx[~sfLateInterestRate], maxLateInterestRate))
+    if (!validNumericRange(tx[~sfLateInterestRate], kMAX_LATE_INTEREST_RATE))
         return temINVALID;
-    if (!validNumericRange(tx[~sfCloseInterestRate], maxCloseInterestRate))
+    if (!validNumericRange(tx[~sfCloseInterestRate], kMAX_CLOSE_INTEREST_RATE))
         return temINVALID;
-    if (!validNumericRange(tx[~sfOverpaymentInterestRate], maxOverpaymentInterestRate))
+    if (!validNumericRange(tx[~sfOverpaymentInterestRate], kMAX_OVERPAYMENT_INTEREST_RATE))
         return temINVALID;
 
     if (auto const paymentTotal = tx[~sfPaymentTotal]; paymentTotal && *paymentTotal <= 0)
         return temINVALID;
 
     auto const paymentInterval = tx[~sfPaymentInterval];
-    if (!validNumericMinimum(paymentInterval, LoanSet::minPaymentInterval))
+    if (!validNumericMinimum(paymentInterval, LoanSet::kMIN_PAYMENT_INTERVAL))
         return temINVALID;  // Grace period is between min default value and payment interval
     if (auto const gracePeriod = tx[~sfGracePeriod]; !validNumericRange(
             gracePeriod,
-            paymentInterval.value_or(LoanSet::defaultPaymentInterval),
-            defaultGracePeriod))
+            paymentInterval.value_or(LoanSet::kDEFAULT_PAYMENT_INTERVAL),
+            kDEFAULT_GRACE_PERIOD))
     {
         return temINVALID;
     }
@@ -102,7 +131,7 @@ LoanSet::preflight(PreflightContext const& ctx)
             return *ret;
     }
 
-    if (auto const brokerID = ctx.tx[~sfLoanBrokerID]; brokerID && *brokerID == beast::zero)
+    if (auto const brokerID = ctx.tx[~sfLoanBrokerID]; brokerID && *brokerID == beast::kZERO)
         return temINVALID;
 
     return tesSUCCESS;
@@ -166,7 +195,7 @@ LoanSet::calculateBaseFee(ReadView const& view, STTx const& tx)
 std::vector<OptionaledField<STNumber>> const&
 LoanSet::getValueFields()
 {
-    static std::vector<OptionaledField<STNumber>> const valueFields{
+    static std::vector<OptionaledField<STNumber>> const kVALUE_FIELDS{
         ~sfPrincipalRequested,
         ~sfLoanOriginationFee,
         ~sfLoanServiceFee,
@@ -175,7 +204,7 @@ LoanSet::getValueFields()
         // Overpayment fee is really a rate. Don't check it here.
     };
 
-    return valueFields;
+    return kVALUE_FIELDS;
 }
 
 static std::uint32_t
@@ -197,14 +226,14 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         // overflows, and we kill the transaction.
         using timeType = decltype(sfNextPaymentDueDate)::type::value_type;
         static_assert(std::is_same_v<timeType, std::uint32_t>);
-        timeType constexpr maxTime = std::numeric_limits<timeType>::max();
-        static_assert(maxTime == 4'294'967'295);
+        timeType constexpr kMAX_TIME = std::numeric_limits<timeType>::max();
+        static_assert(kMAX_TIME == 4'294'967'295);
 
-        auto const timeAvailable = maxTime - getStartDate(ctx.view);
+        auto const timeAvailable = kMAX_TIME - getStartDate(ctx.view);
 
-        auto const interval = ctx.tx.at(~sfPaymentInterval).value_or(defaultPaymentInterval);
-        auto const total = ctx.tx.at(~sfPaymentTotal).value_or(defaultPaymentTotal);
-        auto const grace = ctx.tx.at(~sfGracePeriod).value_or(defaultGracePeriod);
+        auto const interval = ctx.tx.at(~sfPaymentInterval).value_or(kDEFAULT_PAYMENT_INTERVAL);
+        auto const total = ctx.tx.at(~sfPaymentTotal).value_or(kDEFAULT_PAYMENT_TOTAL);
+        auto const grace = ctx.tx.at(~sfGracePeriod).value_or(kDEFAULT_GRACE_PERIOD);
 
         // The grace period can't be larger than the interval. Check it first,
         // mostly so that unit tests can test that specific case.
@@ -385,10 +414,11 @@ LoanSet::doApply()
 
     TenthBips32 const interestRate{tx[~sfInterestRate].value_or(0)};
 
-    auto const paymentInterval = tx[~sfPaymentInterval].value_or(defaultPaymentInterval);
-    auto const paymentTotal = tx[~sfPaymentTotal].value_or(defaultPaymentTotal);
+    auto const paymentInterval = tx[~sfPaymentInterval].value_or(kDEFAULT_PAYMENT_INTERVAL);
+    auto const paymentTotal = tx[~sfPaymentTotal].value_or(kDEFAULT_PAYMENT_TOTAL);
 
     auto const properties = computeLoanProperties(
+        view.rules(),
         vaultAsset,
         principalRequested,
         interestRate,
@@ -430,7 +460,7 @@ LoanSet::doApply()
     if (auto const ret = checkLoanGuards(
             vaultAsset,
             principalRequested,
-            interestRate != beast::zero,
+            interestRate != beast::kZERO,
             paymentTotal,
             properties,
             j_))
@@ -466,7 +496,7 @@ LoanSet::doApply()
         // Round the minimum required cover up to be conservative. This ensures
         // CoverAvailable never drops below the theoretical minimum, protecting
         // the broker's solvency.
-        NumberRoundModeGuard const mg(Number::upward);
+        NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
         if (brokerSle->at(sfCoverAvailable) < tenthBipsOfValue(newDebtTotal, coverRateMinimum))
         {
             JLOG(j_.warn()) << "Insufficient first-loss capital to cover the loan.";
@@ -507,7 +537,7 @@ LoanSet::doApply()
 
     // 2. Transfer originationFee, if any, from vault pseudo-account to
     // LoanBroker owner.
-    if (originationFee != beast::zero)
+    if (originationFee != beast::kZERO)
     {
         // Create the holding if it doesn't already exist (necessary for MPTs).
         // The owner may have deleted their MPT / line at some point.
@@ -571,7 +601,7 @@ LoanSet::doApply()
     setLoanField(~sfLateInterestRate);
     setLoanField(~sfCloseInterestRate);
     setLoanField(~sfOverpaymentInterestRate);
-    setLoanField(~sfGracePeriod, defaultGracePeriod);
+    setLoanField(~sfGracePeriod, kDEFAULT_GRACE_PERIOD);
     // Set dynamic / computed fields to their initial values
     loan->at(sfPrincipalOutstanding) = principalRequested;
     loan->at(sfPeriodicPayment) = properties.periodicPayment;
@@ -615,6 +645,22 @@ LoanSet::doApply()
     associateAsset(*loan, vaultAsset);
 
     return tesSUCCESS;
+}
+
+void
+LoanSet::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+LoanSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 //------------------------------------------------------------------------------

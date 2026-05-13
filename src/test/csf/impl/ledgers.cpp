@@ -1,17 +1,26 @@
 #include <test/csf/ledgers.h>
 
+#include <test/csf/Tx.h>
+
+#include <xrpl/basics/chrono.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/LedgerTiming.h>
+
 #include <algorithm>
+#include <chrono>
+#include <cstddef>
+#include <optional>
+#include <set>
+#include <vector>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
-Ledger::Instance const Ledger::genesis;
+Ledger::Instance const Ledger::kGENESIS;
 
-Json::Value
+json::Value
 Ledger::getJson() const
 {
-    Json::Value res(Json::objectValue);
+    json::Value res(json::ValueType::Object);
     res["id"] = static_cast<ID::value_type>(id());
     res["seq"] = static_cast<Seq::value_type>(seq());
     return res;
@@ -67,7 +76,7 @@ mismatch(Ledger const& a, Ledger const& b)
 
 LedgerOracle::LedgerOracle()
 {
-    instances_.insert(InstanceEntry{Ledger::genesis, nextID()});
+    instances_.insert(InstanceEntry{Ledger::kGENESIS, nextID()});
 }
 
 Ledger::ID
@@ -155,6 +164,4 @@ LedgerOracle::branches(std::set<Ledger> const& ledgers)
     // The size of tips is the number of branches
     return tips.size();
 }
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf

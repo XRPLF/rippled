@@ -3,40 +3,39 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/beast/utility/Journal.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 // A Journal::Sink intended for use with the beast unit test framework.
 class SuiteJournalSink : public beast::Journal::Sink
 {
     std::string partition_;
-    beast::unit_test::suite& suite_;
+    beast::unit_test::Suite& suite_;
 
 public:
     SuiteJournalSink(
         std::string const& partition,
-        beast::severities::Severity threshold,
-        beast::unit_test::suite& suite)
+        beast::Severity threshold,
+        beast::unit_test::Suite& suite)
         : Sink(threshold, false), partition_(partition + " "), suite_(suite)
     {
     }
 
     // For unit testing, always generate logging text.
-    inline bool
-    active(beast::severities::Severity level) const override
+    [[nodiscard]] bool
+    active(beast::Severity level) const override
     {
         return true;
     }
 
     void
-    write(beast::severities::Severity level, std::string const& text) override;
+    write(beast::Severity level, std::string const& text) override;
 
     void
-    writeAlways(beast::severities::Severity level, std::string const& text) override;
+    writeAlways(beast::Severity level, std::string const& text) override;
 };
 
 inline void
-SuiteJournalSink::write(beast::severities::Severity level, std::string const& text)
+SuiteJournalSink::write(beast::Severity level, std::string const& text)
 {
     // Only write the string if the level at least equals the threshold.
     if (level >= threshold())
@@ -44,33 +43,33 @@ SuiteJournalSink::write(beast::severities::Severity level, std::string const& te
 }
 
 inline void
-SuiteJournalSink::writeAlways(beast::severities::Severity level, std::string const& text)
+SuiteJournalSink::writeAlways(beast::Severity level, std::string const& text)
 {
-    using namespace beast::severities;
+    using beast::Severity;
 
     char const* const s = [level]() {
         switch (level)
         {
-            case kTrace:
+            case Severity::Trace:
                 return "TRC:";
-            case kDebug:
+            case Severity::Debug:
                 return "DBG:";
-            case kInfo:
+            case Severity::Info:
                 return "INF:";
-            case kWarning:
+            case Severity::Warning:
                 return "WRN:";
-            case kError:
+            case Severity::Error:
                 return "ERR:";
             default:
                 break;
-            case kFatal:
+            case Severity::Fatal:
                 break;
         }
         return "FTL:";
     }();
 
-    static std::mutex log_mutex;
-    std::lock_guard const lock(log_mutex);
+    static std::mutex kLOG_MUTEX;
+    std::scoped_lock const lock(kLOG_MUTEX);
     suite_.log << s << partition_ << text << std::endl;
 }
 
@@ -82,8 +81,8 @@ class SuiteJournal
 public:
     SuiteJournal(
         std::string const& partition,
-        beast::unit_test::suite& suite,
-        beast::severities::Severity threshold = beast::severities::kFatal)
+        beast::unit_test::Suite& suite,
+        beast::Severity threshold = beast::Severity::Fatal)
         : sink_(partition, threshold, suite), journal_(sink_)
     {
     }
@@ -101,21 +100,20 @@ class StreamSink : public beast::Journal::Sink
     std::stringstream strm_;
 
 public:
-    StreamSink(beast::severities::Severity threshold = beast::severities::kDebug)
-        : Sink(threshold, false)
+    StreamSink(beast::Severity threshold = beast::Severity::Debug) : Sink(threshold, false)
     {
     }
 
     void
-    write(beast::severities::Severity level, std::string const& text) override
+    write(beast::Severity level, std::string const& text) override
     {
         if (level < threshold())
             return;
         writeAlways(level, text);
     }
 
-    inline void
-    writeAlways(beast::severities::Severity level, std::string const& text) override
+    void
+    writeAlways(beast::Severity level, std::string const& text) override
     {
         strm_ << text << std::endl;
     }
@@ -127,5 +125,4 @@ public:
     }
 };
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

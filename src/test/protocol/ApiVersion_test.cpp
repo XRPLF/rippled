@@ -1,17 +1,8 @@
-#include <xrpl/beast/unit_test.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/ApiVersion.h>
 
-#include <array>
-#include <cstdint>
-#include <limits>
-#include <optional>
-#include <type_traits>
-#include <utility>
-
-namespace xrpl {
-namespace test {
-struct ApiVersion_test : beast::unit_test::suite
+namespace xrpl::test {
+struct ApiVersion_test : beast::unit_test::Suite
 {
     void
     run() override
@@ -19,10 +10,11 @@ struct ApiVersion_test : beast::unit_test::suite
         {
             testcase("API versions invariants");
 
-            static_assert(RPC::apiMinimumSupportedVersion <= RPC::apiMaximumSupportedVersion);
-            static_assert(RPC::apiMinimumSupportedVersion <= RPC::apiMaximumValidVersion);
-            static_assert(RPC::apiMaximumSupportedVersion <= RPC::apiMaximumValidVersion);
-            static_assert(RPC::apiBetaVersion <= RPC::apiMaximumValidVersion);
+            static_assert(
+                RPC::kAPI_MINIMUM_SUPPORTED_VERSION <= RPC::kAPI_MAXIMUM_SUPPORTED_VERSION);
+            static_assert(RPC::kAPI_MINIMUM_SUPPORTED_VERSION <= RPC::kAPI_MAXIMUM_VALID_VERSION);
+            static_assert(RPC::kAPI_MAXIMUM_SUPPORTED_VERSION <= RPC::kAPI_MAXIMUM_VALID_VERSION);
+            static_assert(RPC::kAPI_BETA_VERSION <= RPC::kAPI_MAXIMUM_VALID_VERSION);
 
             BEAST_EXPECT(true);
         }
@@ -31,14 +23,14 @@ struct ApiVersion_test : beast::unit_test::suite
             // Update when we change versions
             testcase("API versions");
 
-            static_assert(RPC::apiMinimumSupportedVersion >= 1);
-            static_assert(RPC::apiMinimumSupportedVersion < 2);
-            static_assert(RPC::apiMaximumSupportedVersion >= 2);
-            static_assert(RPC::apiMaximumSupportedVersion < 3);
-            static_assert(RPC::apiMaximumValidVersion >= 3);
-            static_assert(RPC::apiMaximumValidVersion < 4);
-            static_assert(RPC::apiBetaVersion >= 3);
-            static_assert(RPC::apiBetaVersion < 4);
+            static_assert(RPC::kAPI_MINIMUM_SUPPORTED_VERSION >= 1);
+            static_assert(RPC::kAPI_MINIMUM_SUPPORTED_VERSION < 2);
+            static_assert(RPC::kAPI_MAXIMUM_SUPPORTED_VERSION >= 2);
+            static_assert(RPC::kAPI_MAXIMUM_SUPPORTED_VERSION < 3);
+            static_assert(RPC::kAPI_MAXIMUM_VALID_VERSION >= 3);
+            static_assert(RPC::kAPI_MAXIMUM_VALID_VERSION < 4);
+            static_assert(RPC::kAPI_BETA_VERSION >= 3);
+            static_assert(RPC::kAPI_BETA_VERSION < 4);
 
             BEAST_EXPECT(true);
         }
@@ -47,5 +39,4 @@ struct ApiVersion_test : beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(ApiVersion, protocol, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

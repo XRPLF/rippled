@@ -1,13 +1,22 @@
-#include <xrpl/basics/Log.h>
-#include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/View.h>
-#include <xrpl/ledger/helpers/CredentialHelpers.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/credentials/CredentialDelete.h>
 
-#include <chrono>
+#include <xrpl/basics/Log.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
+#include <memory>
 
 namespace xrpl {
 
@@ -43,7 +52,7 @@ CredentialDelete::preflight(PreflightContext const& ctx)
     }
 
     auto const credType = ctx.tx[sfCredentialType];
-    if (credType.empty() || (credType.size() > maxCredentialTypeLength))
+    if (credType.empty() || (credType.size() > kMAX_CREDENTIAL_TYPE_LENGTH))
     {
         JLOG(ctx.j.trace()) << "Malformed transaction: invalid size of CredentialType.";
         return temMALFORMED;
@@ -78,7 +87,7 @@ CredentialDelete::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     if ((subject != account_) && (issuer != account_) &&
-        !checkExpired(sleCred, ctx_.view().header().parentCloseTime))
+        !checkExpired(*sleCred, ctx_.view().header().parentCloseTime))
     {
         JLOG(j_.trace()) << "Can't delete non-expired credential.";
         return tecNO_PERMISSION;
@@ -87,4 +96,24 @@ CredentialDelete::doApply()
     return deleteSLE(view(), sleCred, j_);
 }
 
+void
+CredentialDelete::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+CredentialDelete::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
+}
 }  // namespace xrpl

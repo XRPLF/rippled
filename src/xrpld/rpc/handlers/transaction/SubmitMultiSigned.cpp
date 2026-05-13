@@ -2,7 +2,8 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
 
-#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 
 namespace xrpl {
@@ -11,10 +12,10 @@ namespace xrpl {
 //   SigningAccounts <array>,
 //   tx_json: <object>,
 // }
-Json::Value
+json::Value
 doSubmitMultiSigned(RPC::JsonContext& context)
 {
-    context.loadType = Resource::feeHeavyBurdenRPC;
+    context.loadType = Resource::kFEE_HEAVY_BURDEN_RPC;
     auto const failHard = context.params[jss::fail_hard].asBool();
     auto const failType = NetworkOPs::doFailHard(failHard);
 

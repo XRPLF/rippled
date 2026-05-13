@@ -5,30 +5,24 @@
 
 #include <xrpl/rdb/SociDB.h>
 
-namespace xrpl {
-namespace PeerFinder {
+namespace xrpl::PeerFinder {
 
 /** Database persistence for PeerFinder using SQLite */
 class StoreSqdb : public Store
 {
 private:
-    beast::Journal m_journal;
-    soci::session m_sqlDb;
+    beast::Journal journal_;
+    soci::session sqlDb_;
 
 public:
-    enum {
-        // This determines the on-database format of the data
-        currentSchemaVersion = 4
-    };
+    static constexpr auto kCURRENT_SCHEMA_VERSION = 4;  // on-database format version
 
     explicit StoreSqdb(beast::Journal journal = beast::Journal{beast::Journal::getNullSink()})
-        : m_journal(journal)
+        : journal_(journal)
     {
     }
 
-    ~StoreSqdb()
-    {
-    }
+    ~StoreSqdb() override = default;
 
     void
     open(BasicConfig const& config)
@@ -44,17 +38,17 @@ public:
     {
         std::size_t n(0);
 
-        readPeerFinderDB(m_sqlDb, [&](std::string const& s, int valence) {
-            beast::IP::Endpoint const endpoint(beast::IP::Endpoint::from_string(s));
+        readPeerFinderDB(sqlDb_, [&](std::string const& s, int valence) {
+            beast::IP::Endpoint const endpoint(beast::IP::Endpoint::fromString(s));
 
-            if (!is_unspecified(endpoint))
+            if (!isUnspecified(endpoint))
             {
                 cb(endpoint, valence);
                 ++n;
             }
             else
             {
-                JLOG(m_journal.error()) << "Bad address string '" << s << "' in Bootcache table";
+                JLOG(journal_.error()) << "Bad address string '" << s << "' in Bootcache table";
             }
         });
 
@@ -66,7 +60,7 @@ public:
     void
     save(std::vector<Entry> const& v) override
     {
-        savePeerFinderDB(m_sqlDb, v);
+        savePeerFinderDB(sqlDb_, v);
     }
 
     // Convert any existing entries from an older schema to the
@@ -74,16 +68,15 @@ public:
     void
     update()
     {
-        updatePeerFinderDB(m_sqlDb, currentSchemaVersion, m_journal);
+        updatePeerFinderDB(sqlDb_, kCURRENT_SCHEMA_VERSION, journal_);
     }
 
 private:
     void
     init(BasicConfig const& config)
     {
-        initPeerFinderDB(m_sqlDb, config, m_journal);
+        initPeerFinderDB(sqlDb_, config, journal_);
     }
 };
 
-}  // namespace PeerFinder
-}  // namespace xrpl
+}  // namespace xrpl::PeerFinder

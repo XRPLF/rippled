@@ -159,7 +159,7 @@ parseMessageHeader(boost::system::error_code& ec, BufferSequence const& bufs, st
     // - 32 bits are the uncompressed data size
     if (*iter & 0x80)
     {
-        hdr.header_size = headerBytesCompressed;
+        hdr.header_size = kHEADER_BYTES_COMPRESSED;
 
         // not enough bytes to parse the header
         if (size < hdr.header_size)
@@ -204,7 +204,7 @@ parseMessageHeader(boost::system::error_code& ec, BufferSequence const& bufs, st
     // - 26 bits are the payload size
     if ((*iter & 0xFC) == 0)
     {
-        hdr.header_size = headerBytes;
+        hdr.header_size = kHEADER_BYTES;
 
         if (size < hdr.header_size)
         {
@@ -233,7 +233,7 @@ parseMessageHeader(boost::system::error_code& ec, BufferSequence const& bufs, st
 template <
     class T,
     class Buffers,
-    class = std::enable_if_t<std::is_base_of<::google::protobuf::Message, T>::value>>
+    class = std::enable_if_t<std::is_base_of_v<::google::protobuf::Message, T>>>
 std::shared_ptr<T>
 parseMessageContent(MessageHeader const& header, Buffers const& buffers)
 {
@@ -258,7 +258,9 @@ parseMessageContent(MessageHeader const& header, Buffers const& buffers)
             return {};
     }
     else if (!m->ParseFromZeroCopyStream(&stream))
+    {
         return {};
+    }
 
     return m;
 }
@@ -267,7 +269,7 @@ template <
     class T,
     class Buffers,
     class Handler,
-    class = std::enable_if_t<std::is_base_of<::google::protobuf::Message, T>::value>>
+    class = std::enable_if_t<std::is_base_of_v<::google::protobuf::Message, T>>>
 bool
 invoke(MessageHeader const& header, Buffers const& buffers, Handler& handler)
 {
@@ -327,8 +329,8 @@ invokeProtocolMessage(Buffers const& buffers, Handler& handler, std::size_t& hin
     // whose size exceeds this may result in the connection being dropped. A
     // larger message size may be supported in the future or negotiated as
     // part of a protocol upgrade.
-    if (header->payload_wire_size > maximumMessageSize ||
-        header->uncompressed_size > maximumMessageSize)
+    if (header->payload_wire_size > kMAXIMUM_MESSAGE_SIZE ||
+        header->uncompressed_size > kMAXIMUM_MESSAGE_SIZE)
     {
         result.second = make_error_code(boost::system::errc::message_size);
         return result;

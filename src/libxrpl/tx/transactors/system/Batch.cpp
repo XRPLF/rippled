@@ -1,13 +1,32 @@
+#include <xrpl/tx/transactors/system/Batch.h>
+
 #include <xrpl/basics/Log.h>
-#include <xrpl/ledger/Sandbox.h>
-#include <xrpl/ledger/View.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/apply.h>
-#include <xrpl/tx/transactors/system/Batch.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/applySteps.h>
+
+#include <algorithm>
+#include <bit>
+#include <cstdint>
+#include <limits>
+#include <memory>
+#include <unordered_map>
+#include <unordered_set>
+#include <utility>
 
 namespace xrpl {
 
@@ -43,7 +62,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
     if (baseFee > maxAmount - view.fees().base)
     {
         JLOG(debugLog().error()) << "BatchTrace: Base fee overflow detected.";
-        return XRPAmount{INITIAL_XRP};
+        return XRPAmount{kINITIAL_XRP};
     }
     // LCOV_EXCL_STOP
 
@@ -56,10 +75,10 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
         auto const& txns = tx.getFieldArray(sfRawTransactions);
 
         // LCOV_EXCL_START
-        if (txns.size() > maxBatchTxCount)
+        if (txns.size() > kMAX_BATCH_TX_COUNT)
         {
             JLOG(debugLog().error()) << "BatchTrace: Raw Transactions array exceeds max entries.";
-            return XRPAmount{INITIAL_XRP};
+            return XRPAmount{kINITIAL_XRP};
         }
         // LCOV_EXCL_STOP
 
@@ -71,7 +90,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
             if (stx.getTxnType() == ttBATCH)
             {
                 JLOG(debugLog().error()) << "BatchTrace: Inner Batch transaction found.";
-                return XRPAmount{INITIAL_XRP};
+                return XRPAmount{kINITIAL_XRP};
             }
             // LCOV_EXCL_STOP
 
@@ -81,7 +100,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
             {
                 JLOG(debugLog().error())
                     << "BatchTrace: XRPAmount overflow in txnFees calculation.";
-                return XRPAmount{INITIAL_XRP};
+                return XRPAmount{kINITIAL_XRP};
             }
             // LCOV_EXCL_STOP
             txnFees += fee;
@@ -95,10 +114,10 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
         auto const& signers = tx.getFieldArray(sfBatchSigners);
 
         // LCOV_EXCL_START
-        if (signers.size() > maxBatchTxCount)
+        if (signers.size() > kMAX_BATCH_TX_COUNT)
         {
             JLOG(debugLog().error()) << "BatchTrace: Batch Signers array exceeds max entries.";
-            return XRPAmount{INITIAL_XRP};
+            return XRPAmount{kINITIAL_XRP};
         }
         // LCOV_EXCL_STOP
 
@@ -119,7 +138,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
     if (signerCount > 0 && view.fees().base > maxAmount / signerCount)
     {
         JLOG(debugLog().error()) << "BatchTrace: XRPAmount overflow in signerCount calculation.";
-        return XRPAmount{INITIAL_XRP};
+        return XRPAmount{kINITIAL_XRP};
     }
     // LCOV_EXCL_STOP
 
@@ -129,12 +148,12 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
     if (signerFees > maxAmount - txnFees)
     {
         JLOG(debugLog().error()) << "BatchTrace: XRPAmount overflow in signerFees calculation.";
-        return XRPAmount{INITIAL_XRP};
+        return XRPAmount{kINITIAL_XRP};
     }
     if (txnFees + signerFees > maxAmount - batchBase)
     {
         JLOG(debugLog().error()) << "BatchTrace: XRPAmount overflow in total fee calculation.";
-        return XRPAmount{INITIAL_XRP};
+        return XRPAmount{kINITIAL_XRP};
     }
     // LCOV_EXCL_STOP
 
@@ -202,7 +221,7 @@ Batch::preflight(PreflightContext const& ctx)
         return temARRAY_EMPTY;
     }
 
-    if (rawTxns.size() > maxBatchTxCount)
+    if (rawTxns.size() > kMAX_BATCH_TX_COUNT)
     {
         JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]:"
                             << "txns array exceeds 8 entries.";
@@ -262,10 +281,8 @@ Batch::preflight(PreflightContext const& ctx)
             return temINVALID;
         }
 
-        if (std::any_of(
-                disabledTxTypes.begin(), disabledTxTypes.end(), [txType](auto const& disabled) {
-                    return txType == disabled;
-                }))
+        if (std::ranges::any_of(
+                kDISABLED_TX_TYPES, [txType](auto const& disabled) { return txType == disabled; }))
         {
             return temINVALID_INNER_BATCH;
         }
@@ -294,7 +311,7 @@ Batch::preflight(PreflightContext const& ctx)
         }
 
         // Check that the Fee is native asset (XRP) and zero
-        if (auto const fee = stx.getFieldAmount(sfFee); !fee.native() || fee.xrp() != beast::zero)
+        if (auto const fee = stx.getFieldAmount(sfFee); !fee.native() || fee.xrp() != beast::kZERO)
         {
             JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
                                 << "inner txn must have a fee of 0. "
@@ -304,7 +321,7 @@ Batch::preflight(PreflightContext const& ctx)
 
         auto const innerAccount = stx.getAccountID(sfAccount);
         if (auto const preflightResult =
-                xrpl::preflight(ctx.registry, ctx.rules, parentBatchId, stx, tapBATCH, ctx.j);
+                xrpl::preflight(ctx.registry, ctx.rules, parentBatchId, stx, TapBatch, ctx.j);
             !isTesSuccess(preflightResult.ter))
         {
             JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
@@ -396,7 +413,7 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
         STArray const& signers = ctx.tx.getFieldArray(sfBatchSigners);
 
         // Check that the batch signers array is not too large.
-        if (signers.size() > maxBatchTxCount)
+        if (signers.size() > kMAX_BATCH_TX_COUNT)
         {
             JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
                                 << "signers array exceeds 8 entries.";
@@ -498,6 +515,22 @@ TER
 Batch::doApply()
 {
     return tesSUCCESS;
+}
+
+void
+Batch::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+Batch::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

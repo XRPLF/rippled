@@ -9,9 +9,9 @@
 
 #include <memory>
 
-namespace Json {
+namespace json {
 class Value;
-}  // namespace Json
+}  // namespace json
 
 namespace xrpl {
 
@@ -23,7 +23,7 @@ class STTx;
 namespace RPC {
 
 template <class L>
-Json::Value
+json::Value
 computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
 {
     std::map<
@@ -99,37 +99,42 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
             STAmount const deltaPays = finalFields.getFieldAmount(sfTakerPays) -
                 previousFields.getFieldAmount(sfTakerPays);
 
-            std::string const g{to_string(deltaGets.issue())};
-            std::string const p{to_string(deltaPays.issue())};
+            std::string const g{to_string(deltaGets.asset())};
+            std::string const p{to_string(deltaPays.asset())};
 
-            bool const noswap = isXRP(deltaGets) ? true : (isXRP(deltaPays) ? false : (g < p));
+            bool const noswap = isXRP(deltaGets) || (!isXRP(deltaPays) && (g < p));
 
             STAmount first = noswap ? deltaGets : deltaPays;
             STAmount second = noswap ? deltaPays : deltaGets;
 
             // defensively programmed, should (probably) never happen
-            if (second == beast::zero)
+            if (second == beast::kZERO)
                 continue;
 
             STAmount const rate = divide(first, second, noIssue());
 
-            if (first < beast::zero)
+            if (first < beast::kZERO)
                 first = -first;
 
-            if (second < beast::zero)
+            if (second < beast::kZERO)
                 second = -second;
 
             std::stringstream ss;
             if (noswap)
+            {
                 ss << g << "|" << p;
+            }
             else
+            {
                 ss << p << "|" << g;
+            }
 
             std::optional<uint256> const domain = finalFields[~sfDomainID];
 
             std::string const key{ss.str()};
 
-            if (tally.find(key) == tally.end())
+            if (!tally.contains(key))
+            {
                 tally[key] = {
                     first,   // side A vol
                     second,  // side B vol
@@ -138,6 +143,7 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
                     rate,    // open
                     rate,    // close
                     domain};
+            }
             else
             {
                 // increment volume
@@ -158,7 +164,7 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
         }
     }
 
-    Json::Value jvObj(Json::objectValue);
+    json::Value jvObj(json::ValueType::Object);
     jvObj[jss::type] = "bookChanges";
 
     // retrieve validated information from LedgerHeader class
@@ -166,22 +172,41 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
     jvObj[jss::ledger_index] = lpAccepted->header().seq;
     jvObj[jss::ledger_hash] = to_string(lpAccepted->header().hash);
     jvObj[jss::ledger_time] =
-        Json::Value::UInt(lpAccepted->header().closeTime.time_since_epoch().count());
+        json::Value::UInt(lpAccepted->header().closeTime.time_since_epoch().count());
 
-    jvObj[jss::changes] = Json::arrayValue;
+    jvObj[jss::changes] = json::ValueType::Array;
+
+    auto volToStr = [](STAmount const& vol) {
+        return vol.asset().visit(
+            [&](Issue const& issue) {
+                if (isXRP(issue))
+                    return to_string(vol.xrp());
+                return to_string(vol.iou());
+            },
+            [&](MPTIssue const&) { return to_string(vol.mpt()); });
+    };
 
     for (auto const& entry : tally)
     {
-        Json::Value& inner = jvObj[jss::changes].append(Json::objectValue);
+        json::Value& inner = jvObj[jss::changes].append(json::ValueType::Object);
 
         STAmount const volA = std::get<0>(entry.second);
         STAmount const volB = std::get<1>(entry.second);
 
-        inner[jss::currency_a] = (isXRP(volA) ? "XRP_drops" : to_string(volA.issue()));
-        inner[jss::currency_b] = (isXRP(volB) ? "XRP_drops" : to_string(volB.issue()));
+        volA.asset().visit(
+            [&](Issue const&) {
+                inner[jss::currency_a] = (isXRP(volA) ? "XRP_drops" : to_string(volA.asset()));
+            },
+            [&](MPTIssue const&) { inner[jss::mpt_issuance_id_a] = to_string(volA.asset()); });
 
-        inner[jss::volume_a] = (isXRP(volA) ? to_string(volA.xrp()) : to_string(volA.iou()));
-        inner[jss::volume_b] = (isXRP(volB) ? to_string(volB.xrp()) : to_string(volB.iou()));
+        volB.asset().visit(
+            [&](Issue const&) {
+                inner[jss::currency_b] = (isXRP(volB) ? "XRP_drops" : to_string(volB.asset()));
+            },
+            [&](MPTIssue const&) { inner[jss::mpt_issuance_id_b] = to_string(volB.asset()); });
+
+        inner[jss::volume_a] = volToStr(volA);
+        inner[jss::volume_b] = volToStr(volB);
 
         inner[jss::high] = to_string(std::get<2>(entry.second).iou());
         inner[jss::low] = to_string(std::get<3>(entry.second).iou());

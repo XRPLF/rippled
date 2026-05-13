@@ -1,20 +1,27 @@
 #include <xrpl/protocol/STNumber.h>
-// Do not remove. Keep STNumber.h first
+
 #include <xrpl/basics/Number.h>
-#include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STBase.h>
-#include <xrpl/protocol/STIssue.h>
+#include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/Serializer.h>
 
 #include <boost/lexical_cast.hpp>
-#include <boost/regex.hpp>
+#include <boost/regex/v5/regbase.hpp>
+#include <boost/regex/v5/regex.hpp>
+#include <boost/regex/v5/regex_match.hpp>
 
 #include <cstddef>
+#include <cstdint>
+#include <limits>
 #include <ostream>
+#include <stdexcept>
 #include <string>
 #include <utility>
 
@@ -51,7 +58,7 @@ STNumber::associateAsset(Asset const& a)
     STTakesAsset::associateAsset(a);
 
     XRPL_ASSERT_PARTS(
-        getFName().shouldMeta(SField::sMD_NeedsAsset),
+        getFName().shouldMeta(SField::kSMD_NEEDS_ASSET),
         "STNumber::associateAsset",
         "field needs asset");
 
@@ -69,7 +76,7 @@ STNumber::add(Serializer& s) const
     auto const exponent = value.exponent();
 
     SField const& field = getFName();
-    if (field.shouldMeta(SField::sMD_NeedsAsset))
+    if (field.shouldMeta(SField::kSMD_NEEDS_ASSET))
     {
         // asset is defined in the STTakesAsset base class
         if (asset_)
@@ -89,7 +96,7 @@ STNumber::add(Serializer& s) const
             // Json. Regardless, the only time we should be serializing an
             // STNumber is when the scale is large.
             XRPL_ASSERT_PARTS(
-                Number::getMantissaScale() == MantissaRange::large,
+                Number::getMantissaScale() == MantissaRange::MantissaScale::Large,
                 "xrpl::STNumber::add",
                 "STNumber only used with large mantissa scale");
 #endif
@@ -153,7 +160,7 @@ operator<<(std::ostream& out, STNumber const& rhs)
 NumberParts
 partsFromString(std::string const& number)
 {
-    static boost::regex const reNumber(
+    static boost::regex const kRE_NUMBER(
         "^"                       // the beginning of the string
         "([-+]?)"                 // (optional) + or - character
         "(0|[1-9][0-9]*)"         // a number (no leading zeroes, unless 0)
@@ -164,7 +171,7 @@ partsFromString(std::string const& number)
 
     boost::smatch match;
 
-    if (!boost::regex_match(number, match, reNumber))
+    if (!boost::regex_match(number, match, kRE_NUMBER))
         Throw<std::runtime_error>("'" + number + "' is not a number");
 
     // Match fields:
@@ -207,11 +214,11 @@ partsFromString(std::string const& number)
         }
     }
 
-    return {mantissa, exponent, negative};
+    return {.mantissa = mantissa, .exponent = exponent, .negative = negative};
 }
 
 STNumber
-numberFromJson(SField const& field, Json::Value const& value)
+numberFromJson(SField const& field, json::Value const& value)
 {
     NumberParts parts;
 
@@ -251,7 +258,7 @@ numberFromJson(SField const& field, Json::Value const& value)
     }
 
     return STNumber{
-        field, Number{parts.negative, parts.mantissa, parts.exponent, Number::normalized{}}};
+        field, Number{parts.negative, parts.mantissa, parts.exponent, Number::Normalized{}}};
 }
 
 }  // namespace xrpl

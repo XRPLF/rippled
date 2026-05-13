@@ -1,19 +1,25 @@
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/MallocTrim.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
 
 #include <boost/predef.h>
 
-#include <chrono>
-#include <cstdint>
-#include <cstdio>
-#include <fstream>
-#include <sstream>
+#include <string_view>
 
 #if defined(__GLIBC__) && BOOST_OS_LINUX
 #include <sys/resource.h>
 
 #include <malloc.h>
 #include <unistd.h>
+
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <fstream>
+#include <ios>
+#include <sstream>
+#include <string>
 
 // Require RUSAGE_THREAD for thread-scoped page fault tracking
 #ifndef RUSAGE_THREAD
@@ -80,7 +86,7 @@ mallocTrim(std::string_view tag, beast::Journal journal)
     // Keep glibc malloc_trim padding at 0 (default): 12h Mainnet tests across 0/256KB/1MB/16MB
     // showed no clear, consistent benefit from custom padding—0 provided the best overall balance
     // of RSS reduction and trim-latency stability without adding a tuning surface.
-    constexpr std::size_t TRIM_PAD = 0;
+    constexpr static std::size_t kTRIM_PAD = 0;
 
     report.supported = true;
 
@@ -104,16 +110,16 @@ mallocTrim(std::string_view tag, beast::Journal journal)
         long const rssBeforeKB = detail::parseStatmRSSkB(statmBefore);
 
         struct rusage ru0{};
-        bool const have_ru0 = getRusageThread(ru0);
+        bool const haveRu0 = getRusageThread(ru0);
 
         auto const t0 = std::chrono::steady_clock::now();
 
-        report.trimResult = detail::mallocTrimWithPad(TRIM_PAD);
+        report.trimResult = detail::mallocTrimWithPad(kTRIM_PAD);
 
         auto const t1 = std::chrono::steady_clock::now();
 
         struct rusage ru1{};
-        bool const have_ru1 = getRusageThread(ru1);
+        bool const haveRu1 = getRusageThread(ru1);
 
         auto const statmAfter = readFile(statmPath);
         long const rssAfterKB = detail::parseStatmRSSkB(statmAfter);
@@ -123,7 +129,7 @@ mallocTrim(std::string_view tag, beast::Journal journal)
         report.rssAfterKB = rssAfterKB;
         report.durationUs = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0);
 
-        if (have_ru0 && have_ru1)
+        if (haveRu0 && haveRu1)
         {
             report.minfltDelta = ru1.ru_minflt - ru0.ru_minflt;
             report.majfltDelta = ru1.ru_majflt - ru0.ru_majflt;
@@ -134,7 +140,7 @@ mallocTrim(std::string_view tag, beast::Journal journal)
             : (static_cast<std::int64_t>(rssAfterKB) - static_cast<std::int64_t>(rssBeforeKB));
 
         JLOG(journal.debug()) << "malloc_trim tag=" << tagStr << " result=" << report.trimResult
-                              << " pad=" << TRIM_PAD << " bytes"
+                              << " pad=" << kTRIM_PAD << " bytes"
                               << " rss_before=" << rssBeforeKB << "kB"
                               << " rss_after=" << rssAfterKB << "kB"
                               << " delta=" << deltaKB << "kB"
@@ -144,7 +150,7 @@ mallocTrim(std::string_view tag, beast::Journal journal)
     }
     else
     {
-        report.trimResult = detail::mallocTrimWithPad(TRIM_PAD);
+        report.trimResult = detail::mallocTrimWithPad(kTRIM_PAD);
     }
 
 #endif

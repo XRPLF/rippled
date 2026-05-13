@@ -2,7 +2,7 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
-#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 
@@ -12,10 +12,10 @@ namespace xrpl {
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
 // }
-Json::Value
+json::Value
 doLedgerRequest(RPC::JsonContext& context)
 {
-    context.loadType = Resource::feeHeavyBurdenRPC;
+    context.loadType = Resource::kFEE_HEAVY_BURDEN_RPC;
     auto res = RPC::getOrAcquireLedger(context);
 
     if (!res.has_value())
@@ -23,7 +23,7 @@ doLedgerRequest(RPC::JsonContext& context)
 
     auto const& ledger = res.value();
 
-    Json::Value jvResult;
+    json::Value jvResult;
     jvResult[jss::ledger_index] = ledger->header().seq;
     addJson(jvResult, {*ledger, &context, 0});
     return jvResult;

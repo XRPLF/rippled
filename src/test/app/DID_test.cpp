@@ -1,14 +1,23 @@
-#include <test/jtx.h>
 
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>  // IWYU pragma: keep
+#include <test/jtx/did.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/txflags.h>
+
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TER.h>
 
-#include <algorithm>
+namespace xrpl::test {
 
-namespace xrpl {
-namespace test {
-
-struct DID_test : public beast::unit_test::suite
+struct DID_test : public beast::unit_test::Suite
 {
     void
     testEnabled(FeatureBitset features)
@@ -24,11 +33,11 @@ struct DID_test : public beast::unit_test::suite
         env.close();
 
         BEAST_EXPECT(ownerCount(env, alice) == 0);
-        env(did::setValid(alice), ter(temDISABLED));
+        env(did::setValid(alice), Ter(temDISABLED));
         env.close();
 
         BEAST_EXPECT(ownerCount(env, alice) == 0);
-        env(did::del(alice), ter(temDISABLED));
+        env(did::del(alice), Ter(temDISABLED));
         env.close();
     }
 
@@ -54,7 +63,7 @@ struct DID_test : public beast::unit_test::suite
         BEAST_EXPECT(ownerCount(env, alice) == 0);
 
         // alice does not have enough XRP to cover the reserve for a DID
-        env(did::setValid(alice), ter(tecINSUFFICIENT_RESERVE));
+        env(did::setValid(alice), Ter(tecINSUFFICIENT_RESERVE));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);
 
@@ -64,7 +73,7 @@ struct DID_test : public beast::unit_test::suite
         env.close();
 
         // alice still does not have enough XRP for the reserve of a DID.
-        env(did::setValid(alice), ter(tecINSUFFICIENT_RESERVE));
+        env(did::setValid(alice), Ter(tecINSUFFICIENT_RESERVE));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);
 
@@ -101,40 +110,40 @@ struct DID_test : public beast::unit_test::suite
 
         // invalid flags
         BEAST_EXPECT(ownerCount(env, alice) == 0);
-        env(did::setValid(alice), txflags(0x00010000), ter(temINVALID_FLAG));
+        env(did::setValid(alice), Txflags(0x00010000), Ter(temINVALID_FLAG));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);
 
         // no fields
-        env(did::set(alice), ter(temEMPTY_DID));
+        env(did::set(alice), Ter(temEMPTY_DID));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);
 
         // all empty fields
-        env(did::set(alice), did::uri(""), did::document(""), did::data(""), ter(temEMPTY_DID));
+        env(did::set(alice), did::Uri(""), did::Document(""), did::Data(""), Ter(temEMPTY_DID));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);
 
         // uri is too long
         std::string const longString(257, 'a');
-        env(did::set(alice), did::uri(longString), ter(temMALFORMED));
+        env(did::set(alice), did::Uri(longString), Ter(temMALFORMED));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);
 
         // document is too long
-        env(did::set(alice), did::document(longString), ter(temMALFORMED));
+        env(did::set(alice), did::Document(longString), Ter(temMALFORMED));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);
 
         // attestation is too long
-        env(did::set(alice), did::document("data"), did::data(longString), ter(temMALFORMED));
+        env(did::set(alice), did::Document("data"), did::Data(longString), Ter(temMALFORMED));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);
 
         // some empty fields, some optional fields
         // pre-fix amendment
         auto const fixEnabled = env.current()->rules().enabled(fixEmptyDID);
-        env(did::set(alice), did::uri(""), fixEnabled ? ter(tecEMPTY_DID) : ter(tesSUCCESS));
+        env(did::set(alice), did::Uri(""), fixEnabled ? Ter(tecEMPTY_DID) : Ter(tesSUCCESS));
         env.close();
         auto const expectedOwnerReserve = fixEnabled ? 0 : 1;
         BEAST_EXPECT(ownerCount(env, alice) == expectedOwnerReserve);
@@ -160,7 +169,7 @@ struct DID_test : public beast::unit_test::suite
 
         // invalid flags
         BEAST_EXPECT(ownerCount(env, alice) == 0);
-        env(did::del(alice), txflags(0x00010000), ter(temINVALID_FLAG));
+        env(did::del(alice), Txflags(0x00010000), Ter(temINVALID_FLAG));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);
 
@@ -168,7 +177,7 @@ struct DID_test : public beast::unit_test::suite
         // doApply
 
         // DID doesn't exist
-        env(did::del(alice), ter(tecNO_ENTRY));
+        env(did::del(alice), Ter(tecNO_ENTRY));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);
     }
@@ -196,31 +205,31 @@ struct DID_test : public beast::unit_test::suite
         BEAST_EXPECT(ownerCount(env, charlie) == 0);
 
         // only URI
-        env(did::set(alice), did::uri("uri"));
+        env(did::set(alice), did::Uri("uri"));
         BEAST_EXPECT(ownerCount(env, alice) == 1);
 
         // only DIDDocument
-        env(did::set(bob), did::document("data"));
+        env(did::set(bob), did::Document("data"));
         BEAST_EXPECT(ownerCount(env, bob) == 1);
 
         // only Data
-        env(did::set(charlie), did::data("data"));
+        env(did::set(charlie), did::Data("data"));
         BEAST_EXPECT(ownerCount(env, charlie) == 1);
 
         // URI + Data
-        env(did::set(dave), did::uri("uri"), did::data("attest"));
+        env(did::set(dave), did::Uri("uri"), did::Data("attest"));
         BEAST_EXPECT(ownerCount(env, dave) == 1);
 
         // URI + DIDDocument
-        env(did::set(edna), did::uri("uri"), did::document("data"));
+        env(did::set(edna), did::Uri("uri"), did::Document("data"));
         BEAST_EXPECT(ownerCount(env, edna) == 1);
 
         // DIDDocument + Data
-        env(did::set(francis), did::document("data"), did::data("attest"));
+        env(did::set(francis), did::Document("data"), did::Data("attest"));
         BEAST_EXPECT(ownerCount(env, francis) == 1);
 
         // URI + DIDDocument + Data
-        env(did::set(george), did::uri("uri"), did::document("data"), did::data("attest"));
+        env(did::set(george), did::Uri("uri"), did::Document("data"), did::Data("attest"));
         BEAST_EXPECT(ownerCount(env, george) == 1);
     }
 
@@ -242,7 +251,7 @@ struct DID_test : public beast::unit_test::suite
         // Create DID
         std::string const initialURI = "uri";
         {
-            env(did::set(alice), did::uri(initialURI));
+            env(did::set(alice), did::Uri(initialURI));
             BEAST_EXPECT(ownerCount(env, alice) == 1);
             auto const sleDID = env.le(keylet::did(alice.id()));
             BEAST_EXPECT(sleDID);
@@ -253,7 +262,7 @@ struct DID_test : public beast::unit_test::suite
 
         // Try to delete URI, fails because no elements are set
         {
-            env(did::set(alice), did::uri(""), ter(tecEMPTY_DID));
+            env(did::set(alice), did::Uri(""), Ter(tecEMPTY_DID));
             BEAST_EXPECT(ownerCount(env, alice) == 1);
             auto const sleDID = env.le(keylet::did(alice.id()));
             BEAST_EXPECT(checkVL((*sleDID)[sfURI], initialURI));
@@ -264,7 +273,7 @@ struct DID_test : public beast::unit_test::suite
         // Set DIDDocument
         std::string const initialDocument = "data";
         {
-            env(did::set(alice), did::document(initialDocument));
+            env(did::set(alice), did::Document(initialDocument));
             BEAST_EXPECT(ownerCount(env, alice) == 1);
             auto const sleDID = env.le(keylet::did(alice.id()));
             BEAST_EXPECT(checkVL((*sleDID)[sfURI], initialURI));
@@ -275,7 +284,7 @@ struct DID_test : public beast::unit_test::suite
         // Set Data
         std::string const initialData = "attest";
         {
-            env(did::set(alice), did::data(initialData));
+            env(did::set(alice), did::Data(initialData));
             BEAST_EXPECT(ownerCount(env, alice) == 1);
             auto const sleDID = env.le(keylet::did(alice.id()));
             BEAST_EXPECT(checkVL((*sleDID)[sfURI], initialURI));
@@ -285,7 +294,7 @@ struct DID_test : public beast::unit_test::suite
 
         // Remove URI
         {
-            env(did::set(alice), did::uri(""));
+            env(did::set(alice), did::Uri(""));
             BEAST_EXPECT(ownerCount(env, alice) == 1);
             auto const sleDID = env.le(keylet::did(alice.id()));
             BEAST_EXPECT(!sleDID->isFieldPresent(sfURI));
@@ -295,7 +304,7 @@ struct DID_test : public beast::unit_test::suite
 
         // Remove Data
         {
-            env(did::set(alice), did::data(""));
+            env(did::set(alice), did::Data(""));
             BEAST_EXPECT(ownerCount(env, alice) == 1);
             auto const sleDID = env.le(keylet::did(alice.id()));
             BEAST_EXPECT(!sleDID->isFieldPresent(sfURI));
@@ -306,7 +315,7 @@ struct DID_test : public beast::unit_test::suite
         // Remove Data + set URI
         std::string const secondURI = "uri2";
         {
-            env(did::set(alice), did::uri(secondURI), did::document(""));
+            env(did::set(alice), did::Uri(secondURI), did::Document(""));
             BEAST_EXPECT(ownerCount(env, alice) == 1);
             auto const sleDID = env.le(keylet::did(alice.id()));
             BEAST_EXPECT(checkVL((*sleDID)[sfURI], secondURI));
@@ -317,7 +326,7 @@ struct DID_test : public beast::unit_test::suite
         // Remove URI + set DIDDocument
         std::string const secondDocument = "data2";
         {
-            env(did::set(alice), did::uri(""), did::document(secondDocument));
+            env(did::set(alice), did::Uri(""), did::Document(secondDocument));
             BEAST_EXPECT(ownerCount(env, alice) == 1);
             auto const sleDID = env.le(keylet::did(alice.id()));
             BEAST_EXPECT(!sleDID->isFieldPresent(sfURI));
@@ -328,7 +337,7 @@ struct DID_test : public beast::unit_test::suite
         // Remove DIDDocument + set Data
         std::string const secondData = "randomData";
         {
-            env(did::set(alice), did::document(""), did::data(secondData));
+            env(did::set(alice), did::Document(""), did::Data(secondData));
             BEAST_EXPECT(ownerCount(env, alice) == 1);
             auto const sleDID = env.le(keylet::did(alice.id()));
             BEAST_EXPECT(!sleDID->isFieldPresent(sfURI));
@@ -349,7 +358,7 @@ struct DID_test : public beast::unit_test::suite
     run() override
     {
         using namespace test::jtx;
-        FeatureBitset const all{testable_amendments()};
+        FeatureBitset const all{testableAmendments()};
         FeatureBitset const emptyDID{fixEmptyDID};
         testEnabled(all);
         testAccountReserve(all);
@@ -369,5 +378,4 @@ struct DID_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(DID, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

@@ -19,9 +19,9 @@ class LoanPayBuilder;
  * @brief Transaction: LoanPay
  *
  * Type: ttLOAN_PAY (84)
- * Delegable: Delegation::notDelegable
+ * Delegable: Delegation::NotDelegable
  * Amendment: featureLendingProtocol
- * Privileges: mayAuthorizeMPT | mustModifyVault
+ * Privileges: MayAuthorizeMpt | MustModifyVault
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use LoanPayBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfLoanID (soeREQUIRED)
+     * @brief Get sfLoanID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -59,7 +59,7 @@ public:
     }
 
     /**
-     * @brief Get sfAmount (soeREQUIRED)
+     * @brief Get sfAmount (SoeRequired)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value.
      */
@@ -75,7 +75,7 @@ public:
  * @brief Builder for LoanPay transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class LoanPayBuilder : public TransactionBuilderBase<LoanPayBuilder>
@@ -116,7 +116,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfLoanID (soeREQUIRED)
+     * @brief Set sfLoanID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     LoanPayBuilder&
@@ -127,7 +127,7 @@ public:
     }
 
     /**
-     * @brief Set sfAmount (soeREQUIRED)
+     * @brief Set sfAmount (SoeRequired)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */

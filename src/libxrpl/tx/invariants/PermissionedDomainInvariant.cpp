@@ -1,10 +1,22 @@
 #include <xrpl/tx/invariants/PermissionedDomainInvariant.h>
-//
-#include <xrpl/beast/utility/instrumentation.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/XRPAmount.h>
+
+#include <memory>
+#include <vector>
 
 namespace xrpl {
 
@@ -23,18 +35,22 @@ ValidPermissionedDomain::visitEntry(
         auto const& credentials = sle->getFieldArray(sfAcceptedCredentials);
         auto const sorted = credentials::makeSorted(credentials);
 
-        SleStatus ss{credentials.size(), false, !sorted.empty(), isDel};
+        SleStatus ss{
+            .credentialsSize = credentials.size(),
+            .isSorted = false,
+            .isUnique = !sorted.empty(),
+            .isDelete = isDel};
 
         // If array have duplicates then all the other checks are invalid
-        if (ss.isUnique_)
+        if (ss.isUnique)
         {
             unsigned i = 0;
             for (auto const& cred : sorted)
             {
                 auto const& credTx = credentials[i++];
-                ss.isSorted_ =
+                ss.isSorted =
                     (cred.first == credTx[sfIssuer]) && (cred.second == credTx[sfCredentialType]);
-                if (!ss.isSorted_)
+                if (!ss.isSorted)
                     break;
             }
         }
@@ -54,29 +70,29 @@ ValidPermissionedDomain::finalize(
     beast::Journal const& j)
 {
     auto check = [](SleStatus const& sleStatus, beast::Journal const& j) {
-        if (!sleStatus.credentialsSize_)
+        if (!sleStatus.credentialsSize)
         {
             JLOG(j.fatal()) << "Invariant failed: permissioned domain with "
                                "no rules.";
             return false;
         }
 
-        if (sleStatus.credentialsSize_ > maxPermissionedDomainCredentialsArraySize)
+        if (sleStatus.credentialsSize > kMAX_PERMISSIONED_DOMAIN_CREDENTIALS_ARRAY_SIZE)
         {
             JLOG(j.fatal()) << "Invariant failed: permissioned domain bad "
                                "credentials size "
-                            << sleStatus.credentialsSize_;
+                            << sleStatus.credentialsSize;
             return false;
         }
 
-        if (!sleStatus.isUnique_)
+        if (!sleStatus.isUnique)
         {
             JLOG(j.fatal()) << "Invariant failed: permissioned domain credentials "
                                "aren't unique";
             return false;
         }
 
-        if (!sleStatus.isSorted_)
+        if (!sleStatus.isSorted)
         {
             JLOG(j.fatal()) << "Invariant failed: permissioned domain credentials "
                                "aren't sorted";
@@ -113,7 +129,7 @@ ValidPermissionedDomain::finalize(
                 }
 
                 auto const& sleStatus = sleStatus_[0];
-                if (sleStatus.isDelete_)
+                if (sleStatus.isDelete)
                 {
                     JLOG(j.fatal()) << "Invariant failed: domain object "
                                        "deleted by PermissionedDomainSet";
@@ -129,7 +145,7 @@ ValidPermissionedDomain::finalize(
                     return false;
                 }
 
-                if (!sleStatus_[0].isDelete_)
+                if (!sleStatus_[0].isDelete)
                 {
                     JLOG(j.fatal()) << "Invariant failed: domain object "
                                        "modified, but not deleted by "

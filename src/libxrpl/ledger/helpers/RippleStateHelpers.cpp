@@ -1,15 +1,34 @@
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
-//
+
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
+
+#include <algorithm>
+#include <cstdint>
+#include <memory>
+#include <optional>
 
 namespace xrpl {
 
@@ -33,11 +52,14 @@ creditLimit(
     if (sleRippleState)
     {
         result = sleRippleState->getFieldAmount(account < issuer ? sfLowLimit : sfHighLimit);
-        result.setIssuer(account);
+        result.get<Issue>().account = account;
     }
 
     XRPL_ASSERT(result.getIssuer() == account, "xrpl::creditLimit : result issuer match");
-    XRPL_ASSERT(result.getCurrency() == currency, "xrpl::creditLimit : result currency match");
+    XRPL_ASSERT(
+        result.get<Issue>().currency == currency,
+        "xrpl::creditLimit : result currency "
+        "match");
     return result;
 }
 
@@ -63,11 +85,14 @@ creditBalance(
         result = sleRippleState->getFieldAmount(sfBalance);
         if (account < issuer)
             result.negate();
-        result.setIssuer(account);
+        result.get<Issue>().account = account;
     }
 
     XRPL_ASSERT(result.getIssuer() == account, "xrpl::creditBalance : result issuer match");
-    XRPL_ASSERT(result.getCurrency() == currency, "xrpl::creditBalance : result currency match");
+    XRPL_ASSERT(
+        result.get<Issue>().currency == currency,
+        "xrpl::creditBalance : result currency "
+        "match");
     return result;
 }
 
@@ -222,7 +247,7 @@ trustCreate(
     sleRippleState->setFieldAmount(bSetHigh ? sfHighLimit : sfLowLimit, saLimit);
     sleRippleState->setFieldAmount(
         bSetHigh ? sfLowLimit : sfHighLimit,
-        STAmount(Issue{saBalance.getCurrency(), bSetDst ? uSrcAccountID : uDstAccountID}));
+        STAmount(Issue{saBalance.get<Issue>().currency, bSetDst ? uSrcAccountID : uDstAccountID}));
 
     if (uQualityIn != 0u)
         sleRippleState->setFieldU32(bSetHigh ? sfHighQualityIn : sfLowQualityIn, uQualityIn);
@@ -261,7 +286,7 @@ trustCreate(
     // ONLY: Create ripple balance.
     sleRippleState->setFieldAmount(sfBalance, bSetHigh ? -saBalance : saBalance);
 
-    view.creditHook(uSrcAccountID, uDstAccountID, saBalance, saBalance.zeroed());
+    view.creditHookIOU(uSrcAccountID, uDstAccountID, saBalance, saBalance.zeroed());
 
     return tesSUCCESS;
 }
@@ -323,9 +348,9 @@ updateTrustLine(
         return false;
 
     // YYY Could skip this if rippling in reverse.
-    if (before > beast::zero
+    if (before > beast::kZERO
         // Sender balance was positive.
-        && after <= beast::zero
+        && after <= beast::kZERO
         // Sender is zero or negative.
         && ((flags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve)) != 0u)
         // Sender reserve is set.
@@ -367,7 +392,7 @@ issueIOU(
         "xrpl::issueIOU : neither account nor issuer is XRP");
 
     // Consistency check
-    XRPL_ASSERT(issue == amount.issue(), "xrpl::issueIOU : matching issue");
+    XRPL_ASSERT(issue == amount.get<Issue>(), "xrpl::issueIOU : matching issue");
 
     // Can't send to self!
     XRPL_ASSERT(issue.account != account, "xrpl::issueIOU : not issuer account");
@@ -380,28 +405,28 @@ issueIOU(
 
     if (auto state = view.peek(index))
     {
-        STAmount final_balance = state->getFieldAmount(sfBalance);
+        STAmount finalBalance = state->getFieldAmount(sfBalance);
 
         if (bSenderHigh)
-            final_balance.negate();  // Put balance in sender terms.
+            finalBalance.negate();  // Put balance in sender terms.
 
-        STAmount const start_balance = final_balance;
+        STAmount const startBalance = finalBalance;
 
-        final_balance -= amount;
+        finalBalance -= amount;
 
-        auto const must_delete = updateTrustLine(
-            view, state, bSenderHigh, issue.account, start_balance, final_balance, j);
+        auto const mustDelete =
+            updateTrustLine(view, state, bSenderHigh, issue.account, startBalance, finalBalance, j);
 
-        view.creditHook(issue.account, account, amount, start_balance);
+        view.creditHookIOU(issue.account, account, amount, startBalance);
 
         if (bSenderHigh)
-            final_balance.negate();
+            finalBalance.negate();
 
         // Adjust the balance on the trust line if necessary. We do this even
         // if we are going to delete the line to reflect the correct balance
         // at the time of deletion.
-        state->setFieldAmount(sfBalance, final_balance);
-        if (must_delete)
+        state->setFieldAmount(sfBalance, finalBalance);
+        if (mustDelete)
         {
             return trustDelete(
                 view,
@@ -420,9 +445,9 @@ issueIOU(
     // this is unnecessarily inefficient as copying which could be avoided
     // is now required. Consider available options.
     STAmount const limit(Issue{issue.currency, account});
-    STAmount final_balance = amount;
+    STAmount finalBalance = amount;
 
-    final_balance.setIssuer(noAccount());
+    finalBalance.get<Issue>().account = noAccount();
 
     auto const receiverAccount = view.peek(keylet::account(account));
     if (!receiverAccount)
@@ -441,7 +466,7 @@ issueIOU(
         noRipple,
         false,
         false,
-        final_balance,
+        finalBalance,
         limit,
         0,
         0,
@@ -461,7 +486,7 @@ redeemIOU(
         "xrpl::redeemIOU : neither account nor issuer is XRP");
 
     // Consistency check
-    XRPL_ASSERT(issue == amount.issue(), "xrpl::redeemIOU : matching issue");
+    XRPL_ASSERT(issue == amount.get<Issue>(), "xrpl::redeemIOU : matching issue");
 
     // Can't send to self!
     XRPL_ASSERT(issue.account != account, "xrpl::redeemIOU : not issuer account");
@@ -472,29 +497,29 @@ redeemIOU(
 
     if (auto state = view.peek(keylet::line(account, issue.account, issue.currency)))
     {
-        STAmount final_balance = state->getFieldAmount(sfBalance);
+        STAmount finalBalance = state->getFieldAmount(sfBalance);
 
         if (bSenderHigh)
-            final_balance.negate();  // Put balance in sender terms.
+            finalBalance.negate();  // Put balance in sender terms.
 
-        STAmount const start_balance = final_balance;
+        STAmount const startBalance = finalBalance;
 
-        final_balance -= amount;
+        finalBalance -= amount;
 
-        auto const must_delete =
-            updateTrustLine(view, state, bSenderHigh, account, start_balance, final_balance, j);
+        auto const mustDelete =
+            updateTrustLine(view, state, bSenderHigh, account, startBalance, finalBalance, j);
 
-        view.creditHook(account, issue.account, amount, start_balance);
+        view.creditHookIOU(account, issue.account, amount, startBalance);
 
         if (bSenderHigh)
-            final_balance.negate();
+            finalBalance.negate();
 
         // Adjust the balance on the trust line if necessary. We do this even
         // if we are going to delete the line to reflect the correct balance
         // at the time of deletion.
-        state->setFieldAmount(sfBalance, final_balance);
+        state->setFieldAmount(sfBalance, finalBalance);
 
-        if (must_delete)
+        if (mustDelete)
         {
             return trustDelete(
                 view,
@@ -673,7 +698,7 @@ removeEmptyHolding(
     auto const line = view.peek(keylet::line(accountID, issue));
     if (!line)
         return accountIsIssuer ? (TER)tesSUCCESS : (TER)tecOBJECT_NOT_FOUND;
-    if (!accountIsIssuer && line->at(sfBalance)->iou() != beast::zero)
+    if (!accountIsIssuer && line->at(sfBalance)->iou() != beast::kZERO)
         return tecHAS_OBLIGATIONS;
 
     // Adjust the owner count(s)
@@ -753,6 +778,22 @@ deleteAMMTrustLine(
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     adjustOwnerCount(view, !ammLow ? sleLow : sleHigh, -1, j);
+
+    return tesSUCCESS;
+}
+
+TER
+deleteAMMMPToken(
+    ApplyView& view,
+    std::shared_ptr<SLE> sleMpt,
+    AccountID const& ammAccountID,
+    beast::Journal j)
+{
+    if (!view.dirRemove(
+            keylet::ownerDir(ammAccountID), (*sleMpt)[sfOwnerNode], sleMpt->key(), false))
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+
+    view.erase(sleMpt);
 
     return tesSUCCESS;
 }

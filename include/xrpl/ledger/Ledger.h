@@ -20,11 +20,11 @@ class TransactionMaster;
 
 class SqliteStatement;
 
-struct create_genesis_t
+struct CreateGenesisT
 {
-    explicit create_genesis_t() = default;
+    explicit CreateGenesisT() = default;
 };
-extern create_genesis_t const create_genesis;
+extern CreateGenesisT const kCREATE_GENESIS;
 
 /** Holds a ledger.
 
@@ -81,13 +81,13 @@ public:
         Amendments specified are enabled in the genesis ledger
     */
     Ledger(
-        create_genesis_t,
-        Rules const& rules,
+        CreateGenesisT,
+        Rules rules,
         Fees const& fees,
         std::vector<uint256> const& amendments,
         Family& family);
 
-    Ledger(LedgerHeader const& info, Rules const& rules, Family& family);
+    Ledger(LedgerHeader const& info, Rules rules, Family& family);
 
     /** Used for ledgers loaded from JSON files
 
@@ -100,7 +100,7 @@ public:
         LedgerHeader const& info,
         bool& loaded,
         bool acquire,
-        Rules const& rules,
+        Rules rules,
         Fees const& fees,
         Family& family,
         beast::Journal j);
@@ -117,11 +117,11 @@ public:
     Ledger(
         std::uint32_t ledgerSeq,
         NetClock::time_point closeTime,
-        Rules const& rules,
+        Rules rules,
         Fees const& fees,
         Family& family);
 
-    ~Ledger() = default;
+    ~Ledger() override = default;
 
     //
     // ReadView
@@ -169,19 +169,19 @@ public:
     std::shared_ptr<SLE const>
     read(Keylet const& k) const override;
 
-    std::unique_ptr<sles_type::iter_base>
+    std::unique_ptr<SlesType::iter_base>
     slesBegin() const override;
 
-    std::unique_ptr<sles_type::iter_base>
+    std::unique_ptr<SlesType::iter_base>
     slesEnd() const override;
 
-    std::unique_ptr<sles_type::iter_base>
+    std::unique_ptr<SlesType::iter_base>
     slesUpperBound(uint256 const& key) const override;
 
-    std::unique_ptr<txs_type::iter_base>
+    std::unique_ptr<TxsType::iter_base>
     txsBegin() const override;
 
-    std::unique_ptr<txs_type::iter_base>
+    std::unique_ptr<TxsType::iter_base>
     txsEnd() const override;
 
     bool
@@ -229,19 +229,6 @@ public:
         std::shared_ptr<Serializer const> const& txn,
         std::shared_ptr<Serializer const> const& metaData) override;
 
-    // Insert the transaction, and return the hash of the SHAMap leaf node
-    // holding the transaction. The hash can be used to fetch the transaction
-    // directly, instead of traversing the SHAMap
-    // @param key transaction ID
-    // @param txn transaction
-    // @param metaData transaction metadata
-    // @return hash of SHAMap leaf node that holds the transaction
-    uint256
-    rawTxInsertWithHash(
-        uint256 const& key,
-        std::shared_ptr<Serializer const> const& txn,
-        std::shared_ptr<Serializer const> const& metaData);
-
     //--------------------------------------------------------------------------
 
     void
@@ -262,7 +249,7 @@ public:
     bool
     isImmutable() const
     {
-        return mImmutable;
+        return immutable_;
     }
 
     /*  Mark this ledger as "should be full".
@@ -378,8 +365,8 @@ public:
     peek(Keylet const& k) const;
 
 private:
-    class sles_iter_impl;
-    class txs_iter_impl;
+    class SlesIterImpl;
+    class TxsIterImpl;
 
     bool
     setup();
@@ -405,7 +392,7 @@ private:
     static std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>
     deserializeTxPlusMeta(SHAMapItem const& item);
 
-    bool mImmutable;
+    bool immutable_;
 
     // A SHAMap containing the transactions associated with this ledger.
     SHAMap mutable txMap_;

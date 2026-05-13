@@ -18,7 +18,7 @@ trustline that has rippling enabled on the account's side.
 disabled on the account's side. Any trust lines for an incoming account that
 have rippling disabled are unusable in paths.
 */
-enum class LineDirection : bool { incoming = false, outgoing = true };
+enum class LineDirection : bool { Incoming = false, Outgoing = true };
 
 /** Wraps a trust line SLE for convenience.
     The complication of trust lines is that there is a
@@ -32,6 +32,10 @@ enum class LineDirection : bool { incoming = false, outgoing = true };
 */
 class TrustLineBase
 {
+public:
+    TrustLineBase&
+    operator=(TrustLineBase const&) = delete;
+
 protected:
     // This class should not be instantiated directly. Use one of the derived
     // classes.
@@ -39,13 +43,11 @@ protected:
 
     ~TrustLineBase() = default;
     TrustLineBase(TrustLineBase const&) = default;
-    TrustLineBase&
-    operator=(TrustLineBase const&) = delete;
     TrustLineBase(TrustLineBase&&) = default;
 
 public:
     /** Returns the state map key for the ledger entry. */
-    uint256 const&
+    [[nodiscard]] uint256 const&
     key() const
     {
         return key_;
@@ -53,115 +55,115 @@ public:
 
     // VFALCO Take off the "get" from each function name
 
-    AccountID const&
+    [[nodiscard]] AccountID const&
     getAccountID() const
     {
-        return mViewLowest ? mLowLimit.getIssuer() : mHighLimit.getIssuer();
+        return viewLowest_ ? lowLimit_.getIssuer() : highLimit_.getIssuer();
     }
 
-    AccountID const&
+    [[nodiscard]] AccountID const&
     getAccountIDPeer() const
     {
-        return !mViewLowest ? mLowLimit.getIssuer() : mHighLimit.getIssuer();
+        return !viewLowest_ ? lowLimit_.getIssuer() : highLimit_.getIssuer();
     }
 
     // True, Provided auth to peer.
-    bool
+    [[nodiscard]] bool
     getAuth() const
     {
-        return mFlags & (mViewLowest ? lsfLowAuth : lsfHighAuth);
+        return (flags_ & (viewLowest_ ? lsfLowAuth : lsfHighAuth)) != 0u;
     }
 
-    bool
+    [[nodiscard]] bool
     getAuthPeer() const
     {
-        return mFlags & (!mViewLowest ? lsfLowAuth : lsfHighAuth);
+        return (flags_ & (!viewLowest_ ? lsfLowAuth : lsfHighAuth)) != 0u;
     }
 
-    bool
+    [[nodiscard]] bool
     getNoRipple() const
     {
-        return mFlags & (mViewLowest ? lsfLowNoRipple : lsfHighNoRipple);
+        return (flags_ & (viewLowest_ ? lsfLowNoRipple : lsfHighNoRipple)) != 0u;
     }
 
-    bool
+    [[nodiscard]] bool
     getNoRipplePeer() const
     {
-        return mFlags & (!mViewLowest ? lsfLowNoRipple : lsfHighNoRipple);
+        return (flags_ & (!viewLowest_ ? lsfLowNoRipple : lsfHighNoRipple)) != 0u;
     }
 
-    LineDirection
+    [[nodiscard]] LineDirection
     getDirection() const
     {
-        return getNoRipple() ? LineDirection::incoming : LineDirection::outgoing;
+        return getNoRipple() ? LineDirection::Incoming : LineDirection::Outgoing;
     }
 
-    LineDirection
+    [[nodiscard]] LineDirection
     getDirectionPeer() const
     {
-        return getNoRipplePeer() ? LineDirection::incoming : LineDirection::outgoing;
+        return getNoRipplePeer() ? LineDirection::Incoming : LineDirection::Outgoing;
     }
 
     /** Have we set the freeze flag on our peer */
-    bool
+    [[nodiscard]] bool
     getFreeze() const
     {
-        return mFlags & (mViewLowest ? lsfLowFreeze : lsfHighFreeze);
+        return (flags_ & (viewLowest_ ? lsfLowFreeze : lsfHighFreeze)) != 0u;
     }
 
     /** Have we set the deep freeze flag on our peer */
-    bool
+    [[nodiscard]] bool
     getDeepFreeze() const
     {
-        return mFlags & (mViewLowest ? lsfLowDeepFreeze : lsfHighDeepFreeze);
+        return (flags_ & (viewLowest_ ? lsfLowDeepFreeze : lsfHighDeepFreeze)) != 0u;
     }
 
     /** Has the peer set the freeze flag on us */
-    bool
+    [[nodiscard]] bool
     getFreezePeer() const
     {
-        return mFlags & (!mViewLowest ? lsfLowFreeze : lsfHighFreeze);
+        return (flags_ & (!viewLowest_ ? lsfLowFreeze : lsfHighFreeze)) != 0u;
     }
 
     /** Has the peer set the deep freeze flag on us */
-    bool
+    [[nodiscard]] bool
     getDeepFreezePeer() const
     {
-        return mFlags & (!mViewLowest ? lsfLowDeepFreeze : lsfHighDeepFreeze);
+        return (flags_ & (!viewLowest_ ? lsfLowDeepFreeze : lsfHighDeepFreeze)) != 0u;
     }
 
-    STAmount const&
+    [[nodiscard]] STAmount const&
     getBalance() const
     {
-        return mBalance;
+        return balance_;
     }
 
-    STAmount const&
+    [[nodiscard]] STAmount const&
     getLimit() const
     {
-        return mViewLowest ? mLowLimit : mHighLimit;
+        return viewLowest_ ? lowLimit_ : highLimit_;
     }
 
-    STAmount const&
+    [[nodiscard]] STAmount const&
     getLimitPeer() const
     {
-        return !mViewLowest ? mLowLimit : mHighLimit;
+        return !viewLowest_ ? lowLimit_ : highLimit_;
     }
 
-    Json::Value
+    json::Value
     getJson(int);
 
 protected:
     uint256 key_;
 
-    STAmount const mLowLimit;
-    STAmount const mHighLimit;
+    STAmount const lowLimit_;
+    STAmount const highLimit_;
 
-    STAmount mBalance;
+    STAmount balance_;
 
-    std::uint32_t mFlags;
+    std::uint32_t flags_;
 
-    bool mViewLowest;
+    bool viewLowest_;
 };
 
 // This wrapper is used for the path finder
@@ -190,16 +192,16 @@ public:
 
     RPCTrustLine(std::shared_ptr<SLE const> const& sle, AccountID const& viewAccount);
 
-    Rate const&
+    [[nodiscard]] Rate const&
     getQualityIn() const
     {
-        return mViewLowest ? lowQualityIn_ : highQualityIn_;
+        return viewLowest_ ? lowQualityIn_ : highQualityIn_;
     }
 
-    Rate const&
+    [[nodiscard]] Rate const&
     getQualityOut() const
     {
-        return mViewLowest ? lowQualityOut_ : highQualityOut_;
+        return viewLowest_ ? lowQualityOut_ : highQualityOut_;
     }
 
     static std::optional<RPCTrustLine>

@@ -1,12 +1,12 @@
 #include <xrpld/core/Config.h>
 
-#include <xrpl/beast/unit_test.h>
-#include <xrpl/ledger/ReadView.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/server/LoadFeeTrack.h>
 
 namespace xrpl {
 
-class LoadFeeTrack_test : public beast::unit_test::suite
+class LoadFeeTrack_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -18,8 +18,8 @@ public:
             Fees const fees = [&]() {
                 Fees f;
                 f.base = d.FEES.reference_fee;
-                f.reserve = 200 * DROPS_PER_XRP;
-                f.increment = 50 * DROPS_PER_XRP;
+                f.reserve = 200 * kDROPS_PER_XRP;
+                f.increment = 50 * kDROPS_PER_XRP;
                 return f;
             }();
 
@@ -31,8 +31,8 @@ public:
             Fees const fees = [&]() {
                 Fees f;
                 f.base = d.FEES.reference_fee * 10;
-                f.reserve = 200 * DROPS_PER_XRP;
-                f.increment = 50 * DROPS_PER_XRP;
+                f.reserve = 200 * kDROPS_PER_XRP;
+                f.increment = 50 * kDROPS_PER_XRP;
                 return f;
             }();
 
@@ -44,8 +44,8 @@ public:
             Fees const fees = [&]() {
                 Fees f;
                 f.base = d.FEES.reference_fee;
-                f.reserve = 200 * DROPS_PER_XRP;
-                f.increment = 50 * DROPS_PER_XRP;
+                f.reserve = 200 * kDROPS_PER_XRP;
+                f.increment = 50 * kDROPS_PER_XRP;
                 return f;
             }();
 

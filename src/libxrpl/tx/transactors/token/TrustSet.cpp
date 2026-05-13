@@ -1,14 +1,34 @@
-#include <xrpl/ledger/View.h>
+#include <xrpl/tx/transactors/token/TrustSet.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/tx/transactors/delegate/DelegateUtils.h>
-#include <xrpl/tx/transactors/token/TrustSet.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
+#include <memory>
+#include <unordered_set>
 
 namespace {
 
@@ -82,13 +102,13 @@ TrustSet::preflight(PreflightContext const& ctx)
         return temBAD_LIMIT;
     }
 
-    if (badCurrency() == saLimitAmount.getCurrency())
+    if (badCurrency() == saLimitAmount.get<Issue>().currency)
     {
         JLOG(j.trace()) << "Malformed transaction: specifies XRP as IOU";
         return temBAD_CURRENCY;
     }
 
-    if (saLimitAmount < beast::zero)
+    if (saLimitAmount < beast::kZERO)
     {
         JLOG(j.trace()) << "Malformed transaction: Negative credit limit.";
         return temBAD_LIMIT;
@@ -135,7 +155,8 @@ TrustSet::checkPermission(ReadView const& view, STTx const& tx)
 
     auto const saLimitAmount = tx.getFieldAmount(sfLimitAmount);
     auto const sleRippleState = view.read(
-        keylet::line(tx[sfAccount], saLimitAmount.getIssuer(), saLimitAmount.getCurrency()));
+        keylet::line(
+            tx[sfAccount], saLimitAmount.getIssuer(), saLimitAmount.get<Issue>().currency));
 
     // if the trustline does not exist, granular permissions are
     // not allowed to create trustline
@@ -159,7 +180,7 @@ TrustSet::checkPermission(ReadView const& view, STTx const& tx)
         : sleRippleState->getFieldAmount(sfLowLimit);
 
     STAmount saLimitAllow = saLimitAmount;
-    saLimitAllow.setIssuer(tx[sfAccount]);
+    saLimitAllow.get<Issue>().account = tx[sfAccount];
 
     if (curLimit != saLimitAllow)
         return terNO_DELEGATE_PERMISSION;
@@ -188,7 +209,7 @@ TrustSet::preclaim(PreclaimContext const& ctx)
 
     auto const saLimitAmount = ctx.tx[sfLimitAmount];
 
-    auto const currency = saLimitAmount.getCurrency();
+    auto const currency = saLimitAmount.get<Issue>().currency;
     auto const uDstAccountID = saLimitAmount.getIssuer();
 
     if (id == uDstAccountID)
@@ -237,11 +258,11 @@ TrustSet::preclaim(PreclaimContext const& ctx)
             else if (auto const ammSle = ctx.view.read({ltAMM, sleDst->getFieldH256(sfAMMID)}))
             {
                 auto const lpTokens = ammSle->getFieldAmount(sfLPTokenBalance);
-                if (lpTokens == beast::zero)
+                if (lpTokens == beast::kZERO)
                 {
                     return tecAMM_EMPTY;
                 }
-                if (lpTokens.getCurrency() != saLimitAmount.getCurrency())
+                if (lpTokens.get<Issue>().currency != saLimitAmount.get<Issue>().currency)
                 {
                     return tecNO_PERMISSION;
                 }
@@ -317,7 +338,7 @@ TrustSet::doApply()
     bool const bQualityIn(ctx_.tx.isFieldPresent(sfQualityIn));
     bool const bQualityOut(ctx_.tx.isFieldPresent(sfQualityOut));
 
-    Currency const currency(saLimitAmount.getCurrency());
+    Currency const currency(saLimitAmount.get<Issue>().currency);
     AccountID const uDstAccountID(saLimitAmount.getIssuer());
 
     // true, if current is high account.
@@ -336,7 +357,7 @@ TrustSet::doApply()
     // items.
     //
     // We do this because being able to exchange currencies,
-    // which needs trust lines, is a powerful Ripple feature.
+    // which needs trust lines, is a powerful XRPL feature.
     // So we want to make it easy for a gateway to fund the
     // accounts of its users without fear of being tricked.
     //
@@ -348,7 +369,8 @@ TrustSet::doApply()
     // could use the extra XRP for their own purposes.
 
     XRPAmount const reserveCreate(
-        (uOwnerCount < 2) ? XRPAmount(beast::zero) : view().fees().accountReserve(uOwnerCount + 1));
+        (uOwnerCount < 2) ? XRPAmount(beast::kZERO)
+                          : view().fees().accountReserve(uOwnerCount + 1));
 
     std::uint32_t const uQualityIn(bQualityIn ? ctx_.tx.getFieldU32(sfQualityIn) : 0);
     std::uint32_t uQualityOut(bQualityOut ? ctx_.tx.getFieldU32(sfQualityOut) : 0);
@@ -377,7 +399,7 @@ TrustSet::doApply()
     }
 
     STAmount saLimitAllow = saLimitAmount;
-    saLimitAllow.setIssuer(account_);
+    saLimitAllow.get<Issue>().account = account_;
 
     SLE::pointer const sleRippleState =
         view().peek(keylet::line(account_, uDstAccountID, currency));
@@ -484,7 +506,7 @@ TrustSet::doApply()
 
         if (bSetNoRipple && !bClearNoRipple)
         {
-            if ((bHigh ? saHighBalance : saLowBalance) >= beast::zero)
+            if ((bHigh ? saHighBalance : saLowBalance) >= beast::kZERO)
             {
                 uFlagsOut |= (bHigh ? lsfHighNoRipple : lsfLowNoRipple);
             }
@@ -521,12 +543,12 @@ TrustSet::doApply()
 
         bool const bLowReserveSet = (uLowQualityIn != 0u) || (uLowQualityOut != 0u) ||
             ((uFlagsOut & lsfLowNoRipple) == 0) != bLowDefRipple ||
-            ((uFlagsOut & lsfLowFreeze) != 0u) || saLowLimit || saLowBalance > beast::zero;
+            ((uFlagsOut & lsfLowFreeze) != 0u) || saLowLimit || saLowBalance > beast::kZERO;
         bool const bLowReserveClear = !bLowReserveSet;
 
         bool const bHighReserveSet = (uHighQualityIn != 0u) || (uHighQualityOut != 0u) ||
             ((uFlagsOut & lsfHighNoRipple) == 0) != bHighDefRipple ||
-            ((uFlagsOut & lsfHighFreeze) != 0u) || saHighLimit || saHighBalance > beast::zero;
+            ((uFlagsOut & lsfHighFreeze) != 0u) || saHighLimit || saHighBalance > beast::kZERO;
         bool const bHighReserveClear = !bHighReserveSet;
 
         bool const bDefault = bLowReserveClear && bHighReserveClear;
@@ -652,6 +674,22 @@ TrustSet::doApply()
     }
 
     return terResult;
+}
+
+void
+TrustSet::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+TrustSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

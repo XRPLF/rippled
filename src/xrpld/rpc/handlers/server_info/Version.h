@@ -2,8 +2,7 @@
 
 #include <xrpl/protocol/ApiVersion.h>
 
-namespace xrpl {
-namespace RPC {
+namespace xrpl::RPC {
 
 class VersionHandler
 {
@@ -13,32 +12,33 @@ public:
     {
     }
 
-    Status
+    static Status
     check()
     {
-        return Status::OK;
+        return Status::kOK;
     }
 
     void
-    writeResult(Json::Value& obj)
+    writeResult(json::Value& obj) const
     {
         setVersion(obj, apiVersion_, betaEnabled_);
     }
 
+    // NOLINTBEGIN(readability-identifier-naming)
     static constexpr char const* name = "version";
 
-    static constexpr unsigned minApiVer = RPC::apiMinimumSupportedVersion;
+    static constexpr unsigned minApiVer = RPC::kAPI_MINIMUM_SUPPORTED_VERSION;
 
-    static constexpr unsigned maxApiVer = RPC::apiMaximumValidVersion;
+    static constexpr unsigned maxApiVer = RPC::kAPI_MAXIMUM_VALID_VERSION;
 
     static constexpr Role role = Role::USER;
 
-    static constexpr Condition condition = NO_CONDITION;
+    static constexpr Condition condition = Condition::NoCondition;
+    // NOLINTEND(readability-identifier-naming)
 
 private:
     unsigned int apiVersion_;
     bool betaEnabled_;
 };
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC

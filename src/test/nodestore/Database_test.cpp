@@ -1,17 +1,32 @@
-#include <test/jtx.h>
 #include <test/jtx/CheckMessageLogs.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/envconfig.h>
 #include <test/nodestore/TestBase.h>
 #include <test/unit_test/SuiteJournal.h>
 
+#include <xrpld/core/Config.h>
+
+#include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/temp_dir.h>
+#include <xrpl/beast/xor_shift_engine.h>
+#include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
+#include <xrpl/nodestore/Types.h>
+#include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/rdb/DatabaseCon.h>
 
-namespace xrpl {
+#include <algorithm>
+#include <cstdint>
+#include <cstring>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <utility>
 
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 class Database_test : public TestBase
 {
@@ -39,7 +54,7 @@ public:
             // defaults
             Env env(*this);
 
-            auto const s = setup_DatabaseCon(env.app().config());
+            auto const s = setupDatabaseCon(env.app().config());
 
             if (BEAST_EXPECT(s.globalPragma->size() == 3))
             {
@@ -65,11 +80,11 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(integrityWarning, &found),
-                    beast::severities::kWarning);
+                    beast::Severity::Warning);
             }();
 
             BEAST_EXPECT(!found);
-            auto const s = setup_DatabaseCon(env.app().config());
+            auto const s = setupDatabaseCon(env.app().config());
             if (BEAST_EXPECT(s.globalPragma->size() == 3))
             {
                 BEAST_EXPECT(s.globalPragma->at(0) == "PRAGMA journal_mode=wal;");
@@ -94,11 +109,11 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(integrityWarning, &found),
-                    beast::severities::kWarning);
+                    beast::Severity::Warning);
             }();
 
             BEAST_EXPECT(found);
-            auto const s = setup_DatabaseCon(env.app().config());
+            auto const s = setupDatabaseCon(env.app().config());
             if (BEAST_EXPECT(s.globalPragma->size() == 3))
             {
                 BEAST_EXPECT(s.globalPragma->at(0) == "PRAGMA journal_mode=memory;");
@@ -124,13 +139,13 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(integrityWarning, &found),
-                    beast::severities::kWarning);
+                    beast::Severity::Warning);
             }();
 
             // No warning, even though higher risk settings were used because
             // LEDGER_HISTORY is small
             BEAST_EXPECT(!found);
-            auto const s = setup_DatabaseCon(env.app().config());
+            auto const s = setupDatabaseCon(env.app().config());
             if (BEAST_EXPECT(s.globalPragma->size() == 3))
             {
                 BEAST_EXPECT(s.globalPragma->at(0) == "PRAGMA journal_mode=off;");
@@ -157,13 +172,13 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(integrityWarning, &found),
-                    beast::severities::kWarning);
+                    beast::Severity::Warning);
             }();
 
             // No warning, even though higher risk settings were used because
             // LEDGER_HISTORY is small
             BEAST_EXPECT(found);
-            auto const s = setup_DatabaseCon(env.app().config());
+            auto const s = setupDatabaseCon(env.app().config());
             if (BEAST_EXPECT(s.globalPragma->size() == 3))
             {
                 BEAST_EXPECT(s.globalPragma->at(0) == "PRAGMA journal_mode=off;");
@@ -195,7 +210,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::severities::kWarning);
+                    beast::Severity::Warning);
                 fail();
             }
             catch (...)
@@ -224,7 +239,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::severities::kWarning);
+                    beast::Severity::Warning);
                 fail();
             }
             catch (...)
@@ -253,7 +268,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::severities::kWarning);
+                    beast::Severity::Warning);
                 fail();
             }
             catch (...)
@@ -282,7 +297,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::severities::kWarning);
+                    beast::Severity::Warning);
                 fail();
             }
             catch (...)
@@ -310,7 +325,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::severities::kWarning);
+                    beast::Severity::Warning);
                 fail();
             }
             catch (...)
@@ -338,7 +353,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::severities::kWarning);
+                    beast::Severity::Warning);
                 fail();
             }
             catch (...)
@@ -366,7 +381,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::severities::kWarning);
+                    beast::Severity::Warning);
                 fail();
             }
             catch (...)
@@ -394,7 +409,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::severities::kWarning);
+                    beast::Severity::Warning);
                 fail();
             }
             catch (...)
@@ -405,7 +420,7 @@ public:
         {
             // N/A: Default values
             Env env(*this);
-            auto const s = setup_DatabaseCon(env.app().config());
+            auto const s = setupDatabaseCon(env.app().config());
             if (BEAST_EXPECT(s.txPragma.size() == 4))
             {
                 BEAST_EXPECT(s.txPragma.at(0) == "PRAGMA page_size=4096;");
@@ -425,7 +440,7 @@ public:
                 }
                 return Env(*this, std::move(p));
             }();
-            auto const s = setup_DatabaseCon(env.app().config());
+            auto const s = setupDatabaseCon(env.app().config());
             if (BEAST_EXPECT(s.txPragma.size() == 4))
             {
                 BEAST_EXPECT(s.txPragma.at(0) == "PRAGMA page_size=512;");
@@ -449,7 +464,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::severities::kWarning);
+                    beast::Severity::Warning);
                 fail();
             }
             catch (...)
@@ -472,7 +487,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::severities::kWarning);
+                    beast::Severity::Warning);
                 fail();
             }
             catch (...)
@@ -495,7 +510,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::severities::kWarning);
+                    beast::Severity::Warning);
                 fail();
             }
             catch (...)
@@ -515,18 +530,18 @@ public:
     {
         DummyScheduler scheduler;
 
-        beast::temp_dir const node_db;
+        beast::TempDir const nodeDb;
         Section srcParams;
         srcParams.set("type", srcBackendType);
-        srcParams.set("path", node_db.path());
+        srcParams.set("path", nodeDb.path());
 
         // Create a batch
-        auto batch = createPredictableBatch(numObjectsToTest, seedValue);
+        auto batch = createPredictableBatch(kNUM_OBJECTS_TO_TEST, seedValue);
 
         // Write to source db
         {
             std::unique_ptr<Database> src =
-                Manager::instance().make_Database(megabytes(4), scheduler, 2, srcParams, journal_);
+                Manager::instance().makeDatabase(megabytes(4), scheduler, 2, srcParams, journal_);
             storeBatch(*src, batch);
         }
 
@@ -535,16 +550,16 @@ public:
         {
             // Re-open the db
             std::unique_ptr<Database> src =
-                Manager::instance().make_Database(megabytes(4), scheduler, 2, srcParams, journal_);
+                Manager::instance().makeDatabase(megabytes(4), scheduler, 2, srcParams, journal_);
 
             // Set up the destination database
-            beast::temp_dir const dest_db;
+            beast::TempDir const destDb;
             Section destParams;
             destParams.set("type", destBackendType);
-            destParams.set("path", dest_db.path());
+            destParams.set("path", destDb.path());
 
             std::unique_ptr<Database> dest =
-                Manager::instance().make_Database(megabytes(4), scheduler, 2, destParams, journal_);
+                Manager::instance().makeDatabase(megabytes(4), scheduler, 2, destParams, journal_);
 
             testcase("import into '" + destBackendType + "' from '" + srcBackendType + "'");
 
@@ -556,8 +571,8 @@ public:
         }
 
         // Canonicalize the source and destination batches
-        std::sort(batch.begin(), batch.end(), LessThan{});
-        std::sort(copy.begin(), copy.end(), LessThan{});
+        std::ranges::sort(batch, LessThan{});
+        std::ranges::sort(copy, LessThan{});
         BEAST_EXPECT(areBatchesEqual(batch, copy));
     }
 
@@ -576,10 +591,10 @@ public:
 
         testcase(s);
 
-        beast::temp_dir const node_db;
+        beast::TempDir const nodeDb;
         Section nodeParams;
         nodeParams.set("type", type);
-        nodeParams.set("path", node_db.path());
+        nodeParams.set("path", nodeDb.path());
 
         beast::xor_shift_engine rng(seedValue);
 
@@ -589,7 +604,7 @@ public:
         {
             // Open the database
             std::unique_ptr<Database> db =
-                Manager::instance().make_Database(megabytes(4), scheduler, 2, nodeParams, journal_);
+                Manager::instance().makeDatabase(megabytes(4), scheduler, 2, nodeParams, journal_);
 
             // Write the batch
             storeBatch(*db, batch);
@@ -614,15 +629,15 @@ public:
         {
             // Re-open the database without the ephemeral DB
             std::unique_ptr<Database> db =
-                Manager::instance().make_Database(megabytes(4), scheduler, 2, nodeParams, journal_);
+                Manager::instance().makeDatabase(megabytes(4), scheduler, 2, nodeParams, journal_);
 
             // Read it back in
             Batch copy;
             fetchCopyOfBatch(*db, &copy, batch);
 
             // Canonicalize the source and destination batches
-            std::sort(batch.begin(), batch.end(), LessThan{});
-            std::sort(copy.begin(), copy.end(), LessThan{});
+            std::ranges::sort(batch, LessThan{});
+            std::ranges::sort(copy, LessThan{});
             BEAST_EXPECT(areBatchesEqual(batch, copy));
         }
 
@@ -630,16 +645,16 @@ public:
         {
             // Verify default earliest ledger sequence
             {
-                std::unique_ptr<Database> db = Manager::instance().make_Database(
+                std::unique_ptr<Database> db = Manager::instance().makeDatabase(
                     megabytes(4), scheduler, 2, nodeParams, journal_);
-                BEAST_EXPECT(db->earliestLedgerSeq() == XRP_LEDGER_EARLIEST_SEQ);
+                BEAST_EXPECT(db->earliestLedgerSeq() == kXRP_LEDGER_EARLIEST_SEQ);
             }
 
             // Set an invalid earliest ledger sequence
             try
             {
                 nodeParams.set("earliest_seq", "0");
-                std::unique_ptr<Database> const db = Manager::instance().make_Database(
+                std::unique_ptr<Database> const db = Manager::instance().makeDatabase(
                     megabytes(4), scheduler, 2, nodeParams, journal_);
             }
             catch (std::runtime_error const& e)
@@ -650,7 +665,7 @@ public:
             {
                 // Set a valid earliest ledger sequence
                 nodeParams.set("earliest_seq", "1");
-                std::unique_ptr<Database> db = Manager::instance().make_Database(
+                std::unique_ptr<Database> db = Manager::instance().makeDatabase(
                     megabytes(4), scheduler, 2, nodeParams, journal_);
 
                 // Verify database uses the earliest ledger sequence setting
@@ -661,8 +676,8 @@ public:
             try
             {
                 // Set to default earliest ledger sequence
-                nodeParams.set("earliest_seq", std::to_string(XRP_LEDGER_EARLIEST_SEQ));
-                std::unique_ptr<Database> const db2 = Manager::instance().make_Database(
+                nodeParams.set("earliest_seq", std::to_string(kXRP_LEDGER_EARLIEST_SEQ));
+                std::unique_ptr<Database> const db2 = Manager::instance().makeDatabase(
                     megabytes(4), scheduler, 2, nodeParams, journal_);
             }
             catch (std::runtime_error const& e)
@@ -709,5 +724,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Database, nodestore, xrpl);
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

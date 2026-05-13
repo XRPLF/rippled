@@ -19,7 +19,7 @@ public:
         @param name The name of the JSON field, used in diagnostics.
         @param json The JSON-RPC to parse.
     */
-    STParsedJSONObject(std::string const& name, Json::Value const& json);
+    STParsedJSONObject(std::string const& name, json::Value const& json);
 
     STParsedJSONObject() = delete;
     STParsedJSONObject(STParsedJSONObject const&) = delete;
@@ -31,7 +31,7 @@ public:
     std::optional<STObject> object;
 
     /** On failure, an appropriate set of error values. */
-    Json::Value error;
+    json::Value error;
 };
 
 }  // namespace xrpl

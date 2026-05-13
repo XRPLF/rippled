@@ -1,9 +1,18 @@
 #include <xrpl/tx/invariants/LoanInvariant.h>
-//
+
 #include <xrpl/basics/Log.h>
-#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+
+#include <memory>
 
 namespace xrpl {
 
@@ -35,9 +44,9 @@ ValidLoan::finalize(
         // https://github.com/Tapanito/XRPL-Standards/blob/xls-66-lending-protocol/XLS-0066d-lending-protocol/README.md#3223-invariants
         // If `Loan.PaymentRemaining = 0` then the loan MUST be fully paid off
         if (after->at(sfPaymentRemaining) == 0 &&
-            (after->at(sfTotalValueOutstanding) != beast::zero ||
-             after->at(sfPrincipalOutstanding) != beast::zero ||
-             after->at(sfManagementFeeOutstanding) != beast::zero))
+            (after->at(sfTotalValueOutstanding) != beast::kZERO ||
+             after->at(sfPrincipalOutstanding) != beast::kZERO ||
+             after->at(sfManagementFeeOutstanding) != beast::kZERO))
         {
             JLOG(j.fatal()) << "Invariant failed: Loan with zero payments "
                                "remaining has not been paid off";
@@ -46,9 +55,9 @@ ValidLoan::finalize(
         // If `Loan.PaymentRemaining != 0` then the loan MUST NOT be fully paid
         // off
         if (after->at(sfPaymentRemaining) != 0 &&
-            after->at(sfTotalValueOutstanding) == beast::zero &&
-            after->at(sfPrincipalOutstanding) == beast::zero &&
-            after->at(sfManagementFeeOutstanding) == beast::zero)
+            after->at(sfTotalValueOutstanding) == beast::kZERO &&
+            after->at(sfPrincipalOutstanding) == beast::kZERO &&
+            after->at(sfManagementFeeOutstanding) == beast::kZERO)
         {
             JLOG(j.fatal()) << "Invariant failed: Fully paid off Loan still has payments remaining";
             return false;

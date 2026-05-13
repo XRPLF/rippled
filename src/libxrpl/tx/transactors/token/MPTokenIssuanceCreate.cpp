@@ -1,9 +1,27 @@
-#include <xrpl/ledger/View.h>
+#include <xrpl/tx/transactors/token/MPTokenIssuanceCreate.h>
+
+#include <xrpl/basics/Expected.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/token/MPTokenIssuanceCreate.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
+#include <memory>
 
 namespace xrpl {
 
@@ -39,7 +57,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 
     if (auto const fee = ctx.tx[~sfTransferFee])
     {
-        if (fee > maxTransferFee)
+        if (fee > kMAX_TRANSFER_FEE)
             return temBAD_TRANSFER_FEE;
 
         // If a non-zero TransferFee is set then the tfTransferable flag
@@ -50,7 +68,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 
     if (auto const domain = ctx.tx[~sfDomainID])
     {
-        if (*domain == beast::zero)
+        if (*domain == beast::kZERO)
             return temMALFORMED;
 
         // Domain present implies that MPTokenIssuance is not public
@@ -60,7 +78,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 
     if (auto const metadata = ctx.tx[~sfMPTokenMetadata])
     {
-        if (metadata->empty() || metadata->length() > maxMPTokenMetadataLength)
+        if (metadata->empty() || metadata->length() > kMAX_MP_TOKEN_METADATA_LENGTH)
             return temMALFORMED;
     }
 
@@ -70,7 +88,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
         if (maxAmt == 0)
             return temMALFORMED;
 
-        if (maxAmt > maxMPTokenAmount)
+        if (maxAmt > kMAX_MP_TOKEN_AMOUNT)
             return temMALFORMED;
     }
     return tesSUCCESS;
@@ -152,6 +170,27 @@ MPTokenIssuanceCreate::doApply()
             .mutableFlags = tx[~sfMutableFlags],
         });
     return result ? tesSUCCESS : result.error();
+}
+
+void
+MPTokenIssuanceCreate::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+MPTokenIssuanceCreate::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

@@ -1,17 +1,20 @@
 #include <test/jtx/fee.h>
 
-#include <xrpl/protocol/jss.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+#include <xrpl/protocol/SField.h>
+
+#include <cassert>
+
+namespace xrpl::test::jtx {
 
 void
-fee::operator()(Env& env, JTx& jt) const
+Fee::operator()(Env& env, JTx& jt) const
 {
     if (!manual_)
         return;
-    jt.fill_fee = false;
+    jt.fillFee = false;
     assert(!increment_ || !amount_);
     if (increment_)
     {
@@ -19,10 +22,8 @@ fee::operator()(Env& env, JTx& jt) const
     }
     else if (amount_)
     {
-        jt[sfFee] = amount_->getJson(JsonOptions::none);
+        jt[sfFee] = amount_->getJson(JsonOptions::Values::None);
     }
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

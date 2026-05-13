@@ -1,12 +1,31 @@
-#include <xrpl/ledger/Sandbox.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/tx/transactors/oracle/OracleSet.h>
+
+#include <xrpl/basics/chrono.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/digest.h>
-#include <xrpl/tx/transactors/oracle/OracleSet.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SOTemplate.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <set>
+#include <utility>
 
 namespace xrpl {
 
@@ -24,7 +43,7 @@ OracleSet::preflight(PreflightContext const& ctx)
     auto const& dataSeries = ctx.tx.getFieldArray(sfPriceDataSeries);
     if (dataSeries.empty())
         return temARRAY_EMPTY;
-    if (dataSeries.size() > maxOracleDataSeries)
+    if (dataSeries.size() > kMAX_ORACLE_DATA_SERIES)
         return temARRAY_TOO_LARGE;
 
     auto isInvalidLength = [&](auto const& sField, std::size_t length) {
@@ -32,8 +51,9 @@ OracleSet::preflight(PreflightContext const& ctx)
             (ctx.tx[sField].length() == 0 || ctx.tx[sField].length() > length);
     };
 
-    if (isInvalidLength(sfProvider, maxOracleProvider) || isInvalidLength(sfURI, maxOracleURI) ||
-        isInvalidLength(sfAssetClass, maxOracleSymbolClass))
+    if (isInvalidLength(sfProvider, kMAX_ORACLE_PROVIDER) ||
+        isInvalidLength(sfURI, kMAX_ORACLE_URI) ||
+        isInvalidLength(sfAssetClass, kMAX_ORACLE_SYMBOL_CLASS))
         return temMALFORMED;
 
     return tesSUCCESS;
@@ -52,13 +72,13 @@ OracleSet::preclaim(PreclaimContext const& ctx)
     std::size_t const closeTime =
         duration_cast<seconds>(ctx.view.header().closeTime.time_since_epoch()).count();
     std::size_t const lastUpdateTime = ctx.tx[sfLastUpdateTime];
-    if (lastUpdateTime < epoch_offset.count())
+    if (lastUpdateTime < kEPOCH_OFFSET.count())
         return tecINVALID_UPDATE_TIME;
-    std::size_t const lastUpdateTimeEpoch = lastUpdateTime - epoch_offset.count();
-    if (closeTime < maxLastUpdateTimeDelta)
+    std::size_t const lastUpdateTimeEpoch = lastUpdateTime - kEPOCH_OFFSET.count();
+    if (closeTime < kMAX_LAST_UPDATE_TIME_DELTA)
         return tecINTERNAL;  // LCOV_EXCL_LINE
-    if (lastUpdateTimeEpoch < (closeTime - maxLastUpdateTimeDelta) ||
-        lastUpdateTimeEpoch > (closeTime + maxLastUpdateTimeDelta))
+    if (lastUpdateTimeEpoch < (closeTime - kMAX_LAST_UPDATE_TIME_DELTA) ||
+        lastUpdateTimeEpoch > (closeTime + kMAX_LAST_UPDATE_TIME_DELTA))
         return tecINVALID_UPDATE_TIME;
 
     auto const sle =
@@ -76,7 +96,7 @@ OracleSet::preclaim(PreclaimContext const& ctx)
         auto const key = tokenPairKey(entry);
         if (pairs.contains(key) || pairsDel.contains(key))
             return temMALFORMED;
-        if (entry[~sfScale] > maxPriceScale)
+        if (entry[~sfScale] > kMAX_PRICE_SCALE)
             return temMALFORMED;
         if (entry.isFieldPresent(sfAssetPrice))
         {
@@ -146,7 +166,7 @@ OracleSet::preclaim(PreclaimContext const& ctx)
 
     if (pairs.empty())
         return tecARRAY_EMPTY;
-    if (pairs.size() > maxOracleDataSeries)
+    if (pairs.size() > kMAX_ORACLE_DATA_SERIES)
         return tecARRAY_TOO_LARGE;
 
     auto const reserve =
@@ -236,7 +256,7 @@ OracleSet::doApply()
         }
         STArray updatedSeries;
         for (auto const& iter : pairs)
-            updatedSeries.push_back(iter.second);
+            updatedSeries.pushBack(iter.second);
         sle->setFieldArray(sfPriceDataSeries, updatedSeries);
         if (ctx_.tx.isFieldPresent(sfURI))
             sle->setFieldVL(sfURI, ctx_.tx[sfURI]);
@@ -284,7 +304,7 @@ OracleSet::doApply()
                 pairs.emplace(key, std::move(priceData));
             }
             for (auto const& iter : pairs)
-                series.push_back(iter.second);
+                series.pushBack(iter.second);
         }
 
         sle->setFieldArray(sfPriceDataSeries, series);
@@ -306,6 +326,22 @@ OracleSet::doApply()
     }
 
     return tesSUCCESS;
+}
+
+void
+OracleSet::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+OracleSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

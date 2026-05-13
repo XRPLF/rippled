@@ -8,6 +8,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 
+#include <optional>
 #include <unordered_map>
 #include <vector>
 
@@ -34,15 +35,15 @@ namespace xrpl {
  */
 class ValidVault
 {
-    Number static constexpr zero{};
+    Number static constexpr kZERO{};
 
     struct Vault final
     {
-        uint256 key = beast::zero;
-        Asset asset = {};
-        AccountID pseudoId = {};
-        AccountID owner = {};
-        uint192 shareMPTID = beast::zero;
+        uint256 key = beast::kZERO;
+        Asset asset;
+        AccountID pseudoId;
+        AccountID owner;
+        uint192 shareMPTID = beast::kZERO;
         Number assetsTotal = 0;
         Number assetsAvailable = 0;
         Number assetsMaximum = 0;
@@ -53,18 +54,30 @@ class ValidVault
 
     struct Shares final
     {
-        MPTIssue share = {};
+        MPTIssue share;
         std::uint64_t sharesTotal = 0;
         std::uint64_t sharesMaximum = 0;
 
         Shares static make(SLE const&);
     };
 
-    std::vector<Vault> afterVault_ = {};
-    std::vector<Shares> afterMPTs_ = {};
-    std::vector<Vault> beforeVault_ = {};
-    std::vector<Shares> beforeMPTs_ = {};
-    std::unordered_map<uint256, Number> deltas_ = {};
+public:
+    struct DeltaInfo final
+    {
+        Number delta = kNUM_ZERO;
+        std::optional<int> scale;
+
+        // Compute the delta between two Numbers, taking the coarsest scale
+        [[nodiscard]] static DeltaInfo
+        makeDelta(Number const& before, Number const& after, Asset const& asset);
+    };
+
+private:
+    std::vector<Vault> afterVault_;
+    std::vector<Shares> afterMPTs_;
+    std::vector<Vault> beforeVault_;
+    std::vector<Shares> beforeMPTs_;
+    std::unordered_map<uint256, DeltaInfo> deltas_;
 
 public:
     void
@@ -72,6 +85,10 @@ public:
 
     bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
+
+    // Compute the coarsest scale required to represent all numbers
+    [[nodiscard]] static std::int32_t
+    computeCoarsestScale(std::vector<DeltaInfo> const& numbers);
 };
 
 }  // namespace xrpl

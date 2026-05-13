@@ -1,95 +1,97 @@
-#include <xrpl/basics/safe_cast.h>
 #include <xrpl/conditions/detail/error.h>
 
-#include <string>
+#include <xrpl/basics/safe_cast.h>
 
-namespace xrpl {
-namespace cryptoconditions {
+#include <string>
+#include <system_error>
+#include <type_traits>
+
+namespace xrpl::cryptoconditions {
 namespace detail {
 
-class cryptoconditions_error_category : public std::error_category
+class CryptoconditionsErrorCategory : public std::error_category
 {
 public:
-    explicit cryptoconditions_error_category() = default;
+    explicit CryptoconditionsErrorCategory() = default;
 
-    char const*
+    [[nodiscard]] char const*
     name() const noexcept override
     {
         return "cryptoconditions";
     }
 
-    std::string
+    [[nodiscard]] std::string
     message(int ev) const override
     {
-        switch (safe_cast<error>(ev))
+        switch (safeCast<Error>(ev))
         {
-            case error::unsupported_type:
+            case Error::UnsupportedType:
                 return "Specification: Requested type not supported.";
 
-            case error::unsupported_subtype:
+            case Error::UnsupportedSubtype:
                 return "Specification: Requested subtype not supported.";
 
-            case error::unknown_type:
+            case Error::UnknownType:
                 return "Specification: Requested type not recognized.";
 
-            case error::unknown_subtype:
+            case Error::UnknownSubtype:
                 return "Specification: Requested subtypes not recognized.";
 
-            case error::fingerprint_size:
+            case Error::FingerprintSize:
                 return "Specification: Incorrect fingerprint size.";
 
-            case error::incorrect_encoding:
+            case Error::IncorrectEncoding:
                 return "Specification: Incorrect encoding.";
 
-            case error::trailing_garbage:
+            case Error::TrailingGarbage:
                 return "Bad buffer: contains trailing garbage.";
 
-            case error::buffer_empty:
+            case Error::BufferEmpty:
                 return "Bad buffer: no data.";
 
-            case error::buffer_overfull:
+            case Error::BufferOverfull:
                 return "Bad buffer: overfull.";
 
-            case error::buffer_underfull:
+            case Error::BufferUnderfull:
                 return "Bad buffer: underfull.";
 
-            case error::malformed_encoding:
+            case Error::MalformedEncoding:
                 return "Malformed DER encoding.";
 
-            case error::unexpected_tag:
+            case Error::UnexpectedTag:
                 return "Malformed DER encoding: Unexpected tag.";
 
-            case error::short_preamble:
+            case Error::ShortPreamble:
                 return "Malformed DER encoding: Short preamble.";
 
-            case error::long_tag:
+            case Error::LongTag:
                 return "Implementation limit: Overlong tag.";
 
-            case error::large_size:
+            case Error::LargeSize:
                 return "Implementation limit: Large payload.";
 
-            case error::preimage_too_long:
+            case Error::PreimageTooLong:
                 return "Implementation limit: Specified preimage is too long.";
 
-            case error::generic:
+            case Error::Generic:
             default:
                 return "generic error";
         }
     }
 
-    std::error_condition
+    [[nodiscard]] std::error_condition
     default_error_condition(int ev) const noexcept override
     {
         return std::error_condition{ev, *this};
     }
 
-    bool
+    [[nodiscard]] bool
     equivalent(int ev, std::error_condition const& condition) const noexcept override
     {
         return &condition.category() == this && condition.value() == ev;
     }
 
-    bool
+    [[nodiscard]] bool
     equivalent(std::error_code const& error, int ev) const noexcept override
     {
         return &error.category() == this && error.value() == ev;
@@ -97,21 +99,19 @@ public:
 };
 
 inline std::error_category const&
-get_cryptoconditions_error_category()
+getCryptoconditionsErrorCategory()
 {
-    static cryptoconditions_error_category const cat{};
-    return cat;
+    static CryptoconditionsErrorCategory const kCAT{};
+    return kCAT;
 }
 
 }  // namespace detail
 
 std::error_code
-make_error_code(error ev)
+make_error_code(Error ev)
 {
     return std::error_code{
-        safe_cast<std::underlying_type<error>::type>(ev),
-        detail::get_cryptoconditions_error_category()};
+        safeCast<std::underlying_type_t<Error>>(ev), detail::getCryptoconditionsErrorCategory()};
 }
 
-}  // namespace cryptoconditions
-}  // namespace xrpl
+}  // namespace xrpl::cryptoconditions

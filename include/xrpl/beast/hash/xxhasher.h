@@ -12,7 +12,7 @@
 
 namespace beast {
 
-class xxhasher
+class Xxhasher
 {
 public:
     using result_type = std::size_t;
@@ -21,9 +21,9 @@ private:
     static_assert(sizeof(std::size_t) == 8, "requires 64-bit std::size_t");
     // Have an internal buffer to avoid the streaming API
     // A 64-byte buffer should to be big enough for us
-    static constexpr std::size_t INTERNAL_BUFFER_SIZE = 64;
+    static constexpr std::size_t kINTERNAL_BUFFER_SIZE = 64;
 
-    alignas(64) std::array<std::uint8_t, INTERNAL_BUFFER_SIZE> buffer_{};
+    alignas(64) std::array<std::uint8_t, kINTERNAL_BUFFER_SIZE> buffer_{};
     std::span<std::uint8_t> readBuffer_;
     std::span<std::uint8_t> writeBuffer_;
 
@@ -64,7 +64,7 @@ private:
     void
     flushToState(void const* data, std::size_t len)
     {
-        if (!state_)
+        if (state_ == nullptr)
         {
             state_ = allocState();
             if (seed_.has_value())
@@ -78,7 +78,7 @@ private:
         }
         XXH3_64bits_update(state_, readBuffer_.data(), readBuffer_.size());
         resetBuffers();
-        if (data && len)
+        if ((data != nullptr) && (len != 0u))
         {
             XXH3_64bits_update(state_, data, len);
         }
@@ -87,52 +87,48 @@ private:
     result_type
     retrieveHash()
     {
-        if (state_)
+        if (state_ != nullptr)
         {
             flushToState(nullptr, 0);
             return XXH3_64bits_digest(state_);
         }
-        else
+
+        if (seed_.has_value())
         {
-            if (seed_.has_value())
-            {
-                return XXH3_64bits_withSeed(readBuffer_.data(), readBuffer_.size(), *seed_);
-            }
-            else
-            {
-                return XXH3_64bits(readBuffer_.data(), readBuffer_.size());
-            }
+            return XXH3_64bits_withSeed(readBuffer_.data(), readBuffer_.size(), *seed_);
         }
+
+        return XXH3_64bits(readBuffer_.data(), readBuffer_.size());
     }
 
 public:
-    static constexpr auto const endian = boost::endian::order::native;
+    static constexpr auto const kENDIAN = boost::endian::order::native;
 
-    xxhasher(xxhasher const&) = delete;
-    xxhasher&
-    operator=(xxhasher const&) = delete;
+    Xxhasher(Xxhasher const&) = delete;
+    Xxhasher&
+    operator=(Xxhasher const&) = delete;
 
-    xxhasher()
+    Xxhasher()
     {
         resetBuffers();
     }
 
-    ~xxhasher() noexcept
+    ~Xxhasher() noexcept
     {
-        if (state_)
+        if (state_ != nullptr)
         {
             XXH3_freeState(state_);
         }
     }
 
-    template <class Seed, std::enable_if_t<std::is_unsigned<Seed>::value>* = nullptr>
-    explicit xxhasher(Seed seed) : seed_(seed)
+    template <class Seed, std::enable_if_t<std::is_unsigned_v<Seed>>* = nullptr>
+    explicit Xxhasher(Seed seed) : seed_(seed)
     {
         resetBuffers();
     }
 
-    template <class Seed, std::enable_if_t<std::is_unsigned<Seed>::value>* = nullptr>
-    xxhasher(Seed seed, Seed) : seed_(seed)
+    template <class Seed, std::enable_if_t<std::is_unsigned_v<Seed>>* = nullptr>
+    Xxhasher(Seed seed, Seed) : seed_(seed)
     {
         resetBuffers();
     }

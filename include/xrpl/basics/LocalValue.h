@@ -4,6 +4,7 @@
 
 #include <memory>
 #include <unordered_map>
+#include <utility>
 
 namespace xrpl {
 
@@ -25,27 +26,27 @@ struct LocalValues
     template <class T>
     struct Value : BasicValue
     {
-        T t_;
+        T t;
 
         Value() = default;
-        explicit Value(T const& t) : t_(t)
+        explicit Value(T t) : t(std::move(t))
         {
         }
 
         void*
         get() override
         {
-            return &t_;
+            return &t;
         }
     };
 
     // Keys are the address of a LocalValue.
     std::unordered_map<void const*, std::unique_ptr<BasicValue>> values;
 
-    static inline void
+    static void
     cleanup(LocalValues* lvs)
     {
-        if (lvs && !lvs->onCoro)
+        if ((lvs != nullptr) && !lvs->onCoro)
             delete lvs;
     }
 };
@@ -54,8 +55,8 @@ template <class = void>
 boost::thread_specific_ptr<detail::LocalValues>&
 getLocalValues()
 {
-    static boost::thread_specific_ptr<detail::LocalValues> tsp(&detail::LocalValues::cleanup);
-    return tsp;
+    static boost::thread_specific_ptr<detail::LocalValues> kTSP(&detail::LocalValues::cleanup);
+    return kTSP;
 }
 
 }  // namespace detail
@@ -89,7 +90,7 @@ T&
 LocalValue<T>::operator*()
 {
     auto lvs = detail::getLocalValues().get();
-    if (!lvs)
+    if (lvs == nullptr)
     {
         lvs = new detail::LocalValues();
         lvs->onCoro = false;

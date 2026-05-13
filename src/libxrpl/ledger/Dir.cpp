@@ -1,8 +1,19 @@
 #include <xrpl/ledger/Dir.h>
 
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/SField.h>
+
+#include <cstddef>
+#include <iterator>
+#include <optional>
+
 namespace xrpl {
 
-using const_iterator = Dir::const_iterator;
+using const_iterator = Dir::ConstIterator;
 
 Dir::Dir(ReadView const& view, Keylet const& key)
     : view_(&view), root_(key), sle_(view_->read(root_))
@@ -12,9 +23,9 @@ Dir::Dir(ReadView const& view, Keylet const& key)
 }
 
 auto
-Dir::begin() const -> const_iterator
+Dir::begin() const -> ConstIterator
 {
-    auto it = const_iterator(*view_, root_, root_);
+    auto it = ConstIterator(*view_, root_, root_);
     if (sle_ != nullptr)
     {
         it.sle_ = sle_;
@@ -30,27 +41,27 @@ Dir::begin() const -> const_iterator
 }
 
 auto
-Dir::end() const -> const_iterator
+Dir::end() const -> ConstIterator
 {
-    return const_iterator(*view_, root_, root_);
+    return ConstIterator(*view_, root_, root_);
 }
 
 bool
-const_iterator::operator==(const_iterator const& other) const
+const_iterator::operator==(ConstIterator const& other) const
 {
     if (view_ == nullptr || other.view_ == nullptr)
         return false;
 
     XRPL_ASSERT(
         view_ == other.view_ && root_.key == other.root_.key,
-        "xrpl::const_iterator::operator== : views and roots are matching");
+        "xrpl::Dir::ConstIterator::operator== : views and roots are matching");
     return page_.key == other.page_.key && index_ == other.index_;
 }
 
 const_iterator::reference
 const_iterator::operator*() const
 {
-    XRPL_ASSERT(index_ != beast::zero, "xrpl::const_iterator::operator* : nonzero index");
+    XRPL_ASSERT(index_ != beast::kZERO, "xrpl::Dir::ConstIterator::operator* : nonzero index");
     if (!cache_)
         cache_ = view_->read(keylet::child(index_));
     return *cache_;
@@ -59,7 +70,7 @@ const_iterator::operator*() const
 const_iterator&
 const_iterator::operator++()
 {
-    XRPL_ASSERT(index_ != beast::zero, "xrpl::const_iterator::operator++ : nonzero index");
+    XRPL_ASSERT(index_ != beast::kZERO, "xrpl::Dir::ConstIterator::operator++ : nonzero index");
     if (++it_ != std::end(*indexes_))
     {
         index_ = *it_;
@@ -67,36 +78,37 @@ const_iterator::operator++()
         return *this;
     }
 
-    return next_page();
+    return nextPage();
 }
 
 const_iterator
 const_iterator::operator++(int)
 {
-    XRPL_ASSERT(index_ != beast::zero, "xrpl::const_iterator::operator++(int) : nonzero index");
-    const_iterator tmp(*this);
+    XRPL_ASSERT(
+        index_ != beast::kZERO, "xrpl::Dir::ConstIterator::operator++(int) : nonzero index");
+    ConstIterator tmp(*this);
     ++(*this);
     return tmp;
 }
 
 const_iterator&
-const_iterator::next_page()
+const_iterator::nextPage()
 {
     auto const next = sle_->getFieldU64(sfIndexNext);
     if (next == 0)
     {
         page_.key = root_.key;
-        index_ = beast::zero;
+        index_ = beast::kZERO;
     }
     else
     {
         page_ = keylet::page(root_, next);
         sle_ = view_->read(page_);
-        XRPL_ASSERT(sle_, "xrpl::const_iterator::next_page : non-null SLE");
+        XRPL_ASSERT(sle_, "xrpl::Dir::ConstIterator::nextPage : non-null SLE");
         indexes_ = &sle_->getFieldV256(sfIndexes);
         if (indexes_->empty())
         {
-            index_ = beast::zero;
+            index_ = beast::kZERO;
         }
         else
         {
@@ -109,7 +121,7 @@ const_iterator::next_page()
 }
 
 std::size_t
-const_iterator::page_size()
+const_iterator::pageSize()
 {
     return indexes_->size();
 }

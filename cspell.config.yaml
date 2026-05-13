@@ -44,6 +44,10 @@ suggestWords:
 words:
   - abempty
   - AMMID
+  - AMMMPT
+  - AMMMPToken
+  - AMMMPTokens
+  - AMMXRP
   - amt
   - amts
   - asnode
@@ -67,6 +71,7 @@ words:
   - citardauq
   - clawback
   - clawbacks
+  - cmaketoolchain
   - coeffs
   - coldwallet
   - compr
@@ -96,6 +101,7 @@ words:
   - distro
   - doxyfile
   - dxrpl
+  - enabled
   - endmacro
   - exceptioned
   - Falco
@@ -109,6 +115,7 @@ words:
   - gcovr
   - ghead
   - Gnutella
+  - godexsoft
   - gpgcheck
   - gpgkey
   - hotwallet
@@ -146,8 +153,11 @@ words:
   - lseq
   - lsmf
   - ltype
+  - mathbunnyru
   - mcmodel
   - MEMORYSTATUSEX
+  - MPTAMM
+  - MPTDEX
   - Merkle
   - Metafuncton
   - misprediction
@@ -157,6 +167,7 @@ words:
   - mptid
   - mptissuance
   - mptissuanceid
+  - mptissue
   - mptoken
   - mptokenid
   - mptokenissuance

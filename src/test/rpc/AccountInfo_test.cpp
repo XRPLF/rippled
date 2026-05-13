@@ -1,14 +1,28 @@
-#include <test/jtx.h>
-#include <test/jtx/WSClient.h>
-#include <test/rpc/GRPCTestClientBase.h>
 
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/multisign.h>
+
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
+#include <array>
+#include <cstdint>
+#include <optional>
+#include <string_view>
+#include <utility>
 
-class AccountInfo_test : public beast::unit_test::suite
+namespace xrpl::test {
+
+class AccountInfo_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -29,29 +43,29 @@ public:
                 "account_info",
                 "{\"account\": "
                 "\"n94JNrQYkDrpt62bbSR7nVEhdyAvcJXRAsjEkFYyqRkh9SUTYEqV\"}");
-            BEAST_EXPECT(info[jss::result][jss::error_code] == rpcACT_MALFORMED);
+            BEAST_EXPECT(info[jss::result][jss::error_code] == RpcActMalformed);
             BEAST_EXPECT(info[jss::result][jss::error_message] == "Account malformed.");
         }
         {
             // account_info with an account that's not in the ledger.
             Account const bogie{"bogie"};
-            Json::Value params;
+            json::Value params;
             params[jss::account] = bogie.human();
             auto const info = env.rpc("json", "account_info", to_string(params));
-            BEAST_EXPECT(info[jss::result][jss::error_code] == rpcACT_NOT_FOUND);
+            BEAST_EXPECT(info[jss::result][jss::error_code] == RpcActNotFound);
             BEAST_EXPECT(info[jss::result][jss::error_message] == "Account not found.");
         }
         {
             // Cannot use a seed as account
             auto const info = env.rpc("json", "account_info", R"({"account": "foo"})");
-            BEAST_EXPECT(info[jss::result][jss::error_code] == rpcACT_MALFORMED);
+            BEAST_EXPECT(info[jss::result][jss::error_code] == RpcActMalformed);
             BEAST_EXPECT(info[jss::result][jss::error_message] == "Account malformed.");
         }
         {
             // Cannot pass a non-string into the `account` param
 
             auto testInvalidAccountParam = [&](auto const& param) {
-                Json::Value params;
+                json::Value params;
                 params[jss::account] = param;
                 auto jrr = env.rpc("json", "account_info", to_string(params))[jss::result];
                 BEAST_EXPECT(jrr[jss::error] == "invalidParams");
@@ -61,15 +75,15 @@ public:
             testInvalidAccountParam(1);
             testInvalidAccountParam(1.1);
             testInvalidAccountParam(true);
-            testInvalidAccountParam(Json::Value(Json::nullValue));
-            testInvalidAccountParam(Json::Value(Json::objectValue));
-            testInvalidAccountParam(Json::Value(Json::arrayValue));
+            testInvalidAccountParam(json::Value(json::ValueType::Null));
+            testInvalidAccountParam(json::Value(json::ValueType::Object));
+            testInvalidAccountParam(json::Value(json::ValueType::Array));
         }
         {
             // Cannot pass a non-string into the `ident` param
 
             auto testInvalidIdentParam = [&](auto const& param) {
-                Json::Value params;
+                json::Value params;
                 params[jss::ident] = param;
                 auto jrr = env.rpc("json", "account_info", to_string(params))[jss::result];
                 BEAST_EXPECT(jrr[jss::error] == "invalidParams");
@@ -79,9 +93,9 @@ public:
             testInvalidIdentParam(1);
             testInvalidIdentParam(1.1);
             testInvalidIdentParam(true);
-            testInvalidIdentParam(Json::Value(Json::nullValue));
-            testInvalidIdentParam(Json::Value(Json::objectValue));
-            testInvalidIdentParam(Json::Value(Json::arrayValue));
+            testInvalidIdentParam(json::Value(json::ValueType::Null));
+            testInvalidIdentParam(json::Value(json::ValueType::Object));
+            testInvalidIdentParam(json::Value(json::ValueType::Array));
         }
     }
 
@@ -95,10 +109,10 @@ public:
         Account const alice{"alice"};
         env.fund(XRP(1000), alice);
 
-        Json::Value withoutSigners;
+        json::Value withoutSigners;
         withoutSigners[jss::account] = alice.human();
 
-        Json::Value withSigners;
+        json::Value withSigners;
         withSigners[jss::account] = alice.human();
         withSigners[jss::signer_lists] = true;
 
@@ -125,7 +139,7 @@ public:
         // Give alice a SignerList.
         Account const bogie{"bogie"};
 
-        Json::Value const smallSigners = signers(alice, 2, {{bogie, 3}});
+        json::Value const smallSigners = signers(alice, 2, {{bogie, 3}});
         env(smallSigners);
         {
             // account_info without the "signer_lists" argument.
@@ -162,7 +176,7 @@ public:
         Account const shade{"shade"};
         Account const spook{"spook"};
 
-        Json::Value const bigSigners = signers(
+        json::Value const bigSigners = signers(
             alice,
             4,
             {
@@ -211,11 +225,11 @@ public:
         Account const alice{"alice"};
         env.fund(XRP(1000), alice);
 
-        Json::Value withoutSigners;
+        json::Value withoutSigners;
         withoutSigners[jss::api_version] = 2;
         withoutSigners[jss::account] = alice.human();
 
-        Json::Value withSigners;
+        json::Value withSigners;
         withSigners[jss::api_version] = 2;
         withSigners[jss::account] = alice.human();
         withSigners[jss::signer_lists] = true;
@@ -244,7 +258,7 @@ public:
         // Give alice a SignerList.
         Account const bogie{"bogie"};
 
-        Json::Value const smallSigners = signers(alice, 2, {{bogie, 3}});
+        json::Value const smallSigners = signers(alice, 2, {{bogie, 3}});
         env(smallSigners);
         {
             // account_info without the "signer_lists" argument.
@@ -285,7 +299,7 @@ public:
         Account const shade{"shade"};
         Account const spook{"spook"};
 
-        Json::Value const bigSigners = signers(
+        json::Value const bigSigners = signers(
             alice,
             4,
             {
@@ -402,7 +416,7 @@ public:
         // Give alice a SignerList.
         Account const bogie{"bogie"};
 
-        Json::Value const smallSigners = signers(alice, 2, {{bogie, 3}});
+        json::Value const smallSigners = signers(alice, 2, {{bogie, 3}});
         env(smallSigners);
         {
             // account_info without the "signer_lists" argument.
@@ -445,7 +459,7 @@ public:
         Account const shade{"shade"};
         Account const spook{"spook"};
 
-        Json::Value const bigSigners = signers(
+        json::Value const bigSigners = signers(
             alice,
             4,
             {
@@ -499,7 +513,7 @@ public:
         env.fund(XRP(1000), alice, bob);
 
         auto getAccountFlag = [&env](std::string_view fName, Account const& account) {
-            Json::Value params;
+            json::Value params;
             params[jss::account] = account.human();
             auto const info = env.rpc("json", "account_info", to_string(params));
             auto const name = std::string(fName);
@@ -512,7 +526,7 @@ public:
             return res;
         };
 
-        static constexpr std::array<std::pair<std::string_view, std::uint32_t>, 7> asFlags{
+        static constexpr std::array<std::pair<std::string_view, std::uint32_t>, 7> kAS_FLAGS{
             {{"defaultRipple", asfDefaultRipple},
              {"depositAuth", asfDepositAuth},
              {"disallowIncomingXRP", asfDisallowXRP},
@@ -521,7 +535,7 @@ public:
              {"requireAuthorization", asfRequireAuth},
              {"requireDestinationTag", asfRequireDest}}};
 
-        for (auto& asf : asFlags)
+        for (auto& asf : kAS_FLAGS)
         {
             // Clear a flag and check that account_info returns results
             // as expected
@@ -541,13 +555,13 @@ public:
         }
 
         static constexpr std::array<std::pair<std::string_view, std::uint32_t>, 4>
-            disallowIncomingFlags{
+            kDISALLOW_INCOMING_FLAGS{
                 {{"disallowIncomingCheck", asfDisallowIncomingCheck},
                  {"disallowIncomingNFTokenOffer", asfDisallowIncomingNFTokenOffer},
                  {"disallowIncomingPayChan", asfDisallowIncomingPayChan},
                  {"disallowIncomingTrustline", asfDisallowIncomingTrustline}}};
 
-        for (auto& asf : disallowIncomingFlags)
+        for (auto& asf : kDISALLOW_INCOMING_FLAGS)
         {
             // Clear a flag and check that account_info returns results
             // as expected
@@ -566,47 +580,47 @@ public:
             BEAST_EXPECT(f2.value());  // NOLINT(bugprone-unchecked-optional-access)
         }
 
-        static constexpr std::pair<std::string_view, std::uint32_t> allowTrustLineClawbackFlag{
+        static constexpr std::pair<std::string_view, std::uint32_t> kALLOW_TRUST_LINE_CLAWBACK_FLAG{
             "allowTrustLineClawback", asfAllowTrustLineClawback};
 
         if (features[featureClawback])
         {
             // must use bob's account because alice has noFreeze set
-            auto const f1 = getAccountFlag(allowTrustLineClawbackFlag.first, bob);
+            auto const f1 = getAccountFlag(kALLOW_TRUST_LINE_CLAWBACK_FLAG.first, bob);
             BEAST_EXPECT(f1.has_value());
             BEAST_EXPECT(!f1.value());  // NOLINT(bugprone-unchecked-optional-access)
 
             // Set allowTrustLineClawback
-            env(fset(bob, allowTrustLineClawbackFlag.second));
+            env(fset(bob, kALLOW_TRUST_LINE_CLAWBACK_FLAG.second));
             env.close();
-            auto const f2 = getAccountFlag(allowTrustLineClawbackFlag.first, bob);
+            auto const f2 = getAccountFlag(kALLOW_TRUST_LINE_CLAWBACK_FLAG.first, bob);
             BEAST_EXPECT(f2.has_value());
             BEAST_EXPECT(f2.value());  // NOLINT(bugprone-unchecked-optional-access)
         }
         else
         {
-            BEAST_EXPECT(!getAccountFlag(allowTrustLineClawbackFlag.first, bob));
+            BEAST_EXPECT(!getAccountFlag(kALLOW_TRUST_LINE_CLAWBACK_FLAG.first, bob));
         }
 
-        static constexpr std::pair<std::string_view, std::uint32_t> allowTrustLineLockingFlag{
+        static constexpr std::pair<std::string_view, std::uint32_t> kALLOW_TRUST_LINE_LOCKING_FLAG{
             "allowTrustLineLocking", asfAllowTrustLineLocking};
 
         if (features[featureTokenEscrow])
         {
-            auto const f1 = getAccountFlag(allowTrustLineLockingFlag.first, bob);
+            auto const f1 = getAccountFlag(kALLOW_TRUST_LINE_LOCKING_FLAG.first, bob);
             BEAST_EXPECT(f1.has_value());
             BEAST_EXPECT(!f1.value());  // NOLINT(bugprone-unchecked-optional-access)
 
             // Set allowTrustLineLocking
-            env(fset(bob, allowTrustLineLockingFlag.second));
+            env(fset(bob, kALLOW_TRUST_LINE_LOCKING_FLAG.second));
             env.close();
-            auto const f2 = getAccountFlag(allowTrustLineLockingFlag.first, bob);
+            auto const f2 = getAccountFlag(kALLOW_TRUST_LINE_LOCKING_FLAG.first, bob);
             BEAST_EXPECT(f2.has_value());
             BEAST_EXPECT(f2.value());  // NOLINT(bugprone-unchecked-optional-access)
         }
         else
         {
-            BEAST_EXPECT(!getAccountFlag(allowTrustLineLockingFlag.first, bob));
+            BEAST_EXPECT(!getAccountFlag(kALLOW_TRUST_LINE_LOCKING_FLAG.first, bob));
         }
     }
 
@@ -618,7 +632,7 @@ public:
         testSignerListsApiVersion2();
         testSignerListsV2();
 
-        FeatureBitset const allFeatures{xrpl::test::jtx::testable_amendments()};
+        FeatureBitset const allFeatures{xrpl::test::jtx::testableAmendments()};
         testAccountFlags(allFeatures);
         testAccountFlags(allFeatures - featureClawback);
         testAccountFlags(allFeatures - featureClawback - featureTokenEscrow);
@@ -627,5 +641,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(AccountInfo, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

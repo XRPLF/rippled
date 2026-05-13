@@ -1,3 +1,5 @@
+#include <xrpl/protocol/STAccount.h>
+
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
@@ -5,7 +7,6 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/Serializer.h>
 
@@ -16,11 +17,11 @@
 
 namespace xrpl {
 
-STAccount::STAccount() : value_(beast::zero), default_(true)
+STAccount::STAccount() : value_(beast::kZERO), default_(true)
 {
 }
 
-STAccount::STAccount(SField const& n) : STBase(n), value_(beast::zero), default_(true)
+STAccount::STAccount(SField const& n) : STBase(n), value_(beast::kZERO), default_(true)
 {
 }
 
@@ -34,11 +35,11 @@ STAccount::STAccount(SField const& n, Buffer const& v) : STAccount(n)
     //    STVar::STVar (SerialIter&, SField const&)
     // which throws.  If STVar can throw in its constructor, then so can
     // STAccount.
-    if (v.size() != uint160::bytes)
+    if (v.size() != uint160::kBYTES)
         Throw<std::runtime_error>("Invalid STAccount size");
 
     default_ = false;
-    memcpy(value_.begin(), v.data(), uint160::bytes);
+    memcpy(value_.begin(), v.data(), uint160::kBYTES);
 }
 
 STAccount::STAccount(SerialIter& sit, SField const& name) : STAccount(name, sit.getVLBuffer())
@@ -76,7 +77,7 @@ STAccount::add(Serializer& s) const
     // Preserve the serialization behavior of an STBlob:
     //  o If we are default (all zeros) serialize as an empty blob.
     //  o Otherwise serialize 160 bits.
-    int const size = isDefault() ? 0 : uint160::bytes;
+    int const size = isDefault() ? 0 : uint160::kBYTES;
     s.addVL(value_.data(), size);
 }
 

@@ -7,15 +7,14 @@
 #include <cstdint>
 #include <set>
 
-namespace xrpl {
-namespace cryptoconditions {
+namespace xrpl::cryptoconditions {
 
 enum class Type : std::uint8_t {
-    preimageSha256 = 0,
-    prefixSha256 = 1,
-    thresholdSha256 = 2,
-    rsaSha256 = 3,
-    ed25519Sha256 = 4
+    PreimageSha256 = 0,
+    PrefixSha256 = 1,
+    ThresholdSha256 = 2,
+    RsaSha256 = 3,
+    Ed25519Sha256 = 4
 };
 
 class Condition
@@ -28,7 +27,7 @@ public:
               that were previously considered valid to no longer
               be allowed.
     */
-    static constexpr std::size_t maxSerializedCondition = 128;
+    static constexpr std::size_t kMAX_SERIALIZED_CONDITION = 128;
 
     /** Load a condition from its binary form
 
@@ -88,6 +87,4 @@ operator!=(Condition const& lhs, Condition const& rhs)
     return !(lhs == rhs);
 }
 
-}  // namespace cryptoconditions
-
-}  // namespace xrpl
+}  // namespace xrpl::cryptoconditions

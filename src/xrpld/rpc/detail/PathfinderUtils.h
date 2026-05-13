@@ -7,10 +7,13 @@ namespace xrpl {
 inline STAmount
 largestAmount(STAmount const& amt)
 {
-    if (amt.native())
-        return INITIAL_XRP;
-
-    return STAmount(amt.issue(), STAmount::cMaxValue, STAmount::cMaxOffset);
+    return amt.asset().visit(
+        [&](Issue const& issue) -> STAmount {
+            if (issue.native())
+                return kINITIAL_XRP;
+            return STAmount(amt.asset(), STAmount::kMAX_VALUE, STAmount::kMAX_OFFSET);
+        },
+        [&](MPTIssue const&) { return STAmount(amt.asset(), kMAX_MP_TOKEN_AMOUNT, 0); });
 }
 
 inline STAmount
