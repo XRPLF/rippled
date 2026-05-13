@@ -171,8 +171,6 @@ callMethod(JsonContext& context, Method method, std::string const& name, Object&
         rpc_span::attr::rpcRole,
         context.role == Role::ADMIN ? std::string_view(rpc_span::val::admin)
                                     : std::string_view(rpc_span::val::user));
-    span.setAttribute(attr::nodeAmendmentBlocked, context.app.getOPs().isAmendmentBlocked());
-    span.setAttribute(attr::nodeServerState, context.app.getOPs().strOperatingMode());
 
     static std::atomic<std::uint64_t> requestId{0};
     auto& perfLog = context.app.getPerfLog();
