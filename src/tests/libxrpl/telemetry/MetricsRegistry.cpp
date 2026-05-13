@@ -20,9 +20,9 @@
 #include <xrpld/telemetry/MetricsRegistry.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
-#include <xrpl/protocol/uint256.h>
 
 #include <boost/asio/io_context.hpp>
 
