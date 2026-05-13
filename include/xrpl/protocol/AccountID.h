@@ -25,7 +25,7 @@ public:
 }  // namespace detail
 
 /** A 160-bit unsigned that uniquely identifies an account. */
-using AccountID = BaseUint<160, detail::AccountIDTag>;
+using AccountID = BaseUInt<160, detail::AccountIDTag>;
 
 /** Convert AccountID to base58 checked string */
 std::string

@@ -49,7 +49,7 @@ struct Nonhash
 
 struct base_uint_test : beast::unit_test::Suite
 {
-    using test96 = BaseUint<96>;
+    using test96 = BaseUInt<96>;
     static_assert(std::is_copy_constructible_v<test96>);
     static_assert(std::is_copy_assignable_v<test96>);
 
@@ -68,7 +68,7 @@ struct base_uint_test : beast::unit_test::Suite
 
             for (auto const& arg : kTEST_ARGS)
             {
-                xrpl::BaseUint<64> const u{arg.first}, v{arg.second};
+                xrpl::BaseUInt<64> const u{arg.first}, v{arg.second};
                 BEAST_EXPECT(u < v);
                 BEAST_EXPECT(u <= v);
                 BEAST_EXPECT(u != v);
@@ -99,7 +99,7 @@ struct base_uint_test : beast::unit_test::Suite
 
             for (auto const& arg : kTEST_ARGS)
             {
-                xrpl::BaseUint<96> const u{arg.first}, v{arg.second};
+                xrpl::BaseUInt<96> const u{arg.first}, v{arg.second};
                 BEAST_EXPECT(u < v);
                 BEAST_EXPECT(u <= v);
                 BEAST_EXPECT(u != v);
@@ -327,16 +327,16 @@ struct base_uint_test : beast::unit_test::Suite
 
             // Verify that constexpr base_uints interpret a string the same
             // way parseHex() does.
-            struct StrBaseUint
+            struct StrBaseUInt
             {
                 char const* const str;
                 test96 tst;
 
-                constexpr StrBaseUint(char const* s) : str(s), tst(s)
+                constexpr StrBaseUInt(char const* s) : str(s), tst(s)
                 {
                 }
             };
-            constexpr StrBaseUint kTEST_CASES[] = {
+            constexpr StrBaseUInt kTEST_CASES[] = {
                 "000000000000000000000000",
                 "000000000000000000000001",
                 "fedcba9876543210ABCDEF91",
@@ -344,7 +344,7 @@ struct base_uint_test : beast::unit_test::Suite
                 "800000000000000000000000",
                 "fFfFfFfFfFfFfFfFfFfFfFfF"};
 
-            for (StrBaseUint const& t : kTEST_CASES)
+            for (StrBaseUInt const& t : kTEST_CASES)
             {
                 test96 t96;
                 BEAST_EXPECT(t96.parseHex(t.str));

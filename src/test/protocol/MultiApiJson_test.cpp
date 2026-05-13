@@ -30,7 +30,7 @@ struct MultiApiJson_test : beast::unit_test::Suite
     static auto
     makeJson(char const* key, int val)
     {
-        json::Value obj1(json::ObjectValue);
+        json::Value obj1(json::ValueType::Object);
         obj1[key] = val;
         return obj1;
     }
@@ -278,7 +278,7 @@ struct MultiApiJson_test : beast::unit_test::Suite
         {
             testcase("set");
 
-            auto x = MultiApiJson<1, 2>{json::ObjectValue};
+            auto x = MultiApiJson<1, 2>{json::ValueType::Object};
             x.set("name1", 42);
             BEAST_EXPECT(x.val[0].isMember("name1"));
             BEAST_EXPECT(x.val[1].isMember("name1"));
@@ -296,7 +296,8 @@ struct MultiApiJson_test : beast::unit_test::Suite
             BEAST_EXPECT(x.val[1]["name2"].asString() == "bar");
 
             // Tests of requires clause - these are expected to match
-            static_assert([](auto&& v) { return requires { v.set("name", json::NullValue); }; }(x));
+            static_assert(
+                [](auto&& v) { return requires { v.set("name", json::ValueType::Null); }; }(x));
             static_assert([](auto&& v) { return requires { v.set("name", "value"); }; }(x));
             static_assert([](auto&& v) { return requires { v.set("name", true); }; }(x));
             static_assert([](auto&& v) { return requires { v.set("name", 42); }; }(x));

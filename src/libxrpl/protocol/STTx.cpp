@@ -315,8 +315,8 @@ STTx::checkBatchSign(Rules const& rules) const
 json::Value
 STTx::getJson(JsonOptions options) const
 {
-    json::Value ret = STObject::getJson(JsonOptions::KNone);
-    if (!(options & JsonOptions::KDisableApiPriorV2))
+    json::Value ret = STObject::getJson(JsonOptions::Values::None);
+    if (!(options & JsonOptions::Values::DisableApiPriorV2))
         ret[jss::hash] = to_string(getTransactionID());
     return ret;
 }
@@ -324,7 +324,7 @@ STTx::getJson(JsonOptions options) const
 json::Value
 STTx::getJson(JsonOptions options, bool binary) const
 {
-    bool const v1 = !(options & JsonOptions::KDisableApiPriorV2);
+    bool const v1 = !(options & JsonOptions::Values::DisableApiPriorV2);
 
     if (binary)
     {
@@ -333,7 +333,7 @@ STTx::getJson(JsonOptions options, bool binary) const
 
         if (v1)
         {
-            json::Value ret(json::ObjectValue);
+            json::Value ret(json::ValueType::Object);
             ret[jss::tx] = dataBin;
             ret[jss::hash] = to_string(getTransactionID());
             return ret;
@@ -342,7 +342,7 @@ STTx::getJson(JsonOptions options, bool binary) const
         return json::Value{dataBin};
     }
 
-    json::Value ret = STObject::getJson(JsonOptions::KNone);
+    json::Value ret = STObject::getJson(JsonOptions::Values::None);
     if (v1)
         ret[jss::hash] = to_string(getTransactionID());
 

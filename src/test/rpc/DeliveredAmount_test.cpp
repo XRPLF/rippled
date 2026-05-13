@@ -245,9 +245,9 @@ class DeliveredAmount_test : public beast::unit_test::Suite
             {
                 json::Value stream;
                 // RPC subscribe to ledger stream
-                stream[jss::streams] = json::ArrayValue;
+                stream[jss::streams] = json::ValueType::Array;
                 stream[jss::streams].append("ledger");
-                stream[jss::accounts] = json::ArrayValue;
+                stream[jss::accounts] = json::ValueType::Array;
                 stream[jss::accounts].append(toBase58(alice.id()));
                 stream[jss::accounts].append(toBase58(bob.id()));
                 stream[jss::accounts].append(toBase58(carol.id()));
@@ -368,15 +368,17 @@ class DeliveredAmount_test : public beast::unit_test::Suite
         env.close();
 
         // Get the hash for the most recent transaction.
-        std::string txHash{env.tx()->getJson(JsonOptions::KNone)[jss::hash].asString()};
+        std::string txHash{env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString()};
         json::Value meta = env.rpc("tx", txHash)[jss::result][jss::meta];
 
         if (features[fixMPTDeliveredAmount])
         {
             BEAST_EXPECT(
-                meta[sfDeliveredAmount.jsonName] == STAmount{mpt(800)}.getJson(JsonOptions::KNone));
+                meta[sfDeliveredAmount.jsonName] ==
+                STAmount{mpt(800)}.getJson(JsonOptions::Values::None));
             BEAST_EXPECT(
-                meta[jss::delivered_amount] == STAmount{mpt(800)}.getJson(JsonOptions::KNone));
+                meta[jss::delivered_amount] ==
+                STAmount{mpt(800)}.getJson(JsonOptions::Values::None));
         }
         else
         {
@@ -387,15 +389,17 @@ class DeliveredAmount_test : public beast::unit_test::Suite
         env(pay(bob, carol, mpt(1000)), Sendmax(mpt(1200)), Txflags(tfPartialPayment));
         env.close();
 
-        txHash = env.tx()->getJson(JsonOptions::KNone)[jss::hash].asString();
+        txHash = env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString();
         meta = env.rpc("tx", txHash)[jss::result][jss::meta];
 
         if (features[fixMPTDeliveredAmount])
         {
             BEAST_EXPECT(
-                meta[sfDeliveredAmount.jsonName] == STAmount{mpt(960)}.getJson(JsonOptions::KNone));
+                meta[sfDeliveredAmount.jsonName] ==
+                STAmount{mpt(960)}.getJson(JsonOptions::Values::None));
             BEAST_EXPECT(
-                meta[jss::delivered_amount] == STAmount{mpt(960)}.getJson(JsonOptions::KNone));
+                meta[jss::delivered_amount] ==
+                STAmount{mpt(960)}.getJson(JsonOptions::Values::None));
         }
         else
         {
