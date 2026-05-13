@@ -204,8 +204,6 @@ class StatsDCollectorImp : public StatsDCollector,
                            public std::enable_shared_from_this<StatsDCollectorImp>
 {
 private:
-    // Need to be named before converting
-    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum {
         // max_packet_size = 484
         max_packet_size = 1472
@@ -295,14 +293,14 @@ public:
     void
     add(StatsDMetricBase& metric)
     {
-        std::scoped_lock const _(metricsLock_);
+        std::lock_guard const _(metricsLock_);
         metrics_.push_back(metric);
     }
 
     void
     remove(StatsDMetricBase& metric)
     {
-        std::scoped_lock const _(metricsLock_);
+        std::lock_guard const _(metricsLock_);
         metrics_.erase(metrics_.iterator_to(metric));
     }
 
@@ -446,7 +444,7 @@ public:
             return;
         }
 
-        std::scoped_lock const _(metricsLock_);
+        std::lock_guard const _(metricsLock_);
 
         for (auto& m : metrics_)
             m.do_process();

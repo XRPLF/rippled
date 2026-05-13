@@ -64,14 +64,15 @@ check_span() {
     fi
 }
 
-# Phase 8: Verify trace_id injection in rippled log output.
+# Phase 8: Verify trace_id injection in xrpld log output.
 # Greps all node debug.log files for the "trace_id=<hex> span_id=<hex>"
 # pattern that Logs::format() injects when an active OTel span exists.
-# Also cross-checks that a trace_id found in logs matches a trace in Jaeger.
+# Also cross-checks that a trace_id found in logs matches a trace in Tempo.
 check_log_correlation() {
     log "Checking log-trace correlation..."
 
     local total_matches=0
+    local files_scanned=0
     local sample_trace_id=""
 
     for i in $(seq 1 "$NUM_NODES"); do
@@ -79,30 +80,35 @@ check_log_correlation() {
         if [ ! -f "$logfile" ]; then
             continue
         fi
+        files_scanned=$((files_scanned + 1))
         local matches
-        matches=$(grep -c 'trace_id=[a-f0-9]\{32\} span_id=[a-f0-9]\{16\}' "$logfile" 2>/dev/null || echo 0)
+        matches=$(grep -c 'trace_id=[a-f0-9]\{32\} span_id=[a-f0-9]\{16\}' "$logfile") || matches=0
         total_matches=$((total_matches + matches))
-        # Capture the first trace_id we find for cross-referencing with Jaeger
         if [ -z "$sample_trace_id" ] && [ "$matches" -gt 0 ]; then
             sample_trace_id=$(grep -o 'trace_id=[a-f0-9]\{32\}' "$logfile" | head -1 | cut -d= -f2)
         fi
     done
 
-    if [ "$total_matches" -gt 0 ]; then
-        ok "Log correlation: found $total_matches log lines with trace_id"
-    else
-        fail "Log correlation: no trace_id found in any node debug.log"
+    if [ "$files_scanned" -eq 0 ]; then
+        fail "Log correlation: no debug.log files found in $WORKDIR/node*/"
+        return
     fi
 
-    # Cross-check: verify the sample trace_id exists in Jaeger
+    if [ "$total_matches" -gt 0 ]; then
+        ok "Log correlation: found $total_matches log lines with trace_id ($files_scanned nodes scanned)"
+    else
+        fail "Log correlation: no trace_id found in any node debug.log ($files_scanned nodes scanned)"
+    fi
+
+    # Cross-check: verify the sample trace_id exists in Tempo
     if [ -n "$sample_trace_id" ]; then
         local trace_found
-        trace_found=$(curl -sf "$JAEGER/api/traces/$sample_trace_id" \
-            | jq '.data | length' 2>/dev/null || echo 0)
+        trace_found=$(curl -sf "$TEMPO/api/traces/$sample_trace_id" \
+            | jq '.data | length' 2>/dev/null) || trace_found=0
         if [ "$trace_found" -gt 0 ]; then
-            ok "Log-Jaeger cross-check: trace_id=$sample_trace_id found in Jaeger"
+            ok "Log-Tempo cross-check: trace_id=$sample_trace_id found in Tempo"
         else
-            fail "Log-Jaeger cross-check: trace_id=$sample_trace_id NOT found in Jaeger"
+            fail "Log-Tempo cross-check: trace_id=$sample_trace_id NOT found in Tempo"
         fi
     fi
 }

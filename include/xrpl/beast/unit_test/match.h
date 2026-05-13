@@ -14,7 +14,7 @@ namespace beast::unit_test {
 class selector
 {
 public:
-    enum class mode_t {
+    enum mode_t {
         // Run all tests except manual ones
         all,
 
@@ -53,8 +53,8 @@ public:
 template <class>
 selector::selector(mode_t mode, std::string const& pattern) : mode_(mode), pat_(pattern)
 {
-    if (mode_ == mode_t::automatch && pattern.empty())
-        mode_ = mode_t::all;
+    if (mode_ == automatch && pattern.empty())
+        mode_ = all;
 }
 
 template <class>
@@ -63,18 +63,18 @@ selector::operator()(suite_info const& s)
 {
     switch (mode_)
     {
-        case mode_t::automatch:
+        case automatch:
             // suite or full name
             if (s.name() == pat_ || s.full_name() == pat_)
             {
-                mode_ = mode_t::none;
+                mode_ = none;
                 return true;
             }
 
             // check module
             if (pat_ == s.module())
             {
-                mode_ = mode_t::module;
+                mode_ = module;
                 library_ = s.library();
                 return !s.manual();
             }
@@ -82,7 +82,7 @@ selector::operator()(suite_info const& s)
             // check library
             if (pat_ == s.library())
             {
-                mode_ = mode_t::library;
+                mode_ = library;
                 return !s.manual();
             }
 
@@ -96,19 +96,19 @@ selector::operator()(suite_info const& s)
 
             return false;
 
-        case mode_t::suite:
+        case suite:
             return pat_ == s.name();
 
-        case mode_t::module:
+        case module:
             return pat_ == s.module() && !s.manual();
 
-        case mode_t::library:
+        case library:
             return pat_ == s.library() && !s.manual();
 
-        case mode_t::none:
+        case none:
             return false;
 
-        case mode_t::all:
+        case all:
         default:
             break;
     };
@@ -138,28 +138,28 @@ selector::operator()(suite_info const& s)
 inline selector
 match_auto(std::string const& name)
 {
-    return selector(selector::mode_t::automatch, name);
+    return selector(selector::automatch, name);
 }
 
 /** Return a predicate that matches all suites not marked manual. */
 inline selector
 match_all()
 {
-    return selector(selector::mode_t::all);
+    return selector(selector::all);
 }
 
 /** Returns a predicate that matches a specific suite. */
 inline selector
 match_suite(std::string const& name)
 {
-    return selector(selector::mode_t::suite, name);
+    return selector(selector::suite, name);
 }
 
 /** Returns a predicate that matches all suites in a library. */
 inline selector
 match_library(std::string const& name)
 {
-    return selector(selector::mode_t::library, name);
+    return selector(selector::library, name);
 }
 
 }  // namespace beast::unit_test

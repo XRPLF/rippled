@@ -197,7 +197,7 @@ struct MutexDifferentLockTypesTest : ::testing::Test
 {
 };
 
-TEST_F(MutexDifferentLockTypesTest, scoped_lock)
+TEST_F(MutexDifferentLockTypesTest, lock_guard)
 {
     Mutex<int> m(0);
     {

@@ -665,7 +665,7 @@ flow(
             // the previous strand execution failed. It has to be reset
             // since this strand might not have AMM liquidity.
             ammContext.clear();
-            if (offerCrossing != OfferCrossing::no && limitQuality)
+            if (offerCrossing && limitQuality)
             {
                 auto const strandQ = qualityUpperBound(sb, *strand);
                 if (!strandQ || *strandQ < *limitQuality)
@@ -797,8 +797,7 @@ flow(
             // fixFillOrKill amendment:
             //   That case is handled here if tfSell is also not set; i.e,
             //   case 1.
-            if (offerCrossing == OfferCrossing::no ||
-                (fillOrKillEnabled && offerCrossing != OfferCrossing::sell))
+            if (!offerCrossing || (fillOrKillEnabled && offerCrossing != OfferCrossing::sell))
                 return {tecPATH_PARTIAL, actualIn, actualOut, std::move(ofrsToRmOnFail)};
         }
         else if (actualOut == beast::zero)
@@ -806,7 +805,7 @@ flow(
             return {tecPATH_DRY, std::move(ofrsToRmOnFail)};
         }
     }
-    if (offerCrossing != OfferCrossing::no &&
+    if (offerCrossing &&
         (!partialPayment && (!fillOrKillEnabled || offerCrossing == OfferCrossing::sell)))
     {
         // If we're offer crossing and partialPayment is *not* true, then

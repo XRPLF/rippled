@@ -6,8 +6,6 @@
 /** @{ */
 namespace xrpl::PeerFinder::Tuning {
 
-// Need to be named before converting
-// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum {
     //---------------------------------------------------------
     //
@@ -63,8 +61,6 @@ static std::array<int, 10> const connectionBackoff{{1, 1, 2, 3, 5, 8, 13, 21, 34
 //
 //------------------------------------------------------------------------------
 
-// Need to be named before converting
-// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum {
     // Threshold of cache entries above which we trim.
     bootcacheSize = 1000

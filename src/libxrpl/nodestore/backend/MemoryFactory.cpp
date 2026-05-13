@@ -59,7 +59,7 @@ public:
     MemoryDB&
     open(std::string const& path)
     {
-        std::scoped_lock const _(mutex_);
+        std::lock_guard const _(mutex_);
         auto const result =
             map_.emplace(std::piecewise_construct, std::make_tuple(path), std::make_tuple());
         MemoryDB& db = result.first->second;
@@ -134,16 +134,16 @@ public:
     {
         XRPL_ASSERT(db_, "xrpl::NodeStore::MemoryBackend::fetch : non-null database");
 
-        std::scoped_lock const _(db_->mutex);
+        std::lock_guard const _(db_->mutex);
 
         Map::iterator const iter = db_->table.find(hash);
         if (iter == db_->table.end())
         {
             pObject->reset();
-            return Status::notFound;
+            return notFound;
         }
         *pObject = iter->second;
-        return Status::ok;
+        return ok;
     }
 
     std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
@@ -155,7 +155,7 @@ public:
         {
             std::shared_ptr<NodeObject> nObj;
             Status const status = fetch(h, &nObj);
-            if (status != Status::ok)
+            if (status != ok)
             {
                 results.push_back({});
             }
@@ -165,14 +165,14 @@ public:
             }
         }
 
-        return {results, Status::ok};
+        return {results, ok};
     }
 
     void
     store(std::shared_ptr<NodeObject> const& object) override
     {
         XRPL_ASSERT(db_, "xrpl::NodeStore::MemoryBackend::store : non-null database");
-        std::scoped_lock const _(db_->mutex);
+        std::lock_guard const _(db_->mutex);
         db_->table.emplace(object->getHash(), object);
     }
 

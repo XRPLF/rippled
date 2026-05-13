@@ -15,8 +15,6 @@ class Object;
 namespace xrpl::RPC {
 
 // Under what condition can we call this RPC?
-// Bitwise flags
-// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum Condition {
     NO_CONDITION = 0,
     NEEDS_NETWORK_CONNECTION = 1,

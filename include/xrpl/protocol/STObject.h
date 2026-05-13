@@ -413,9 +413,9 @@ public:
     class FieldErr;
 
 private:
-    enum class WhichFields : bool {
+    enum WhichFields : bool {
         // These values are carefully chosen to do the right thing if passed
-        // to SField::shouldInclude (bool) via static_cast<bool>
+        // to SField::shouldInclude (bool)
         omitSigningFields = false,
         withAllFields = true
     };
@@ -987,7 +987,7 @@ STObject::isFree() const
 inline void
 STObject::addWithoutSigningFields(Serializer& s) const
 {
-    add(s, WhichFields::omitSigningFields);
+    add(s, omitSigningFields);
 }
 
 // VFALCO NOTE does this return an expensive copy of an object with a
@@ -997,7 +997,7 @@ inline Serializer
 STObject::getSerializer() const
 {
     Serializer s;
-    add(s, WhichFields::withAllFields);
+    add(s, withAllFields);
     return s;
 }
 

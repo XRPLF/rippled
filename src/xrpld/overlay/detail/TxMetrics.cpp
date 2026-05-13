@@ -17,7 +17,7 @@ void
 TxMetrics::addMetrics(protocol::MessageType type, std::uint32_t val)
 {
     auto add = [&](auto& m, std::uint32_t val) {
-        std::scoped_lock const lock(mutex);
+        std::lock_guard const lock(mutex);
         m.addMetrics(val);
     };
 
@@ -46,7 +46,7 @@ TxMetrics::addMetrics(protocol::MessageType type, std::uint32_t val)
 void
 TxMetrics::addMetrics(std::uint32_t selected, std::uint32_t suppressed, std::uint32_t notenabled)
 {
-    std::scoped_lock const lock(mutex);
+    std::lock_guard const lock(mutex);
     selectedPeers.addMetrics(selected);
     suppressedPeers.addMetrics(suppressed);
     notEnabled.addMetrics(notenabled);
@@ -55,7 +55,7 @@ TxMetrics::addMetrics(std::uint32_t selected, std::uint32_t suppressed, std::uin
 void
 TxMetrics::addMetrics(std::uint32_t missing)
 {
-    std::scoped_lock const lock(mutex);
+    std::lock_guard const lock(mutex);
     missingTx.addMetrics(missing);
 }
 
@@ -99,7 +99,7 @@ SingleMetrics::addMetrics(std::uint32_t val)
 Json::Value
 TxMetrics::json() const
 {
-    std::scoped_lock const l(mutex);
+    std::lock_guard const l(mutex);
 
     Json::Value ret(Json::objectValue);
 

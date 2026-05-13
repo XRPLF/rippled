@@ -170,7 +170,7 @@ private:
         for (auto const& key : cache.getKeys())
         {
             dbRotating_->fetchNodeObject(key, 0, NodeStore::FetchType::synchronous, true);
-            if (!(++check % checkHealthInterval_) && healthWait() == HealthResult::stopping)
+            if (!(++check % checkHealthInterval_) && healthWait() == stopping)
                 return true;
         }
 
@@ -201,7 +201,7 @@ private:
      *
      * @return Whether the server is stopping.
      */
-    enum class HealthResult { stopping, keepGoing };
+    enum HealthResult { stopping, keepGoing };
     [[nodiscard]] HealthResult
     healthWait();
 

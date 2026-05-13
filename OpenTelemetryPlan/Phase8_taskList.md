@@ -24,23 +24,32 @@
 **What to do**:
 
 - Edit `src/libxrpl/basics/Log.cpp`:
-  - In `Logs::format()` (around line 346), after severity is appended, check for active OTel span:
+  - In `Logs::format()` (around line 346), after severity is appended, check for active OTel span. The implementation checks the context value directly to avoid the heap allocation that `GetSpan()` performs on the no-span path:
     ```cpp
     #ifdef XRPL_ENABLE_TELEMETRY
-    auto span = opentelemetry::trace::GetSpan(
-        opentelemetry::context::RuntimeContext::GetCurrent());
-    auto ctx = span->GetContext();
-    if (ctx.IsValid())
     {
-        // Append trace context as structured fields
-        char traceId[33], spanId[17];
-        ctx.trace_id().ToLowerBase16(traceId);
-        ctx.span_id().ToLowerBase16(spanId);
-        output += "trace_id=";
-        output.append(traceId, 32);
-        output += " span_id=";
-        output.append(spanId, 16);
-        output += ' ';
+        auto context = opentelemetry::context::RuntimeContext::GetCurrent();
+        auto spanValue = context.GetValue(opentelemetry::trace::kSpanKey);
+        if (opentelemetry::nostd::holds_alternative<
+                opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>>(spanValue))
+        {
+            auto span = opentelemetry::nostd::get<
+                opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>>(spanValue);
+            auto spanCtx = span->GetContext();
+            if (spanCtx.IsValid())
+            {
+                char traceId[32], spanId[16];
+                spanCtx.trace_id().ToLowerBase16(
+                    opentelemetry::nostd::span<char, 32>{traceId});
+                spanCtx.span_id().ToLowerBase16(
+                    opentelemetry::nostd::span<char, 16>{spanId});
+                output += "trace_id=";
+                output.append(traceId, 32);
+                output += " span_id=";
+                output.append(spanId, 16);
+                output += ' ';
+            }
+        }
     }
     #endif
     ```
@@ -53,7 +62,7 @@
 
 - `src/libxrpl/basics/Log.cpp`
 
-**Performance note**: `GetSpan()` and `GetContext()` are thread-local reads with no locking — measured at <10ns per call. With ~1000 JLOG calls/min, this adds <10us/min of overhead.
+**Performance note**: The implementation checks the thread-local context value directly (avoiding the heap allocation that `GetSpan()` performs on the no-span path). On threads without an active span (~99% of log lines), the cost is a thread-local read + variant type check (~15-20ns). On the active-span path, an additional shared_ptr copy + `GetContext()` + `IsValid()` adds ~50ns total. Overhead is negligible at typical logging rates.
 
 ---
 

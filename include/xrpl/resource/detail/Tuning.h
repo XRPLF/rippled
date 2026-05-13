@@ -5,8 +5,6 @@
 namespace xrpl::Resource {
 
 /** Tunable constants. */
-// Need to be named before converting
-// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum {
     // Balance at which a warning is issued
     warningThreshold = 5000

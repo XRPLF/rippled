@@ -123,8 +123,6 @@ public:
     Transactor(Transactor const&) = delete;
     Transactor&
     operator=(Transactor const&) = delete;
-    // 68 transactor subclass files
-    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum ConsequencesFactoryType { Normal, Blocker, Custom };
 
     /** Process the transaction. */

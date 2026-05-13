@@ -3,7 +3,7 @@
 namespace xrpl::Resource {
 
 /** The disposition of a consumer after applying a load charge. */
-enum class Disposition {
+enum Disposition {
     /** No action required. */
     ok
 

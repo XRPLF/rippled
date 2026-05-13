@@ -9,8 +9,6 @@ namespace beast {
 /** A namespace for easy access to logging severity values. */
 namespace severities {
 /** Severity level / threshold of a Journal message. */
-// Hundreds of usages via logging macros
-// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum Severity {
     kAll = 0,
 

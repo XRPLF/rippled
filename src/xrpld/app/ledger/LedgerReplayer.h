@@ -103,21 +103,21 @@ public:
     std::size_t
     tasksSize() const
     {
-        std::scoped_lock const lock(mtx_);
+        std::lock_guard<std::mutex> const lock(mtx_);
         return tasks_.size();
     }
 
     std::size_t
     deltasSize() const
     {
-        std::scoped_lock const lock(mtx_);
+        std::lock_guard<std::mutex> const lock(mtx_);
         return deltas_.size();
     }
 
     std::size_t
     skipListsSize() const
     {
-        std::scoped_lock const lock(mtx_);
+        std::lock_guard<std::mutex> const lock(mtx_);
         return skipLists_.size();
     }
 

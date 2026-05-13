@@ -38,8 +38,6 @@ protected:
     using endpoint_type = boost::asio::ip::tcp::endpoint;
     using yield_context = boost::asio::yield_context;
 
-    // Need to be named before converting
-    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum {
         // Size of our read/write buffer
         bufferSize = 4 * 1024,
@@ -305,7 +303,7 @@ BaseHTTPPeer<Handler, Impl>::on_write(error_code const& ec, std::size_t bytes_tr
         return fail(ec, "write");
     bytes_out_ += bytes_transferred;
     {
-        std::scoped_lock const lock(mutex_);
+        std::lock_guard const lock(mutex_);
         wq2_.clear();
         wq2_.reserve(wq_.size());
         std::swap(wq2_, wq_);
@@ -397,7 +395,7 @@ BaseHTTPPeer<Handler, Impl>::write(void const* buf, std::size_t bytes)
     if (bytes == 0)
         return;
     if ([&] {
-            std::scoped_lock const lock(mutex_);
+            std::lock_guard const lock(mutex_);
             wq_.emplace_back(buf, bytes);
             return wq_.size() == 1 && wq2_.size() == 0;
         }())
@@ -451,7 +449,7 @@ BaseHTTPPeer<Handler, Impl>::complete()
     complete_ = true;
 
     {
-        std::scoped_lock const lock(mutex_);
+        std::lock_guard const lock(mutex_);
         if (!wq_.empty() && !wq2_.empty())
             return;
     }
@@ -486,7 +484,7 @@ BaseHTTPPeer<Handler, Impl>::close(bool graceful)
     {
         graceful_ = true;
         {
-            std::scoped_lock const lock(mutex_);
+            std::lock_guard const lock(mutex_);
             if (!wq_.empty() || !wq2_.empty())
                 return;
         }
