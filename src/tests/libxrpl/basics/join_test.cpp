@@ -1,8 +1,7 @@
-#include <test/jtx/Account.h>
-
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/join.h>
-#include <xrpl/beast/unit_test/suite.h>
+
+#include <gtest/gtest.h>
 
 #include <array>
 #include <cstddef>
@@ -13,20 +12,20 @@
 
 namespace xrpl::test {
 
-struct join_test : beast::unit_test::Suite
+struct JoinTest : public ::testing::Test
 {
-    void
-    run() override
+    static void
+    run()
     {
-        auto test = [this](auto collectionanddelimiter, std::string expected) {
+        auto test = [](auto collectionanddelimiter, std::string expected) {
             std::stringstream ss;
             // Put something else in the buffer before and after to ensure that
             // the << operator returns the stream correctly.
             ss << "(" << collectionanddelimiter << ")";
             auto const str = ss.str();
-            BEAST_EXPECT(str.substr(1, str.length() - 2) == expected);
-            BEAST_EXPECT(str.front() == '(');
-            BEAST_EXPECT(str.back() == ')');
+            EXPECT_TRUE(str.substr(1, str.length() - 2) == expected);
+            EXPECT_TRUE(str.front() == '(');
+            EXPECT_TRUE(str.back() == ')');
         };
 
         // C++ array
@@ -54,13 +53,8 @@ struct join_test : beast::unit_test::Suite
         test(CollectionAndDelimiter(std::initializer_list<size_t>{19, 25}, "+"), "19+25");
         // vector
         test(CollectionAndDelimiter(std::vector<int>{0, 42}, std::to_string(99)), "09942");
-        {
-            // vector with one item edge case
-            using namespace jtx;
-            test(
-                CollectionAndDelimiter(std::vector<Account>{Account::kMASTER}, "xxx"),
-                Account::kMASTER.human());
-        }
+        // vector with one item edge case
+        test(CollectionAndDelimiter(std::vector<std::string>{"master"}, "xxx"), "master");
         // empty vector edge case
         test(CollectionAndDelimiter(std::vector<uint256>{}, ","), "");
         // C-style string
@@ -76,8 +70,11 @@ struct join_test : beast::unit_test::Suite
         // Single char std::string edge case
         test(CollectionAndDelimiter(std::string{"y"}, "*"), "y");
     }
-};  // namespace test
+};
 
-BEAST_DEFINE_TESTSUITE(join, basics, xrpl);
+TEST_F(JoinTest, join)
+{
+    run();
+}
 
 }  // namespace xrpl::test

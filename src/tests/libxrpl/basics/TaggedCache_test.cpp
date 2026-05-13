@@ -1,13 +1,14 @@
-#include <test/unit_test/SuiteJournal.h>
-
 #include <xrpl/basics/TaggedCache.h>
 #include <xrpl/basics/TaggedCache.ipp>  // IWYU pragma: keep
 #include <xrpl/basics/chrono.h>
-#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/Protocol.h>
 
+#include <gtest/gtest.h>
+#include <helpers/TestSink.h>
+
 #include <memory>
+#include <string>
 
 namespace xrpl {
 
@@ -21,15 +22,14 @@ then canonicalize a new object with the same key, make sure you get the
 original object.
 */
 
-class TaggedCache_test : public beast::unit_test::Suite
+class TaggedCacheTest : public ::testing::Test
 {
 public:
-    void
-    run() override
+    static void
+    run()
     {
         using namespace std::chrono_literals;
-        using beast::Severity;
-        test::SuiteJournal journal("TaggedCache_test", *this);
+        beast::Journal const journal{TestSink::instance()};
 
         TestStopwatch clock;
         clock.set(0);
@@ -42,61 +42,61 @@ public:
 
         // Insert an item, retrieve it, and age it so it gets purged.
         {
-            BEAST_EXPECT(c.getCacheSize() == 0);
-            BEAST_EXPECT(c.getTrackSize() == 0);
-            BEAST_EXPECT(!c.insert(1, "one"));
-            BEAST_EXPECT(c.getCacheSize() == 1);
-            BEAST_EXPECT(c.getTrackSize() == 1);
+            EXPECT_TRUE(c.getCacheSize() == 0);
+            EXPECT_TRUE(c.getTrackSize() == 0);
+            EXPECT_TRUE(!c.insert(1, "one"));
+            EXPECT_TRUE(c.getCacheSize() == 1);
+            EXPECT_TRUE(c.getTrackSize() == 1);
 
             {
                 std::string s;
-                BEAST_EXPECT(c.retrieve(1, s));
-                BEAST_EXPECT(s == "one");
+                EXPECT_TRUE(c.retrieve(1, s));
+                EXPECT_TRUE(s == "one");
             }
 
             ++clock;
             c.sweep();
-            BEAST_EXPECT(c.getCacheSize() == 0);
-            BEAST_EXPECT(c.getTrackSize() == 0);
+            EXPECT_TRUE(c.getCacheSize() == 0);
+            EXPECT_TRUE(c.getTrackSize() == 0);
         }
 
         // Insert an item, maintain a strong pointer, age it, and
         // verify that the entry still exists.
         {
-            BEAST_EXPECT(!c.insert(2, "two"));
-            BEAST_EXPECT(c.getCacheSize() == 1);
-            BEAST_EXPECT(c.getTrackSize() == 1);
+            EXPECT_TRUE(!c.insert(2, "two"));
+            EXPECT_TRUE(c.getCacheSize() == 1);
+            EXPECT_TRUE(c.getTrackSize() == 1);
 
             {
                 auto p = c.fetch(2);
-                BEAST_EXPECT(p != nullptr);
+                EXPECT_TRUE(p != nullptr);
                 ++clock;
                 c.sweep();
-                BEAST_EXPECT(c.getCacheSize() == 0);
-                BEAST_EXPECT(c.getTrackSize() == 1);
+                EXPECT_TRUE(c.getCacheSize() == 0);
+                EXPECT_TRUE(c.getTrackSize() == 1);
             }
 
             // Make sure its gone now that our reference is gone
             ++clock;
             c.sweep();
-            BEAST_EXPECT(c.getCacheSize() == 0);
-            BEAST_EXPECT(c.getTrackSize() == 0);
+            EXPECT_TRUE(c.getCacheSize() == 0);
+            EXPECT_TRUE(c.getTrackSize() == 0);
         }
 
         // Insert the same key/value pair and make sure we get the same result
         {
-            BEAST_EXPECT(!c.insert(3, "three"));
+            EXPECT_TRUE(!c.insert(3, "three"));
 
             {
                 auto const p1 = c.fetch(3);
                 auto p2 = std::make_shared<Value>("three");
                 c.canonicalizeReplaceClient(3, p2);
-                BEAST_EXPECT(p1.get() == p2.get());
+                EXPECT_TRUE(p1.get() == p2.get());
             }
             ++clock;
             c.sweep();
-            BEAST_EXPECT(c.getCacheSize() == 0);
-            BEAST_EXPECT(c.getTrackSize() == 0);
+            EXPECT_TRUE(c.getCacheSize() == 0);
+            EXPECT_TRUE(c.getTrackSize() == 0);
         }
 
         // Put an object in but keep a strong pointer to it, advance the clock a
@@ -104,38 +104,41 @@ public:
         // get the original object.
         {
             // Put an object in
-            BEAST_EXPECT(!c.insert(4, "four"));
-            BEAST_EXPECT(c.getCacheSize() == 1);
-            BEAST_EXPECT(c.getTrackSize() == 1);
+            EXPECT_TRUE(!c.insert(4, "four"));
+            EXPECT_TRUE(c.getCacheSize() == 1);
+            EXPECT_TRUE(c.getTrackSize() == 1);
 
             {
                 // Keep a strong pointer to it
                 auto const p1 = c.fetch(4);
-                BEAST_EXPECT(p1 != nullptr);
-                BEAST_EXPECT(c.getCacheSize() == 1);
-                BEAST_EXPECT(c.getTrackSize() == 1);
+                EXPECT_TRUE(p1 != nullptr);
+                EXPECT_TRUE(c.getCacheSize() == 1);
+                EXPECT_TRUE(c.getTrackSize() == 1);
                 // Advance the clock a lot
                 ++clock;
                 c.sweep();
-                BEAST_EXPECT(c.getCacheSize() == 0);
-                BEAST_EXPECT(c.getTrackSize() == 1);
+                EXPECT_TRUE(c.getCacheSize() == 0);
+                EXPECT_TRUE(c.getTrackSize() == 1);
                 // Canonicalize a new object with the same key
                 auto p2 = std::make_shared<std::string>("four");
-                BEAST_EXPECT(c.canonicalizeReplaceClient(4, p2));
-                BEAST_EXPECT(c.getCacheSize() == 1);
-                BEAST_EXPECT(c.getTrackSize() == 1);
+                EXPECT_TRUE(c.canonicalizeReplaceClient(4, p2));
+                EXPECT_TRUE(c.getCacheSize() == 1);
+                EXPECT_TRUE(c.getTrackSize() == 1);
                 // Make sure we get the original object
-                BEAST_EXPECT(p1.get() == p2.get());
+                EXPECT_TRUE(p1.get() == p2.get());
             }
 
             ++clock;
             c.sweep();
-            BEAST_EXPECT(c.getCacheSize() == 0);
-            BEAST_EXPECT(c.getTrackSize() == 0);
+            EXPECT_TRUE(c.getCacheSize() == 0);
+            EXPECT_TRUE(c.getTrackSize() == 0);
         }
     }
 };
 
-BEAST_DEFINE_TESTSUITE(TaggedCache, basics, xrpl);
+TEST_F(TaggedCacheTest, tagged_cache)
+{
+    run();
+}
 
 }  // namespace xrpl

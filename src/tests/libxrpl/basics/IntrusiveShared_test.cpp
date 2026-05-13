@@ -2,7 +2,8 @@
 #include <xrpl/basics/IntrusivePointer.h>    // IWYU pragma: keep
 #include <xrpl/basics/IntrusivePointer.ipp>  // IWYU pragma: keep
 #include <xrpl/basics/IntrusiveRefCounts.h>
-#include <xrpl/beast/unit_test/suite.h>
+
+#include <gtest/gtest.h>
 
 #include <algorithm>
 #include <array>
@@ -187,29 +188,27 @@ std::function<void(TrackedState, std::optional<TrackedState>)> TIBase::tracingCa
 
 }  // namespace
 
-class IntrusiveShared_test : public beast::unit_test::Suite
+class IntrusiveSharedTest : public ::testing::Test
 {
 public:
-    void
+    static void
     testBasics()
     {
-        testcase("Basics");
-
         {
             TIBase::ResetStatesGuard const rsg{true};
 
             TIBase const b;
-            BEAST_EXPECT(b.useCount() == 1);
+            EXPECT_TRUE(b.useCount() == 1);
             b.addWeakRef();
-            BEAST_EXPECT(b.useCount() == 1);
+            EXPECT_TRUE(b.useCount() == 1);
             auto s = b.releaseStrongRef();
-            BEAST_EXPECT(s == ReleaseStrongRefAction::PartialDestroy);
-            BEAST_EXPECT(b.useCount() == 0);
+            EXPECT_TRUE(s == ReleaseStrongRefAction::PartialDestroy);
+            EXPECT_TRUE(b.useCount() == 0);
             TIBase const* pb = &b;
             partialDestructorFinished(&pb);
-            BEAST_EXPECT(!pb);
+            EXPECT_TRUE(!pb);
             auto w = b.releaseWeakRef();
-            BEAST_EXPECT(w == ReleaseWeakRefAction::Destroy);
+            EXPECT_TRUE(w == ReleaseWeakRefAction::Destroy);
         }
 
         std::vector<SharedIntrusive<TIBase>> strong;
@@ -220,40 +219,40 @@ public:
             using enum TrackedState;
             auto b = makeSharedIntrusive<TIBase>();
             auto id = b->id;
-            BEAST_EXPECT(TIBase::getState(id) == Alive);
-            BEAST_EXPECT(b->useCount() == 1);
+            EXPECT_TRUE(TIBase::getState(id) == Alive);
+            EXPECT_TRUE(b->useCount() == 1);
             for (int i = 0; i < 10; ++i)
             {
                 strong.push_back(b);
             }
             b.reset();
-            BEAST_EXPECT(TIBase::getState(id) == Alive);
+            EXPECT_TRUE(TIBase::getState(id) == Alive);
             strong.resize(strong.size() - 1);
-            BEAST_EXPECT(TIBase::getState(id) == Alive);
+            EXPECT_TRUE(TIBase::getState(id) == Alive);
             strong.clear();
-            BEAST_EXPECT(TIBase::getState(id) == Deleted);
+            EXPECT_TRUE(TIBase::getState(id) == Deleted);
 
             b = makeSharedIntrusive<TIBase>();
             id = b->id;
-            BEAST_EXPECT(TIBase::getState(id) == Alive);
-            BEAST_EXPECT(b->useCount() == 1);
+            EXPECT_TRUE(TIBase::getState(id) == Alive);
+            EXPECT_TRUE(b->useCount() == 1);
             for (int i = 0; i < 10; ++i)
             {
                 weak.emplace_back(b);
-                BEAST_EXPECT(b->useCount() == 1);
+                EXPECT_TRUE(b->useCount() == 1);
             }
-            BEAST_EXPECT(TIBase::getState(id) == Alive);
+            EXPECT_TRUE(TIBase::getState(id) == Alive);
             weak.resize(weak.size() - 1);
-            BEAST_EXPECT(TIBase::getState(id) == Alive);
+            EXPECT_TRUE(TIBase::getState(id) == Alive);
             b.reset();
-            BEAST_EXPECT(TIBase::getState(id) == PartiallyDeleted);
+            EXPECT_TRUE(TIBase::getState(id) == PartiallyDeleted);
             while (!weak.empty())
             {
                 weak.resize(weak.size() - 1);
                 if (!weak.empty())
-                    BEAST_EXPECT(TIBase::getState(id) == PartiallyDeleted);
+                    EXPECT_TRUE(TIBase::getState(id) == PartiallyDeleted);
             }
-            BEAST_EXPECT(TIBase::getState(id) == Deleted);
+            EXPECT_TRUE(TIBase::getState(id) == Deleted);
         }
         {
             TIBase::ResetStatesGuard const rsg{true};
@@ -261,23 +260,23 @@ public:
             using enum TrackedState;
             auto b = makeSharedIntrusive<TIBase>();
             auto id = b->id;
-            BEAST_EXPECT(TIBase::getState(id) == Alive);
+            EXPECT_TRUE(TIBase::getState(id) == Alive);
             WeakIntrusive<TIBase> w{b};
-            BEAST_EXPECT(TIBase::getState(id) == Alive);
+            EXPECT_TRUE(TIBase::getState(id) == Alive);
             auto s = w.lock();
-            BEAST_EXPECT(s && s->useCount() == 2);
+            EXPECT_TRUE(s && s->useCount() == 2);
             b.reset();
-            BEAST_EXPECT(TIBase::getState(id) == Alive);
-            BEAST_EXPECT(s && s->useCount() == 1);
+            EXPECT_TRUE(TIBase::getState(id) == Alive);
+            EXPECT_TRUE(s && s->useCount() == 1);
             s.reset();
-            BEAST_EXPECT(TIBase::getState(id) == PartiallyDeleted);
-            BEAST_EXPECT(w.expired());
+            EXPECT_TRUE(TIBase::getState(id) == PartiallyDeleted);
+            EXPECT_TRUE(w.expired());
             s = w.lock();
             // Cannot convert a weak pointer to a strong pointer if object is
             // already partially deleted
-            BEAST_EXPECT(!s);
+            EXPECT_TRUE(!s);
             w.reset();
-            BEAST_EXPECT(TIBase::getState(id) == Deleted);
+            EXPECT_TRUE(TIBase::getState(id) == Deleted);
         }
         {
             TIBase::ResetStatesGuard const rsg{true};
@@ -285,31 +284,31 @@ public:
             using enum TrackedState;
             using swu = SharedWeakUnion<TIBase>;
             swu b = makeSharedIntrusive<TIBase>();
-            BEAST_EXPECT(b.isStrong() && b.useCount() == 1);
+            EXPECT_TRUE(b.isStrong() && b.useCount() == 1);
             auto id = b.get()->id;
-            BEAST_EXPECT(TIBase::getState(id) == Alive);
+            EXPECT_TRUE(TIBase::getState(id) == Alive);
             swu w = b;
-            BEAST_EXPECT(TIBase::getState(id) == Alive);
-            BEAST_EXPECT(w.isStrong() && b.useCount() == 2);
+            EXPECT_TRUE(TIBase::getState(id) == Alive);
+            EXPECT_TRUE(w.isStrong() && b.useCount() == 2);
             w.convertToWeak();
-            BEAST_EXPECT(w.isWeak() && b.useCount() == 1);
+            EXPECT_TRUE(w.isWeak() && b.useCount() == 1);
             swu s = w;
-            BEAST_EXPECT(s.isWeak() && b.useCount() == 1);
+            EXPECT_TRUE(s.isWeak() && b.useCount() == 1);
             s.convertToStrong();
-            BEAST_EXPECT(s.isStrong() && b.useCount() == 2);
+            EXPECT_TRUE(s.isStrong() && b.useCount() == 2);
             b.reset();
-            BEAST_EXPECT(TIBase::getState(id) == Alive);
-            BEAST_EXPECT(s.useCount() == 1);
-            BEAST_EXPECT(!w.expired());
+            EXPECT_TRUE(TIBase::getState(id) == Alive);
+            EXPECT_TRUE(s.useCount() == 1);
+            EXPECT_TRUE(!w.expired());
             s.reset();
-            BEAST_EXPECT(TIBase::getState(id) == PartiallyDeleted);
-            BEAST_EXPECT(w.expired());
+            EXPECT_TRUE(TIBase::getState(id) == PartiallyDeleted);
+            EXPECT_TRUE(w.expired());
             w.convertToStrong();
             // Cannot convert a weak pointer to a strong pointer if object is
             // already partially deleted
-            BEAST_EXPECT(w.isWeak());
+            EXPECT_TRUE(w.isWeak());
             w.reset();
-            BEAST_EXPECT(TIBase::getState(id) == Deleted);
+            EXPECT_TRUE(TIBase::getState(id) == Deleted);
         }
         {
             // Testing SharedWeakUnion assignment operator
@@ -322,54 +321,52 @@ public:
             auto id1 = strong1->id;
             auto id2 = strong2->id;
 
-            BEAST_EXPECT(id1 != id2);
+            EXPECT_TRUE(id1 != id2);
 
             SharedWeakUnion<TIBase> union1 = strong1;
             SharedWeakUnion<TIBase> union2 = strong2;
 
-            BEAST_EXPECT(union1.isStrong());
-            BEAST_EXPECT(union2.isStrong());
-            BEAST_EXPECT(union1.get() == strong1.get());
-            BEAST_EXPECT(union2.get() == strong2.get());
+            EXPECT_TRUE(union1.isStrong());
+            EXPECT_TRUE(union2.isStrong());
+            EXPECT_TRUE(union1.get() == strong1.get());
+            EXPECT_TRUE(union2.get() == strong2.get());
 
             // 1) Normal assignment: explicitly calls SharedWeakUnion assignment
             union1 = union2;
-            BEAST_EXPECT(union1.isStrong());
-            BEAST_EXPECT(union2.isStrong());
-            BEAST_EXPECT(union1.get() == union2.get());
-            BEAST_EXPECT(TIBase::getState(id1) == TrackedState::Alive);
-            BEAST_EXPECT(TIBase::getState(id2) == TrackedState::Alive);
+            EXPECT_TRUE(union1.isStrong());
+            EXPECT_TRUE(union2.isStrong());
+            EXPECT_TRUE(union1.get() == union2.get());
+            EXPECT_TRUE(TIBase::getState(id1) == TrackedState::Alive);
+            EXPECT_TRUE(TIBase::getState(id2) == TrackedState::Alive);
 
             // 2) Test self-assignment
-            BEAST_EXPECT(union1.isStrong());
-            BEAST_EXPECT(TIBase::getState(id1) == TrackedState::Alive);
+            EXPECT_TRUE(union1.isStrong());
+            EXPECT_TRUE(TIBase::getState(id1) == TrackedState::Alive);
             int const initialRefCount = strong1->useCount();
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wself-assign-overloaded"
             union1 = union1;  // Self-assignment
 #pragma clang diagnostic pop
-            BEAST_EXPECT(union1.isStrong());
-            BEAST_EXPECT(TIBase::getState(id1) == TrackedState::Alive);
-            BEAST_EXPECT(strong1->useCount() == initialRefCount);
+            EXPECT_TRUE(union1.isStrong());
+            EXPECT_TRUE(TIBase::getState(id1) == TrackedState::Alive);
+            EXPECT_TRUE(strong1->useCount() == initialRefCount);
 
             // 3) Test assignment from null union pointer
             union1 = SharedWeakUnion<TIBase>();
-            BEAST_EXPECT(union1.get() == nullptr);
+            EXPECT_TRUE(union1.get() == nullptr);
 
             // 4) Test assignment to expired union pointer
             strong2.reset();
             union2.reset();
             union1 = union2;
-            BEAST_EXPECT(union1.get() == nullptr);
-            BEAST_EXPECT(TIBase::getState(id2) == TrackedState::Deleted);
+            EXPECT_TRUE(union1.get() == nullptr);
+            EXPECT_TRUE(TIBase::getState(id2) == TrackedState::Deleted);
         }
     }
 
-    void
+    static void
     testPartialDelete()
     {
-        testcase("Partial Delete");
-
         // This test creates two threads. One with a strong pointer and one
         // with a weak pointer. The strong pointer is reset while the weak
         // pointer still holds a reference, triggering a partial delete.
@@ -395,7 +392,7 @@ public:
                 // before the destructor is called. A sleep is inserted
                 // inside the partial delete to make sure the destructor is
                 // given an opportunity to run during partial delete.
-                BEAST_EXPECT(cur == PartiallyDeleted);
+                EXPECT_TRUE(cur == PartiallyDeleted);
             }
             if (next == PartiallyDeletedStarted)
             {
@@ -408,12 +405,12 @@ public:
             }
             if (next == PartiallyDeleted)
             {
-                BEAST_EXPECT(!partialDeleteRan && !destructorRan);
+                EXPECT_TRUE(!partialDeleteRan && !destructorRan);
                 partialDeleteRan = true;
             }
             if (next == Deleted)
             {
-                BEAST_EXPECT(!destructorRan);
+                EXPECT_TRUE(!destructorRan);
                 destructorRan = true;
             }
         };
@@ -428,14 +425,12 @@ public:
         t1.join();
         t2.join();
 
-        BEAST_EXPECT(destructorRan && partialDeleteRan);
+        EXPECT_TRUE(destructorRan && partialDeleteRan);
     }
 
-    void
+    static void
     testDestructor()
     {
-        testcase("Destructor");
-
         // This test creates two threads. One with a strong pointer and one
         // with a weak pointer. The weak pointer is reset while the strong
         // pointer still holds a reference. Then the strong pointer is
@@ -457,12 +452,12 @@ public:
             using enum TrackedState;
             if (next == PartiallyDeleted)
             {
-                BEAST_EXPECT(!partialDeleteRan && !destructorRan);
+                EXPECT_TRUE(!partialDeleteRan && !destructorRan);
                 partialDeleteRan = true;
             }
             if (next == Deleted)
             {
-                BEAST_EXPECT(!destructorRan);
+                EXPECT_TRUE(!destructorRan);
                 destructorRan = true;
             }
         };
@@ -477,14 +472,12 @@ public:
         t1.join();
         t2.join();
 
-        BEAST_EXPECT(destructorRan && !partialDeleteRan);
+        EXPECT_TRUE(destructorRan && !partialDeleteRan);
     }
 
-    void
+    static void
     testMultithreadedClearMixedVariant()
     {
-        testcase("Multithreaded Clear Mixed Variant");
-
         // This test creates and destroys many strong and weak pointers in a
         // loop. There is a random mix of strong and weak pointers stored in
         // a vector (held as a variant). Both threads clear all the pointers
@@ -510,12 +503,12 @@ public:
             auto [destructorRan, partialDeleteRan] = getDestructorState();
             if (next == PartiallyDeleted)
             {
-                BEAST_EXPECT(!partialDeleteRan && !destructorRan);
+                EXPECT_TRUE(!partialDeleteRan && !destructorRan);
                 setPartialDeleteRan();
             }
             if (next == Deleted)
             {
-                BEAST_EXPECT(!destructorRan);
+                EXPECT_TRUE(!destructorRan);
                 setDestructorRan();
             }
         };
@@ -574,7 +567,7 @@ public:
 
                     rsg.emplace(false);
                     auto [destructorRan, partialDeleteRan] = getDestructorState();
-                    BEAST_EXPECT(!i || destructorRan);
+                    EXPECT_TRUE(!i || destructorRan);
                     destructionState.store(0, std::memory_order_release);
 
                     toClone.clear();
@@ -608,11 +601,9 @@ public:
         }
     }
 
-    void
+    static void
     testMultithreadedClearMixedUnion()
     {
-        testcase("Multithreaded Clear Mixed Union");
-
         // This test creates and destroys many SharedWeak pointers in a
         // loop. All the pointers start as strong and a loop randomly
         // convert them between strong and weak pointers. Both threads clear
@@ -644,12 +635,12 @@ public:
             auto [destructorRan, partialDeleteRan] = getDestructorState();
             if (next == PartiallyDeleted)
             {
-                BEAST_EXPECT(!partialDeleteRan && !destructorRan);
+                EXPECT_TRUE(!partialDeleteRan && !destructorRan);
                 setPartialDeleteRan();
             }
             if (next == Deleted)
             {
-                BEAST_EXPECT(!destructorRan);
+                EXPECT_TRUE(!destructorRan);
                 setDestructorRan();
             }
         };
@@ -701,7 +692,7 @@ public:
                     // clear the temporary variables.
                     rsg.emplace(false);
                     auto [destructorRan, partialDeleteRan] = getDestructorState();
-                    BEAST_EXPECT(!i || destructorRan);
+                    EXPECT_TRUE(!i || destructorRan);
                     destructionState.store(0, std::memory_order_release);
 
                     toClone.clear();
@@ -754,11 +745,9 @@ public:
         }
     }
 
-    void
+    static void
     testMultithreadedLockingWeak()
     {
-        testcase("Multithreaded Locking Weak");
-
         // This test creates a single shared atomic pointer that multiple thread
         // create weak pointers from. The threads then lock the weak pointers.
         // Both threads clear all the pointers and check that the invariants
@@ -785,12 +774,12 @@ public:
             auto [destructorRan, partialDeleteRan] = getDestructorState();
             if (next == PartiallyDeleted)
             {
-                BEAST_EXPECT(!partialDeleteRan && !destructorRan);
+                EXPECT_TRUE(!partialDeleteRan && !destructorRan);
                 setPartialDeleteRan();
             }
             if (next == Deleted)
             {
-                BEAST_EXPECT(!destructorRan);
+                EXPECT_TRUE(!destructorRan);
                 setDestructorRan();
             }
         };
@@ -822,7 +811,7 @@ public:
                     // clear the temporary variables.
                     rsg.emplace(false);
                     auto [destructorRan, partialDeleteRan] = getDestructorState();
-                    BEAST_EXPECT(!i || destructorRan);
+                    EXPECT_TRUE(!i || destructorRan);
                     destructionState.store(0, std::memory_order_release);
 
                     toLock.clear();
@@ -840,9 +829,9 @@ public:
                 WeakIntrusive const weak{toLock[threadId]};
                 for (int wi = 0; wi < kLOCK_WEAK_LOOP_ITERS; ++wi)
                 {
-                    BEAST_EXPECT(!weak.expired());
+                    EXPECT_TRUE(!weak.expired());
                     auto strong = weak.lock();
-                    BEAST_EXPECT(strong);
+                    EXPECT_TRUE(strong);
                 }
 
                 // ------ Sync Point ------
@@ -863,8 +852,8 @@ public:
         }
     }
 
-    void
-    run() override
+    static void
+    run()
     {
         testBasics();
         testPartialDelete();
@@ -873,7 +862,11 @@ public:
         testMultithreadedClearMixedUnion();
         testMultithreadedLockingWeak();
     }
-};  // namespace tests
+};
 
-BEAST_DEFINE_TESTSUITE(IntrusiveShared, basics, xrpl);
+TEST_F(IntrusiveSharedTest, intrusive_shared)
+{
+    run();
+}
+
 }  // namespace xrpl::tests

@@ -1,7 +1,8 @@
-#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/detail/token_errors.h>
 
 #include <boost/multiprecision/cpp_int.hpp>  // IWYU pragma: keep
+
+#include <gtest/gtest.h>
 
 #include <algorithm>
 #include <cassert>
@@ -157,13 +158,12 @@ randomBigInt(std::uint8_t minSize = 1, std::uint8_t maxSize = 5)
 }
 }  // namespace multiprecision_utils
 
-class base58_test : public beast::unit_test::Suite
+class Base58Test : public ::testing::Test
 {
-    void
+public:
+    static void
     testMultiprecision()
     {
-        testcase("b58_multiprecision");
-
         using namespace boost::multiprecision;
 
         constexpr std::size_t kITERS = 100000;
@@ -185,8 +185,8 @@ class base58_test : public beast::unit_test::Suite
             auto const mod = b58_fast::detail::inplaceBigintDivRem(
                 std::span<uint64_t>(bigInt.data(), bigInt.size()), d);
             auto const foundDiv = multiprecision_utils::toBoostMP(bigInt);
-            BEAST_EXPECT(refMod.convert_to<std::uint64_t>() == mod);
-            BEAST_EXPECT(foundDiv == refDiv);
+            EXPECT_TRUE(refMod.convert_to<std::uint64_t>() == mod);
+            EXPECT_TRUE(foundDiv == refDiv);
         }
         for (int i = 0; i < kITERS; ++i)
         {
@@ -203,9 +203,9 @@ class base58_test : public beast::unit_test::Suite
 
             auto const result = b58_fast::detail::inplaceBigintAdd(
                 std::span<uint64_t>(bigInt.data(), bigInt.size()), d);
-            BEAST_EXPECT(result == TokenCodecErrc::Success);
+            EXPECT_TRUE(result == TokenCodecErrc::Success);
             auto const foundAdd = multiprecision_utils::toBoostMP(bigInt);
-            BEAST_EXPECT(refAdd == foundAdd);
+            EXPECT_TRUE(refAdd == foundAdd);
         }
         for (int i = 0; i < kITERS; ++i)
         {
@@ -220,9 +220,9 @@ class base58_test : public beast::unit_test::Suite
 
             auto const result = b58_fast::detail::inplaceBigintAdd(
                 std::span<uint64_t>(bigInt.data(), bigInt.size()), d);
-            BEAST_EXPECT(result == TokenCodecErrc::OverflowAdd);
+            EXPECT_TRUE(result == TokenCodecErrc::OverflowAdd);
             auto const foundAdd = multiprecision_utils::toBoostMP(bigInt);
-            BEAST_EXPECT(refAdd != foundAdd);
+            EXPECT_TRUE(refAdd != foundAdd);
         }
         for (int i = 0; i < kITERS; ++i)
         {
@@ -238,9 +238,9 @@ class base58_test : public beast::unit_test::Suite
 
             auto const result = b58_fast::detail::inplaceBigintMul(
                 std::span<uint64_t>(bigInt.data(), bigInt.size()), d);
-            BEAST_EXPECT(result == TokenCodecErrc::Success);
+            EXPECT_TRUE(result == TokenCodecErrc::Success);
             auto const foundMul = multiprecision_utils::toBoostMP(bigInt);
-            BEAST_EXPECT(refMul == foundMul);
+            EXPECT_TRUE(refMul == foundMul);
         }
         for (int i = 0; i < kITERS; ++i)
         {
@@ -254,16 +254,15 @@ class base58_test : public beast::unit_test::Suite
 
             auto const result = b58_fast::detail::inplaceBigintMul(
                 std::span<uint64_t>(bigInt.data(), bigInt.size()), d);
-            BEAST_EXPECT(result == TokenCodecErrc::InputTooLarge);
+            EXPECT_TRUE(result == TokenCodecErrc::InputTooLarge);
             auto const foundMul = multiprecision_utils::toBoostMP(bigInt);
-            BEAST_EXPECT(refMul != foundMul);
+            EXPECT_TRUE(refMul != foundMul);
         }
     }
 
-    void
+    static void
     testFastMatchesRef()
     {
-        testcase("fast_matches_ref");
         auto testRawEncode = [&](std::span<std::uint8_t> const& b256Data) {
             std::array<std::uint8_t, 64> b58ResultBuf[2];
             std::array<std::span<std::uint8_t>, 2> b58Result;
@@ -276,7 +275,7 @@ class base58_test : public beast::unit_test::Suite
                 if (i == 0)
                 {
                     auto const r = xrpl::b58_fast::detail::b256ToB58Be(b256Data, outBuf);
-                    BEAST_EXPECT(r);
+                    EXPECT_TRUE(r);
                     b58Result[i] = r.value();
                 }
                 else
@@ -284,15 +283,19 @@ class base58_test : public beast::unit_test::Suite
                     std::array<std::uint8_t, 128> tmpBuf{};
                     std::string const s = xrpl::b58_ref::detail::encodeBase58(
                         b256Data.data(), b256Data.size(), tmpBuf.data(), tmpBuf.size());
-                    BEAST_EXPECT(s.size());
+                    EXPECT_TRUE(s.size());
                     b58Result[i] = outBuf.subspan(0, s.size());
                     std::ranges::copy(s, b58Result[i].begin());
                 }
             }
-            if (BEAST_EXPECT(b58Result[0].size() == b58Result[1].size()))
+            auto const rawB58SameSize = b58Result[0].size() == b58Result[1].size();
+            EXPECT_TRUE(rawB58SameSize);
+            if (rawB58SameSize)
             {
-                if (!BEAST_EXPECT(
-                        memcmp(b58Result[0].data(), b58Result[1].data(), b58Result[0].size()) == 0))
+                auto const rawB58SameData =
+                    memcmp(b58Result[0].data(), b58Result[1].data(), b58Result[0].size()) == 0;
+                EXPECT_TRUE(rawB58SameData);
+                if (!rawB58SameData)
                 {
                     printAsChar(b58Result[0], b58Result[1]);
                 }
@@ -306,24 +309,27 @@ class base58_test : public beast::unit_test::Suite
                     std::string const in(
                         b58Result[i].data(), b58Result[i].data() + b58Result[i].size());
                     auto const r = xrpl::b58_fast::detail::b58ToB256Be(in, outBuf);
-                    BEAST_EXPECT(r);
+                    EXPECT_TRUE(r);
                     b256Result[i] = r.value();
                 }
                 else
                 {
                     std::string const st(b58Result[i].begin(), b58Result[i].end());
                     std::string const s = xrpl::b58_ref::detail::decodeBase58(st);
-                    BEAST_EXPECT(s.size());
+                    EXPECT_TRUE(s.size());
                     b256Result[i] = outBuf.subspan(0, s.size());
                     std::ranges::copy(s, b256Result[i].begin());
                 }
             }
 
-            if (BEAST_EXPECT(b256Result[0].size() == b256Result[1].size()))
+            auto const rawB256SameSize = b256Result[0].size() == b256Result[1].size();
+            EXPECT_TRUE(rawB256SameSize);
+            if (rawB256SameSize)
             {
-                if (!BEAST_EXPECT(
-                        memcmp(b256Result[0].data(), b256Result[1].data(), b256Result[0].size()) ==
-                        0))
+                auto const rawB256SameData =
+                    memcmp(b256Result[0].data(), b256Result[1].data(), b256Result[0].size()) == 0;
+                EXPECT_TRUE(rawB256SameData);
+                if (!rawB256SameData)
                 {
                     printAsInt(b256Result[0], b256Result[1]);
                 }
@@ -343,22 +349,26 @@ class base58_test : public beast::unit_test::Suite
                 if (i == 0)
                 {
                     auto const r = xrpl::b58_fast::encodeBase58Token(tokType, b256Data, outBuf);
-                    BEAST_EXPECT(r);
+                    EXPECT_TRUE(r);
                     b58Result[i] = r.value();
                 }
                 else
                 {
                     std::string const s =
                         xrpl::b58_ref::encodeBase58Token(tokType, b256Data.data(), b256Data.size());
-                    BEAST_EXPECT(s.size());
+                    EXPECT_TRUE(s.size());
                     b58Result[i] = outBuf.subspan(0, s.size());
                     std::ranges::copy(s, b58Result[i].begin());
                 }
             }
-            if (BEAST_EXPECT(b58Result[0].size() == b58Result[1].size()))
+            auto const tokenB58SameSize = b58Result[0].size() == b58Result[1].size();
+            EXPECT_TRUE(tokenB58SameSize);
+            if (tokenB58SameSize)
             {
-                if (!BEAST_EXPECT(
-                        memcmp(b58Result[0].data(), b58Result[1].data(), b58Result[0].size()) == 0))
+                auto const tokenB58SameData =
+                    memcmp(b58Result[0].data(), b58Result[1].data(), b58Result[0].size()) == 0;
+                EXPECT_TRUE(tokenB58SameData);
+                if (!tokenB58SameData)
                 {
                     printAsChar(b58Result[0], b58Result[1]);
                 }
@@ -372,24 +382,27 @@ class base58_test : public beast::unit_test::Suite
                     std::string const in(
                         b58Result[i].data(), b58Result[i].data() + b58Result[i].size());
                     auto const r = xrpl::b58_fast::decodeBase58Token(tokType, in, outBuf);
-                    BEAST_EXPECT(r);
+                    EXPECT_TRUE(r);
                     b256Result[i] = r.value();
                 }
                 else
                 {
                     std::string const st(b58Result[i].begin(), b58Result[i].end());
                     std::string const s = xrpl::b58_ref::decodeBase58Token(st, tokType);
-                    BEAST_EXPECT(s.size());
+                    EXPECT_TRUE(s.size());
                     b256Result[i] = outBuf.subspan(0, s.size());
                     std::ranges::copy(s, b256Result[i].begin());
                 }
             }
 
-            if (BEAST_EXPECT(b256Result[0].size() == b256Result[1].size()))
+            auto const tokenB256SameSize = b256Result[0].size() == b256Result[1].size();
+            EXPECT_TRUE(tokenB256SameSize);
+            if (tokenB256SameSize)
             {
-                if (!BEAST_EXPECT(
-                        memcmp(b256Result[0].data(), b256Result[1].data(), b256Result[0].size()) ==
-                        0))
+                auto const tokenB256SameData =
+                    memcmp(b256Result[0].data(), b256Result[1].data(), b256Result[0].size()) == 0;
+                EXPECT_TRUE(tokenB256SameData);
+                if (!tokenB256SameData)
                 {
                     printAsInt(b256Result[0], b256Result[1]);
                 }
@@ -424,15 +437,18 @@ class base58_test : public beast::unit_test::Suite
         }
     }
 
-    void
-    run() override
+    static void
+    run()
     {
         testMultiprecision();
         testFastMatchesRef();
     }
 };
 
-BEAST_DEFINE_TESTSUITE(base58, basics, xrpl);
+TEST_F(Base58Test, base58)
+{
+    run();
+}
 
 }  // namespace xrpl::test
 

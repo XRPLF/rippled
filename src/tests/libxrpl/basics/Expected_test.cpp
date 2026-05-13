@@ -1,9 +1,10 @@
 #include <xrpl/basics/Expected.h>
-#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/TER.h>
 
 #include <boost/json/value.hpp>
 #include <boost/version.hpp>
+
+#include <gtest/gtest.h>
 
 #include <cstddef>
 #include <stdexcept>
@@ -16,19 +17,19 @@
 
 namespace xrpl::test {
 
-struct Expected_test : beast::unit_test::Suite
+struct ExpectedTest : public ::testing::Test
 {
-    void
-    run() override
+    static void
+    run()
     {
         // Test non-error const construction.
         {
             auto const expected = []() -> Expected<std::string, TER> { return "Valid value"; }();
-            BEAST_EXPECT(expected);
-            BEAST_EXPECT(expected.has_value());
-            BEAST_EXPECT(expected.value() == "Valid value");
-            BEAST_EXPECT(*expected == "Valid value");
-            BEAST_EXPECT(expected->at(0) == 'V');
+            EXPECT_TRUE(expected);
+            EXPECT_TRUE(expected.has_value());
+            EXPECT_TRUE(expected.value() == "Valid value");
+            EXPECT_TRUE(*expected == "Valid value");
+            EXPECT_TRUE(expected->at(0) == 'V');
 
             bool throwOccurred = false;
             try
@@ -38,21 +39,21 @@ struct Expected_test : beast::unit_test::Suite
             }
             catch (std::runtime_error const& e)
             {
-                BEAST_EXPECT(e.what() == std::string("bad expected access"));
+                EXPECT_TRUE(e.what() == std::string("bad expected access"));
                 throwOccurred = true;
             }
-            BEAST_EXPECT(throwOccurred);
+            EXPECT_TRUE(throwOccurred);
         }
         // Test non-error non-const construction.
         {
             auto expected = []() -> Expected<std::string, TER> { return "Valid value"; }();
-            BEAST_EXPECT(expected);
-            BEAST_EXPECT(expected.has_value());
-            BEAST_EXPECT(expected.value() == "Valid value");
-            BEAST_EXPECT(*expected == "Valid value");
-            BEAST_EXPECT(expected->at(0) == 'V');
+            EXPECT_TRUE(expected);
+            EXPECT_TRUE(expected.has_value());
+            EXPECT_TRUE(expected.value() == "Valid value");
+            EXPECT_TRUE(*expected == "Valid value");
+            EXPECT_TRUE(expected->at(0) == 'V');
             std::string const mv = std::move(*expected);
-            BEAST_EXPECT(mv == "Valid value");
+            EXPECT_TRUE(mv == "Valid value");
 
             bool throwOccurred = false;
             try
@@ -62,18 +63,18 @@ struct Expected_test : beast::unit_test::Suite
             }
             catch (std::runtime_error const& e)
             {
-                BEAST_EXPECT(e.what() == std::string("bad expected access"));
+                EXPECT_TRUE(e.what() == std::string("bad expected access"));
                 throwOccurred = true;
             }
-            BEAST_EXPECT(throwOccurred);
+            EXPECT_TRUE(throwOccurred);
         }
         // Test non-error overlapping type construction.
         {
             auto expected = []() -> Expected<std::uint32_t, std::uint16_t> { return 1; }();
-            BEAST_EXPECT(expected);
-            BEAST_EXPECT(expected.has_value());
-            BEAST_EXPECT(expected.value() == 1);
-            BEAST_EXPECT(*expected == 1);
+            EXPECT_TRUE(expected);
+            EXPECT_TRUE(expected.has_value());
+            EXPECT_TRUE(expected.value() == 1);
+            EXPECT_TRUE(*expected == 1);
 
             bool throwOccurred = false;
             try
@@ -83,19 +84,19 @@ struct Expected_test : beast::unit_test::Suite
             }
             catch (std::runtime_error const& e)
             {
-                BEAST_EXPECT(e.what() == std::string("bad expected access"));
+                EXPECT_TRUE(e.what() == std::string("bad expected access"));
                 throwOccurred = true;
             }
-            BEAST_EXPECT(throwOccurred);
+            EXPECT_TRUE(throwOccurred);
         }
         // Test error construction from rvalue.
         {
             auto const expected = []() -> Expected<std::string, TER> {
                 return Unexpected(telLOCAL_ERROR);
             }();
-            BEAST_EXPECT(!expected);
-            BEAST_EXPECT(!expected.has_value());
-            BEAST_EXPECT(expected.error() == telLOCAL_ERROR);
+            EXPECT_TRUE(!expected);
+            EXPECT_TRUE(!expected.has_value());
+            EXPECT_TRUE(expected.error() == telLOCAL_ERROR);
 
             bool throwOccurred = false;
             try
@@ -105,18 +106,18 @@ struct Expected_test : beast::unit_test::Suite
             }
             catch (std::runtime_error const& e)
             {
-                BEAST_EXPECT(e.what() == std::string("bad expected access"));
+                EXPECT_TRUE(e.what() == std::string("bad expected access"));
                 throwOccurred = true;
             }
-            BEAST_EXPECT(throwOccurred);
+            EXPECT_TRUE(throwOccurred);
         }
         // Test error construction from lvalue.
         {
             auto const err(telLOCAL_ERROR);
             auto expected = [&err]() -> Expected<std::string, TER> { return Unexpected(err); }();
-            BEAST_EXPECT(!expected);
-            BEAST_EXPECT(!expected.has_value());
-            BEAST_EXPECT(expected.error() == telLOCAL_ERROR);
+            EXPECT_TRUE(!expected);
+            EXPECT_TRUE(!expected.has_value());
+            EXPECT_TRUE(expected.error() == telLOCAL_ERROR);
 
             bool throwOccurred = false;
             try
@@ -126,35 +127,35 @@ struct Expected_test : beast::unit_test::Suite
             }
             catch (std::runtime_error const& e)
             {
-                BEAST_EXPECT(e.what() == std::string("bad expected access"));
+                EXPECT_TRUE(e.what() == std::string("bad expected access"));
                 throwOccurred = true;
             }
-            BEAST_EXPECT(throwOccurred);
+            EXPECT_TRUE(throwOccurred);
         }
         // Test error construction from const char*.
         {
             auto const expected = []() -> Expected<int, char const*> {
                 return Unexpected("Not what is expected!");
             }();
-            BEAST_EXPECT(!expected);
-            BEAST_EXPECT(!expected.has_value());
-            BEAST_EXPECT(expected.error() == std::string("Not what is expected!"));
+            EXPECT_TRUE(!expected);
+            EXPECT_TRUE(!expected.has_value());
+            EXPECT_TRUE(expected.error() == std::string("Not what is expected!"));
         }
         // Test error construction of string from const char*.
         {
             auto expected = []() -> Expected<int, std::string> {
                 return Unexpected("Not what is expected!");
             }();
-            BEAST_EXPECT(!expected);
-            BEAST_EXPECT(!expected.has_value());
-            BEAST_EXPECT(expected.error() == "Not what is expected!");
+            EXPECT_TRUE(!expected);
+            EXPECT_TRUE(!expected.has_value());
+            EXPECT_TRUE(expected.error() == "Not what is expected!");
             std::string const s(std::move(expected.error()));
-            BEAST_EXPECT(s == "Not what is expected!");
+            EXPECT_TRUE(s == "Not what is expected!");
         }
         // Test non-error const construction of Expected<void, T>.
         {
             auto const expected = []() -> Expected<void, std::string> { return {}; }();
-            BEAST_EXPECT(expected);
+            EXPECT_TRUE(expected);
             bool throwOccurred = false;
             try
             {
@@ -163,15 +164,15 @@ struct Expected_test : beast::unit_test::Suite
             }
             catch (std::runtime_error const& e)
             {
-                BEAST_EXPECT(e.what() == std::string("bad expected access"));
+                EXPECT_TRUE(e.what() == std::string("bad expected access"));
                 throwOccurred = true;
             }
-            BEAST_EXPECT(throwOccurred);
+            EXPECT_TRUE(throwOccurred);
         }
         // Test non-error non-const construction of Expected<void, T>.
         {
             auto expected = []() -> Expected<void, std::string> { return {}; }();
-            BEAST_EXPECT(expected);
+            EXPECT_TRUE(expected);
             bool throwOccurred = false;
             try
             {
@@ -180,28 +181,28 @@ struct Expected_test : beast::unit_test::Suite
             }
             catch (std::runtime_error const& e)
             {
-                BEAST_EXPECT(e.what() == std::string("bad expected access"));
+                EXPECT_TRUE(e.what() == std::string("bad expected access"));
                 throwOccurred = true;
             }
-            BEAST_EXPECT(throwOccurred);
+            EXPECT_TRUE(throwOccurred);
         }
         // Test error const construction of Expected<void, T>.
         {
             auto const expected = []() -> Expected<void, std::string> {
                 return Unexpected("Not what is expected!");
             }();
-            BEAST_EXPECT(!expected);
-            BEAST_EXPECT(expected.error() == "Not what is expected!");
+            EXPECT_TRUE(!expected);
+            EXPECT_TRUE(expected.error() == "Not what is expected!");
         }
         // Test error non-const construction of Expected<void, T>.
         {
             auto expected = []() -> Expected<void, std::string> {
                 return Unexpected("Not what is expected!");
             }();
-            BEAST_EXPECT(!expected);
-            BEAST_EXPECT(expected.error() == "Not what is expected!");
+            EXPECT_TRUE(!expected);
+            EXPECT_TRUE(expected.error() == "Not what is expected!");
             std::string const s(std::move(expected.error()));
-            BEAST_EXPECT(s == "Not what is expected!");
+            EXPECT_TRUE(s == "Not what is expected!");
         }
         // Test a case that previously unintentionally returned an array.
 #if BOOST_VERSION >= 107500
@@ -209,13 +210,16 @@ struct Expected_test : beast::unit_test::Suite
             auto expected = []() -> Expected<boost::json::value, std::string> {
                 return boost::json::object{{"oops", "me array now"}};
             }();
-            BEAST_EXPECT(expected);
-            BEAST_EXPECT(!expected.value().is_array());
+            EXPECT_TRUE(expected);
+            EXPECT_TRUE(!expected.value().is_array());
         }
 #endif  // BOOST_VERSION
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Expected, basics, xrpl);
+TEST_F(ExpectedTest, expected)
+{
+    run();
+}
 
 }  // namespace xrpl::test

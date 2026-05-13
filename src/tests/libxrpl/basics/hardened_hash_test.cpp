@@ -1,5 +1,6 @@
 #include <xrpl/basics/hardened_hash.h>
-#include <xrpl/beast/unit_test/suite.h>
+
+#include <gtest/gtest.h>
 
 #include <array>
 #include <cstddef>
@@ -152,20 +153,20 @@ static_assert(sha256_t::kBITS == 256, "sha256_t must have 256 bits");
 
 namespace xrpl {
 
-class hardened_hash_test : public beast::unit_test::Suite
+class HardenedHashTest : public ::testing::Test
 {
 public:
     template <class T>
-    void
+    static void
     check()
     {
         T t{};
         HardenedHash<>()(t);
-        pass();
+        SUCCEED();
     }
 
     template <template <class T> class U>
-    void
+    static void
     checkUserType()
     {
         check<U<bool>>();
@@ -190,48 +191,49 @@ public:
     }
 
     template <template <class T> class C>
-    void
+    static void
     checkContainer()
     {
         {
             C<detail::TestUserTypeMember<std::string>> const c;
         }
 
-        pass();
+        SUCCEED();
 
         {
             C<detail::TestUserTypeFree<std::string>> const c;
         }
 
-        pass();
+        SUCCEED();
     }
 
-    void
+    static void
     testUserTypes()
     {
-        testcase("user types");
         checkUserType<detail::TestUserTypeMember>();
         checkUserType<detail::TestUserTypeFree>();
     }
 
-    void
+    static void
     testContainers()
     {
-        testcase("containers");
         checkContainer<detail::test_hardened_unordered_set>();
         checkContainer<detail::test_hardened_unordered_map>();
         checkContainer<detail::test_hardened_unordered_multiset>();
         checkContainer<detail::test_hardened_unordered_multimap>();
     }
 
-    void
-    run() override
+    static void
+    run()
     {
         testUserTypes();
         testContainers();
     }
 };
 
-BEAST_DEFINE_TESTSUITE(hardened_hash, basics, xrpl);
+TEST_F(HardenedHashTest, hardened_hash)
+{
+    run();
+}
 
 }  // namespace xrpl

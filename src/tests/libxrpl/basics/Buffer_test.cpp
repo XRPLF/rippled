@@ -1,6 +1,7 @@
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
-#include <xrpl/beast/unit_test/suite.h>
+
+#include <gtest/gtest.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -10,7 +11,7 @@
 
 namespace xrpl::test {
 
-struct Buffer_test : beast::unit_test::Suite
+struct BufferTest : public ::testing::Test
 {
     static bool
     sane(Buffer const& b)
@@ -21,8 +22,8 @@ struct Buffer_test : beast::unit_test::Suite
         return b.data() != nullptr;
     }
 
-    void
-    run() override
+    static void
+    run()
     {
         std::uint8_t const data[] = {0xa8, 0xa1, 0x38, 0x45, 0x23, 0xec, 0xe4, 0x23,
                                      0x71, 0x6d, 0x2a, 0x18, 0xb4, 0x70, 0xcb, 0xf5,
@@ -30,69 +31,67 @@ struct Buffer_test : beast::unit_test::Suite
                                      0x15, 0xd1, 0xf9, 0x9b, 0x66, 0xd2, 0x30, 0xd3};
 
         Buffer const b0;
-        BEAST_EXPECT(sane(b0));
-        BEAST_EXPECT(b0.empty());
+        EXPECT_TRUE(sane(b0));
+        EXPECT_TRUE(b0.empty());
 
         Buffer b1{0};
-        BEAST_EXPECT(sane(b1));
-        BEAST_EXPECT(b1.empty());
+        EXPECT_TRUE(sane(b1));
+        EXPECT_TRUE(b1.empty());
         std::memcpy(b1.alloc(16), data, 16);
-        BEAST_EXPECT(sane(b1));
-        BEAST_EXPECT(!b1.empty());
-        BEAST_EXPECT(b1.size() == 16);
+        EXPECT_TRUE(sane(b1));
+        EXPECT_TRUE(!b1.empty());
+        EXPECT_TRUE(b1.size() == 16);
 
         Buffer b2{b1.size()};
-        BEAST_EXPECT(sane(b2));
-        BEAST_EXPECT(!b2.empty());
-        BEAST_EXPECT(b2.size() == b1.size());
+        EXPECT_TRUE(sane(b2));
+        EXPECT_TRUE(!b2.empty());
+        EXPECT_TRUE(b2.size() == b1.size());
         std::memcpy(b2.data(), data + 16, 16);
 
         Buffer b3{data, sizeof(data)};
-        BEAST_EXPECT(sane(b3));
-        BEAST_EXPECT(!b3.empty());
-        BEAST_EXPECT(b3.size() == sizeof(data));
-        BEAST_EXPECT(std::memcmp(b3.data(), data, b3.size()) == 0);
+        EXPECT_TRUE(sane(b3));
+        EXPECT_TRUE(!b3.empty());
+        EXPECT_TRUE(b3.size() == sizeof(data));
+        EXPECT_TRUE(std::memcmp(b3.data(), data, b3.size()) == 0);
 
         // Check equality and inequality comparisons
-        BEAST_EXPECT(b0 == b0);
-        BEAST_EXPECT(b0 != b1);
-        BEAST_EXPECT(b1 == b1);
-        BEAST_EXPECT(b1 != b2);
-        BEAST_EXPECT(b2 != b3);
+        EXPECT_TRUE(b0 == b0);
+        EXPECT_TRUE(b0 != b1);
+        EXPECT_TRUE(b1 == b1);
+        EXPECT_TRUE(b1 != b2);
+        EXPECT_TRUE(b2 != b3);
 
         // Check copy constructors and copy assignments:
         {
-            testcase("Copy Construction / Assignment");
-
             Buffer x{b0};
-            BEAST_EXPECT(x == b0);
-            BEAST_EXPECT(sane(x));
+            EXPECT_TRUE(x == b0);
+            EXPECT_TRUE(sane(x));
             Buffer y{b1};
-            BEAST_EXPECT(y == b1);
-            BEAST_EXPECT(sane(y));
+            EXPECT_TRUE(y == b1);
+            EXPECT_TRUE(sane(y));
             x = b2;
-            BEAST_EXPECT(x == b2);
-            BEAST_EXPECT(sane(x));
+            EXPECT_TRUE(x == b2);
+            EXPECT_TRUE(sane(x));
             x = y;
-            BEAST_EXPECT(x == y);
-            BEAST_EXPECT(sane(x));
+            EXPECT_TRUE(x == y);
+            EXPECT_TRUE(sane(x));
             y = b3;
-            BEAST_EXPECT(y == b3);
-            BEAST_EXPECT(sane(y));
+            EXPECT_TRUE(y == b3);
+            EXPECT_TRUE(sane(y));
             x = b0;
-            BEAST_EXPECT(x == b0);
-            BEAST_EXPECT(sane(x));
+            EXPECT_TRUE(x == b0);
+            EXPECT_TRUE(sane(x));
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wself-assign-overloaded"
 #endif
 
             x = x;
-            BEAST_EXPECT(x == b0);
-            BEAST_EXPECT(sane(x));
+            EXPECT_TRUE(x == b0);
+            EXPECT_TRUE(sane(x));
             y = y;
-            BEAST_EXPECT(y == b3);
-            BEAST_EXPECT(sane(y));
+            EXPECT_TRUE(y == b3);
+            EXPECT_TRUE(sane(y));
 
 #if defined(__clang__)
 #pragma clang diagnostic pop
@@ -101,28 +100,26 @@ struct Buffer_test : beast::unit_test::Suite
 
         // Check move constructor & move assignments:
         {
-            testcase("Move Construction / Assignment");
-
             static_assert(std::is_nothrow_move_constructible_v<Buffer>, "");
             static_assert(std::is_nothrow_move_assignable_v<Buffer>, "");
 
             {  // Move-construct from empty buf
                 Buffer x;
                 Buffer const y{std::move(x)};
-                BEAST_EXPECT(sane(x));    // NOLINT(bugprone-use-after-move)
-                BEAST_EXPECT(x.empty());  // NOLINT(bugprone-use-after-move)
-                BEAST_EXPECT(sane(y));
-                BEAST_EXPECT(y.empty());
-                BEAST_EXPECT(x == y);  // NOLINT(bugprone-use-after-move)
+                EXPECT_TRUE(sane(x));    // NOLINT(bugprone-use-after-move)
+                EXPECT_TRUE(x.empty());  // NOLINT(bugprone-use-after-move)
+                EXPECT_TRUE(sane(y));
+                EXPECT_TRUE(y.empty());
+                EXPECT_TRUE(x == y);  // NOLINT(bugprone-use-after-move)
             }
 
             {  // Move-construct from non-empty buf
                 Buffer x{b1};
                 Buffer const y{std::move(x)};
-                BEAST_EXPECT(sane(x));    // NOLINT(bugprone-use-after-move)
-                BEAST_EXPECT(x.empty());  // NOLINT(bugprone-use-after-move)
-                BEAST_EXPECT(sane(y));
-                BEAST_EXPECT(y == b1);
+                EXPECT_TRUE(sane(x));    // NOLINT(bugprone-use-after-move)
+                EXPECT_TRUE(x.empty());  // NOLINT(bugprone-use-after-move)
+                EXPECT_TRUE(sane(y));
+                EXPECT_TRUE(y == b1);
             }
 
             {  // Move assign empty buf to empty buf
@@ -130,10 +127,10 @@ struct Buffer_test : beast::unit_test::Suite
                 Buffer y;
 
                 x = std::move(y);
-                BEAST_EXPECT(sane(x));
-                BEAST_EXPECT(x.empty());
-                BEAST_EXPECT(sane(y));    // NOLINT(bugprone-use-after-move)
-                BEAST_EXPECT(y.empty());  // NOLINT(bugprone-use-after-move)
+                EXPECT_TRUE(sane(x));
+                EXPECT_TRUE(x.empty());
+                EXPECT_TRUE(sane(y));    // NOLINT(bugprone-use-after-move)
+                EXPECT_TRUE(y.empty());  // NOLINT(bugprone-use-after-move)
             }
 
             {  // Move assign non-empty buf to empty buf
@@ -141,10 +138,10 @@ struct Buffer_test : beast::unit_test::Suite
                 Buffer y{b1};
 
                 x = std::move(y);
-                BEAST_EXPECT(sane(x));
-                BEAST_EXPECT(x == b1);
-                BEAST_EXPECT(sane(y));    // NOLINT(bugprone-use-after-move)
-                BEAST_EXPECT(y.empty());  // NOLINT(bugprone-use-after-move)
+                EXPECT_TRUE(sane(x));
+                EXPECT_TRUE(x == b1);
+                EXPECT_TRUE(sane(y));    // NOLINT(bugprone-use-after-move)
+                EXPECT_TRUE(y.empty());  // NOLINT(bugprone-use-after-move)
             }
 
             {  // Move assign empty buf to non-empty buf
@@ -152,10 +149,10 @@ struct Buffer_test : beast::unit_test::Suite
                 Buffer y;
 
                 x = std::move(y);
-                BEAST_EXPECT(sane(x));
-                BEAST_EXPECT(x.empty());
-                BEAST_EXPECT(sane(y));    // NOLINT(bugprone-use-after-move)
-                BEAST_EXPECT(y.empty());  // NOLINT(bugprone-use-after-move)
+                EXPECT_TRUE(sane(x));
+                EXPECT_TRUE(x.empty());
+                EXPECT_TRUE(sane(y));    // NOLINT(bugprone-use-after-move)
+                EXPECT_TRUE(y.empty());  // NOLINT(bugprone-use-after-move)
             }
 
             {  // Move assign non-empty buf to non-empty buf
@@ -164,94 +161,90 @@ struct Buffer_test : beast::unit_test::Suite
                 Buffer z{b3};
 
                 x = std::move(y);
-                BEAST_EXPECT(sane(x));
-                BEAST_EXPECT(!x.empty());
-                BEAST_EXPECT(sane(y));    // NOLINT(bugprone-use-after-move)
-                BEAST_EXPECT(y.empty());  // NOLINT(bugprone-use-after-move)
+                EXPECT_TRUE(sane(x));
+                EXPECT_TRUE(!x.empty());
+                EXPECT_TRUE(sane(y));    // NOLINT(bugprone-use-after-move)
+                EXPECT_TRUE(y.empty());  // NOLINT(bugprone-use-after-move)
 
                 x = std::move(z);
-                BEAST_EXPECT(sane(x));
-                BEAST_EXPECT(!x.empty());
-                BEAST_EXPECT(sane(z));    // NOLINT(bugprone-use-after-move)
-                BEAST_EXPECT(z.empty());  // NOLINT(bugprone-use-after-move)
+                EXPECT_TRUE(sane(x));
+                EXPECT_TRUE(!x.empty());
+                EXPECT_TRUE(sane(z));    // NOLINT(bugprone-use-after-move)
+                EXPECT_TRUE(z.empty());  // NOLINT(bugprone-use-after-move)
             }
         }
 
         {
-            testcase("Slice Conversion / Construction / Assignment");
-
             Buffer w{static_cast<Slice>(b0)};
-            BEAST_EXPECT(sane(w));
-            BEAST_EXPECT(w == b0);
+            EXPECT_TRUE(sane(w));
+            EXPECT_TRUE(w == b0);
 
             Buffer x{static_cast<Slice>(b1)};
-            BEAST_EXPECT(sane(x));
-            BEAST_EXPECT(x == b1);
+            EXPECT_TRUE(sane(x));
+            EXPECT_TRUE(x == b1);
 
             Buffer y{static_cast<Slice>(b2)};
-            BEAST_EXPECT(sane(y));
-            BEAST_EXPECT(y == b2);
+            EXPECT_TRUE(sane(y));
+            EXPECT_TRUE(y == b2);
 
             Buffer z{static_cast<Slice>(b3)};
-            BEAST_EXPECT(sane(z));
-            BEAST_EXPECT(z == b3);
+            EXPECT_TRUE(sane(z));
+            EXPECT_TRUE(z == b3);
 
             // Assign empty slice to empty buffer
             w = static_cast<Slice>(b0);
-            BEAST_EXPECT(sane(w));
-            BEAST_EXPECT(w == b0);
+            EXPECT_TRUE(sane(w));
+            EXPECT_TRUE(w == b0);
 
             // Assign non-empty slice to empty buffer
             w = static_cast<Slice>(b1);
-            BEAST_EXPECT(sane(w));
-            BEAST_EXPECT(w == b1);
+            EXPECT_TRUE(sane(w));
+            EXPECT_TRUE(w == b1);
 
             // Assign non-empty slice to non-empty buffer
             x = static_cast<Slice>(b2);
-            BEAST_EXPECT(sane(x));
-            BEAST_EXPECT(x == b2);
+            EXPECT_TRUE(sane(x));
+            EXPECT_TRUE(x == b2);
 
             // Assign non-empty slice to non-empty buffer
             y = static_cast<Slice>(z);
-            BEAST_EXPECT(sane(y));
-            BEAST_EXPECT(y == z);
+            EXPECT_TRUE(sane(y));
+            EXPECT_TRUE(y == z);
 
             // Assign empty slice to non-empty buffer:
             z = static_cast<Slice>(b0);
-            BEAST_EXPECT(sane(z));
-            BEAST_EXPECT(z == b0);
+            EXPECT_TRUE(sane(z));
+            EXPECT_TRUE(z == b0);
         }
 
         {
-            testcase("Allocation, Deallocation and Clearing");
-
-            auto test = [this](Buffer const& b, std::size_t i) {
+            auto test = [](Buffer const& b, std::size_t i) {
                 Buffer x{b};
 
                 // Try to allocate some number of bytes, possibly
                 // zero (which means clear) and sanity check
                 x(i);
-                BEAST_EXPECT(sane(x));
-                BEAST_EXPECT(x.size() == i);
-                BEAST_EXPECT((x.data() == nullptr) == (i == 0));
+                EXPECT_TRUE(sane(x));
+                EXPECT_TRUE(x.size() == i);
+                EXPECT_TRUE((x.data() == nullptr) == (i == 0));
 
                 // Try to allocate some more data (always non-zero)
                 x(i + 1);
-                BEAST_EXPECT(sane(x));
-                BEAST_EXPECT(x.size() == i + 1);
-                BEAST_EXPECT(x.data() != nullptr);
+                EXPECT_TRUE(sane(x));
+                EXPECT_TRUE(x.size() == i + 1);
+                EXPECT_TRUE(x.data() != nullptr);
 
                 // Try to clear:
                 x.clear();
-                BEAST_EXPECT(sane(x));
-                BEAST_EXPECT(x.empty());
-                BEAST_EXPECT(x.data() == nullptr);
+                EXPECT_TRUE(sane(x));
+                EXPECT_TRUE(x.empty());
+                EXPECT_TRUE(x.data() == nullptr);
 
                 // Try to clear again:
                 x.clear();
-                BEAST_EXPECT(sane(x));
-                BEAST_EXPECT(x.empty());
-                BEAST_EXPECT(x.data() == nullptr);
+                EXPECT_TRUE(sane(x));
+                EXPECT_TRUE(x.empty());
+                EXPECT_TRUE(x.data() == nullptr);
             };
 
             for (std::size_t i = 0; i < 16; ++i)
@@ -263,6 +256,9 @@ struct Buffer_test : beast::unit_test::Suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Buffer, basics, xrpl);
+TEST_F(BufferTest, buffer)
+{
+    run();
+}
 
 }  // namespace xrpl::test

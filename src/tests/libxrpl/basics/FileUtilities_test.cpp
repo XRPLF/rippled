@@ -1,63 +1,109 @@
-#include <test/unit_test/FileDirGuard.h>
-
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/FileUtilities.h>
-#include <xrpl/beast/unit_test/suite.h>
 
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
 #include <boost/system/detail/errc.hpp>
 #include <boost/system/detail/error_code.hpp>
 
+#include <gtest/gtest.h>
+
+#include <fstream>
+#include <stdexcept>
+#include <string>
+
 namespace xrpl {
 
-class FileUtilities_test : public beast::unit_test::Suite
+namespace {
+
+class TempFile
 {
 public:
-    void
+    explicit TempFile(boost::filesystem::path file, std::string const& contents)
+        : dir_(
+              boost::filesystem::temp_directory_path() /
+              boost::filesystem::unique_path("xrpl-file-utilities-%%%%-%%%%-%%%%"))
+        , file_(dir_ / file)
+    {
+        boost::filesystem::create_directory(dir_);
+
+        std::ofstream output(file_.string());
+        if (!output)
+            throw std::runtime_error("Unable to create temporary test file");
+
+        output << contents;
+    }
+
+    ~TempFile()
+    {
+        boost::system::error_code ec;
+        boost::filesystem::remove(file_, ec);
+        boost::filesystem::remove(dir_, ec);
+    }
+
+    [[nodiscard]] boost::filesystem::path const&
+    file() const
+    {
+        return file_;
+    }
+
+private:
+    boost::filesystem::path dir_;
+    boost::filesystem::path file_;
+};
+
+}  // namespace
+
+class FileUtilitiesTest : public ::testing::Test
+{
+public:
+    static void
     testGetFileContents()
     {
-        using namespace xrpl::detail;
         using namespace boost::system;
 
         constexpr char const* kEXPECTED_CONTENTS = "This file is very short. That's all we need.";
 
-        FileDirGuard const file(
-            *this, "test_file", "test.txt", "This is temporary text that should get overwritten");
+        TempFile const file("test_file", "This is temporary text that should get overwritten");
 
         error_code ec;
         auto const path = file.file();
 
         writeFileContents(ec, path, kEXPECTED_CONTENTS);
-        BEAST_EXPECT(!ec);
+        EXPECT_TRUE(!ec);
 
         {
             // Test with no max
             auto const good = getFileContents(ec, path);
-            BEAST_EXPECT(!ec);
-            BEAST_EXPECT(good == kEXPECTED_CONTENTS);
+            EXPECT_TRUE(!ec);
+            EXPECT_TRUE(good == kEXPECTED_CONTENTS);
         }
 
         {
             // Test with large max
             auto const good = getFileContents(ec, path, kilobytes(1));
-            BEAST_EXPECT(!ec);
-            BEAST_EXPECT(good == kEXPECTED_CONTENTS);
+            EXPECT_TRUE(!ec);
+            EXPECT_TRUE(good == kEXPECTED_CONTENTS);
         }
 
         {
             // Test with small max
             auto const bad = getFileContents(ec, path, 16);
-            BEAST_EXPECT(ec && ec.value() == boost::system::errc::file_too_large);
-            BEAST_EXPECT(bad.empty());
+            EXPECT_TRUE(ec && ec.value() == boost::system::errc::file_too_large);
+            EXPECT_TRUE(bad.empty());
         }
     }
 
-    void
-    run() override
+    static void
+    run()
     {
         testGetFileContents();
     }
 };
 
-BEAST_DEFINE_TESTSUITE(FileUtilities, basics, xrpl);
+TEST_F(FileUtilitiesTest, get_file_contents)
+{
+    testGetFileContents();
+}
 
 }  // namespace xrpl

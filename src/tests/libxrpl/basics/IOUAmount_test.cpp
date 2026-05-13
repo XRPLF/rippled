@@ -1,159 +1,151 @@
 #include <xrpl/basics/Number.h>
-#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/IOUAmount.h>
+
+#include <gtest/gtest.h>
 
 #include <cstdint>
 #include <limits>
 #include <sstream>
+#include <string>
 
 namespace xrpl {
 
-class IOUAmount_test : public beast::unit_test::Suite
+class IOUAmountTest : public ::testing::Test
 {
 public:
-    void
+    static void
     testZero()
     {
-        testcase("zero");
-
         IOUAmount const z(0, 0);
 
-        BEAST_EXPECT(z.mantissa() == 0);
-        BEAST_EXPECT(z.exponent() == -100);
-        BEAST_EXPECT(!z);
-        BEAST_EXPECT(z.signum() == 0);
-        BEAST_EXPECT(z == beast::kZERO);
+        EXPECT_TRUE(z.mantissa() == 0);
+        EXPECT_TRUE(z.exponent() == -100);
+        EXPECT_TRUE(!z);
+        EXPECT_TRUE(z.signum() == 0);
+        EXPECT_TRUE(z == beast::kZERO);
 
-        BEAST_EXPECT((z + z) == z);
-        BEAST_EXPECT((z - z) == z);
-        BEAST_EXPECT(z == -z);
+        EXPECT_TRUE((z + z) == z);
+        EXPECT_TRUE((z - z) == z);
+        EXPECT_TRUE(z == -z);
 
         IOUAmount const zz(beast::kZERO);
-        BEAST_EXPECT(z == zz);
+        EXPECT_TRUE(z == zz);
 
         // https://github.com/XRPLF/rippled/issues/5170
         IOUAmount const zzz{};
-        BEAST_EXPECT(zzz == beast::kZERO);
-        // BEAST_EXPECT(zzz == zz);
+        EXPECT_TRUE(zzz == beast::kZERO);
+        // EXPECT_TRUE(zzz == zz);
     }
 
-    void
+    static void
     testSigNum()
     {
-        testcase("signum");
-
         IOUAmount const neg(-1, 0);
-        BEAST_EXPECT(neg.signum() < 0);
+        EXPECT_TRUE(neg.signum() < 0);
 
         IOUAmount const zer(0, 0);
-        BEAST_EXPECT(zer.signum() == 0);
+        EXPECT_TRUE(zer.signum() == 0);
 
         IOUAmount const pos(1, 0);
-        BEAST_EXPECT(pos.signum() > 0);
+        EXPECT_TRUE(pos.signum() > 0);
     }
 
-    void
+    static void
     testBeastZero()
     {
-        testcase("beast::Zero Comparisons");
-
         using beast::kZERO;
 
         {
             IOUAmount const z(kZERO);
-            BEAST_EXPECT(z == kZERO);
-            BEAST_EXPECT(z >= kZERO);
-            BEAST_EXPECT(z <= kZERO);
-            unexpected(z != kZERO);
-            unexpected(z > kZERO);
-            unexpected(z < kZERO);
+            EXPECT_TRUE(z == kZERO);
+            EXPECT_TRUE(z >= kZERO);
+            EXPECT_TRUE(z <= kZERO);
+            EXPECT_FALSE(z != kZERO);
+            EXPECT_FALSE(z > kZERO);
+            EXPECT_FALSE(z < kZERO);
         }
 
         {
             IOUAmount const neg(-2, 0);
-            BEAST_EXPECT(neg < kZERO);
-            BEAST_EXPECT(neg <= kZERO);
-            BEAST_EXPECT(neg != kZERO);
-            unexpected(neg == kZERO);
+            EXPECT_TRUE(neg < kZERO);
+            EXPECT_TRUE(neg <= kZERO);
+            EXPECT_TRUE(neg != kZERO);
+            EXPECT_FALSE(neg == kZERO);
         }
 
         {
             IOUAmount const pos(2, 0);
-            BEAST_EXPECT(pos > kZERO);
-            BEAST_EXPECT(pos >= kZERO);
-            BEAST_EXPECT(pos != kZERO);
-            unexpected(pos == kZERO);
+            EXPECT_TRUE(pos > kZERO);
+            EXPECT_TRUE(pos >= kZERO);
+            EXPECT_TRUE(pos != kZERO);
+            EXPECT_FALSE(pos == kZERO);
         }
     }
 
-    void
+    static void
     testComparisons()
     {
-        testcase("IOU Comparisons");
-
         IOUAmount const n(-2, 0);
         IOUAmount const z(0, 0);
         IOUAmount const p(2, 0);
 
-        BEAST_EXPECT(z == z);
-        BEAST_EXPECT(z >= z);
-        BEAST_EXPECT(z <= z);
-        BEAST_EXPECT(z == -z);
+        EXPECT_TRUE(z == z);
+        EXPECT_TRUE(z >= z);
+        EXPECT_TRUE(z <= z);
+        EXPECT_TRUE(z == -z);
         // NOLINTBEGIN(misc-redundant-expression)
-        unexpected(z > z);
-        unexpected(z < z);
-        unexpected(z != z);
+        EXPECT_FALSE(z > z);
+        EXPECT_FALSE(z < z);
+        EXPECT_FALSE(z != z);
         // NOLINTEND(misc-redundant-expression)
-        unexpected(z != -z);
+        EXPECT_FALSE(z != -z);
 
-        BEAST_EXPECT(n < z);
-        BEAST_EXPECT(n <= z);
-        BEAST_EXPECT(n != z);
-        unexpected(n > z);
-        unexpected(n >= z);
-        unexpected(n == z);
+        EXPECT_TRUE(n < z);
+        EXPECT_TRUE(n <= z);
+        EXPECT_TRUE(n != z);
+        EXPECT_FALSE(n > z);
+        EXPECT_FALSE(n >= z);
+        EXPECT_FALSE(n == z);
 
-        BEAST_EXPECT(p > z);
-        BEAST_EXPECT(p >= z);
-        BEAST_EXPECT(p != z);
-        unexpected(p < z);
-        unexpected(p <= z);
-        unexpected(p == z);
+        EXPECT_TRUE(p > z);
+        EXPECT_TRUE(p >= z);
+        EXPECT_TRUE(p != z);
+        EXPECT_FALSE(p < z);
+        EXPECT_FALSE(p <= z);
+        EXPECT_FALSE(p == z);
 
-        BEAST_EXPECT(n < p);
-        BEAST_EXPECT(n <= p);
-        BEAST_EXPECT(n != p);
-        unexpected(n > p);
-        unexpected(n >= p);
-        unexpected(n == p);
+        EXPECT_TRUE(n < p);
+        EXPECT_TRUE(n <= p);
+        EXPECT_TRUE(n != p);
+        EXPECT_FALSE(n > p);
+        EXPECT_FALSE(n >= p);
+        EXPECT_FALSE(n == p);
 
-        BEAST_EXPECT(p > n);
-        BEAST_EXPECT(p >= n);
-        BEAST_EXPECT(p != n);
-        unexpected(p < n);
-        unexpected(p <= n);
-        unexpected(p == n);
+        EXPECT_TRUE(p > n);
+        EXPECT_TRUE(p >= n);
+        EXPECT_TRUE(p != n);
+        EXPECT_FALSE(p < n);
+        EXPECT_FALSE(p <= n);
+        EXPECT_FALSE(p == n);
 
-        BEAST_EXPECT(p > -p);
-        BEAST_EXPECT(p >= -p);
-        BEAST_EXPECT(p != -p);
+        EXPECT_TRUE(p > -p);
+        EXPECT_TRUE(p >= -p);
+        EXPECT_TRUE(p != -p);
 
-        BEAST_EXPECT(n < -n);
-        BEAST_EXPECT(n <= -n);
-        BEAST_EXPECT(n != -n);
+        EXPECT_TRUE(n < -n);
+        EXPECT_TRUE(n <= -n);
+        EXPECT_TRUE(n != -n);
     }
 
-    void
+    static void
     testToString()
     {
-        testcase("IOU strings");
-
-        auto test = [this](IOUAmount const& n, std::string const& expected) {
+        auto test = [](IOUAmount const& n, std::string const& expected) {
             auto const result = to_string(n);
             std::stringstream ss;
             ss << "to_string(" << result << "). Expected: " << expected;
-            BEAST_EXPECTS(result == expected, ss.str());
+            EXPECT_TRUE(result == expected) << ss.str();
         };
 
         for (auto const mantissaSize :
@@ -173,11 +165,9 @@ public:
         }
     }
 
-    void
+    static void
     testMulRatio()
     {
-        testcase("mulRatio");
-
         /* The range for the mantissa when normalized */
         constexpr std::int64_t kMIN_MANTISSA = 1000000000000000ull;
         constexpr std::int64_t kMAX_MANTISSA = 9999999999999999ull;
@@ -191,36 +181,36 @@ public:
             // multiply by a number that would overflow the mantissa, then
             // divide by the same number, and check we didn't lose any value
             IOUAmount const bigMan(kMAX_MANTISSA, 0);
-            BEAST_EXPECT(bigMan == mulRatio(bigMan, kMAX_UINT, kMAX_UINT, true));
+            EXPECT_TRUE(bigMan == mulRatio(bigMan, kMAX_UINT, kMAX_UINT, true));
             // rounding mode shouldn't matter as the result is exact
-            BEAST_EXPECT(bigMan == mulRatio(bigMan, kMAX_UINT, kMAX_UINT, false));
+            EXPECT_TRUE(bigMan == mulRatio(bigMan, kMAX_UINT, kMAX_UINT, false));
         }
         {
             // Similar test as above, but for negative values
             IOUAmount const bigMan(-kMAX_MANTISSA, 0);
-            BEAST_EXPECT(bigMan == mulRatio(bigMan, kMAX_UINT, kMAX_UINT, true));
+            EXPECT_TRUE(bigMan == mulRatio(bigMan, kMAX_UINT, kMAX_UINT, true));
             // rounding mode shouldn't matter as the result is exact
-            BEAST_EXPECT(bigMan == mulRatio(bigMan, kMAX_UINT, kMAX_UINT, false));
+            EXPECT_TRUE(bigMan == mulRatio(bigMan, kMAX_UINT, kMAX_UINT, false));
         }
 
         {
             // small amounts
             IOUAmount const tiny(kMIN_MANTISSA, kMIN_EXPONENT);
             // Round up should give the smallest allowable number
-            BEAST_EXPECT(tiny == mulRatio(tiny, 1, kMAX_UINT, true));
-            BEAST_EXPECT(tiny == mulRatio(tiny, kMAX_UINT - 1, kMAX_UINT, true));
+            EXPECT_TRUE(tiny == mulRatio(tiny, 1, kMAX_UINT, true));
+            EXPECT_TRUE(tiny == mulRatio(tiny, kMAX_UINT - 1, kMAX_UINT, true));
             // rounding down should be zero
-            BEAST_EXPECT(beast::kZERO == mulRatio(tiny, 1, kMAX_UINT, false));
-            BEAST_EXPECT(beast::kZERO == mulRatio(tiny, kMAX_UINT - 1, kMAX_UINT, false));
+            EXPECT_TRUE(beast::kZERO == mulRatio(tiny, 1, kMAX_UINT, false));
+            EXPECT_TRUE(beast::kZERO == mulRatio(tiny, kMAX_UINT - 1, kMAX_UINT, false));
 
             // tiny negative numbers
             IOUAmount const tinyNeg(-kMIN_MANTISSA, kMIN_EXPONENT);
             // Round up should give zero
-            BEAST_EXPECT(beast::kZERO == mulRatio(tinyNeg, 1, kMAX_UINT, true));
-            BEAST_EXPECT(beast::kZERO == mulRatio(tinyNeg, kMAX_UINT - 1, kMAX_UINT, true));
+            EXPECT_TRUE(beast::kZERO == mulRatio(tinyNeg, 1, kMAX_UINT, true));
+            EXPECT_TRUE(beast::kZERO == mulRatio(tinyNeg, kMAX_UINT - 1, kMAX_UINT, true));
             // rounding down should be tiny
-            BEAST_EXPECT(tinyNeg == mulRatio(tinyNeg, 1, kMAX_UINT, false));
-            BEAST_EXPECT(tinyNeg == mulRatio(tinyNeg, kMAX_UINT - 1, kMAX_UINT, false));
+            EXPECT_TRUE(tinyNeg == mulRatio(tinyNeg, 1, kMAX_UINT, false));
+            EXPECT_TRUE(tinyNeg == mulRatio(tinyNeg, kMAX_UINT - 1, kMAX_UINT, false));
         }
 
         {  // rounding
@@ -228,40 +218,40 @@ public:
                 IOUAmount const one(1, 0);
                 auto const rup = mulRatio(one, kMAX_UINT - 1, kMAX_UINT, true);
                 auto const rdown = mulRatio(one, kMAX_UINT - 1, kMAX_UINT, false);
-                BEAST_EXPECT(rup.mantissa() - rdown.mantissa() == 1);
+                EXPECT_TRUE(rup.mantissa() - rdown.mantissa() == 1);
             }
             {
                 IOUAmount const big(kMAX_MANTISSA, kMAX_EXPONENT);
                 auto const rup = mulRatio(big, kMAX_UINT - 1, kMAX_UINT, true);
                 auto const rdown = mulRatio(big, kMAX_UINT - 1, kMAX_UINT, false);
-                BEAST_EXPECT(rup.mantissa() - rdown.mantissa() == 1);
+                EXPECT_TRUE(rup.mantissa() - rdown.mantissa() == 1);
             }
 
             {
                 IOUAmount const negOne(-1, 0);
                 auto const rup = mulRatio(negOne, kMAX_UINT - 1, kMAX_UINT, true);
                 auto const rdown = mulRatio(negOne, kMAX_UINT - 1, kMAX_UINT, false);
-                BEAST_EXPECT(rup.mantissa() - rdown.mantissa() == 1);
+                EXPECT_TRUE(rup.mantissa() - rdown.mantissa() == 1);
             }
         }
 
         {
             // division by zero
-            IOUAmount one(1, 0);
-            except([&] { mulRatio(one, 1, 0, true); });
+            IOUAmount const one(1, 0);
+            EXPECT_ANY_THROW({ mulRatio(one, 1, 0, true); });
         }
 
         {
             // overflow
-            IOUAmount big(kMAX_MANTISSA, kMAX_EXPONENT);
-            except([&] { mulRatio(big, 2, 0, true); });
+            IOUAmount const big(kMAX_MANTISSA, kMAX_EXPONENT);
+            EXPECT_ANY_THROW({ mulRatio(big, 2, 0, true); });
         }
     }  // namespace xrpl
 
     //--------------------------------------------------------------------------
 
-    void
-    run() override
+    static void
+    run()
     {
         testZero();
         testSigNum();
@@ -272,6 +262,9 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(IOUAmount, basics, xrpl);
+TEST_F(IOUAmountTest, iou_amount)
+{
+    run();
+}
 
 }  // namespace xrpl
