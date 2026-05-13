@@ -71,30 +71,28 @@ inline constexpr auto cleanup = makeStr("cleanup");
 // ===== Attribute keys ======================================================
 
 namespace attr {
-inline constexpr auto xrplTxq = join(seg::xrpl, makeStr("txq"));
+/// Canonical shared constants (defined in SpanNames.h).
+using ::xrpl::telemetry::attr::ledgerSeq;
+using ::xrpl::telemetry::attr::txHash;
 
-/// "xrpl.txq.tx_hash"
-inline constexpr auto txHash = join(xrplTxq, makeStr("tx_hash"));
-/// "xrpl.txq.status"
-inline constexpr auto status = join(xrplTxq, makeStr("status"));
-/// "xrpl.txq.fee_level_paid"
-inline constexpr auto feeLevelPaid = join(xrplTxq, makeStr("fee_level_paid"));
-/// "xrpl.txq.required_fee_level"
-inline constexpr auto requiredFeeLevel = join(xrplTxq, makeStr("required_fee_level"));
-/// "xrpl.txq.queue_size"
-inline constexpr auto queueSize = join(xrplTxq, makeStr("queue_size"));
-/// "xrpl.txq.ledger_changed"
-inline constexpr auto ledgerChanged = join(xrplTxq, makeStr("ledger_changed"));
-/// "xrpl.txq.ledger_seq"
-inline constexpr auto ledgerSeq = join(xrplTxq, makeStr("ledger_seq"));
-/// "xrpl.txq.expired_count"
-inline constexpr auto expiredCount = join(xrplTxq, makeStr("expired_count"));
-/// "xrpl.txq.ter_code"
-inline constexpr auto terCode = join(xrplTxq, makeStr("ter_code"));
-/// "xrpl.txq.retries_remaining"
-inline constexpr auto retriesRemaining = join(xrplTxq, makeStr("retries_remaining"));
-/// "xrpl.txq.num_cleared"
-inline constexpr auto numCleared = join(xrplTxq, makeStr("num_cleared"));
+/// "txq_status" — domain-qualified (collides with tx_status, rpc_status).
+inline constexpr auto txqStatus = makeStr("txq_status");
+/// "fee_level_paid" — fee level paid by queued tx.
+inline constexpr auto feeLevelPaid = makeStr("fee_level_paid");
+/// "required_fee_level" — minimum fee level for inclusion.
+inline constexpr auto requiredFeeLevel = makeStr("required_fee_level");
+/// "queue_size" — current TxQ depth.
+inline constexpr auto queueSize = makeStr("queue_size");
+/// "ledger_changed" — whether ledger changed since last attempt.
+inline constexpr auto ledgerChanged = makeStr("ledger_changed");
+/// "expired_count" — number of expired entries cleared.
+inline constexpr auto expiredCount = makeStr("expired_count");
+/// "ter_code" — transaction engine result code.
+inline constexpr auto terCode = makeStr("ter_code");
+/// "retries_remaining" — retries left before discard.
+inline constexpr auto retriesRemaining = makeStr("retries_remaining");
+/// "num_cleared" — entries cleared in batch.
+inline constexpr auto numCleared = makeStr("num_cleared");
 }  // namespace attr
 
 // ===== Attribute values ====================================================
