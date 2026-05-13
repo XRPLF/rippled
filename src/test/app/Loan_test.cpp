@@ -7246,12 +7246,17 @@ protected:
     // transactions and verifies the loan completes (paymentRemaining=0)
     // with totals matching the loan's economics (1 principal + 2 interest).
     void
-    testIntegerScalePrincipalSticks()
+    testIntegerScalePrincipalSticks(FeatureBitset features)
     {
+        // Without fixCleanup3_2_0, this behavior will abort the server, so
+        // don't run without it.
+        if (!features[fixCleanup3_2_0])
+            return;
+
         testcase("edge: integer MPT principal stuck mid-loan completes via final");
 
         using namespace jtx;
-        Env env(*this, all_);
+        Env env(*this, features);
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -7331,14 +7336,6 @@ protected:
         BEAST_EXPECT(borrowerStart - borrowerEnd == asset(3).value());
     }
 
-    // Reproduces a bug fixed by fixCleanup3_2_0; aborts the server on the
-    // pre-amendment rounding path, so it must run only with the amendment on.
-    void
-    runAmendmentRequired()
-    {
-        testIntegerScalePrincipalSticks();
-    }
-
     // Tests that don't depend on lending amendments. Run once.
     void
     runAmendmentIndependent()
@@ -7396,6 +7393,7 @@ protected:
         testRoundingAllowsUndercoverage(features);
         testOverpaymentManagementFee(features);
         testIssuerIsBorrower(features);
+        testIntegerScalePrincipalSticks(features);
 
         // RIPD regressions
         testRIPD3831(features);
@@ -7413,7 +7411,6 @@ public:
     void
     run() override
     {
-        runAmendmentRequired();
         runAmendmentIndependent();
         for (auto const& features : amendmentCombinations())
             runAmendmentSensitive(features);
