@@ -1,0 +1,29 @@
+{
+  "global_minimum": 0,
+  "ratchet_mode": "no_decrease",
+  "new_file_minimum": 80,
+  "module_thresholds": {
+    "include/xrpl/basics/": 0,
+    "include/xrpl/crypto/": 0,
+    "include/xrpl/protocol/": 0,
+    "include/xrpl/ledger/": 0,
+    "include/xrpl/tx/": 0,
+    "include/xrpl/server/": 0,
+    "include/xrpl/nodestore/": 0,
+    "include/xrpl/shamap/": 0,
+    "include/xrpl/resource/": 0,
+    "src/xrpld/rpc/": 0,
+    "src/xrpld/overlay/": 0,
+    "src/xrpld/peerfinder/": 0,
+    "src/xrpld/consensus/": 0,
+    "src/xrpld/app/": 0,
+    "src/libxrpl/": 0
+  },
+  "schedule": {
+    "2026-Q3": { "global_minimum": 30 },
+    "2026-Q4": { "global_minimum": 40 },
+    "2027-Q1": { "global_minimum": 50 },
+    "2027-Q2": { "global_minimum": 60 },
+    "2027-Q3": { "global_minimum": 70 }
+  }
+}
