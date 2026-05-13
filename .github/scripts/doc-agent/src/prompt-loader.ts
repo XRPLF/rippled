@@ -24,7 +24,7 @@ export async function loadSystemPrompt(promptName: string, sourcePath: string): 
     return basePrompt;
   }
 
-  const skillPath = resolve(SKILLS_DIR, 'soul', skillFile);
+  const skillPath = resolve(SKILLS_DIR, skillFile);
   if (!existsSync(skillPath)) {
     return basePrompt;
   }

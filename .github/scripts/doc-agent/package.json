@@ -9,10 +9,11 @@
   },
   "scripts": {
     "build": "tsc",
-    "start": "node dist/index.js",
-    "dev": "tsx src/index.ts",
-    "document": "tsx src/index.ts document",
-    "review": "tsx src/index.ts review",
+    "start": "node --env-file-if-exists=.env dist/index.js",
+    "dev": "tsx --env-file-if-exists=.env src/index.ts",
+    "document": "tsx --env-file-if-exists=.env src/index.ts document",
+    "review": "tsx --env-file-if-exists=.env src/index.ts review",
+    "regen-skills": "tsx --env-file-if-exists=.env src/index.ts regen-skills",
     "typecheck": "tsc --noEmit",
     "lint": "biome lint src",
     "format": "biome format --write src",
@@ -29,6 +30,6 @@
     "typescript": "^5.7.0"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=20.12"
   }
 }

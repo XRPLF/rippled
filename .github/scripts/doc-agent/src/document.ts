@@ -3,6 +3,7 @@
  */
 
 import { existsSync, readdirSync, statSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { join, relative, resolve } from 'node:path';
 import { query } from '@anthropic-ai/claude-agent-sdk';
 import { MODEL, XRPLD_ROOT } from './config.js';
@@ -48,6 +49,21 @@ function findCppFiles(target: string): string[] {
 }
 
 /**
+ * Read the sibling .ai.md file for a source file, if one exists.
+ *
+ * The athenah-ai pipeline produces a `<file>.ai.md` companion for every
+ * documented source file (e.g., `Slice.h` -> `Slice.h.ai.md`). When present,
+ * it is high-signal prose describing the file's purpose, design, and
+ * non-obvious behavior — the agent should use it as the authoritative
+ * source of intent.
+ */
+async function readAiContext(absPath: string): Promise<string | null> {
+  const aiPath = `${absPath}.ai.md`;
+  if (!existsSync(aiPath)) return null;
+  return await readFile(aiPath, 'utf8');
+}
+
+/**
  * Document a single file by running the documentation agent against it.
  */
 async function documentFile(absPath: string): Promise<void> {
@@ -55,13 +71,19 @@ async function documentFile(absPath: string): Promise<void> {
   console.log(`\n=== Documenting: ${relPath} ===`);
 
   const systemPrompt = await loadSystemPrompt('document-file', relPath);
+  const aiContext = await readAiContext(absPath);
+  const aiContextBlock =
+    aiContext === null
+      ? ''
+      : `\n\n## Authoritative AI Context (${relPath}.ai.md)\n\nThe following is high-signal prose describing this file's purpose, design,\nand non-obvious behavior. Treat it as the source of truth for intent and\nbehavior. Your job is to translate this into structured Doxygen \`/** */\`\ncomments on the actual declarations.\n\n---\n\n${aiContext}\n---`;
+
   const userPrompt = `Add Doxygen documentation to: ${relPath}
 
 The file is rooted at ${XRPLD_ROOT}. Use the Read tool to read it, the Edit
 tool to add documentation, and Glob/Grep to find related tests or callers
 when needed.
 
-Do not modify any code logic — only add documentation comments.`;
+Do not modify any code logic — only add documentation comments.${aiContextBlock}`;
 
   const result = query({
     prompt: userPrompt,
