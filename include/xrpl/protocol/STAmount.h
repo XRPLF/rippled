@@ -266,7 +266,7 @@ public:
     [[nodiscard]] std::string
     getText() const override;
 
-    [[nodiscard]] json::Value getJson(JsonOptions = JsonOptions::KNone) const override;
+    [[nodiscard]] json::Value getJson(JsonOptions = JsonOptions::Values::None) const override;
 
     void
     add(Serializer& s) const override;

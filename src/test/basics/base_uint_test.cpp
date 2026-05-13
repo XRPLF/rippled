@@ -49,7 +49,7 @@ struct Nonhash
 
 struct base_uint_test : beast::unit_test::Suite
 {
-    using test96 = BaseUint<96>;
+    using test96 = BaseUInt<96>;
     static_assert(std::is_copy_constructible_v<test96>);
     static_assert(std::is_copy_assignable_v<test96>);
 
@@ -68,7 +68,7 @@ struct base_uint_test : beast::unit_test::Suite
 
             for (auto const& arg : kTEST_ARGS)
             {
-                xrpl::BaseUint<64> const u{arg.first}, v{arg.second};
+                xrpl::BaseUInt<64> const u{arg.first}, v{arg.second};
                 BEAST_EXPECT(u < v);
                 BEAST_EXPECT(u <= v);
                 BEAST_EXPECT(u != v);
@@ -99,7 +99,7 @@ struct base_uint_test : beast::unit_test::Suite
 
             for (auto const& arg : kTEST_ARGS)
             {
-                xrpl::BaseUint<96> const u{arg.first}, v{arg.second};
+                xrpl::BaseUInt<96> const u{arg.first}, v{arg.second};
                 BEAST_EXPECT(u < v);
                 BEAST_EXPECT(u <= v);
                 BEAST_EXPECT(u != v);
@@ -134,7 +134,7 @@ struct base_uint_test : beast::unit_test::Suite
         Blob const raw{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
         BEAST_EXPECT(test96::kBYTES == raw.size());
 
-        test96 u{raw};
+        test96 u = test96::fromRaw(raw);
         uset.insert(u);
         BEAST_EXPECT(raw.size() == u.size());
         BEAST_EXPECT(to_string(u) == "0102030405060708090A0B0C");
@@ -155,7 +155,7 @@ struct base_uint_test : beast::unit_test::Suite
         // back into another base_uint (w) for comparison with the original
         Nonhash<96> h{};
         hash_append(h, u);
-        test96 const w{std::vector<std::uint8_t>(h.data.begin(), h.data.end())};
+        test96 const w = test96::fromRaw(std::vector<std::uint8_t>(h.data.begin(), h.data.end()));
         BEAST_EXPECT(w == u);
 
         test96 v{~u};
@@ -327,16 +327,16 @@ struct base_uint_test : beast::unit_test::Suite
 
             // Verify that constexpr base_uints interpret a string the same
             // way parseHex() does.
-            struct StrBaseUint
+            struct StrBaseUInt
             {
                 char const* const str;
                 test96 tst;
 
-                constexpr StrBaseUint(char const* s) : str(s), tst(s)
+                constexpr StrBaseUInt(char const* s) : str(s), tst(s)
                 {
                 }
             };
-            constexpr StrBaseUint kTEST_CASES[] = {
+            constexpr StrBaseUInt kTEST_CASES[] = {
                 "000000000000000000000000",
                 "000000000000000000000001",
                 "fedcba9876543210ABCDEF91",
@@ -344,7 +344,7 @@ struct base_uint_test : beast::unit_test::Suite
                 "800000000000000000000000",
                 "fFfFfFfFfFfFfFfFfFfFfFfF"};
 
-            for (StrBaseUint const& t : kTEST_CASES)
+            for (StrBaseUInt const& t : kTEST_CASES)
             {
                 test96 t96;
                 BEAST_EXPECT(t96.parseHex(t.str));

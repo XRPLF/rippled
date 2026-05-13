@@ -196,7 +196,7 @@ SHAMap::gmnProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
             // we already know this child node is missing
             fullBelow = false;
         }
-        else if (!backed_ || !f_.getFullBelowCache()->touchIfExists(childHash.asUint256()))
+        else if (!backed_ || !f_.getFullBelowCache()->touchIfExists(childHash.asUInt256()))
         {
             bool pending = false;
             auto d = descendAsync(
@@ -223,7 +223,7 @@ SHAMap::gmnProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
 
                 fullBelow = false;  // for now, not known full below
                 mn.missingHashes.insert(childHash);
-                mn.missingNodes.emplace_back(nodeID.getChildNodeID(branch), childHash.asUint256());
+                mn.missingNodes.emplace_back(nodeID.getChildNodeID(branch), childHash.asUInt256());
 
                 if (--mn.max <= 0)
                     return;
@@ -250,7 +250,7 @@ SHAMap::gmnProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
         node->setFullBelowGen(mn.generation);
         if (backed_)
         {
-            f_.getFullBelowCache()->insert(node->getHash().asUint256());
+            f_.getFullBelowCache()->insert(node->getHash().asUInt256());
         }
     }
 
@@ -292,7 +292,7 @@ SHAMap::gmnProcessDeferredReads(MissingNodes& mn)
         }
         else if ((mn.max > 0) && (mn.missingHashes.insert(nodeHash).second))
         {
-            mn.missingNodes.emplace_back(parentID.getChildNodeID(branch), nodeHash.asUint256());
+            mn.missingNodes.emplace_back(parentID.getChildNodeID(branch), nodeHash.asUInt256());
             --mn.max;
         }
     }
@@ -572,7 +572,7 @@ SHAMap::addKnownNode(SHAMapNodeID const& node, Slice const& rawNode, SHAMapSyncF
         }
 
         auto childHash = inner->getChildHash(branch);
-        if (f_.getFullBelowCache()->touchIfExists(childHash.asUint256()))
+        if (f_.getFullBelowCache()->touchIfExists(childHash.asUInt256()))
         {
             return SHAMapAddNode::duplicate();
         }

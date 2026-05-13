@@ -46,9 +46,6 @@ XRPL_FEATURE(Credentials,                Supported::Yes, VoteBehavior::DefaultNo
 XRPL_FEATURE(AMMClawback,                Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (AMMv1_2,                    Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(MPTokensV1,                 Supported::Yes, VoteBehavior::DefaultNo)
-// InvariantsV1_1 will be changes to Supported::yes when all the
-// invariants expected to be included under it are complete.
-XRPL_FEATURE(InvariantsV1_1,             Supported::No,  VoteBehavior::DefaultNo)
 XRPL_FIX    (NFTokenPageLinks,           Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (InnerObjTemplate2,          Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (EnforceNFTokenTrustline,    Supported::Yes, VoteBehavior::DefaultNo)
