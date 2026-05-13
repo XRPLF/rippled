@@ -50,7 +50,7 @@
         if (telemetry.isEnabled() && telemetry.shouldTraceRpc())
         {
             SpanGuard guard(telemetry.startSpan("rpc.command.submit"));
-            guard.setAttribute("xrpl.rpc.command", "submit");
+            guard.setAttribute("command", "submit");
             // ... guard ends span automatically on scope exit
         }
     @endcode

@@ -490,11 +490,11 @@ void ServerHandler::onRequest(...) {
 // After (only ~4 lines added)
 void ServerHandler::onRequest(...) {
     auto span = telemetry::SpanGuard::rpcSpan("rpc.request");   // +1 line
-    span.setAttribute("xrpl.rpc.command", command);              // +1 line
+    span.setAttribute("command", command);                        // +1 line
 
     auto result = processRequest(req);
 
-    span.setAttribute("xrpl.rpc.status", status);                // +1 line
+    span.setAttribute("rpc_status", status);                      // +1 line
     send(result);
 }
 ```
