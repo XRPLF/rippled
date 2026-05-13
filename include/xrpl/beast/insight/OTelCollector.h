@@ -40,8 +40,7 @@
 #include <memory>
 #include <string>
 
-namespace beast {
-namespace insight {
+namespace beast::insight {
 
 /**
  * @brief A Collector that exports metrics via OpenTelemetry OTLP/HTTP.
@@ -88,5 +87,4 @@ public:
         Journal journal);
 };
 
-}  // namespace insight
-}  // namespace beast
+}  // namespace beast::insight
