@@ -17,7 +17,7 @@ class AccountInfoHandler
 public:
     explicit AccountInfoHandler(JsonContext&);
 
-    Status
+    static Status
     check();
 
     void
@@ -35,9 +35,18 @@ public:
     static constexpr Condition condition = Condition::NoCondition;
 
     static constexpr std::array requestFields = {
-        FieldSpec{jss::account, FieldRequirement::Optional, json::ValueType::String},
-        FieldSpec{jss::ident, FieldRequirement::Optional, json::ValueType::String},
-        FieldSpec{jss::queue, FieldRequirement::Optional, json::ValueType::Boolean},
+        FieldSpec{
+            .name = jss::account,
+            .requirement = FieldRequirement::Optional,
+            .type = json::ValueType::String},
+        FieldSpec{
+            .name = jss::ident,
+            .requirement = FieldRequirement::Optional,
+            .type = json::ValueType::String},
+        FieldSpec{
+            .name = jss::queue,
+            .requirement = FieldRequirement::Optional,
+            .type = json::ValueType::Boolean},
     };
     // NOLINTEND(readability-identifier-naming)
 

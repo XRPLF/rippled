@@ -3,6 +3,7 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
 #include <xrpl/basics/Blob.h>
