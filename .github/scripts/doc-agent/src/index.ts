@@ -7,9 +7,11 @@
  *   doc-agent document include/xrpl/basics/
  *   doc-agent review develop..HEAD
  *   doc-agent review --pr 1234
+ *   doc-agent regen-skills protocol
  */
 
 import { documentTarget } from './document.js';
+import { regenSkills } from './regen-skills.js';
 import { reviewDiff } from './review.js';
 
 const USAGE = `
@@ -19,6 +21,8 @@ Usage:
   doc-agent document <file-or-directory>   Add Doxygen documentation
   doc-agent review <base>..<head>          Detect doc drift in range
   doc-agent review --pr <number>           Detect doc drift for a PR
+  doc-agent regen-skills <module>          Regenerate docs/skills/soul/<module>.md
+                                           from sibling .ai.md files
 
 Environment:
   ANTHROPIC_API_KEY  (required)  Anthropic API key
@@ -55,6 +59,13 @@ async function main(): Promise<void> {
   if (mode === 'review') {
     if (args.length === 0) printUsageAndExit(1);
     await reviewDiff(args);
+    return;
+  }
+
+  if (mode === 'regen-skills') {
+    const moduleName = args[0];
+    if (moduleName === undefined) printUsageAndExit(1);
+    await regenSkills(moduleName);
     return;
   }
 

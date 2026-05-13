@@ -34,7 +34,7 @@ Read `docs/DOCUMENTATION_STANDARDS.md` for the full specification. Key rules:
 
 ## Module Context
 
-Before you start, read the relevant skill file in `docs/skills/soul/` for
+Before you start, read the relevant skill file in `docs/skills/` for
 the module you're working on. These capture per-module conventions, key
 classes, and gotchas:
 
@@ -42,20 +42,26 @@ classes, and gotchas:
 - `protocol` — STObject, SField, Serializer, TER codes, Features, Keylets
 - `ledger` — ReadView/ApplyView, state tables, payment sandbox
 - `tx` / `transactors` — transaction pipeline
-- `consensus`, `peering`, `nodestore`, `shamap`, `rpc` — see `docs/skills/soul/`
+- `consensus`, `peering`, `nodestore`, `shamap`, `rpc` — see `docs/skills/`
 
 ## Process
 
-1. Read the target file completely
-2. Read the corresponding skill file in `docs/skills/soul/` if one applies
-3. Identify entities that need documentation (public classes, structs,
+1. If "Authoritative AI Context" is provided in the user prompt, treat it as
+   the source of truth for the file's intent and behavior. Your task is to
+   translate that prose into structured Doxygen comments on the declarations.
+2. Read the target file completely
+3. Read the corresponding skill file in `docs/skills/` if one applies
+4. Identify entities that need documentation (public classes, structs,
    public methods, free functions in headers, enums)
-4. For each entity: read the implementation (and tests if helpful), then
-   write a Doxygen comment that captures behavior and intent
-5. Use the Edit tool to add the comments to the file
-6. Do NOT modify code logic — only add documentation
-7. Do NOT add documentation to entities that don't need it (private members
+5. For each entity: cross-reference the ai.md context, read the implementation
+   (and tests if helpful), then write a Doxygen comment that captures behavior
+   and intent
+6. Use the Edit tool to add the comments to the file
+7. Do NOT modify code logic — only add documentation
+8. Do NOT add documentation to entities that don't need it (private members
    with obvious purpose, simple getters where the name is self-explanatory)
+9. Do NOT read the `.ai.md` file yourself — it is already injected into your
+   prompt when one exists for the target file
 
 When you finish, summarize:
 - How many entities you documented
