@@ -59,7 +59,7 @@ PathRequest::PathRequest(
     , owner_(owner)
     , wpSubscriber_(subscriber)
     , consumer_(subscriber->getConsumer())
-    , jvStatus_(json::ObjectValue)
+    , jvStatus_(json::ValueType::Object)
     , lastIndex_(0)
     , inProgress_(false)
     , iLevel_(0)
@@ -82,7 +82,7 @@ PathRequest::PathRequest(
     , owner_(owner)
     , fCompletion_(completion)
     , consumer_(consumer)
-    , jvStatus_(json::ObjectValue)
+    , jvStatus_(json::ValueType::Object)
     , lastIndex_(0)
     , inProgress_(false)
     , iLevel_(0)
@@ -198,7 +198,7 @@ PathRequest::isValid(std::shared_ptr<AssetCache> const& crCache)
 
     auto const sleDest = lrLedger->read(keylet::account(*raDstAccount_));
 
-    json::Value& jvDestCur = (jvStatus_[jss::destination_currencies] = json::ArrayValue);
+    json::Value& jvDestCur = (jvStatus_[jss::destination_currencies] = json::ValueType::Array);
 
     if (!sleDest)
     {
@@ -673,19 +673,22 @@ PathRequest::findPaths(
 
         if (rc.result() == tesSUCCESS)
         {
-            json::Value jvEntry(json::ObjectValue);
+            json::Value jvEntry(json::ValueType::Object);
             if (rc.actualAmountIn.holds<Issue>())
                 rc.actualAmountIn.get<Issue>().account = sourceAccount;
-            jvEntry[jss::source_amount] = rc.actualAmountIn.getJson(JsonOptions::KNone);
-            jvEntry[jss::paths_computed] = ps.getJson(JsonOptions::KNone);
+            jvEntry[jss::source_amount] = rc.actualAmountIn.getJson(JsonOptions::Values::None);
+            jvEntry[jss::paths_computed] = ps.getJson(JsonOptions::Values::None);
 
             if (convert_all_)
-                jvEntry[jss::destination_amount] = rc.actualAmountOut.getJson(JsonOptions::KNone);
+            {
+                jvEntry[jss::destination_amount] =
+                    rc.actualAmountOut.getJson(JsonOptions::Values::None);
+            }
 
             if (hasCompletion())
             {
                 // Old ripple_path_find API requires this
-                jvEntry[jss::paths_canonical] = json::ArrayValue;
+                jvEntry[jss::paths_canonical] = json::ValueType::Array;
             }
 
             jvArray.append(jvEntry);
@@ -722,12 +725,12 @@ PathRequest::doUpdate(
             return jvStatus_;
     }
 
-    json::Value newStatus = json::ObjectValue;
+    json::Value newStatus = json::ValueType::Object;
 
     if (hasCompletion())
     {
         // Old ripple_path_find API gives destination_currencies
-        auto& destAssets = (newStatus[jss::destination_currencies] = json::ArrayValue);
+        auto& destAssets = (newStatus[jss::destination_currencies] = json::ValueType::Array);
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access) isValid() ensures both are set
         auto const assets = accountDestAssets(*raDstAccount_, cache, true);
         for (auto const& asset : assets)
@@ -738,7 +741,7 @@ PathRequest::doUpdate(
     newStatus[jss::source_account] = toBase58(*raSrcAccount_);
     newStatus[jss::destination_account] = toBase58(*raDstAccount_);
     // NOLINTEND(bugprone-unchecked-optional-access)
-    newStatus[jss::destination_amount] = saDstAmount_.getJson(JsonOptions::KNone);
+    newStatus[jss::destination_amount] = saDstAmount_.getJson(JsonOptions::Values::None);
     newStatus[jss::full_reply] = !fast;
 
     if (jvId_)
@@ -783,7 +786,7 @@ PathRequest::doUpdate(
 
     JLOG(journal_.debug()) << iIdentifier_ << " processing at level " << iLevel_;
 
-    json::Value jvArray = json::ArrayValue;
+    json::Value jvArray = json::ValueType::Array;
     if (findPaths(cache, iLevel_, jvArray, continueCallback))
     {
         bLastSuccess_ = jvArray.size() != 0;

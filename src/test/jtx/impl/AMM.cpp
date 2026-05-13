@@ -141,8 +141,8 @@ AMM::createJv(
 {
     json::Value jv;
     jv[jss::Account] = to_string(account);
-    jv[jss::Amount] = asset1.getJson(JsonOptions::KNone);
-    jv[jss::Amount2] = asset2.getJson(JsonOptions::KNone);
+    jv[jss::Amount] = asset1.getJson(JsonOptions::Values::None);
+    jv[jss::Amount2] = asset2.getJson(JsonOptions::Values::None);
     jv[jss::TradingFee] = tfee;
     jv[jss::TransactionType] = jss::AMMCreate;
 
@@ -199,14 +199,14 @@ AMM::ammRpcInfo(
         if (asset1 || asset2)
         {
             if (asset1)
-                jv[jss::asset] = STIssue(sfAsset, *asset1).getJson(JsonOptions::KNone);
+                jv[jss::asset] = STIssue(sfAsset, *asset1).getJson(JsonOptions::Values::None);
             if (asset2)
-                jv[jss::asset2] = STIssue(sfAsset2, *asset2).getJson(JsonOptions::KNone);
+                jv[jss::asset2] = STIssue(sfAsset2, *asset2).getJson(JsonOptions::Values::None);
         }
         else if (!ammAccount)
         {
-            jv[jss::asset] = STIssue(sfAsset, asset1_.asset()).getJson(JsonOptions::KNone);
-            jv[jss::asset2] = STIssue(sfAsset2, asset2_.asset()).getJson(JsonOptions::KNone);
+            jv[jss::asset] = STIssue(sfAsset, asset1_.asset()).getJson(JsonOptions::Values::None);
+            jv[jss::asset2] = STIssue(sfAsset2, asset2_.asset()).getJson(JsonOptions::Values::None);
         }
         if (ammAccount)
             jv[jss::amm_account] = to_string(*ammAccount);
@@ -217,7 +217,7 @@ AMM::ammRpcInfo(
              : env_.rpc(apiVersion, "json", "amm_info", to_string(jv)));
     if (jr.isObject() && jr.isMember(jss::result) && jr[jss::result].isMember(jss::status))
         return jr[jss::result];
-    return json::NullValue;
+    return json::ValueType::Null;
 }
 
 std::tuple<STAmount, STAmount, STAmount>
@@ -374,13 +374,13 @@ AMM::setTokens(json::Value& jv, std::optional<std::pair<Asset, Asset>> const& as
 {
     if (assets)
     {
-        jv[jss::Asset] = STIssue(sfAsset, assets->first).getJson(JsonOptions::KNone);
-        jv[jss::Asset2] = STIssue(sfAsset, assets->second).getJson(JsonOptions::KNone);
+        jv[jss::Asset] = STIssue(sfAsset, assets->first).getJson(JsonOptions::Values::None);
+        jv[jss::Asset2] = STIssue(sfAsset, assets->second).getJson(JsonOptions::Values::None);
     }
     else
     {
-        jv[jss::Asset] = STIssue(sfAsset, asset1_.asset()).getJson(JsonOptions::KNone);
-        jv[jss::Asset2] = STIssue(sfAsset, asset2_.asset()).getJson(JsonOptions::KNone);
+        jv[jss::Asset] = STIssue(sfAsset, asset1_.asset()).getJson(JsonOptions::Values::None);
+        jv[jss::Asset2] = STIssue(sfAsset, asset2_.asset()).getJson(JsonOptions::Values::None);
     }
 }
 
@@ -392,8 +392,8 @@ AMM::depositJv(DepositArg const& arg)
         Throw<std::runtime_error>("AMM::depositJv: account or assets not set");
 
     jv[jss::Account] = arg.account->human();
-    jv[jss::Asset] = STIssue(sfAsset, arg.assets->first).getJson(JsonOptions::KNone);
-    jv[jss::Asset2] = STIssue(sfAsset, arg.assets->second).getJson(JsonOptions::KNone);
+    jv[jss::Asset] = STIssue(sfAsset, arg.assets->first).getJson(JsonOptions::Values::None);
+    jv[jss::Asset2] = STIssue(sfAsset, arg.assets->second).getJson(JsonOptions::Values::None);
     if (arg.tokens)
         arg.tokens->tokens().setJson(jv[jss::LPTokenOut]);
     if (arg.asset1In)
@@ -538,8 +538,8 @@ AMM::withdrawJv(WithdrawArg const& arg)
     if (!arg.account || !arg.assets)
         Throw<std::runtime_error>("AMM::withdrawJv: account or assets not set");
     jv[jss::Account] = arg.account->human();
-    jv[jss::Asset] = STIssue(sfAsset, arg.assets->first).getJson(JsonOptions::KNone);
-    jv[jss::Asset2] = STIssue(sfAsset, arg.assets->second).getJson(JsonOptions::KNone);
+    jv[jss::Asset] = STIssue(sfAsset, arg.assets->first).getJson(JsonOptions::Values::None);
+    jv[jss::Asset2] = STIssue(sfAsset, arg.assets->second).getJson(JsonOptions::Values::None);
     if (arg.tokens)
         arg.tokens->tokens().setJson(jv[jss::LPTokenIn]);
     if (arg.asset1Out)
@@ -674,8 +674,8 @@ AMM::voteJv(VoteArg const& arg)
     if (!arg.account || !arg.assets)
         Throw<std::runtime_error>("AMM::withdrawJv: account or assets not set");
     jv[jss::Account] = arg.account->human();
-    jv[jss::Asset] = STIssue(sfAsset, arg.assets->first).getJson(JsonOptions::KNone);
-    jv[jss::Asset2] = STIssue(sfAsset, arg.assets->second).getJson(JsonOptions::KNone);
+    jv[jss::Asset] = STIssue(sfAsset, arg.assets->first).getJson(JsonOptions::Values::None);
+    jv[jss::Asset2] = STIssue(sfAsset, arg.assets->second).getJson(JsonOptions::Values::None);
     jv[jss::TradingFee] = arg.tfee;
     if (arg.flags)
         jv[jss::Flags] = *arg.flags;
@@ -758,7 +758,7 @@ AMM::bid(BidArg const& arg)
     }
     if (!arg.authAccounts.empty())
     {
-        json::Value accounts(json::ArrayValue);
+        json::Value accounts(json::ValueType::Array);
         for (auto const& account : arg.authAccounts)
         {
             json::Value acct;
@@ -875,8 +875,8 @@ AMM::deleteJv(AccountID const& account, Asset const& asset1, Asset const& asset2
 {
     json::Value jv;
     jv[jss::Account] = to_string(account);
-    jv[jss::Asset] = STIssue(sfAsset, asset1).getJson(JsonOptions::KNone);
-    jv[jss::Asset2] = STIssue(sfAsset, asset2).getJson(JsonOptions::KNone);
+    jv[jss::Asset] = STIssue(sfAsset, asset1).getJson(JsonOptions::Values::None);
+    jv[jss::Asset2] = STIssue(sfAsset, asset2).getJson(JsonOptions::Values::None);
 
     jv[jss::TransactionType] = jss::AMMDelete;
 
@@ -909,7 +909,7 @@ ammClawback(
     jv[jss::Asset] = toJson(asset);
     jv[jss::Asset2] = toJson(asset2);
     if (amount)
-        jv[jss::Amount] = amount->getJson(JsonOptions::KNone);
+        jv[jss::Amount] = amount->getJson(JsonOptions::Values::None);
 
     return jv;
 }

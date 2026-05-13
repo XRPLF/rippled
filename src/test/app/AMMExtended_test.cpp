@@ -506,7 +506,7 @@ private:
         env(offer(dan, XRP(500), euR1(50)));
         env.close();
 
-        json::Value jtp{json::ArrayValue};
+        json::Value jtp{json::ValueType::Array};
         jtp[0u][0u][jss::currency] = "XRP";
         env(pay(alice_, bob_, euR1(30)), Json(jss::Paths, jtp), Sendmax(usD1(333)));
         env.close();
@@ -681,7 +681,8 @@ private:
         payment[jss::tx_json][jss::Sequence] =
             env.current()->read(keylet::account(bob_.id()))->getFieldU32(sfSequence);
         payment[jss::tx_json][jss::Fee] = to_string(env.current()->fees().base);
-        payment[jss::tx_json][jss::SendMax] = bob_["XTS"](1.5).value().getJson(JsonOptions::KNone);
+        payment[jss::tx_json][jss::SendMax] =
+            bob_["XTS"](1.5).value().getJson(JsonOptions::Values::None);
         payment[jss::tx_json][jss::Flags] = tfPartialPayment;
         auto const jrr = env.rpc("json", "submit", to_string(payment));
         BEAST_EXPECT(jrr[jss::result][jss::status] == "success");
@@ -3084,12 +3085,14 @@ private:
             // Is cleared via a TrustSet with ClearFreeze flag
             //    test: sets LowFreeze | HighFreeze flags
             env(trust(g1, bob["USD"](0), tfClearFreeze));
-            auto affected = env.meta()->getJson(JsonOptions::KNone)[sfAffectedNodes.fieldName];
+            auto affected =
+                env.meta()->getJson(JsonOptions::Values::None)[sfAffectedNodes.fieldName];
             if (!BEAST_EXPECT(checkArraySize(affected, 2u)))
                 return;
             auto ff = affected[1u][sfModifiedNode.fieldName][sfFinalFields.fieldName];
             BEAST_EXPECT(
-                ff[sfLowLimit.fieldName] == g1["USD"](0).value().getJson(JsonOptions::KNone));
+                ff[sfLowLimit.fieldName] ==
+                g1["USD"](0).value().getJson(JsonOptions::Values::None));
             BEAST_EXPECT(!(ff[jss::Flags].asUInt() & lsfLowFreeze));
             BEAST_EXPECT(!(ff[jss::Flags].asUInt() & lsfHighFreeze));
             env.close();
