@@ -122,22 +122,30 @@ When you have written the file, respond with a brief one-line confirmation.`;
       model: MODEL,
       systemPrompt,
       cwd: XRPLD_ROOT,
-      allowedTools: ['Write', 'Read', 'Glob', 'Grep'],
+      allowedTools: ['Write', 'Edit', 'Read', 'Glob', 'Grep'],
       permissionMode: 'acceptEdits',
     },
   });
 
-  let wroteFile = false;
+  let writeCount = 0;
+  let editCount = 0;
   for await (const message of result) {
     if (message.type === 'assistant') {
       const content = message.message?.content;
       if (Array.isArray(content)) {
         for (const block of content) {
           if (block.type === 'tool_use' && block.name === 'Write') {
+            writeCount++;
             const input = block.input as { file_path?: string } | undefined;
             if (input?.file_path !== undefined) {
-              wroteFile = true;
-              console.log(`  Agent wrote: ${input.file_path}`);
+              console.log(`    Write: ${input.file_path}`);
+            }
+          }
+          if (block.type === 'tool_use' && block.name === 'Edit') {
+            editCount++;
+            const input = block.input as { file_path?: string } | undefined;
+            if (input?.file_path !== undefined) {
+              console.log(`    Edit: ${input.file_path}`);
             }
           }
         }
@@ -145,14 +153,14 @@ When you have written the file, respond with a brief one-line confirmation.`;
     }
     if (message.type === 'result') {
       const cost = message.total_cost_usd?.toFixed(4) ?? '?';
-      console.log(`  [Cost: $${cost}]`);
+      console.log(`    [Cost: $${cost}]`);
     }
   }
 
-  if (!wroteFile) {
+  if (writeCount === 0) {
     console.error('  Agent did not call Write — skill file not updated.');
     return;
   }
 
-  console.log(`  Wrote: ${skillRelPath}`);
+  console.log(`  Wrote: ${skillRelPath} (${writeCount} Write + ${editCount} Edit calls)`);
 }

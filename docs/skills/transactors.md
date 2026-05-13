@@ -1,39 +1,57 @@
 # Transactors
 
-Transaction processing pipeline: preflight (static validation) -> preclaim (ledger state checks) -> doApply (state mutation). Base class `Transactor` in `src/libxrpl/tx/`.
+Transaction processing pipeline: preflight (static validation) → preclaim (ledger state checks) → doApply (state mutation). Base class `Transactor` in `src/libxrpl/tx/`. Every transaction type inherits from it; only `doApply()` is virtual — all other dispatch is compile-time.
 
 ## Pipeline Architecture
 
 ### Three Phases
 
-1. **`preflight`** — stateless, no ledger access. Validates fields, flags, signatures (cached via HashRouter). Cheap, parallelizable. Returns `NotTEC`. Caller-cacheable.
-2. **`preclaim`** — read-only `ReadView` access. Checks account exists, fee sufficient, sequence valid. Returns `TER`. Sets `likelyToClaimFee` for relay decisions.
-3. **`doApply`** — mutable `ApplyView` access. Only runs if `preclaim` returned `tesSUCCESS` and `likelyToClaimFee` is true.
+1. **`preflight`** — stateless, no ledger access. Validates fields, flags, signatures (cached via HashRouter). Cheap, parallelizable. Returns `NotTEC`. Results carry a `TxConsequences` summary used by the transaction queue.
+2. **`preclaim`** — read-only `ReadView` access. Checks account exists, fee sufficient, sequence valid, signature valid. Returns `TER`. Sets `likelyToClaimFee` for relay decisions.
+3. **`doApply`** — mutable `ApplyView` access. Only runs if preclaim returned `tesSUCCESS` and `likelyToClaimFee` is true.
 
-`apply()` in `apply.cpp` composes all three; templated on a preflight callable so the same `preclaim`+`doApply` machinery serves normal and batch-inner transactions. `applyTransaction()` adds `tapRETRY` semantics and dispatches to `applyBatchTransactions()` after a successful `ttBATCH`.
+`apply()` in `apply.cpp` composes all three. It accepts a preflight callable so the same `preclaim`+`doApply` machinery serves normal and batch-inner transactions. `applyTransaction()` adds `tapRETRY` semantics and dispatches to `applyBatchTransactions()` after a successful `ttBATCH`.
+
+**Important preclaim security invariant** (documented in `applySteps.cpp`): every check through and including `checkSign` must return `NotTEC` (not a `tec` code). A `tec` before signature verification would charge a fee without authentication — a critical security property.
+
+### Layered Preflight: `preflight0` → `preflight1` → `T::preflight` → `preflight2` → `T::preflightSigValidated`
+
+`Transactor::invokePreflight<T>` calls (in order): `T::checkExtraFeatures`, `preflight1(ctx, T::getFlagsMask(ctx))`, `T::preflight`, `preflight2`, `T::preflightSigValidated`. Each is a static method; derived classes participate via name hiding — never virtual.
+
+- **`preflight0`** (called from `preflight1`): gates on `sfNetworkID` presence/absence, zero-hash tx ID, valid flag bits, and pseudo-tx/batch-inner exclusivity.
+- **`preflight1`**: account is non-zero, `sfFee` is non-negative native XRP, signing key format valid, tickets and `sfAccountTxnID` are mutually exclusive.
+- **`preflight2`**: simulation mode (`tapDRY_RUN`), cryptographic signature check via hash router. Skipped entirely for `tfInnerBatchTxn` (outer batch authorizes).
+
+**Rule**: derived `preflight` runs *between* `preflight1` and `preflight2`. Never call `preflight1`/`preflight2` directly.
 
 ### Compile-time Polymorphism (Name Hiding, Not Virtual)
 
-`Transactor::invokePreflight<T>` calls `T::checkExtraFeatures`, `preflight1`, `T::getFlagsMask`, `T::preflight`, `preflight2`, `T::preflightSigValidated` by name. The static methods on derived classes participate via name hiding — derived classes MUST NOT define `invokePreflight` themselves, nor call `preflight1`/`preflight2` directly. Only `doApply()` is virtual.
-
-`with_txn_type()` in `applySteps.cpp` uses an X-macro over `transactions.macro` to convert runtime `TxType` to a compile-time template parameter via a switch dispatch — no virtual dispatch, no included transactor headers (forbidden in `applySteps.cpp`).
+`with_txn_type()` in `applySteps.cpp` uses an X-macro over `transactions.macro` to convert runtime `TxType` to a compile-time template parameter via a switch dispatch — no virtual dispatch, no transactor headers included in `applySteps.cpp` (explicitly forbidden).
 
 ### `ConsequencesFactoryType`
 
 Each transactor declares `static constexpr ConsequencesFactoryType ConsequencesFactory{...}`:
 - **`Normal`** — standard fee/sequence consequences. Most transactors.
-- **`Blocker`** — queues block later transactions from same account. Examples: `SetRegularKey`, `AccountDelete`, `SignerListSet`, `XChainAddClaimAttestation`, `XChainClaim` (any attestation may trigger immediate fund movement).
-- **`Custom`** — derived class implements `makeTxConsequences(PreflightContext const&)`. Examples: `Payment` (XRP spend), `OfferCreate` (XRP TakerGets), `XChainCommit`, `TicketCreate` (multi-sequence), `AccountSet` (conditional blocker on auth/master flags), `LoanSet` (counterparty signers).
+- **`Blocker`** — queues block later transactions from same account. Examples: `SetRegularKey`, `AccountDelete`, `SignerListSet`, `XChainAddClaimAttestation`.
+- **`Custom`** — derived class implements `makeTxConsequences(PreflightContext const&)`. Examples: `Payment` (XRP spend via `sfSendMax`), `OfferCreate` (XRP TakerGets), `TicketCreate` (multi-sequence), `AccountSet` (conditional blocker on auth/master flags), `LoanSet` (counterparty signers).
 
-The `consequences_helper` dispatch in `applySteps.cpp` uses C++20 `requires` clauses to pick the right factory at compile time.
+C++20 `requires` clauses in `applySteps.cpp` pick the factory at compile time.
+
+### Numeric Precision Guards
+
+`with_txn_type()` installs RAII guards before dispatch:
+- When `featureSingleAssetVault` or `featureLendingProtocol` is active: `CurrentTransactionRulesGuard` (thread-local rules access) + `NumberSO` (floating-point-style number arithmetic per `fixUniversalNumber`).
+- Otherwise: `NumberMantissaScaleGuard` (legacy small-mantissa mode).
+
+Ideally these would apply everywhere from the start; they were retrofitted into `with_txn_type` for `preflight`/`preclaim` when vault/lending features needed correct numeric rules in read-only phases.
 
 ## Key Invariants
 
-- Pipeline is strict: preflight runs WITHOUT ledger state, preclaim runs WITH read-only view, doApply runs with mutable view
-- `preflight` validates all fields exist and are well-formed; this is the ONLY place to reject malformed transactions cheaply
-- Fee is always deducted on `tecCLAIM`; `payFee` runs before `doApply`
-- Sequence/ticket consumption happens in `consumeSeqProxy`; must succeed before any state changes
-- Invariant checkers run after `doApply`; they can veto the transaction post-execution
+- Pipeline is strict: preflight runs WITHOUT ledger state, preclaim WITH read-only view, doApply with mutable view.
+- `preflight` validates all fields exist and are well-formed; this is the ONLY place to reject malformed transactions cheaply.
+- Fee is always deducted on `tecCLAIM`; `payFee` runs before `doApply`.
+- Sequence/ticket consumption happens in `consumeSeqProxy`; must succeed before any state changes.
+- Invariant checkers run after `doApply`; they can veto the transaction post-execution.
 - Amendment gating belongs in `checkExtraFeatures`, NOT in `preflight`. The framework guards on the central permission registry first.
 - `tem*`/`tef*`/`tel*` results: fee NOT charged, transaction not included. `tec*` results: fee charged, transaction included.
 
@@ -41,7 +59,7 @@ The `consequences_helper` dispatch in `applySteps.cpp` uses C++20 `requires` cla
 
 **`doApply` mutations are NOT committed until `ctx_.apply()` is called at the end of `operator()`.** All peek/insert/update/erase during `doApply` go into an `ApplyContext` view (`view_`) layered on top of `base_`. Whether that view gets flushed to `base_` depends entirely on the TER that `doApply` returns.
 
-`ApplyContext::discard()` ([src/libxrpl/tx/ApplyContext.cpp](src/libxrpl/tx/ApplyContext.cpp)) replaces `view_` with a fresh view on `base_` — **every doApply mutation is thrown away**:
+`ApplyContext::discard()` replaces `view_` with a fresh view on `base_` — **every doApply mutation is thrown away**:
 ```cpp
 void ApplyContext::discard() { view_.emplace(&base_, flags_); }
 ```
@@ -61,24 +79,31 @@ void ApplyContext::discard() { view_.emplace(&base_, flags_); }
 
 ### What this means
 
-- **A `tec*` return from doApply acts as a full-transaction rollback.** You do NOT need to order mutations defensively. If a helper called late in doApply returns `tec*`, everything mutated earlier in the same doApply is discarded via `discard()`.
-- **Orphan-state bugs of the form "we mutated X then returned tec* so X is now in an inconsistent state" are not possible at the transactor boundary.**
-- **The real failure mode is within `doApply` itself**: stale SLE pointers, missing `view().update(sle)` after mutation, mutating values read by value instead of peek. These are in-memory bugs, not state-commit bugs.
-- **Sandboxes inside `doApply` add nesting, not safety.** `PaymentSandbox` / nested `ApplyView` are useful when you need to conditionally commit a subset of changes *within* a single doApply (e.g., apply offers but revert if the net outcome fails). They are not needed to protect against doApply's own `tec*` return.
+- **A `tec*` return from doApply acts as a full-transaction rollback.** You do NOT need to order mutations defensively. If a helper called late in doApply returns `tec*`, everything mutated earlier is discarded.
+- **Orphan-state bugs "we mutated X then returned tec* so X is now inconsistent" are not possible at the transactor boundary.**
+- **The real failure mode**: stale SLE pointers, missing `view().update(sle)` after mutation, mutating values read by value. These are in-memory bugs, not state-commit bugs.
+- **Sandboxes inside `doApply` add nesting, not safety.** `PaymentSandbox`/nested `ApplyView` are for conditionally committing a *subset* of changes within a single doApply.
 - **Only `ctx_.apply(result)` publishes to `base_`**; a doApply that returns early, throws, or crashes never reaches that call.
+
+### `reset()` Fee Clamping
+
+`reset()` discards all ledger mutations via `ctx_.discard()` then re-deducts the fee, clamping if necessary:
+```cpp
+if (fee > balance) fee = balance;
+```
+This ensures a failing transaction can still claim its fee even when the account is over-committed.
 
 ### Verifying a suspected orphan-state bug
 
-Before claiming "directory removed but SLE not erased because tec\*":
 1. Read the caller of `doApply` — confirm the TER path (`operator()` in Transactor.cpp).
 2. Check whether `discard()` is reached via `reset()` or the `tapFAIL_HARD` branch.
-3. If both paths call `discard()`, the mutations cannot persist on tec\*.
-4. Look instead for: missing `view().update(sle)` after mutation, stale SLE pointers, or genuine non-atomic side effects (e.g., hash router flags, which are NOT in the ApplyContext view).
+3. If both paths call `discard()`, the mutations cannot persist on tec*.
+4. Look instead for: missing `view().update(sle)`, stale SLE pointers, or genuine non-atomic side effects (e.g., hash router flags — NOT in ApplyContext view).
 
 ## Apply Loop Details (Transactor::operator()())
 
 1. RAII guards: `NumberSO`, `CurrentTransactionRulesGuard` (for `fixUniversalNumber`, `featureSingleAssetVault`, `featureLendingProtocol`)
-2. Debug builds: serialize/re-parse round-trip catches serdes mismatches
+2. Debug builds: serialize/re-parse round-trip catches serdes mismatches; `trapTransaction()` provides a named breakpoint for replaying specific transactions
 3. `apply()` runs `preCompute()` → captures `preFeeBalance_` → `consumeSeqProxy()` → `payFee()` → updates `sfAccountTxnID` → `doApply()`
 4. Enforces `tecOVERSIZE` if metadata exceeds `oversizeMetaDataCap`
 5. Special `tec` codes (`tecOVERSIZE`, `tecKILLED`, `tecINCOMPLETE`, `tecEXPIRED`) trigger context-diff visitation then targeted cleanup: `removeUnfundedOffers`, `removeExpiredNFTokenOffers`, `removeDeletedTrustLines`, `removeDeletedMPTs`, `removeExpiredCredentials`
@@ -96,6 +121,8 @@ Before claiming "directory removed but SLE not erased because tec\*":
 - Using `view().update()` on a stale SLE pointer after another mutation
 - Computing reserve against `view().peek(account)->getFieldAmount(sfBalance)` AFTER fee deduction instead of `preFeeBalance_`
 - Missing `associateAsset(*sle, asset)` call at end of `doApply` for SLEs with `STNumber` or `STTakesAsset` fields (lending/vault transactors)
+- preclaim `Rules` race: if ledger advanced between preflight and preclaim, `applySteps.cpp` silently re-runs preflight with new rules before constructing `PreclaimContext`
+- Calling `ter*` codes before signature verification in preclaim (see security invariant above)
 
 ## Transactor Template
 
@@ -189,6 +216,7 @@ TER doApply() override {
 
 Variants:
 - `PaymentSandbox` — for `flow()` calls (used by `Payment`, `CheckCash`, `OfferCreate` crossing). Required because `flow()` uses deferred-credit accounting.
+- `RippleCalc::rippleCalculate()` wraps its own `PaymentSandbox` inside the caller's sandbox (double-sandbox pattern) for exception safety — if `flow()` throws, the caller's sandbox remains unmodified.
 - Dual sandbox in `OfferCreate`: `sb` (main) + `sbCancel` (offer cleanup); commit one or the other based on `tfFillOrKill` outcome.
 - Nested sandboxes: `applyBatchTransactions` uses `wholeBatchView` (over outer view) + `perTxBatchView` (per inner tx).
 
@@ -218,7 +246,7 @@ Deleting an owned object:
 
 Reserve cost is usually 1 unit per object, but:
 - `AccountDelete`, `LedgerStateFix`, `AMMCreate` charge a full reserve via `calculateOwnerReserveFee` instead of base fee
-- Two-object structures (`Vault`, `LoanBroker`) charge +2 for object + pseudo-account
+- Two-object structures (`Vault`, `LoanBroker`) charge +2 for object + pseudo-account (incremented before reserve check so check reflects true post-creation state)
 - `SignerListSet` post-amendment uses `lsfOneOwnerCount` flag (1 unit regardless of N signers); pre-amendment charges 2+N
 - `OracleSet` uses tiered count: 1 unit for ≤5 price pairs, 2 units for more
 
@@ -234,9 +262,11 @@ Synthetic `AccountRoot` SLEs with disabled master key, used to hold protocol-man
 
 Pseudo-account guard rules:
 - `ValidPseudoAccounts` invariant: exactly one discriminator field, sequence never changes, required flags (`lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth`), no `sfRegularKey`
+- For pseudo-accounts, initial sequence must be 0 and flags must be exactly `lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth`
 - Many transactors explicitly reject pseudo-account destinations (`tecPSEUDO_ACCOUNT`): `Payment` direct, `CheckCreate`, `PaymentChannelCreate`, `VaultCreate` (asset issuer), `Clawback` (holder)
 - `MPTokenAuthorize` issuer-path skips pseudo-account holders (they are implicitly always authorized)
 - Pseudo-accounts cannot sign — when `featureLendingProtocol` active, `checkSign` rejects with `tefBAD_AUTH`
+- Anti-nesting: AMM preclaim detects LP-token-issuer pseudo-accounts via `sfAMMID` on the issuer's `AccountRoot` and rejects using them as AMM assets
 
 ### `associateAsset` Convention
 
@@ -251,25 +281,29 @@ Validates the optional `sfDelegate` field. If absent, normal account signing app
 2. Try full transaction-type permission via `checkTxPermission()` (uses `TxType + 1` encoding)
 3. Fall back to granular permission via `loadGranularPermission()` + per-transactor logic
 
-### Granular Permissions
+### Encoding Convention
 
-Permission values store both forms in single `uint32_t`:
-- Transaction types: `TxType + 1` (always ≤ `UINT16_MAX`, since `+1` shift avoids ambiguous zero)
+Permission values store both forms in a single `uint32_t`:
+- Transaction types: `TxType + 1` (always ≤ `UINT16_MAX`; `+1` avoids ambiguous zero since `ttPAYMENT == 0`)
 - Granular permissions: values `> UINT16_MAX`, enumerated in `permissions.macro`
 
+`Permission` singleton asserts this separation at construction time.
+
+### Granular Permissions
+
 `DelegateUtils.cpp` provides:
-- `checkTxPermission()` — linear scan for `TxType + 1` match
-- `loadGranularPermission()` — populates per-tx-type granular set via `Permission::getInstance().getGranularTxType()` reverse-map
+- `checkTxPermission()` — linear scan for `TxType + 1` match; returns `terNO_DELEGATE_PERMISSION` on null delegate or no match
+- `loadGranularPermission()` — populates per-tx-type granular set via `Permission::getInstance().getGranularTxType()` reverse-map; returns silently with empty set on null delegate
 
 Examples of granular permissions:
-- `Payment` direct only: `PaymentMint` (issuer source), `PaymentBurn` (issuer destination) — blocked if `sfPaths` or asset conversion
+- `Payment` direct only: `PaymentMint` (issuer source), `PaymentBurn` (issuer destination) — blocked if `sfPaths` present or asset conversion
 - `AccountSet`: field-level grants per metadata field (`AccountDomainSet`, `AccountTransferRateSet`, etc.); flag changes blocked entirely
 - `TrustSet`: `TrustlineAuthorize`, `TrustlineFreeze`, `TrustlineUnfreeze`; cannot create new lines, cannot change limit
 - `MPTokenIssuanceSet`: `MPTokenIssuanceLock`, `MPTokenIssuanceUnlock`
 
 ## Permission Model & Cross-Transactor Static Interfaces
 
-Several transactors expose `static deleteSLE`/`removeFromLedger`/equivalent methods on `ApplyView` so other transactors (especially `AccountDelete`) can clean up owned objects without constructing a fake transaction:
+Several transactors expose static deletion/creation methods on `ApplyView` so other transactors (especially `AccountDelete`) can clean up owned objects without constructing a fake transaction:
 
 - `DepositPreauth::removeFromLedger(ApplyView&, uint256, Journal)`
 - `DIDDelete::deleteSLE(ApplyView&, SLE, AccountID, Journal)`
@@ -280,7 +314,13 @@ Several transactors expose `static deleteSLE`/`removeFromLedger`/equivalent meth
 - `AMMWithdraw::withdraw`/`equalWithdrawTokens` — used by `AMMClawback`, `AMMDelete`
 - `LoanManage::unimpairLoan/impairLoan/defaultLoan` — used by `LoanPay`
 
-`AccountDelete` uses a `nonObligationDeleter()` switch over `LedgerEntryType` returning a `DeleterFuncPtr`. `nullptr` means "obligation, cannot delete". Recognized as non-obligations: offers, signer lists, tickets, deposit preauth, NFT offers, DIDs, oracles, credentials, delegates.
+`AccountDelete` uses a `nonObligationDeleter()` switch over `LedgerEntryType` returning a `DeleterFuncPtr`. `nullptr` means "obligation, cannot delete". The same switch is used in both `preclaim` (to detect blockers) and `doApply` (to invoke deletions), keeping type classification in sync. Deletable types: offers, signer lists, tickets, deposit preauth, NFT offers, DIDs, oracles, credentials, delegates.
+
+### AccountDelete-specific preclaim rules
+
+- NFT obligations: `sfMintedNFTokens != sfBurnedNFTokens` → `tecHAS_OBLIGATIONS`; authorized-minting replay guard: `FirstNFTokenSequence + MintedNFTokens + 255` must not exceed current ledger sequence
+- Sequence freshness: account seq must be ≥ 256 below current ledger index (`tecTOO_SOON`) — prevents replay after resurrection
+- Owner directory: more than `maxDeletableDirEntries` (1000) deletable items → `tefTOO_BIG`
 
 ## Signature Verification
 
@@ -314,10 +354,14 @@ After every successful or fee-claiming transaction, every checker in the `Invari
 
 Uses `std::index_sequence` + fold expression for variadic visit. Critically, `finalize()` results are collected into a `std::array<bool>` then checked with `std::all_of` — NOT short-circuited with `&&` — so every failing invariant logs its own diagnostic.
 
+Invariant checkers run even on failed (`tec*`) transactions — bugs or exploits could cause a failed transaction to mutate ledger state unexpectedly.
+
 ### `failInvariantCheck` Escalation
 
 - First failure → `tecINVARIANT_FAILED` (committed to ledger, fee charged)
-- Repeated failure during retry → `tefINVARIANT_FAILED` (not included in ledger)
+- Repeated failure during retry (recognized because incoming result is already `tecINVARIANT_FAILED` or `tefINVARIANT_FAILED`) → `tefINVARIANT_FAILED` (not included in ledger)
+
+Rationale: if even the minimal fee-charge path breaks invariants, no ledger entry of any kind should be created.
 
 ### The `enforce` Pattern (Soft Rollout)
 
@@ -334,7 +378,7 @@ This lets invariants ship before activation: violations log unconditionally (vis
 
 ### Privilege System (`InvariantCheckPrivilege.h`)
 
-`Privilege` bitmask enum + `hasPrivilege(STTx, Privilege)` (implemented via `transactions.macro` X-macro). Used by checkers to know what each transaction type may legitimately do:
+`Privilege` bitmask enum + `hasPrivilege(STTx, Privilege)` (implemented via `transactions.macro` X-macro). Used by checkers to know what each transaction type may legitimately do. `must` vs. `may` variants let invariants enforce cardinality (e.g., `AccountDelete` *must* delete exactly one account root; `AMMWithdraw` *may* delete one).
 
 | Privilege | Granted to (examples) |
 |---|---|
@@ -354,16 +398,16 @@ This lets invariants ship before activation: violations log unconditionally (vis
 | Checker | What it enforces |
 |---|---|
 | `TransactionFeeCheck` | Fee non-negative, < INITIAL_XRP, ≤ sfFee |
-| `XRPNotCreated` | Net XRP delta across accounts/paychans/escrows = -fee |
+| `XRPNotCreated` | Net XRP delta across accounts/paychans/escrows = -fee (pay channels tracked as `sfAmount - sfBalance`) |
 | `XRPBalanceChecks` | Every account balance is native XRP in [0, INITIAL_XRP] |
 | `NoBadOffers` | No negative-amount, no XRP-for-XRP offers |
-| `NoZeroEscrow` | Escrow/MPT amounts within bounds; MPT locked ≤ outstanding |
+| `NoZeroEscrow` | Escrow/MPT amounts within bounds; MPT locked ≤ outstanding; also validates `ltMPTOKEN_ISSUANCE` and `ltMPTOKEN` entries |
 | `AccountRootsNotDeleted` | Account deletion cardinality matches `must`/`may` privilege |
-| `AccountRootsDeletedClean` | Deleted account had zero balance + zero owner count + no orphaned objects (trust lines, escrows, offers, NFT pages, paychans, pseudo-account linked objects) |
+| `AccountRootsDeletedClean` | Deleted account had zero balance + zero owner count + no orphaned objects; uses `before` SLE for pseudo-account linked object keys (fields may be cleared during deletion) |
 | `ValidNewAccountRoot` | New accounts only from `createAcct`/`createPseudoAcct`; correct initial seq + flags |
-| `ValidPseudoAccounts` | Exactly one discriminator, sequence unchanged, required flags, no regular key |
+| `ValidPseudoAccounts` | Exactly one discriminator, sequence unchanged, required flags, no regular key; errors accumulated in `vector<string>` and all logged before returning |
 | `ValidClawback` | At most one trust line/MPT modified, holder balance non-negative |
-| `NoModifiedUnmodifiableFields` | `sfLedgerEntryType`/`sfLedgerIndex` immutable; loan/broker origination fields immutable |
+| `NoModifiedUnmodifiableFields` | `sfLedgerEntryType`/`sfLedgerIndex` immutable; loan/broker origination fields immutable; gated on `featureLendingProtocol` |
 | `LedgerEntryTypesMatch` | Modified entries don't change type; new entries are recognized types |
 | `NoXRPTrustLines` | No trust line uses XRP as currency |
 | `NoDeepFreezeTrustLinesWithoutFreeze` | DeepFreeze flag requires regular Freeze flag |
@@ -375,9 +419,9 @@ This lets invariants ship before activation: violations log unconditionally (vis
 | `ValidAMM` | Per-tx-type rules: create exact `sqrt(A*B)`, deposit/withdraw constant-product invariant `sqrt(x*y) ≥ LPSupply`, vote/bid leave pool unchanged |
 | `ValidPermissionedDomain` | AcceptedCredentials non-empty, ≤ max size, unique, sorted |
 | `ValidPermissionedDEX` | Domain-scoped tx only touches offers/dirs with matching domain; hybrid offers structurally valid |
-| `ValidVault` | Per-tx-type rules: deposit/withdraw asset/share conservation, immutable fields unchanged, loss only via loan ops |
+| `ValidVault` | Per-tx-type rules: deposit/withdraw asset/share conservation, immutable fields unchanged, loss only via loan ops; XRP vault fee compensation for depositor/withdrawer balance check |
 | `ValidLoan` | Payment completion bidirectional (paymentRemaining=0 ↔ all outstanding=0), `lsfLoanOverpayment` immutable, non-negative fees, positive `sfPeriodicPayment` |
-| `ValidLoanBroker` | Sequence monotonic, non-negative cover/debt, vault exists, cover ≤ pseudo-account balance (== under `fixSecurity3_1_3` except at delete) |
+| `ValidLoanBroker` | Sequence monotonic, non-negative cover/debt, vault exists, cover ≤ pseudo-account balance (== under `fixSecurity3_1_3` except at delete); no amendment gate (objects can't exist unless amendment is active) |
 
 ## doApply Order Convention (Cleanup)
 
@@ -396,7 +440,7 @@ Erasing first would lose the page index needed for `dirRemove`. Many transactors
 - `tecKILLED`: order/loan time-window expired or sequence overflow (`LoanSet` arithmetic overflow check)
 - `tecEXPIRED`: legitimately expired object; some transactors (e.g., `NFTokenAcceptOffer` under `fixExpiredNFTokenOfferRemoval`) clean up before returning this
 - `tecINSUFFICIENT_RESERVE`: reserve check failed against `preFeeBalance_`
-- `tecINTERNAL` / `tefBAD_LEDGER`: ledger corruption sentinels. Often marked `LCOV_EXCL` because preclaim should have prevented them
+- `tecINTERNAL` / `tefBAD_LEDGER`: ledger corruption sentinels. Often marked `LCOV_EXCL` because preclaim should have prevented them. `RippleCalc` converts exceptions to `tecINTERNAL` rather than rethrowing (deterministic fallback all validators agree on)
 - `terNO_AMM`, `terNO_DELEGATE_PERMISSION`, `terNO_ACCOUNT`, `terNO_LINE`: retryable failures
 
 ## Hash Router Caching
@@ -406,15 +450,19 @@ Some expensive operations cache results in the `HashRouter` using private flag b
 - **Signature verification** (`apply.cpp` `checkValidity`): `SF_SIGBAD`, `SF_SIGGOOD`, `SF_LOCALBAD`, `SF_LOCALGOOD` (PRIVATE1–PRIVATE4)
 - **Crypto-condition validation** (`EscrowFinish::preflightSigValidated`): `SF_CF_VALID`, `SF_CF_INVALID` (PRIVATE5–PRIVATE6)
 
-The `forceValidity()` API can promote cached state but cannot downgrade (never sets `SF_SIGBAD`) — used to mark locally-submitted transactions as pre-verified.
+The `forceValidity()` API can promote cached state (using `[[fallthrough]]`) but cannot downgrade (never sets `SF_SIGBAD`) — used to mark locally-submitted transactions as pre-verified. **Use with extreme care**: bypassing signature verification in the cache affects every subsequent `checkValidity` call on the same hash until cache expiry.
+
+Validity enum → P2P semantics: `SigBad` = don't forward; `SigGoodOnly` = relay but don't apply; `Valid` = relay and apply.
 
 ## Batch Transactions
 
 `Batch` (in `system/Batch.cpp`) bundles 2-8 inner transactions with one of four execution policies (mutually exclusive, enforced via `std::popcount`):
-- `tfAllOrNothing`: any failure aborts, full rollback
-- `tfUntilFailure`: stop at first failure, keep prior successes
+- `tfAllOrNothing`: any failure aborts, full rollback (`applyBatchTransactions` returns false)
+- `tfUntilFailure`: stop at first failure, keep prior successes (returns false if no inner tx was ever applied)
 - `tfOnlyOne`: stop at first success
 - `tfIndependent`: run all, commit successes
+
+`Batch::doApply()` returns `tesSUCCESS` and does nothing — `applyBatchTransactions()` in `apply.cpp` is called separately by `applyTransaction()` after the outer apply succeeds, executing inner txs in a nested `wholeBatchView`/`perTxBatchView` sandbox structure.
 
 **Critical for new transactors:** Update `disabledTxTypes` in `Batch.cpp` if your type cannot run inside a batch. Currently disabled: all `ttVAULT_*` and `ttLOAN_*` types (multi-step state machines whose invariants are difficult to reason about under batch atomicity).
 
@@ -423,13 +471,16 @@ Inner transaction rules (enforced in `Batch::preflight`):
 - Empty `sfSigningPubKey`, no `sfTxnSignature`, no `sfSigners`
 - Fee = 0 XRP
 - Exactly one of `sfSequence` (nonzero) or `sfTicketSequence`
-- For `tfAllOrNothing`/`tfUntilFailure`: no duplicate sequence/ticket values across same-account inner txs
+- For `tfAllOrNothing`/`tfUntilFailure`: no duplicate sequence/ticket values across same-account inner txs (relaxed for `tfIndependent`/`tfOnlyOne`)
+- Each inner tx has `xrpl::preflight` called on it with `tapBATCH` and `parentBatchId`; no nested `ttBATCH`
 
-`Batch::preflightSigValidated` reconciles `sfBatchSigners` against the set of inner-tx accounts that differ from outer account (plus any `sfCounterparty` accounts). The outer account is explicitly excluded from `sfBatchSigners`.
-
-`Batch::doApply()` returns `tesSUCCESS` and does nothing — `applyBatchTransactions()` in `apply.cpp` is called separately by `applyTransaction()` after the outer apply succeeds, executing inner txs in a nested `wholeBatchView`/`perTxBatchView` sandbox structure.
+`Batch::preflightSigValidated` reconciles `sfBatchSigners` bidirectionally: each signer removed from `requiredSigners` as matched; any signer not in `requiredSigners` → `temBAD_SIGNER`; outer account explicitly excluded. Then `ctx.tx.checkBatchSign(ctx.rules)` verifies the cryptographic batch signature payload.
 
 `Batch::calculateBaseFee` = `baseFee + Σ(inner tx fees) + numSigners × baseFee`. Overflow guards everywhere (marked `LCOV_EXCL`).
+
+**`fixBatchInnerSigs` amendment**: corrects a bug in the original Batch implementation where inner-batch transactions could be assigned `SF_SIGGOOD` cache entries (implying valid signatures on unsigned objects). After the fix, inner-batch transactions follow the `neverValid` path.
+
+All Batch log messages use `BatchTrace[<parentBatchId>]` prefix for correlation.
 
 ## Key Files
 
@@ -448,12 +499,21 @@ Inner transaction rules (enforced in `Batch::preflight`):
 `Payment`, `OfferCreate` (crossing), and `CheckCash` (IOU/MPT) all route through `flow()` in `Flow.cpp` → `StrandFlow.h`. Key concepts:
 
 - A **strand** is a `std::vector<std::unique_ptr<Step>>`; each `Step` is one hop (`DirectStepI`, `BookStepXX`, `XRPEndpointStep`, `MPTEndpointStep`)
+- `flow()` is templated on `(TIn, TOut)` pairs for the three asset types (6 combinations). `Flow.cpp` is the façade that resolves runtime `STAmount`/`Asset` values into compile-time template parameters via `std::visit`, then hands off to `StrandFlow.h`.
 - Two-pass execution: reverse pass (compute required input for desired output) then forward pass (compute output for actual input)
 - Limiting step detection: if reverse pass cannot satisfy desired output, that step is identified as the bottleneck and used as the anchor for forward pass
 - Multi-strand flow uses `ActiveStrands` priority queue sorted by `qualityUpperBound`; one strand consumed per outer iteration (probe-and-push)
 - Safety limits: `MaxOffersToConsume` = 1000 per book step, `maxTries` = 1000 outer iterations, `maxOffersToConsider` = 1500 cumulative, `AMMContext::MaxIterations` = 30
 - `PaymentSandbox` (not regular `Sandbox`) is required because `flow()` uses deferred-credit accounting
-- AMM offers are synthesized by `AMMLiquidity` to look like CLOB offers to `BookStep`; single-path uses `changeSpotPriceQuality`, multi-path uses Fibonacci-scaled offer sizes
+- AMM offers are synthesized by `AMMLiquidity` to look like CLOB offers to `BookStep`; single-path uses `changeSpotPriceQuality`, multi-path uses Fibonacci-scaled offer sizes; `AMMContext` tracks whether multi-path is active (disables quality optimization)
+- `RippleCalc::rippleCalculate()` creates a nested `PaymentSandbox` inside the caller's `PaymentSandbox` (exception safety); `flow()` applies its internal sandbox to `flowSB` only on success
+- `ter*` retry codes from `RippleCalc` are converted to `tecPATH_DRY` in `Payment::doApply` (forces fee charge, prevents path-spam)
+- `sfDeliverMin` + `tfPartialPayment`: if actual delivery < `sfDeliverMin` → `tecPATH_PARTIAL`; `ctx_.deliver()` records actual delivered amount for metadata (critical for partial payment detection downstream)
+- `std::optional<uint256> domainID` threads through `toStrands()` for permissioned payment domains
+
+### `sendMax` semantics in `RippleCalc`
+
+`sendMax` is `nullopt` when sending the same IOU that the destination receives with sender as issuer (no separate spending cap needed). Otherwise set to `saMaxAmountReq`. `limitQuality` is only constructed when `pInputs->limitQuality && saMaxAmountReq > beast::zero`.
 
 ## Asset Type Dispatch Pattern
 
@@ -473,3 +533,28 @@ template <> TER preclaimHelper<MPTIssue>(...);
 ```
 
 Used by `Clawback`, `Escrow*`, `Vault*`, `AMM*Withdraw/Deposit`, `LoanBrokerCoverClawback`. Each specialization handles asset-type-specific permission flags (`lsfAllowTrustLineClawback`/`lsfNoFreeze` vs `lsfMPTCanClawback`), authorization (`StrongAuth` vs `WeakAuth`), and freeze checks (`tecFROZEN` vs `tecLOCKED`).
+
+## Lending Protocol (XLS-66)
+
+`LendingHelpers.cpp` is the numerical core. Key concepts:
+
+- **Amortization math**: `loanPeriodicPayment()` uses standard `r(1+r)^n / ((1+r)^n - 1)` factor (Eq. 6–7 in XLS-66 Eq. Glossary). Zero-interest path uses equal principal slices (no division by zero).
+- **Theoretical vs. rounded state**: `LoanProperties` holds both; `computeTheoreticalLoanState()` computes at full precision; `constructRoundedLoanState()` reflects actual ledger values. Rounding errors are carried forward during re-amortization.
+- **Payment types**: regular, late (penalty via `loanLatePaymentInterest`), full/early-closure, overpayment (triggers re-amortization via `tryOverpayment()`).
+- **`checkLoanGuards()`** enforces 4 precision invariants at creation/re-amortization: measurable interest, positive first-payment principal, non-zero rounded payment, payment count math. All return `tecPRECISION_LOSS`.
+- **Template proxy pattern**: `doPayment<NumberProxy, UInt32Proxy, UInt32OptionalProxy>` runs against real SLE (via `ValueProxy`) or simulation values — same code path for both.
+- `loanMakePayment()` dispatches to the correct payment type and runs up to `loanMaximumPaymentsPerTransaction` installments per call.
+
+## Vault Architecture
+
+Six vault transactors: `VaultCreate`, `VaultDeposit`, `VaultWithdraw`, `VaultSet`, `VaultDelete`, `VaultClawback`. Key creation invariants (see `VaultCreate.cpp`):
+
+- `sfWithdrawalPolicy` currently only accepts `vaultStrategyFirstComeFirstServe` (= 1)
+- `sfDomainID` is only valid when `tfVaultPrivate` is set
+- `sfScale` restricted: meaningless for XRP/MPT assets; bounded above by `vaultMaximumIOUScale` (18)
+- Vault pseudo-account asset issuer cannot be another pseudo-account (`tecWRONG_ASSET`) — those assets have no clawback path
+- `adjustOwnerCount` increments by **2** (vault + pseudo-account) before reserve check
+- MPT share issuance flags derived from transaction flags: tradeable unless `tfVaultShareNonTransferable`; `lsfMPTRequireAuth` added for private vaults
+- `associateAsset` is the final call in `doApply`
+
+`ValidVault` invariant uses a delta-map (`uint256 → Number`) with sign conventions per entry type (+1 for share issuance outstanding amount, -1 for asset balances). Entries captured even at zero delta for accounting completeness. Fee compensation applied for XRP vault balance deltas (skipped for delegated transactions).
