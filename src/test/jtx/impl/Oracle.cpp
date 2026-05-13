@@ -167,7 +167,7 @@ Oracle::aggregatePrice(
     std::optional<AnyValue> const& timeThreshold)
 {
     json::Value jv;
-    json::Value jvOracles(json::ArrayValue);
+    json::Value jvOracles(json::ValueType::Array);
     if (oracles)
     {
         for (auto const& id : *oracles)
@@ -205,7 +205,7 @@ Oracle::aggregatePrice(
             return jr;
         }
     }
-    return json::NullValue;
+    return json::ValueType::Null;
 }
 
 void
@@ -269,7 +269,7 @@ Oracle::set(UpdateArg const& arg)
             duration_cast<seconds>(env_.current()->header().closeTime.time_since_epoch()).count() +
             kEPOCH_OFFSET.count());
     }
-    json::Value dataSeries(json::ArrayValue);
+    json::Value dataSeries(json::ValueType::Array);
     auto assetToStr = [](std::string const& s) {
         // assume standard currency
         if (s.size() == 3)
@@ -361,7 +361,7 @@ Oracle::ledgerEntry(
         if (jr.isMember(jss::result) && jr[jss::result].isMember(jss::status))
             return jr[jss::result];
     }
-    return json::NullValue;
+    return json::ValueType::Null;
 }
 
 void
