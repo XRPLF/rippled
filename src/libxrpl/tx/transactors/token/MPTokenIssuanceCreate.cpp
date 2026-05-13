@@ -50,6 +50,11 @@ MPTokenIssuanceCreate::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 {
+    // sfReferenceHolding is set only internally by VaultCreate. Reject
+    // any user-submitted MPTokenIssuanceCreate that attempts to carry it.
+    if (ctx.rules.enabled(fixCleanup3_2_0) && ctx.tx.isFieldPresent(sfReferenceHolding))
+        return temMALFORMED;
+
     // If the mutable flags field is included, at least one flag must be
     // specified.
     if (auto const mutableFlags = ctx.tx[~sfMutableFlags]; mutableFlags &&

@@ -79,6 +79,8 @@ isVaultPseudoAccountFrozen(
     // fall back to the chain lookup below.
     if (mptIssuance->isFieldPresent(sfReferenceHolding))
     {
+        if (depth >= kMAX_ASSET_CHECK_DEPTH)
+            return true;  // LCOV_EXCL_LINE
         auto const sleHolding =
             view.read(keylet::unchecked(mptIssuance->getFieldH256(sfReferenceHolding)));
         if (!sleHolding)

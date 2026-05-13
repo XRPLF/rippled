@@ -39,6 +39,9 @@ ValidMPTIssuance::visitEntry(
     // on the hot path.
     bool const cleanupEnabled = isFeatureEnabled(fixCleanup3_2_0);
 
+    if (referenceHoldingMutated_)
+        return;
+
     if (after && after->getType() == ltMPTOKEN_ISSUANCE)
     {
         if (isDelete)

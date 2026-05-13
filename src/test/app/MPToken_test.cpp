@@ -191,6 +191,22 @@ class MPToken_test : public beast::unit_test::Suite
                  .metadata = "test",
                  .err = temMALFORMED});
         }
+
+        // sfReferenceHolding is populated internally only by VaultCreate.
+        // A user-submitted MPTokenIssuanceCreate carrying the field must be
+        // rejected at preflight under fixCleanup3_2_0.
+        if (features[fixCleanup3_2_0])
+        {
+            Env env{*this, features};
+            env.fund(XRP(1'000), alice);
+            env.close();
+
+            json::Value jv;
+            jv[sfAccount] = alice.human();
+            jv[sfTransactionType] = jss::MPTokenIssuanceCreate;
+            jv[sfReferenceHolding] = to_string(uint256{1});
+            env(jv, Ter(temMALFORMED));
+        }
     }
 
     void

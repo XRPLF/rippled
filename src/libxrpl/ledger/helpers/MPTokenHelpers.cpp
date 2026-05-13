@@ -513,7 +513,7 @@ assetOfHolding(SLE const& sleShareIssuance, SLE const& sleHolding)
     if (sleHolding.getType() == ltMPTOKEN)
         return MPTIssue{sleHolding.getFieldH192(sfMPTokenIssuanceID)};
 
-    auto const& vaultPseudo = sleShareIssuance.at(sfIssuer);
+    auto const vaultPseudo = sleShareIssuance.at(sfIssuer);
     auto const lowLimit = sleHolding.getFieldAmount(sfLowLimit);
     auto const highLimit = sleHolding.getFieldAmount(sfHighLimit);
     auto const& iouIssuer =
@@ -535,33 +535,21 @@ canTransfer(
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    auto const& issuer = (*sleIssuance)[sfIssuer];
-    auto const isNotIssuerTransfer = from != issuer && to != issuer;
-    if (waive == WaiveMPTCanTransfer::No && !sleIssuance->isFlag(lsfMPTCanTransfer))
-    {
-        if (isNotIssuerTransfer)
-            return TER{tecNO_AUTH};
-    }
+    auto const issuer = (*sleIssuance)[sfIssuer];
+    if (waive == WaiveMPTCanTransfer::Yes || from == issuer || to == issuer)
+        return tesSUCCESS;
+
+    if (!sleIssuance->isFlag(lsfMPTCanTransfer))
+        return TER{tecNO_AUTH};
 
     // Post-fixCleanup3_2_0: vault shares carry sfReferenceHolding pointing
     // to the vault pseudo's MPToken or RippleState for the underlying asset.
-    // Third-party transfers (where neither party is the share issuer /
-    // vault pseudo) inherit the underlying's transferability. Redemption
-    // (vault pseudo on either side) is allowed by the issuer carveout
-    // above and never reaches the inheritance dispatch.
-    //
-    // The waive == No guard is intentional: recovery-path callers
-    // (VaultWithdraw, LoanBrokerCoverWithdraw under fixCleanup3_2_0)
-    // pass WaiveMPTCanTransfer::Yes and operate on the vault's direct
-    // underlying, which is never itself a vault share (forbidden at
-    // VaultCreate). Skipping the inheritance branch here both honours
-    // the waive's recovery intent and avoids transitively unlocking a
-    // deeper underlying in any future caller that may hold a share.
+    // Third-party transfers inherit the underlying's transferability.
+    // Issuer-involving transfers and waived callers returned tesSUCCESS above.
     //
     // The recursive call always passes WaiveMPTCanTransfer::No so that
     // a waived outer caller does not transitively unlock the underlying.
-    if (waive == WaiveMPTCanTransfer::No && isNotIssuerTransfer &&
-        sleIssuance->isFieldPresent(sfReferenceHolding))
+    if (sleIssuance->isFieldPresent(sfReferenceHolding))
     {
         // Defensive depth bound on the inheritance recursion. Reachable
         // only post-fixCleanup3_2_0 (sfReferenceHolding is never set
