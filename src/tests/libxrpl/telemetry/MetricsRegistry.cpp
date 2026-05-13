@@ -56,7 +56,7 @@ public:
         throwUnimplemented();
     }
     TimeKeeper&
-    timeKeeper() override
+    getTimeKeeper() override
     {
         throwUnimplemented();
     }
@@ -71,7 +71,7 @@ public:
         throwUnimplemented();
     }
     CachedSLEs&
-    cachedSLEs() override
+    getCachedSLEs() override
     {
         throwUnimplemented();
     }
@@ -106,37 +106,37 @@ public:
         throwUnimplemented();
     }
     ValidatorList&
-    validators() override
+    getValidators() override
     {
         throwUnimplemented();
     }
     ValidatorSite&
-    validatorSites() override
+    getValidatorSites() override
     {
         throwUnimplemented();
     }
     ManifestCache&
-    validatorManifests() override
+    getValidatorManifests() override
     {
         throwUnimplemented();
     }
     ManifestCache&
-    publisherManifests() override
+    getPublisherManifests() override
     {
         throwUnimplemented();
     }
     Overlay&
-    overlay() override
+    getOverlay() override
     {
         throwUnimplemented();
     }
     Cluster&
-    cluster() override
+    getCluster() override
     {
         throwUnimplemented();
     }
     PeerReservationTable&
-    peerReservations() override
+    getPeerReservations() override
     {
         throwUnimplemented();
     }
@@ -191,17 +191,17 @@ public:
         throwUnimplemented();
     }
     PendingSaves&
-    pendingSaves() override
+    getPendingSaves() override
     {
         throwUnimplemented();
     }
     OpenLedger&
-    openLedger() override
+    getOpenLedger() override
     {
         throwUnimplemented();
     }
     OpenLedger const&
-    openLedger() const override
+    getOpenLedger() const override
     {
         throwUnimplemented();
     }
@@ -225,8 +225,8 @@ public:
     {
         throwUnimplemented();
     }
-    PathRequests&
-    getPathRequests() override
+    PathRequestManager&
+    getPathRequestManager() override
     {
         throwUnimplemented();
     }
@@ -256,7 +256,7 @@ public:
         return false;
     }
     beast::Journal
-    journal(std::string const&) override
+    getJournal(std::string const&) override
     {
         return beast::Journal(beast::Journal::getNullSink());
     }
@@ -266,12 +266,12 @@ public:
         throwUnimplemented();
     }
     Logs&
-    logs() override
+    getLogs() override
     {
         throwUnimplemented();
     }
     std::optional<uint256> const&
-    trapTxID() const override
+    getTrapTxID() const override
     {
         static std::optional<uint256> const empty;
         return empty;
@@ -282,7 +282,7 @@ public:
         throwUnimplemented();
     }
     Application&
-    app() override
+    getApp() override
     {
         throwUnimplemented();
     }
