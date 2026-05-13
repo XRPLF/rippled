@@ -249,7 +249,9 @@ public:
             {
                 weak.resize(weak.size() - 1);
                 if (!weak.empty())
+                {
                     EXPECT_TRUE(TIBase::getState(id) == PartiallyDeleted);
+                }
             }
             EXPECT_TRUE(TIBase::getState(id) == Deleted);
         }
