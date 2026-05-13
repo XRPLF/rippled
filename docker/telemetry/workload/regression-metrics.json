@@ -18,8 +18,8 @@
     ]
   },
   "job_queue": {
-    "_queued_template": "histogram_quantile({quantile}, sum by (le) (rate(rippled_job_queued_duration_us_bucket{job_type=\"{name}\"}[{window}])))",
-    "_running_template": "histogram_quantile({quantile}, sum by (le) (rate(rippled_job_running_duration_us_bucket{job_type=\"{name}\"}[{window}])))",
+    "_queued_template": "histogram_quantile({quantile}, sum by (le) (rate(xrpld_job_queued_duration_us_bucket{job_type=\"{name}\"}[{window}])))",
+    "_running_template": "histogram_quantile({quantile}, sum by (le) (rate(xrpld_job_running_duration_us_bucket{job_type=\"{name}\"}[{window}])))",
     "_unit": "us",
     "_quantiles": [0.95],
     "_phases": ["queued", "running"],

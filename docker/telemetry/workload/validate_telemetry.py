@@ -884,26 +884,26 @@ PARITY_SPAN_ATTRS: list[dict[str, str]] = [
 PARITY_VALUE_SANITY: list[dict[str, Any]] = [
     {
         "name": "validation_agreement_pct_1h",
-        "query": 'rippled_validation_agreement{metric="agreement_pct_1h"}',
+        "query": 'xrpld_validation_agreement{metric="agreement_pct_1h"}',
         "lo": 0,
         "hi": 100,
     },
     {
         "name": "unl_expiry_days",
-        "query": 'rippled_validator_health{metric="unl_expiry_days"}',
+        "query": 'xrpld_validator_health{metric="unl_expiry_days"}',
         "lo": 0,
         "hi": None,
         "exclusive_lo": True,
     },
     {
         "name": "peer_latency_p90_ms",
-        "query": 'rippled_peer_quality{metric="peer_latency_p90_ms"}',
+        "query": 'xrpld_peer_quality{metric="peer_latency_p90_ms"}',
         "lo": 0,
         "hi": None,
     },
     {
         "name": "state_value",
-        "query": 'rippled_state_tracking{metric="state_value"}',
+        "query": 'xrpld_state_tracking{metric="state_value"}',
         "lo": 0,
         "hi": 7,
     },
