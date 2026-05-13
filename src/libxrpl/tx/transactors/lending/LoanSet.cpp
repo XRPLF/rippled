@@ -559,28 +559,14 @@ LoanSet::doApply()
     if (auto const ter = requireAuth(view, vaultAsset, brokerOwner, AuthType::StrongAuth))
         return ter;
 
-    // Disburse loan principal to borrower and origination fee to broker
-    // owner via accountSendExact so a destination trust line at the IOU
-    // 16-digit edge can't silently canonicalize the inflow and lose units.
-    if (auto const ter = accountSendExact(
+    if (auto const ter = accountSendMulti(
             view,
             vaultPseudo,
-            borrower,
-            STAmount{vaultAsset, loanAssetsToBorrower},
+            vaultAsset,
+            {{borrower, loanAssetsToBorrower}, {brokerOwner, originationFee}},
             j_,
             WaiveTransferFee::Yes))
         return ter;
-    if (originationFee > beast::kZERO)
-    {
-        if (auto const ter = accountSendExact(
-                view,
-                vaultPseudo,
-                brokerOwner,
-                STAmount{vaultAsset, originationFee},
-                j_,
-                WaiveTransferFee::Yes))
-            return ter;
-    }
 
     // Get shortcuts to the loan property values
     auto const startDate = getStartDate(view);
