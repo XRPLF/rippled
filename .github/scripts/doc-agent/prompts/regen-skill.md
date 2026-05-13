@@ -39,9 +39,29 @@ ai.md files into the existing skill. Specifically:
 - **Keep prose grounded.** No marketing language. No "robust, scalable,
   enterprise-grade" filler. Engineers reading this need facts.
 
-## Output
+## Output — Chunked Writing (REQUIRED)
 
-Emit the complete new skill file content as your final assistant message.
-Start with the markdown heading. Do not include meta-commentary like "Here
-is the updated skill file" — the output is captured verbatim and written
-to the skill file path.
+You have a per-turn output cap (32K tokens). For larger modules, a
+complete skill file will not fit in a single tool call. You MUST write
+the file in chunks across multiple tool calls. Do not try to emit the
+whole file in one Write — it will be truncated mid-content.
+
+Process:
+1. **First chunk (Write)**: Call the `Write` tool with the start of the
+   skill: the title heading, the opening overview, and the first 1–2
+   major sections. Keep this chunk under ~20K characters of content.
+2. **Subsequent chunks (Edit)**: For each remaining section, call the
+   `Edit` tool with:
+   - `old_string` = the last line currently at the end of the file (must
+     be unique enough to match unambiguously — use the full last line)
+   - `new_string` = that same last line **plus the next 1–2 sections**
+   appended
+   Keep each chunk under ~20K characters.
+3. **Repeat** until the skill is complete. There is no maximum number
+   of Edit calls.
+
+After the file is fully written, respond with a one-line confirmation
+listing how many chunks you wrote.
+
+DO NOT emit the skill content in your text response. The file is the
+output; the text response is only for confirmation.

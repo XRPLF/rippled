@@ -8,8 +8,9 @@ JSON-RPC over HTTP/WebSocket and gRPC. Central handler table dispatches by metho
 - `conditionMet` checks amendment-blocked, UNL expired, operating mode ≥ SYNCING, validated ledger age < `Tuning::maxValidatedLedgerAge` (2 min), and validated/current gap ≤ 10 ledgers. Standalone mode bypasses age checks.
 - API v1 vs v2 error code split: v1 emits `rpcNO_NETWORK`/`rpcNO_CURRENT`/`rpcNO_CLOSED`; v2+ collapses to `rpcNOT_SYNCED`.
 - Sensitive fields (`passphrase`, `secret`, `seed`, `seed_hex`) are masked as `<masked>` in error response echoes.
-- Batch requests: top-level `"method": "batch"` with `params` array; each sub-request processed independently and accumulated into JSON array.
+- Batch requests: top-level `"method": "batch"` with `params` array; each sub-request processed independently and accumulated into JSON array. Batch is rejected entirely if any sub-request is itself a batch (no nesting).
 - API v2 enforces strict JSON typing on previously-permissive boolean fields (e.g., `signer_lists`, `binary`, `forward`, `transactions`).
+- Two handler registration styles exist but only two handlers use the new-style (class-based): `LedgerHandler` and `VersionHandler`. All ~67 others use old-style free functions in `handlerArray`.
 
 ## Common Bug Patterns
 
@@ -21,6 +22,10 @@ JSON-RPC over HTTP/WebSocket and gRPC. Central handler table dispatches by metho
 - Marker pagination: callers can forge markers pointing into other accounts' directories — always call `RPC::isRelatedToAccount` before resuming.
 - `parse<T>()` returning `std::nullopt` is a programming-error sentinel for type system; user-facing errors go through `required<T>` / `Expected<T, Json::Value>`.
 - `loadType` must be set early in handler — escalates to `feeExceptionRPC` automatically on exception if still `feeReferenceRPC`.
+- `WSInfoSub` only trusts `X-User`/`X-Forwarded-For` headers when the remote IP is in `secure_gateway_nets`; outside that list, those headers are stripped. Misconfiguring `secure_gateway` lets untrusted clients spoof identity.
+- `RPCSub::sendThread` reads `mUsername`/`mPassword` outside `mLock` — minor data-race noted in source with `XXX` comment.
+- `PathRequestManager::getAssetCache` assigns the `weak_ptr<AssetCache>` lock result to a local `shared_ptr` before returning — assigning directly to the weak member would cause immediate expiry.
+- `account_objects` marker encodes phase (NFT page vs directory); resuming with a wrong-phase marker can traverse the wrong list. Both `nftPageStart` and directory marker use different sentinel shapes.
 
 ## Adding New RPC Handler
 
@@ -83,21 +88,22 @@ template <> Handler handlerFrom<MyCommandHandler>() {
 - `include/xrpl/protocol/ErrorCodes.h` — `error_code_i`, `inject_error`, `ErrorInfo` table, HTTP status mapping.
 
 ### Subscriptions
-- `src/xrpld/rpc/detail/WSInfoSub.h` — WebSocket `InfoSub` subclass; `Json::stream`-based zero-intermediate serialization into `multi_buffer`.
-- `src/xrpld/rpc/RPCSub.h` / `detail/RPCSub.cpp` — outbound HTTP/HTTPS push subscription ("webhook"); producer/consumer with `jtCLIENT_SUBSCRIBE` jobs; carries `VFALCO TODO` markers (legacy).
+- `src/xrpld/rpc/detail/WSInfoSub.h` — WebSocket `InfoSub` subclass; `Json::stream`-based zero-intermediate serialization into `multi_buffer`. Only trusts `X-User`/`X-Forwarded-For` when remote IP is in `secure_gateway_nets`.
+- `src/xrpld/rpc/RPCSub.h` / `detail/RPCSub.cpp` — outbound HTTP/HTTPS push subscription ("webhook"); legacy feature maintained for one specific partner; carries `VFALCO TODO` markers. `sendThread` reads `mUsername`/`mPassword` outside `mLock` (data-race risk).
 - Streams: `server`, `ledger`, `book_changes`, `transactions`, `transactions_proposed` (`rt_transactions` deprecated alias), `validations`, `manifests`, `peer_status` (admin), `consensus`.
+- `book_changes` stream can be subscribed but **cannot be unsubscribed** — there is no unsubscribe path for it.
 - `account_history_tx_stream` is experimental; gated on `useTxTables()`; supports `stop_history_tx_only` in unsubscribe.
 
 ### Pathfinding
 - `src/xrpld/rpc/detail/Pathfinder.cpp` / `.h` — three-phase engine: `findPaths()` (template expansion via static `mPathTable`), `computePathRanks()` (RippleCalc simulation), `getBestPaths()` (selection with covering-path).
 - `src/xrpld/rpc/detail/PathRequest.cpp` / `.h` — per-request state machine; two constructors for `path_find` (subscription) vs `ripple_path_find` (legacy callback); adaptive `iLevel`.
-- `src/xrpld/rpc/detail/PathRequestManager.cpp` / `.h` — collection of `wptr<PathRequest>`; re-entrant `updateAll()` loop; shared `AssetCache` via `weak_ptr` (intentional, see `getAssetCache`).
-- `src/xrpld/rpc/detail/AssetCache.cpp` / `.h` — per-ledger thread-safe trust line + MPT cache; direction-superset optimization for trust lines; `shared_ptr<vector<>>` null sentinels for empty accounts.
+- `src/xrpld/rpc/detail/PathRequestManager.cpp` / `.h` — collection of `wptr<PathRequest>`; re-entrant `updateAll()` loop; shared `AssetCache` via `weak_ptr` (intentional — cache lives only as long as a request holds it).
+- `src/xrpld/rpc/detail/AssetCache.cpp` / `.h` — per-ledger thread-safe trust line + MPT cache; **direction-superset optimization**: caches lines in both directions (AB and BA) so a single fetch covers both source and destination queries; `shared_ptr<vector<>>` null sentinels for empty accounts.
 - `src/xrpld/rpc/detail/AccountAssets.cpp` / `.h` — `accountSourceAssets` / `accountDestAssets` for path source/dest currency enumeration.
 - `src/xrpld/rpc/detail/TrustLine.cpp` / `.h` — `TrustLineBase` + `PathFindTrustLine` (memory-minimal) + `RPCTrustLine` (adds quality rates).
-- `src/xrpld/rpc/detail/MPT.h` — `PathFindMPT` (MPTID + zeroBalance + maxedOut).
-- `src/xrpld/rpc/detail/PathfinderUtils.h` — `largestAmount`, `convertAmount`, `convertAllCheck` for "convert all" sentinel handling.
-- `src/xrpld/rpc/detail/LegacyPathFind.cpp` / `.h` — RAII concurrency guard for synchronous `ripple_path_find`; lock-free CAS on `inProgress` counter; admin bypass.
+- `src/xrpld/rpc/detail/MPT.h` — `PathFindMPT` (MPTID + zeroBalance + maxedOut); implicitly converts from `MPTIssue` for uniform interface with `PathFindTrustLine`.
+- `src/xrpld/rpc/detail/PathfinderUtils.h` — `largestAmount`, `convertAmount`, `convertAllCheck`; XRP sentinel = `STAmount::cMaxNative`, IOU sentinel = `STAmount::cMaxValue / cMaxOffset`, MPT sentinel = `maxMPTokenAmount`. Pass these to signal "send all".
+- `src/xrpld/rpc/detail/LegacyPathFind.cpp` / `.h` — RAII concurrency guard for synchronous `ripple_path_find`; lock-free CAS on `inProgress` counter; admin bypass. Destructor skips decrement if construction failed (`m_isOk` flag).
 - `src/xrpld/rpc/detail/RippleLineCache.cpp` / `.h` — **empty stubs**; functionality replaced by `AssetCache`. Still `#include`d in two files for inert compatibility.
 
 ### Transaction Signing / Submission
@@ -105,10 +111,11 @@ template <> Handler handlerFrom<MyCommandHandler>() {
 - Fee pipeline: `checkFee` → `getCurrentNetworkFee` (max of load-scaled base fee and TxQ-escalated open ledger fee, capped by `fee_mult_max`/`fee_div_max`).
 - `ProcessTransactionFn` dependency injection via `getProcessTxnFn(NetworkOPs&)` for testability.
 - `acctMatchesPubKey` handles three account states: unactivated (master-only), master+regular both valid, master disabled (regular only).
+- `doSubmit`: pre-seeds `HashRouter` with the transaction hash before forwarding, so the node does not rebroadcast its own submission.
 
 ### Utility / Enrichment
 - `src/xrpld/rpc/BookChanges.h` — header-only template `computeBookChanges<L>(ledger)`; produces OHLCV per pair; reused by RPC handler and `book_changes` subscription stream.
-- `src/xrpld/rpc/CTID.h` — Concise Transaction ID (XLS-15d): 16-hex `C` + 28-bit ledgerSeq + 16-bit txnIdx + 16-bit netID. Boost regex; `boost::regex` not `std::regex`.
+- `src/xrpld/rpc/CTID.h` — Concise Transaction ID (XLS-15d): 16-hex `C` + 28-bit ledgerSeq + 16-bit txnIdx + 16-bit netID. Uses `boost::regex`, not `std::regex`.
 - `src/xrpld/rpc/DeliveredAmount.h` / `detail/DeliveredAmount.cpp` — `insertDeliveredAmount`; three-tier resolution; threshold = ledger 4594095 (Jan 2014) or close time 446000000s; `"unavailable"` string sentinel for pre-threshold ledgers; lazy lambdas avoid `LedgerMaster` calls when meta has `sfDeliveredAmount`.
 - `src/xrpld/rpc/MPTokenIssuanceID.h` / `detail/MPTokenIssuanceID.cpp` — `insertMPTokenIssuanceID`; mirrors `DeliveredAmount` three-function pattern (eligibility / extraction / injection).
 - `src/xrpld/rpc/handlers/server_info/ServerDefinitions.cpp` — built once at startup via Meyers singleton; SHA-512-half hash for client cache invalidation; X-macro–driven from protocol headers.
@@ -118,6 +125,16 @@ template <> Handler handlerFrom<MyCommandHandler>() {
 
 ### Client-side
 - `src/xrpld/rpc/RPCCall.h` / `detail/RPCCall.cpp` — `xrpld` CLI dispatch; `RPCParser` with static `Command[]` table mapping method → parse function; "trusted interface" — minimal validation by design.
+
+## Enrichment Pipeline
+
+Three functions are called together wherever transaction metadata is serialized to JSON. **Always apply all three** at the same call sites to keep responses consistent:
+
+1. `insertDeliveredAmount()` — actual delivered amount for payments/check-cash/account-delete.
+2. `RPC::insertNFTSyntheticInJson()` — synthetic NFT fields (`nft_offer_index`, `nftoken_id`, etc.) extracted from metadata.
+3. `RPC::insertMPTokenIssuanceID()` — `mpt_issuance_id` for successful `MPTokenIssuanceCreate` transactions.
+
+Call sites: `Tx.cpp`, `AccountTx.cpp`, `NetworkOPs.cpp`, `LedgerToJson.cpp`, `Simulate.cpp`.
 
 ## Resource Cost Tiers
 
@@ -154,7 +171,7 @@ if (context.role != Role::ADMIN && !context.app.config().canSign())
 - v2 strict boolean typing; v1 silently coerces.
 - v2 rejects mixing `ledger_index_min`/`max` with `ledger_index`/`ledger_hash` in `account_tx`; v1 tolerates.
 - v2 enforces precise marker objects in `account_tx` (`{ledger, seq}` integers).
-- v3 (beta) adds human-readable singleton aliases in `ledger_entry` index lookup.
+- v3 (beta) adds human-readable singleton aliases in `ledger_entry` index lookup. `VersionHandler::maxApiVer` tracks the highest beta version; the width of the beta range (currently 1) matters for the version negotiation boundary.
 
 ## Handler Subdirectory Map
 
@@ -164,7 +181,7 @@ if (context.role != Role::ADMIN && !context.app.config().canSign())
 - `handlers/orderbook/` — `AMMInfo`, `BookChanges`, `BookOffers`, `DepositAuthorized`, `GetAggregatePrice`, `NFTBuyOffers` / `NFTSellOffers` / `NFTOffersHelpers.h`, `PathFind` (subscription), `RipplePathFind` (one-shot).
 - `handlers/server_info/` — `Fee`, `Feature`, `Manifest`, `ServerDefinitions`, `ServerInfo`, `ServerState`, `Version.h` (class-based).
 - `handlers/subscribe/` — `Subscribe`, `Unsubscribe`.
-- `handlers/transaction/` — `Simulate` (dry-run via `tapDRY_RUN`), `Submit`, `SubmitMultiSigned`, `Tx`, `TransactionEntry` (ledger-pinned), `TxHistory` (paginated, `useTxTables()`-gated, deep-page cap 10000 for non-admin), `TxReduceRelay`.
+- `handlers/transaction/` — `Simulate` (dry-run via `tapDRY_RUN`; batch rejected), `Submit`, `SubmitMultiSigned`, `Tx`, `TransactionEntry` (ledger-pinned), `TxHistory` (paginated, `useTxTables()`-gated, deep-page cap 10000 for non-admin), `TxReduceRelay`.
 - `handlers/utility/` — `Ping` (role-conditional response), `Random`.
 - Top-level `handlers/`: `ChannelVerify` (no admin restriction, stateless), `VaultInfo` (XLS-66, vault + MPT issuance lookup).
 
@@ -188,3 +205,8 @@ if (context.role != Role::ADMIN && !context.app.config().canSign())
 - `getCountsJson` (in `GetCounts.h`) is callable from non-RPC contexts (e.g., `OverlayImpl::getCountsJson`).
 - `wallet_propose` entropy warning: <80 bits → strong warning; passphrase that already encodes the seed (1751/Base58/hex) suppresses warning.
 - Account marker security: always verify `RPC::isRelatedToAccount(*ledger, sle, accountID)` on resumed pagination — prevents cross-account directory traversal.
+- `AMMInfo` has two distinct parsing paths: one for `amm_account` (direct lookup) and one for `asset`+`asset2` pair (derives AMM account via `keylet::amm`). Both resolve to the same AMM SLE but through different code paths — changes must update both.
+- `book_offers` applies an inline load-shedder: if `checkFee` determines the consumer is at warning/drop tier, it cuts the offer limit in half before iterating.
+- `Simulate` rejects batch transactions (returns `rpcINVALID_PARAMS`) — `tapDRY_RUN` does not support the batch transaction type.
+- `autofillSignature()` in `Simulate.cpp` removes `SigningPubKey` and `TxnSignature` fields before applying dry-run, then restores them; callers must not pre-sign before calling Simulate.
+- `RPCSub` is a legacy feature retained for one specific partner. It is **not** a general-purpose webhook system. New subscribers should use WebSocket instead.
