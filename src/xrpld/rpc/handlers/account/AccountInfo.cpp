@@ -1,3 +1,5 @@
+#include <xrpld/rpc/handlers/account/AccountInfo.h>
+
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/rpc/Context.h>
@@ -91,14 +93,10 @@ doAccountInfo(RPC::JsonContext& context)
     std::string strIdent;
     if (params.isMember(jss::account))
     {
-        if (!params[jss::account].isString())
-            return RPC::invalidFieldError(jss::account);
         strIdent = params[jss::account].asString();
     }
     else if (params.isMember(jss::ident))
     {
-        if (!params[jss::ident].isString())
-            return RPC::invalidFieldError(jss::ident);
         strIdent = params[jss::ident].asString();
     }
     else
@@ -339,5 +337,25 @@ doAccountInfo(RPC::JsonContext& context)
 
     return result;
 }
+
+namespace RPC {
+
+AccountInfoHandler::AccountInfoHandler(JsonContext& context) : context_(context)
+{
+}
+
+Status
+AccountInfoHandler::check()
+{
+    return Status::kOK;
+}
+
+void
+AccountInfoHandler::writeResult(json::Value& value)
+{
+    value = doAccountInfo(context_);
+}
+
+}  // namespace RPC
 
 }  // namespace xrpl

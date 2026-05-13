@@ -3,6 +3,7 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/handlers/Handlers.h>
+#include <xrpld/rpc/handlers/account/AccountInfo.h>
 #include <xrpld/rpc/handlers/ledger/Ledger.h>
 #include <xrpld/rpc/handlers/server_info/Version.h>
 
@@ -48,6 +49,16 @@ handle(JsonContext& context, Object& object)
         context.apiVersion >= HandlerImpl::minApiVer &&
             context.apiVersion <= HandlerImpl::maxApiVer,
         "xrpl::RPC::handle : valid API version");
+
+    if constexpr (requires { HandlerImpl::requestFields; })
+    {
+        if (auto status = validateFieldSpecs(context.params, HandlerImpl::requestFields))
+        {
+            status.inject(object);
+            return status;
+        }
+    }
+
     HandlerImpl handler(context);
 
     auto status = handler.check();
@@ -78,10 +89,6 @@ handlerFrom()
 Handler const kHANDLER_ARRAY[]{
     // Some handlers not specified here are added to the table via addHandler()
     // Request-response methods
-    {.name = "account_info",
-     .valueMethod = byRef(&doAccountInfo),
-     .role = Role::USER,
-     .condition = Condition::NoCondition},
     {.name = "account_currencies",
      .valueMethod = byRef(&doAccountCurrencies),
      .role = Role::USER,
@@ -410,6 +417,7 @@ private:
         }
 
         // This is where the new-style handlers are added.
+        addHandler<AccountInfoHandler>();
         addHandler<LedgerHandler>();
         addHandler<VersionHandler>();
     }

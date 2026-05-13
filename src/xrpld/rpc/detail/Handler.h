@@ -6,7 +6,10 @@
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/server/NetworkOPs.h>
+
+#include <span>
 
 namespace json {
 class Object;
@@ -36,8 +39,36 @@ struct Handler
     unsigned maxApiVer = kAPI_MAXIMUM_VALID_VERSION;
 };
 
+enum class FieldRequirement { Optional, Required };
+
+struct FieldSpec
+{
+    json::StaticString name;
+    FieldRequirement requirement;
+    json::ValueType type;
+};
+
 Handler const*
 getHandler(unsigned int version, bool betaEnabled, std::string const&);
+
+inline Status
+validateFieldSpecs(json::Value const& params, std::span<FieldSpec const> fields)
+{
+    for (auto const& field : fields)
+    {
+        if (!params.isMember(field.name))
+        {
+            if (field.requirement == FieldRequirement::Required)
+                return {RpcInvalidParams, missingFieldMessage(std::string(field.name))};
+            continue;
+        }
+
+        if (params[field.name].type() != field.type)
+            return {RpcInvalidParams, invalidFieldMessage(field.name)};
+    }
+
+    return Status::kOK;
+}
 
 /** Return a json::ValueType::Object with a single entry. */
 template <class Value>
