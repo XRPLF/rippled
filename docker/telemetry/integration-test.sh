@@ -103,8 +103,9 @@ check_log_correlation() {
     # Cross-check: verify the sample trace_id exists in Tempo
     if [ -n "$sample_trace_id" ]; then
         local trace_found
+        # Tempo /api/traces/{id} returns OTLP shape: {"batches":[...]}
         trace_found=$(curl -sf "$TEMPO/api/traces/$sample_trace_id" \
-            | jq '.data | length' 2>/dev/null) || trace_found=0
+            | jq '.batches | length' 2>/dev/null) || trace_found=0
         if [ "$trace_found" -gt 0 ]; then
             ok "Log-Tempo cross-check: trace_id=$sample_trace_id found in Tempo"
         else
