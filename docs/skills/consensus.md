@@ -1,57 +1,135 @@
 # Consensus
 
-Template-based state machine in `Consensus.h` parameterized by an Adaptor (`RCLConsensus`). Three phases: open -> establish -> accepted. Modes: proposing, observing, wrongLedger, switchedLedger.
+Template-based state machine in `Consensus.h` parameterized by an `Adaptor` (production: `RCLConsensus`). Three phases: `open -> establish -> accepted`. Four modes: `proposing`, `observing`, `wrongLedger`, `switchedLedger`. Header-only because of templating; policy decisions (`shouldCloseLedger`, `checkConsensus`) live as free functions in `Consensus.cpp` for independent testability.
+
+## Architecture
+
+The consensus engine is fully decoupled from XRPL types via the `Adaptor` template parameter. `Adaptor` provides four type aliases (`Ledger_t`, `TxSet_t`, `NodeID_t`, `PeerPosition_t`) plus callbacks (`onClose`, `onAccept`, `onForceAccept`, `onModeChange`) and queries (`proposersValidated`, `proposersFinished`, `getPrevLedger`). Networking is hooked via `propose()` and three `share()` overloads (position, tx set, individual tx).
+
+The engine itself has no thread or timer — it is driven externally by `timerEntry()` calls. Thread safety is the caller's responsibility.
 
 ## Key Invariants
 
 - A ledger cannot close until the previous ledger reaches consensus AND (has transactions OR close time reached)
 - Proposals must have strictly increasing sequence numbers per peer; stale proposals are silently dropped
-- The Avalanche state machine progressively lowers consensus thresholds over time (init -> mid -> late -> stuck) to prevent livelock
-- `minCONSENSUS_PCT = 80` is the baseline; timing params: `ledgerMIN_CONSENSUS = 1950ms`, `ledgerMAX_CONSENSUS = 15s`
+- `ConsensusResult` constructor asserts `txns.id() == position.position()` — a node's declared position is always a commitment to a specific tx set
+- The Avalanche state machine progressively raises consensus thresholds over time (`init -> mid -> late -> stuck`) to force convergence
+- `minCONSENSUS_PCT = 80` is the baseline for `checkConsensus`; timing: `ledgerMIN_CONSENSUS = 1950ms`, `ledgerMAX_CONSENSUS = 15s`, `ledgerABANDON_CONSENSUS = 120s`
+- `ledgerMAX_CONSENSUS` must stay below `validationFRESHNESS` so waiting validators aren't mistaken for offline
 - Dead nodes (`deadNodes_`) are permanently excluded for the round once they bow out
+- LedgerTrie compression invariant: non-root nodes with zero `tipSupport` must have ≥2 children
+
+## Phases and Modes
+
+### Phase transitions (`ConsensusPhase` in `ConsensusTypes.h`)
+```
+       "close"             "accept"
+ open --------> establish ---------> accepted
+   ^               |                    |
+   |---------------|                    |
+   |       "startRound"                 |
+   |------------------------------------|
+```
+Mid-`establish` re-entry to `open` happens inside `handleWrongLedger()` — it preserves surrounding state rather than aborting. `timerEntry`, `gotTxSet`, and `peerProposal` all short-circuit when phase is `accepted`.
+
+### Mode transitions (`ConsensusMode`)
+```
+proposing               observing
+   \                       /
+    \---> wrongLedger <---/
+               ^
+               v
+         switchedLedger
+```
+`switchedLedger` is a distinct mode (not just `observing`) because close-time logic checks the mode label when deciding whether the previous ledger's close time is authoritative. `MonitoredMode` inner class wraps the enum to make silent mode changes structurally impossible — every `set()` calls `adaptor_.onModeChange(before, after)`.
+
+## Phase Logic
+
+### Open phase
+`shouldCloseLedger()` is called per timer tick. Priority order (`Consensus.cpp`):
+1. Sanity bounds — close immediately if `prevRoundTime` or `timeSincePrevClose` outside `[-1s, 10min]`
+2. Majority closed — close if `proposersClosed + proposersValidated > prevProposers / 2`
+3. Idle case — only close on `timeSincePrevClose >= ledgerIDLE_INTERVAL` (15s) when no transactions
+4. Minimum open time — never close before `ledgerMIN_CLOSE` (2s)
+5. Rate limit — block close if `openTime < prevRoundTime / 2` (prevents fast node from outrunning slower validators)
+
+Close-time reference: if mode is `wrongLedger` or close-time wasn't agreed, use internal `prevCloseTime_` rather than the ledger's recorded close time.
+
+### Establish phase
+Per tick: `updateOurPositions()` → `shouldPause()` → `haveConsensus()`. `ledgerMIN_CONSENSUS` is enforced before any position updates. `updateOurPositions()`:
+- Prunes stale peer proposals (older than `proposeFRESHNESS` = 20s)
+- Calls `dispute.updateVote(convergePercent_, ...)` on each `DisputedTx`
+- Rebuilds the `MutableTxSet` if any vote flipped, re-shares + re-proposes
+
+`shouldPause()` uses a 5-phase cycle (0–4) keyed off `(ahead - 1) % 5`. Each phase requires progressively more validators current; phase 4 requires all. This cycles to avoid any single threshold being universally right.
+
+### checkConsensus outcomes (`ConsensusState`)
+- `No` — insufficient agreement
+- `Yes` — local + network agree on tx set (80% with self counted)
+- `MovedOn` — 80% of peers finished without us (self not counted); we lost the race
+- `Expired` — abandoned after `prevAgreeTime * ledgerABANDON_CONSENSUS_FACTOR` (factor=10), clamped to `[ledgerMAX_CONSENSUS, ledgerABANDON_CONSENSUS]`
+
+The zero-peer case in `checkConsensusReached` deliberately refuses consensus until `reachedMax` — prevents premature self-close on a network slow to deliver proposals. The `stalled` case bypasses the percentage check entirely.
+
+## Avalanche Voting
+
+Four states defined in `ConsensusParms.h`:
+
+| State   | Time threshold (% of prior round) | Required yes-vote | Next   |
+|---------|-----------------------------------|-------------------|--------|
+| `init`  | 0%                                | 50%               | `mid`  |
+| `mid`   | 50%                               | 65%               | `late` |
+| `late`  | 85%                               | 70%               | `stuck`|
+| `stuck` | 200%                              | 95%               | `stuck`|
+
+Encoded as `std::map<AvalancheState, AvalancheCutoff>` (data-driven, not switch) so theoretical loops are expressible. `getNeededWeight()` returns `(consensusPct, optional<nextState>)`. Caller does the actual state update. `avMIN_ROUNDS` prevents premature escalation through states on clock jitter.
+
+`DisputedTx::updateVote()` behaves asymmetrically:
+- Proposing: `weight = (yays_*100 + (ourVote_?100:0)) / (nays_+yays_+1)`; `newPosition = weight > requiredPct`
+- Not proposing: `newPosition = yays_ > nays_`, `weight = -1`. Observer never distorts proposers' weighted vote.
+
+Stall detection (`DisputedTx::stalled`) — all must hold:
+1. `nextCutoff.consensusTime <= currentCutoff.consensusTime` (terminal state)
+2. ≥ `avMIN_ROUNDS` rounds in state
+3. `peersUnchanged >= avSTALLED_ROUNDS` OR `currentVoteCounter_ >= avSTALLED_ROUNDS` (OR not AND — defends against a peer flip-flopping to reset the counter)
+4. Vote split exceeds `minCONSENSUS_PCT` (80%) in either direction
+
+`peerUnchangedCounter_` resets to 0 on any peer vote change in `updateDisputes()`. Close-time consensus uses a separate threshold `avCT_CONSENSUS_PCT` (75%) — close-time agreement is a simple majority, not a multi-round ratchet.
+
+## Proposals (`ConsensusProposal.h`)
+
+Five fields hashed for signing: `HashPrefix::proposal`, `proposeSeq_`, `closeTime_`, `prevLedgerID_`, `position_`. Hash is `mutable std::optional<uint256>`, lazily computed; `changePosition()` and `bowOut()` must call `signingHash_.reset()` before mutating.
+
+Sequence sentinels:
+- `seqJoin = 0` — initial proposal (`isInitial()`); `ConsensusCloseTimes` collects these for clock-drift measurement
+- `seqLeave = 0xffffffff` — bow-out; `changePosition()` refuses to increment past this
+
+`seenTime()` is local wall-clock time when last updated, NOT `closeTime_` (the proposer's estimate of when the ledger should close in `NetClock`). Don't conflate them. `isStale(cutoff)` uses `seenTime()`. `operator==` includes `seenTime()`, so logically-identical proposals seen at different times don't compare equal.
+
+## Wrong-Ledger Recovery
+
+At every `timerEntry()`, `checkLedger()` calls `adaptor_.getPrevLedger()`. If diverged, `handleWrongLedger()`:
+1. Calls `leaveConsensus()` — broadcasts bow-out, drops to `observing`
+2. Clears peer state
+3. Calls `playbackProposals()` — replays proposals from `recentPeerPositions_` (capped at 10/peer, stored regardless of ledger ID)
+4. If correct ledger acquired: `startRoundInternal()` in `switchedLedger` mode; else: stays in `wrongLedger`
+
+The bounded `recentPeerPositions_` buffer is a deliberate trade-off: small bounded buffer beats dropping proposals during switches.
 
 ## Common Bug Patterns
 
 - Proposals referencing a stale `prevLedgerID_` after a ledger switch cause split-brain; always check `newPeerProp.prevLedger() != prevLedgerID_` before processing
 - Resetting the consensus timer during `establish` phase causes re-convergence and potential split; timer must only reset on phase transitions
 - `DisputedTx::updateVote` changes local vote based on peer pressure; bugs here cause determinism failures across nodes
-- `createDisputes()` deduplicates via `compares` set; missing this check creates duplicate disputes that skew vote counts
+- `createDisputes()` deduplicates via `result_->compares` set; missing this check creates duplicate disputes that skew vote counts
 - The `peerUnchangedCounter_` is reset to 0 when any vote changes; bugs in this counter cause premature consensus declaration
+- Forgetting `signingHash_.reset()` before mutating a `ConsensusProposal` returns stale hashes
+- Comparing wall-clock `seenTime()` against `NetClock` `closeTime_` is a type-shaped bug waiting to happen
 
-## Amendments
+## Key Code Patterns
 
-- 80% validator support for 2 weeks to enable; tracked via `AmendmentTable` with `amendmentMap_`
-- New amendments: add to `features.macro` with `XRPL_FEATURE`/`XRPL_FIX`, increment `numFeatures` in `Feature.h`
-- Unsupported enabled amendment blocks the server (`setAmendmentBlocked`); no mechanism to disable/revoke
-- Voting happens each consensus round in `doVoting`; votes are persisted in `FeatureVotes` SQLite table
-- `fixAmendmentMajorityCalc` changed the threshold calculation; check which calculation applies
-
-## UNL and Negative UNL
-
-- Negative UNL temporarily disables unreliable validators (max 25% of UNL: `negativeUNLMaxListed = 0.25`)
-- Scoring uses `buildScoreTable` over recent ledger history; low watermark (50%) = disable candidate, high watermark (80%) = re-enable candidate
-- Candidate selection is deterministic via previous ledger hash as randomizing pad
-- `newValidatorDisableSkip = FLAG_LEDGER_INTERVAL * 2` prevents disabling newly joined validators prematurely
-
-## Validations
-
-- `ValidationParms` defines freshness windows: CURRENT_WALL=5min, CURRENT_LOCAL=3min, SET_EXPIRES=10min, FRESHNESS=20s
-- `SeqEnforcer` rejects validations with regressed or duplicate sequence numbers (`ValStatus::badSeq`)
-- Conflicting validations (same seq, different hash) are logged as byzantine behavior
-- `handleNewValidation` is the entry point: checks trust, adds to `Validations` set, triggers `checkAccept` if current+trusted
-
-## Transaction Ordering
-
-- `CanonicalTXSet` orders by: salted account key (XOR with random salt) -> sequence proxy -> transaction ID
-- Salt prevents manipulation of ordering by account selection
-- `TxQ` uses `OrderCandidates`: higher fee level first, then `txID XOR parentHash` as tiebreaker
-- Per-account limit: `maximumTxnPerAccount`; blocked transactions held until blocker resolves
-
-## Key Patterns
-
-### Proposal Validation (prevents split-brain)
+### Proposal Validation
 ```cpp
-// REQUIRED: reject proposals referencing stale previous ledger
 if (newPeerProp.prevLedger() != prevLedgerID_)
 {
     JLOG(j_.debug()) << "Got proposal for " << newPeerProp.prevLedger()
@@ -62,7 +140,6 @@ if (newPeerProp.prevLedger() != prevLedgerID_)
 
 ### Complete Bow-Out Handling
 ```cpp
-// REQUIRED: all three steps — unvote, erase position, mark dead
 if (newPeerProp.isBowOut())
 {
     if (result_)
@@ -74,13 +151,92 @@ if (newPeerProp.isBowOut())
 }
 ```
 
+### CLOG diagnostic pattern
+Most methods take `std::unique_ptr<std::stringstream> const& clog = {}`. `CLOG(clog)` macro appends only when non-null — full round trace available without paying formatting cost on the hot path.
+
+## Validations (`Validations.h`)
+
+`Validations<Adaptor>` is templated; production uses `RCLValidationsAdaptor`. Five coordinated structures under one `mutex_`:
+- `current_`: most recent per node, fast-path for quorum
+- `byLedger_`: aged unordered map keyed by ledger ID
+- `bySequence_`: aged unordered map for Byzantine detection
+- `trie_`: `LedgerTrie<Ledger>` for preferred-ledger calc
+- `acquiring_`: validations waiting on locally-unavailable ledgers
+
+`ValidationParms` windows: `validationCURRENT_WALL=5min`, `validationCURRENT_LOCAL=3min`, `validationCURRENT_EARLY=3min`, `validationSET_EXPIRES=10min`, `validationFRESHNESS=20s` (used only for laggard detection, not staleness). Fields are mutable instance members, not `constexpr` — simulations inject alternate values.
+
+`isCurrent()` checks two clocks independently: signer's wall time and our local steady-clock first-observation time. Arithmetic promotes to signed 64-bit to avoid underflow on untrusted `signTime`.
+
+`SeqEnforcer<Seq>` rejects regressed/duplicate sequences but resets its high-water mark after `validationSET_EXPIRES` with no new validation — long-offline validators can rejoin.
+
+`add()` classification (in order):
+- Same seq, different ledger/sign time → `ValStatus::conflicting` (possible Byzantine)
+- Same seq + ledger, different cookie → `ValStatus::multiple` (misconfig/duplicate)
+- Otherwise → `ValStatus::badSeq`
+
+All trie queries go through `withTrie()`, which first `current()`-flushes stale entries then `checkAcquired()`-promotes newly available ledgers. `lastLedger_` tracks each node's trie contribution so `removeTrie()` can atomically undo before re-inserting.
+
+`getPreferred(curr)` fallback: trie → `acquiring_` (max waiters) → `nullopt`. Conservative switch rule: if preferred is an immediate child of current working ledger, stay put.
+
+`trustChanged()` iterates `current_` and full `byLedger_` to propagate UNL changes — trie reflects only currently trusted validators.
+
+`setSeqToKeep([low, high))` pins a range against eviction by "touching" entries near expiry. Throttled to once per `(validationSET_EXPIRES - validationFRESHNESS)` window.
+
+## LedgerTrie (`LedgerTrie.h`)
+
+Compressed prefix trie over ledger ancestry — ledger history is treated as a string over the alphabet of ledger IDs. Each `Node` carries a `Span` (half-open `[start_, end_)`), two counters, raw parent pointer, owned children.
+
+- `tipSupport`: validations exactly matching this node's tip
+- `branchSupport`: `tipSupport` + sum of descendants' `branchSupport`
+
+Counters propagate up the parent chain on every `insert`/`remove`. Non-root nodes with zero tip and ≤1 child violate the compression invariant and are merged.
+
+`insert()` may do up to two structural ops:
+1. Split — extract suffix into new child inheriting children + counts, truncate found node
+2. Branch — append new leaf
+
+`remove()` uses `findByLedgerID()` (O(n) exact match), not the prefix-based `find()`.
+
+`getPreferred(largestIssued)` — the algorithmic heart. Walks from root using "preferred by branch": validators with last validation below the current frontier are *uncommitted* (could swing any branch). A branch advances only when `branchSupport` exceeds *uncommitted*, and a child wins only when its `branchSupport` lead over the runner-up exceeds *uncommitted* (with `startID()` tie-break). The strictly-greater-than margin prevents thrashing when validators lag.
+
+`seqSupport: std::map<Seq, uint32_t>` (ordered for in-sequence walk) drives the uncommitted accounting.
+
+`checkInvariants()` does full DFS — used heavily in tests; verifies compression rule, counter consistency, parent links, and `seqSupport` sums.
+
+`Ledger` template contract: cheap copy, `seq()`, `operator[](Seq)` returning `ID{0}` for unknowns, `MakeGenesis{}` tag, free `mismatch(Ledger,Ledger)`. Unique history invariant: agreement on any ancestor ID implies agreement on all earlier ancestors.
+
+## Amendments
+
+- 80% validator support for 2 weeks to enable; tracked via `AmendmentTable` with `amendmentMap_`
+- New amendments: add to `features.macro` with `XRPL_FEATURE`/`XRPL_FIX`, increment `numFeatures` in `Feature.h`
+- Unsupported enabled amendment blocks the server (`setAmendmentBlocked`); no mechanism to disable/revoke
+- Voting happens each consensus round in `doVoting`; votes persisted in `FeatureVotes` SQLite table
+- `fixAmendmentMajorityCalc` changed the threshold calculation; check which applies
+
+## UNL and Negative UNL
+
+- N-UNL temporarily disables unreliable validators (max 25% of UNL: `negativeUNLMaxListed = 0.25`)
+- Scoring via `buildScoreTable` over recent ledger history; low watermark 50% = disable candidate, high 80% = re-enable
+- Candidate selection deterministic via previous ledger hash as randomizing pad
+- `newValidatorDisableSkip = FLAG_LEDGER_INTERVAL * 2` prevents disabling newly joined validators
+
+## Transaction Ordering
+
+- `CanonicalTXSet`: salted account key (XOR random salt) → seq proxy → tx ID. Salt prevents ordering manipulation
+- `TxQ` uses `OrderCandidates`: higher fee level first, then `txID XOR parentHash` tiebreaker
+- Per-account limit `maximumTxnPerAccount`; blocked transactions held until blocker resolves
+
 ## Key Files
 
-- `src/xrpld/consensus/Consensus.h` - state machine
-- `src/xrpld/consensus/ConsensusParms.h` - timing/threshold params
-- `src/xrpld/app/consensus/RCLConsensus.cpp` - XRPL adaptor
-- `src/xrpld/consensus/DisputedTx.h` - dispute tracking
-- `src/xrpld/app/misc/detail/AmendmentTable.cpp` - amendment logic
-- `src/xrpld/app/misc/NegativeUNLVote.cpp` - N-UNL voting
-- `src/xrpld/consensus/Validations.h` - validation tracking
-- `src/xrpld/app/misc/CanonicalTXSet.h` - TX ordering
+- `src/xrpld/consensus/Consensus.h` — state machine (header-only template)
+- `src/xrpld/consensus/Consensus.cpp` — free policy functions (`shouldCloseLedger`, `checkConsensus`, `checkConsensusReached`)
+- `src/xrpld/consensus/ConsensusParms.h` — all numeric thresholds; dual-clock (NetClock seconds vs steady ms)
+- `src/xrpld/consensus/ConsensusTypes.h` — `ConsensusMode`, `ConsensusPhase`, `ConsensusState`, `ConsensusTimer`, `ConsensusCloseTimes`, `ConsensusResult`
+- `src/xrpld/consensus/ConsensusProposal.h` — proposal record with sequence protocol and lazy signing hash
+- `src/xrpld/consensus/DisputedTx.h` — per-tx avalanche voting and stall detection
+- `src/xrpld/consensus/Validations.h` — validation tracking, indexing, trie integration
+- `src/xrpld/consensus/LedgerTrie.h` — compressed ancestry trie for preferred-ledger calc
+- `src/xrpld/app/consensus/RCLConsensus.cpp` — XRPL `Adaptor` implementation
+- `src/xrpld/app/misc/detail/AmendmentTable.cpp` — amendment voting logic
+- `src/xrpld/app/misc/NegativeUNLVote.cpp` — N-UNL voting
+- `src/xrpld/app/misc/CanonicalTXSet.h` — tx ordering
