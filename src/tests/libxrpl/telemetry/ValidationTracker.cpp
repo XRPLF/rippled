@@ -4,9 +4,14 @@
 
 #include <xrpld/telemetry/ValidationTracker.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/protocol/Protocol.h>
+
 #include <gtest/gtest.h>
 
 #include <chrono>
+#include <cstddef>
+#include <cstdint>
 #include <thread>
 
 using namespace xrpl;

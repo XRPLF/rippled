@@ -107,7 +107,7 @@ doSubmit(RPC::JsonContext& context)
 
     std::string reason;
     auto transaction = std::make_shared<Transaction>(stTx, reason, context.app);
-    if (transaction->getStatus() != TransStatus::NEW)
+    if (transaction->getStatus() != NEW)
     {
         jvResult[jss::error] = "invalidTransaction";
         jvResult[jss::error_exception] = "fails local checks: " + reason;

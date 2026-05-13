@@ -138,14 +138,12 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
 
     // If making an overpayment, count it as a full payment because it will do
     // about the same amount of work, if not more.
-    NumberRoundModeGuard const mg(
-        tx.isFlag(tfLoanOverpayment) ? Number::rounding_mode::upward
-                                     : Number::rounding_mode::downward);
+    NumberRoundModeGuard const mg(tx.isFlag(tfLoanOverpayment) ? Number::upward : Number::downward);
     // Estimate how many payments will be made
     Number const numPaymentEstimate = static_cast<std::int64_t>(amount / regularPayment);
 
     // Charge one base fee per paymentsPerFeeIncrement payments, rounding up.
-    Number::setround(Number::rounding_mode::upward);
+    Number::setround(Number::upward);
     auto const feeIncrements = std::max(
         std::int64_t(1),
         static_cast<std::int64_t>(numPaymentEstimate / loanPaymentsPerFeeIncrement));
@@ -242,8 +240,8 @@ LoanPay::preclaim(PreclaimContext const& ctx)
             ctx.view,
             account,
             asset,
-            FreezeHandling::fhZERO_IF_FROZEN,
-            AuthHandling::ahZERO_IF_UNAUTHORIZED,
+            fhZERO_IF_FROZEN,
+            ahZERO_IF_UNAUTHORIZED,
             ctx.j,
             SpendableHandling::shFULL_BALANCE);
         balance < amount)
@@ -300,7 +298,7 @@ LoanPay::doApply()
         // Round the minimum required cover up to be conservative. This ensures
         // CoverAvailable never drops below the theoretical minimum, protecting
         // the broker's solvency.
-        NumberRoundModeGuard const mg(Number::rounding_mode::upward);
+        NumberRoundModeGuard const mg(Number::upward);
         return coverAvailableProxy >=
             roundToAsset(
                    asset, tenthBipsOfValue(debtTotalProxy.value(), coverRateMinimum), loanScale) &&
@@ -406,7 +404,7 @@ LoanPay::doApply()
 
     auto const totalPaidToVaultRaw = paymentParts->principalPaid + paymentParts->interestPaid;
     auto const totalPaidToVaultRounded =
-        roundToAsset(asset, totalPaidToVaultRaw, vaultScale, Number::rounding_mode::downward);
+        roundToAsset(asset, totalPaidToVaultRaw, vaultScale, Number::downward);
     XRPL_ASSERT_PARTS(
         !asset.integral() || totalPaidToVaultRaw == totalPaidToVaultRounded,
         "xrpl::LoanPay::doApply",
@@ -513,8 +511,8 @@ LoanPay::doApply()
         view,
         account_,
         asset,
-        FreezeHandling::fhIGNORE_FREEZE,
-        AuthHandling::ahIGNORE_AUTH,
+        fhIGNORE_FREEZE,
+        ahIGNORE_AUTH,
         j_,
         SpendableHandling::shFULL_BALANCE);
     auto const vaultBalanceBefore = account_ == vaultPseudoAccount
@@ -523,8 +521,8 @@ LoanPay::doApply()
               view,
               vaultPseudoAccount,
               asset,
-              FreezeHandling::fhIGNORE_FREEZE,
-              AuthHandling::ahIGNORE_AUTH,
+              fhIGNORE_FREEZE,
+              ahIGNORE_AUTH,
               j_,
               SpendableHandling::shFULL_BALANCE);
     auto const brokerBalanceBefore = account_ == brokerPayee
@@ -533,8 +531,8 @@ LoanPay::doApply()
               view,
               brokerPayee,
               asset,
-              FreezeHandling::fhIGNORE_FREEZE,
-              AuthHandling::ahIGNORE_AUTH,
+              fhIGNORE_FREEZE,
+              ahIGNORE_AUTH,
               j_,
               SpendableHandling::shFULL_BALANCE);
 #endif
@@ -590,8 +588,8 @@ LoanPay::doApply()
         view,
         account_,
         asset,
-        FreezeHandling::fhIGNORE_FREEZE,
-        AuthHandling::ahIGNORE_AUTH,
+        fhIGNORE_FREEZE,
+        ahIGNORE_AUTH,
         j_,
         SpendableHandling::shFULL_BALANCE);
     auto const vaultBalanceAfter = account_ == vaultPseudoAccount
@@ -600,8 +598,8 @@ LoanPay::doApply()
               view,
               vaultPseudoAccount,
               asset,
-              FreezeHandling::fhIGNORE_FREEZE,
-              AuthHandling::ahIGNORE_AUTH,
+              fhIGNORE_FREEZE,
+              ahIGNORE_AUTH,
               j_,
               SpendableHandling::shFULL_BALANCE);
     auto const brokerBalanceAfter = account_ == brokerPayee
@@ -610,8 +608,8 @@ LoanPay::doApply()
               view,
               brokerPayee,
               asset,
-              FreezeHandling::fhIGNORE_FREEZE,
-              AuthHandling::ahIGNORE_AUTH,
+              fhIGNORE_FREEZE,
+              ahIGNORE_AUTH,
               j_,
               SpendableHandling::shFULL_BALANCE);
 

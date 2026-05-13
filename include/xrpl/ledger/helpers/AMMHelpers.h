@@ -28,7 +28,7 @@ reduceOffer(auto const& amount)
     static Number const reducedOfferPct(9999, -4);
 
     // Make sure the result is always less than amount or zero.
-    NumberRoundModeGuard const mg(Number::rounding_mode::towards_zero);
+    NumberRoundModeGuard const mg(Number::towards_zero);
     return amount * reducedOfferPct;
 }
 
@@ -180,7 +180,7 @@ getAMMOfferStartWithTakerGets(
     if (targetQuality.rate() == beast::zero)
         return std::nullopt;
 
-    NumberRoundModeGuard const mg(Number::rounding_mode::to_nearest);
+    NumberRoundModeGuard const mg(Number::to_nearest);
     auto const f = feeMult(tfee);
     auto const a = 1;
     auto const b = pool.in * (1 - 1 / f) / targetQuality.rate() - 2 * pool.out;
@@ -202,7 +202,7 @@ getAMMOfferStartWithTakerGets(
         // Round downward to minimize the offer and to maximize the quality.
         // This has the most impact when takerGets is XRP.
         auto const takerGets =
-            toAmount<TOut>(getAsset(pool.out), nTakerGetsProposed, Number::rounding_mode::downward);
+            toAmount<TOut>(getAsset(pool.out), nTakerGetsProposed, Number::downward);
         return TAmounts<TIn, TOut>{swapAssetOut(pool, takerGets, tfee), takerGets};
     };
 
@@ -247,7 +247,7 @@ getAMMOfferStartWithTakerPays(
     if (targetQuality.rate() == beast::zero)
         return std::nullopt;
 
-    NumberRoundModeGuard const mg(Number::rounding_mode::to_nearest);
+    NumberRoundModeGuard const mg(Number::to_nearest);
     auto const f = feeMult(tfee);
     auto const& a = f;
     auto const b = pool.in * (1 + f);
@@ -269,7 +269,7 @@ getAMMOfferStartWithTakerPays(
         // Round downward to minimize the offer and to maximize the quality.
         // This has the most impact when takerPays is XRP.
         auto const takerPays =
-            toAmount<TIn>(getAsset(pool.in), nTakerPaysProposed, Number::rounding_mode::downward);
+            toAmount<TIn>(getAsset(pool.in), nTakerPaysProposed, Number::downward);
         return TAmounts<TIn, TOut>{takerPays, swapAssetIn(pool, takerPays, tfee)};
     };
 
@@ -341,8 +341,7 @@ changeSpotPriceQuality(
                                 << " " << to_string(pool.out) << " " << quality << " " << tfee;
                 return std::nullopt;
             }
-            auto const takerPays =
-                toAmount<TIn>(getAsset(pool.in), nTakerPays, Number::rounding_mode::upward);
+            auto const takerPays = toAmount<TIn>(getAsset(pool.in), nTakerPays, Number::upward);
             // should not fail
             if (auto amounts = TAmounts<TIn, TOut>{takerPays, swapAssetIn(pool, takerPays, tfee)};
                 Quality{amounts} < quality &&
@@ -448,32 +447,32 @@ swapAssetIn(TAmounts<TIn, TOut> const& pool, TIn const& assetIn, std::uint16_t t
         // fee
         saveNumberRoundMode const _{Number::getround()};
 
-        Number::setround(Number::rounding_mode::upward);
+        Number::setround(Number::upward);
         auto const numerator = pool.in * pool.out;
         auto const fee = getFee(tfee);
 
-        Number::setround(Number::rounding_mode::downward);
+        Number::setround(Number::downward);
         auto const denom = pool.in + assetIn * (1 - fee);
 
         if (denom.signum() <= 0)
             return toAmount<TOut>(getAsset(pool.out), 0);
 
-        Number::setround(Number::rounding_mode::upward);
+        Number::setround(Number::upward);
         auto const ratio = numerator / denom;
 
-        Number::setround(Number::rounding_mode::downward);
+        Number::setround(Number::downward);
         auto const swapOut = pool.out - ratio;
 
         if (swapOut.signum() < 0)
             return toAmount<TOut>(getAsset(pool.out), 0);
 
-        return toAmount<TOut>(getAsset(pool.out), swapOut, Number::rounding_mode::downward);
+        return toAmount<TOut>(getAsset(pool.out), swapOut, Number::downward);
     }
 
     return toAmount<TOut>(
         getAsset(pool.out),
         pool.out - (pool.in * pool.out) / (pool.in + assetIn * feeMult(tfee)),
-        Number::rounding_mode::downward);
+        Number::downward);
 }
 
 /** Swap assetOut out of the pool and swap in a proportional amount
@@ -510,36 +509,36 @@ swapAssetOut(TAmounts<TIn, TOut> const& pool, TOut const& assetOut, std::uint16_
 
         saveNumberRoundMode const _{Number::getround()};
 
-        Number::setround(Number::rounding_mode::upward);
+        Number::setround(Number::upward);
         auto const numerator = pool.in * pool.out;
 
-        Number::setround(Number::rounding_mode::downward);
+        Number::setround(Number::downward);
         auto const denom = pool.out - assetOut;
         if (denom.signum() <= 0)
         {
             return toMaxAmount<TIn>(getAsset(pool.in));
         }
 
-        Number::setround(Number::rounding_mode::upward);
+        Number::setround(Number::upward);
         auto const ratio = numerator / denom;
         auto const numerator2 = ratio - pool.in;
         auto const fee = getFee(tfee);
 
-        Number::setround(Number::rounding_mode::downward);
+        Number::setround(Number::downward);
         auto const feeMult = 1 - fee;
 
-        Number::setround(Number::rounding_mode::upward);
+        Number::setround(Number::upward);
         auto const swapIn = numerator2 / feeMult;
         if (swapIn.signum() < 0)
             return toAmount<TIn>(getAsset(pool.in), 0);
 
-        return toAmount<TIn>(getAsset(pool.in), swapIn, Number::rounding_mode::upward);
+        return toAmount<TIn>(getAsset(pool.in), swapIn, Number::upward);
     }
 
     return toAmount<TIn>(
         getAsset(pool.in),
         ((pool.in * pool.out) / (pool.out - assetOut) - pool.in) / feeMult(tfee),
-        Number::rounding_mode::upward);
+        Number::upward);
 }
 
 /** Return square of n.
@@ -598,8 +597,7 @@ getLPTokenRounding(IsDeposit isDeposit)
 {
     // Minimize on deposit, maximize on withdraw to ensure
     // AMM invariant sqrt(poolAsset1 * poolAsset2) >= LPTokensBalance
-    return isDeposit == IsDeposit::Yes ? Number::rounding_mode::downward
-                                       : Number::rounding_mode::upward;
+    return isDeposit == IsDeposit::Yes ? Number::downward : Number::upward;
 }
 
 inline Number::rounding_mode
@@ -607,8 +605,7 @@ getAssetRounding(IsDeposit isDeposit)
 {
     // Maximize on deposit, minimize on withdraw to ensure
     // AMM invariant sqrt(poolAsset1 * poolAsset2) >= LPTokensBalance
-    return isDeposit == IsDeposit::Yes ? Number::rounding_mode::upward
-                                       : Number::rounding_mode::downward;
+    return isDeposit == IsDeposit::Yes ? Number::upward : Number::downward;
 }
 
 }  // namespace detail

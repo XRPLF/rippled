@@ -50,7 +50,7 @@ TransactionMaster::inLedger(
     if (!txn)
         return false;
 
-    txn->setStatus(TransStatus::COMMITTED, ledger, tseq, netID);
+    txn->setStatus(COMMITTED, ledger, tseq, netID);
     return true;
 }
 
@@ -130,7 +130,7 @@ TransactionMaster::fetch(
     else
     {
         if (uCommitLedger != 0u)
-            iTx->setStatus(TransStatus::COMMITTED, uCommitLedger);
+            iTx->setStatus(COMMITTED, uCommitLedger);
 
         txn = iTx->getSTransaction();
     }

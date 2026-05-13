@@ -17,7 +17,7 @@
  *   OTelCounterImpl / OTelGaugeImpl / OTelEventImpl / OTelMeterImpl
  *       |                    |                |              |
  *       v                    v                v              v
- *   OTel Counter<uint64> ObservableGauge  Histogram<double>  Counter<uint64>
+ *   Counter<uint64_t>  ObservableGauge  Histogram<double>  Counter<uint64_t>
  *       |                    |                |              |
  *       +--------------------+----------------+--------------+
  *       |
@@ -64,8 +64,7 @@
 #include <string>
 #include <vector>
 
-namespace beast {
-namespace insight {
+namespace beast::insight {
 
 namespace detail {
 
@@ -123,7 +122,7 @@ private:
 /**
  * @brief OTel-backed implementation of beast::insight::CounterImpl.
  *
- * Wraps an OTel Counter<int64_t> instrument. Each increment() call
+ * Wraps an OTel Counter<uint64_t> instrument. Each increment() call
  * is forwarded directly to the OTel counter's Add() method. The
  * PeriodicMetricReader collects and exports the accumulated delta.
  *
@@ -239,7 +238,7 @@ public:
     /**
      * @brief Increment (or decrement) the gauge by a signed amount.
      *
-     * Clamps the result to [0, UINT64_MAX] to match StatsDGaugeImpl
+     * Clamps the result to [0, INT64_MAX] to match StatsDGaugeImpl
      * behavior.
      *
      * @param amount  Signed amount to add to the current value.
@@ -253,6 +252,10 @@ public:
      */
     int64_t
     currentValue() const;
+
+    /** Static callback registered with the OTel SDK observable gauge. */
+    static void
+    gaugeCallback(opentelemetry::metrics::ObserverResult result, void* state);
 
 private:
     OTelGaugeImpl&
@@ -578,27 +581,25 @@ OTelGaugeImpl::OTelGaugeImpl(
     : m_gauge(meter->CreateInt64ObservableGauge(name)), m_collector(collector)
 {
     m_collector->addGauge(this);
+    m_gauge->AddCallback(gaugeCallback, this);
+}
 
-    // Register the async callback that the SDK calls during collection.
-    // Before reading the gauge value, invoke all registered hooks so that
-    // hook handlers (e.g. NetworkOPs State_Accounting) have a chance to
-    // update gauge values. callHooks() uses a debounce timestamp so hooks
-    // run at most once per collection cycle even with many gauges.
-    m_gauge->AddCallback(
-        [](opentelemetry::metrics::ObserverResult result, void* state) {
-            auto* self = static_cast<OTelGaugeImpl*>(state);
-            self->m_collector->callHooks();
-            if (auto intResult = opentelemetry::nostd::get_if<opentelemetry::nostd::shared_ptr<
-                    opentelemetry::metrics::ObserverResultT<int64_t>>>(&result))
-            {
-                (*intResult)->Observe(self->currentValue());
-            }
-        },
-        this);
+void
+OTelGaugeImpl::gaugeCallback(opentelemetry::metrics::ObserverResult result, void* state)
+{
+    auto* self = static_cast<OTelGaugeImpl*>(state);
+    self->m_collector->callHooks();
+    if (auto intResult = opentelemetry::nostd::get_if<
+            opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObserverResultT<int64_t>>>(
+            &result))
+    {
+        (*intResult)->Observe(self->currentValue());
+    }
 }
 
 OTelGaugeImpl::~OTelGaugeImpl()
 {
+    m_gauge->RemoveCallback(gaugeCallback, this);
     m_collector->removeGauge(this);
 }
 
@@ -720,8 +721,7 @@ OTelCollectorImp::~OTelCollectorImp()
         m_journal.info() << "OTelCollector shutting down";
     if (m_provider)
     {
-        // ForceFlush to export any pending metrics before shutdown.
-        m_provider->ForceFlush();
+        m_provider->ForceFlush(std::chrono::milliseconds(2000));
         m_provider->Shutdown();
     }
     if (m_journal.info())
@@ -783,10 +783,10 @@ OTelCollectorImp::callHooks()
     auto now = std::chrono::duration_cast<std::chrono::milliseconds>(
                    std::chrono::steady_clock::now().time_since_epoch())
                    .count();
-    auto last = m_lastHookCallMs.load(std::memory_order_relaxed);
+    auto last = m_lastHookCallMs.load(std::memory_order_acquire);
     if (now - last < 500)
         return;
-    if (!m_lastHookCallMs.compare_exchange_strong(last, now, std::memory_order_relaxed))
+    if (!m_lastHookCallMs.compare_exchange_strong(last, now, std::memory_order_acq_rel))
         return;  // Another thread won the race.
 
     std::lock_guard lock(m_mutex);
@@ -850,19 +850,19 @@ OTelCollector::New(
     return std::make_shared<detail::OTelCollectorImp>(endpoint, prefix, instanceId, journal);
 }
 
-}  // namespace insight
-}  // namespace beast
+}  // namespace beast::insight
 
 #else  // !XRPL_ENABLE_TELEMETRY
 
 // When telemetry is disabled at compile time, OTelCollector::New()
 // returns a NullCollector so callers do not need conditional logic.
 
+#include <xrpl/beast/insight/Collector.h>
 #include <xrpl/beast/insight/NullCollector.h>
 #include <xrpl/beast/insight/OTelCollector.h>
+#include <xrpl/beast/utility/Journal.h>
 
-namespace beast {
-namespace insight {
+namespace beast::insight {
 
 std::shared_ptr<Collector>
 OTelCollector::New(
@@ -874,7 +874,6 @@ OTelCollector::New(
     return NullCollector::New();
 }
 
-}  // namespace insight
-}  // namespace beast
+}  // namespace beast::insight
 
 #endif  // XRPL_ENABLE_TELEMETRY
