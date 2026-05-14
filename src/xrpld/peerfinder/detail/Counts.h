@@ -8,32 +8,73 @@
 
 namespace xrpl::PeerFinder {
 
-/** Direction of a slot count adjustment. */
-enum class CountAdjustment : int { Decrement = -1, Increment = 1 };
+/** Direction of a slot count adjustment passed to `Counts::adjust`. */
+enum class CountAdjustment : int {
+    Decrement = -1, /**< Remove a slot from tracked counts. */
+    Increment = 1   /**< Add a slot to tracked counts. */
+};
 
-/** Manages the count of available connections for the various slots. */
+/** Tracks the occupancy of every connection-slot category managed by PeerFinder.
+ *
+ *  `Counts` is the bookkeeping core that answers the resource-management
+ *  questions `Logic` needs: Are inbound slots available? Should more outbound
+ *  attempts be launched? Can this handshaked slot be promoted to active?
+ *
+ *  All mutations funnel through the private `adjust()` method, which is called
+ *  by `Logic` under its own `std::recursive_mutex`. `Counts` itself carries no
+ *  synchronization — it is a value-semantics helper embedded in a larger
+ *  guarded object.
+ *
+ *  Fixed peers (from node config) and reserved peers (cluster/reservation
+ *  table) are tracked in separate counters and do NOT consume ordinary
+ *  inbound/outbound slot capacity; `canActivate()` admits them unconditionally.
+ *
+ *  @see Logic
+ */
 class Counts
 {
 public:
-    /** Adds the slot state and properties to the slot counts. */
+    /** Register a slot's state and properties in the counts.
+     *
+     *  Thin wrapper around `adjust(s, Increment)`. Call this whenever a slot
+     *  is created or transitions to a new state (after updating the slot).
+     *
+     *  @param s The slot whose current state and properties should be counted.
+     */
     void
     add(Slot const& s)
     {
         adjust(s, CountAdjustment::Increment);
     }
 
-    /** Removes the slot state and properties from the slot counts. */
+    /** Deregister a slot's state and properties from the counts.
+     *
+     *  Thin wrapper around `adjust(s, Decrement)`. Call this before a slot
+     *  transitions to a new state or is destroyed.
+     *
+     *  @param s The slot whose current state and properties should be removed.
+     */
     void
     remove(Slot const& s)
     {
         adjust(s, CountAdjustment::Decrement);
     }
 
-    /** Returns `true` if the slot can become active. */
+    /** Determine whether a handshaked slot may be promoted to active.
+     *
+     *  Fixed and reserved slots bypass capacity limits and are always admitted.
+     *  For ordinary slots, inbound connections require `in_active_ < in_max_`
+     *  and outbound connections require `out_active_ < out_max_`.
+     *
+     *  @param s The slot to test; must be in `Connected` or `Accept` state.
+     *  @return `true` if the slot may become active, `false` if all slots of
+     *      its direction are occupied.
+     *  @note Fixed and reserved connections are never blocked by slot limits,
+     *      ensuring administratively configured peers can always connect.
+     */
     [[nodiscard]] bool
     canActivate(Slot const& s) const
     {
-        // Must be handshaked and in the right state
         XRPL_ASSERT(
             s.state() == Slot::State::Connected || s.state() == Slot::State::Accept,
             "xrpl::PeerFinder::Counts::can_activate : valid input state");
@@ -47,7 +88,15 @@ public:
         return out_active_ < out_max_;
     }
 
-    /** Returns the number of attempts needed to bring us to the max. */
+    /** Compute how many additional outbound attempts should be launched.
+     *
+     *  Compares the current in-flight attempt count against
+     *  `Tuning::kMAX_CONNECT_ATTEMPTS` (20) to cap simultaneous outbound
+     *  connection storms regardless of how many free slots remain.
+     *
+     *  @return Number of additional attempts that may be started; 0 when the
+     *      in-flight count has already reached the cap.
+     */
     [[nodiscard]] std::size_t
     attemptsNeeded() const
     {
@@ -56,37 +105,59 @@ public:
         return Tuning::kMAX_CONNECT_ATTEMPTS - attempts_;
     }
 
-    /** Returns the number of outbound connection attempts. */
+    /** Return the current number of in-flight outbound connection attempts.
+     *
+     *  Counts slots in `Connect` or `Connected` state (both are outbound
+     *  attempts that have not yet been admitted as active).
+     *
+     *  @return Number of in-flight outbound attempts.
+     */
     [[nodiscard]] std::size_t
     attempts() const
     {
         return attempts_;
     }
 
-    /** Returns the total number of outbound slots. */
+    /** Return the configured maximum number of outbound slots.
+     *
+     *  Set by `onConfig()` from `Config::outPeers`. Fixed-peer connections
+     *  do not consume this quota.
+     *
+     *  @return Maximum desired outbound peer count.
+     */
     [[nodiscard]] int
     outMax() const
     {
         return out_max_;
     }
 
-    /** Returns the number of outbound peers assigned an open slot.
-        Fixed peers do not count towards outbound slots used.
-    */
+    /** Return the number of active ordinary outbound peers.
+     *
+     *  Fixed and reserved peers are excluded; they have their own counters
+     *  and do not consume outbound slot capacity.
+     *
+     *  @return Count of active non-fixed, non-reserved outbound peers.
+     */
     [[nodiscard]] int
     outActive() const
     {
         return out_active_;
     }
 
-    /** Returns the number of fixed connections. */
+    /** Return the total number of fixed-peer connections (any state).
+     *
+     *  @return Count of fixed slots across all states.
+     */
     [[nodiscard]] std::size_t
     fixed() const
     {
         return fixed_;
     }
 
-    /** Returns the number of active fixed connections. */
+    /** Return the number of fixed-peer connections that are fully active.
+     *
+     *  @return Count of fixed slots in `Active` state.
+     */
     [[nodiscard]] std::size_t
     fixedActive() const
     {
@@ -95,7 +166,15 @@ public:
 
     //--------------------------------------------------------------------------
 
-    /** Called when the config is set or changed. */
+    /** Apply configuration limits for inbound and outbound slot capacities.
+     *
+     *  Sets `out_max_` unconditionally from `config.outPeers`. Sets `in_max_`
+     *  from `config.inPeers` only when `config.wantIncoming` is true; if the
+     *  node does not want inbound connections, `in_max_` remains 0, which
+     *  causes `canActivate()` to reject all inbound slots.
+     *
+     *  @param config The active PeerFinder configuration.
+     */
     void
     onConfig(Config const& config)
     {
@@ -104,51 +183,87 @@ public:
             in_max_ = config.inPeers;
     }
 
-    /** Returns the number of accepted connections that haven't handshaked. */
+    /** Return the number of inbound connections that have not yet handshaked.
+     *
+     *  These are slots in `Accept` state — the TCP connection is established
+     *  but the protocol handshake is still in progress.
+     *
+     *  @return Count of pre-handshake inbound slots.
+     */
     [[nodiscard]] int
     acceptCount() const
     {
         return acceptCount_;
     }
 
-    /** Returns the number of connection attempts currently active. */
+    /** Return the number of outbound connection attempts currently in progress.
+     *
+     *  Alias for `attempts()` using the naming convention expected by
+     *  `onWrite()` and `stateString()`.
+     *
+     *  @return Count of slots in `Connect` or `Connected` state.
+     */
     [[nodiscard]] int
     connectCount() const
     {
         return attempts_;
     }
 
-    /** Returns the number of connections that are gracefully closing. */
+    /** Return the number of connections currently undergoing graceful teardown.
+     *
+     *  @return Count of slots in `Closing` state.
+     */
     [[nodiscard]] int
     closingCount() const
     {
         return closingCount_;
     }
 
-    /** Returns the total number of inbound slots. */
+    /** Return the configured maximum number of inbound slots.
+     *
+     *  Zero when `Config::wantIncoming` was false at `onConfig()` time,
+     *  causing all inbound activation attempts to be rejected.
+     *
+     *  @return Maximum allowed inbound active peer count.
+     */
     [[nodiscard]] int
     inMax() const
     {
         return in_max_;
     }
 
-    /** Returns the number of inbound peers assigned an open slot. */
+    /** Return the number of active ordinary inbound peers.
+     *
+     *  Fixed and reserved peers are excluded and do not consume inbound
+     *  slot capacity.
+     *
+     *  @return Count of active non-fixed, non-reserved inbound peers.
+     */
     [[nodiscard]] int
     inboundActive() const
     {
         return in_active_;
     }
 
-    /** Returns the total number of active peers excluding fixed peers. */
+    /** Return the combined active ordinary peer count (inbound + outbound).
+     *
+     *  Fixed and reserved peers are excluded from both terms.
+     *
+     *  @return `in_active_ + out_active_`.
+     */
     [[nodiscard]] int
     totalActive() const
     {
         return in_active_ + out_active_;
     }
 
-    /** Returns the number of unused inbound slots.
-        Fixed peers do not deduct from inbound slots or count towards totals.
-    */
+    /** Return the number of available inbound slots.
+     *
+     *  Fixed and reserved peers do not consume inbound capacity, so they do
+     *  not reduce this value.
+     *
+     *  @return `in_max_ - in_active_`, or 0 if the inbound limit is reached.
+     */
     [[nodiscard]] int
     inboundSlotsFree() const
     {
@@ -157,9 +272,13 @@ public:
         return 0;
     }
 
-    /** Returns the number of unused outbound slots.
-        Fixed peers do not deduct from outbound slots or count towards totals.
-    */
+    /** Return the number of available outbound slots.
+     *
+     *  Fixed and reserved peers do not consume outbound capacity, so they do
+     *  not reduce this value.
+     *
+     *  @return `out_max_ - out_active_`, or 0 if the outbound limit is reached.
+     */
     [[nodiscard]] int
     outboundSlotsFree() const
     {
@@ -170,21 +289,34 @@ public:
 
     //--------------------------------------------------------------------------
 
-    /** Returns true if the slot logic considers us "connected" to the network.
+    /** Determine whether this node considers itself connected to the network.
+     *
+     *  Returns `true` only when `out_max_ <= 0`, which means the node is
+     *  configured with zero desired outbound connections (pure-listener mode)
+     *  and therefore considers itself connected without needing any outbound
+     *  peers. In the common case where `out_max_ > 0` this always returns
+     *  `false`; `Logic` uses `out_active_` vs `out_max_` directly to drive
+     *  connection attempts.
+     *
+     *  @note Fixed peers are not counted toward `out_active_` and do not
+     *      influence this result.
+     *
+     *  @return `true` if the node operates as a pure listener (outPeers == 0).
      */
     [[nodiscard]] bool
     isConnectedToNetwork() const
     {
-        // We will consider ourselves connected if we have reached
-        // the number of outgoing connections desired, or if connect
-        // automatically is false.
-        //
-        // Fixed peers do not count towards the active outgoing total.
-
         return out_max_ <= 0;
     }
 
-    /** Output statistics. */
+    /** Serialize current slot counts into a property-stream map for monitoring.
+     *
+     *  Emits: `accept`, `connect`, `close`, `in` (active/max), `out`
+     *  (active/max), `fixed` (active fixed peers), `reserved`, and `total`
+     *  (all active peers including fixed and reserved).
+     *
+     *  @param map The property-stream map to write into.
+     */
     void
     onWrite(beast::PropertyStream::Map& map) const
     {
@@ -198,7 +330,14 @@ public:
         map["total"] = active_;
     }
 
-    /** Records the state for diagnostics. */
+    /** Return a compact human-readable summary of current slot state.
+     *
+     *  Produces a string of the form
+     *  `"3/8 out, 10/21 in, 2 connecting, 0 closing"` used in log
+     *  messages throughout `Logic`.
+     *
+     *  @return Diagnostic string; no side effects.
+     */
     [[nodiscard]] std::string
     stateString() const
     {
@@ -210,7 +349,19 @@ public:
 
     //--------------------------------------------------------------------------
 private:
-    /** Increments or decrements a counter based on the adjustment direction. */
+    /** Increment or decrement a counter by exactly one step.
+     *
+     *  All `std::size_t` counters MUST be updated through this helper rather
+     *  than via `+= static_cast<int>(dir)`. Adding `-1` to a `std::size_t`
+     *  implicitly converts to `SIZE_MAX` (unsigned-integer overflow), which
+     *  masks underflow bugs and is flagged by UBSan. Plain `int` counters
+     *  (`acceptCount_`, `attempts_`, `closingCount_`) are safe with `+= n`
+     *  and bypass this helper.
+     *
+     *  @tparam T Counter type (integral).
+     *  @param counter Reference to the counter to adjust.
+     *  @param dir Whether to increment or decrement.
+     */
     template <typename T>
     static void
     adjustCounter(T& counter, CountAdjustment dir)
@@ -226,14 +377,25 @@ private:
         }
     }
 
-    // Adjusts counts based on the specified slot, in the direction indicated.
-    //
-    // IMPORTANT: All std::size_t counters MUST be adjusted via adjustCounter()
-    // and NEVER via `+= n` where n = static_cast<int>(dir).  When dir is
-    // Decrement, n == -1; adding -1 to a std::size_t implicitly converts -1 to
-    // SIZE_MAX, which UBSan flags as unsigned-integer-overflow and masks real
-    // underflow bugs (decrementing a counter already at zero).  Plain int
-    // counters (acceptCount_, attempts_, closingCount_) are safe with += n.
+    /** Update all counters that track the given slot's state and properties.
+     *
+     *  Single entry-point for all count mutations: `add()` and `remove()` are
+     *  thin wrappers that call this with `Increment` or `Decrement`. Keeping
+     *  all counter logic here ensures add/remove can never diverge.
+     *
+     *  State mapping:
+     *  - `Accept`    → `acceptCount_` (asserts inbound).
+     *  - `Connect` / `Connected` → `attempts_` (asserts outbound).
+     *  - `Active`    → `active_`; additionally `fixed_active_` for fixed slots,
+     *                  or `in_active_`/`out_active_` for ordinary slots.
+     *  - `Closing`   → `closingCount_`.
+     *
+     *  Fixed and reserved slots are always tracked in `fixed_`/`reserved_`
+     *  regardless of state.
+     *
+     *  @param s   The slot whose current state drives the counter selection.
+     *  @param dir `Increment` when adding a slot; `Decrement` when removing.
+     */
     void
     adjust(Slot const& s, CountAdjustment const dir)
     {
@@ -317,11 +479,10 @@ private:
     /** Reserved connections. */
     std::size_t reserved_{0};
 
-    // Number of inbound connections that are
-    // not active or gracefully closing.
+    /** Inbound connections in `Accept` state (TCP established, pre-handshake). */
     int acceptCount_{0};
 
-    // Number of connections that are gracefully closing.
+    /** Connections in `Closing` state (graceful teardown in progress). */
     int closingCount_{0};
 };
 

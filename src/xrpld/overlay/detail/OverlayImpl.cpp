@@ -1,3 +1,18 @@
+/** @file
+ *  Concrete implementation of the XRPL peer-to-peer overlay network.
+ *
+ *  Implements `OverlayImpl`, the operational heart of an XRPL node's P2P
+ *  layer.  The class manages the full lifecycle of peer connections — from
+ *  initial TLS acceptance and HTTP upgrade through cryptographic handshake,
+ *  protocol negotiation, active message relay, and eventual teardown.  It
+ *  also exposes three internal HTTP endpoints (`/crawl`, `/health`, `/vl/`)
+ *  consumed by network topology tools, monitoring systems, and validator-list
+ *  clients respectively.
+ *
+ *  Also defines the `setupOverlay` config parser and the `makeOverlay`
+ *  factory, keeping the concrete type out of translation units that only
+ *  need the `Overlay` interface.
+ */
 #include <xrpld/overlay/detail/OverlayImpl.h>
 
 #include <xrpld/app/misc/ValidatorList.h>
@@ -91,11 +106,21 @@
 
 namespace xrpl {
 
+/** Bitmask flags that control which sections appear in `/crawl` responses.
+ *
+ *  Composed from the `[crawl]` config section.  A value of `kDISABLED`
+ *  (0) suppresses the endpoint entirely.
+ */
 namespace CrawlOptions {
+/** `/crawl` endpoint is disabled; no response is served. */
 static constexpr auto kDISABLED = 0;
+/** Include peer-connectivity topology in the `overlay` field. */
 static constexpr auto kOVERLAY = (1 << 0);
+/** Include local server status info in the `server` field. */
 static constexpr auto kSERVER_INFO = (1 << 1);
+/** Include server performance counters in the `counts` field. */
 static constexpr auto kSERVER_COUNTS = (1 << 2);
+/** Include UNL / validator-list info in the `unl` field. */
 static constexpr auto kUNL = (1 << 3);
 }  // namespace CrawlOptions
 
@@ -116,15 +141,20 @@ OverlayImpl::Timer::Timer(OverlayImpl& overlay) : Child(overlay), timer(overlay_
 {
 }
 
+/** Cancel the timer and prevent any further rescheduling.
+ *
+ *  Always called from the overlay strand, so it never races with `onTimer`.
+ *  Sets `stopping` before cancelling so the in-flight handler (if any)
+ *  sees the flag and exits without rescheduling.
+ */
 void
 OverlayImpl::Timer::stop()
 {
-    // This method is only ever called from the same strand that calls
-    // Timer::on_timer, ensuring they never execute concurrently.
     stopping = true;
     timer.cancel();
 }
 
+/** Schedule the next one-second tick on the overlay strand. */
 void
 OverlayImpl::Timer::asyncWait()
 {
@@ -135,6 +165,20 @@ OverlayImpl::Timer::asyncWait()
             std::bind(&Timer::onTimer, shared_from_this(), std::placeholders::_1)));
 }
 
+/** Execute per-second overlay maintenance tasks.
+ *
+ *  On each tick: drives `PeerFinder::oncePerSecond`, pushes endpoint
+ *  advertisements, opens new outbound connections, and (when TX
+ *  reduce-relay is enabled) flushes the per-peer TX hash queues.
+ *  Every `Tuning::kCHECK_IDLE_PEERS` ticks, purges stale squelch slots
+ *  via `deleteIdlePeers`.  Reschedules itself at the end of each
+ *  successful tick.
+ *
+ *  A deliberate `operation_aborted` cancel (from `stop()`) is silently
+ *  ignored; any other ASIO error is logged at error level.
+ *
+ *  @param ec ASIO error code from the expired timer wait.
+ */
 void
 OverlayImpl::Timer::onTimer(error_code ec)
 {
@@ -203,6 +247,29 @@ OverlayImpl::OverlayImpl(
     beast::PropertyStream::Source::add(peerFinder_.get());
 }
 
+/** Accept an inbound TLS connection and either handle it as a built-in HTTP
+ *  request or upgrade it to a peer session.
+ *
+ *  Non-peer requests (`/crawl`, `/health`, `/vl/`) are dispatched to
+ *  `processRequest` and return immediately.  For genuine peer upgrade
+ *  requests the method performs sequential gating checks — resource limit,
+ *  slot availability (IP-limit / self-connect), protocol-version negotiation,
+ *  TLS channel-binding cookie, and cryptographic handshake — before creating
+ *  a `PeerImp` and registering it in `peers_` and `list_`.
+ *
+ *  `peer->run()` is called while holding `mutex_` so that a concurrent
+ *  `stop()` cannot drain the list before the peer has started its I/O.
+ *  On any failure the PeerFinder slot is released via `onClosed` to keep
+ *  slot accounting accurate.
+ *
+ *  @param streamPtr Ownership of the established TLS stream.
+ *  @param request   The parsed HTTP upgrade (or plain) request.
+ *  @param remoteEndpoint TCP endpoint of the connecting peer.
+ *  @return A `Handoff` that is either consumed (moved) or carries an HTTP
+ *      response to be written back to the caller.
+ *  @throws Nothing — all `verifyHandshake` exceptions are caught internally
+ *      and converted to HTTP 400 responses.
+ */
 Handoff
 OverlayImpl::onHandoff(
     std::unique_ptr<stream_type>&& streamPtr,
@@ -243,13 +310,10 @@ OverlayImpl::onHandoff(
 
     if (slot == nullptr)
     {
-        // connection refused either IP limit exceeded or self-connect
         handoff.moved = false;
         JLOG(journal.debug()) << "Peer " << remoteEndpoint << " refused, " << to_string(result);
         return handoff;
     }
-
-    // Validate HTTP request
 
     {
         auto const types = beast::rfc2616::splitCommas(request["Connect-As"]);
@@ -299,8 +363,6 @@ OverlayImpl::onHandoff(
         consumer.setPublicKey(publicKey);
 
         {
-            // The node gets a reserved slot if it is in our cluster
-            // or if it has a reservation.
             bool const reserved = static_cast<bool>(app_.getCluster().member(publicKey)) ||
                 app_.getPeerReservations().contains(publicKey);
             auto const result = peerFinder_->activate(slot, publicKey, reserved);
@@ -327,9 +389,6 @@ OverlayImpl::onHandoff(
             std::move(streamPtr),
             *this);
         {
-            // As we are not on the strand, run() must be called
-            // while holding the lock, otherwise new I/O can be
-            // queued after a call to stop().
             std::scoped_lock const lock(mutex_);
             {
                 auto const result = peers_.emplace(peer->slot(), peer);
@@ -358,6 +417,12 @@ OverlayImpl::onHandoff(
 
 //------------------------------------------------------------------------------
 
+/** Return true if the request is an HTTP upgrade listing at least one
+ *  recognized XRPL protocol version.
+ *
+ *  @param request The incoming HTTP request to inspect.
+ *  @return `true` when the request should be treated as a peer connection.
+ */
 bool
 OverlayImpl::isPeerUpgrade(http_request_type const& request)
 {
@@ -367,6 +432,11 @@ OverlayImpl::isPeerUpgrade(http_request_type const& request)
     return !versions.empty();
 }
 
+/** Format a zero-padded three-digit peer ID prefix for log sinks.
+ *
+ *  @param id Short numeric peer identifier.
+ *  @return String of the form `"[NNN] "` for use with `beast::WrappedSink`.
+ */
 std::string
 OverlayImpl::makePrefix(std::uint32_t id)
 {
@@ -375,6 +445,17 @@ OverlayImpl::makePrefix(std::uint32_t id)
     return ss.str();
 }
 
+/** Build an HTTP 503 response carrying a JSON `peer-ips` redirect list.
+ *
+ *  Sent when a new inbound connection is refused due to slot limits.
+ *  The body contains alternative peer addresses obtained from
+ *  `PeerFinder::redirect()` so the rejected peer can try elsewhere.
+ *
+ *  @param slot          The refused PeerFinder slot (used for redirect list).
+ *  @param request       The original HTTP request (version is echoed back).
+ *  @param remoteAddress Source IP echoed in the `Remote-Address` header.
+ *  @return A `Writer` wrapping the serialised HTTP response.
+ */
 std::shared_ptr<Writer>
 OverlayImpl::makeRedirectResponse(
     std::shared_ptr<PeerFinder::Slot> const& slot,
@@ -402,6 +483,15 @@ OverlayImpl::makeRedirectResponse(
     return std::make_shared<SimpleWriter>(msg);
 }
 
+/** Build an HTTP 400 response for a failed handshake or protocol error.
+ *
+ *  @param slot          The refused slot (unused in body, kept for symmetry
+ *      with `makeRedirectResponse`).
+ *  @param request       The original HTTP request (version is echoed back).
+ *  @param remoteAddress Source IP echoed in the `Remote-Address` header.
+ *  @param text          Human-readable reason appended to the status line.
+ *  @return A `Writer` wrapping the serialised HTTP 400 response.
+ */
 std::shared_ptr<Writer>
 OverlayImpl::makeErrorResponse(
     std::shared_ptr<PeerFinder::Slot> const& slot,
@@ -422,6 +512,14 @@ OverlayImpl::makeErrorResponse(
 
 //------------------------------------------------------------------------------
 
+/** Initiate an outbound connection to a remote peer endpoint.
+ *
+ *  Checks the resource manager and PeerFinder slot availability before
+ *  creating a `ConnectAttempt`.  Silently returns if the resource limit
+ *  is exceeded or no outbound slot is available.
+ *
+ *  @param remoteEndpoint The target address and port to connect to.
+ */
 void
 OverlayImpl::connect(beast::IP::Endpoint const& remoteEndpoint)
 {
@@ -460,7 +558,15 @@ OverlayImpl::connect(beast::IP::Endpoint const& remoteEndpoint)
 
 //------------------------------------------------------------------------------
 
-// Adds a peer that is already handshaked and active
+/** Register a fully handshaked outbound peer in both peer registries.
+ *
+ *  Called by `ConnectAttempt` after a successful outbound handshake.
+ *  Populates both `peers_` (slot → peer) and `ids_` (id → peer) atomically
+ *  under `mutex_`, then calls `peer->run()` while still holding the lock so
+ *  that a concurrent `stop()` cannot drain the list before I/O begins.
+ *
+ *  @param peer The newly activated outbound peer.
+ */
 void
 OverlayImpl::addActive(std::shared_ptr<PeerImp> const& peer)
 {
@@ -486,12 +592,13 @@ OverlayImpl::addActive(std::shared_ptr<PeerImp> const& peer)
 
     JLOG(journal.debug()) << "activated";
 
-    // As we are not on the strand, run() must be called
-    // while holding the lock, otherwise new I/O can be
-    // queued after a call to stop().
     peer->run();
 }
 
+/** Remove a peer from the slot-keyed registry when its PeerFinder slot closes.
+ *
+ *  @param slot The PeerFinder slot whose associated peer entry should be erased.
+ */
 void
 OverlayImpl::remove(std::shared_ptr<PeerFinder::Slot> const& slot)
 {
@@ -501,6 +608,15 @@ OverlayImpl::remove(std::shared_ptr<PeerFinder::Slot> const& slot)
     peers_.erase(iter);
 }
 
+/** Start the overlay: configure PeerFinder, seed the boot cache, and arm
+ *  the per-second timer.
+ *
+ *  Bootstrap IPs are sourced in priority order: `[ips]` → `[ips_fixed]` →
+ *  four hardcoded well-known nodes (Ripple Labs, ISRDC, XRPL Kuwait, XRPL
+ *  Commons).  All resolution is asynchronous; `resolver_.resolve()` callbacks
+ *  push results into PeerFinder's fallback list.  Fixed peers (`[ips_fixed]`)
+ *  are registered separately as always-reconnect entries.
+ */
 void
 OverlayImpl::start()
 {
@@ -513,25 +629,14 @@ OverlayImpl::start()
     peerFinder_->setConfig(config);
     peerFinder_->start();
 
-    // Populate our boot cache: if there are no entries in [ips] then we use
-    // the entries in [ips_fixed].
     auto bootstrapIps = app_.config().IPS.empty() ? app_.config().IPS_FIXED : app_.config().IPS;
 
-    // If nothing is specified, default to several well-known high-capacity
-    // servers to serve as bootstrap:
     if (bootstrapIps.empty())
     {
-        // Pool of servers operated by Ripple Labs Inc. - https://ripple.com
-        bootstrapIps.emplace_back("r.ripple.com 51235");
-
-        // Pool of servers operated by ISRDC - https://isrdc.in
-        bootstrapIps.emplace_back("sahyadri.isrdc.in 51235");
-
-        // Pool of servers operated by @Xrpkuwait - https://xrpkuwait.com
-        bootstrapIps.emplace_back("hubs.xrpkuwait.com 51235");
-
-        // Pool of servers operated by XRPL Commons - https://xrpl-commons.org
-        bootstrapIps.emplace_back("hub.xrpl-commons.org 51235");
+        bootstrapIps.emplace_back("r.ripple.com 51235");         // Ripple Labs Inc.
+        bootstrapIps.emplace_back("sahyadri.isrdc.in 51235");    // ISRDC
+        bootstrapIps.emplace_back("hubs.xrpkuwait.com 51235");   // @Xrpkuwait
+        bootstrapIps.emplace_back("hub.xrpl-commons.org 51235"); // XRPL Commons
     }
 
     resolver_.resolve(
@@ -556,7 +661,6 @@ OverlayImpl::start()
                 peerFinder_->addFallbackStrings(base + name, ips);
         });
 
-    // Add the ips_fixed from the xrpld.cfg file
     if (!app_.config().standalone() && !app_.config().IPS_FIXED.empty())
     {
         resolver_.resolve(
@@ -588,6 +692,12 @@ OverlayImpl::start()
     timer->asyncWait();
 }
 
+/** Shut down the overlay and block until all children have stopped.
+ *
+ *  Dispatches `stopChildren` to the strand, then waits on `cond_` until
+ *  `list_` drains to empty — each child's destructor signals `cond_` via
+ *  `remove(Child&)`.  Stops `peerFinder_` after the drain.
+ */
 void
 OverlayImpl::stop()
 {
@@ -622,18 +732,21 @@ OverlayImpl::onWrite(beast::PropertyStream::Map& stream)
 }
 
 //------------------------------------------------------------------------------
-/** A peer has connected successfully
-    This is called after the peer handshake has been completed and during
-    peer activation. At this point, the peer address and the public key
-    are known.
-*/
+/** Register an inbound peer in the ID-keyed relay registry after handshake.
+ *
+ *  Called once the protocol handshake is complete and the peer's public key
+ *  is known.  Adds the peer to `ids_` so it can receive broadcast and relay
+ *  messages.  (For inbound peers, `peers_` was populated earlier in
+ *  `onHandoff`; for outbound peers `addActive` populates both maps together.)
+ *
+ *  @param peer The newly activated inbound peer.
+ */
 void
 OverlayImpl::activate(std::shared_ptr<PeerImp> const& peer)
 {
     beast::WrappedSink sink{journal_.sink(), peer->prefix()};
     beast::Journal const journal{sink};
 
-    // Now track this peer
     {
         std::scoped_lock const lock(mutex_);
         auto const result(ids_.emplace(
@@ -643,11 +756,13 @@ OverlayImpl::activate(std::shared_ptr<PeerImp> const& peer)
     }
 
     JLOG(journal.debug()) << "activated";
-
-    // We just accepted this peer so we have non-zero active peers
     XRPL_ASSERT(size(), "xrpl::OverlayImpl::activate : nonzero peers");
 }
 
+/** Remove a peer from the ID-keyed relay registry on deactivation.
+ *
+ *  @param id Short peer identifier to erase from `ids_`.
+ */
 void
 OverlayImpl::onPeerDeactivate(Peer::id_t id)
 {
@@ -655,6 +770,17 @@ OverlayImpl::onPeerDeactivate(Peer::id_t id)
     ids_.erase(id);
 }
 
+/** Process a received `TMManifests` message and relay newly accepted entries.
+ *
+ *  Each manifest is applied via `ValidatorManifests::applyManifest`.  Those
+ *  with `ManifestDisposition::Accepted` are republished to the application
+ *  layer (`pubManifest`) and, if the master key is listed in the validator
+ *  set, persisted to the wallet database.  All accepted entries are
+ *  forwarded to every active peer as a new `TMManifests` message.
+ *
+ *  @param m    The incoming manifest batch.
+ *  @param from The peer that sent the message (used for journal context).
+ */
 void
 OverlayImpl::onManifests(
     std::shared_ptr<protocol::TMManifests> const& m,
@@ -723,10 +849,13 @@ OverlayImpl::reportOutboundTraffic(TrafficCount::Category cat, int size)
 {
     traffic_.addCount(cat, false, size);
 }
-/** The number of active peers on the network
-    Active peers are only those peers that have completed the handshake
-    and are running the XRPL protocol.
-*/
+/** Return the number of fully-activated peers running the XRPL protocol.
+ *
+ *  Counts only peers that have completed the handshake (present in `ids_`).
+ *  Peers still in the TLS/HTTP upgrade phase are not counted.
+ *
+ *  @return Current active peer count.
+ */
 std::size_t
 OverlayImpl::size() const
 {
@@ -734,12 +863,24 @@ OverlayImpl::size() const
     return ids_.size();
 }
 
+/** Return the configured maximum number of active peers.
+ *
+ *  @return The `maxPeers` value from the current PeerFinder configuration.
+ */
 int
 OverlayImpl::limit()
 {
     return peerFinder_->config().maxPeers;
 }
 
+/** Build the `overlay.active` JSON array for the `/crawl` endpoint.
+ *
+ *  Each entry contains public key (base64), connection direction, uptime,
+ *  and optionally IP/port when the peer's `crawl()` flag permits disclosure.
+ *  Ledger range is included when the peer has reported non-zero bounds.
+ *
+ *  @return JSON object with an `active` array of peer descriptors.
+ */
 json::Value
 OverlayImpl::getOverlayInfo() const
 {
@@ -784,6 +925,15 @@ OverlayImpl::getOverlayInfo() const
     return jv;
 }
 
+/** Build a filtered server-info JSON object for the `/crawl` endpoint.
+ *
+ *  Calls `NetworkOPs::getServerInfo` with public (non-admin, non-human)
+ *  settings and strips fields not intended for external consumption:
+ *  `hostid`, escalation and queue load factors, quorum, and the raw fee
+ *  fields from `validated_ledger`.
+ *
+ *  @return Filtered JSON object describing local server status.
+ */
 json::Value
 OverlayImpl::getServerInfo()
 {
@@ -793,7 +943,6 @@ OverlayImpl::getServerInfo()
 
     json::Value serverInfo = app_.getOPs().getServerInfo(humanReadable, admin, counters);
 
-    // Filter out some information
     serverInfo.removeMember(jss::hostid);
     serverInfo.removeMember(jss::load_factor_fee_escalation);
     serverInfo.removeMember(jss::load_factor_fee_queue);
@@ -811,12 +960,25 @@ OverlayImpl::getServerInfo()
     return serverInfo;
 }
 
+/** Return server performance counters for the `/crawl` endpoint.
+ *
+ *  @return JSON object from `getCountsJson` with a minimum-threshold of 10.
+ */
 json::Value
 OverlayImpl::getServerCounts()
 {
     return getCountsJson(app_, 10);
 }
 
+/** Build a filtered UNL/validator-list JSON object for the `/crawl` endpoint.
+ *
+ *  Returns validator and publisher-list metadata with sensitive fields
+ *  stripped (`list` entries per publisher, `signing_keys`,
+ *  `trusted_validator_keys`, `validation_quorum`).  Appends
+ *  `validator_sites` from `ValidatorSites`.
+ *
+ *  @return Filtered JSON object describing the node's validator configuration.
+ */
 json::Value
 OverlayImpl::getUnlInfo()
 {
@@ -846,7 +1008,10 @@ OverlayImpl::getUnlInfo()
     return validators;
 }
 
-// Returns information on verified peers.
+/** Return a JSON array of per-peer status objects for all active peers.
+ *
+ *  @return JSON array where each element is the result of `Peer::json()`.
+ */
 json::Value
 OverlayImpl::json()
 {
@@ -897,8 +1062,6 @@ OverlayImpl::processCrawl(http_request_type const& req, Handoff& handoff)
 bool
 OverlayImpl::processValidatorList(http_request_type const& req, Handoff& handoff)
 {
-    // If the target is in the form "/vl/<validator_list_public_key>",
-    // return the most recent validator list for that key.
     constexpr std::string_view kPREFIX("/vl/");
 
     if (!req.target().starts_with(kPREFIX) || !setup_.vlEnabled)
@@ -936,14 +1099,10 @@ OverlayImpl::processValidatorList(http_request_type const& req, Handoff& handoff
     if (key.empty())
         return fail(boost::beast::http::status::bad_request);
 
-    // find the list
     auto vl = app_.getValidators().getAvailable(key, version);
 
     if (!vl)
-    {
-        // 404 not found
         return fail(boost::beast::http::status::not_found);
-    }
     if (!*vl)
     {
         return fail(boost::beast::http::status::bad_request);
@@ -958,6 +1117,29 @@ OverlayImpl::processValidatorList(http_request_type const& req, Handoff& handoff
     return true;
 }
 
+/** Classify node health and respond with an HTTP status that encodes the result.
+ *
+ *  Health is the maximum severity of any triggered condition:
+ *
+ *  | Condition                              | Warning | Critical |
+ *  |----------------------------------------|---------|----------|
+ *  | Validated-ledger age 7–19 s            | ✓       |          |
+ *  | Validated-ledger age ≥ 20 s or missing |         | ✓        |
+ *  | Amendment blocked                      |         | ✓        |
+ *  | 1–7 peers                              | ✓       |          |
+ *  | 0 peers                                |         | ✓        |
+ *  | Server in syncing/tracking/connected   | ✓       |          |
+ *  | Server in any other non-operational    |         | ✓        |
+ *  | Load factor 100–999                    | ✓       |          |
+ *  | Load factor ≥ 1000                     |         | ✓        |
+ *
+ *  HTTP status encodes the result directly (200 / 503 / 500) so load
+ *  balancers can gate on status without parsing JSON.
+ *
+ *  @param req     The incoming HTTP request.
+ *  @param handoff Populated with the response writer on match.
+ *  @return `true` if the request was for `/health` and was handled.
+ */
 bool
 OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
 {
@@ -1065,11 +1247,14 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
 bool
 OverlayImpl::processRequest(http_request_type const& req, Handoff& handoff)
 {
-    // Take advantage of || short-circuiting
     return processCrawl(req, handoff) || processValidatorList(req, handoff) ||
         processHealth(req, handoff);
 }
 
+/** Return a snapshot of all fully-activated peers.
+ *
+ *  @return Vector of shared peer pointers for all peers in `ids_`.
+ */
 Overlay::PeerSequence
 OverlayImpl::getActivePeers() const
 {
@@ -1102,7 +1287,6 @@ OverlayImpl::getActivePeers(
         if (p = w.lock(); p != nullptr)
         {
             bool const reduceRelayEnabled = p->txReduceRelayEnabled();
-            // tx reduced relay feature disabled
             if (!reduceRelayEnabled)
                 ++disabled;
 
@@ -1120,12 +1304,25 @@ OverlayImpl::getActivePeers(
     return ret;
 }
 
+/** Notify all active peers of the current validated ledger sequence index.
+ *
+ *  Each peer compares `index` to its own tracked range to decide whether
+ *  it should transition the `tracking_` state between `converged` and
+ *  `diverged`.
+ *
+ *  @param index The latest fully-validated ledger sequence number.
+ */
 void
 OverlayImpl::checkTracking(std::uint32_t index)
 {
     forEach([index](std::shared_ptr<PeerImp> const& sp) { sp->checkTracking(index); });
 }
 
+/** Look up an active peer by its short numeric ID.
+ *
+ *  @param id The peer's short ID assigned at connection time.
+ *  @return The peer if found and still alive, or `nullptr`.
+ */
 std::shared_ptr<Peer>
 OverlayImpl::findPeerByShortID(Peer::id_t const& id) const
 {
@@ -1136,8 +1333,15 @@ OverlayImpl::findPeerByShortID(Peer::id_t const& id) const
     return {};
 }
 
-// A public key hash map was not used due to the peer connect/disconnect
-// update overhead outweighing the performance of a small set linear search.
+/** Look up an active peer by its node public key via linear scan.
+ *
+ *  A dedicated hash map was not used because the connect/disconnect overhead
+ *  of maintaining it outweighs the cost of a linear search over the (small)
+ *  active-peer set.
+ *
+ *  @param pubKey The node's Ed25519 or secp256k1 public key.
+ *  @return The peer if found and still alive, or `nullptr`.
+ */
 std::shared_ptr<Peer>
 OverlayImpl::findPeerByPublicKey(PublicKey const& pubKey)
 {
@@ -1155,6 +1359,10 @@ OverlayImpl::findPeerByPublicKey(PublicKey const& pubKey)
     return {};
 }
 
+/** Send a consensus proposal to every active peer without deduplication.
+ *
+ *  @param m The proposal message to broadcast.
+ */
 void
 OverlayImpl::broadcast(protocol::TMProposeSet& m)
 {
@@ -1162,6 +1370,19 @@ OverlayImpl::broadcast(protocol::TMProposeSet& m)
     forEach([&](std::shared_ptr<PeerImp> const& p) { p->send(sm); });
 }
 
+/** Relay a consensus proposal, skipping peers that already have it.
+ *
+ *  Consults `HashRouter::shouldRelay` for deduplication.  Returns the set
+ *  of peer IDs that already relayed this message (the skip set) so callers
+ *  can track which peers to exclude in future rounds.  Returns an empty set
+ *  if the message has already been relayed and should be suppressed.
+ *
+ *  @param m         The proposal message to relay.
+ *  @param uid       Unique message hash used for hash-router lookup.
+ *  @param validator Public key of the originating validator.
+ *  @return Skip-set of peer IDs that already received this message, or empty
+ *      if relay was suppressed.
+ */
 std::set<Peer::id_t>
 OverlayImpl::relay(protocol::TMProposeSet& m, uint256 const& uid, PublicKey const& validator)
 {
@@ -1177,6 +1398,10 @@ OverlayImpl::relay(protocol::TMProposeSet& m, uint256 const& uid, PublicKey cons
     return {};
 }
 
+/** Send a validation to every active peer without deduplication.
+ *
+ *  @param m The validation message to broadcast.
+ */
 void
 OverlayImpl::broadcast(protocol::TMValidation& m)
 {
@@ -1184,6 +1409,14 @@ OverlayImpl::broadcast(protocol::TMValidation& m)
     forEach([sm](std::shared_ptr<PeerImp> const& p) { p->send(sm); });
 }
 
+/** Relay a validation, skipping peers that already have it.
+ *
+ *  @param m         The validation message to relay.
+ *  @param uid       Unique message hash used for hash-router deduplication.
+ *  @param validator Public key of the originating validator.
+ *  @return Skip-set of peer IDs that already received this message, or empty
+ *      if relay was suppressed.
+ */
 std::set<Peer::id_t>
 OverlayImpl::relay(protocol::TMValidation& m, uint256 const& uid, PublicKey const& validator)
 {
@@ -1199,6 +1432,15 @@ OverlayImpl::relay(protocol::TMValidation& m, uint256 const& uid, PublicKey cons
     return {};
 }
 
+/** Return a lazily built, cached `TMManifests` protocol message.
+ *
+ *  Rebuilds the message only when the `ValidatorManifests` sequence number
+ *  has advanced since the last call.  The message and its sequence number are
+ *  guarded by `manifestLock_`.  Hash-router suppression entries are added for
+ *  each manifest so they are not re-relayed by the caller.
+ *
+ *  @return The cached manifest message, or `nullptr` if there are no manifests.
+ */
 std::shared_ptr<Message>
 OverlayImpl::getManifestsMessage()
 {
@@ -1226,6 +1468,29 @@ OverlayImpl::getManifestsMessage()
     return manifestMessage_;
 }
 
+/** Relay a transaction (or its hash) to peers not in the skip set.
+ *
+ *  Pseudo-transactions are never relayed.  When TX reduce-relay is disabled
+ *  the full message is sent to all peers outside `toSkip`.  When enabled and
+ *  the peer count exceeds the reduce-relay threshold, a quota of peers
+ *  is computed:
+ *  @code
+ *  enabledTarget = TX_REDUCE_RELAY_MIN_PEERS
+ *                + (total - minRelay) * TX_RELAY_PERCENTAGE / 100
+ *  @endcode
+ *  Peers with the feature disabled always receive the full message for
+ *  backward compatibility.  Peers above the quota receive only the hash via
+ *  `addTxQueue()`.  The peer list is shuffled before selection to prevent
+ *  systematic bias.
+ *
+ *  If `tx` is `nullopt`, the caller signals a hash-only announcement;
+ *  the hash is queued on all reachable peers when reduce-relay is active,
+ *  or the call is a no-op when it is not.
+ *
+ *  @param hash    SHA-256 transaction hash.
+ *  @param tx      The transaction message, or `nullopt` for hash-only relay.
+ *  @param toSkip  Peer IDs to exclude (already have the transaction).
+ */
 void
 OverlayImpl::relay(
     uint256 const& hash,
@@ -1280,9 +1545,6 @@ OverlayImpl::relay(
         return;
     }
 
-    // We have more peers than the minimum (disabled + minimum enabled),
-    // relay to all disabled and some randomly selected enabled that
-    // do not have the transaction.
     auto const enabledTarget = app_.config().TX_REDUCE_RELAY_MIN_PEERS +
         ((total - minRelay) * app_.config().TX_RELAY_PERCENTAGE / 100);
 
@@ -1295,11 +1557,9 @@ OverlayImpl::relay(
                            << enabledTarget << " skip " << toSkip.size() << " disabled "
                            << disabled;
 
-    // count skipped peers with the enabled feature towards the quota
     std::uint16_t enabledAndRelayed = enabledInSkip;
     for (auto const& p : peers)
     {
-        // always relay to a peer with the disabled feature
         if (!p->txReduceRelayEnabled())
         {
             p->send(sm);
@@ -1318,6 +1578,13 @@ OverlayImpl::relay(
 
 //------------------------------------------------------------------------------
 
+/** Erase a child from the lifetime registry and signal `stop()` if empty.
+ *
+ *  Called from `Child::~Child`.  When the last child is removed, notifies
+ *  `cond_` to wake the thread blocked in `stop()`.
+ *
+ *  @param child The child object being destroyed.
+ */
 void
 OverlayImpl::remove(Child& child)
 {
@@ -1327,17 +1594,18 @@ OverlayImpl::remove(Child& child)
         cond_.notify_all();
 }
 
+/** Signal all registered children to stop and release the io_context work guard.
+ *
+ *  Must run on the overlay strand.  Children's `stop()` calls may re-enter
+ *  `remove(Child&)` (and thus `list_.erase`) on the same thread, so all
+ *  child pointers are snapshotted into a local vector before any `stop()` is
+ *  invoked — iterating `list_` directly while modifying it is undefined.
+ *  Resetting `work_` lets the `io_context` drain once the last async op
+ *  completes.
+ */
 void
 OverlayImpl::stopChildren()
 {
-    // Calling list_[].second->stop() may cause list_ to be modified
-    // (OverlayImpl::remove() may be called on this same thread).  So
-    // iterating directly over list_ to call child->stop() could lead to
-    // undefined behavior.
-    //
-    // Therefore we copy all of the weak/shared ptrs out of list_ before we
-    // start calling stop() on them.  That guarantees OverlayImpl::remove()
-    // won't be called until vector<> children leaves scope.
     std::vector<std::shared_ptr<Child>> children;
     {
         std::scoped_lock const lock(mutex_);
@@ -1359,6 +1627,7 @@ OverlayImpl::stopChildren()
     }
 }
 
+/** Ask PeerFinder for new outbound connection targets and connect to them. */
 void
 OverlayImpl::autoConnect()
 {
@@ -1367,6 +1636,7 @@ OverlayImpl::autoConnect()
         connect(addr);
 }
 
+/** Compute and dispatch peer endpoint advertisements via PeerFinder. */
 void
 OverlayImpl::sendEndpoints()
 {
@@ -1385,6 +1655,11 @@ OverlayImpl::sendEndpoints()
     }
 }
 
+/** Flush per-peer TX hash queues to all peers that support reduce-relay.
+ *
+ *  Called once per second by `onTimer` when `TX_REDUCE_RELAY_ENABLE` is
+ *  active.  Peers that did not negotiate the feature are skipped.
+ */
 void
 OverlayImpl::sendTxQueue() const
 {
@@ -1394,6 +1669,14 @@ OverlayImpl::sendTxQueue() const
     });
 }
 
+/** Build a `TMSquelch` protocol message.
+ *
+ *  @param validator      Public key of the validator whose messages should be
+ *      squelched or unsquelched.
+ *  @param squelch        `true` to squelch, `false` to unsquelch.
+ *  @param squelchDuration Duration in seconds (only set when squelching).
+ *  @return Shared `Message` ready to be sent over the wire.
+ */
 std::shared_ptr<Message>
 makeSquelchMessage(PublicKey const& validator, bool squelch, uint32_t squelchDuration)
 {
@@ -1405,26 +1688,46 @@ makeSquelchMessage(PublicKey const& validator, bool squelch, uint32_t squelchDur
     return std::make_shared<Message>(m, protocol::mtSQUELCH);
 }
 
+/** Send a `TMSquelch` unsquelch message to the specified peer.
+ *
+ *  @param validator Public key of the validator to unsquelch.
+ *  @param id        Short ID of the peer to notify.
+ *  @note Multiple unsquelch messages for different validators may be batched
+ *      to the same peer; each is sent individually as they arrive.
+ */
 void
 OverlayImpl::unsquelch(PublicKey const& validator, Peer::id_t id) const
 {
     if (auto peer = findPeerByShortID(id); peer)
-    {
-        // optimize - multiple message with different
-        // validator might be sent to the same peer
         peer->send(makeSquelchMessage(validator, false, 0));
-    }
 }
 
+/** Send a `TMSquelch` squelch message to the specified peer.
+ *
+ *  @param validator       Public key of the validator to squelch.
+ *  @param id              Short ID of the peer to notify.
+ *  @param squelchDuration How long (seconds) the peer should suppress messages
+ *      for this validator.
+ */
 void
 OverlayImpl::squelch(PublicKey const& validator, Peer::id_t id, uint32_t squelchDuration) const
 {
     if (auto peer = findPeerByShortID(id); peer)
-    {
         peer->send(makeSquelchMessage(validator, true, squelchDuration));
-    }
 }
 
+/** Update squelch slots for a batch of peers and send `TMSquelch` as needed.
+ *
+ *  Dispatches to the overlay strand if called from another thread — `Slots`
+ *  is not thread-safe.  Reference parameters (`key`, `validator`) are
+ *  captured by value when posting to avoid dangling references.
+ *  No-ops when `baseSquelchReady()` returns false (warmup period).
+ *
+ *  @param key       Unique message hash identifying the validator message.
+ *  @param validator Validator whose per-peer message count is updated.
+ *  @param peers     Set of peer IDs that received the message.
+ *  @param type      Received protocol message type.
+ */
 void
 OverlayImpl::updateSlotAndSquelch(
     uint256 const& key,
@@ -1455,6 +1758,16 @@ OverlayImpl::updateSlotAndSquelch(
     }
 }
 
+/** Single-peer overload of `updateSlotAndSquelch` to avoid set allocation.
+ *
+ *  Dispatches to the overlay strand if called from another thread.
+ *  Reference parameters are captured by value in the posted lambda.
+ *
+ *  @param key       Unique message hash identifying the validator message.
+ *  @param validator Validator whose per-peer message count is updated.
+ *  @param peer      Peer ID that received the message.
+ *  @param type      Received protocol message type.
+ */
 void
 OverlayImpl::updateSlotAndSquelch(
     uint256 const& key,
@@ -1467,14 +1780,12 @@ OverlayImpl::updateSlotAndSquelch(
 
     if (!strand_.running_in_this_thread())
     {
-        {
-            post(
-                strand_,
-                // Must capture copies of reference parameters (i.e. key, validator)
-                [this, key = key, validator = validator, peer, type]() {
-                    updateSlotAndSquelch(key, validator, peer, type);
-                });
-        }
+        post(
+            strand_,
+            // Must capture copies of reference parameters (i.e. key, validator)
+            [this, key = key, validator = validator, peer, type]() {
+                updateSlotAndSquelch(key, validator, peer, type);
+            });
         return;
     }
 
@@ -1483,6 +1794,14 @@ OverlayImpl::updateSlotAndSquelch(
     });
 }
 
+/** Remove a peer's squelch slot, unsquelching peers if it was a selected source.
+ *
+ *  Dispatches to the overlay strand.  If the deleted peer was one of the
+ *  selected sources for a validator, the squelched peers are unsquelched so
+ *  they may resume forwarding that validator's messages.
+ *
+ *  @param id Short ID of the peer being removed.
+ */
 void
 OverlayImpl::deletePeer(Peer::id_t id)
 {
@@ -1495,6 +1814,12 @@ OverlayImpl::deletePeer(Peer::id_t id)
     slots_.deletePeer(id, true);
 }
 
+/** Purge squelch slots for peers that have gone idle.
+ *
+ *  Dispatches to the overlay strand if not already on it, ensuring
+ *  thread-safe access to `slots_`.  Called every
+ *  `Tuning::kCHECK_IDLE_PEERS` timer ticks.
+ */
 void
 OverlayImpl::deleteIdlePeers()
 {
@@ -1509,6 +1834,19 @@ OverlayImpl::deleteIdlePeers()
 
 //------------------------------------------------------------------------------
 
+/** Parse config sections into an `Overlay::Setup` struct.
+ *
+ *  Reads `[overlay]`, `[crawl]`, `[vl]`, and `[network_id]` sections.
+ *  Creates an SSL context and validates all fields:
+ *  - `ip_limit`: must be non-negative.
+ *  - `public_ip`: must be a valid, non-private IP address.
+ *  - `[network_id]`: may be a decimal number or one of the symbolic names
+ *    `main` (0), `testnet` (1), `devnet` (2).
+ *
+ *  @param config The application config to parse.
+ *  @return Populated `Overlay::Setup` ready to pass to `makeOverlay`.
+ *  @throws std::runtime_error on any invalid configuration value.
+ */
 Overlay::Setup
 setupOverlay(BasicConfig const& config)
 {
@@ -1612,6 +1950,20 @@ setupOverlay(BasicConfig const& config)
     return setup;
 }
 
+/** Factory function that constructs an `OverlayImpl` and returns it as
+ *  `unique_ptr<Overlay>`, keeping the concrete type out of translation
+ *  units that only need the `Overlay` interface.
+ *
+ *  @param app            The application instance.
+ *  @param setup          Pre-parsed overlay configuration from `setupOverlay`.
+ *  @param serverHandler  HTTP server handler for inbound upgrade requests.
+ *  @param resourceManager Resource manager for connection rate limiting.
+ *  @param resolver       Async DNS resolver used during bootstrap.
+ *  @param ioContext       ASIO io_context that owns the overlay strand.
+ *  @param config         Full application config (passed to PeerFinder).
+ *  @param collector      Metrics collector for traffic gauges.
+ *  @return Owning pointer to the newly constructed overlay.
+ */
 std::unique_ptr<Overlay>
 makeOverlay(
     Application& app,

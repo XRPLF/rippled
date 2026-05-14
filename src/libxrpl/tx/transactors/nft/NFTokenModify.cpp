@@ -1,3 +1,12 @@
+/** @file
+ *  Implementation of the `NFTokenModify` transactor, which updates the
+ *  metadata URI of a mutable NFT without burning and re-minting it.
+ *
+ *  Heavy lifting is delegated to `nft::changeTokenURI` in
+ *  `NFTokenHelpers.cpp`; this file is responsible only for the three-phase
+ *  validation pipeline (`preflight` → `preclaim` → `doApply`) and the
+ *  no-op invariant hooks.
+ */
 #include <xrpl/tx/transactors/nft/NFTokenModify.h>
 
 #include <xrpl/basics/base_uint.h>
@@ -42,11 +51,9 @@ NFTokenModify::preclaim(PreclaimContext const& ctx)
     if (!nft::findToken(ctx.view, owner, ctx.tx[sfNFTokenID]))
         return tecNO_ENTRY;
 
-    // Check if the NFT is mutable
     if ((nft::getFlags(ctx.tx[sfNFTokenID]) & nft::kFLAG_MUTABLE) == 0)
         return tecNO_PERMISSION;
 
-    // Verify permissions for the issuer
     if (AccountID const issuer = nft::getIssuer(ctx.tx[sfNFTokenID]); issuer != account)
     {
         auto const sle = ctx.view.read(keylet::account(issuer));

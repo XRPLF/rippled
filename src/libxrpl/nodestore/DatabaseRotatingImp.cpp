@@ -1,3 +1,15 @@
+/** @file
+ *  Implements `DatabaseRotatingImp`, the concrete two-backend node store that
+ *  powers XRPL's online deletion feature.
+ *
+ *  The key design constraint throughout this file is the capture-under-lock /
+ *  use-outside-lock pattern: `mutex_` protects only the `shared_ptr` swap, not
+ *  backend I/O.  Holding the lock across disk operations would serialise all
+ *  readers and destroy concurrency.  Every method that reads either backend
+ *  pointer first copies it into a local `shared_ptr` under the lock, releases
+ *  the lock, then performs I/O through the local.  `sync()` is the sole
+ *  exception — it is a maintenance call and not latency-sensitive.
+ */
 #include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
 
 #include <xrpl/basics/BasicConfig.h>
@@ -45,12 +57,12 @@ DatabaseRotatingImp::rotate(
     std::unique_ptr<NodeStore::Backend>&& newBackend,
     std::function<void(std::string const& writableName, std::string const& archiveName)> const& f)
 {
-    // Pass these two names to the callback function
+    // Capture the new backend's name before the lock; getName() on the
+    // incoming backend needs no synchronisation (it is owned exclusively here).
     std::string const newWritableBackendName = newBackend->getName();
     std::string newArchiveBackendName;
-    // Hold on to current archive backend pointer until after the
-    // callback finishes. Only then will the archive directory be
-    // deleted.
+    // Keeps the old archive alive past the callback so its directory is
+    // deleted only after the callback has persisted the new layout.
     std::shared_ptr<NodeStore::Backend> oldArchiveBackend;
     {
         std::scoped_lock const lock(mutex_);
@@ -149,7 +161,6 @@ DatabaseRotatingImp::fetchNodeObject(
         return nodeObject;
     };
 
-    // See if the node object exists in the cache
     std::shared_ptr<NodeObject> nodeObject;
 
     auto [writable, archive] = [&] {
@@ -157,21 +168,20 @@ DatabaseRotatingImp::fetchNodeObject(
         return std::make_pair(writableBackend_, archiveBackend_);
     }();
 
-    // Try to fetch from the writable backend
     nodeObject = fetch(writable);
     if (!nodeObject)
     {
-        // Otherwise try to fetch from the archive backend
         nodeObject = fetch(archive);
         if (nodeObject)
         {
             {
-                // Refresh the writable backend pointer
+                // Re-snapshot writable under lock: a rotation may have
+                // occurred between the archive fetch and this write-back,
+                // so we must not promote into the now-demoted old writable.
                 std::scoped_lock const lock(mutex_);
                 writable = writableBackend_;
             }
 
-            // Update writable backend with data from the archive backend
             if (duplicate)
                 writable->store(nodeObject);
         }
@@ -191,10 +201,7 @@ DatabaseRotatingImp::forEach(std::function<void(std::shared_ptr<NodeObject>)> f)
         return std::make_pair(writableBackend_, archiveBackend_);
     }();
 
-    // Iterate the writable backend
     writable->forEach(f);
-
-    // Iterate the archive backend
     archive->forEach(f);
 }
 

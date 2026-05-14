@@ -1,3 +1,12 @@
+/** @file
+ *  RPC error code registry and JSON serialization for the XRPL RPC layer.
+ *
+ *  Defines the complete set of named error conditions that can be returned to
+ *  API clients, a compile-time-validated lookup table sorted by error code,
+ *  O(1) metadata retrieval, JSON stamping helpers, and the HTTP-status mapping
+ *  used by the transport layer for load-balancer failover decisions.
+ */
+
 #include <xrpl/protocol/ErrorCodes.h>
 
 #include <xrpl/beast/utility/instrumentation.h>
@@ -13,22 +22,22 @@ namespace RPC {
 
 namespace detail {
 
-// Unordered array of ErrorInfos, so we don't have to maintain the list
-// ordering by hand.
-//
-// This array will be omitted from the object file; only the sorted version
-// will remain in the object file.  But the string literals will remain.
-//
-// There's a certain amount of tension in determining the correct HTTP
-// status to associate with a given RPC error.  Initially all RPC errors
-// returned 200 (OK).  And that's the default behavior if no HTTP status code
-// is specified below.
-//
-// The codes currently selected target the load balancer fail-over use case.
-// If a query fails on one node but is likely to have a positive outcome
-// on a different node, then the failure should return a 4xx/5xx range
-// status code.
-
+/** Authoring table of every recognized RPC error condition.
+ *
+ *  Entries may appear in any order and are grouped thematically for
+ *  readability. `sortErrorInfos` re-indexes them into `kSORTED_ERROR_INFOS`
+ *  at compile time, so numeric ordering is never a maintenance concern here.
+ *
+ *  HTTP status assignments target the load-balancer failover use case.
+ *  Errors that might resolve on a different node (amendment-blocked,
+ *  not-synced, too-busy) use 5xx/429 so upstream proxies can retry
+ *  elsewhere. Permanent or client-side errors (bad syntax, bad credentials)
+ *  use 4xx. Everything else defaults to 200 (OK), preserving the original
+ *  JSON-RPC semantics where the HTTP transaction always succeeded.
+ *
+ *  @note This array is elided from the object file; only the sorted copy
+ *      `kSORTED_ERROR_INFOS` is retained. The string literals do remain.
+ */
 // clang-format off
 constexpr static ErrorInfo kUNORDERED_ERROR_INFOS[]{
     {RpcActMalformed,          "actMalformed",         "Account malformed."},
@@ -105,8 +114,29 @@ constexpr static ErrorInfo kUNORDERED_ERROR_INFOS[]{
 };
 // clang-format on
 
-// Sort and validate unorderedErrorInfos at compile time.  Should be
-// converted to consteval when get to C++20.
+/** Sort and integrity-check an unordered `ErrorInfo` array at compile time.
+ *
+ *  Produces a `std::array<ErrorInfo, M>` indexed by `code - 1`, enabling
+ *  O(1) lookup in `getErrorInfo()`. Three invariants are enforced:
+ *
+ *  1. **Range** — every code must satisfy `rpcSUCCESS < code <= rpcLAST`;
+ *     codes outside that window throw `std::out_of_range`.
+ *  2. **Uniqueness** — if two entries claim the same slot, the second
+ *     throws `std::invalid_argument` (duplicate code).
+ *  3. **Contiguity** — after placement, each occupied slot must carry the
+ *     code value that matches its index position, and the count of occupied
+ *     slots must equal `N` (the input size). This rejects off-by-one typos
+ *     that would silently land an entry at the wrong index.
+ *
+ *  @tparam M  Output array size; must equal `rpcLAST`.
+ *  @tparam N  Input array size; deduced from the argument.
+ *  @param  unordered  C-array of `ErrorInfo` entries in any order.
+ *  @return A `std::array<ErrorInfo, M>` in canonical index order.
+ *  @throw std::out_of_range       If any code is outside `(rpcSUCCESS, rpcLAST]`.
+ *  @throw std::invalid_argument   If any code is duplicated or the contiguity
+ *      check fails.
+ *  @note Should become `consteval` when the codebase moves to C++20.
+ */
 template <int M, int N>
 constexpr auto
 sortErrorInfos(ErrorInfo const (&unordered)[N]) -> std::array<ErrorInfo, M>
@@ -118,7 +148,7 @@ sortErrorInfos(ErrorInfo const (&unordered)[N]) -> std::array<ErrorInfo, M>
         if (info.code <= RpcSuccess || info.code > RpcLast)
             throw(std::out_of_range("Invalid error_code_i"));
 
-        // The first valid code follows rpcSUCCESS immediately.
+        // rpcSUCCESS == 0, so the first valid code maps to index 0.
         static_assert(RpcSuccess == 0, "Unexpected error_code_i layout.");
         int const index{info.code - 1};
 
@@ -128,11 +158,8 @@ sortErrorInfos(ErrorInfo const (&unordered)[N]) -> std::array<ErrorInfo, M>
         ret[index] = info;
     }
 
-    // Verify that all entries are filled in starting with 1 and proceeding
-    // to rpcLAST.
-    //
-    // It's okay for there to be missing entries; they will contain the code
-    // rpcUNKNOWN.  But other than that all entries should match their index.
+    // Slots left at rpcUNKNOWN represent intentional gaps in the enum
+    // (retired or reserved codes). All other slots must match their index.
     int codeCount{0};
     int expect{RpcBadSyntax - 1};
     for (ErrorInfo const& info : ret)
@@ -153,14 +180,28 @@ sortErrorInfos(ErrorInfo const (&unordered)[N]) -> std::array<ErrorInfo, M>
     return ret;
 }
 
+/** Compile-time lookup table indexed by `code - 1`.
+ *
+ *  Built from `kUNORDERED_ERROR_INFOS` by `sortErrorInfos`, which validates
+ *  range, uniqueness, and contiguity. Gaps in `ErrorCodeI` remain as
+ *  default-constructed `ErrorInfo` entries whose `code` field equals
+ *  `rpcUNKNOWN`. `getErrorInfo()` accesses this array via direct subscript.
+ */
 constexpr auto kSORTED_ERROR_INFOS{sortErrorInfos<RpcLast>(kUNORDERED_ERROR_INFOS)};
 
+/** Fallback returned by `getErrorInfo()` for out-of-range or unknown codes. */
 constexpr ErrorInfo kUNKNOWN_ERROR;
 
 }  // namespace detail
 
 //------------------------------------------------------------------------------
 
+/** Stamp `error`, `error_code`, and `error_message` fields onto @p json using
+ *  the default message for @p code.
+ *
+ *  @param code  The RPC error code whose metadata to inject.
+ *  @param json  The JSON object to mutate; existing fields are overwritten.
+ */
 void
 injectError(ErrorCodeI code, json::Value& json)
 {
@@ -170,6 +211,18 @@ injectError(ErrorCodeI code, json::Value& json)
     json[jss::error_message] = info.message;
 }
 
+/** Stamp `error`, `error_code`, and `error_message` fields onto @p json,
+ *  replacing the default message with a caller-supplied diagnostic string.
+ *
+ *  The `error` token and numeric `error_code` are taken from the registry;
+ *  only `error_message` is overridden, enabling context-specific diagnostics
+ *  while keeping the stable machine-readable fields intact.
+ *
+ *  @param code     The RPC error code whose token and numeric code to inject.
+ *  @param message  Context-specific human-readable message to use instead of
+ *      the registry default.
+ *  @param json     The JSON object to mutate; existing fields are overwritten.
+ */
 void
 injectError(ErrorCodeI code, std::string const& message, json::Value& json)
 {
@@ -179,6 +232,12 @@ injectError(ErrorCodeI code, std::string const& message, json::Value& json)
     json[jss::error_message] = message;
 }
 
+/** O(1) lookup of the `ErrorInfo` for @p code via direct array subscript.
+ *
+ *  @param code  The error code to look up.
+ *  @return Reference to the matching `ErrorInfo`, or `detail::kUNKNOWN_ERROR`
+ *      if @p code is out of the valid range `(rpcSUCCESS, rpcLAST]`.
+ */
 ErrorInfo const&
 getErrorInfo(ErrorCodeI code)
 {
@@ -187,6 +246,12 @@ getErrorInfo(ErrorCodeI code)
     return detail::kSORTED_ERROR_INFOS[code - 1];
 }
 
+/** Construct and return a new JSON error object for @p code.
+ *
+ *  @param code  The RPC error code.
+ *  @return A fresh `Json::Value` object with `error`, `error_code`, and
+ *      `error_message` fields populated from the registry.
+ */
 json::Value
 makeError(ErrorCodeI code)
 {
@@ -195,6 +260,13 @@ makeError(ErrorCodeI code)
     return json;
 }
 
+/** Construct and return a new JSON error object with a custom message.
+ *
+ *  @param code     The RPC error code.
+ *  @param message  Context-specific message to use for `error_message`.
+ *  @return A fresh `Json::Value` object with `error` and `error_code` from
+ *      the registry and `error_message` set to @p message.
+ */
 json::Value
 makeError(ErrorCodeI code, std::string const& message)
 {
@@ -203,12 +275,27 @@ makeError(ErrorCodeI code, std::string const& message)
     return json;
 }
 
+/** Return `true` if @p json is an object containing an `"error"` member.
+ *
+ *  @param json  The value to probe.
+ *  @return `true` if @p json carries an RPC error; `false` otherwise.
+ *  @note Only the presence of the `"error"` key is checked; the specific
+ *      code is not inspected. Use `getErrorInfo()` for code-level branching.
+ */
 bool
 containsError(json::Value const& json)
 {
     return json.isObject() && json.isMember(jss::error);
 }
 
+/** Return the HTTP status integer associated with @p code.
+ *
+ *  Used by the HTTP transport layer when constructing the response header.
+ *  Codes not given an explicit status in the registry default to 200.
+ *
+ *  @param code  The RPC error code.
+ *  @return HTTP status integer (e.g., 200, 400, 403, 503).
+ */
 int
 errorCodeHttpStatus(ErrorCodeI code)
 {
@@ -217,6 +304,18 @@ errorCodeHttpStatus(ErrorCodeI code)
 
 }  // namespace RPC
 
+/** Concatenate the `error` token and `error_message` from a JSON error value.
+ *
+ *  Convenience helper for logging and diagnostic strings. Lives in the `xrpl`
+ *  namespace rather than `xrpl::RPC` for broader accessibility.
+ *
+ *  @param jv  A `Json::Value` that must already contain an RPC error (i.e.,
+ *      `containsError(jv)` is true).
+ *  @return Concatenation of the `error` token string and `error_message`
+ *      string with no separator.
+ *  @note An `XRPL_ASSERT` fires in debug builds if @p jv does not contain
+ *      an error, making misuse diagnosable early.
+ */
 std::string
 rpcErrorString(json::Value const& jv)
 {

@@ -1,3 +1,21 @@
+/** @file AMMHelpers.cpp
+ *  Implementation of the AMM mathematical engine and ledger-state utilities.
+ *
+ *  Provides the closed-form deposit/withdrawal formulas, quadratic solvers,
+ *  directional rounding wrappers, pool balance readers, and AMM account
+ *  lifecycle management.  The companion header additionally defines the
+ *  inline swap and spot-price-quality templates that depend on these
+ *  primitives.
+ *
+ *  All arithmetic that touches pool balances obeys the invariant:
+ *  @code
+ *    sqrt(asset1 × asset2) >= LPTokenBalance
+ *  @endcode
+ *  Rounding is always applied in the direction that keeps the pool at least
+ *  as large as required by the invariant.  The `fixAMMv1_3` amendment
+ *  introduces explicit per-step directional rounding; pre-amendment paths are
+ *  preserved for historic replay.
+ */
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 
 #include <xrpl/basics/Expected.h>
@@ -53,11 +71,17 @@ ammLPTokens(STAmount const& asset1, STAmount const& asset2, Asset const& lptIssu
     return toSTAmount(lptIssue, tokens);
 }
 
-/*
- * Equation 3:
- * t = T * [(b/B - (sqrt(f2**2 - b/(B*f1)) - f2)) /
- *          (1 + sqrt(f2**2 - b/(B*f1)) - f2)]
- * where f1 = 1 - tfee, f2 = (1 - tfee/2)/f1
+/** LP tokens minted for a single-asset deposit (Equation 3).
+ *
+ *  Implements the closed-form formula:
+ *  @code
+ *    t = T * [(b/B - (sqrt(f2**2 - b/(B*f1)) - f2)) /
+ *             (1 + sqrt(f2**2 - b/(B*f1)) - f2)]
+ *  @endcode
+ *  where `f1 = 1 - tfee`, `f2 = (1 - tfee/2) / f1`, `b` is the deposit
+ *  amount, `B` is the current pool balance, and `T` is the current LP token
+ *  supply.  Under `fixAMMv1_3` the final multiplication is rounded downward
+ *  so that fewer tokens are issued, preserving the pool invariant.
  */
 STAmount
 lpTokensOut(
@@ -81,16 +105,16 @@ lpTokensOut(
     return multiply(lptAMMBalance, frac, Number::RoundingMode::Downward);
 }
 
-/* Equation 4 solves equation 3 for b:
- * Let f1 = 1 - tfee, f2 = (1 - tfee/2)/f1, t1 = t/T, t2 = 1 + t1, R = b/B
- * then
- * t1 = [R - sqrt(f2**2 + R/f1) + f2] / [1 + sqrt(f2**2 + R/f1] - f2] =>
- * sqrt(f2**2 + R/f1)*(t1 + 1) = R + f2 + t1*f2 - t1 =>
- * sqrt(f2**2 + R/f1)*t2 = R + t2*f2 - t1 =>
- * sqrt(f2**2 + R/f1) = R/t2 + f2 - t1/t2, let d = f2 - t1/t2 =>
- * sqrt(f2**2 + R/f1) = R/t2 + d =>
- * f2**2 + R/f1 = (R/t2)**2 +2*d*R/t2 + d**2 =>
- * (R/t2)**2 + R*(2*d/t2 - 1/f1) + d**2 - f2**2 = 0
+/** Required asset deposit for a desired LP token amount (Equation 4).
+ *
+ *  Solves Equation 3 for the deposit `b` given desired tokens `t`.
+ *  Let `f1 = 1 - tfee`, `f2 = (1 - tfee/2) / f1`, `t1 = t/T`, `t2 = 1 + t1`,
+ *  `R = b/B`, `d = f2 - t1/t2`.  Rearranging Equation 3 yields:
+ *  @code
+ *    (R/t2)**2 + R*(2*d/t2 - 1/f1) + d**2 - f2**2 = 0
+ *  @endcode
+ *  which is solved by `solveQuadraticEq()`.  Under `fixAMMv1_3` the result is
+ *  rounded upward so the depositor pays more, preserving the pool invariant.
  */
 STAmount
 ammAssetIn(
@@ -117,9 +141,15 @@ ammAssetIn(
     return multiply(asset1Balance, frac, Number::RoundingMode::Upward);
 }
 
-/* Equation 7:
- * t = T * (c - sqrt(c**2 - 4*R))/2
- * where R = b/B, c = R*fee + 2 - fee
+/** LP tokens to burn for a single-asset withdrawal (Equation 7).
+ *
+ *  Implements the closed-form formula:
+ *  @code
+ *    t = T * (c - sqrt(c**2 - 4*R)) / 2
+ *  @endcode
+ *  where `R = b/B` (withdrawal fraction of pool balance), `c = R*fee + 2 - fee`,
+ *  and `fee = tfee / 100000`.  Under `fixAMMv1_3` the final multiplication is
+ *  rounded upward so more tokens must be burned, preserving the pool invariant.
  */
 STAmount
 lpTokensIn(
@@ -142,15 +172,16 @@ lpTokensIn(
     return multiply(lptAMMBalance, frac, Number::RoundingMode::Upward);
 }
 
-/* Equation 8 solves equation 7 for b:
- * c - 2*t/T = sqrt(c**2 - 4*R) =>
- * c**2 - 4*c*t/T + 4*t**2/T**2 = c**2 - 4*R =>
- * -4*c*t/T + 4*t**2/T**2 = -4*R =>
- * -c*t/T + t**2/T**2 = -R -=>
- * substitute c = R*f + 2 - f =>
- * -(t/T)*(R*f + 2 - f) + (t/T)**2 = -R, let t1 = t/T =>
- * -t1*R*f -2*t1 +t1*f +t1**2 = -R =>
- * R = (t1**2 + t1*(f - 2)) / (t1*f - 1)
+/** Asset returned for a given LP token burn (Equation 8).
+ *
+ *  Solves Equation 7 for the withdrawal `b` given tokens `t`.  Let
+ *  `t1 = t/T` and `f = tfee / 100000`.  Substituting `c = R*f + 2 - f` and
+ *  rearranging gives the direct rational formula:
+ *  @code
+ *    R = (t1**2 + t1*(f - 2)) / (t1*f - 1)
+ *  @endcode
+ *  where `R = b/B`.  Under `fixAMMv1_3` the final multiplication is rounded
+ *  downward so the withdrawer receives less, preserving the pool invariant.
  */
 STAmount
 ammAssetOut(
@@ -172,6 +203,7 @@ ammAssetOut(
     return multiply(assetBalance, frac, Number::RoundingMode::Downward);
 }
 
+/** Return the square of @p n. */
 Number
 square(Number const& n)
 {
@@ -199,7 +231,6 @@ adjustAmountsByLPTokens(
     std::uint16_t tfee,
     IsDeposit isDeposit)
 {
-    // AMMv1_3 amendment adjusts tokens and amounts in deposit/withdraw
     if (isFeatureEnabled(fixAMMv1_3))
         return std::make_tuple(amount, amount2, lpTokens);
 
@@ -272,7 +303,17 @@ solveQuadraticEq(Number const& a, Number const& b, Number const& c)
     return (-b + root2(b * b - 4 * a * c)) / (2 * a);
 }
 
-// Minimize takerGets or takerPays
+/** Smallest positive root of `a*x**2 + b*x + c = 0`, used to minimize
+ *  takerGets or takerPays in offer generation.
+ *
+ *  Uses the numerically stable "citardauq" formula (Blinn 2006): when `b > 0`
+ *  it computes `2c / (-b - sqrt(d))` instead of the standard
+ *  `(-b + sqrt(d)) / 2a`, avoiding catastrophic cancellation when the two
+ *  terms under subtraction are nearly equal.
+ *
+ *  @return The smallest positive root, or `std::nullopt` when the discriminant
+ *      is negative (no real solution exists).
+ */
 std::optional<Number>
 solveQuadraticEqSmallest(Number const& a, Number const& b, Number const& c)
 {
@@ -289,6 +330,13 @@ solveQuadraticEqSmallest(Number const& a, Number const& b, Number const& c)
     return (2 * c) / (-b + root2(d));
 }
 
+/** Multiply @p amount by @p frac under the specified rounding mode @p rm.
+ *
+ *  Installs @p rm for the duration of both the `Number` multiplication and the
+ *  subsequent `toSTAmount()` conversion, so that rounding is applied
+ *  consistently at the final step — not accumulated through intermediate
+ *  operations.
+ */
 STAmount
 multiply(STAmount const& amount, Number const& frac, Number::RoundingMode rm)
 {
@@ -405,6 +453,14 @@ adjustAssetOutByTokens(
     return {tokensAdj, std::min(amount, assetAdj)};
 }
 
+/** Recalculate the pool fraction after LP token adjustment.
+ *
+ *  When `fixAMMv1_3` is active, the adjusted token count (post-precision-loss
+ *  correction) may differ from the originally requested count, so the fraction
+ *  `tokens / lptAMMBalance` is recomputed from the adjusted value.  Under
+ *  earlier amendments the original @p frac is returned unchanged because
+ *  `adjustLPTokens()` has not yet been applied.
+ */
 Number
 adjustFracByTokens(
     Rules const& rules,
@@ -502,6 +558,17 @@ ammHolds(
     return std::make_tuple(amount1, amount2, ammSle[sfLPTokenBalance]);
 }
 
+/** LP token balance for a given account, checking only the LP token trustline.
+ *
+ *  Intentionally does not delegate to `accountHolds()`.  Under the
+ *  `fixFrozenLPTokenTransfer` amendment, `accountHolds()` also checks whether
+ *  the AMM's underlying pool assets are frozen, which would incorrectly block
+ *  LP token transfers.  This function only checks whether the LP token
+ *  trustline itself is frozen, which is the correct policy for balance queries.
+ *
+ *  Trust-line orientation: if `lpAccount > ammAccount` the raw `sfBalance` is
+ *  stored from the AMM's perspective and must be negated before returning.
+ */
 STAmount
 ammLPHolds(
     ReadView const& view,
@@ -511,10 +578,6 @@ ammLPHolds(
     AccountID const& lpAccount,
     beast::Journal const j)
 {
-    // This function looks similar to `accountHolds`. However, it only checks if
-    // a LPToken holder has enough balance. On the other hand, `accountHolds`
-    // checks if the underlying assets of LPToken are frozen with the
-    // fixFrozenLPTokenTransfer amendment
 
     auto const currency = ammLPTCurrency(asset1, asset2);
     STAmount amount;
@@ -562,6 +625,17 @@ ammLPHolds(
     return ammLPHolds(view, ammSle[sfAsset], ammSle[sfAsset2], ammSle[sfAccount], lpAccount, j);
 }
 
+/** Effective trading fee for @p account on the given AMM.
+ *
+ *  Returns `sfDiscountedFee` if the AMM's auction slot is unexpired and
+ *  @p account is either the slot owner or one of its authorized accounts;
+ *  otherwise returns the global `sfTradingFee`.  Expiration is compared
+ *  against `parentCloseTime` in seconds (the slot stores
+ *  `parentCloseTime + TOTAL_TIME_SLOT_SECS` at creation time, i.e. 24 hours).
+ *
+ *  @note When `fixInnerObjTemplate` is active an `sfAuctionSlot` object is
+ *      always present; the assert verifies this invariant in debug builds.
+ */
 std::uint16_t
 getTradingFee(ReadView const& view, SLE const& ammSle, AccountID const& account)
 {
@@ -592,10 +666,16 @@ getTradingFee(ReadView const& view, SLE const& ammSle, AccountID const& account)
     return ammSle[sfTradingFee];
 }
 
+/** Raw pool-asset balance of the AMM account, bypassing balance hooks.
+ *
+ *  Unlike `accountHolds()`, this function does not invoke `balanceHookIOU` or
+ *  `balanceHookMPT` so the result is unaffected by `PaymentSandbox` deferred-
+ *  credit accounting.  Used when the AMM needs its own unmodified balance for
+ *  mathematical calculations, not for payment routing.
+ */
 STAmount
 ammAccountHolds(ReadView const& view, AccountID const& ammAccountID, Asset const& asset)
 {
-    // Get the actual AMM balance without factoring in the balance hook
     return asset.visit(
         [&](MPTIssue const& issue) {
             if (auto const sle = view.read(keylet::mptoken(issue, ammAccountID));
@@ -624,6 +704,17 @@ ammAccountHolds(ReadView const& view, AccountID const& ammAccountID, Asset const
         });
 }
 
+/** Delete zero-balance IOU trustlines from the AMM account's owner directory.
+ *
+ *  Walks the owner directory via `cleanupOnAccountDelete`, skipping `ltAMM`
+ *  and `ltMPTOKEN` entries.  Every `ltRIPPLE_STATE` (IOU trustline) is
+ *  deleted via `deleteAMMTrustLine()`; a non-zero balance is a protocol
+ *  invariant violation and returns `tecINTERNAL` (annotated `LCOV_EXCL`).
+ *
+ *  @param maxTrustlinesToDelete Maximum number of trustlines to remove in a
+ *      single call.  Returns `tecINCOMPLETE` if the directory still has
+ *      entries after the limit is reached, enabling multi-transaction deletion.
+ */
 static TER
 deleteAMMTrustLines(
     Sandbox& sb,
@@ -664,6 +755,15 @@ deleteAMMTrustLines(
         maxTrustlinesToDelete);
 }
 
+/** Delete MPToken objects held by the AMM account.
+ *
+ *  Must be called only after `deleteAMMTrustLines()` has succeeded; if any
+ *  `ltRIPPLE_STATE` entry remains, the function returns `tecINTERNAL` because
+ *  trustlines must be fully cleared before MPTokens are removed.
+ *  The directory is expected to contain at most three entries: two MPToken
+ *  objects (one per pool-side MPT) plus the AMM SLE itself, so a fixed limit
+ *  of 3 is sufficient.
+ */
 static TER
 deleteAMMMPTokens(Sandbox& sb, AccountID const& ammAccountID, beast::Journal j)
 {
@@ -709,6 +809,22 @@ deleteAMMMPTokens(Sandbox& sb, AccountID const& ammAccountID, beast::Journal j)
         3);  // At most two MPToken plus AMM object
 }
 
+/** Fully delete the AMM account, its SLE, and all associated ledger objects.
+ *
+ *  Deletion order is significant:
+ *  1. `deleteAMMTrustLines()` — removes IOU trustlines (up to
+ *     `kMAX_DELETABLE_AMM_TRUST_LINES`); returns `tecINCOMPLETE` if more
+ *     remain, allowing a follow-up transaction to continue.
+ *  2. `deleteAMMMPTokens()` — removes MPToken objects; only runs after all
+ *     trustlines are gone so that the AMM can be re-created via deposit if
+ *     step 1 returned `tecINCOMPLETE`.
+ *  3. Owner-directory link removal, `emptyDirDelete`, and erase of both the
+ *     AMM SLE and AMM root `AccountRoot` SLE.
+ *
+ *  @return `tesSUCCESS` on full deletion, `tecINCOMPLETE` if trustlines
+ *      remain, or `tecINTERNAL` for unexpected ledger inconsistencies
+ *      (annotated `LCOV_EXCL` — unreachable under correct business logic).
+ */
 TER
 deleteAMMAccount(Sandbox& sb, Asset const& asset, Asset const& asset2, beast::Journal j)
 {
@@ -736,9 +852,6 @@ deleteAMMAccount(Sandbox& sb, Asset const& asset, Asset const& asset2, beast::Jo
         !isTesSuccess(ter))
         return ter;
 
-    // Delete AMM's MPTokens only if all trustlines are deleted. If trustlines
-    // are not deleted then AMM can be re-created with Deposit and
-    // AMM's MPToken(s) must exist.
     if (auto const ter = deleteAMMMPTokens(sb, ammAccountID, j); !isTesSuccess(ter))
         return ter;
 
@@ -765,6 +878,22 @@ deleteAMMAccount(Sandbox& sb, Asset const& asset, Asset const& asset2, beast::Jo
     return tesSUCCESS;
 }
 
+/** Initialize the fee vote slot and auction slot on a new or re-created AMM.
+ *
+ *  Called both on `AMMCreate` and on `AMMDeposit` when the AMM was empty
+ *  (all liquidity withdrawn).  Writes a single vote entry with
+ *  `kVOTE_WEIGHT_SCALE_FACTOR` (100% weight) for @p account, then
+ *  sets up the auction slot with:
+ *  - expiration = `parentCloseTime + kTOTAL_TIME_SLOT_SECS` (24 hours)
+ *  - `sfPrice` = 0 (the creator receives the slot for free)
+ *  - `sfDiscountedFee` = `tfee / kAUCTION_SLOT_DISCOUNTED_FEE_FRACTION` (1/10
+ *    of the full fee)
+ *
+ *  Both fee fields are removed via `makeFieldAbsent()` when the computed value
+ *  is zero, preserving canonical absent-field serialization.  Under
+ *  `fixCleanup3_2_0`, any stale `sfAuthAccounts` from a previous slot owner
+ *  is also cleared.
+ */
 void
 initializeFeeAuctionVote(
     ApplyView& view,
@@ -774,7 +903,6 @@ initializeFeeAuctionVote(
     std::uint16_t tfee)
 {
     auto const& rules = view.rules();
-    // AMM creator gets the voting slot.
     STArray voteSlots;
     STObject voteEntry = STObject::makeInnerObject(sfVoteEntry);
     if (tfee != 0)
@@ -783,9 +911,8 @@ initializeFeeAuctionVote(
     voteEntry.setAccountID(sfAccount, account);
     voteSlots.pushBack(voteEntry);
     ammSle->setFieldArray(sfVoteSlots, voteSlots);
-    // AMM creator gets the auction slot for free.
-    // AuctionSlot is created on AMMCreate and updated on AMMDeposit
-    // when AMM is in an empty state
+    // Under fixInnerObjTemplate the slot object must be explicitly created if
+    // absent (first AMMCreate path); on AMMDeposit re-init it already exists.
     if (rules.enabled(fixInnerObjTemplate) && !ammSle->isFieldPresent(sfAuctionSlot))
     {
         STObject auctionSlot = STObject::makeInnerObject(sfAuctionSlot);
@@ -793,14 +920,12 @@ initializeFeeAuctionVote(
     }
     STObject& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
     auctionSlot.setAccountID(sfAccount, account);
-    // current + sec in 24h
     auto const expiration = std::chrono::duration_cast<std::chrono::seconds>(
                                 view.header().parentCloseTime.time_since_epoch())
                                 .count() +
         kTOTAL_TIME_SLOT_SECS;
     auctionSlot.setFieldU32(sfExpiration, expiration);
     auctionSlot.setFieldAmount(sfPrice, STAmount{lptAsset, 0});
-    // Set the fee
     if (tfee != 0)
     {
         ammSle->setFieldU16(sfTradingFee, tfee);
@@ -822,33 +947,34 @@ initializeFeeAuctionVote(
         auctionSlot.makeFieldAbsent(sfAuthAccounts);
 }
 
+/** Determine whether @p lpAccount is the sole remaining liquidity provider.
+ *
+ *  Walks up to 10 pages of the AMM account's owner directory (sufficient for
+ *  at most four objects: 1 AMM SLE + 1 LPToken trustline + ≤2 IOU/MPT
+ *  pool-asset entries).  Counters track:
+ *  - `nLPTokenTrustLines` — must be exactly 1 for `lpAccount`; any other
+ *    LPToken trustline implies a second LP and returns `false` immediately.
+ *  - `nIOUTrustLines` — IOU pool-asset trustlines (not LPToken); ≤2 each.
+ *  - `nMPT` — MPToken objects for pool-side MPTs; ≤2.
+ *  - `hasAMM` — exactly one `ltAMM` SLE must be present.
+ *
+ *  Final check: exactly 1 LPToken trustline and between 1–2 pool-asset
+ *  entries (IOU + MPT combined); otherwise `tecINTERNAL`.
+ *
+ *  @return `true` if @p lpAccount is the only LP, `false` if other LPs exist,
+ *      or `Unexpected(tecINTERNAL)` for any unexpected directory state.
+ */
 Expected<bool, TER>
 isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID const& lpAccount)
 {
-    // Liquidity Provider (LP) must have one LPToken trustline
     std::uint8_t nLPTokenTrustLines = 0;
-    // AMM account has at most two IOU (pool tokens, not LPToken) trustlines.
-    // One or both trustlines could be to the LP if LP is the issuer,
-    // or a different account if LP is not an issuer. For instance,
-    // if AMM has two tokens USD and EUR and LP is not the issuer of the tokens
-    // then the trustlines are between AMM account and the issuer.
-    // There is one LPToken trustline for each LP. Only remaining LP has
-    // exactly one LPToken trustlines and at most two IOU trustline for each
-    // pool token. One or both tokens could be MPT.
     std::uint8_t nIOUTrustLines = 0;
-    // There are at most two MPT objects, one for each side of the pool.
     std::uint8_t nMPT = 0;
-    // There is only one AMM object
     bool hasAMM = false;
-    // AMM LP has at most three trustlines, at most two MPTs, and only one
-    // AMM object must exist. If there are more than four objects then
-    // it's either an error or there are more than one LP. Ten pages should
-    // be sufficient to include four objects.
     std::uint8_t limit = 10;
     auto const root = keylet::ownerDir(ammIssue.account);
     auto currentIndex = root;
 
-    // Iterate over AMM owner directory objects.
     while (limit-- >= 1)
     {
         auto const ownerDir = view.read(currentIndex);
@@ -882,28 +1008,24 @@ isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID c
             auto const isLPTokenTrustline =
                 lowLimit.asset() == ammIssue || highLimit.asset() == ammIssue;
 
-            // Liquidity Provider trustline
             if (isLPTrustline)
             {
-                // LPToken trustline
                 if (isLPTokenTrustline)
                 {
                     // LP has exactly one LPToken trustline
                     if (++nLPTokenTrustLines > 1)
                         return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
                 }
-                // AMM account has at most two IOU trustlines
                 else if (++nIOUTrustLines > 2)
                 {
                     return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
                 }
             }
-            // Another Liquidity Provider LPToken trustline
+            // Another LP's LPToken trustline: more than one LP exists.
             else if (isLPTokenTrustline)
             {
                 return false;
             }
-            // AMM account has at most two IOU trustlines
             else if (++nIOUTrustLines > 2)
             {
                 return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
@@ -922,6 +1044,22 @@ isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID c
     return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
 }
 
+/** Reconcile the AMM's stored `sfLPTokenBalance` with the last LP's actual
+ *  trustline balance.
+ *
+ *  Due to the 16-significant-digit limit of `STAmount`, the AMM's running
+ *  `sfLPTokenBalance` may differ from the LP's trustline balance by a small
+ *  rounding error.  This function:
+ *  1. Confirms @p account is the only remaining LP via `isOnlyLiquidityProvider()`.
+ *  2. If so, checks that the discrepancy is within 0.1% (tolerance `1e-3`).
+ *  3. If within tolerance, updates `sfLPTokenBalance` to match @p lpTokens
+ *     so the final withdrawal leaves the AMM in a fully consistent state.
+ *
+ *  @return `true` when the balance was reconciled or no adjustment was needed
+ *      (other LPs exist), `Unexpected(tecAMM_INVALID_TOKENS)` if the
+ *      discrepancy exceeds tolerance, or `Unexpected(tecINTERNAL)` on an
+ *      unexpected directory error.
+ */
 Expected<bool, TER>
 verifyAndAdjustLPTokenBalance(
     Sandbox& sb,

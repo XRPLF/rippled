@@ -1,3 +1,9 @@
+/** @file
+ *  Implementation of `Message` — the wire-format envelope for overlay peer
+ *  messages. Serialization is eager (constructor), compression is lazy
+ *  (`std::call_once` on first `getBuffer(Compressed::On)` call). See
+ *  `Message.h` for the full public interface contract.
+ */
 #include <xrpld/overlay/Message.h>
 
 #include <xrpld/overlay/Compression.h>
@@ -43,7 +49,17 @@ Message::Message(
         "xrpl::Message::Message : message size matches the buffer");
 }
 
-// static
+/** Return the serialized byte length of a protobuf message.
+ *
+ *  Dispatches to `ByteSizeLong()` (returns `size_t`, available from protobuf
+ *  3.11.0) or the older `ByteSize()` (returns `int`, risks signed overflow on
+ *  payloads larger than 2 GiB) depending on the detected library version.
+ *  The compile-time guard avoids undefined signed-overflow behavior on
+ *  unusually large messages when building against an older protobuf.
+ *
+ *  @param message Protobuf message to measure.
+ *  @return Serialized size in bytes, excluding any wire header.
+ */
 std::size_t
 Message::messageSize(::google::protobuf::Message const& message)
 {
@@ -61,6 +77,25 @@ Message::totalSize(::google::protobuf::Message const& message)
     return messageSize(message) + compression::kHEADER_BYTES;
 }
 
+/** Attempt LZ4 compression of `buffer_` and populate `bufferCompressed_`.
+ *
+ *  Applies a two-level eligibility policy before invoking the codec:
+ *  1. Payload must exceed 70 bytes — smaller messages cannot recover the
+ *     4-byte extra header overhead that the compressed wire format adds.
+ *  2. The message type must be in the compression whitelist (bulk data:
+ *     `mtTRANSACTION`, `mtLEDGER_DATA`, `mtVALIDATOR_LIST`, etc.).
+ *     Latency-sensitive control messages (`mtPING`, `mtVALIDATION`,
+ *     `mtPROPOSE_LEDGER`, `mtSTATUS_CHANGE`, `mtHAVE_SET`) are excluded.
+ *
+ *  If the compressed result is not strictly smaller than
+ *  `messageBytes - (kHEADER_BYTES_COMPRESSED - kHEADER_BYTES)` —
+ *  i.e., it does not recover the 4-byte header overhead — then
+ *  `bufferCompressed_` is cleared to zero length so that `getBuffer()`
+ *  falls back to returning the uncompressed `buffer_`.
+ *
+ *  @note Invoked at most once per instance via `std::call_once` in
+ *      `getBuffer()`. Not intended to be called directly.
+ */
 void
 Message::compress()
 {
@@ -197,6 +232,18 @@ Message::getBufferSize()
     return buffer_.size();
 }
 
+/** Return the wire buffer, triggering compression on first eligible call.
+ *
+ *  When `tryCompressed == Compressed::On`, `compress()` is invoked via
+ *  `std::call_once` so the LZ4 pass runs exactly once regardless of
+ *  concurrent callers. If compression was skipped or produced no net gain,
+ *  `bufferCompressed_` is empty and `buffer_` (uncompressed) is returned.
+ *
+ *  @param tryCompressed `Compressed::On` to request the compressed buffer;
+ *      `Compressed::Off` to bypass compression entirely.
+ *  @return `const` reference to an internal buffer valid for the lifetime
+ *      of this `Message`.
+ */
 std::vector<uint8_t> const&
 Message::getBuffer(Compressed tryCompressed)
 {
@@ -213,6 +260,15 @@ Message::getBuffer(Compressed tryCompressed)
     return buffer_;
 }
 
+/** Decode the 16-bit message type from a wire-format header.
+ *
+ *  Bytes 4 and 5 (0-indexed) hold the message type in big-endian order for
+ *  both the 6-byte uncompressed and 10-byte compressed header formats, so
+ *  this function works identically for either variant.
+ *
+ *  @param in Pointer to the first byte of a complete wire header.
+ *  @return Integer message type (e.g. `protocol::mtTRANSACTION`).
+ */
 int
 Message::getType(std::uint8_t const* in)
 {

@@ -1,3 +1,14 @@
+/** @file
+ *  SOCI/SQLite adapter: session lifecycle, WAL checkpointing, memory
+ *  diagnostics, and blob conversion helpers.
+ *
+ *  This translation unit is wrapped in a Clang `-Wdeprecated` suppression
+ *  pragma because SOCI's own headers use deprecated constructs.  The pragma
+ *  scope is kept as narrow as possible (this file only).
+ *
+ *  Only `"sqlite"` is a valid backend; any other value in the `[sqdb]`
+ *  config section causes an immediate `std::runtime_error`.
+ */
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/core/Job.h>
@@ -32,10 +43,27 @@
 
 namespace xrpl {
 
+/** WAL frame threshold that triggers an off-thread checkpoint.
+ *
+ *  Mirrors SQLite's own auto-checkpoint default so behaviour is consistent
+ *  whether or not the WAL hook fires first.  Tune here to change the
+ *  trade-off between WAL file growth and checkpoint frequency.
+ */
 static auto gCheckpointPageCount = 1000;
 
 namespace detail {
 
+/** Build the SQLite connection string for a named database.
+ *
+ *  Appends @p name + @p ext to @p dir to produce the full filesystem path
+ *  that SOCI uses as its connection string.
+ *
+ *  @param name  Database filename stem (e.g. `"ledger"`).
+ *  @param dir   Directory that holds the database files.
+ *  @param ext   File extension, either `".db"` or `".sqlite"`.
+ *  @return The absolute file path as a string.
+ *  @throws std::runtime_error if @p name is empty.
+ */
 std::string
 getSociSqliteInit(std::string const& name, std::string const& dir, std::string const& ext)
 {
@@ -50,6 +78,19 @@ getSociSqliteInit(std::string const& name, std::string const& dir, std::string c
     return file.string();
 }
 
+/** Resolve the SOCI connection string from the node configuration.
+ *
+ *  Reads `[sqdb] backend` (defaulting to `"sqlite"`).  Any value other than
+ *  `"sqlite"` throws immediately — no other backends are supported.  The
+ *  `validators` and `peerfinder` databases receive the `.sqlite` extension;
+ *  all other databases receive `.db`.  This extension asymmetry is a
+ *  historical artifact.
+ *
+ *  @param config  Node configuration supplying `[sqdb]` and `database_path`.
+ *  @param dbName  Logical database name (e.g. `"ledger"`, `"peerfinder"`).
+ *  @return Filesystem path suitable for passing to `soci::session::open`.
+ *  @throws std::runtime_error if the backend is not `"sqlite"`.
+ */
 std::string
 getSociInit(BasicConfig const& config, std::string const& dbName)
 {
@@ -106,6 +147,18 @@ open(soci::session& s, std::string const& beName, std::string const& connectionS
     }
 }
 
+/** Recover the raw SQLite connection pointer from a SOCI session.
+ *
+ *  This is the only intentional breach of the SOCI abstraction in this file.
+ *  A `dynamic_cast` to `soci::sqlite3_session_backend` extracts the native
+ *  `sqlite3*` handle required by WAL and memory-statistics APIs that SOCI
+ *  does not expose.
+ *
+ *  @param s  An open SOCI session backed by SQLite.
+ *  @return   The raw `sqlite3*` connection pointer.
+ *  @throws std::logic_error if @p s is not a SQLite session or the connection
+ *      pointer is null.
+ */
 static sqlite_api::sqlite3*
 getConnection(soci::session& s)
 {
@@ -120,6 +173,15 @@ getConnection(soci::session& s)
     return result;
 }
 
+/** Return total SQLite memory in use across the entire process, in kilobytes.
+ *
+ *  Delegates to `sqlite3_memory_used()`, which is a process-global counter
+ *  independent of any individual connection.
+ *
+ *  @param s  Any open SOCI/SQLite session (used only to validate the backend).
+ *  @return   Process-wide SQLite heap usage in kilobytes.
+ *  @throws std::logic_error if @p s is not a SQLite session.
+ */
 std::uint32_t
 getKBUsedAll(soci::session& s)
 {
@@ -128,10 +190,20 @@ getKBUsedAll(soci::session& s)
     return static_cast<size_t>(sqlite_api::sqlite3_memory_used() / kilobytes(1));
 }
 
+/** Return the page-cache memory used by a specific database connection, in kilobytes.
+ *
+ *  Calls `sqlite3_db_status(..., SQLITE_DBSTATUS_CACHE_USED, ...)` on the
+ *  connection underlying @p s.
+ *
+ *  @param s  An open SOCI/SQLite session.
+ *  @return   Page-cache footprint of @p s in kilobytes.
+ *  @throws std::logic_error if @p s is not a SQLite session.
+ *  @note This function will need to be extended if additional SOCI backends
+ *      are ever supported.
+ */
 std::uint32_t
 getKBUsedDB(soci::session& s)
 {
-    // This function will have to be customized when other backends are added
     if (auto conn = getConnection(s))
     {
         int cur = 0, hiw = 0;
@@ -142,6 +214,15 @@ getKBUsedDB(soci::session& s)
     return 0;  // Silence compiler warning.
 }
 
+/** Copy a SOCI blob into a byte vector.
+ *
+ *  Resizes @p to to match the blob length and reads all bytes via SOCI's
+ *  `blob::read` API, centralising the `reinterpret_cast` from `char*` to
+ *  `uint8_t*`.
+ *
+ *  @param from  Source SOCI blob.
+ *  @param to    Destination vector; resized and overwritten on return.
+ */
 void
 convert(soci::blob& from, std::vector<std::uint8_t>& to)
 {
@@ -151,6 +232,14 @@ convert(soci::blob& from, std::vector<std::uint8_t>& to)
     from.read(0, reinterpret_cast<char*>(&to[0]), from.get_len());
 }
 
+/** Copy a SOCI blob into a string.
+ *
+ *  Delegates to the vector overload then constructs the string from that
+ *  buffer.
+ *
+ *  @param from  Source SOCI blob.
+ *  @param to    Destination string; overwritten on return.
+ */
 void
 convert(soci::blob& from, std::string& to)
 {
@@ -159,6 +248,15 @@ convert(soci::blob& from, std::string& to)
     to.assign(tmp.begin(), tmp.end());
 }
 
+/** Write a byte vector into a SOCI blob.
+ *
+ *  Uses `blob::write` for non-empty input and `blob::trim(0)` for an empty
+ *  vector.  Calling `blob::write` with a null pointer on an empty vector is
+ *  undefined behaviour in SOCI, hence the explicit branch.
+ *
+ *  @param from  Source byte vector.
+ *  @param to    Destination SOCI blob; overwritten on return.
+ */
 void
 convert(std::vector<std::uint8_t> const& from, soci::blob& to)
 {
@@ -172,6 +270,14 @@ convert(std::vector<std::uint8_t> const& from, soci::blob& to)
     }
 }
 
+/** Write a string into a SOCI blob.
+ *
+ *  Mirrors the vector overload: `blob::write` for non-empty strings,
+ *  `blob::trim(0)` for empty strings.
+ *
+ *  @param from  Source string.
+ *  @param to    Destination SOCI blob; overwritten on return.
+ */
 void
 convert(std::string const& from, soci::blob& to)
 {
@@ -187,18 +293,47 @@ convert(std::string const& from, soci::blob& to)
 
 namespace {
 
-/** Run a thread to checkpoint the write ahead log (wal) for
-    the given soci::session every 1000 pages. This is only implemented
-    for sqlite databases.
-
-    Note: According to: https://www.sqlite.org/wal.html#ckpt this
-    is the default behavior of sqlite. We may be able to remove this
-    class.
-*/
-
+/** SQLite WAL checkpointer that offloads checkpoint work to the XRPL JobQueue.
+ *
+ *  Installs a `sqlite3_wal_hook` that fires after every WAL write.  When the
+ *  accumulated WAL size reaches `gCheckpointPageCount` frames the hook enqueues
+ *  a `jtWAL` job rather than running `sqlite3_wal_checkpoint_v2` on the
+ *  writer's thread.  This prevents database writers from stalling on I/O.
+ *
+ *  The hook cookie is the checkpointer's integer `id_`, not a raw `this`
+ *  pointer.  `checkpointerFromId()` performs the lookup against the
+ *  process-wide `CheckpointersCollection`; if lookup returns null (because the
+ *  owning `DatabaseCon` has been destroyed) the hook unregisters itself and
+ *  returns without touching freed memory.
+ *
+ *  At most one checkpoint job is in-flight at any time, enforced by the
+ *  `running_` flag under `mutex_`.  The job lambda captures a `weak_ptr` to
+ *  this object so a destroyed `DatabaseCon` causes it to exit silently.
+ *
+ *  @note SQLite already auto-checkpoints at 1000 pages; the primary benefit of
+ *      this class is routing that work onto the XRPL job queue rather than the
+ *      calling thread.
+ *  @see DatabaseCon, checkpointerFromId, makeCheckpointer
+ */
 class WALCheckpointer : public Checkpointer
 {
 public:
+    /** Construct and arm the WAL hook on the underlying SQLite connection.
+     *
+     *  Registers `sqliteWALHook` via `sqlite3_wal_hook` using @p id cast to
+     *  `void*` as the cookie.  The hook fires immediately upon the next WAL
+     *  write, so the checkpointer must already be registered in
+     *  `CheckpointersCollection` before this constructor returns.
+     *
+     *  @param id        Unique integer identifier for this checkpointer; must
+     *      match the ID stored in `CheckpointersCollection`.
+     *  @param session   Weak reference to the owning session; the checkpointer
+     *      must not outlive the object that holds the corresponding
+     *      `shared_ptr`.
+     *  @param q         Job queue on which checkpoint jobs are scheduled.
+     *  @param registry  Service registry used to obtain the WALCheckpointer
+     *      journal.
+     */
     WALCheckpointer(
         std::uintptr_t id,
         std::weak_ptr<soci::session> session,
@@ -216,6 +351,15 @@ public:
         }
     }
 
+    /** Attempt to lock the session and retrieve the underlying connection.
+     *
+     *  Returns `{nullptr, {}}` if the session `weak_ptr` has expired (i.e.,
+     *  the owning `DatabaseCon` has been destroyed).  The caller must keep the
+     *  returned `shared_ptr` alive for as long as it uses the `sqlite3*`.
+     *
+     *  @return A pair of the raw connection pointer (or null) and the
+     *      locked session `shared_ptr` that keeps the connection valid.
+     */
     std::pair<sqlite_api::sqlite3*, std::shared_ptr<soci::session>>
     getConnection() const
     {
@@ -234,6 +378,14 @@ public:
 
     ~WALCheckpointer() override = default;
 
+    /** Enqueue a checkpoint job on the `JobQueue`, if none is already running.
+     *
+     *  Guards against concurrent submissions with `running_` under `mutex_`.
+     *  If the `JobQueue` rejects the job (e.g., during shutdown) `running_`
+     *  is reset so the next WAL hook invocation can retry.  The job lambda
+     *  holds only a `weak_ptr` to this checkpointer so a destroyed
+     *  `DatabaseCon` causes it to exit without touching freed memory.
+     */
     void
     schedule() override
     {
@@ -263,6 +415,17 @@ public:
         }
     }
 
+    /** Perform a passive WAL checkpoint and reset the `running_` flag.
+     *
+     *  Calls `sqlite3_wal_checkpoint_v2` with `SQLITE_CHECKPOINT_PASSIVE`,
+     *  which checkpoints only WAL frames that are not currently held by any
+     *  reader.  `SQLITE_LOCKED` is expected under reader contention and is
+     *  logged at trace level; any other non-OK result is logged as a warning.
+     *  `running_` is always reset under `mutex_` before returning so future
+     *  hook invocations can schedule new jobs.
+     *
+     *  Exits immediately if the session `weak_ptr` has expired.
+     */
     void
     checkpoint() override
     {
@@ -291,17 +454,43 @@ public:
     }
 
 protected:
+    /** Unique integer identifier used as the WAL hook cookie. */
     std::uintptr_t const id_;
-    // session is owned by the DatabaseCon parent that holds the checkpointer.
-    // It is possible (though rare) for the DatabaseCon class to be destroyed
-    // before the checkpointer.
+
+    /** Weak reference to the owning session.
+     *
+     *  `DatabaseCon` holds the `shared_ptr`; this weak reference lets
+     *  in-flight checkpoint jobs detect that the connection has been torn
+     *  down without preventing the destructor from completing.
+     */
     std::weak_ptr<soci::session> session_;
+
+    /** Guards `running_` against concurrent WAL hook and job-completion access. */
     std::mutex mutex_;
+
+    /** Job queue on which checkpoint jobs are submitted. */
     JobQueue& jobQueue_;
 
+    /** True while a checkpoint job is enqueued or executing. */
     bool running_ = false;
+
+    /** Journal for WAL checkpoint trace and warning messages. */
     beast::Journal const j_;
 
+    /** SQLite WAL hook callback.
+     *
+     *  SQLite invokes this function on the writing thread after each WAL
+     *  write.  The cookie @p cpId is the checkpointer's integer ID (not a
+     *  pointer); `checkpointerFromId` resolves it to the live
+     *  `shared_ptr<Checkpointer>`.  If lookup fails the hook unregisters
+     *  itself to prevent future calls after the `DatabaseCon` is gone.
+     *
+     *  @param cpId    Checkpointer ID cast to `void*` by the constructor.
+     *  @param conn    SQLite connection that triggered the hook.
+     *  @param dbName  Name of the attached database (unused).
+     *  @param walSize Current WAL size in pages.
+     *  @return Always `SQLITE_OK`.
+     */
     static int
     sqliteWALHook(void* cpId, sqlite_api::sqlite3* conn, char const* dbName, int walSize)
     {
@@ -322,6 +511,22 @@ protected:
 
 }  // namespace
 
+/** Create and arm a WAL checkpointer for a SQLite session.
+ *
+ *  Constructs a `WALCheckpointer` and registers `sqlite3_wal_hook` on the
+ *  underlying connection.  The caller (typically `DatabaseCon::setupCheckpointing`)
+ *  must insert the returned pointer into `CheckpointersCollection` under @p id
+ *  **before** this call returns, because WAL writes can trigger the hook
+ *  immediately.
+ *
+ *  @param id       Integer ID that will be passed as the WAL hook cookie and
+ *      used for lookup in `checkpointerFromId`.
+ *  @param session  Weak reference to the session to checkpoint; must not
+ *      outlive the `shared_ptr` held by the owning `DatabaseCon`.
+ *  @param queue    Job queue on which checkpoint jobs will be scheduled.
+ *  @param registry Service registry used to obtain the WALCheckpointer journal.
+ *  @return A `shared_ptr` to the new `Checkpointer`.
+ */
 std::shared_ptr<Checkpointer>
 makeCheckpointer(
     std::uintptr_t id,

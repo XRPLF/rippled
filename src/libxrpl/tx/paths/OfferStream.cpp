@@ -1,3 +1,14 @@
+/** @file
+ *  Implements the order-book cursor used by the Flow payment engine.
+ *
+ *  `TOfferStreamBase` and `FlowOfferStream` walk a single currency-pair book
+ *  from the best-quality offer downward, permanently removing stale entries
+ *  (expired, missing, found-unfunded, deep-frozen, out-of-domain) and skipping
+ *  entries that only *became* unfunded within the current transaction.
+ *
+ *  All eight `TIn × TOut` combinations of `XRPAmount`, `IOUAmount`, and
+ *  `MPTAmount` are explicitly instantiated at the bottom of this file.
+ */
 #include <xrpl/tx/paths/OfferStream.h>
 
 #include <xrpl/basics/Log.h>
@@ -33,6 +44,17 @@
 namespace xrpl {
 
 namespace {
+/** Return `true` if both issuers named in @p book exist in @p view.
+ *
+ *  XRP is its own issuer and always passes; for IOU/MPT assets the issuing
+ *  `AccountRoot` must be present.  A book whose issuer has been deleted is
+ *  treated as invalid and `step()` returns `false` immediately, preventing
+ *  spurious work against a defunct order book.
+ *
+ *  @param view The ledger state to check.
+ *  @param book The currency-pair book whose issuers are validated.
+ *  @return `true` if both the in-asset and out-asset issuers exist.
+ */
 bool
 checkIssuers(ReadView const& view, Book const& book)
 {
@@ -64,15 +86,14 @@ TOfferStreamBase<TIn, TOut>::TOfferStreamBase(
     XRPL_ASSERT(validBook_, "xrpl::TOfferStreamBase::TOfferStreamBase : valid book");
 }
 
-// Handle the case where a directory item with no corresponding ledger entry
-// is found. This shouldn't happen but if it does we clean it up.
 template <StepAmount TIn, StepAmount TOut>
 void
 TOfferStreamBase<TIn, TOut>::erase(ApplyView& view)
 {
-    // NIKB NOTE This should be using ApplyView::dirRemove, which would
-    //           correctly remove the directory if its the last entry.
-    //           Unfortunately this is a protocol breaking change.
+    // NOTE: This should use ApplyView::dirRemove, which would also clean up
+    // empty directory pages.  However, that would change which ledger entries
+    // a payment touches, making it a protocol-breaking change.  Empty pages
+    // are therefore left in place to preserve consensus compatibility.
 
     auto p = view.peek(keylet::page(tip_.dir()));
 
@@ -99,6 +120,29 @@ TOfferStreamBase<TIn, TOut>::erase(ApplyView& view)
                      << tip_.dir();
 }
 
+/** Compute how much of @p asset the account @p id can deliver.
+ *
+ *  Dispatches across all three amount types via `if constexpr`:
+ *  - `IOUAmount`: if the account is the asset's issuer, the issuer is
+ *    self-funded and `amtDefault` (the offer's stated output amount) is
+ *    returned directly — an IOU issuer has no trust-line constraint with
+ *    themselves.
+ *  - `MPTAmount`: if the account is the issuer, `issuerFundsToSelfIssue`
+ *    computes the remaining issuance headroom from the MPT's supply limits;
+ *    MPT issuers are *not* self-funded without bound.
+ *  - All other cases: delegates to `accountHolds` with the supplied freeze and
+ *    auth handling, surfacing frozen or unauthorized balances as zero.
+ *
+ *  @tparam T         Amount type (`IOUAmount`, `MPTAmount`, or `XRPAmount`).
+ *  @param view       Ledger view to query.
+ *  @param id         Account whose available funds are computed.
+ *  @param amtDefault Fallback amount returned for self-funded IOU issuers.
+ *  @param asset      The asset being queried.
+ *  @param freezeHandling Whether to zero out frozen trust-line balances.
+ *  @param authHandling   Whether to zero out unauthorized holder balances.
+ *  @param j          Journal for diagnostic logging inside `accountHolds`.
+ *  @return The deliverable amount of @p asset held by @p id.
+ */
 template <StepAmount T>
 static T
 accountFundsHelper(
@@ -114,7 +158,6 @@ accountFundsHelper(
     {
         if (id == asset.getIssuer())
         {
-            // self funded
             return amtDefault;
         }
     }
@@ -135,18 +178,15 @@ template <class TTakerPays, class TTakerGets>
 [[nodiscard]] bool
 TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
 {
-    // Consider removing the offer if:
-    //  o `TakerPays` is XRP (because of XRP drops granularity) or
-    //  o `TakerPays` and `TakerGets` are both IOU and `TakerPays`<`TakerGets`
     constexpr bool const kIN_IS_XRP = std::is_same_v<TTakerPays, XRPAmount>;
     constexpr bool const kOUT_IS_XRP = std::is_same_v<TTakerGets, XRPAmount>;
 
     if constexpr (kOUT_IS_XRP)
     {
-        // If `TakerGets` is XRP, the worst this offer's quality can change is
-        // to about 10^-81 `TakerPays` and 1 drop `TakerGets`. This will be
-        // remarkably good quality for any realistic asset, so these offers
-        // don't need this extra check.
+        // If TakerGets is XRP, the worst-case effective quality after clamping
+        // to owner funds is ~10^-81 TakerPays per 1-drop TakerGets — still
+        // astronomically good for any realistic IOU input, so this protection
+        // is unnecessary.
         return false;
     }
 
@@ -167,16 +207,14 @@ TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
     auto const effectiveAmounts = [&] {
         if (offer_.owner() != offer_.assetOut().getIssuer() && ownerFunds < ofrAmts.out)
         {
-            // adjust the amounts by owner funds.
-            //
-            // It turns out we can prevent order book blocking by rounding down
-            // the ceil_out() result.
+            // Round down (not up) so the adjustment cannot artificially raise
+            // effective quality above the stored quality, which would distort
+            // book ordering.
             return offer_.quality().ceilOutStrict(ofrAmts, ownerFunds, /* roundUp */ false);
         }
         return ofrAmts;
     }();
 
-    // If either the effective in or out are zero then remove the offer.
     if (effectiveAmounts.in.signum() <= 0 || effectiveAmounts.out.signum() <= 0)
         return true;
 
@@ -191,8 +229,9 @@ template <StepAmount TIn, StepAmount TOut>
 bool
 TOfferStreamBase<TIn, TOut>::step()
 {
-    // Modifying the order or logic of these
-    // operations causes a protocol breaking change.
+    // CONSENSUS INVARIANT: Modifying the order or logic of these checks
+    // constitutes a protocol-breaking change — all validators must agree on
+    // exactly which offers are consumed or removed for each payment.
 
     if (!validBook_)
         return false;
@@ -200,18 +239,14 @@ TOfferStreamBase<TIn, TOut>::step()
     for (;;)
     {
         ownerFunds_ = std::nullopt;
-        // BookTip::step deletes the current offer from the view before
-        // advancing to the next (unless the ledger entry is missing).
         if (!tip_.step(j_))
             return false;
 
         std::shared_ptr<SLE> const entry = tip_.entry();
 
-        // If we exceed the maximum number of allowed steps, we're done.
         if (!counter_.step())
             return false;
 
-        // Remove if missing
         if (!entry)
         {
             erase(view_);
@@ -219,7 +254,6 @@ TOfferStreamBase<TIn, TOut>::step()
             continue;
         }
 
-        // Remove if expired
         using d = NetClock::duration;
         using tp = NetClock::time_point;
         if (entry->isFieldPresent(sfExpiration) && tp{d{(*entry)[sfExpiration]}} <= expire_)
@@ -233,7 +267,6 @@ TOfferStreamBase<TIn, TOut>::step()
 
         auto const amount(offer_.amount());
 
-        // Remove if either amount is zero
         if (amount.empty())
         {
             JLOG(j_.warn()) << "Removing bad offer " << entry->key();
@@ -260,7 +293,6 @@ TOfferStreamBase<TIn, TOut>::step()
             continue;
         }
 
-        // Calculate owner funds
         ownerFunds_ = accountFundsHelper(
             view_,
             offer_.owner(),
@@ -270,12 +302,12 @@ TOfferStreamBase<TIn, TOut>::step()
             AuthHandling::ZeroIfUnauthorized,
             j_);
 
-        // Check for unfunded offer
         if (*ownerFunds_ <= beast::kZERO)
         {
-            // If the owner's balance in the pristine view is the same,
-            // we haven't modified the balance and therefore the
-            // offer is "found unfunded" versus "became unfunded"
+            // Distinguish "found unfunded" (balance was already zero before
+            // this transaction — permanent removal) from "became unfunded"
+            // (balance dropped to zero inside this transaction due to an
+            // earlier strand — skip only, since the strand may be rolled back).
             auto const originalFunds = accountFundsHelper(
                 cancelView_,
                 offer_.owner(),
@@ -295,12 +327,13 @@ TOfferStreamBase<TIn, TOut>::step()
                 JLOG(j_.trace()) << "Removing became unfunded offer " << entry->key();
             }
             offer_ = TOffer<TIn, TOut>{};
-            // See comment at top of loop for how the offer is removed
             continue;
         }
 
         if (shouldRmSmallIncreasedQOffer<TIn, TOut>())
         {
+            // Apply the same found-vs-became distinction: only permanently
+            // remove if the tiny-quality condition existed before this tx.
             auto const originalFunds = accountFundsHelper(
                 cancelView_,
                 offer_.owner(),
@@ -322,7 +355,6 @@ TOfferStreamBase<TIn, TOut>::step()
                                  << entry->key();
             }
             offer_ = TOffer<TIn, TOut>{};
-            // See comment at top of loop for how the offer is removed
             continue;
         }
 

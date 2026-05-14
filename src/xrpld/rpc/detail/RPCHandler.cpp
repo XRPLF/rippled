@@ -1,3 +1,31 @@
+/** @file
+ *  Central dispatch engine for XRPL RPC commands.
+ *
+ *  Implements the three-stage pipeline shared by the HTTP and WebSocket
+ *  transports: `fillHandler` (validation and gating), `callMethod`
+ *  (instrumented, exception-safe invocation), and the public `doCommand`
+ *  entry point that threads them together.
+ *
+ *  @note HTTP and WebSocket responses differ structurally: for HTTP the
+ *      `status` field lives *inside* `result`; for WebSocket it lives at the
+ *      top level. This file populates only the inner `result` object — the
+ *      transport layers assemble the envelope.
+ *
+ *  HTTP success envelope:
+ *  @code{.json}
+ *  { "result": { ..., "status": "success" } }
+ *  @endcode
+ *
+ *  WebSocket success envelope:
+ *  @code{.json}
+ *  { "result": { ... }, "type": "response", "status": "success", "id": "..." }
+ *  @endcode
+ *
+ *  Error codes are API-version-sensitive: API v1 emits `rpcNO_NETWORK`,
+ *  `rpcNO_CURRENT`, and `rpcNO_CLOSED`; API v2+ collapses all three to
+ *  `rpcNOT_SYNCED`.
+ */
+
 #include <xrpld/rpc/RPCHandler.h>
 
 #include <xrpld/app/main/Application.h>
@@ -27,92 +55,41 @@ namespace xrpl::RPC {
 
 namespace {
 
-/**
-   This code is called from both the HTTP RPC handler and Websockets.
-
-   The form of the Json returned is somewhat different between the two services.
-
-   HTML:
-     Success:
-        {
-           "result" : {
-              "ledger" : {
-                 "accepted" : false,
-                 "transaction_hash" : "..."
-              },
-              "ledger_index" : 10300865,
-              "validated" : false,
-              "status" : "success"  # Status is inside the result.
-           }
-        }
-
-     Failure:
-        {
-           "result" : {
-              // api_version == 1
-              "error" : "noNetwork",
-              "error_code" : 17,
-              "error_message" : "Not synced to the network.",
-
-              // api_version == 2
-              "error" : "notSynced",
-              "error_code" : 18,
-              "error_message" : "Not synced to the network.",
-
-              "request" : {
-                 "command" : "ledger",
-                 "ledger_index" : 10300865
-              },
-              "status" : "error"
-           }
-        }
-
-   Websocket:
-     Success:
-        {
-           "result" : {
-              "ledger" : {
-                 "accepted" : false,
-                 "transaction_hash" : "..."
-              },
-              "ledger_index" : 10300865,
-              "validated" : false
-           }
-           "type": "response",
-           "status": "success",   # Status is OUTside the result!
-           "id": "client's ID",   # Optional
-           "warning": 3.14        # Optional
-        }
-
-     Failure:
-        {
-          // api_version == 1
-          "error" : "noNetwork",
-          "error_code" : 17,
-          "error_message" : "Not synced to the network.",
-
-          // api_version == 2
-          "error" : "notSynced",
-          "error_code" : 18,
-          "error_message" : "Not synced to the network.",
-
-          "request" : {
-             "command" : "ledger",
-             "ledger_index" : 10300865
-          },
-          "type": "response",
-          "status" : "error",
-          "id": "client's ID"   # Optional
-        }
-
+/** Pre-dispatch gatekeeper: validate, route, and authorize an RPC request.
+ *
+ *  Executes every check required before a handler is invoked, in order:
+ *
+ *  1. **Load shedding** — for non-unlimited callers, counts all jobs at
+ *     `jtCLIENT` priority or above. Rejects with `rpcTOO_BUSY` if the count
+ *     exceeds `Tuning::kMAX_JOB_QUEUE_CLIENTS`. Admin/unlimited callers bypass
+ *     this gate so operators retain access under saturation.
+ *  2. **Command field resolution** — accepts `"command"` (canonical JSON-RPC)
+ *     or `"method"` (legacy WebSocket alias). If both are present with
+ *     *different* values, returns `rpcUNKNOWN_COMMAND` rather than silently
+ *     picking one.
+ *  3. **Handler lookup** — calls `getHandler(version, betaEnabled, name)`.
+ *     Unknown commands or out-of-range API versions return `rpcUNKNOWN_COMMAND`.
+ *  4. **Role enforcement** — rejects non-admin callers for `Role::ADMIN`
+ *     handlers with `rpcNO_PERMISSION`.
+ *  5. **Node condition check** — delegates to `conditionMet()`, which enforces
+ *     amendment-blocked, UNL-blocked, operating-mode, and ledger-freshness
+ *     requirements. Error codes are version-sensitive (v1 vs v2+).
+ *
+ *  On success, `result` is set to the resolved `Handler` and `RpcSuccess` is
+ *  returned. On any failure, `result` is left unchanged and the appropriate
+ *  `ErrorCodeI` is returned.
+ *
+ *  @param context  The RPC dispatch context, supplying params, role, API
+ *      version, and references to node subsystems.
+ *  @param result   Output parameter; set to the matched handler on success.
+ *  @return `RpcSuccess` if all gates pass, otherwise the first failing error
+ *      code.
  */
-
 ErrorCodeI
 fillHandler(JsonContext& context, Handler const*& result)
 {
     if (!isUnlimited(context.role))
     {
-        // Count all jobs at jtCLIENT priority or higher.
         int const jobCount = context.app.getJobQueue().getJobCountGE(JtClient);
         if (jobCount > Tuning::kMAX_JOB_QUEUE_CLIENTS)
         {
@@ -153,6 +130,31 @@ fillHandler(JsonContext& context, Handler const*& result)
     return RpcSuccess;
 }
 
+/** Invoke an RPC handler with performance instrumentation and exception safety.
+ *
+ *  Brackets the handler call with `PerfLog::rpcStart` / `rpcFinish` (or
+ *  `rpcError` on failure) and registers a `JobQueue` load event named
+ *  `"cmd:<name>"` for wall-clock accounting. A monotonically increasing
+ *  `requestId` (shared `static std::atomic<uint64_t>`) correlates start and
+ *  finish log entries across concurrent calls without requiring a mutex.
+ *
+ *  If any `std::exception` escapes the handler and the request was charged at
+ *  `feeReferenceRPC`, this function escalates `context.loadType` to
+ *  `feeExceptionRPC` before returning. The escalation causes the resource
+ *  layer to levy a higher fee for the call that crashed the handler — an
+ *  automatic deterrent against server-side abort-inducing requests.
+ *
+ *  No exception ever propagates out of this function; callers receive either
+ *  the handler's `Status` or `RpcInternal`.
+ *
+ *  @tparam Object  The JSON output type (typically `json::Value`).
+ *  @tparam Method  A callable matching `Status(JsonContext&, Object&)`.
+ *  @param context  The RPC dispatch context for the current request.
+ *  @param method   The handler callable to invoke.
+ *  @param name     The RPC method name; used as the `PerfLog` and load-event key.
+ *  @param result   Output object the handler populates with its response.
+ *  @return The handler's `Status`, or `RpcInternal` if an exception was caught.
+ */
 template <class Object, class Method>
 Status
 callMethod(JsonContext& context, Method method, std::string const& name, Object& result)

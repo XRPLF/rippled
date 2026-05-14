@@ -1,3 +1,13 @@
+/** @file
+ *  Header-only template that aggregates per-ledger order book activity into
+ *  OHLCV-style market data.
+ *
+ *  `computeBookChanges` is the sole entry point. It is consumed by two
+ *  independent paths: the `book_changes` WebSocket subscription stream
+ *  (pushed from `NetworkOPs` on each validated ledger) and the
+ *  `book_changes` RPC command (on-demand via `handlers/orderbook/BookChanges.cpp`).
+ */
+
 #pragma once
 
 #include <xrpl/json/json_value.h>
@@ -22,6 +32,52 @@ class STTx;
 
 namespace RPC {
 
+/** Scan a closed ledger and produce OHLCV market-data for every crossed order book.
+ *
+ *  Iterates `sfAffectedNodes` in each transaction's metadata, identifies
+ *  modified or deleted `ltOFFER` nodes, and accumulates per-pair Open, High,
+ *  Low, Close, and Volume data into a tally map. The tally is then serialised
+ *  to JSON and returned.
+ *
+ *  Filtering rules applied before any accumulation:
+ *  - Only `ltOFFER` nodes are considered; all other object types are ignored.
+ *  - `sfCreatedNode` entries are skipped — a freshly created, uncrossed offer
+ *    has no volume yet.
+ *  - Nodes missing either `sfFinalFields` or `sfPreviousFields` are skipped;
+ *    this is typical of cancelled offers where no crossing occurred.
+ *  - `sfDeletedNode` entries whose `sfSequence` matches the transaction's
+ *    cancel target (`sfOfferSequence` in `OfferCancel` / `OfferCreate`) are
+ *    excluded so that explicit cancellations are not counted as volume.
+ *
+ *  Canonical pair key ordering: XRP always occupies the first position; for
+ *  two non-XRP assets, the lexicographically smaller asset string comes first.
+ *  This ensures one tally entry per book regardless of offer direction.
+ *
+ *  The exchange rate is `divide(first, second, noIssue())`. `noIssue()` is a
+ *  static sentinel (`noCurrency()` / `noAccount()`) used because the rate is a
+ *  dimensionless ratio and is not attributable to any specific IOU issuer.
+ *
+ *  @tparam L Ledger type. Must expose `.txs` (iterable of `(STTx, TxMeta)`
+ *      pairs) and `.header()` (providing `seq`, `hash`, `validated`,
+ *      `closeTime`). No virtual interface is required; this template works
+ *      with both production `ReadView`-derived types and lightweight test
+ *      fixtures.
+ *  @param lpAccepted The closed ledger to scan.
+ *  @return A `Json::Value` object containing `type`, `validated`,
+ *      `ledger_index`, `ledger_hash`, `ledger_time`, and a `changes` array.
+ *      Each element of `changes` carries `currency_a` / `currency_b` (IOU or
+ *      XRP pairs) or `mpt_issuance_id_a` / `mpt_issuance_id_b` (MPT pairs),
+ *      plus `volume_a`, `volume_b`, `high`, `low`, `open`, `close`, and an
+ *      optional `domain` field for permissioned-DEX tagged books.
+ *  @note Open and close reflect transaction ordering within the ledger, not
+ *      wall-clock timestamps. The `domain` field of the *last* processed trade
+ *      for a given pair wins; this is consistent because all offers within one
+ *      permissioned book share the same domain.
+ *  @note A zero-value `second` delta causes the pair to be skipped entirely
+ *      (defensive guard against malformed metadata — should never occur in
+ *      practice). Negative volume deltas are normalised with `abs()` before
+ *      accumulation.
+ */
 template <class L>
 json::Value
 computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
@@ -29,13 +85,13 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
     std::map<
         std::string,
         std::tuple<
-            STAmount,                 // side A volume
-            STAmount,                 // side B volume
-            STAmount,                 // high rate
-            STAmount,                 // low rate
-            STAmount,                 // open rate
-            STAmount,                 // close rate
-            std::optional<uint256>>>  // optional: domain id
+            STAmount,                 // vol A
+            STAmount,                 // vol B
+            STAmount,                 // high
+            STAmount,                 // low
+            STAmount,                 // open (first trade, never updated)
+            STAmount,                 // close (most recent trade)
+            std::optional<uint256>>>  // domain id (last trade wins)
         tally;
 
     for (auto& tx : lpAccepted->txs)
@@ -64,14 +120,9 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
             SField const& metaType = node.getFName();
             uint16_t const nodeType = node.getFieldU16(sfLedgerEntryType);
 
-            // we only care about ltOFFER objects being modified or
-            // deleted
             if (nodeType != ltOFFER || metaType == sfCreatedNode)
                 continue;
 
-            // if either FF or PF are missing we can't compute
-            // but generally these are cancelled rather than crossed
-            // so skipping them is consistent
             if (!node.isFieldPresent(sfFinalFields) || !node.isFieldPresent(sfPreviousFields))
                 continue;
 
@@ -80,7 +131,6 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
             auto const& pfBase = node.peekAtField(sfPreviousFields);
             auto const& previousFields = pfBase.template downcast<STObject>();
 
-            // defensive case that should never be hit
             if (!finalFields.isFieldPresent(sfTakerGets) ||
                 !finalFields.isFieldPresent(sfTakerPays) ||
                 !previousFields.isFieldPresent(sfTakerGets) ||
@@ -92,8 +142,6 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
                 finalFields.getFieldU32(sfSequence) == *offerCancel)
                 continue;
 
-            // compute the difference in gets and pays actually
-            // affected onto the offer
             STAmount const deltaGets = finalFields.getFieldAmount(sfTakerGets) -
                 previousFields.getFieldAmount(sfTakerGets);
             STAmount const deltaPays = finalFields.getFieldAmount(sfTakerPays) -
@@ -107,7 +155,6 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
             STAmount first = noswap ? deltaGets : deltaPays;
             STAmount second = noswap ? deltaPays : deltaGets;
 
-            // defensively programmed, should (probably) never happen
             if (second == beast::kZERO)
                 continue;
 
@@ -135,31 +182,23 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
 
             if (!tally.contains(key))
             {
-                tally[key] = {
-                    first,   // side A vol
-                    second,  // side B vol
-                    rate,    // high
-                    rate,    // low
-                    rate,    // open
-                    rate,    // close
-                    domain};
+                tally[key] = {first, second, rate, rate, rate, rate, domain};
             }
             else
             {
-                // increment volume
                 auto& entry = tally[key];
 
-                std::get<0>(entry) += first;   // side A vol
-                std::get<1>(entry) += second;  // side B vol
+                std::get<0>(entry) += first;
+                std::get<1>(entry) += second;
 
-                if (std::get<2>(entry) < rate)  // high
+                if (std::get<2>(entry) < rate)
                     std::get<2>(entry) = rate;
 
-                if (std::get<3>(entry) > rate)  // low
+                if (std::get<3>(entry) > rate)
                     std::get<3>(entry) = rate;
 
-                std::get<5>(entry) = rate;    // close
-                std::get<6>(entry) = domain;  // domain
+                std::get<5>(entry) = rate;
+                std::get<6>(entry) = domain;
             }
         }
     }
@@ -167,7 +206,6 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
     json::Value jvObj(json::ValueType::Object);
     jvObj[jss::type] = "bookChanges";
 
-    // retrieve validated information from LedgerHeader class
     jvObj[jss::validated] = lpAccepted->header().validated;
     jvObj[jss::ledger_index] = lpAccepted->header().seq;
     jvObj[jss::ledger_hash] = to_string(lpAccepted->header().hash);

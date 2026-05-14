@@ -1,3 +1,17 @@
+/** @file
+ *  Ledger validation tracking for the XRPL consensus engine.
+ *
+ *  Defines `ValidationParms`, `SeqEnforcer`, `isCurrent()`, `ValStatus`, and
+ *  the primary `Validations<Adaptor>` template. Together these components
+ *  receive validator attestations from the network, enforce freshness and
+ *  monotonicity invariants, index them for efficient querying, and feed the
+ *  `LedgerTrie` that drives preferred-ledger selection.
+ *
+ *  The entire implementation is generic: the `Adaptor` template parameter
+ *  supplies types and callbacks so that simulations and the production rippled
+ *  application can share the same logic while substituting test clocks or
+ *  storage backends.
+ */
 #pragma once
 
 #include <xrpld/consensus/LedgerTrie.h>
@@ -17,11 +31,16 @@
 
 namespace xrpl {
 
-/** Timing parameters to control validation staleness and expiration.
-
-    @note These are protocol level parameters that should not be changed without
-          careful consideration.  They are *not* implemented as static constexpr
-          to allow simulation code to test alternate parameter settings.
+/** Protocol timing thresholds that govern validation staleness and expiration.
+ *
+ *  All durations are compared against `NetClock` (second-resolution network
+ *  time) for the wall-clock checks, and against `std::chrono::steady_clock`
+ *  for the local-observation check.
+ *
+ *  @note These are protocol-level parameters; changing them without careful
+ *      consideration can break consensus safety or liveness. They are
+ *      intentionally *not* `static constexpr` so that simulation code can
+ *      inject alternate values without recompiling.
  */
 struct ValidationParms
 {
@@ -58,23 +77,32 @@ struct ValidationParms
     */
     std::chrono::seconds validationSET_EXPIRES = std::chrono::minutes{10};
 
-    /** How long we consider a validation fresh.
+    /** Maximum age of a validation (by local seen-time) for it to be
+     *  considered from a *live* proposer in `laggards()` queries.
      *
-     *  The number of seconds since a validation has been seen for it to
-     *  be considered to accurately represent a live proposer's most recent
-     *  validation. This value should be sufficiently higher than
-     *  ledgerMAX_CONSENSUS such that validators who are waiting for
-     *  laggards are not considered offline.
+     *  A validation is "fresh" if `now < seenTime + validationFRESHNESS`.
+     *  This threshold is used only for online/laggard detection, not for
+     *  general staleness — see `isCurrent()` for that.  The value must exceed
+     *  `ledgerMAX_CONSENSUS` so that validators waiting on slow peers are not
+     *  misclassified as offline.
      */
     std::chrono::seconds validationFRESHNESS = std::chrono::seconds{20};
 };
 
-/** Enforce validation increasing sequence requirement.
-
-    Helper class for enforcing that a validation must be larger than all
-    unexpired validation sequence numbers previously issued by the validator
-    tracked by the instance of this class.
-*/
+/** Enforces a monotonically-increasing ledger sequence invariant per validator.
+ *
+ *  Each instance tracks the highest validation sequence seen for one
+ *  particular validator. A new validation is accepted only when its sequence
+ *  number strictly exceeds every unexpired prior sequence from that validator.
+ *
+ *  The high-water mark resets to zero after `validationSET_EXPIRES` elapses
+ *  with no new validation, so a validator returning after a long offline
+ *  period is not permanently locked out — it can start fresh at the current
+ *  network sequence.
+ *
+ *  @tparam Seq Ledger sequence type (must be default-constructible to zero and
+ *      support `<=` and `>` comparisons).
+ */
 template <class Seq>
 class SeqEnforcer
 {
@@ -107,6 +135,9 @@ public:
         return true;
     }
 
+    /** Return the highest accepted sequence number, or zero if no unexpired
+     *  validation has been accepted yet (including after a reset).
+     */
     [[nodiscard]] Seq
     largest() const
     {
@@ -114,17 +145,27 @@ public:
     }
 };
 
-/** Whether a validation is still current
-
-    Determines whether a validation can still be considered the current
-    validation from a node based on when it was signed by that node and first
-    seen by this node.
-
-    @param p ValidationParms with timing parameters
-    @param now Current time
-    @param signTime When the validation was signed
-    @param seenTime When the validation was first seen locally
-*/
+/** Determine whether a validation is still considered current.
+ *
+ *  Checks two independent time conditions:
+ *  1. **Sign-time window** — the validator's declared signing time must fall
+ *     within `(now - validationCURRENT_EARLY, now + validationCURRENT_WALL)`,
+ *     rejecting both ancient and future-dated attestations.
+ *  2. **Seen-time backstop** — if the local node has recorded a first-seen
+ *     time, it must be no later than `now + validationCURRENT_LOCAL`, guarding
+ *     against extreme local clock drift.
+ *
+ *  @note Because `signTime` originates from an untrusted remote node, all
+ *      arithmetic is performed after promoting the unsigned 32-bit NetClock
+ *      epoch values to signed 64-bit to prevent underflow on subtraction.
+ *
+ *  @param p        Timing thresholds governing the staleness windows.
+ *  @param now      Current network time used as the reference point.
+ *  @param signTime The time the validation was signed by the remote node.
+ *  @param seenTime When this node first observed the validation; pass the
+ *                  default-constructed `NetClock::time_point{}` if unknown.
+ *  @return `true` if the validation passes both time-window checks.
+ */
 inline bool
 isCurrent(
     ValidationParms const& p,
@@ -132,32 +173,43 @@ isCurrent(
     NetClock::time_point signTime,
     NetClock::time_point seenTime)
 {
-    // Because this can be called on untrusted, possibly
-    // malicious validations, we do our math in a way
-    // that avoids any chance of overflowing or underflowing
-    // the signing time.  All of the expressions below are
-    // promoted from unsigned 32 bit to signed 64 bit prior
-    // to computation.
-
     return (signTime > (now - p.validationCURRENT_EARLY)) &&
         (signTime < (now + p.validationCURRENT_WALL)) &&
         ((seenTime == NetClock::time_point{}) || (seenTime < (now + p.validationCURRENT_LOCAL)));
 }
 
-/** Status of validation we received */
+/** Classification of a received validation returned by `Validations::add()`.
+ *
+ *  The values form a rough severity ordering. Only `Current` means the
+ *  validation was accepted and stored. All other values indicate the
+ *  validation was discarded, with different implications for monitoring:
+ *  `Conflicting` is the most serious (possible Byzantine behavior), while
+ *  `Stale` is routine churn.
+ */
 enum class ValStatus {
-    /// This was a new validation and was added
+    /// Validation was new and accepted into the tracking structures.
     Current,
-    /// Not current or was older than current from this node
+    /// Validation was not current (too old or older than an existing one from
+    /// this node); discarded without further processing.
     Stale,
-    /// A validation violates the increasing seq requirement
+    /// Sequence number is not strictly greater than an unexpired prior
+    /// validation from the same node; plain regression, not necessarily
+    /// malicious.
     BadSeq,
-    /// Multiple validations by a validator for the same ledger
+    /// Same node, same sequence, same ledger but different cookie — likely
+    /// accidental misconfiguration (e.g., duplicate validator restart).
     Multiple,
-    /// Multiple validations by a validator for different ledgers
+    /// Same node, same sequence, different ledger or different sign time —
+    /// indicates a potentially Byzantine validator signing conflicting ledgers.
     Conflicting
 };
 
+/** Convert a `ValStatus` to its lowercase string representation for logging.
+ *
+ *  @param m The status value to convert.
+ *  @return A lowercase string (`"current"`, `"stale"`, `"badSeq"`,
+ *          `"multiple"`, `"conflicting"`, or `"unknown"`).
+ */
 inline std::string
 to_string(ValStatus m)
 {
@@ -178,27 +230,37 @@ to_string(ValStatus m)
     }
 }
 
-/** Maintains current and recent ledger validations.
-
-    Manages storage and queries related to validations received on the network.
-    Stores the most current validation from nodes and sets of recent
-    validations grouped by ledger identifier.
-
-    Stored validations are not necessarily from trusted nodes, so clients
-    and implementations should take care to use `trusted` member functions or
-    check the validation's trusted status.
-
-    This class uses a generic interface to allow adapting Validations for
-    specific applications. The Adaptor template implements a set of helper
-    functions and type definitions. The code stubs below outline the
-    interface and type requirements.
-
-
-    @warning The Adaptor::MutexType is used to manage concurrent access to
-             private members of Validations but does not manage any data in the
-             Adaptor instance itself.
-
-    @code
+/** Tracks ledger validations received from the network and drives preferred-
+ *  ledger selection.
+ *
+ *  Maintains five coordinated data structures under a single `Mutex`:
+ *  - `current_` — most recent valid validation per node (fast quorum path).
+ *  - `byLedger_` — all validations indexed by ledger ID with LRU expiry.
+ *  - `bySequence_` — validations indexed by sequence for Byzantine detection.
+ *  - `trie_` — `LedgerTrie` reflecting all trusted validators for preferred-
+ *    ledger computation.
+ *  - `acquiring_` — trusted validations waiting on locally-unavailable ledgers.
+ *
+ *  The critical path is `add()`, which enforces freshness (via `isCurrent()`),
+ *  monotonic sequence (via `SeqEnforcer`), and Byzantine detection before
+ *  inserting into the indexes and the trie.
+ *
+ *  All trie queries flow through `withTrie()`, which flushes stale entries
+ *  and promotes pending acquisitions before delegating to the trie — ensuring
+ *  the trie is always consistent with `current_`.
+ *
+ *  @warning `Adaptor::Mutex` protects all private members of this class but
+ *      does *not* cover the `Adaptor` instance itself — the adaptor manages
+ *      its own synchronization.
+ *
+ *  @note Stored validations are not necessarily from trusted nodes. Callers
+ *      must use the `trusted`-prefixed query methods or check
+ *      `Validation::trusted()` explicitly.
+ *
+ *  @tparam Adaptor Supplies `Mutex`, `Validation`, `Ledger`, `now()`, and
+ *      `acquire()`. See the code stub below for the full interface contract.
+ *
+ *  @code
 
     // Conforms to the Ledger type requirements of LedgerTrie
     struct Ledger;
@@ -262,7 +324,6 @@ to_string(ValStatus m)
     };
     @endcode
 
-    @tparam Adaptor Provides type definitions and callbacks
 */
 template <class Adaptor>
 class Validations
@@ -278,19 +339,27 @@ class Validations
     using WrappedValidationType =
         std::decay_t<std::invoke_result_t<decltype(&Validation::unwrap), Validation>>;
 
-    // Manages concurrent access to members
+    // Protects all mutable state below. The adaptor_ member is explicitly
+    // excluded and manages its own synchronization.
     mutable Mutex mutex_;
 
-    // Validations from currently listed and trusted nodes (partial and full)
+    // Most recent valid validation from each known node (partial and full).
+    // Continuously pruned for staleness by current(); the fast path for
+    // quorum and laggard queries.
     hash_map<NodeID, Validation> current_;
 
-    // Used to enforce the largest validation invariant for the local node
+    // SeqEnforcer for the local node; tracks the highest sequence this node
+    // has validated so that canValidateSeq() can enforce the monotonic
+    // sequence invariant locally.
     SeqEnforcer<Seq> localSeqEnforcer_;
 
-    // Sequence of the largest validation received from each node
+    // Per-peer SeqEnforcers used in add() to reject sequence regressions and
+    // to classify Byzantine violations.
     hash_map<NodeID, SeqEnforcer<Seq>> seqEnforcers_;
 
-    //! Validations from listed nodes, indexed by ledger id (partial and full)
+    //! All validations (partial and full) grouped by ledger ID with LRU-style
+    //! time-based expiry via beast::expire(). Access via byLedger() to get
+    //! automatic LRU touch.
     beast::aged_unordered_map<
         ID,
         hash_map<NodeID, Validation>,
@@ -298,7 +367,10 @@ class Validations
         beast::Uhash<>>
         byLedger_;
 
-    // Partial and full validations indexed by sequence
+    // All validations (partial and full) grouped by ledger sequence number.
+    // Used exclusively in add() for Byzantine detection — allows checking
+    // whether any prior validation from the same node exists for the same
+    // sequence.
     beast::aged_unordered_map<
         Seq,
         hash_map<NodeID, Validation>,
@@ -306,7 +378,9 @@ class Validations
         beast::Uhash<>>
         bySequence_;
 
-    // A range [low_, high_) of validations to keep from expire
+    // Half-open range [low, high) of sequence numbers that expire() must not
+    // evict. Set via setSeqToKeep(); entries are "touched" just before their
+    // natural expiry time to reset their LRU timestamp.
     struct KeepRange
     {
         Seq low;
@@ -314,25 +388,39 @@ class Validations
     };
     std::optional<KeepRange> toKeep_;
 
-    // Represents the ancestry of validated ledgers
+    // Compressed prefix trie over ledger ancestry, keyed on sequence-indexed
+    // ancestor IDs. Drives getPreferred(). Must only be accessed through
+    // withTrie() to ensure stale entries are flushed first.
     LedgerTrie<Ledger> trie_;
 
-    // Last (validated) ledger successfully acquired. If in this map, it is
-    // accounted for in the trie.
+    // Maps each node to the last ledger it contributed to the trie. Used by
+    // removeTrie() to atomically undo a node's prior trie contribution before
+    // inserting the new one, keeping trie updates effectively atomic.
     hash_map<NodeID, Ledger> lastLedger_;
 
-    // Set of ledgers being acquired from the network
+    // Trusted validations whose target ledger has not yet been locally
+    // acquired. Keyed by (Seq, ID); value is the set of validating nodes.
+    // When the ledger becomes available, all nodes are promoted into the trie.
     hash_map<std::pair<Seq, ID>, hash_set<NodeID>> acquiring_;
 
-    // Parameters to determine validation staleness
+    // Staleness and expiration thresholds; immutable after construction.
     ValidationParms const parms_;
 
-    // Adaptor instance
-    // Is NOT managed by the mutex_ above
+    // Adaptor instance — NOT protected by mutex_; adaptor manages its own
+    // synchronization.
     Adaptor adaptor_;
 
 private:
-    // Remove support of a validated ledger
+    /** Remove a node's contribution to the trie and/or acquiring_ map.
+     *
+     *  Erases `nodeID` from `acquiring_` for the ledger described by `val`
+     *  (if present) and, if `lastLedger_` records the same ledger for that
+     *  node, removes it from `trie_` and clears the `lastLedger_` entry.
+     *
+     *  @param lock  Proof that the caller holds `mutex_`.
+     *  @param nodeID  The node whose trie contribution is being withdrawn.
+     *  @param val  The validation identifying the ledger to un-register.
+     */
     void
     removeTrie(std::scoped_lock<Mutex> const&, NodeID const& nodeID, Validation const& val)
     {
@@ -355,7 +443,14 @@ private:
         }
     }
 
-    // Check if any pending acquire ledger requests are complete
+    /** Promote any pending acquisitions whose ledger is now locally available.
+     *
+     *  Iterates `acquiring_` and calls `adaptor_.acquire()` for each pending
+     *  ledger. For any that are now available, inserts all waiting node IDs
+     *  into the trie and erases the entry from `acquiring_`.
+     *
+     *  @param lock  Proof that the caller holds `mutex_`.
+     */
     void
     checkAcquired(std::scoped_lock<Mutex> const& lock)
     {
@@ -375,7 +470,15 @@ private:
         }
     }
 
-    // Update the trie to reflect a new validated ledger
+    /** Insert or update a node's trie contribution with a directly-acquired ledger.
+     *
+     *  If the node already has a `lastLedger_` entry, removes the old ledger
+     *  from the trie before inserting the new one, keeping the trie consistent.
+     *
+     *  @param lock    Proof that the caller holds `mutex_`.
+     *  @param nodeID  The validating node.
+     *  @param ledger  The locally-acquired ledger to register in the trie.
+     */
     void
     updateTrie(std::scoped_lock<Mutex> const&, NodeID const& nodeID, Ledger ledger)
     {
@@ -443,43 +546,47 @@ private:
         }
     }
 
-    /** Use the trie for a calculation
-
-        Accessing the trie through this helper ensures acquiring validations
-        are checked and any stale validations are flushed from the trie.
-
-        @param lock Existing lock of mutex_
-        @param f Invocable with signature (LedgerTrie<Ledger> &)
-
-        @warning The invocable `f` is expected to be a simple transformation of
-                 its arguments and will be called with mutex_ under lock.
-
-    */
+    /** Execute a query against the trie after flushing stale state.
+     *
+     *  This is the **only** sanctioned entry point into the trie. It first
+     *  calls `current()` to evict stale entries from `current_` (and remove
+     *  their trie contributions), then calls `checkAcquired()` to promote any
+     *  newly-available ledgers. This lazy-flush design keeps the trie accurate
+     *  without a background sweep.
+     *
+     *  @param lock  Proof that the caller holds `mutex_`.
+     *  @param f     Callable with signature `auto(LedgerTrie<Ledger>&)`.
+     *               Invoked with the trie under lock; must be a simple,
+     *               non-blocking transformation — no external I/O.
+     *  @return      Whatever `f` returns.
+     */
     template <class F>
     auto
     withTrie(std::scoped_lock<Mutex> const& lock, F&& f)
     {
-        // Call current to flush any stale validations
         current(lock, [](auto) {}, [](auto, auto) {});
         checkAcquired(lock);
         return f(trie_);
     }
 
-    /** Iterate current validations.
-
-        Iterate current validations, flushing any which are stale.
-
-        @param lock Existing lock of mutex_
-        @param pre Invocable with signature (std::size_t) called prior to
-                   looping.
-        @param f Invocable with signature (NodeID const &, Validations const &)
-                 for each current validation.
-
-        @note The invocable `pre` is called _prior_ to checking for staleness
-              and reflects an upper-bound on the number of calls to `f.
-        @warning The invocable `f` is expected to be a simple transformation of
-                 its arguments and will be called with mutex_ under lock.
-    */
+    /** Iterate all non-stale entries in `current_`, evicting stale ones.
+     *
+     *  Walks `current_`, calling `isCurrent()` on each entry. Stale entries
+     *  are removed from `current_` and their trie contributions withdrawn via
+     *  `removeTrie()`. Live entries are passed to `f`.
+     *
+     *  @param lock  Proof that the caller holds `mutex_`.
+     *  @param pre   Called once before the loop with the *current* (pre-
+     *               eviction) map size — useful for `reserve()` calls.
+     *               Signature: `void(std::size_t)`.
+     *  @param f     Called for each live entry. Signature:
+     *               `void(NodeID const&, Validation const&)`. Invoked under
+     *               lock; must be a simple, non-blocking transformation.
+     *
+     *  @note `pre` receives an upper bound, not an exact count: stale entries
+     *      are evicted *during* iteration, so the actual number of `f` calls
+     *      may be lower.
+     */
 
     template <class Pre, class F>
     void
@@ -490,7 +597,6 @@ private:
         auto it = current_.begin();
         while (it != current_.end())
         {
-            // Check for staleness
             if (!isCurrent(parms_, t, it->second.signTime(), it->second.seenTime()))
             {
                 removeTrie(lock, it->first, it->second);
@@ -499,25 +605,30 @@ private:
             else
             {
                 auto cit = typename decltype(current_)::const_iterator{it};
-                // contains a live record
                 f(cit->first, cit->second);
                 ++it;
             }
         }
     }
 
-    /** Iterate the set of validations associated with a given ledger id
-
-        @param lock Existing lock on mutex_
-        @param ledgerID The identifier of the ledger
-        @param pre Invocable with signature(std::size_t)
-        @param f Invocable with signature (NodeID const &, Validation const &)
-
-        @note The invocable `pre` is called prior to iterating validations. The
-              argument is the number of times `f` will be called.
-        @warning The invocable f is expected to be a simple transformation of
-       its arguments and will be called with mutex_ under lock.
-    */
+    /** Iterate all validations stored for a specific ledger ID.
+     *
+     *  Looks up `ledgerID` in `byLedger_` and, if found, touches the entry
+     *  (resetting its LRU timestamp) then invokes `pre` and `f`.
+     *
+     *  @param lock      Proof that the caller holds `mutex_`.
+     *  @param ledgerID  The ledger hash to query.
+     *  @param pre       Called with the exact count of validations before any
+     *                   `f` invocations — suitable for `reserve()`. Signature:
+     *                   `void(std::size_t)`.
+     *  @param f         Called for each stored validation. Signature:
+     *                   `void(NodeID const&, Validation const&)`. Invoked
+     *                   under lock; must be a simple, non-blocking
+     *                   transformation.
+     *
+     *  @note Does nothing (no calls to `pre` or `f`) if `ledgerID` is absent
+     *      from `byLedger_`.
+     */
     template <class Pre, class F>
     void
     byLedger(std::scoped_lock<Mutex> const&, ID const& ledgerID, Pre&& pre, F&& f)
@@ -565,13 +676,17 @@ public:
         return parms_;
     }
 
-    /** Return whether the local node can issue a validation for the given
-       sequence number
-
-        @param s The sequence number of the ledger the node wants to validate
-        @return Whether the validation satisfies the invariant, updating the
-                largest sequence number seen accordingly
-    */
+    /** Check whether the local node may issue a validation for sequence `s`.
+     *
+     *  Delegates to the local `SeqEnforcer` — returns `true` only if `s`
+     *  strictly exceeds every unexpired sequence previously validated by this
+     *  node. On success, `s` becomes the new high-water mark. On failure, the
+     *  high-water mark is unchanged.
+     *
+     *  @param s  The ledger sequence number the local node wants to validate.
+     *  @return   `true` if the validation may proceed; `false` if `s` would
+     *            violate the monotonic sequence invariant.
+     */
     bool
     canValidateSeq(Seq const s)
     {
@@ -579,14 +694,29 @@ public:
         return localSeqEnforcer_(byLedger_.clock().now(), s, parms_);
     }
 
-    /** Add a new validation
-
-        Attempt to add a new validation.
-
-        @param nodeID The identity of the node issuing this validation
-        @param val The validation to store
-        @return The outcome
-    */
+    /** Process and store an incoming validation.
+     *
+     *  Executes the following checks in order before storing:
+     *  1. **Freshness** — `isCurrent()` is called *before* acquiring the lock;
+     *     stale validations are discarded immediately as `ValStatus::Stale`.
+     *  2. **Byzantine detection** — `bySequence_` is inspected for any prior
+     *     validation from `nodeID` at the same sequence number. Conflicts on
+     *     ledger ID or sign time return `ValStatus::Conflicting`; same-ledger
+     *     cookie collisions return `ValStatus::Multiple`.
+     *  3. **Monotonic sequence** — the per-node `SeqEnforcer` rejects
+     *     regressions as `ValStatus::BadSeq`.
+     *  4. **Currency** — if a newer validation from this node already exists
+     *     in `current_`, the incoming one is discarded as `ValStatus::Stale`.
+     *
+     *  Trusted validations that pass all checks are routed to `updateTrie()`,
+     *  which either inserts them into the trie immediately (if the ledger is
+     *  locally available) or parks `nodeID` in `acquiring_` to wait.
+     *
+     *  @param nodeID  The stable node identifier of the validating node.
+     *  @param val     The validation to store.
+     *  @return        Classification of the validation (see `ValStatus`). Only
+     *                 `ValStatus::Current` means the validation was accepted.
+     */
     ValStatus
     add(NodeID const& nodeID, Validation const& val)
     {
@@ -673,11 +803,20 @@ public:
         return ValStatus::Current;
     }
 
-    /**
-     * Set the range [low, high) of validations to keep from expire
-     * @param low the lower sequence number
-     * @param high the higher sequence number
-     * @note high must be greater than low
+    /** Pin a half-open range of sequence numbers against expiry.
+     *
+     *  `expire()` normally evicts `byLedger_` and `bySequence_` entries older
+     *  than `validationSET_EXPIRES`. This method designates the range
+     *  `[low, high)` as protected: `expire()` will "touch" those entries just
+     *  before their natural expiry time, resetting the LRU timestamp and
+     *  preventing eviction.
+     *
+     *  @param low   First sequence number to protect (inclusive).
+     *  @param high  One past the last sequence number to protect (exclusive).
+     *  @pre  `low < high`.
+     *
+     *  @note Only one range can be active at a time; calling this again
+     *      replaces the previous range.
      */
     void
     setSeqToKeep(Seq const& low, Seq const& high)
@@ -687,11 +826,18 @@ public:
         toKeep_ = {low, high};
     }
 
-    /** Expire old validation sets
-
-        Remove validation sets that were accessed more than
-        validationSET_EXPIRES ago and were not asked to keep.
-    */
+    /** Evict aged entries from `byLedger_` and `bySequence_`.
+     *
+     *  Calls `beast::expire()` on both indexes, removing entries that have
+     *  not been touched for longer than `validationSET_EXPIRES`.
+     *
+     *  If a `setSeqToKeep()` range is active, this method first "touches" all
+     *  matching entries — but only once per `(validationSET_EXPIRES -
+     *  validationFRESHNESS)` window — to reset their LRU timestamps and
+     *  prevent premature eviction.
+     *
+     *  @param j  Journal for debug-level timing diagnostics.
+     */
     void
     expire(beast::Journal& j)
     {
@@ -742,15 +888,20 @@ public:
                         << "ms";
     }
 
-    /** Update trust status of validations
-
-        Updates the trusted status of known validations to account for nodes
-        that have been added or removed from the UNL. This also updates the trie
-        to ensure only currently trusted nodes' validations are used.
-
-        @param added Identifiers of nodes that are now trusted
-        @param removed Identifiers of nodes that are no longer trusted
-    */
+    /** Propagate a UNL membership change through all stored validations.
+     *
+     *  Iterates both `current_` and the full `byLedger_` index to mark
+     *  validations as trusted or untrusted. Additionally updates the trie so
+     *  that it reflects only currently-trusted validators:
+     *  - Nodes in `added` have their `current_` entry inserted into the trie.
+     *  - Nodes in `removed` have their trie contribution withdrawn.
+     *
+     *  @param added    Node IDs now considered trusted (joined the UNL).
+     *  @param removed  Node IDs no longer considered trusted (left the UNL).
+     *
+     *  @note This iterates the entire `byLedger_` map; it is not on the hot
+     *      path but may be slow if the map is large.
+     */
     void
     trustChanged(hash_set<NodeID> const& added, hash_set<NodeID> const& removed)
     {
@@ -787,6 +938,11 @@ public:
         }
     }
 
+    /** Return a JSON representation of the ledger trie for diagnostics.
+     *
+     *  @return JSON object describing the trie's current structure and support
+     *          counts; intended for debug endpoints and monitoring tools.
+     */
     json::Value
     getJsonTrie() const
     {
@@ -794,18 +950,27 @@ public:
         return trie_.getJson();
     }
 
-    /** Return the sequence number and ID of the preferred working ledger
-
-        A ledger is preferred if it has more support amongst trusted validators
-        and is *not* an ancestor of the current working ledger; otherwise it
-        remains the current working ledger.
-
-        @param curr The local node's current working ledger
-
-        @return The sequence and id of the preferred working ledger,
-                or std::nullopt if no trusted validations are available to
-                determine the preferred ledger.
-    */
+    /** Determine the preferred working ledger according to trusted validators.
+     *
+     *  Three-tier fallback:
+     *  1. **Trie** — delegates to `LedgerTrie::getPreferred()` using the
+     *     local high-water sequence, which weights branches by trusted-validator
+     *     support while accounting for uncommitted validators.
+     *  2. **Acquiring** — if the trie has no trusted entries, falls back to the
+     *     `acquiring_` map entry with the most waiting validators (tie-broken
+     *     by ledger ID).
+     *  3. **Nullopt** — if both are empty, returns `std::nullopt`, signalling
+     *     the caller to rely on raw peer counts.
+     *
+     *  Conservative switch rule: if the preferred ledger is the immediate child
+     *  of `curr` (same ancestry), the node stays on `curr` — it may be about to
+     *  build that child itself. A genuinely different chain or a ledger further
+     *  ahead overrides the working ledger unconditionally.
+     *
+     *  @param curr  The local node's current working ledger.
+     *  @return      `{seq, id}` of the preferred ledger, or `std::nullopt` if
+     *               there are no trusted validations to guide the choice.
+     */
     std::optional<std::pair<Seq, ID>>
     getPreferred(Ledger const& curr)
     {
@@ -813,18 +978,14 @@ public:
         std::optional<SpanTip<Ledger>> preferred = withTrie(lock, [this](LedgerTrie<Ledger>& trie) {
             return trie.getPreferred(localSeqEnforcer_.largest());
         });
-        // No trusted validations to determine branch
         if (!preferred)
         {
-            // fall back to majority over acquiring ledgers
             auto it = std::max_element(
                 acquiring_.begin(), acquiring_.end(), [](auto const& a, auto const& b) {
                     std::pair<Seq, ID> const& aKey = a.first;
                     typename hash_set<NodeID>::size_type const& aSize = a.second.size();
                     std::pair<Seq, ID> const& bKey = b.first;
                     typename hash_set<NodeID>::size_type const& bSize = b.second.size();
-                    // order by number of trusted peers validating that ledger
-                    // break ties with ledger ID
                     return std::tie(aSize, aKey.second) < std::tie(bSize, bKey.second);
                 });
             if (it != acquiring_.end())
@@ -832,34 +993,30 @@ public:
             return std::nullopt;
         }
 
-        // If we are the parent of the preferred ledger, stick with our
-        // current ledger since we might be about to generate it
         if (preferred->seq == curr.seq() + Seq{1} && preferred->ancestor(curr.seq()) == curr.id())
             return std::make_pair(curr.seq(), curr.id());
 
-        // A ledger ahead of us is preferred regardless of whether it is
-        // a descendant of our working ledger or it is on a different chain
         if (preferred->seq > curr.seq())
             return std::make_pair(preferred->seq, preferred->id);
 
-        // Only switch to earlier or same sequence number
-        // if it is a different chain.
         if (curr[preferred->seq] != preferred->id)
             return std::make_pair(preferred->seq, preferred->id);
 
-        // Stick with current ledger
         return std::make_pair(curr.seq(), curr.id());
     }
 
-    /** Get the ID of the preferred working ledger that exceeds a minimum valid
-        ledger sequence number
-
-        @param curr Current working ledger
-        @param minValidSeq Minimum allowed sequence number
-
-        @return ID Of the preferred ledger, or curr if the preferred ledger
-                   is not valid
-    */
+    /** Return the ID of the preferred working ledger, subject to a minimum
+     *  sequence constraint.
+     *
+     *  Delegates to `getPreferred(Ledger const&)`. If the preferred ledger's
+     *  sequence is at least `minValidSeq` it is returned; otherwise the
+     *  current working ledger's ID is returned unchanged.
+     *
+     *  @param curr         Current working ledger.
+     *  @param minValidSeq  Minimum acceptable sequence number for the result.
+     *  @return             ID of the preferred ledger if its sequence ≥
+     *                      `minValidSeq`, otherwise `curr.id()`.
+     */
     ID
     getPreferred(Ledger const& curr, Seq minValidSeq)
     {
@@ -869,36 +1026,41 @@ public:
         return curr.id();
     }
 
-    /** Determine the preferred last closed ledger for the next consensus round.
-
-        Called before starting the next round of ledger consensus to determine
-        the preferred working ledger. Uses the dominant peerCount ledger if no
-        trusted validations are available.
-
-        @param lcl Last closed ledger by this node
-        @param minSeq Minimum allowed sequence number of the trusted preferred
-                      ledger
-        @param peerCounts Map from ledger ids to count of peers with that as the
-                          last closed ledger
-        @return The preferred last closed ledger ID
-
-        @note The minSeq does not apply to the peerCounts, since this function
-              does not know their sequence number
-    */
+    /** Select the preferred last-closed ledger to open the next consensus round.
+     *
+     *  Uses trusted validations when available; falls back to raw peer counts
+     *  when no trusted validations exist.
+     *
+     *  Decision order:
+     *  1. If trusted validations are available and the preferred ledger's
+     *     sequence ≥ `minSeq`, return its ID.
+     *  2. If trusted validations are available but the preferred ledger is too
+     *     old (sequence < `minSeq`), stay on `lcl`.
+     *  3. If no trusted validations, return the ID with the highest peer count
+     *     (tie-broken by ledger ID).
+     *  4. If `peerCounts` is also empty, return `lcl.id()`.
+     *
+     *  @param lcl         Last closed ledger reported by this node.
+     *  @param minSeq      Minimum acceptable sequence for a trusted result.
+     *  @param peerCounts  Map from ledger ID to the number of peers reporting
+     *                     that ledger as their LCL; used only when no trusted
+     *                     validations are available.
+     *  @return            ID of the preferred last-closed ledger.
+     *
+     *  @note `minSeq` applies only to the trusted-validation path; peer counts
+     *      are accepted regardless of sequence because sequence is not known
+     *      from `peerCounts` alone.
+     */
     ID
     getPreferredLCL(Ledger const& lcl, Seq minSeq, hash_map<ID, std::uint32_t> const& peerCounts)
     {
         std::optional<std::pair<Seq, ID>> preferred = getPreferred(lcl);
 
-        // Trusted validations exist, but stick with local preferred ledger if
-        // preferred is in the past
         if (preferred)
             return (preferred->first >= minSeq) ? preferred->second : lcl.id();
 
-        // Otherwise, rely on peer ledgers
+        // max_element expects true if a < b; prefer larger counts then larger IDs on ties.
         auto it = std::max_element(peerCounts.begin(), peerCounts.end(), [](auto& a, auto& b) {
-            // Prefer larger counts, then larger ids on ties
-            // (max_element expects this to return true if a < b)
             return std::tie(a.second, a.first) < std::tie(b.second, b.first);
         });
 
@@ -907,23 +1069,28 @@ public:
         return lcl.id();
     }
 
-    /** Count the number of current trusted validators working on a ledger
-        after the specified one.
-
-        @param ledger The working ledger
-        @param ledgerID The preferred ledger
-        @return The number of current trusted validators working on a descendant
-                of the preferred ledger
-
-        @note If ledger.id() != ledgerID, only counts immediate child ledgers of
-              ledgerID
-    */
+    /** Count current trusted validators whose validated ledger descends from
+     *  `ledgerID`.
+     *
+     *  Used during the establish phase to assess how many peers have already
+     *  advanced beyond the current preferred ledger.
+     *
+     *  When `ledger.id() == ledgerID`, the full trie (`branchSupport -
+     *  tipSupport`) is used, counting all descendants at any depth.  When
+     *  they differ (we are on a different chain), the method falls back to
+     *  counting entries in `lastLedger_` whose parent ID equals `ledgerID`,
+     *  i.e. immediate children only.
+     *
+     *  @param ledger    The local node's current working ledger.
+     *  @param ledgerID  The preferred ledger whose descendants to count.
+     *  @return          Number of current trusted validators working on a
+     *                   ledger that descends from `ledgerID`.
+     */
     std::size_t
     getNodesAfter(Ledger const& ledger, ID const& ledgerID)
     {
         std::scoped_lock const lock{mutex_};
 
-        // Use trie if ledger is the right one
         if (ledger.id() == ledgerID)
         {
             return withTrie(lock, [&ledger](LedgerTrie<Ledger>& trie) {
@@ -931,17 +1098,21 @@ public:
             });
         }
 
-        // Count parent ledgers as fallback
         return std::count_if(lastLedger_.begin(), lastLedger_.end(), [&ledgerID](auto const& it) {
             auto const& curr = it.second;
             return curr.seq() > Seq{0} && curr[curr.seq() - Seq{1}] == ledgerID;
         });
     }
 
-    /** Get the currently trusted full validations
-
-        @return Vector of validations from currently trusted validators
-    */
+    /** Return the unwrapped form of all current trusted full validations.
+     *
+     *  Flushes stale entries from `current_` (via `current()`), then returns
+     *  the underlying validation objects for every entry that is both trusted
+     *  and full. Partial validations are excluded.
+     *
+     *  @return  Vector of `WrappedValidationType` values; empty if no current
+     *           trusted full validations exist.
+     */
     std::vector<WrappedValidationType>
     currentTrusted()
     {
@@ -957,10 +1128,15 @@ public:
         return ret;
     }
 
-    /** Get the set of node ids associated with current validations
-
-        @return The set of node ids for active, listed validators
-    */
+    /** Return the node IDs of all validators with a current (non-stale)
+     *  validation.
+     *
+     *  Stale entries are evicted from `current_` as a side effect (via
+     *  `current()`).  Both trusted and untrusted nodes are included.
+     *
+     *  @return  Set of `NodeID` values for every node that has a live entry
+     *           in `current_`.
+     */
     auto
     getCurrentNodeIDs() -> hash_set<NodeID>
     {
@@ -974,11 +1150,15 @@ public:
         return ret;
     }
 
-    /** Count the number of trusted full validations for the given ledger
-
-        @param ledgerID The identifier of ledger of interest
-        @return The number of trusted validations
-    */
+    /** Count trusted full validations stored for a specific ledger hash.
+     *
+     *  Queries `byLedger_` (touching the entry to defer its expiry). Partial
+     *  validations are not counted.
+     *
+     *  @param ledgerID  The ledger hash to query.
+     *  @return          Number of trusted full validations for `ledgerID`;
+     *                   zero if no validations are stored for that ledger.
+     */
     std::size_t
     numTrustedForLedger(ID const& ledgerID)
     {
@@ -995,12 +1175,18 @@ public:
         return count;
     }
 
-    /**  Get trusted full validations for a specific ledger
-
-         @param ledgerID The identifier of ledger of interest
-         @param seq The sequence number of ledger of interest
-         @return Trusted validations associated with ledger
-    */
+    /** Return the unwrapped trusted full validations for a specific ledger.
+     *
+     *  Queries `byLedger_` for `ledgerID`, then filters to entries that are
+     *  trusted, full, and whose recorded sequence equals `seq`. The `seq`
+     *  filter guards against stale cross-sequence entries that may share a
+     *  ledger ID under unusual conditions.
+     *
+     *  @param ledgerID  The ledger hash to query.
+     *  @param seq       The expected ledger sequence number.
+     *  @return          Vector of matching `WrappedValidationType` values;
+     *                   empty if none match.
+     */
     std::vector<WrappedValidationType>
     getTrustedForLedger(ID const& ledgerID, Seq const& seq)
     {
@@ -1018,12 +1204,19 @@ public:
         return res;
     }
 
-    /** Returns fees reported by trusted full validators in the given ledger
-
-        @param ledgerID The identifier of ledger of interest
-        @param baseFee The fee to report if not present in the validation
-        @return Vector of fees
-    */
+    /** Collect the load fees reported by trusted full validators for a ledger.
+     *
+     *  For each trusted full validation stored under `ledgerID`, appends the
+     *  validator's reported load fee (if present) or `baseFee` as a fallback.
+     *  The resulting vector is consumed by fee-scaling logic to compute a
+     *  consensus fee level.
+     *
+     *  @param ledgerID  The ledger hash to query.
+     *  @param baseFee   Fee value to use when a validator's validation does not
+     *                   include an explicit load fee.
+     *  @return          One fee entry per trusted full validation for
+     *                   `ledgerID`; empty if no matching validations exist.
+     */
     std::vector<std::uint32_t>
     fees(ID const& ledgerID, std::uint32_t baseFee)
     {
@@ -1050,7 +1243,10 @@ public:
         return res;
     }
 
-    /** Flush all current validations
+    /** Clear all entries from `current_`.
+     *
+     *  Used during shutdown or test teardown to release references to
+     *  validation objects. Does not evict `byLedger_` or `bySequence_`.
      */
     void
     flush()
@@ -1059,20 +1255,27 @@ public:
         current_.clear();
     }
 
-    /** Return quantity of lagging proposers, and remove online proposers
-     *  for purposes of evaluating whether to pause.
+    /** Count lagging proposers and cull the online-proposer set.
      *
-     *  Laggards are the trusted proposers whose sequence number is lower
-     *  than the sequence number from which our current pending proposal
-     *  is based. Proposers from whom we have not received a validation for
-     *  awhile are considered offline.
+     *  Iterates current validations looking for proposers whose signing key
+     *  is in `trustedKeys` and whose most-recent validation was seen within
+     *  `validationFRESHNESS`. For each such *online* proposer, the key is
+     *  removed from `trustedKeys` (so the caller can detect truly offline
+     *  nodes as the keys left in the set) and, if that proposer's validation
+     *  sequence is below `seq`, the laggard counter is incremented.
      *
-     *  Note: the trusted flag is not used in this evaluation because it's made
-     *  redundant by checking the list of proposers.
+     *  Callers use the laggard count and the residual `trustedKeys` set to
+     *  decide whether to pause consensus and wait for slow validators.
      *
-     * @param seq Our current sequence number.
-     * @param trustedKeys Public keys of trusted proposers.
-     * @return Quantity of laggards.
+     *  @note The `Validation::trusted()` flag is deliberately ignored here;
+     *      freshness of the signing key against the caller-supplied
+     *      `trustedKeys` set is sufficient.
+     *
+     *  @param seq         The local node's current validation sequence number.
+     *  @param trustedKeys In/out: public keys of all trusted proposers. Online
+     *                     proposers are erased during the call; remaining keys
+     *                     on return represent offline nodes.
+     *  @return            Number of online proposers whose sequence < `seq`.
      */
     std::size_t
     laggards(Seq const seq, hash_set<NodeKey>& trustedKeys)
@@ -1095,6 +1298,7 @@ public:
         return laggards;
     }
 
+    /** Return the number of entries in the `current_` map (diagnostic). */
     std::size_t
     sizeOfCurrentCache() const
     {
@@ -1102,6 +1306,7 @@ public:
         return current_.size();
     }
 
+    /** Return the number of per-node `SeqEnforcer` entries cached (diagnostic). */
     std::size_t
     sizeOfSeqEnforcersCache() const
     {
@@ -1109,6 +1314,7 @@ public:
         return seqEnforcers_.size();
     }
 
+    /** Return the number of distinct ledger IDs in `byLedger_` (diagnostic). */
     std::size_t
     sizeOfByLedgerCache() const
     {
@@ -1116,6 +1322,7 @@ public:
         return byLedger_.size();
     }
 
+    /** Return the number of distinct sequence numbers in `bySequence_` (diagnostic). */
     std::size_t
     sizeOfBySequenceCache() const
     {

@@ -30,32 +30,29 @@
 
 namespace xrpl {
 
-/**
- * @brief Calculates the total base fee for a batch transaction.
+/** Compute the total base fee for a Batch transaction.
  *
- * This function computes the required base fee for a batch transaction,
- * including the base fee for the batch itself, the sum of base fees for
- * all inner transactions, and additional fees for each batch signer.
- * It performs overflow checks and validates the structure of the batch
- * and its signers.
+ *  Fee = `view.fees().base` (batch overhead) + `Transactor::calculateBaseFee`
+ *  (normal outer-tx base) + sum(inner tx fees) + signerCount × `view.fees().base`.
+ *  Each `sfBatchSigners` entry is expanded to its actual key count: a
+ *  single-sig entry contributes 1, a multi-sig entry contributes the number of
+ *  sub-signers in `sfSigners`.
  *
- * @param view The ledger view providing fee and state information.
- * @param tx The batch transaction to calculate the fee for.
- * @return XRPAmount The total base fee required for the batch transaction.
+ *  Every accumulation is overflow-checked. On overflow or any structural error
+ *  that should have been caught by `preflight`, `kINITIAL_XRP` is returned as
+ *  a sentinel and the error is logged. These paths are unreachable in practice
+ *  (covered by LCOV exclusions) because `preflight` enforces all size limits
+ *  and rejects nested Batch transactions.
  *
- * @throws std::overflow_error If any fee calculation would overflow the
- * XRPAmount type.
- * @throws std::length_error If the number of inner transactions or signers
- * exceeds the allowed maximum.
- * @throws std::invalid_argument If an inner transaction is itself a batch
- * transaction.
+ *  @param view The ledger view, used to obtain the network base fee.
+ *  @param tx   The outer Batch transaction.
+ *  @return Total fee in drops, or `kINITIAL_XRP` if an overflow is detected.
  */
 XRPAmount
 Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     XRPAmount const maxAmount{std::numeric_limits<XRPAmount::value_type>::max()};
 
-    // batchBase: view.fees().base for batch processing + default base fee
     XRPAmount const baseFee = Transactor::calculateBaseFee(view, tx);
 
     // LCOV_EXCL_START
@@ -68,7 +65,6 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
 
     XRPAmount const batchBase = view.fees().base + baseFee;
 
-    // Calculate the Inner Txn Fees
     XRPAmount txnFees{0};
     if (tx.isFieldPresent(sfRawTransactions))
     {
@@ -107,7 +103,6 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
         }
     }
 
-    // Calculate the Signers/BatchSigners Fees
     std::int32_t signerCount = 0;
     if (tx.isFieldPresent(sfBatchSigners))
     {
@@ -157,7 +152,6 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
     }
     // LCOV_EXCL_STOP
 
-    // 10 drops per batch signature + sum of inner tx fees + batchBase
     return signerFees + txnFees + batchBase;
 }
 
@@ -167,38 +161,26 @@ Batch::getFlagsMask(PreflightContext const& ctx)
     return tfBatchMask;
 }
 
-/**
- * @brief Performs preflight validation checks for a Batch transaction.
+/** Validate the structural integrity of the Batch transaction.
  *
- * This function validates the structure and contents of a Batch transaction
- * before it is processed. It ensures that the Batch feature is enabled,
- * checks for valid flags, validates the number and uniqueness of inner
- * transactions, and enforces correct signing and fee requirements.
+ *  `std::popcount` is used on the policy-flag bits to guarantee exactly one
+ *  execution policy is active — a simple range or switch check would silently
+ *  pass flag combinations.
  *
- * The following validations are performed:
- * - The Batch feature must be enabled in the current rules.
- * - Only one of the mutually exclusive batch flags must be set.
- * - The batch must contain at least two and no more than the maximum allowed
- * inner transactions.
- * - Each inner transaction must:
- *   - Be unique within the batch.
- *   - Not itself be a Batch transaction.
- *   - Have the tfInnerBatchTxn flag set.
- *   - Not include a TxnSignature or Signers field.
- *   - Have an empty SigningPubKey.
- *   - Pass its own preflight checks.
- *   - Have a fee of zero.
- *   - Have either Sequence or TicketSequence set, but not both or neither.
- *   - Not duplicate Sequence or TicketSequence values for the same account (for
- * certain flags).
- * - Validates that all required inner transaction accounts are present in the
- * batch signers array, and that all batch signers are unique and not the outer
- * account.
- * - Verifies the batch signature if batch signers are present.
+ *  Duplicate-sequence detection (via `accountSeqTicket`) is enforced only for
+ *  `tfAllOrNothing` and `tfUntilFailure`. Those modes commit or abort as a
+ *  unit, so two inner transactions from the same account consuming the same
+ *  sequence slot would be structurally incoherent. `tfIndependent` and
+ *  `tfOnlyOne` relax this: only one of a pair may actually execute, so the
+ *  collision is not guaranteed to matter.
  *
- * @param ctx The PreflightContext containing the transaction and environment.
- * @return NotTEC Returns tesSUCCESS if all checks pass, or an appropriate error
- * code otherwise.
+ *  Signer reconciliation (building `requiredSigners` and comparing against
+ *  `sfBatchSigners`) is deferred to `preflightSigValidated` so it runs only
+ *  after the outer account's own signature is confirmed valid by the framework.
+ *
+ *  @param ctx Preflight context for the outer Batch transaction.
+ *  @return `tesSUCCESS` on success, or a `tem*` code describing the first
+ *      structural violation found.
  */
 NotTEC
 Batch::preflight(PreflightContext const& ctx)
@@ -228,7 +210,6 @@ Batch::preflight(PreflightContext const& ctx)
         return temARRAY_TOO_LARGE;
     }
 
-    // Validation Inner Batch Txns
     std::unordered_set<uint256> uniqueHashes;
     std::unordered_map<AccountID, std::unordered_set<std::uint32_t>> accountSeqTicket;
     auto checkSignatureFields =
@@ -310,7 +291,6 @@ Batch::preflight(PreflightContext const& ctx)
             }
         }
 
-        // Check that the Fee is native asset (XRP) and zero
         if (auto const fee = stx.getFieldAmount(sfFee); !fee.native() || fee.xrp() != beast::kZERO)
         {
             JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
@@ -331,7 +311,6 @@ Batch::preflight(PreflightContext const& ctx)
             return temINVALID_INNER_BATCH;
         }
 
-        // Check that Sequence and TicketSequence are not both present
         if (stx.isFieldPresent(sfTicketSequence) && stx.getFieldU32(sfSequence) != 0)
         {
             JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
@@ -341,7 +320,6 @@ Batch::preflight(PreflightContext const& ctx)
             return temSEQ_AND_TICKET;
         }
 
-        // Verify that either Sequence or TicketSequence is present
         if (!stx.isFieldPresent(sfTicketSequence) && stx.getFieldU32(sfSequence) == 0)
         {
             JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
@@ -351,7 +329,6 @@ Batch::preflight(PreflightContext const& ctx)
             return temSEQ_AND_TICKET;
         }
 
-        // Duplicate sequence and ticket checks
         if ((flags & (tfAllOrNothing | tfUntilFailure)) != 0u)
         {
             if (auto const seq = stx.getFieldU32(sfSequence); seq != 0)
@@ -382,6 +359,25 @@ Batch::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Validate batch-signer authorization after the outer signature is verified.
+ *
+ *  Builds `requiredSigners` from every inner-transaction account and every
+ *  `sfCounterparty` field that differs from the outer account, then performs a
+ *  bidirectional reconciliation against `sfBatchSigners`: each batch signer is
+ *  removed from `requiredSigners` as matched; a signer absent from
+ *  `requiredSigners` is extraneous (`temBAD_SIGNER`). After the loop,
+ *  any non-empty `requiredSigners` means a required party did not provide a
+ *  batch signature. Finally, `ctx.tx.checkBatchSign()` verifies the
+ *  cryptographic payload produced by `serializeBatch()`.
+ *
+ *  Called by the framework only after the outer account's own signature is
+ *  confirmed valid, ensuring the submitter is authenticated before evaluating
+ *  whether other parties have also signed.
+ *
+ *  @param ctx Preflight context, post outer-signature verification.
+ *  @return `tesSUCCESS` if all required parties have valid batch signatures;
+ *      a `tem*` code otherwise.
+ */
 NotTEC
 Batch::preflightSigValidated(PreflightContext const& ctx)
 {
@@ -389,7 +385,6 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
     auto const outerAccount = ctx.tx.getAccountID(sfAccount);
     auto const& rawTxns = ctx.tx.getFieldArray(sfRawTransactions);
 
-    // Build the signers list
     std::unordered_set<AccountID> requiredSigners;
     for (STObject const& rb : rawTxns)
     {
@@ -406,13 +401,11 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
             requiredSigners.insert(*counterparty);
     }
 
-    // Validation Batch Signers
     std::unordered_set<AccountID> batchSigners;
     if (ctx.tx.isFieldPresent(sfBatchSigners))
     {
         STArray const& signers = ctx.tx.getFieldArray(sfBatchSigners);
 
-        // Check that the batch signers array is not too large.
         if (signers.size() > kMAX_BATCH_TX_COUNT)
         {
             JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
@@ -420,11 +413,6 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
             return temARRAY_TOO_LARGE;
         }
 
-        // Add batch signers to the set to ensure all signer accounts are
-        // unique. Meanwhile, remove signer accounts from the set of inner
-        // transaction accounts (`requiredSigners`). By the end of the loop,
-        // `requiredSigners` should be empty, indicating that all inner
-        // accounts are matched with signers.
         for (auto const& signer : signers)
         {
             AccountID const signerAccount = signer.getAccountID(sfAccount);
@@ -442,8 +430,6 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
                 return temREDUNDANT;
             }
 
-            // Check that the batch signer is in the required signers set.
-            // Remove it if it does, as it can be crossed off the list.
             if (requiredSigners.erase(signerAccount) == 0)
             {
                 JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
@@ -452,7 +438,6 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
             }
         }
 
-        // Check the batch signers signatures.
         auto const sigResult = ctx.tx.checkBatchSign(ctx.rules);
 
         if (!sigResult)
@@ -472,22 +457,15 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-/**
- * @brief Checks the validity of signatures for a batch transaction.
+/** Verify the outer account's signature and the batch-signers' signatures.
  *
- * This method first verifies the standard transaction signature by calling
- * Transactor::checkSign. If the signature is not valid it returns the
- * corresponding error code.
+ *  Chains `Transactor::checkSign` (outer account: regular key, master key, or
+ *  signer list) and `Transactor::checkBatchSign` (on-ledger credentials for
+ *  each entry in `sfBatchSigners`). Both must pass; failure at the first check
+ *  short-circuits.
  *
- * Next, it verifies the batch-specific signature requirements by calling
- * Transactor::checkBatchSign. If this check fails, it also returns the
- * corresponding error code.
- *
- * If both checks succeed, the function returns tesSUCCESS.
- *
- * @param ctx The PreclaimContext containing transaction and environment data.
- * @return NotTEC Returns tesSUCCESS if all signature checks pass, or an error
- * code otherwise.
+ *  @param ctx Preclaim context providing a read-only ledger view.
+ *  @return `tesSUCCESS` if both checks pass; a `tef*` code otherwise.
  */
 NotTEC
 Batch::checkSign(PreclaimContext const& ctx)
@@ -501,15 +479,15 @@ Batch::checkSign(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-/**
- * @brief Applies the outer batch transaction.
+/** Apply the outer Batch transaction.
  *
- * This method is responsible for applying the outer batch transaction.
- * The inner transactions within the batch are applied separately in the
- * `applyBatchTransactions` method after the outer transaction is processed.
+ *  Returns `tesSUCCESS` immediately. The outer Batch does not directly mutate
+ *  any ledger objects — fee deduction and sequence consumption are handled by
+ *  the base-class `apply()` method. Inner transaction execution is performed
+ *  by `applyBatchTransactions()` in `apply.cpp`, called by `applyTransaction()`
+ *  after this method returns.
  *
- * @return TER Returns tesSUCCESS to indicate successful application of the
- * outer batch transaction.
+ *  @return Always `tesSUCCESS`.
  */
 TER
 Batch::doApply()
@@ -517,19 +495,33 @@ Batch::doApply()
     return tesSUCCESS;
 }
 
+/** Invariant visitor for the outer Batch transaction — currently a no-op.
+ *
+ *  The outer Batch does not directly create or modify ledger objects beyond
+ *  fee and sequence handling, so there are no Batch-specific per-entry
+ *  invariants to enforce. Inner-transaction invariant checks are performed by
+ *  each inner transactor's own apply context.
+ */
 void
 Batch::visitInvariantEntry(
     bool,
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
-    // No transaction-specific invariants yet (future work).
 }
 
+/** Finalize invariant checks for the outer Batch transaction — currently a no-op.
+ *
+ *  Returns `true` unconditionally. No outer-Batch invariant violations are
+ *  possible: the outer transaction only deducts a fee and consumes a sequence,
+ *  both of which are covered by shared invariant checkers. Inner-transaction
+ *  invariants are finalized within each inner transactor's own apply context.
+ *
+ *  @return Always `true`.
+ */
 bool
 Batch::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
-    // No transaction-specific invariants yet (future work).
     return true;
 }
 

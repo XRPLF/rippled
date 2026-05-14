@@ -1,3 +1,21 @@
+/** @file
+ *  Implements `BookListeners`: per-book subscriber fan-out for WebSocket
+ *  order-book subscriptions.
+ *
+ *  Each `BookListeners` instance holds the set of `InfoSub` weak pointers that
+ *  care about a specific currency-pair `Book`. `OrderBookDB` owns all instances
+ *  and calls `publish()` for each affected book when a transaction is accepted.
+ *
+ *  Three design choices worth noting:
+ *  - **Weak-pointer storage**: subscribers are kept as `InfoSub::wptr` so that
+ *    `BookListeners` never extends a connection's lifetime.
+ *  - **Lazy GC**: dead entries are evicted inside `publish()` when
+ *    `weak_ptr::lock()` fails; no separate sweep is needed.
+ *  - **Cross-book deduplication**: the caller threads a single
+ *    `hash_set<uint64_t>` through every `publish()` call for a transaction so
+ *    a client subscribed to multiple affected books receives the message only
+ *    once.
+ */
 #include <xrpl/ledger/BookListeners.h>
 
 #include <xrpl/basics/UnorderedContainers.h>
@@ -36,7 +54,6 @@ BookListeners::publish(MultiApiJson const& jvObj, hash_set<std::uint64_t>& haveP
 
         if (p)
         {
-            // Only publish jvObj if this is the first occurrence
             if (havePublished.emplace(p->getSeq()).second)
             {
                 jvObj.visit(

@@ -88,7 +88,6 @@ AMMCreate::preflight(PreflightContext const& ctx)
 XRPAmount
 AMMCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
-    // The fee required for AMMCreate is one owner reserve.
     return calculateOwnerReserveFee(view, tx);
 }
 
@@ -99,7 +98,6 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     auto const amount = ctx.tx[sfAmount];
     auto const amount2 = ctx.tx[sfAmount2];
 
-    // Check if AMM already exists for the token pair
     if (auto const ammKeylet = keylet::amm(amount.asset(), amount2.asset());
         ctx.view.read(ammKeylet))
     {
@@ -119,7 +117,6 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
         return ter;
     }
 
-    // Globally or individually frozen
     if (isFrozen(ctx.view, accountID, amount.asset()) ||
         isFrozen(ctx.view, accountID, amount2.asset()))
     {
@@ -143,9 +140,10 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
         return terNO_RIPPLE;
     }
 
-    // Check the reserve for LPToken trustline
+    // xrpLiquid accounts for one extra reserve (the LP-token trustline the
+    // creator will receive), so a non-positive result means the account cannot
+    // afford both the trustline and its current reserve obligations.
     STAmount const xrpBalance = xrpLiquid(ctx.view, accountID, 1, ctx.j);
-    // Insufficient reserve
     if (xrpBalance <= beast::kZERO)
     {
         JLOG(ctx.j.debug()) << "AMM Instance: insufficient reserves";
@@ -198,13 +196,12 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
         !isTesSuccess(ter))
         return ter;
 
-    // If featureAMMClawback is enabled, allow AMMCreate without checking
-    // if the issuer has clawback enabled
+    // featureAMMClawback provides a controlled clawback path for AMM pools.
+    // Until it is active, block creation with any clawback-enabled issuer to
+    // prevent an issuer from unilaterally draining the pool.
     if (ctx.view.rules().enabled(featureAMMClawback))
         return tesSUCCESS;
 
-    // Disallow AMM if the issuer has clawback enabled when featureAMMClawback
-    // is not enabled
     auto clawbackDisabled = [&](Asset const& asset) -> TER {
         return asset.visit(
             [&](MPTIssue const& issue) -> TER {
@@ -235,6 +232,49 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Execute all ledger mutations required to bootstrap a new AMM pool.
+ *
+ *  This function performs every write inside the supplied @p sb sandbox so the
+ *  entire operation is atomic: any error causes the caller to discard the
+ *  sandbox, leaving the ledger unchanged. On success the caller flushes @p sb
+ *  to the live view.
+ *
+ *  Mutation sequence:
+ *  1. Create a pseudo-account `AccountRoot` derived from the AMM keylet hash
+ *     via `createPseudoAccount`. The account carries `sfAMMID`, disables the
+ *     master key, and has no regular key — it is exclusively protocol-managed.
+ *  2. Compute the initial LP token supply as `sqrt(amount * amount2)` (the
+ *     geometric mean, per the constant-product seeding formula) and send the
+ *     tokens from the pseudo-account to @p account. LP-token trustlines are
+ *     intentionally created with a zero credit limit so the pool cannot push
+ *     tokens to an account that has not taken affirmative action (deposit,
+ *     `TrustSet`, or offer crossing).
+ *  3. Build and insert the `ltAMM` SLE. Assets are stored in canonical
+ *     `std::minmax` order regardless of the transaction's input order.
+ *     `initializeFeeAuctionVote` populates the trading fee, initial auction
+ *     slot, and voting weight — the creator receives the first auction slot.
+ *  4. Transfer each seed asset from @p account to the pseudo-account via
+ *     `sendAndInitTrustOrMPT` with `WaiveTransferFee::Yes`. For IOU assets
+ *     the resulting trust line is immediately stamped with `lsfAMMNode` to
+ *     distinguish it from ordinary LP trust lines. For MPT assets,
+ *     `createMPToken` establishes the pseudo-account's MPT holding with
+ *     `lsfMPTAMM`; if the issuance requires authorization and the
+ *     pseudo-account has not been pre-authorized, `lsfMPTAuthorized` is also
+ *     set. Owner count is not adjusted for the pseudo-account — it has no
+ *     reserve obligation.
+ *  5. Register both swap directions (asset1→asset2 and asset2→asset1) with
+ *     `OrderBookDB`, making the new pool immediately visible to the payment
+ *     engine and offer-crossing logic.
+ *
+ *  @param ctx      The apply context providing the transaction, raw view, and
+ *      service registry.
+ *  @param sb       The sandbox overlay; caller commits it on success.
+ *  @param account  The creator account that seeds liquidity and receives LP
+ *      tokens.
+ *  @param j        Journal for diagnostic logging.
+ *  @return A pair of `{TER, bool}` where the bool is true only when the TER
+ *      is `tesSUCCESS` and the sandbox should be committed.
+ */
 static std::pair<TER, bool>
 applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journal j)
 {
@@ -243,9 +283,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
 
     auto const ammKeylet = keylet::amm(amount.asset(), amount2.asset());
 
-    // Mitigate same account exists possibility
     auto const maybeAccount = createPseudoAccount(sb, ammKeylet.key, sfAMMID);
-    // AMM account already exists (should not happen)
     if (!maybeAccount)
     {
         JLOG(j.error()) << "AMM Instance: failed to create pseudo account.";
@@ -254,7 +292,6 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
     auto& acc = *maybeAccount;
     auto const accountId = (*acc)[sfAccount];
 
-    // LP Token already exists. (should not happen)
     auto const lptIss = ammLPTIssue(amount.asset(), amount2.asset(), accountId);
     if (sb.read(keylet::line(accountId, lptIss)))
     {
@@ -262,26 +299,16 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
         return {tecDUPLICATE, false};
     }
 
-    // Note, that the trustlines created by AMM have 0 credit limit.
-    // This prevents shifting the balance between accounts via AMM,
-    // or sending unsolicited LPTokens. This is a desired behavior.
-    // A user can only receive LPTokens through affirmative action -
-    // either an AMMDeposit, TrustSet, crossing an offer, etc.
-
-    // Calculate initial LPT balance.
     auto const lpTokens = ammLPTokens(amount, amount2, lptIss);
 
-    // Create ltAMM
     auto ammSle = std::make_shared<SLE>(ammKeylet);
     ammSle->setAccountID(sfAccount, accountId);
     ammSle->setFieldAmount(sfLPTokenBalance, lpTokens);
     auto const& [asset1, asset2] = std::minmax(amount.asset(), amount2.asset());
     ammSle->setFieldIssue(sfAsset, STIssue{sfAsset, asset1});
     ammSle->setFieldIssue(sfAsset2, STIssue{sfAsset2, asset2});
-    // AMM creator gets the auction slot and the voting slot.
     initializeFeeAuctionVote(ctx.view(), ammSle, account, lptIss, ctx.tx[sfTradingFee]);
 
-    // Add owner directory to link the root account and AMM object.
     if (auto ter = dirLink(sb, accountId, ammSle); ter)
     {
         JLOG(j.debug()) << "AMM Instance: failed to insert owner dir";
@@ -289,7 +316,6 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
     }
     sb.insert(ammSle);
 
-    // Send LPT to LP.
     auto res = accountSend(sb, accountId, account, lpTokens, ctx.journal);
     if (!isTesSuccess(res))
     {
@@ -298,10 +324,8 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
     }
 
     auto sendAndInitTrustOrMPT = [&](STAmount const& amount) -> TER {
-        // Authorize MPT
         return amount.asset().visit(
             [&](MPTIssue const& issue) -> TER {
-                // Authorize MPT
                 auto const& mptIssue = issue;
                 auto const& mptID = mptIssue.getMptID();
                 std::uint32_t flags = lsfMPTAMM;
@@ -311,6 +335,8 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
                 {
                     if (err == tecNO_AUTH)
                     {
+                        // Issuance requires auth and pseudo-account is not
+                        // pre-authorized; set lsfMPTAuthorized on creation.
                         flags |= lsfMPTAuthorized;
                     }
                     else
@@ -321,17 +347,15 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
 
                 if (auto const err = createMPToken(sb, mptID, accountId, flags); !isTesSuccess(err))
                     return err;
-                // Don't adjust AMM owner count.
-                // It's irrelevant for pseudo-account like AMM.
+                // Owner count is not adjusted for the pseudo-account; it has
+                // no reserve obligation.
                 return accountSend(
                     sb, account, accountId, amount, ctx.journal, WaiveTransferFee::Yes);
             },
-            // Set AMM flag on AMM trustline
             [&](Issue const& issue) -> TER {
                 if (auto const res = accountSend(
                         sb, account, accountId, amount, ctx.journal, WaiveTransferFee::Yes))
                     return res;
-                // Set AMM flag on AMM trustline
                 if (!isXRP(amount))
                 {
                     SLE::pointer const sleRippleState = sb.peek(keylet::line(accountId, issue));
@@ -341,6 +365,8 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
                     }
 
                     auto const flags = sleRippleState->getFlags();
+                    // Mark the trust line as AMM-owned so it can be
+                    // distinguished from ordinary LP trust lines.
                     sleRippleState->setFieldU32(sfFlags, flags | lsfAMMNode);
                     sb.update(sleRippleState);
                 }
@@ -348,7 +374,6 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
             });
     };
 
-    // Send asset1.
     res = sendAndInitTrustOrMPT(amount);
     if (!isTesSuccess(res))
     {
@@ -356,7 +381,6 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
         return {res, false};
     }
 
-    // Send asset2.
     res = sendAndInitTrustOrMPT(amount2);
     if (!isTesSuccess(res))
     {
@@ -381,8 +405,6 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
 TER
 AMMCreate::doApply()
 {
-    // This is the ledger view that we work against. Transactions are applied
-    // as we go on processing transactions.
     Sandbox sb(&ctx_.view());
 
     auto const result = applyCreate(ctx_, sb, account_, j_);

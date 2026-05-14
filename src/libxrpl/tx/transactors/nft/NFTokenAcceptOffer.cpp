@@ -1,3 +1,11 @@
+/** @file
+ *  Implementation of the `NFTokenAcceptOffer` transactor.
+ *
+ *  This is the most financially complex NFT transaction: up to four parties
+ *  (buyer, seller, royalty issuer, broker) may receive funds in a single
+ *  atomic apply.  See the class and method documentation in
+ *  `NFTokenAcceptOffer.h` for the full behavioral contract.
+ */
 #include <xrpl/tx/transactors/nft/NFTokenAcceptOffer.h>
 
 #include <xrpl/basics/Log.h>
@@ -33,12 +41,9 @@ NFTokenAcceptOffer::preflight(PreflightContext const& ctx)
     auto const bo = ctx.tx[~sfNFTokenBuyOffer];
     auto const so = ctx.tx[~sfNFTokenSellOffer];
 
-    // At least one of these MUST be specified
     if (!bo && !so)
         return temMALFORMED;
 
-    // The `BrokerFee` field must not be present in direct mode but may be
-    // present and greater than zero in brokered mode.
     if (auto const bf = ctx.tx[~sfNFTokenBrokerFee])
     {
         if (!bo || !so)
@@ -68,12 +73,12 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 
             if (hasExpired(ctx.view, (*offerSLE)[~sfExpiration]))
             {
-                // Before fixCleanup3_1_3 amendment, expired offers caused tecEXPIRED in preclaim,
-                // leaving them on ledger forever. After the amendment, we allow expired offers to
-                // reach doApply() where they get deleted and tecEXPIRED is returned.
+                // Before fixCleanup3_1_3, returning tecEXPIRED here left the
+                // expired offer stranded on the ledger (doApply was never reached).
+                // After the amendment, we pass the expired SLE through so doApply
+                // can delete it before returning tecEXPIRED.
                 if (!ctx.view.rules().enabled(fixCleanup3_1_3))
                     return {nullptr, tecEXPIRED};
-                // Amendment enabled: return the expired offer to be handled in doApply.
             }
 
             if ((*offerSLE)[sfAmount].negative())
@@ -93,43 +98,31 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 
     if (bo && so)
     {
-        // Brokered mode:
-        // The two offers being brokered must be for the same token:
         if ((*bo)[sfNFTokenID] != (*so)[sfNFTokenID])
             return tecNFTOKEN_BUY_SELL_MISMATCH;
 
-        // The two offers being brokered must be for the same asset:
         if ((*bo)[sfAmount].asset() != (*so)[sfAmount].asset())
             return tecNFTOKEN_BUY_SELL_MISMATCH;
 
-        // The two offers may not form a loop.  A broker may not sell the
-        // token to the current owner of the token.
+        // Reject self-trades: a broker may not facilitate a sale from an
+        // account to itself.
         if (((*bo)[sfOwner] == (*so)[sfOwner]))
             return tecCANT_ACCEPT_OWN_NFTOKEN_OFFER;
 
-        // Ensure that the buyer is willing to pay at least as much as the
-        // seller is requesting:
         if ((*so)[sfAmount] > (*bo)[sfAmount])
             return tecINSUFFICIENT_PAYMENT;
 
-        // The destination must be whoever is submitting the tx if the buyer
-        // specified it
+        // In brokered mode the submitter is the broker; both offers'
+        // Destination (if set) must name the broker.
         if (auto const dest = bo->at(~sfDestination); dest && *dest != ctx.tx[sfAccount])
-        {
             return tecNO_PERMISSION;
-        }
 
-        // The destination must be whoever is submitting the tx if the seller
-        // specified it
         if (auto const dest = so->at(~sfDestination); dest && *dest != ctx.tx[sfAccount])
-        {
             return tecNO_PERMISSION;
-        }
 
-        // The broker can specify an amount that represents their cut; if they
-        // have, ensure that the seller will get at least as much as they want
-        // to get *after* this fee is accounted for (but before the issuer's
-        // cut, if any).
+        // The broker fee is deducted from the buyer's amount first; what
+        // remains must still satisfy the seller's ask (issuer royalty is
+        // computed on the post-broker remainder in doApply).
         if (auto const brokerFee = ctx.tx[~sfNFTokenBrokerFee])
         {
             if (brokerFee->asset() != (*bo)[sfAmount].asset())
@@ -162,38 +155,31 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         if (((*bo)[sfFlags] & lsfSellNFToken) == lsfSellNFToken)
             return tecNFTOKEN_OFFER_TYPE_MISMATCH;
 
-        // An account can't accept an offer it placed:
         if ((*bo)[sfOwner] == ctx.tx[sfAccount])
             return tecCANT_ACCEPT_OWN_NFTOKEN_OFFER;
 
-        // If not in bridged mode, the account must own the token:
+        // In direct mode the submitter must own the token they are selling.
         if (!so && !nft::findToken(ctx.view, ctx.tx[sfAccount], (*bo)[sfNFTokenID]))
             return tecNO_PERMISSION;
 
-        // If not in bridged mode...
         if (!so)
         {
-            // If the offer has a Destination field, the acceptor must be the
-            // Destination.
             if (auto const dest = bo->at(~sfDestination);
                 dest.has_value() && *dest != ctx.tx[sfAccount])
                 return tecNO_PERMISSION;
         }
 
-        // The account offering to buy must have funds:
-        //
-        // After this amendment, we allow an IOU issuer to buy an NFT with their
-        // own currency
+        // An IOU issuer may buy an NFT with their own currency; accountFunds
+        // handles this by treating the issuer's own IOU as zero-cost.
         auto const needed = bo->at(sfAmount);
 
         if (accountFunds(ctx.view, (*bo)[sfOwner], needed, FreezeHandling::ZeroIfFrozen, ctx.j) <
             needed)
             return tecINSUFFICIENT_FUNDS;
 
-        // Check that the account accepting the buy offer (he's selling the NFT)
-        // is allowed to receive IOUs. Also check that this offer's creator is
-        // authorized. But we need to exclude the case when the transaction is
-        // created by the broker.
+        // Trust-line checks for the IOU payment: buyer must be authorized and
+        // the seller (direct mode submitter) must be authorized and not deep-
+        // frozen. Skipped in brokered mode — the broker is not the IOU recipient.
         if (ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2) && !needed.native())
         {
             auto res = nft::checkTrustlineAuthorized(
@@ -221,47 +207,31 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         if (((*so)[sfFlags] & lsfSellNFToken) != lsfSellNFToken)
             return tecNFTOKEN_OFFER_TYPE_MISMATCH;
 
-        // An account can't accept an offer it placed:
         if ((*so)[sfOwner] == ctx.tx[sfAccount])
             return tecCANT_ACCEPT_OWN_NFTOKEN_OFFER;
 
-        // The seller must own the token.
         if (!nft::findToken(ctx.view, (*so)[sfOwner], (*so)[sfNFTokenID]))
             return tecNO_PERMISSION;
 
-        // If not in bridged mode...
         if (!bo)
         {
-            // If the offer has a Destination field, the acceptor must be the
-            // Destination.
             if (auto const dest = so->at(~sfDestination);
                 dest.has_value() && *dest != ctx.tx[sfAccount])
                 return tecNO_PERMISSION;
         }
 
-        // The account offering to buy must have funds:
         auto const needed = so->at(sfAmount);
         if (!bo)
         {
-            // After this amendment, we allow buyers to buy with their own
-            // issued currency.
-            //
-            // In the case of brokered mode, this check is essentially
-            // redundant, since we have already confirmed that buy offer is >
-            // than the sell offer, and that the buyer can cover the buy
-            // offer.
-            //
-            // We also _must not_ check the tx submitter in brokered
-            // mode, because then we are confirming that the broker can
-            // cover what the buyer will pay, which doesn't make sense, causes
-            // an unnecessary tec, and is also resolved with this amendment.
+            // In brokered mode this check is skipped: the buyer's solvency is
+            // already confirmed via the buy-offer check, and checking the
+            // broker's balance here would produce a spurious tecINSUFFICIENT_FUNDS.
             if (accountFunds(
                     ctx.view, ctx.tx[sfAccount], needed, FreezeHandling::ZeroIfFrozen, ctx.j) <
                 needed)
                 return tecINSUFFICIENT_FUNDS;
         }
 
-        // Make sure that we are allowed to hold what the taker will pay us.
         if (!needed.native())
         {
             if (ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2))
@@ -287,8 +257,8 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    // Additional checks are required in case a minter set a transfer fee for
-    // this nftoken
+    // When a transfer fee is set on the token, the issuer is an additional
+    // IOU payment recipient and must pass trust-line hygiene checks.
     auto const& offer = bo ? bo : so;
     if (!offer)
     {
@@ -302,16 +272,16 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 
     if (nft::getTransferFee(tokenID) != 0 && !amount.native())
     {
-        // Fix a bug where the transfer of an NFToken with a transfer fee could
-        // give the NFToken issuer an undesired trust line.
-        // Issuer doesn't need a trust line to accept their own currency.
+        // fixEnforceNFTokenTrustline: if the token lacks kFLAG_CREATE_TRUST_LINES
+        // and no trust line already exists between the issuer and the IOU issuer,
+        // the transfer would silently create an unintended trust line for the royalty
+        // payment. Reject unless the NFT issuer is also the IOU issuer (self-payment).
         if (ctx.view.rules().enabled(fixEnforceNFTokenTrustline) &&
             (nft::getFlags(tokenID) & nft::kFLAG_CREATE_TRUST_LINES) == 0 &&
             nftMinter != amount.getIssuer() &&
             !ctx.view.read(keylet::line(nftMinter, amount.get<Issue>())))
             return tecNO_LINE;
 
-        // Check that the issuer is allowed to receive IOUs.
         if (ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2))
         {
             auto res = nft::checkTrustlineAuthorized(
@@ -332,17 +302,15 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 TER
 NFTokenAcceptOffer::pay(AccountID const& from, AccountID const& to, STAmount const& amount)
 {
-    // This should never happen, but it's easy and quick to check.
     if (amount < beast::kZERO)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const result = accountSend(view(), from, to, amount, j_);
 
-    // If any payment causes a non-IOU-issuer to have a negative balance,
-    // or an IOU-issuer to have a positive balance in their own currency,
-    // we know that something went wrong. This was originally found in the
-    // context of IOU transfer fees. Since there are several payouts in this tx,
-    // just confirm that the end state is OK.
+    // IOU transfer fees can leave the sender with a small negative or the
+    // receiver (when they are the IOU issuer) with a positive balance in their
+    // own currency. Check both parties after every payment to catch these
+    // edge cases before they corrupt the ledger.
     if (!isTesSuccess(result))
         return result;
     if (accountFunds(view(), from, amount, FreezeHandling::ZeroIfFrozen, j_).signum() < 0)
@@ -375,19 +343,11 @@ NFTokenAcceptOffer::transferNFToken(
 
     auto const insertRet = nft::insertToken(view(), buyer, std::move(tokenAndPage->token));
 
-    // if fixNFTokenReserve is enabled, check if the buyer has sufficient
-    // reserve to own a new object, if their OwnerCount changed.
-    //
-    // There was an issue where the buyer accepts a sell offer, the ledger
-    // didn't check if the buyer has enough reserve, meaning that buyer can get
-    // NFTs free of reserve.
     if (view().rules().enabled(fixNFTokenReserve))
     {
-        // To check if there is sufficient reserve, we cannot use preFeeBalance_
-        // because NFT is sold for a price. So we must use the balance after
-        // the deduction of the potential offer price. A small caveat here is
-        // that the balance has already deducted the transaction fee, meaning
-        // that the reserve requirement is a few drops higher.
+        // Use the buyer's current post-purchase balance, not preFeeBalance_.
+        // The tx fee has already been deducted, so the effective reserve bar
+        // is a few drops higher than the owner-count formula alone would imply.
         auto const buyerBalance = sleBuyer->getFieldAmount(sfBalance);
 
         auto const buyerOwnerCountAfter = sleBuyer->getFieldU32(sfOwnerCount);
@@ -414,11 +374,12 @@ NFTokenAcceptOffer::acceptOffer(std::shared_ptr<SLE> const& offer)
 
     if (auto amount = offer->getFieldAmount(sfAmount); amount != beast::kZERO)
     {
-        // Calculate the issuer's cut from this sale, if any:
         if (auto const fee = nft::getTransferFee(nftokenID); fee != 0)
         {
             auto const cut = multiply(amount, nft::transferFeeAsRate(fee));
 
+            // Skip the royalty when either party is the issuer: paying the
+            // issuer their own cut would be a no-op or nonsensical self-transfer.
             if (auto const issuer = nft::getIssuer(nftokenID);
                 cut != beast::kZERO && seller != issuer && buyer != issuer)
             {
@@ -428,12 +389,10 @@ NFTokenAcceptOffer::acceptOffer(std::shared_ptr<SLE> const& offer)
             }
         }
 
-        // Send the remaining funds to the seller of the NFT
         if (auto const r = pay(buyer, seller, amount); !isTesSuccess(r))
             return r;
     }
 
-    // Now transfer the NFT:
     return transferNFToken(buyer, seller, nftokenID);
 }
 
@@ -450,8 +409,8 @@ NFTokenAcceptOffer::doApply()
     auto bo = loadToken(ctx_.tx[~sfNFTokenBuyOffer]);
     auto so = loadToken(ctx_.tx[~sfNFTokenSellOffer]);
 
-    // With fixCleanup3_1_3 amendment, check for expired offers and delete them, returning
-    // tecEXPIRED. This ensures expired offers are properly cleaned up from the ledger.
+    // Under fixCleanup3_1_3, expired offers are passed through preclaim so we
+    // can delete them here, preventing them from becoming permanently stranded.
     if (view().rules().enabled(fixCleanup3_1_3))
     {
         bool foundExpired = false;
@@ -501,7 +460,6 @@ NFTokenAcceptOffer::doApply()
         // LCOV_EXCL_STOP
     }
 
-    // Bridging two different offers
     if (bo && so)
     {
         AccountID const buyer = (*bo)[sfOwner];
@@ -509,23 +467,15 @@ NFTokenAcceptOffer::doApply()
 
         auto const nftokenID = (*so)[sfNFTokenID];
 
-        // The amount is what the buyer of the NFT pays:
         STAmount amount = (*bo)[sfAmount];
 
-        // Three different folks may be paid.  The order of operations is
-        // important.
+        // Payment ordering in brokered mode is strict and critical to correctness:
+        // 1. Broker receives their fee from the buyer's full amount.
+        // 2. Issuer royalty is computed on what remains after the broker cut.
+        // 3. Seller receives the final remainder.
         //
-        // o The broker is paid the cut they requested.
-        // o The issuer's cut is calculated from what remains after the
-        //   broker is paid.  The issuer can take up to 50% of the remainder.
-        // o Finally, the seller gets whatever is left.
-        //
-        // It is important that the issuer's cut be calculated after the
-        // broker's portion is already removed.  Calculating the issuer's
-        // cut before the broker's cut is removed can result in more money
-        // being paid out than the seller authorized.  That would be bad!
-
-        // Send the broker the amount they requested.
+        // Computing the issuer's royalty before removing the broker fee would
+        // allow total disbursements to exceed what the buyer authorised.
         if (auto const cut = ctx_.tx[~sfNFTokenBrokerFee]; cut && cut.value() != beast::kZERO)
         {
             if (auto const r = pay(buyer, account_, cut.value()); !isTesSuccess(r))
@@ -534,7 +484,6 @@ NFTokenAcceptOffer::doApply()
             amount -= cut.value();
         }
 
-        // Calculate the issuer's cut, if any.
         if (auto const fee = nft::getTransferFee(nftokenID); amount != beast::kZERO && fee != 0)
         {
             auto cut = multiply(amount, nft::transferFeeAsRate(fee));
@@ -548,14 +497,12 @@ NFTokenAcceptOffer::doApply()
             }
         }
 
-        // And send whatever remains to the seller.
         if (amount > beast::kZERO)
         {
             if (auto const r = pay(buyer, seller, amount); !isTesSuccess(r))
                 return r;
         }
 
-        // Now transfer the NFT:
         return transferNFToken(buyer, seller, nftokenID);
     }
 

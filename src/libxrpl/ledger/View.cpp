@@ -1,3 +1,13 @@
+/** @file
+ *  Free-function utility layer over ReadView and ApplyView.
+ *
+ *  Implements business-logic queries (expiry, freeze detection, ledger chain
+ *  validation, amendment introspection) and state mutations (directory
+ *  management, withdrawal validation and execution, account cleanup) that are
+ *  shared across many transaction types.  The file is split into two sections:
+ *  read-only observers that take `ReadView const&`, and state-mutating
+ *  modifiers that require `ApplyView&`.
+ */
 #include <xrpl/ledger/View.h>
 
 #include <xrpl/basics/Log.h>
@@ -243,7 +253,6 @@ getMajorityAmendments(ReadView const& view)
 std::optional<uint256>
 hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
 {
-    // Easy cases...
     if (seq > ledger.seq())
     {
         JLOG(journal.warn()) << "Can't get seq " << seq << " from " << ledger.seq() << " future";
@@ -256,7 +265,6 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
 
     if (int const diff = ledger.seq() - seq; diff <= 256)
     {
-        // Within 256...
         auto const hashIndex = ledger.read(keylet::skip());
         if (hashIndex)
         {
@@ -276,13 +284,14 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
         }
     }
 
+    // Non-256-aligned sequences older than 256 steps cannot be resolved; the
+    // skip list only stores permanent anchors at 256-aligned boundaries.
     if ((seq & 0xff) != 0)
     {
         JLOG(journal.debug()) << "Can't get seq " << seq << " from " << ledger.seq() << " past";
         return std::nullopt;
     }
 
-    // in skiplist
     auto const hashIndex = ledger.read(keylet::skip(seq));
     if (hashIndex)
     {
@@ -319,21 +328,27 @@ dirLink(
     return tesSUCCESS;
 }
 
-/*
- * Checks if a withdrawal amount into the destination account exceeds
- * any applicable receiving limit.
- * Called by VaultWithdraw and LoanBrokerCoverWithdraw.
+/** Checks whether a withdrawal amount would push the destination account over
+ *  its applicable receiving limit.
  *
- * IOU : Performs the trustline check against the destination account's
- * credit limit to ensure the account's trust maximum is not exceeded.
+ *  Called by VaultWithdraw and LoanBrokerCoverWithdraw.
  *
- * MPT: The limit check is effectively skipped (returns true). This is
- * because MPT MaximumAmount relates to token supply, and withdrawal does not
- * involve minting new tokens that could exceed the global cap.
- * On withdrawal, tokens are simply transferred from the vault's pseudo-account
- * to the destination account. Since no new MPT tokens are minted during this
- * transfer, the withdrawal cannot violate the MPT MaximumAmount/supply cap
- * even if `from` is the issuer.
+ *  For IOU assets, the destination's trust-line credit limit is checked: the
+ *  withdrawal is rejected with `tecNO_LINE` if it would cause the recipient's
+ *  balance to exceed that limit.
+ *
+ *  For MPT assets, the limit check is unconditionally skipped.  MPT
+ *  `MaximumAmount` governs token supply (minting), not transfers.  A vault
+ *  withdrawal moves existing tokens from the pseudo-account to the destination
+ *  without minting new ones, so the supply cap cannot be violated regardless
+ *  of whether `from` is the issuer.
+ *
+ *  @param view The ledger state to inspect.
+ *  @param from The source account (vault or broker pseudo-account).
+ *  @param to The destination account.
+ *  @param amount The asset and quantity being withdrawn.
+ *  @return `tecNO_LINE` if the IOU credit limit would be exceeded;
+ *      `tesSUCCESS` otherwise.
  */
 static TER
 withdrawToDestExceedsLimit(
@@ -418,7 +433,6 @@ doWithdraw(
     STAmount const& amount,
     beast::Journal j)
 {
-    // Create trust line or MPToken for the receiving account
     if (dstAcct == senderAcct)
     {
         if (auto const ter = addEmptyHolding(view, senderAcct, priorBalance, amount.asset(), j);
@@ -432,7 +446,6 @@ doWithdraw(
             return err;
     }
 
-    // Sanity check
     if (accountHolds(
             view,
             sourceAcct,
@@ -447,8 +460,6 @@ doWithdraw(
         // LCOV_EXCL_STOP
     }
 
-    // Move the funds directly from the broker's pseudo-account to the
-    // dstAcct
     return accountSend(view, sourceAcct, dstAcct, amount, j, WaiveTransferFee::Yes);
 }
 
@@ -460,7 +471,6 @@ cleanupOnAccountDelete(
     beast::Journal j,
     std::optional<uint16_t> maxNodesToDelete)
 {
-    // Delete all the entries in the account directory.
     std::shared_ptr<SLE> sleDirNode{};
     unsigned int uDirEntry{0};
     uint256 dirEntry{beast::kZERO};
@@ -474,7 +484,6 @@ cleanupOnAccountDelete(
             if (maxNodesToDelete && ++deleted > *maxNodesToDelete)
                 return tecINCOMPLETE;
 
-            // Choose the right way to delete each directory node.
             auto sleItem = view.peek(keylet::child(dirEntry));
             if (!sleItem)
             {
@@ -489,8 +498,6 @@ cleanupOnAccountDelete(
             LedgerEntryType const nodeType{
                 safeCast<LedgerEntryType>(sleItem->getFieldU16(sfLedgerEntryType))};
 
-            // Deleter handles the details of specific account-owned object
-            // deletion
             auto const [ter, skipEntry] = deleter(nodeType, dirEntry, sleItem);
             if (!isTesSuccess(ter))
                 return ter;

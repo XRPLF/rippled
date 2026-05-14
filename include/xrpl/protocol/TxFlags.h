@@ -1,3 +1,17 @@
+/** @file
+ *  Canonical, single-source-of-truth definitions for every transaction flag in
+ *  the XRPL protocol.
+ *
+ *  Flag values are embedded in signed transactions and therefore form part of
+ *  the consensus protocol. Altering any constant without a coordinated amendment
+ *  and special handling will cause a hard fork.
+ *
+ *  The file uses three X-macro instantiations of a single `XMACRO` table to
+ *  emit, from one authoritative list, the flag value constants, the per-type
+ *  validation masks, and the Meyer's-singleton getter functions consumed by the
+ *  `server_definitions` RPC endpoint.
+ */
+
 #pragma once
 
 // NOLINTBEGIN(readability-identifier-naming)
@@ -36,14 +50,33 @@ namespace xrpl {
     @ingroup protocol
 */
 
+/** Underlying integer type for all transaction flag bitmasks. */
 using FlagValue = std::uint32_t;
 
-// Universal Transaction flags:
+// --- Universal Transaction flags ---
+
+/** Require that the transaction signature use the canonical (low-S) ECDSA
+ *  form.  The network now enforces this unconditionally, but the flag must
+ *  remain defined so that historical transactions that set it remain valid. */
 inline constexpr FlagValue tfFullyCanonicalSig = 0x80000000;
+
+/** Marks a transaction as an inner member of a `Batch` transaction.
+ *
+ *  Set by the batch submitter on every inner transaction; the outer `Batch`
+ *  wrapper must NOT carry this flag (enforced by `tfBatchMask` and the
+ *  compile-time `static_assert` below). */
 inline constexpr FlagValue tfInnerBatchTxn = 0x40000000;
+
+/** Bitwise OR of all universal flags; occupies the high 8 bits of `Flags`. */
 inline constexpr FlagValue tfUniversal = tfFullyCanonicalSig | tfInnerBatchTxn;
+
+/** Complement of `tfUniversal`; ANDing an unknown `Flags` value with this mask
+ *  isolates any transaction-type-specific bits. */
 inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
 
+// The push/pop guards protect any caller that has its own macros with the same
+// short names (XMACRO, TO_VALUE, etc.) from having them clobbered when this
+// header is included.
 #pragma push_macro("XMACRO")
 #pragma push_macro("TO_VALUE")
 #pragma push_macro("VALUE_TO_MAP")
@@ -70,16 +103,36 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
 // clang-format off
 #undef ALL_TX_FLAGS
 
-// XMACRO parameters:
-// - TRANSACTION: handles the transaction name, its flags, and mask adjustment
-// - TF_FLAG: defines a new flag constant
-// - TF_FLAG2: references an existing flag constant (no new definition)
-// - MASK_ADJ: specifies flags to add back to the mask (making them invalid for this tx type)
-//
-// Note: MASK_ADJ is used when a universal flag should be invalid for a specific transaction.
-// For example, Batch uses MASK_ADJ(tfInnerBatchTxn) because the outer Batch transaction
-// must not have tfInnerBatchTxn set (only inner transactions should have it).
-//
+/** Master X-macro table of all per-transaction-type flag groups.
+ *
+ *  This macro is the single source of truth for every flag in the system.
+ *  It is instantiated three times with different argument bindings to produce:
+ *    1. Inline `constexpr FlagValue tf*` declarations.
+ *    2. Inline `constexpr FlagValue tf*Mask` validation masks.
+ *    3. `inline FlagMap const& get*Flags()` Meyer's-singleton getters consumed
+ *       by the `server_definitions` RPC endpoint.
+ *
+ *  @param TRANSACTION  Macro invoked once per transaction type; receives the
+ *      type name, the expansion of its flag list, and the mask adjustment.
+ *  @param TF_FLAG      Declares a new flag constant unique to this transaction
+ *      type (or the first transaction that defines a shared constant).
+ *  @param TF_FLAG2     References an already-declared flag constant; suppresses
+ *      redeclaration. Used when two transaction types share a numeric value
+ *      (e.g., `tfLPToken` is declared by `AMMDeposit` and referenced by
+ *      `AMMWithdraw`).
+ *  @param MASK_ADJ     Specifies additional bits to OR back into the generated
+ *      mask, making those bits invalid for this transaction type even though
+ *      they are otherwise universal. `Batch` uses `MASK_ADJ(tfInnerBatchTxn)`
+ *      because the outer wrapper must not carry that flag; all other entries
+ *      use `MASK_ADJ(0)`.
+ *
+ *  @note To add a new flag: add a `TF_FLAG(name, value)` row inside the
+ *      appropriate `TRANSACTION(...)` block and nowhere else. The value,
+ *      mask, and getter are all derived automatically.
+ *
+ *  @warning Flag values are protocol-stable. Changing or reusing a numeric
+ *      value without an amendment causes a hard fork.
+ */
 // TODO: Consider rewriting this using reflection in C++26 or later. Alternatively this could be a DSL processed by a script at build time.
 #define XMACRO(TRANSACTION, TF_FLAG, TF_FLAG2, MASK_ADJ)                                                                                                       \
     TRANSACTION(AccountSet,                                                                                                                                    \
@@ -218,39 +271,38 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
 
 // clang-format on
 
-// Create all the flag values.
-//
-// example:
-// inline constexpr FlagValue tfAccountSetRequireDestTag = 0x00010000;
+// --- Instantiation 1: emit `inline constexpr FlagValue tf* = 0x...;` ---
+// TF_FLAG  → declares a new constant.
+// TF_FLAG2 → no-op (constant already declared by a prior TRANSACTION block).
+// Example output:
+//   inline constexpr FlagValue tfRequireDestTag = 0x00010000;
 #define TO_VALUE(name, value) inline constexpr FlagValue name = value;
 #define NULL_NAME(name, values, maskAdj) values
 #define NULL_OUTPUT(name, value)
 #define NULL_MASK_ADJ(value)
 XMACRO(NULL_NAME, TO_VALUE, NULL_OUTPUT, NULL_MASK_ADJ)
 
-// Create masks for each transaction type that has flags.
-//
-// example:
-// inline constexpr FlagValue tfAccountSetMask = ~(tfUniversal | tfRequireDestTag |
-//     tfOptionalDestTag | tfRequireAuth | tfOptionalAuth | tfDisallowXRP | tfAllowXRP);
-//
-// The mask adjustment (maskAdj) allows adding flags back to the mask, making them invalid.
-// For example, Batch uses MASK_ADJ(tfInnerBatchTxn) to reject tfInnerBatchTxn on outer Batch.
+// --- Instantiation 2: emit `inline constexpr FlagValue tf*Mask` ---
+// Each mask is the bitwise complement of (tfUniversal | all valid flags for
+// this tx type) OR'd with any MASK_ADJ bits.  A transaction whose `Flags`
+// field ANDed with the mask is non-zero is rejected as carrying unknown or
+// forbidden flags.
+// Example output:
+//   inline constexpr FlagValue tfAccountSetMask =
+//       ~(tfUniversal | tfRequireDestTag | tfOptionalDestTag | ...);
 #define TO_MASK(name, values, maskAdj) \
     inline constexpr FlagValue tf##name##Mask = ~(tfUniversal values) | (maskAdj);
 #define VALUE_TO_MASK(name, value) | name
 #define MASK_ADJ_TO_MASK(value) value
 XMACRO(TO_MASK, VALUE_TO_MASK, VALUE_TO_MASK, MASK_ADJ_TO_MASK)
 
-// Verify that tfBatchMask correctly rejects tfInnerBatchTxn.
-// The outer Batch transaction must NOT have tfInnerBatchTxn set; only inner transactions should
-// have it.
+// Compile-time invariants for the MASK_ADJ(tfInnerBatchTxn) mechanism:
+// The outer Batch transaction rejects tfInnerBatchTxn (bit must appear in its
+// mask); all other transaction types allow it so inner transactions can carry
+// the flag legally.
 static_assert(
     (tfBatchMask & tfInnerBatchTxn) == tfInnerBatchTxn,
     "tfBatchMask must include tfInnerBatchTxn to reject it on outer Batch");
-
-// Verify that other transaction masks correctly allow tfInnerBatchTxn.
-// Inner transactions need tfInnerBatchTxn to be valid, so these masks must not reject it.
 static_assert(
     (tfPaymentMask & tfInnerBatchTxn) == 0,
     "tfPaymentMask must not reject tfInnerBatchTxn");
@@ -258,19 +310,13 @@ static_assert(
     (tfAccountSetMask & tfInnerBatchTxn) == 0,
     "tfAccountSetMask must not reject tfInnerBatchTxn");
 
-// Create getter functions for each set of flags using Meyer's singleton pattern.
-// This avoids static initialization order fiasco while still providing efficient access.
-// This is used below in `getAllTxFlags()` to generate the server_definitions RPC
-// output.
-//
-// example:
-// inline FlagMap const& getAccountSetFlags() {
-//     static FlagMap const flags = {
-//         {"tfRequireDestTag", 0x00010000},
-//         {"tfOptionalDestTag", 0x00020000},
-//     ...};
-//     return flags;
-// }
+// --- Instantiation 3: emit `inline FlagMap const& get*Flags()` getters ---
+// Each function initialises a local static on first call (Meyer's singleton)
+// and returns a reference to it on every subsequent call.  The map is keyed
+// by flag name string and valued by the numeric FlagValue.  These are
+// aggregated by getAllTxFlags() and served to clients via server_definitions.
+
+/** Maps flag names to their numeric values for a single transaction type. */
 using FlagMap = std::map<std::string, FlagValue>;
 #define VALUE_TO_MAP(name, value) {#name, value},
 #define TO_MAP(name, values, maskAdj)          \
@@ -281,6 +327,14 @@ using FlagMap = std::map<std::string, FlagValue>;
     }
 XMACRO(TO_MAP, VALUE_TO_MAP, VALUE_TO_MAP, NULL_MASK_ADJ)
 
+/** Returns the universal transaction flags by name.
+ *
+ *  The returned map contains `tfFullyCanonicalSig` and `tfInnerBatchTxn`.
+ *  It is initialised once (Meyer's singleton) and safe to call from any
+ *  thread after static initialisation completes.
+ *
+ *  @return A reference to the singleton `FlagMap` for universal flags.
+ */
 inline FlagMap const&
 getUniversalFlags()
 {
@@ -289,18 +343,21 @@ getUniversalFlags()
     return flags;
 }
 
-// Create a getter function for all transaction flag maps using Meyer's singleton pattern.
-// This is used to generate the server_definitions RPC output.
-//
-// example:
-// inline FlagMapPairList const& getAllTxFlags() {
-//     static FlagMapPairList const flags = {
-//         {"AccountSet", getAccountSetFlags()},
-//     ...};
-//     return flags;
-// }
+/** Ordered list of `{transaction-type-name, FlagMap}` pairs covering every
+ *  transaction type and the universal flag group.  Consumed by the
+ *  `server_definitions` RPC endpoint so clients can discover the protocol's
+ *  flag vocabulary at runtime. */
 using FlagMapPairList = std::vector<std::pair<std::string, FlagMap>>;
 #define ALL_TX_FLAGS(name, values, maskAdj) {#name, get##name##Flags()},
+
+/** Returns all per-transaction-type flag maps, prefixed by the universal group.
+ *
+ *  Initialised once (Meyer's singleton). The first entry is always
+ *  `{"universal", getUniversalFlags()}`; subsequent entries follow the
+ *  declaration order in `XMACRO`.
+ *
+ *  @return A reference to the singleton `FlagMapPairList`.
+ */
 inline FlagMapPairList const&
 getAllTxFlags()
 {
@@ -334,68 +391,142 @@ getAllTxFlags()
 #pragma pop_macro("NULL_MASK_ADJ")
 #pragma pop_macro("MASK_ADJ_TO_MASK")
 
-// Additional transaction masks and combos
+// --- Additional composite masks ---
+
+/** Validation mask for `Payment` transactions that involve MPTokens.
+ *
+ *  MPToken payments support only `tfPartialPayment`; all other
+ *  transaction-type-specific bits are rejected. */
 inline constexpr FlagValue tfMPTPaymentMask = ~(tfUniversal | tfPartialPayment);
+
+/** Validation mask for `TrustSet` transactions submitted under a granular
+ *  delegation permission.
+ *
+ *  Only `tfSetfAuth`, `tfSetFreeze`, and `tfClearFreeze` are permitted when
+ *  the `TrustlineUnfreeze` permission applies; any other flags cause the
+ *  transactor to return `terNO_DELEGATE_PERMISSION`. */
 inline constexpr FlagValue tfTrustSetPermissionMask =
     ~(tfUniversal | tfSetfAuth | tfSetFreeze | tfClearFreeze);
 
-// MPTokenIssuanceCreate MutableFlags:
-// Indicating specific fields or flags may be changed after issuance.
+// --- MPTokenIssuanceCreate mutable-flag declarations (tmf* prefix) ---
+// These alias the corresponding lsmf* ledger-state mutable-flag values from
+// LedgerFormats.h so that the same numeric bit can be stored verbatim on the
+// MPTokenIssuance object without a translation step.  Each flag, when set on
+// the creation transaction, means the named property may be updated by a
+// subsequent MPTokenIssuanceSet transaction.
+
+/** Permits the `CanLock` property to be changed after issuance. */
 inline constexpr FlagValue tmfMPTCanMutateCanLock = lsmfMPTCanMutateCanLock;
+/** Permits the `RequireAuth` property to be changed after issuance. */
 inline constexpr FlagValue tmfMPTCanMutateRequireAuth = lsmfMPTCanMutateRequireAuth;
+/** Permits the `CanEscrow` property to be changed after issuance. */
 inline constexpr FlagValue tmfMPTCanMutateCanEscrow = lsmfMPTCanMutateCanEscrow;
+/** Permits the `CanTrade` property to be changed after issuance. */
 inline constexpr FlagValue tmfMPTCanMutateCanTrade = lsmfMPTCanMutateCanTrade;
+/** Permits the `CanTransfer` property to be changed after issuance. */
 inline constexpr FlagValue tmfMPTCanMutateCanTransfer = lsmfMPTCanMutateCanTransfer;
+/** Permits the `CanClawback` property to be changed after issuance. */
 inline constexpr FlagValue tmfMPTCanMutateCanClawback = lsmfMPTCanMutateCanClawback;
+/** Permits the metadata URI to be changed after issuance. */
 inline constexpr FlagValue tmfMPTCanMutateMetadata = lsmfMPTCanMutateMetadata;
+/** Permits the transfer fee to be changed after issuance. */
 inline constexpr FlagValue tmfMPTCanMutateTransferFee = lsmfMPTCanMutateTransferFee;
+
+/** Validation mask for the `MutableFlags` field of `MPTokenIssuanceCreate`.
+ *
+ *  Any bit outside the recognised `tmfMPTCanMutate*` set causes
+ *  `MPTokenIssuanceCreate::preflight` to return `temINVALID_FLAG`.
+ *  A value of zero is also rejected — at least one mutable property must be
+ *  declared. */
 inline constexpr FlagValue tmfMPTokenIssuanceCreateMutableMask =
     ~(tmfMPTCanMutateCanLock | tmfMPTCanMutateRequireAuth | tmfMPTCanMutateCanEscrow |
       tmfMPTCanMutateCanTrade | tmfMPTCanMutateCanTransfer | tmfMPTCanMutateCanClawback |
       tmfMPTCanMutateMetadata | tmfMPTCanMutateTransferFee);
 
-// MPTokenIssuanceSet MutableFlags:
-// Set or Clear flags.
+// --- MPTokenIssuanceSet mutable-flag Set/Clear pairs ---
+// Each property has two complementary flags: one to enable and one to disable
+// the property in an existing MPTokenIssuance object.  Setting both bits in the
+// same transaction is a logical error and is rejected by the transactor.
 
+/** Enable the `CanLock` property on an existing MPTokenIssuance. */
 inline constexpr FlagValue tmfMPTSetCanLock = 0x00000001;
+/** Disable the `CanLock` property on an existing MPTokenIssuance. */
 inline constexpr FlagValue tmfMPTClearCanLock = 0x00000002;
+/** Enable the `RequireAuth` property on an existing MPTokenIssuance. */
 inline constexpr FlagValue tmfMPTSetRequireAuth = 0x00000004;
+/** Disable the `RequireAuth` property on an existing MPTokenIssuance. */
 inline constexpr FlagValue tmfMPTClearRequireAuth = 0x00000008;
+/** Enable the `CanEscrow` property on an existing MPTokenIssuance. */
 inline constexpr FlagValue tmfMPTSetCanEscrow = 0x00000010;
+/** Disable the `CanEscrow` property on an existing MPTokenIssuance. */
 inline constexpr FlagValue tmfMPTClearCanEscrow = 0x00000020;
+/** Enable the `CanTrade` property on an existing MPTokenIssuance. */
 inline constexpr FlagValue tmfMPTSetCanTrade = 0x00000040;
+/** Disable the `CanTrade` property on an existing MPTokenIssuance. */
 inline constexpr FlagValue tmfMPTClearCanTrade = 0x00000080;
+/** Enable the `CanTransfer` property on an existing MPTokenIssuance. */
 inline constexpr FlagValue tmfMPTSetCanTransfer = 0x00000100;
+/** Disable the `CanTransfer` property on an existing MPTokenIssuance. */
 inline constexpr FlagValue tmfMPTClearCanTransfer = 0x00000200;
+/** Enable the `CanClawback` property on an existing MPTokenIssuance. */
 inline constexpr FlagValue tmfMPTSetCanClawback = 0x00000400;
+/** Disable the `CanClawback` property on an existing MPTokenIssuance. */
 inline constexpr FlagValue tmfMPTClearCanClawback = 0x00000800;
+
+/** Validation mask for the `MutableFlags` field of `MPTokenIssuanceSet`.
+ *
+ *  Any bit outside the recognised `tmfMPTSet*` / `tmfMPTClear*` set causes
+ *  `MPTokenIssuanceSet::preflight` to return `temINVALID_FLAG`.
+ *  A zero value is also rejected. */
 inline constexpr FlagValue tmfMPTokenIssuanceSetMutableMask = ~(
     tmfMPTSetCanLock | tmfMPTClearCanLock | tmfMPTSetRequireAuth | tmfMPTClearRequireAuth |
     tmfMPTSetCanEscrow | tmfMPTClearCanEscrow | tmfMPTSetCanTrade | tmfMPTClearCanTrade |
     tmfMPTSetCanTransfer | tmfMPTClearCanTransfer | tmfMPTSetCanClawback | tmfMPTClearCanClawback);
 
-// Prior to fixRemoveNFTokenAutoTrustLine, transfer of an NFToken between accounts allowed a
-// TrustLine to be added to the issuer of that token without explicit permission from that issuer.
-// This was enabled by minting the NFToken with the tfTrustLine flag set.
+// --- NFTokenMint backward-compatibility mask variants ---
+// Three mask variants exist to accommodate two amendment-gated changes to the
+// set of valid NFTokenMint flags:
 //
-// That capability could be used to attack the NFToken issuer.
-// It would be possible for two accounts to trade the NFToken back and forth building up any number
-// of TrustLines on the issuer, increasing the issuer's reserve without bound.
+//   1. fixRemoveNFTokenAutoTrustLine — closed a reserve-exhaustion attack where
+//      two accounts could endlessly trade an NFToken, forcing unbounded trust
+//      lines onto the issuer. After this amendment, tfTrustLine is forbidden.
+//   2. featureDynamicNFT — adds tfMutable, allowing the token URI to be updated
+//      after minting.
 //
-// The fixRemoveNFTokenAutoTrustLine amendment disables minting with the tfTrustLine flag as a way
-// to prevent the attack. But until the amendment passes we still need to keep the old behavior
-// available.
-inline constexpr FlagValue tfTrustLine = 0x00000004;  // needed for backwards compatibility
+// Nodes processing historical ledger data must still accept tfTrustLine on pre-
+// amendment mints, which is why the constant and the old mask remain defined.
+
+/** NFTokenMint flag that once allowed automatic trust-line creation on the
+ *  issuer.  Forbidden after the `fixRemoveNFTokenAutoTrustLine` amendment;
+ *  retained only for historical ledger replay. */
+inline constexpr FlagValue tfTrustLine = 0x00000004;
+
+/** Baseline `NFTokenMint` validation mask (post `fixRemoveNFTokenAutoTrustLine`,
+ *  pre `featureDynamicNFT`).  Rejects `tfTrustLine` and `tfMutable`. */
 inline constexpr FlagValue tfNFTokenMintMaskWithoutMutable =
     ~(tfUniversal | tfBurnable | tfOnlyXRP | tfTransferable);
 
+/** `NFTokenMint` validation mask for ledgers before `fixRemoveNFTokenAutoTrustLine`.
+ *  Allows `tfTrustLine` in addition to the standard flags. */
 inline constexpr FlagValue tfNFTokenMintOldMask = ~(~tfNFTokenMintMaskWithoutMutable | tfTrustLine);
 
-// if featureDynamicNFT enabled then new flag allowing mutable URI available.
+/** `NFTokenMint` validation mask for ledgers before `fixRemoveNFTokenAutoTrustLine`
+ *  but after `featureDynamicNFT` — allows both `tfTrustLine` and `tfMutable`. */
 inline constexpr FlagValue tfNFTokenMintOldMaskWithMutable = ~(~tfNFTokenMintOldMask | tfMutable);
 
+/** Union of all mutually-exclusive `AMMWithdraw` mode flags.
+ *
+ *  The transactor checks `std::popcount(flags & tfWithdrawSubTx) == 1` to
+ *  ensure exactly one withdrawal mode is selected; zero or more than one
+ *  causes `temMALFORMED`. */
 inline constexpr FlagValue tfWithdrawSubTx = tfLPToken | tfSingleAsset | tfTwoAsset |
     tfOneAssetLPToken | tfLimitLPToken | tfWithdrawAll | tfOneAssetWithdrawAll;
+
+/** Union of all mutually-exclusive `AMMDeposit` mode flags.
+ *
+ *  The transactor checks `std::popcount(flags & tfDepositSubTx) == 1` to
+ *  ensure exactly one deposit mode is selected; zero or more than one
+ *  causes `temMALFORMED`. */
 inline constexpr FlagValue tfDepositSubTx =
     tfLPToken | tfSingleAsset | tfTwoAsset | tfOneAssetLPToken | tfLimitLPToken | tfTwoAssetIfEmpty;
 
@@ -403,7 +534,21 @@ inline constexpr FlagValue tfDepositSubTx =
 #pragma push_macro("ACCOUNTSET_FLAG_TO_VALUE")
 #pragma push_macro("ACCOUNTSET_FLAG_TO_MAP")
 
-// AccountSet SetFlag/ClearFlag values
+/** X-macro table of `AccountSet` `SetFlag`/`ClearFlag` integer values.
+ *
+ *  These are **small integers** (1–17), not bitmasks, and are carried in the
+ *  `SetFlag` or `ClearFlag` field of an `AccountSet` transaction rather than
+ *  in the `Flags` bitmask.  Value 11 is reserved for the Hooks amendment
+ *  (`asfTshCollect`) and is intentionally absent here.
+ *
+ *  The macro is instantiated twice: once to declare inline constants and once
+ *  to build the map returned by `getAsfFlagMap()`.
+ *
+ *  @param ASF_FLAG  Receives `(name, integer_value)` for each `asf*` constant.
+ *
+ *  @warning These values are protocol-stable; changing them breaks existing
+ *      signed `AccountSet` transactions.
+ */
 #define ACCOUNTSET_FLAGS(ASF_FLAG)                \
     ASF_FLAG(asfRequireDest, 1)                   \
     ASF_FLAG(asfRequireAuth, 2)                   \
@@ -429,6 +574,14 @@ inline constexpr FlagValue tfDepositSubTx =
 
 ACCOUNTSET_FLAGS(ACCOUNTSET_FLAG_TO_VALUE)
 
+/** Returns all `AccountSet` `SetFlag`/`ClearFlag` values by name.
+ *
+ *  The map keys are the `asf*` constant names; values are the corresponding
+ *  small integers.  Initialised once (Meyer's singleton) and consumed by the
+ *  `server_definitions` RPC endpoint alongside `getAllTxFlags()`.
+ *
+ *  @return A reference to the singleton `asf*` flag map.
+ */
 inline std::map<std::string, FlagValue> const&
 getAsfFlagMap()
 {

@@ -1,5 +1,34 @@
-//
-/* The base58 encoding & decoding routines in the b58_ref namespace are taken
+/**
+ * @file tokens.cpp
+ * @brief Base58Check encoding and decoding for XRPL identifiers.
+ *
+ * This file is the single source of truth for XRPL's Base58Check scheme —
+ * the algorithm that converts raw binary account IDs, key pairs, and seeds
+ * into the human-readable strings users interact with every day
+ * (e.g., `rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh`).
+ *
+ * Every encoded XRPL identifier follows the wire layout:
+ * @code
+ *   [ type byte (1) ][ raw payload (N) ][ checksum (4) ]
+ * @endcode
+ * The checksum is the first four bytes of SHA-256(SHA-256(type || payload)),
+ * identical to Bitcoin's checksum design.
+ *
+ * Two internal implementations are provided and selected at compile time:
+ * - `b58_ref` — portable O(n²) algorithm adapted from Bitcoin Core.
+ * - `b58_fast` — 10-15× faster path using GCC's `unsigned __int128` extension;
+ *   unavailable on MSVC, which falls back to `b58_ref`.
+ *
+ * The fast algorithm stages the conversion as:
+ * @code
+ *   base 58 → base 58^10 → base 2^64 → base 2^8
+ * @endcode
+ * `58^10 = 430804206899405824` is the largest power of 58 that fits in a
+ * 64-bit register, enabling the first hop to use simple 64-bit arithmetic.
+ * The multi-precision second hop then operates on far fewer, larger
+ * coefficients, dramatically reducing total work.
+ *
+ * The base58 encoding & decoding routines in the b58_ref namespace are taken
  * from Bitcoin but have been modified from the original.
  *
  * Copyright (c) 2014 The Bitcoin Core developers
@@ -122,9 +151,22 @@ coefficients sizes greatly speeds up the multi-precision computations.
 
 namespace xrpl {
 
+/** The 58-character XRPL Base58 alphabet.
+ *
+ *  Deliberately chosen so that an `AccountID` of all-zero bytes encodes to a
+ *  string beginning with `'r'`, letting users and validators visually
+ *  recognize a classic XRPL account address without decoding.
+ */
 static constexpr char const* kALPHABET_FORWARD =
     "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz";
 
+/** Compile-time reverse lookup table for the XRPL Base58 alphabet.
+ *
+ *  Maps each ASCII byte value to its 0-based index in `kALPHABET_FORWARD`,
+ *  or `-1` if the character is not a valid Base58 digit.  Used by the
+ *  decoder to convert encoded characters back to numeric coefficients
+ *  without a linear search.
+ */
 static constexpr std::array<int, 256> const kALPHABET_REVERSE = []() {
     std::array<int, 256> map{};
     for (auto& m : map)
@@ -134,6 +176,14 @@ static constexpr std::array<int, 256> const kALPHABET_REVERSE = []() {
     return map;
 }();
 
+/** Hash a raw buffer with the given Hasher.
+ *
+ *  @tparam Hasher A type satisfying the XRP hasher concept — default-constructible,
+ *      callable with `(void const*, size_t)`, and convertible to its `result_type`.
+ *  @param data Pointer to the bytes to hash.
+ *  @param size Number of bytes to hash.
+ *  @return The hash digest.
+ */
 template <class Hasher>
 static typename Hasher::result_type
 digest(void const* data, std::size_t size) noexcept
@@ -143,6 +193,16 @@ digest(void const* data, std::size_t size) noexcept
     return static_cast<typename Hasher::result_type>(h);
 }
 
+/** Hash a fixed-size byte array with the given Hasher.
+ *
+ *  Convenience overload for `std::array<T, N>` where `sizeof(T) == 1`.
+ *
+ *  @tparam Hasher A type satisfying the XRP hasher concept.
+ *  @tparam T Byte-sized element type.
+ *  @tparam N Array length.
+ *  @param v The byte array to hash.
+ *  @return The hash digest.
+ */
 template <class Hasher, class T, std::size_t N, class = std::enable_if_t<sizeof(T) == 1>>
 static typename Hasher::result_type
 digest(std::array<T, N> const& v)
@@ -150,7 +210,17 @@ digest(std::array<T, N> const& v)
     return digest<Hasher>(v.data(), v.size());
 }
 
-// Computes a double digest (e.g. digest of the digest)
+/** Compute the hash of a hash (double-digest).
+ *
+ *  Applies the Hasher twice: first to produce an intermediate digest from
+ *  `args`, then hashes that digest again.  The result is the same as
+ *  `digest<Hasher>(digest<Hasher>(args...))`.
+ *
+ *  @tparam Hasher A type satisfying the XRP hasher concept.
+ *  @tparam Args  Arguments forwarded to the inner `digest` overload.
+ *  @param args   Data arguments passed to the inner digest computation.
+ *  @return The double-digest result.
+ */
 template <class Hasher, class... Args>
 static typename Hasher::result_type
 digest2(Args const&... args)
@@ -174,6 +244,19 @@ checksum(void* out, void const* message, std::size_t size)
     std::memcpy(out, h.data(), 4);
 }
 
+/** Encode a raw payload as a Base58Check XRPL token string.
+ *
+ *  Prepends the `type` byte, appends a 4-byte double-SHA256 checksum, then
+ *  Base58-encodes the result using the XRPL alphabet.  Dispatches to the
+ *  fast (`b58_fast`) implementation on non-MSVC compilers, and to the
+ *  portable reference implementation (`b58_ref`) on MSVC.
+ *
+ *  @param type  The `TokenType` version byte that prefixes the encoded form
+ *      (e.g., `TokenType::AccountID = 0` → addresses start with `'r'`).
+ *  @param token Pointer to the raw payload bytes to encode.
+ *  @param size  Number of payload bytes.
+ *  @return The Base58Check-encoded string, or an empty string on error.
+ */
 [[nodiscard]] std::string
 encodeBase58Token(TokenType type, void const* token, std::size_t size)
 {
@@ -184,6 +267,22 @@ encodeBase58Token(TokenType type, void const* token, std::size_t size)
 #endif
 }
 
+/** Decode a Base58Check XRPL token string and return the raw payload.
+ *
+ *  Decodes the Base58 string, then validates:
+ *  1. The decoded length is at least 6 bytes (1 type + 1 payload min + 4 checksum).
+ *  2. The leading type byte matches `type`.
+ *  3. The trailing 4-byte checksum is correct.
+ *
+ *  Dispatches to the fast (`b58_fast`) implementation on non-MSVC compilers,
+ *  and to the portable reference implementation (`b58_ref`) on MSVC.
+ *
+ *  @param s    The Base58Check-encoded string to decode.
+ *  @param type The expected `TokenType` version byte.
+ *  @return The raw payload (type byte and checksum stripped), or an empty
+ *      string if the input is invalid, the type does not match, or the
+ *      checksum fails.
+ */
 [[nodiscard]] std::string
 decodeBase58Token(std::string const& s, TokenType type)
 {
@@ -198,6 +297,21 @@ namespace b58_ref {
 
 namespace detail {
 
+/** Encode a raw byte buffer as a Base58 string (reference O(n²) algorithm).
+ *
+ *  Uses the Bitcoin-derived algorithm: for each input byte the working
+ *  base-58 buffer is multiplied by 256 and the byte added as carry.
+ *  Leading zero bytes map to the first alphabet character (`'r'`) to
+ *  preserve bijectivity.
+ *
+ *  @param message  Pointer to the data to encode.
+ *  @param size     Number of bytes in `message`.
+ *  @param temp     Caller-supplied scratch buffer; must be at least
+ *      `size * 138 / 100 + 1` bytes (derived from log(256)/log(58) ≈ 1.38).
+ *  @param tempSize Size of `temp` in bytes.
+ *  @return The Base58-encoded string.
+ *  @note Exposed in the header for unit-testing comparison against the fast path.
+ */
 std::string
 encodeBase58(void const* message, std::size_t size, void* temp, std::size_t tempSize)
 {
@@ -245,6 +359,18 @@ encodeBase58(void const* message, std::size_t size, void* temp, std::size_t temp
     return str;
 }
 
+/** Decode a Base58 string to raw bytes (reference O(n²) algorithm).
+ *
+ *  Reverses `encodeBase58`: for each input character the working base-256
+ *  buffer is multiplied by 58 and the digit value added as carry.
+ *  Leading `'r'` characters (index 0 in the alphabet) map back to leading
+ *  zero bytes.
+ *
+ *  @param s The Base58-encoded string to decode.
+ *  @return The decoded byte string, or an empty string if any character is
+ *      not in the XRPL alphabet or if the input exceeds 64 characters.
+ *  @note Exposed in the header for unit-testing comparison against the fast path.
+ */
 std::string
 decodeBase58(std::string const& s)
 {
@@ -293,6 +419,18 @@ decodeBase58(std::string const& s)
 
 }  // namespace detail
 
+/** Encode a raw payload as a Base58Check XRPL token string (reference implementation).
+ *
+ *  Constructs the wire layout `[type][payload][checksum]` in a stack-allocated
+ *  buffer, then delegates to `detail::encodeBase58`.  The scratch buffer is
+ *  sized at `expanded * 3` bytes, which is a safe upper bound derived from
+ *  `log(256) / log(58) ≈ 1.38` plus one character of slack.
+ *
+ *  @param type  The `TokenType` version byte to prepend.
+ *  @param token Pointer to the payload bytes.
+ *  @param size  Number of payload bytes.
+ *  @return The Base58Check-encoded string.
+ */
 std::string
 encodeBase58Token(TokenType type, void const* token, std::size_t size)
 {
@@ -306,8 +444,6 @@ encodeBase58Token(TokenType type, void const* token, std::size_t size)
 
     boost::container::small_vector<std::uint8_t, 1024> buf(bufsize);
 
-    // Lay the data out as
-    //      <type><token><checksum>
     buf[0] = safeCast<std::underlying_type_t<TokenType>>(type);
     if (size != 0u)
         std::memcpy(buf.data() + 1, token, size);
@@ -316,6 +452,16 @@ encodeBase58Token(TokenType type, void const* token, std::size_t size)
     return detail::encodeBase58(buf.data(), expanded, buf.data() + expanded, bufsize - expanded);
 }
 
+/** Decode a Base58Check XRPL token string and return the raw payload (reference implementation).
+ *
+ *  Validates decoded length (≥ 6 bytes), the leading type byte, and the
+ *  trailing 4-byte checksum.  Returns an empty string on any mismatch.
+ *
+ *  @param s    The Base58Check-encoded string to decode.
+ *  @param type The expected `TokenType` version byte.
+ *  @return The raw payload with the type byte and checksum stripped, or an
+ *      empty string if validation fails.
+ */
 std::string
 decodeBase58Token(std::string const& s, TokenType type)
 {
@@ -345,7 +491,33 @@ decodeBase58Token(std::string const& s, TokenType type)
 // meantime MS falls back to the slower reference implementation)
 namespace b58_fast {
 namespace detail {
-// Note: both the input and output will be BIG ENDIAN
+
+/** Encode big-endian binary data as a big-endian Base58 byte sequence (fast path).
+ *
+ *  Implements the three-hop conversion `base 256 → base 2^64 → base 58^10 → base 58`
+ *  using GCC's `unsigned __int128` for carry-free multi-precision arithmetic:
+ *
+ *  1. The input bytes are loaded into at most 5 `uint64_t` limbs (little-endian
+ *     coefficient order), representing the value in base 2^64.
+ *  2. The 2^64 limb array is repeatedly divided by `58^10 = 430804206899405824`
+ *     via `inplaceBigintDivRem` to extract base-58^10 coefficients.
+ *  3. Each base-58^10 coefficient is expanded into 10 base-58 digits via
+ *     `b5810ToB58Be` and mapped through `kALPHABET_FORWARD`.
+ *
+ *  Leading zero bytes in `input` each emit the alphabet's first character
+ *  (`'r'`) to preserve the bijective encoding property.
+ *
+ *  @note Both `input` and `out` are in big-endian byte order.
+ *  @note Maximum valid `input` is 38 bytes (33-byte public key + 1 type + 4 checksum).
+ *      Larger inputs return `TokenCodecErrc::InputTooLarge`.
+ *
+ *  @param input The big-endian binary data to encode.
+ *  @param out   Caller-supplied output buffer; must be large enough for the
+ *      encoded result (≈ ceil(len×log(256)/log(58)) + leading-zero count).
+ *      Returns `TokenCodecErrc::OutputTooSmall` if insufficient.
+ *  @return On success, a subspan of `out` containing the encoded Base58 bytes.
+ *      On failure, an unexpected `TokenCodecErrc` error code.
+ */
 B58Result<std::span<std::uint8_t>>
 b256ToB58Be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
 {
@@ -466,7 +638,35 @@ b256ToB58Be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
     return out.subspan(0, outIndex);
 }
 
-// Note the input is BIG ENDIAN (some fn in this module use little endian)
+/** Decode a big-endian Base58 string to big-endian binary data (fast path).
+ *
+ *  Reverses `b256ToB58Be` using the same three-hop strategy in reverse:
+ *  `base 58 → base 58^10 → base 2^64 → base 2^8`:
+ *
+ *  1. The input string is partitioned into chunks of 10 characters
+ *     (with a possible shorter partial chunk at the start).  Each chunk is
+ *     accumulated into a `uint64_t` base-58^10 coefficient using simple
+ *     64-bit arithmetic.
+ *  2. The base-58^10 coefficients synthesize a multi-precision value stored
+ *     as `uint64_t` limbs via `inplaceBigintMul` (×58^10) and
+ *     `inplaceBigintAdd` (+coefficient) for each chunk.
+ *  3. The `uint64_t` limbs are written out as big-endian bytes, suppressing
+ *     leading zeros from the most-significant limb.
+ *
+ *  Leading `'r'` characters (alphabet index 0) map back to leading zero bytes.
+ *
+ *  @note The input string is big-endian (most significant Base58 digit first).
+ *  @note Maximum input length is 52 characters (encoding up to 38 bytes);
+ *      larger inputs return `TokenCodecErrc::InputTooLarge`.
+ *  @note `out` must be at least 8 bytes; returns `TokenCodecErrc::OutputTooSmall`
+ *      if the buffer is too small to hold the decoded result.
+ *
+ *  @param input The Base58-encoded string to decode (big-endian digit order).
+ *  @param out   Caller-supplied output buffer for the decoded bytes.
+ *  @return On success, a subspan of `out` containing the decoded big-endian bytes.
+ *      On failure, an unexpected `TokenCodecErrc` error code (e.g.,
+ *      `InvalidEncodingChar` for characters not in the XRPL alphabet).
+ */
 B58Result<std::span<std::uint8_t>>
 b58ToB256Be(std::string_view input, std::span<std::uint8_t> out)
 {
@@ -604,6 +804,21 @@ b58ToB256Be(std::string_view input, std::span<std::uint8_t> out)
 }
 }  // namespace detail
 
+/** Encode a raw payload as a Base58Check XRPL token (fast, span-based overload).
+ *
+ *  Builds the wire layout `[tokenType][input][checksum(4)]` in a 128-byte
+ *  stack buffer, then delegates to `detail::b256ToB58Be` to perform the
+ *  base conversion.  The output is written directly into the caller-supplied
+ *  `out` span, avoiding heap allocation.
+ *
+ *  @param tokenType The `TokenType` version byte to prepend.
+ *  @param input     The raw payload bytes to encode.  Must be non-empty and
+ *      at most 123 bytes (128 buffer − 5 bytes for type + checksum).
+ *  @param out       Caller-supplied output buffer for the encoded Base58 bytes.
+ *  @return On success, a subspan of `out` containing the encoded result.
+ *      On failure, an unexpected `TokenCodecErrc` (`InputTooLarge`,
+ *      `InputTooSmall`, or `OutputTooSmall`).
+ */
 B58Result<std::span<std::uint8_t>>
 encodeBase58Token(
     TokenType tokenType,
@@ -620,21 +835,33 @@ encodeBase58Token(
     {
         return Unexpected(TokenCodecErrc::InputTooSmall);
     }
-    // <type (1 byte)><token (input len)><checksum (4 bytes)>
     buf[0] = static_cast<std::uint8_t>(tokenType);
-    // buf[1..=input.len()] = input;
     memcpy(&buf[1], input.data(), input.size());
     size_t const checksumI = input.size() + 1;
-    // buf[checksum_i..checksum_i + 4] = checksum
     checksum(buf.data() + checksumI, buf.data(), checksumI);
     std::span<std::uint8_t const> const b58Span(buf.data(), input.size() + 5);
     return detail::b256ToB58Be(b58Span, out);
 }
-// Convert from base 58 to base 256, largest coefficients first
-// The input is encoded in XRPL format, with the token in the first
-// byte and the checksum in the last four bytes.
-// The decoded base 256 value does not include the token type or checksum.
-// It is an error if the token type or checksum does not match.
+
+/** Decode a Base58Check XRPL token and return the raw payload (fast, span-based overload).
+ *
+ *  Converts the Base58 string to binary via `detail::b58ToB256Be`, then
+ *  applies three-layer validation:
+ *  1. Decoded length ≥ 6 bytes (1 type + at least 1 payload byte + 4 checksum).
+ *  2. Leading type byte matches `type`.
+ *  3. Trailing 4-byte double-SHA256 checksum is correct.
+ *
+ *  Only the interior payload (type byte and checksum stripped) is copied into
+ *  `outBuf` on success.
+ *
+ *  @param type   The expected `TokenType` version byte.
+ *  @param s      The Base58Check-encoded string to decode (largest digit first).
+ *  @param outBuf Caller-supplied buffer for the decoded payload bytes.
+ *  @return On success, a subspan of `outBuf` containing the decoded payload.
+ *      On failure, an unexpected `TokenCodecErrc` (`InputTooSmall`,
+ *      `MismatchedTokenType`, `MismatchedChecksum`, `OutputTooSmall`,
+ *      `InvalidEncodingChar`, or `InputTooLarge`).
+ */
 B58Result<std::span<std::uint8_t>>
 decodeBase58Token(TokenType type, std::string_view s, std::span<std::uint8_t> outBuf)
 {
@@ -670,16 +897,22 @@ decodeBase58Token(TokenType type, std::string_view s, std::span<std::uint8_t> ou
     return outBuf.subspan(0, outSize);
 }
 
+/** Encode a raw payload as a Base58Check XRPL token string (fast, legacy string overload).
+ *
+ *  Bridges the zero-allocation span-based API to the legacy `std::string`
+ *  interface expected by callers that pre-date the span overload.  Pre-allocates
+ *  128 bytes — well above the theoretical maximum of ≈46 Base58 characters for
+ *  a 33-byte public key — to avoid reallocation.
+ *
+ *  @param type  The `TokenType` version byte to prepend.
+ *  @param token Pointer to the raw payload bytes.
+ *  @param size  Number of payload bytes.
+ *  @return The Base58Check-encoded string, or an empty string on any error.
+ */
 [[nodiscard]] std::string
 encodeBase58Token(TokenType type, void const* token, std::size_t size)
 {
     std::string sr;
-    // The largest object encoded as base58 is 33 bytes; This will be encoded in
-    // at most ceil(log(2^256,58)) bytes, or 46 bytes. 128 is plenty (and
-    // there's not real benefit making it smaller). Note that 46 bytes may be
-    // encoded in more than 46 base58 chars. Since decode uses 64 as the
-    // over-allocation, this function uses 128 (again, over-allocation assuming
-    // 2 base 58 char per byte)
     sr.resize(128);
     std::span<std::uint8_t> const outSp(reinterpret_cast<std::uint8_t*>(sr.data()), sr.size());
     std::span<std::uint8_t const> const inSp(reinterpret_cast<std::uint8_t const*>(token), size);
@@ -690,12 +923,21 @@ encodeBase58Token(TokenType type, void const* token, std::size_t size)
     return sr;
 }
 
+/** Decode a Base58Check XRPL token string and return the raw payload (fast, legacy string overload).
+ *
+ *  Bridges the zero-allocation span-based API to the legacy `std::string`
+ *  interface.  Pre-allocates 64 bytes — sufficient for any valid XRPL token
+ *  payload — to avoid reallocation.
+ *
+ *  @param s    The Base58Check-encoded string to decode.
+ *  @param type The expected `TokenType` version byte.
+ *  @return The raw payload with type byte and checksum stripped, or an empty
+ *      string on any error (invalid character, type mismatch, checksum failure, etc.).
+ */
 [[nodiscard]] std::string
 decodeBase58Token(std::string const& s, TokenType type)
 {
     std::string sr;
-    // The largest object encoded as base58 is 33 bytes; 64 is plenty (and
-    // there's no benefit making it smaller)
     sr.resize(64);
     std::span<std::uint8_t> const outSp(reinterpret_cast<std::uint8_t*>(sr.data()), sr.size());
     auto r = b58_fast::decodeBase58Token(type, s, outSp);

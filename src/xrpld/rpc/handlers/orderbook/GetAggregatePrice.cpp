@@ -38,12 +38,49 @@
 namespace xrpl {
 
 using namespace boost::bimaps;
-// sorted descending by lastUpdateTime, ascending by AssetPrice
+
+/** Dual-indexed price dataset for the aggregate-price computation.
+ *
+ *  The left side is keyed by `lastUpdateTime` in descending order so that
+ *  stale entries can be erased in O(log n) via `left.upper_bound(cutoff)`.
+ *  The right side is keyed by `STAmount` in ascending order so that
+ *  statistical operations (median, trimmed mean) iterate over prices already
+ *  sorted by value.  Both views stay automatically synchronized: erasing an
+ *  entry from either side removes the corresponding entry from the other.
+ */
 using Prices =
     bimap<multiset_of<std::uint32_t, std::greater<std::uint32_t>>, multiset_of<STAmount>>;
 
-/** Calls callback "f" on the ledger-object sle and up to three previous
- * metadata objects. Stops early if the callback returns true.
+/** Walk an oracle's current state and up to three prior transaction metadata
+ *  snapshots, invoking a callback on each until a matching price is found.
+ *
+ *  An oracle may have been updated without touching the requested token pair,
+ *  leaving the current `sfPriceDataSeries` with no relevant entry.  This
+ *  function follows `sfPreviousTxnID` / `sfPreviousTxnLgrSeq` backward
+ *  through the ledger history (up to `kMAX_HISTORY = 3` hops) so the caller
+ *  can retrieve a price from the most recent revision that did record the pair.
+ *
+ *  Two pointers track separate concerns:
+ *  - **`oracle`** — the object containing `sfPriceDataSeries`.  Starts as the
+ *      live SLE; after the first hop it becomes `sfNewFields` (create) or
+ *      `sfFinalFields` (modify) inside the matching metadata node.
+ *  - **`chain`** — the object containing the navigation fields
+ *      `sfPreviousTxnID` and `sfPreviousTxnLgrSeq`.  Starts equal to `oracle`
+ *      (the live SLE), then diverges to the enclosing `ModifiedNode` /
+ *      `CreatedNode` wrapper once inside metadata (where those fields live on
+ *      the wrapper, not on the nested field object).
+ *
+ *  The `prevChain == chain` guard detects a missing `ltORACLE` node in the
+ *  inner scan and exits the loop cleanly.  An `isNew` flag short-circuits
+ *  immediately when the earliest hop was a creation transaction, since there
+ *  is no further history behind it.
+ *
+ *  @param context  RPC execution context; used to fetch historical ledgers.
+ *  @param sle      The live `PriceOracle` SLE for the oracle being examined.
+ *                  May be null if the oracle does not exist on the ledger.
+ *  @param f        Callback receiving each `STObject` that has
+ *                  `sfPriceDataSeries`.  Return `true` to stop iteration (price
+ *                  found); return `false` to continue to the next history hop.
  */
 static void
 iteratePriceData(
@@ -118,7 +155,21 @@ iteratePriceData(
     }
 }
 
-// Return avg, sd, data set size
+/** Compute mean, sample standard deviation, and element count over a range of
+ *  price-sorted bimap entries.
+ *
+ *  The mean is computed as the arithmetic average of the `STAmount` values in
+ *  [begin, end).  The standard deviation uses Bessel's correction (`n - 1`
+ *  denominator), appropriate for a sample drawn from a broader population of
+ *  potential oracle reports.  The square root is taken via XRPL's `Number`
+ *  type to preserve financial-grade precision.  When the range contains only
+ *  one element the standard deviation is returned as zero.
+ *
+ *  @param begin  Iterator to the first element of the value-sorted (right)
+ *               view of the `Prices` bimap.
+ *  @param end    Past-the-end iterator for the same range.
+ *  @return A tuple of `{mean, standard_deviation, count}`.
+ */
 static std::tuple<STAmount, Number, std::uint16_t>
 getStats(Prices::right_const_iterator const& begin, Prices::right_const_iterator const& end)
 {
@@ -138,13 +189,46 @@ getStats(Prices::right_const_iterator const& begin, Prices::right_const_iterator
     return {avg, sd, size};
 };
 
-/**
- * oracles: array of {account, oracle_document_id}
- * base_asset: is the asset to be priced
- * quote_asset: is the denomination in which the prices are expressed
- * trim : percentage of outliers to trim [optional]
- * time_threshold : defines a range of prices to include based on the timestamp
- *   range - {most recent, most recent - time_threshold} [optional]
+/** Handler for the `get_aggregate_price` RPC method (XLS-47).
+ *
+ *  Aggregates prices from up to 200 on-chain `PriceOracle` ledger objects
+ *  for a given (base_asset, quote_asset) pair and returns a statistical
+ *  summary: mean, sample standard deviation, median, and — if `trim` is
+ *  supplied — a symmetrically trimmed mean and standard deviation.
+ *
+ *  Because individual oracles may be stale or dishonest, the method is
+ *  designed to be called with a list of independent oracle identifiers so
+ *  that the aggregate resists manipulation by any single reporter.  History
+ *  walking (`iteratePriceData`) recovers prices from oracles that were last
+ *  updated without touching the requested pair.
+ *
+ *  **Input parameters** (all in `context.params`):
+ *  - `oracles` (required) — JSON array of `{account, oracle_document_id}`,
+ *      1–200 entries; empty or oversized arrays return `oracleMalformed`.
+ *  - `base_asset` (required) — currency code for the asset being priced;
+ *      must pass `currencyFromJson` validation.
+ *  - `quote_asset` (required) — currency code for the denomination; same
+ *      validation as `base_asset`.
+ *  - `trim` (optional) — integer 1–25; percentage of lowest and highest
+ *      prices to remove symmetrically before computing trimmed statistics.
+ *      Zero and values above 25 are rejected as `invalidParams`.
+ *  - `time_threshold` (optional) — non-negative integer; prices whose
+ *      `lastUpdateTime` is older than `(latestTime - time_threshold)` are
+ *      excluded.  Zero means no filtering.
+ *
+ *  **Result fields** (on success):
+ *  - `time` — `lastUpdateTime` of the most recently updated oracle.
+ *  - `entire_set.mean`, `entire_set.standard_deviation`, `entire_set.size`.
+ *  - `median`.
+ *  - `trimmed_set.mean`, `trimmed_set.standard_deviation`, `trimmed_set.size`
+ *      (only present when `trim` was supplied and non-zero).
+ *
+ *  @param context  RPC execution context carrying params, ledger master, and
+ *                  application references.
+ *  @return A `Json::Value` containing the aggregate statistics, or an error
+ *          object populated via `RPC::injectError` / `RPC::missingFieldError`.
+ *  @note If no oracle in the list has a price for the requested pair (including
+ *      up to three historical hops), the handler returns `objectNotFound`.
  */
 json::Value
 doGetAggregatePrice(RPC::JsonContext& context)
@@ -168,8 +252,9 @@ doGetAggregatePrice(RPC::JsonContext& context)
     if (!params.isMember(jss::quote_asset))
         return RPC::missingFieldError(jss::quote_asset);
 
-    // Lambda to validate uint type
-    // support positive int, uint, and a number represented as a string
+    // Returns true when the named field is a non-negative integer or a string
+    // that lexically converts to one — accepts JSON uint, non-negative int, or
+    // a decimal string (e.g. "200") to accommodate loose clients.
     auto validUInt = [](json::Value const& params, json::StaticString const& field) {
         auto const& jv = params[field];
         std::uint32_t v = 0;
@@ -177,8 +262,10 @@ doGetAggregatePrice(RPC::JsonContext& context)
             (jv.isString() && beast::lexicalCastChecked(v, jv.asString()));
     };
 
-    // Lambda to get `trim` and `time_threshold` fields. If the field
-    // is not included in the input then a default value is returned.
+    // Reads an optional uint32 parameter from params; returns the field value
+    // on success, `def` when absent, or `RpcInvalidParams` when present but
+    // not a valid non-negative integer.  Return type is a variant so callers
+    // can distinguish a missing field from a parse failure without exceptions.
     auto getField = [&params, &validUInt](
                         json::StaticString const& field,
                         unsigned int def = 0) -> std::variant<std::uint32_t, ErrorCodeI> {
@@ -191,8 +278,10 @@ doGetAggregatePrice(RPC::JsonContext& context)
         return def;
     };
 
-    // Lambda to get `base_asset` and `quote_asset`. The values have
-    // to conform to the Currency type.
+    // Validates that an asset field is a non-empty, well-formed currency code
+    // by delegating to `currencyFromJson`, which throws on malformed input.
+    // Returns the raw JSON value on success so it can be compared textually
+    // against `sfBaseAsset`/`sfQuoteAsset` values in `sfPriceDataSeries`.
     auto getCurrency = [&params](SField const& sField, json::StaticString const& field)
         -> std::variant<json::Value, ErrorCodeI> {
         try
@@ -246,8 +335,8 @@ doGetAggregatePrice(RPC::JsonContext& context)
     if (!ledger)
         return result;  // LCOV_EXCL_LINE
 
-    // Collect the dataset into bimap keyed by lastUpdateTime and
-    // STAmount (Number is int64 and price is uint64)
+    // Collect prices into the bimap.  sfAssetPrice is stored as a uint64
+    // mantissa; sfScale is negated so STAmount represents price * 10^(-scale).
     Prices prices;
     for (auto const& oracle : params[jss::oracles])
     {
@@ -269,7 +358,6 @@ doGetAggregatePrice(RPC::JsonContext& context)
         auto const sle = ledger->read(keylet::oracle(*account, *documentID));
         iteratePriceData(context, sle, [&](STObject const& node) {
             auto const& series = node.getFieldArray(sfPriceDataSeries);
-            // find the token pair entry with the price
             if (auto iter = std::ranges::find_if(
                     series,
                     [&](STObject const& o) -> bool {
@@ -300,22 +388,22 @@ doGetAggregatePrice(RPC::JsonContext& context)
         return result;
     }
 
-    // erase outdated data
-    // sorted in descending, therefore begin is the latest, end is the oldest
+    // Left view is sorted descending, so begin() is the newest entry.
     auto const latestTime = prices.left.begin()->first;
     if (auto const threshold = std::get<std::uint32_t>(timeThreshold))
     {
-        // threshold defines an acceptable range {max,min} of lastUpdateTime as
-        // {latestTime, latestTime - threshold}. Prices with lastUpdateTime
-        // less than (latestTime - threshold) are erased (outdated prices).
+        // Acceptable range is [latestTime - threshold, latestTime].  Prices
+        // older than the lower bound are erased.  When latestTime <= threshold
+        // the subtraction would underflow, so upperBound is clamped to
+        // oldestTime, which preserves all entries.
         auto const oldestTime = prices.left.rbegin()->first;
         auto const upperBound = latestTime > threshold ? (latestTime - threshold) : oldestTime;
         if (upperBound > oldestTime)
             prices.left.erase(prices.left.upper_bound(upperBound), prices.left.end());
 
-        // At least one element should remain since upperBound is either
-        // equal to oldestTime or is less than latestTime, in which case
-        // the data is deleted between the oldestTime and upperBound.
+        // upperBound is either equal to oldestTime (nothing erased) or strictly
+        // less than latestTime (some entries erased, but the newest survives).
+        // An empty set here would be a logic error.
         if (prices.empty())
         {
             // LCOV_EXCL_START
@@ -326,12 +414,13 @@ doGetAggregatePrice(RPC::JsonContext& context)
     }
     result[jss::time] = latestTime;
 
-    // calculate stats
     auto const [avg, sd, size] = getStats(prices.right.begin(), prices.right.end());
     result[jss::entire_set][jss::mean] = avg.getText();
     result[jss::entire_set][jss::size] = size;
     result[jss::entire_set][jss::standard_deviation] = to_string(sd);
 
+    // Helper to return an advanced copy of a bimap iterator by value,
+    // keeping median and trimmed-set arithmetic readable inline.
     auto itAdvance = [&](auto it, int distance) {
         std::advance(it, distance);
         return it;

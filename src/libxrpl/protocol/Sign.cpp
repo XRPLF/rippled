@@ -1,3 +1,15 @@
+/** @file
+ *  Protocol-level signing and verification for XRPL serialized objects.
+ *
+ *  Every function here follows the same three-step composition: prepend the
+ *  domain-separation `HashPrefix`, serialize the object via
+ *  `addWithoutSigningFields()` (which excludes signature-carrying fields to
+ *  break circularity), then delegate to the raw cryptographic primitives in
+ *  `SecretKey.h`.  The `HashPrefix` guarantees that a valid signature in one
+ *  protocol context (e.g., a single-signed transaction) cannot be replayed as
+ *  a valid signature in another (e.g., a ledger validation).
+ */
+
 #include <xrpl/protocol/Sign.h>
 
 #include <xrpl/protocol/AccountID.h>
@@ -38,37 +50,33 @@ verify(STObject const& st, HashPrefix const& prefix, PublicKey const& pk, SF_VL 
     return verify(pk, Slice(ss.data(), ss.size()), Slice(sig->data(), sig->size()));
 }
 
-// Questions regarding buildMultiSigningData:
-//
-// Why do we include the Signer.Account in the blob to be signed?
-//
-// Unless you include the Account which is signing in the signing blob,
-// you could swap out any Signer.Account for any other, which may also
-// be on the SignerList and have a RegularKey matching the
-// Signer.SigningPubKey.
-//
-// That RegularKey may be set to allow some 3rd party to sign transactions
-// on the account's behalf, and that RegularKey could be common amongst all
-// users of the 3rd party. That's just one example of sharing the same
-// RegularKey amongst various accounts and just one vulnerability.
-//
-//   "When you have something that's easy to do that makes entire classes of
-//    attacks clearly and obviously impossible, you need a damn good reason
-//    not to do it."  --  David Schwartz
-//
-// Why would we include the signingFor account in the blob to be signed?
-//
-// In the current signing scheme, the account that a signer is `signing
-// for/on behalf of` is the tx_json.Account.
-//
-// Later we might support more levels of signing.  Suppose Bob is a signer
-// for Alice, and Carol is a signer for Bob, so Carol can sign for Bob who
-// signs for Alice.  But suppose Alice has two signers: Bob and Dave.  If
-// Carol is a signer for both Bob and Dave, then the signature needs to
-// distinguish between Carol signing for Bob and Carol signing for Dave.
-//
-// So, if we support multiple levels of signing, then we'll need to
-// incorporate the "signing for" accounts into the signing data as well.
+/** Build the full multi-signing payload for a single signer.
+ *
+ *  Serializes `obj` under `HashPrefix::TxMultiSign` (excluding signature
+ *  fields), then appends `signingID` as a raw 160-bit bit-string.  The
+ *  result is equivalent to calling `startMultiSigningData` followed by
+ *  `finishMultiSigningData`.
+ *
+ *  The `signingID` (the signer's `AccountID`) **must** be included in the
+ *  blob.  Without it an attacker could substitute any other `SignerList`
+ *  entry whose `RegularKey` happens to match the same third-party key —
+ *  a realistic threat when custodial services share a single signing key
+ *  across many accounts.  Including the account ID makes each authorization
+ *  cryptographically specific to that signer slot.
+ *
+ *  @note If XRPL ever adds nested multi-signing (Carol signs for Bob who
+ *      signs for Alice), each intermediate "signing-for" account ID would
+ *      also need to be incorporated here.  The current scheme already
+ *      carries the transaction's `Account` field implicitly via the
+ *      serialized `STObject`, with the signer's own identity appended by
+ *      this function.
+ *
+ *  @param obj       The transaction or object being authorized.
+ *  @param signingID The `AccountID` of the signer authorizing `obj`.
+ *  @return A `Serializer` containing the complete signing payload ready
+ *      for hashing and signing.
+ *  @see startMultiSigningData, finishMultiSigningData
+ */
 Serializer
 buildMultiSigningData(STObject const& obj, AccountID const& signingID)
 {
@@ -77,6 +85,20 @@ buildMultiSigningData(STObject const& obj, AccountID const& signingID)
     return s;
 }
 
+/** Build the shared prefix of a multi-signing payload.
+ *
+ *  Serializes `obj` under `HashPrefix::TxMultiSign`, omitting all signing
+ *  fields.  The returned `Serializer` is identical for every signer of the
+ *  same transaction; callers pass it to `finishMultiSigningData` once per
+ *  signer to append only the small, signer-specific tail.  This split
+ *  avoids re-serializing the (potentially large) transaction body for each
+ *  signer during batch verification.
+ *
+ *  @param obj The transaction or object being authorized.
+ *  @return A `Serializer` containing the shared signing prefix; must be
+ *      completed with `finishMultiSigningData` before use.
+ *  @see finishMultiSigningData, buildMultiSigningData
+ */
 Serializer
 startMultiSigningData(STObject const& obj)
 {

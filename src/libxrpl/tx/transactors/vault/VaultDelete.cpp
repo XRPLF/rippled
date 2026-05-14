@@ -33,6 +33,25 @@ VaultDelete::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Enforces pre-deletion invariants against the live ledger.
+ *
+ *  `sfAssetsAvailable` and `sfAssetsTotal` are checked independently because
+ *  a vault carrying unrealized losses (e.g. defaulted loans) may have
+ *  `sfAssetsTotal` > `sfAssetsAvailable`; both must reach zero before the
+ *  vault can be destroyed.  Checking only one would allow deletion while the
+ *  other still records outstanding obligations.
+ *
+ *  The two `MPTokenIssuance` guards — existence of the share issuance SLE and
+ *  the issuer-match check — are wrapped in `LCOV_EXCL_START` because they
+ *  defend against ledger state that cannot arise from valid transaction
+ *  sequences.  They are reachable only if earlier transactions have already
+ *  corrupted the ledger; their presence prevents silent destruction of a
+ *  partially dismantled vault cluster.
+ *
+ *  All user-correctable failures (`tecNO_PERMISSION`, `tecHAS_OBLIGATIONS`,
+ *  `tecNO_ENTRY`) consume the transaction fee, signalling that the submitter
+ *  must resolve the issue before resubmitting.
+ */
 TER
 VaultDelete::preclaim(PreclaimContext const& ctx)
 {
@@ -86,6 +105,57 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Dismantles the vault cluster in strict dependency order.
+ *
+ *  The five-step sequence must not be reordered: each step removes an object
+ *  that a later step depends on having already cleaned up.
+ *
+ *  **Step 1 — Asset holding removal.**
+ *  `removeEmptyHolding` erases the trust line (`RippleState`) or `MPToken`
+ *  that the pseudo-account used to hold the underlying asset.  The holding is
+ *  guaranteed empty by `preclaim`'s `sfAssetsTotal == 0` check; the call also
+ *  removes the object from the pseudo-account's owner directory and
+ *  decrements its owner count.
+ *
+ *  **Step 2 — Vault owner's share MPToken removal.**
+ *  If the vault creator holds an `MPToken` for the share issuance
+ *  (`keylet::mptoken(shareMPTID, account_)`), a second `removeEmptyHolding`
+ *  call cleans it up.  This is conditioned on the token's existence; the
+ *  vault owner is not required to hold shares.  The `LCOV_EXCL` guard covers
+ *  the failure branch, which is unreachable in valid ledger state because
+ *  `preclaim` has already verified `sfOutstandingAmount == 0`.
+ *
+ *  **Step 3 — Share issuance removal.**
+ *  The `MPTokenIssuance` SLE is removed directly rather than via
+ *  `MPTokenIssuanceDestroy` because that transactor carries fee and
+ *  amendment logic irrelevant here.  `dirRemove` uses the cached
+ *  `sfOwnerNode` from the issuance SLE for O(1) directory removal, then
+ *  `adjustOwnerCount(view(), pseudoAcct, -1, j_)` decrements the
+ *  pseudo-account's count before the SLE is erased.
+ *
+ *  **Step 4 — Pseudo-account cleanup verification and erasure.**
+ *  After Steps 1–3, the pseudo-account's owner directory must be empty.
+ *  The `view().peek(keylet::ownerDir(pseudoID))` guard is the one
+ *  `tec` code emitted from `doApply` (vs. `tef` codes for true corruption),
+ *  marked `LCOV_EXCL_LINE` because it is a forward-safety valve: a future
+ *  ledger feature could attach additional objects to the pseudo-account's
+ *  directory, and this guard prevents silently destroying a pseudo-account
+ *  that still owns unhandled objects.  The subsequent balance and owner-count
+ *  checks are `LCOV_EXCL`-guarded corruption sentinels; if reached, they
+ *  return `tecHAS_OBLIGATIONS` rather than `tef` to let the invariant checker
+ *  log diagnostics before fee collection.
+ *
+ *  **Step 5 — Vault SLE removal and owner-count adjustment.**
+ *  The vault is removed from the real owner's `ownerDir` via `dirRemove`,
+ *  then `adjustOwnerCount(view(), owner, -2, j_)` fires.  The `-2` is the
+ *  exact inverse of `VaultCreate`'s `+2`, accounting for both the vault SLE
+ *  and the pseudo-account destroyed in Step 4.  The vault SLE is erased last.
+ *
+ *  Errors indicating impossible ledger state (missing pseudo-account,
+ *  mismatched issuance, failed directory removal) return `tefBAD_LEDGER` or
+ *  `tefINTERNAL` rather than fee-claiming `tec` codes, signalling internal
+ *  inconsistency rather than a user-correctable condition.
+ */
 TER
 VaultDelete::doApply()
 {

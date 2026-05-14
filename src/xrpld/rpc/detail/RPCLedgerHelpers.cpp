@@ -30,6 +30,18 @@ namespace xrpl::RPC {
 
 namespace {
 
+/** Return true if the node's validated ledger is too stale to trust.
+ *
+ *  Compares `LedgerMaster::getValidatedLedgerAge()` against
+ *  `Tuning::kMAX_VALIDATED_LEDGER_AGE` (2 minutes). Always returns `false`
+ *  in standalone mode, where there are no peers and network-dependent
+ *  staleness is meaningless.
+ *
+ *  @param ledgerMaster The ledger master to query for age.
+ *  @param standalone   True if the node is running in standalone mode.
+ *  @return `true` if validation is stale and the node should refuse to serve
+ *      ledger data; `false` if the node is current or in standalone mode.
+ */
 bool
 isValidatedOld(LedgerMaster& ledgerMaster, bool standalone)
 {
@@ -39,6 +51,20 @@ isValidatedOld(LedgerMaster& ledgerMaster, bool standalone)
     return ledgerMaster.getValidatedLedgerAge() > Tuning::kMAX_VALIDATED_LEDGER_AGE;
 }
 
+/** Resolve a ledger from a JSON hex-hash value.
+ *
+ *  Parses `hash` as a `uint256` hex string and delegates to
+ *  `getLedger(ledger, hash, context)`. There is no staleness check: the
+ *  caller named an immutable object by identity, so "too old" does not apply.
+ *
+ *  @tparam T        Ledger pointer type (e.g., `std::shared_ptr<ReadView const>`).
+ *  @param ledger    Output; set on success.
+ *  @param hash      JSON value expected to contain a 64-hex-character string.
+ *  @param context   RPC context providing `LedgerMaster` and config.
+ *  @param fieldName Field name used in error messages (e.g., `jss::ledger_hash`).
+ *  @return `Status::kOK` on success; `rpcINVALID_PARAMS` if the string is not
+ *      valid hex; `rpcLGR_NOT_FOUND` if no ledger with that hash is cached.
+ */
 template <class T>
 Status
 ledgerFromHash(
@@ -53,6 +79,21 @@ ledgerFromHash(
     return getLedger(ledger, ledgerHash, context);
 }
 
+/** Resolve a ledger from a JSON index or shortcut value.
+ *
+ *  Accepts the canonical shortcut strings `"current"` (also the empty string),
+ *  `"validated"`, and `"closed"`, delegating each to the corresponding
+ *  `LedgerShortcut` overload of `getLedger()`. Any other string value is
+ *  parsed as a decimal `uint32_t` sequence number via `beast::lexicalCastChecked`.
+ *
+ *  @tparam T          Ledger pointer type.
+ *  @param ledger      Output; set on success.
+ *  @param indexValue  JSON value containing a shortcut string or integer index.
+ *  @param context     RPC context providing `LedgerMaster` and config.
+ *  @param fieldName   Field name used in error messages (e.g., `jss::ledger_index`).
+ *  @return `Status::kOK` on success; `rpcINVALID_PARAMS` if the value cannot
+ *      be interpreted; network/sync errors propagated from `getLedger()`.
+ */
 template <class T>
 Status
 ledgerFromIndex(
@@ -79,6 +120,25 @@ ledgerFromIndex(
     return getLedger(ledger, iVal, context);
 }
 
+/** Resolve a ledger from a JSON-RPC request's parameter object.
+ *
+ *  Enforces mutual exclusivity: at most one of `ledger`, `ledger_hash`, or
+ *  `ledger_index` may be present. Supplying more than one returns
+ *  `rpcINVALID_PARAMS`. The deprecated `ledger` field is still accepted but
+ *  is not mentioned in the error message when only `ledger_hash` and
+ *  `ledger_index` conflict, nudging callers toward the non-deprecated API.
+ *
+ *  The legacy `ledger` field uses a length heuristic: a string of exactly 64
+ *  characters is treated as a hash; anything else is treated as an index or
+ *  shortcut. If neither `ledger_hash` nor `ledger_index` is present, defaults
+ *  to `LedgerShortcut::Current`.
+ *
+ *  @tparam T      Ledger pointer type.
+ *  @param ledger  Output; reset on entry, set on success.
+ *  @param context JSON-RPC context whose `params` supply the ledger selector.
+ *  @return `Status::kOK` on success; `rpcINVALID_PARAMS` for malformed or
+ *      conflicting fields; network/sync errors from `getLedger()`.
+ */
 template <class T>
 Status
 ledgerFromRequest(T& ledger, JsonContext const& context)
@@ -107,7 +167,6 @@ ledgerFromRequest(T& ledger, JsonContext const& context)
             "'ledger_index' can be specified."};
     }
 
-    // We need to support the legacy "ledger" field.
     if (hasLedger)
     {
         auto& legacyLedger = params[jss::ledger];
@@ -141,11 +200,24 @@ ledgerFromRequest(T& ledger, JsonContext const& context)
         return ledgerFromIndex(ledger, ledgerIndex, context, jss::ledger_index);
     }
 
-    // nothing specified, `index` has a default setting
     return getLedger(ledger, LedgerShortcut::Current, context);
 }
 }  // namespace
 
+/** Resolve a ledger from a gRPC request context.
+ *
+ *  Extracts the `LedgerSpecifier` protobuf field from the request and
+ *  delegates to `ledgerFromSpecifier()`. Explicitly instantiated for
+ *  `GetLedgerEntryRequest`, `GetLedgerDataRequest`, and `GetLedgerRequest`.
+ *
+ *  @tparam T       Ledger pointer type.
+ *  @tparam R       gRPC request type; must expose a `.ledger()` method
+ *      returning a `LedgerSpecifier`.
+ *  @param ledger   Output; set on success.
+ *  @param context  gRPC context whose `params` provide the request.
+ *  @return `Status::kOK` on success; errors propagated from
+ *      `ledgerFromSpecifier()`.
+ */
 template <class T, class R>
 Status
 ledgerFromRequest(T& ledger, GRPCContext<R> const& context)
@@ -154,24 +226,37 @@ ledgerFromRequest(T& ledger, GRPCContext<R> const& context)
     return ledgerFromSpecifier(ledger, request.ledger(), context);
 }
 
-// explicit instantiation of above function
 template Status
 ledgerFromRequest<>(
     std::shared_ptr<ReadView const>&,
     GRPCContext<org::xrpl::rpc::v1::GetLedgerEntryRequest> const&);
 
-// explicit instantiation of above function
 template Status
 ledgerFromRequest<>(
     std::shared_ptr<ReadView const>&,
     GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest> const&);
 
-// explicit instantiation of above function
 template Status
 ledgerFromRequest<>(
     std::shared_ptr<ReadView const>&,
     GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest> const&);
 
+/** Resolve a ledger from a protobuf `LedgerSpecifier`.
+ *
+ *  Maps each `LedgerCase` variant to the appropriate `getLedger()` overload:
+ *  - `kHash` → lookup by `uint256` (returns `rpcINVALID_PARAMS` if malformed).
+ *  - `kSequence` → lookup by sequence number.
+ *  - `kShortcut` / `LEDGER_NOT_SET` → maps `SHORTCUT_VALIDATED`,
+ *    `SHORTCUT_CURRENT`, `SHORTCUT_UNSPECIFIED`, and `SHORTCUT_CLOSED` to their
+ *    `LedgerShortcut` equivalents. An unrecognised shortcut falls through to
+ *    `Status::kOK` with `ledger` left in its reset state.
+ *
+ *  @tparam T         Ledger pointer type.
+ *  @param ledger     Output; reset on entry, set on success.
+ *  @param specifier  The protobuf specifier describing the desired ledger.
+ *  @param context    RPC context providing `LedgerMaster` and config.
+ *  @return `Status::kOK` on success; errors propagated from `getLedger()`.
+ */
 template <class T>
 Status
 ledgerFromSpecifier(
@@ -218,6 +303,19 @@ ledgerFromSpecifier(
     return Status::kOK;
 }
 
+/** Retrieve a ledger by its hash, with no staleness check.
+ *
+ *  The caller named an immutable object by identity; there is no concept of
+ *  "too old" for a specific historical ledger, so `isValidatedOld()` is
+ *  deliberately not called here.
+ *
+ *  @tparam T        Ledger pointer type.
+ *  @param ledger    Output; set on success.
+ *  @param ledgerHash The 256-bit hash of the desired ledger.
+ *  @param context   RPC context providing `LedgerMaster`.
+ *  @return `Status::kOK` if the ledger is in cache;
+ *      `rpcLGR_NOT_FOUND` otherwise.
+ */
 template <class T>
 Status
 getLedger(T& ledger, uint256 const& ledgerHash, Context const& context)
@@ -228,6 +326,22 @@ getLedger(T& ledger, uint256 const& ledgerHash, Context const& context)
     return Status::kOK;
 }
 
+/** Retrieve a ledger by sequence number with staleness guard.
+ *
+ *  Falls back to the current open ledger when `getLedgerBySeq()` returns
+ *  null, handling the common case where the requested sequence is the ledger
+ *  still being built. After lookup, if the resolved ledger's sequence exceeds
+ *  the last validated index *and* `isValidatedOld()` is true, the node is
+ *  considered out-of-sync and an error is returned instead of stale data.
+ *
+ *  @tparam T            Ledger pointer type.
+ *  @param ledger        Output; set on success, reset on sync error.
+ *  @param ledgerIndex   Sequence number of the desired ledger.
+ *  @param context       RPC context providing `LedgerMaster` and config.
+ *  @return `Status::kOK` on success; `rpcLGR_NOT_FOUND` if not cached;
+ *      `rpcNO_NETWORK` (API v1) or `rpcNOT_SYNCED` (API v2+) if the node
+ *      is stale and the ledger is ahead of the validated chain.
+ */
 template <class T>
 Status
 getLedger(T& ledger, uint32_t ledgerIndex, Context const& context)
@@ -257,6 +371,28 @@ getLedger(T& ledger, uint32_t ledgerIndex, Context const& context)
     return Status::kOK;
 }
 
+/** Retrieve a ledger by shortcut (`Current`, `Closed`, or `Validated`).
+ *
+ *  Performs the staleness check *before* lookup — a stale node returns an
+ *  error regardless of which shortcut was requested. For `Validated`, an
+ *  additional null check guards against the race where no ledger has been
+ *  validated yet. For `Current` and `Closed`, a sequence-gap check rejects
+ *  responses when the shortcut ledger is more than 10 sequences behind the
+ *  last validated index, protecting callers from data on a clearly-behind node.
+ *
+ *  @tparam T         Ledger pointer type.
+ *  @param ledger     Output; set on success, reset on error.
+ *  @param shortcut   Which ledger to retrieve (`Current`, `Closed`,
+ *      or `Validated`).
+ *  @param context    RPC context providing `LedgerMaster` and config.
+ *  @return `Status::kOK` on success;
+ *      `rpcNO_NETWORK` (API v1) or `rpcNOT_SYNCED` (API v2+) if stale or
+ *      the sequence gap exceeds 10; `rpcINVALID_PARAMS` for an unrecognised
+ *      shortcut value.
+ *  @note The sequence-gap threshold of 10 is a hard-coded heuristic.
+ *  @note `Current` returns an open ledger; `Closed` and `Validated` return
+ *      closed ledgers — violations cause `XRPL_ASSERT` failures.
+ */
 template <class T>
 Status
 getLedger(T& ledger, LedgerShortcut shortcut, Context const& context)
@@ -317,7 +453,6 @@ getLedger(T& ledger, LedgerShortcut shortcut, Context const& context)
     return Status::kOK;
 }
 
-// Explicit instantiation of above three functions
 template Status
 getLedger<>(std::shared_ptr<ReadView const>&, uint32_t, Context const&);
 
@@ -327,25 +462,21 @@ getLedger<>(std::shared_ptr<ReadView const>&, LedgerShortcut shortcut, Context c
 template Status
 getLedger<>(std::shared_ptr<ReadView const>&, uint256 const&, Context const&);
 
-// The previous version of the lookupLedger command would accept the
-// "ledger_index" argument as a string and silently treat it as a request to
-// return the current ledger which, while not strictly wrong, could cause a lot
-// of confusion.
-//
-// The code now robustly validates the input and ensures that the only possible
-// values for the "ledger_index" parameter are the index of a ledger passed as
-// an integer or one of the strings "current", "closed" or "validated".
-// Additionally, the code ensures that the value passed in "ledger_hash" is a
-// string and a valid hash. Invalid values will return an appropriate error
-// code.
-//
-// In the absence of the "ledger_hash" or "ledger_index" parameters, the code
-// assumes that "ledger_index" has the value "current".
-//
-// Returns a json::ValueType::Object.  If there was an error, it will be in that
-// return value.  Otherwise, the object contains the field "validated" and
-// optionally the fields "ledger_hash", "ledger_index" and
-// "ledger_current_index", if they are defined.
+/** Resolve a ledger and populate the JSON result with identifying fields.
+ *
+ *  After calling `ledgerFromRequest()`, writes the identifying fields into
+ *  `result`: closed ledgers receive `ledger_hash` and `ledger_index`; the
+ *  open (current) ledger receives only `ledger_current_index`. The `validated`
+ *  boolean is always written. If `ledger_index` is absent, defaults to the
+ *  current open ledger.
+ *
+ *  @param ledger   Output; set on success.
+ *  @param context  JSON-RPC context whose `params` supply the ledger selector.
+ *  @param result   JSON object to populate; must be an object type. On error,
+ *      the caller should check the returned `Status` — `result` is not
+ *      modified on failure.
+ *  @return `Status::kOK` on success; errors from `ledgerFromRequest()`.
+ */
 Status
 lookupLedger(
     std::shared_ptr<ReadView const>& ledger,
@@ -371,6 +502,17 @@ lookupLedger(
     return Status::kOK;
 }
 
+/** Resolve a ledger and return the JSON result object directly.
+ *
+ *  Convenience wrapper around the three-argument overload. On error, the
+ *  `Status` is injected into the returned JSON object rather than returned
+ *  separately, giving callers a single return value to check and forward.
+ *
+ *  @param ledger   Output; set on success, unmodified on error.
+ *  @param context  JSON-RPC context whose `params` supply the ledger selector.
+ *  @return A `json::Value` object containing ledger identifiers on success,
+ *      or an error description with the injected status on failure.
+ */
 json::Value
 lookupLedger(std::shared_ptr<ReadView const>& ledger, JsonContext const& context)
 {
@@ -381,6 +523,32 @@ lookupLedger(std::shared_ptr<ReadView const>& ledger, JsonContext const& context
     return result;
 }
 
+/** Retrieve a ledger by hash or index, triggering a network fetch if needed.
+ *
+ *  Used exclusively by the `ledger_request` admin command. Unlike the other
+ *  ledger helpers, this function can initiate an active acquisition via
+ *  `InboundLedgers::acquire()` when the ledger is not locally cached.
+ *
+ *  Exactly one of `ledger_hash` or `ledger_index` must be supplied; the
+ *  deprecated `ledger` field is not supported. The sequence-index path
+ *  uses a two-step skip-list walk: it first tries `hashOfSeq()` against the
+ *  validated ledger directly, and if the skip list doesn't reach far enough
+ *  back, it computes a candidate boundary ledger via `getCandidateLedger()`,
+ *  acquires that ledger, and then resolves the target hash from its skip list.
+ *
+ *  If acquisition is in progress rather than complete, the function returns a
+ *  JSON error object describing the pending fetch — this is a polling model;
+ *  the caller should retry. In standalone mode the network path is bypassed
+ *  and the ledger is retrieved from the cache only.
+ *
+ *  @param context  JSON-RPC context; must contain exactly one of
+ *      `ledger_hash` (hex string) or `ledger_index` (positive integer).
+ *  @return On success, a `shared_ptr<Ledger const>` for the resolved ledger.
+ *      On failure, a `json::Value` describing the error, which may include
+ *      an `"acquiring"` field with in-progress acquisition status.
+ *  @note The sequence-index path validates that the node's ledger is not stale
+ *      before attempting the skip-list lookup.
+ */
 Expected<std::shared_ptr<Ledger const>, json::Value>
 getOrAcquireLedger(RPC::JsonContext const& context)
 {
@@ -411,7 +579,6 @@ getOrAcquireLedger(RPC::JsonContext const& context)
         if (!jsonIndex.isInt() && !jsonIndex.isUInt())
             return Unexpected(RPC::expectedFieldError(jss::ledger_index, "number"));
 
-        // We need a validated ledger to get the hash from the sequence
         if (ledgerMaster.getValidatedLedgerAge() > RPC::Tuning::kMAX_VALIDATED_LEDGER_AGE)
         {
             if (context.apiVersion == 1)
@@ -428,13 +595,9 @@ getOrAcquireLedger(RPC::JsonContext const& context)
             return Unexpected(RPC::makeParamError("Ledger index too small"));
 
         auto const j = context.app.getJournal("RPCHandler");
-        // Try to get the hash of the desired ledger from the validated
-        // ledger
         auto neededHash = hashOfSeq(*ledger, ledgerIndex, j);
         if (!neededHash)
         {
-            // Find a ledger more likely to have the hash of the desired
-            // ledger
             auto const refIndex = getCandidateLedger(ledgerIndex);
             auto refHash = hashOfSeq(*ledger, refIndex, j);
             XRPL_ASSERT(refHash, "xrpl::RPC::getOrAcquireLedger : nonzero ledger hash");
@@ -443,9 +606,6 @@ getOrAcquireLedger(RPC::JsonContext const& context)
             ledger = ledgerMaster.getLedgerByHash(*refHash);
             if (!ledger)
             {
-                // We don't have the ledger we need to figure out which
-                // ledger they want. Try to get it.
-
                 if (auto il = context.app.getInboundLedgers().acquire(
                         *refHash, refIndex, InboundLedger::Reason::GENERIC))
                 {
@@ -474,12 +634,10 @@ getOrAcquireLedger(RPC::JsonContext const& context)
         ledgerHash = neededHash ? *neededHash : beast::kZERO;  // kludge
     }
 
-    // Try to get the desired ledger
-    // Verify all nodes even if we think we have it
     auto ledger = context.app.getInboundLedgers().acquire(
         ledgerHash, ledgerIndex, InboundLedger::Reason::GENERIC);
 
-    // In standalone mode, accept the ledger from the ledger cache
+    // In standalone mode there are no peers to fetch from; fall back to cache.
     if (!ledger && context.app.config().standalone())
         ledger = ledgerMaster.getLedgerByHash(ledgerHash);
 

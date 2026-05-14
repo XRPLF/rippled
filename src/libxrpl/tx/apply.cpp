@@ -1,3 +1,13 @@
+/** @file
+ *  Top-level transaction application coordinator for the XRP Ledger.
+ *
+ *  Bridges the network-level validity cache (`HashRouter`) with the
+ *  stateless-then-stateful application pipeline defined in `applySteps.cpp`.
+ *  Where `applySteps.cpp` contains the mechanics of each pipeline stage
+ *  (`preflight → preclaim → doApply`), this file decides *when* to run them,
+ *  how to short-circuit redundant work via the hash-router cache, and how to
+ *  handle the multi-transaction semantics of the Batch feature.
+ */
 #include <xrpl/tx/apply.h>
 
 #include <xrpl/basics/Log.h>
@@ -25,12 +35,16 @@
 
 namespace xrpl {
 
-// These are the same flags defined as HashRouterFlags::PRIVATE1-4 in
-// HashRouter.h
-constexpr HashRouterFlags kSF_SIGBAD = HashRouterFlags::PRIVATE1;     // Signature is bad
-constexpr HashRouterFlags kSF_SIGGOOD = HashRouterFlags::PRIVATE2;    // Signature is good
-constexpr HashRouterFlags kSF_LOCALBAD = HashRouterFlags::PRIVATE3;   // Local checks failed
-constexpr HashRouterFlags kSF_LOCALGOOD = HashRouterFlags::PRIVATE4;  // Local checks passed
+// --- HashRouter private flag aliases (PRIVATE1–PRIVATE4) ---
+
+/** Cached flag: transaction signature failed verification. */
+constexpr HashRouterFlags kSF_SIGBAD = HashRouterFlags::PRIVATE1;
+/** Cached flag: transaction signature passed verification. */
+constexpr HashRouterFlags kSF_SIGGOOD = HashRouterFlags::PRIVATE2;
+/** Cached flag: local well-formedness checks failed (`passesLocalChecks`). */
+constexpr HashRouterFlags kSF_LOCALBAD = HashRouterFlags::PRIVATE3;
+/** Cached flag: local well-formedness checks passed (`passesLocalChecks`). */
+constexpr HashRouterFlags kSF_LOCALGOOD = HashRouterFlags::PRIVATE4;
 
 //------------------------------------------------------------------------------
 
@@ -67,10 +81,7 @@ checkValidity(HashRouter& router, STTx const& tx, Rules const& rules)
     }
 
     if (any(flags & kSF_SIGBAD))
-    {
-        // Signature is known bad
         return {Validity::SigBad, "Transaction has bad signature."};
-    }
 
     if (!any(flags & kSF_SIGGOOD))
     {
@@ -83,22 +94,13 @@ checkValidity(HashRouter& router, STTx const& tx, Rules const& rules)
         router.setFlags(id, kSF_SIGGOOD);
     }
 
-    // Signature is now known good
+    // Signature is now known good.
     if (any(flags & kSF_LOCALBAD))
-    {
-        // ...but the local checks
-        // are known bad.
         return {Validity::SigGoodOnly, "Local checks failed."};
-    }
 
     if (any(flags & kSF_LOCALGOOD))
-    {
-        // ...and the local checks
-        // are known good.
         return {Validity::Valid, ""};
-    }
 
-    // Do the local checks
     std::string reason;
     if (!passesLocalChecks(tx, reason))
     {
@@ -122,13 +124,28 @@ forceValidity(HashRouter& router, uint256 const& txid, Validity validity)
             flags |= kSF_SIGGOOD;
             [[fallthrough]];
         case Validity::SigBad:
-            // would be silly to call directly
+            // No flag to set: calling forceValidity with SigBad is intentionally a no-op.
             break;
     }
     if (any(flags))
         router.setFlags(txid, flags);
 }
 
+/** Core apply implementation: invoke a preflight callable, then run preclaim and doApply.
+ *
+ *  Accepting a callable rather than a `PreflightResult` keeps the sequencing
+ *  enforced: preflight results can be produced on a different thread (they hold
+ *  no ledger references), but preclaim and doApply must run together against
+ *  the same view. The `NumberSO` RAII guard is installed here — before preclaim
+ *  — so the correct fixed-point arithmetic mode is active for the entire
+ *  post-preflight pipeline.
+ *
+ *  @tparam PreflightChecks Callable returning a `PreflightResult`.
+ *  @param registry The service registry providing transactor implementations.
+ *  @param view The open ledger view for preclaim and doApply.
+ *  @param preflightChecks Callable that produces the `PreflightResult`.
+ *  @return An `ApplyResult` with the TER code and whether mutations were committed.
+ */
 template <typename PreflightChecks>
 ApplyResult
 apply(ServiceRegistry& registry, OpenView& view, PreflightChecks&& preflightChecks)
@@ -144,6 +161,20 @@ apply(ServiceRegistry& registry, OpenView& view, STTx const& tx, ApplyFlags flag
         registry, view, [&]() mutable { return preflight(registry, view.rules(), tx, flags, j); });
 }
 
+/** Apply a batch inner transaction, supplying the enclosing batch's ID.
+ *
+ *  The `parentBatchId` is threaded into the preflight context so the transactor
+ *  can enforce inner-batch signing rules (no `sfTxnSignature`, empty
+ *  `sfSigningPubKey`). The `TapBatch` flag should be set in `flags`.
+ *
+ *  @param registry The service registry providing transactor implementations.
+ *  @param view The per-transaction batch sub-view created by `applyBatchTransactions`.
+ *  @param parentBatchId Transaction ID of the enclosing `ttBATCH` transaction.
+ *  @param tx The inner transaction to apply.
+ *  @param flags Apply flags; must include `TapBatch`.
+ *  @param j Logging sink.
+ *  @return An `ApplyResult` with the TER code and whether mutations were committed.
+ */
 ApplyResult
 apply(
     ServiceRegistry& registry,
@@ -158,6 +189,29 @@ apply(
     });
 }
 
+/** Execute the inner transactions of a committed `ttBATCH` transaction.
+ *
+ *  The outer batch transaction must already be applied before this is called;
+ *  its fee and sequence have been consumed. Inner transactions run against a
+ *  two-level view stack: `batchView` (all-or-nothing relative to the caller's
+ *  outer view) wraps a per-transaction `perTxBatchView`. If an inner transaction
+ *  is applied, its changes are promoted from `perTxBatchView` to `batchView`.
+ *
+ *  Execution policy is read from the batch transaction's flags:
+ *  - `tfAllOrNothing`: any failure causes immediate return of `false`.
+ *  - `tfUntilFailure`: iteration stops at the first failure; prior successes kept.
+ *  - `tfOnlyOne`: stops after the first success; subsequent transactions skipped.
+ *  - `tfIndependent` (no special flag): all inner transactions run independently.
+ *
+ *  @param registry The service registry providing transactor implementations.
+ *  @param batchView The whole-batch `OpenView` wrapping the outer ledger view.
+ *      The caller promotes this to the outer view only if the function returns
+ *      `true`.
+ *  @param batchTxn The outer `ttBATCH` transaction containing `sfRawTransactions`.
+ *  @param j Logging sink; each inner result is logged with a `BatchTrace` prefix.
+ *  @return `true` if at least one inner transaction was applied and the batch
+ *      execution policy allows the aggregate to be committed; `false` otherwise.
+ */
 static bool
 applyBatchTransactions(
     ServiceRegistry& registry,
@@ -183,8 +237,6 @@ applyBatchTransactions(
         JLOG(j.debug()) << "BatchTrace[" << parentBatchId << "]: " << tx.getTransactionID() << " "
                         << (ret.applied ? "applied" : "failure") << ": " << transToken(ret.ter);
 
-        // If the transaction should be applied push its changes to the
-        // whole-batch view.
         if (ret.applied && (isTesSuccess(ret.ter) || isTecClaim(ret.ter)))
             perTxBatchView.apply(batchView);
 
@@ -229,7 +281,6 @@ applyTransaction(
     ApplyFlags flags,
     beast::Journal j)
 {
-    // Returns false if the transaction has need not be retried.
     if (retryAssured)
         flags = flags | TapRetry;
 
@@ -243,8 +294,6 @@ applyTransaction(
         {
             JLOG(j.debug()) << "Transaction applied: " << transToken(result.ter);
 
-            // The batch transaction was just applied; now we need to apply
-            // its inner transactions as necessary.
             if (isTesSuccess(result.ter) && txn.getTxnType() == ttBATCH)
             {
                 OpenView wholeBatchView(kBATCH_VIEW, view);
@@ -258,7 +307,6 @@ applyTransaction(
 
         if (isTefFailure(result.ter) || isTemMalformed(result.ter) || isTelLocal(result.ter))
         {
-            // failure
             JLOG(j.debug()) << "Transaction failure: " << transHuman(result.ter);
             return ApplyTransactionResult::Fail;
         }

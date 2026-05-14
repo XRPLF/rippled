@@ -1,3 +1,12 @@
+/** @file
+ *  Per-request pathfinding state machine for the XRP Ledger.
+ *
+ *  Each `PathRequest` represents one outstanding client request — either a
+ *  persistent `path_find` subscription or a one-shot `ripple_path_find` call.
+ *  `PathRequestManager` owns and schedules these objects; this file contains
+ *  the full lifecycle: JSON parsing, ledger-state validation, adaptive-depth
+ *  pathfinding via `Pathfinder` + `RippleCalc`, and timing instrumentation.
+ */
 #include <xrpld/rpc/detail/PathRequest.h>
 
 #include <xrpld/app/main/Application.h>
@@ -48,6 +57,18 @@
 
 namespace xrpl {
 
+/** Constructs a subscription-mode path request (`path_find` semantics).
+ *
+ *  Results are pushed to `subscriber` on every ledger close.  The subscriber
+ *  is held as a `weak_ptr` so that network-layer destruction does not stall
+ *  background pathfinding threads.
+ *
+ *  @param app        The running Application instance.
+ *  @param subscriber The WebSocket subscriber that issued the request.
+ *  @param id         Numeric identifier for log correlation.
+ *  @param owner      The managing `PathRequestManager`.
+ *  @param journal    Logging sink.
+ */
 PathRequest::PathRequest(
     Application& app,
     std::shared_ptr<InfoSub> const& subscriber,
@@ -70,6 +91,19 @@ PathRequest::PathRequest(
     JLOG(journal_.debug()) << iIdentifier_ << " created";
 }
 
+/** Constructs a one-shot path request (`ripple_path_find` semantics).
+ *
+ *  `completion` is invoked exactly once when `updateComplete()` is called,
+ *  then cleared so subsequent calls are no-ops.  The caller supplies
+ *  `consumer` directly because there is no persistent subscriber object.
+ *
+ *  @param app        The running Application instance.
+ *  @param completion Callback fired when the single pathfinding pass finishes.
+ *  @param consumer   Resource consumer used to charge for path complexity.
+ *  @param id         Numeric identifier for log correlation.
+ *  @param owner      The managing `PathRequestManager`.
+ *  @param journal    Logging sink.
+ */
 PathRequest::PathRequest(
     Application& app,
     std::function<void(void)> const& completion,
@@ -93,6 +127,11 @@ PathRequest::PathRequest(
     JLOG(journal_.debug()) << iIdentifier_ << " created";
 }
 
+/** Logs fast-reply, full-reply, and total lifetime latencies at `info` level.
+ *
+ *  Only emits if the `info` stream is active.  Times are reported in
+ *  milliseconds relative to `created_`.
+ */
 PathRequest::~PathRequest()
 {
     using namespace std::chrono;
@@ -118,47 +157,71 @@ PathRequest::~PathRequest()
            << "ms";
 }
 
+/** Returns true if this request has never completed a full pathfinding pass.
+ *
+ *  Used by `PathRequestManager::updateAll` to prioritise new requests.
+ *  Thread-safe; acquires `indexLock_`.
+ *
+ *  @return `true` until the first successful `doUpdate` records a ledger index.
+ */
 bool
 PathRequest::isNew()
 {
     std::scoped_lock const sl(indexLock_);
-
-    // does this path request still need its first full path
     return lastIndex_ == 0;
 }
 
+/** Atomically claims this request for processing by the calling thread.
+ *
+ *  Returns `true` and sets `inProgress_` if all of the following hold:
+ *  no other thread is already processing this request, the `newOnly` filter
+ *  does not exclude it, and `index` is strictly newer than `lastIndex_`.
+ *  Callers must call `updateComplete()` when finished to release the claim.
+ *
+ *  @param newOnly If `true`, only requests that have never been processed
+ *      (i.e. `isNew()`) are eligible.
+ *  @param index   The ledger sequence number being processed; skipped if
+ *      `lastIndex_` is already >= this value.
+ *  @return `true` if the caller now owns the update slot; `false` otherwise.
+ */
 bool
 PathRequest::needsUpdate(bool newOnly, LedgerIndex index)
 {
     std::scoped_lock const sl(indexLock_);
 
     if (inProgress_)
-    {
-        // Another thread is handling this
         return false;
-    }
 
     if (newOnly && (lastIndex_ != 0))
-    {
-        // Only handling new requests, this isn't new
         return false;
-    }
 
     if (lastIndex_ >= index)
-    {
         return false;
-    }
 
     inProgress_ = true;
     return true;
 }
 
+/** Returns true if this is a one-shot `ripple_path_find` request.
+ *
+ *  Used throughout the file to branch between subscription push behaviour
+ *  and the legacy one-shot callback path.  After `updateComplete()` fires
+ *  `fCompletion_` and clears it, subsequent calls return `false`.
+ *
+ *  @return `true` while a completion callback is still pending.
+ */
 bool
 PathRequest::hasCompletion()
 {
     return bool(fCompletion_);
 }
 
+/** Releases the in-progress claim and fires the one-shot completion callback.
+ *
+ *  Must be called by whichever thread received `true` from `needsUpdate()`,
+ *  even if `doUpdate` failed.  For one-shot requests, fires `fCompletion_`
+ *  then clears it so the callback is invoked at most once.
+ */
 void
 PathRequest::updateComplete()
 {
@@ -174,6 +237,22 @@ PathRequest::updateComplete()
     }
 }
 
+/** Validates request parameters against live ledger state in `crCache`.
+ *
+ *  Verifies that the source account exists, and that the destination account
+ *  can receive the requested asset (non-existent destinations may only receive
+ *  XRP at or above reserve).  Populates `jvStatus_[destination_currencies]`
+ *  from the destination account's current trust lines, respecting `lsfDisallowXRP`.
+ *  This side-effect allows the client to build a currency picker without a
+ *  separate RPC call.
+ *
+ *  Called both from `doCreate` and at the start of every `doUpdate`, because
+ *  ledger state can change between updates.  Must be called with `lock_` held.
+ *
+ *  @param crCache  Snapshot of the current ledger state.
+ *  @return `true` if the request is consistent with current ledger state;
+ *      `false` with `jvStatus_` set to the appropriate RPC error otherwise.
+ */
 bool
 PathRequest::isValid(std::shared_ptr<AssetCache> const& crCache)
 {
@@ -182,7 +261,6 @@ PathRequest::isValid(std::shared_ptr<AssetCache> const& crCache)
 
     if (!convert_all_ && (saSendMax_ || saDstAmount_ <= beast::kZERO))
     {
-        // If send max specified, dst amt must be -1.
         jvStatus_ = rpcError(RpcDstAmtMalformed);
         return false;
     }
@@ -191,7 +269,6 @@ PathRequest::isValid(std::shared_ptr<AssetCache> const& crCache)
 
     if (!lrLedger->exists(keylet::account(*raSrcAccount_)))
     {
-        // Source account does not exist.
         jvStatus_ = rpcError(RpcSrcActNotFound);
         return false;
     }
@@ -205,14 +282,14 @@ PathRequest::isValid(std::shared_ptr<AssetCache> const& crCache)
         jvDestCur.append(json::Value(systemCurrencyCode()));
         if (!saDstAmount_.native())
         {
-            // Only XRP can be send to a non-existent account.
+            // Only XRP can be sent to a non-existent account.
             jvStatus_ = rpcError(RpcActNotFound);
             return false;
         }
 
         if (!convert_all_ && saDstAmount_ < STAmount(lrLedger->fees().reserve))
         {
-            // Payment must meet reserve.
+            // Payment must meet the account reserve.
             jvStatus_ = rpcError(RpcDstAmtMalformed);
             return false;
         }
@@ -234,15 +311,22 @@ PathRequest::isValid(std::shared_ptr<AssetCache> const& crCache)
     return true;
 }
 
-/*  If this is a normal path request, we want to run it once "fast" now
-    to give preliminary results.
-
-    If this is a legacy path request, we are only going to run it once,
-    and we can't run it in full now, so we don't want to run it at all.
-
-    If there's an error, we need to be sure to return it to the caller
-    in all cases.
-*/
+/** Initialises the request and, for subscription mode, runs a fast first pass.
+ *
+ *  Chains `parseJson` → `isValid`.  For subscription-mode requests (`path_find`)
+ *  a fast preliminary `doUpdate` (depth = `PATH_SEARCH_FAST`) is run immediately
+ *  so the client receives an initial result in the same request/response cycle.
+ *  Legacy one-shot requests (`ripple_path_find`) skip this fast pass because
+ *  they will be run once in full by `PathRequestManager`.
+ *
+ *  Errors from parsing or validation are embedded in `jvStatus_` and returned
+ *  to the caller; the request is dead and should not be queued.
+ *
+ *  @param cache  Ledger snapshot to validate against and run the fast pass on.
+ *  @param value  Raw JSON from the client's `path_find create` command.
+ *  @return A pair of {validity flag, current `jvStatus_`}.  The caller should
+ *      only enqueue the request when the flag is `true`.
+ */
 std::pair<bool, json::Value>
 PathRequest::doCreate(std::shared_ptr<AssetCache> const& cache, json::Value const& value)
 {
@@ -271,6 +355,25 @@ PathRequest::doCreate(std::shared_ptr<AssetCache> const& cache, json::Value cons
     return {valid, jvStatus_};
 }
 
+/** Parses and stores the client-supplied JSON request parameters.
+ *
+ *  Validates the presence and format of `source_account`, `destination_account`,
+ *  and `destination_amount`.  Optional fields handled:
+ *  - `send_max`: only legal when `destination_amount` is the "convert all"
+ *    sentinel (value `-1` / max-flag); enforces source-asset filtering and
+ *    issuer reconciliation against `send_max`.
+ *  - `source_currencies`: array of currency/issuer pairs or `mpt_issuance_id`
+ *    hex strings, capped at `RPC::Tuning::kMAX_SRC_CUR`.
+ *  - `domain`: 256-bit hex identifier restricting pathfinding to a permissioned
+ *    domain; stored as `std::optional<uint256>`.
+ *  - `id`: opaque echo value forwarded unchanged to every update response.
+ *
+ *  @param jvParams  Raw JSON from the client.
+ *  @return `PFR_PJ_NOCHANGE` (0) on success, `PFR_PJ_INVALID` (-1) on any
+ *      parse error (with `jvStatus_` set to the relevant RPC error code).
+ *  @note `send_max` requires `destination_amount == -1`.  Providing `send_max`
+ *      with a fixed destination amount is rejected with `RpcDstAmtMalformed`.
+ */
 int
 PathRequest::parseJson(json::Value const& jvParams)
 {
@@ -474,6 +577,14 @@ PathRequest::parseJson(json::Value const& jvParams)
     return PFR_PJ_NOCHANGE;
 }
 
+/** Marks this request as closed and returns the final status snapshot.
+ *
+ *  Called by `PathRequestManager` when the subscriber disconnects or the
+ *  subscription is explicitly cancelled.  Sets `jvStatus_["closed"] = true`
+ *  so the client can detect the closure in buffered responses.
+ *
+ *  @return The final `jvStatus_` with `"closed": true` injected.
+ */
 json::Value
 PathRequest::doClose()
 {
@@ -483,6 +594,13 @@ PathRequest::doClose()
     return jvStatus_;
 }
 
+/** Returns the current status snapshot with `"status": "success"` injected.
+ *
+ *  Used by `path_find status` sub-command to let a client poll the last
+ *  computed result without triggering a new search.
+ *
+ *  @return A copy of `jvStatus_` with the success flag set.
+ */
 json::Value
 PathRequest::doStatus(json::Value const&)
 {
@@ -491,12 +609,39 @@ PathRequest::doStatus(json::Value const&)
     return jvStatus_;
 }
 
+/** Logs an early-abort event at `info` level.
+ *
+ *  Invoked by `PathRequestManager` when the subscriber has already gone away
+ *  mid-update and the pathfinding work is being discarded before completion.
+ */
 void
 PathRequest::doAborting() const
 {
     JLOG(journal_.info()) << iIdentifier_ << " aborting early";
 }
 
+/** Returns (or constructs and ranks) a `Pathfinder` for a given source asset.
+ *
+ *  Looks up `currency` in `currencyMap`; on a miss, constructs a fresh
+ *  `Pathfinder`, runs `findPaths` at `level`, then `computePathRanks` limited
+ *  to `kMAX_PATHS` (4).  If `findPaths` fails the entry is stored as `nullptr`
+ *  so callers can distinguish "not yet tried" from "tried and found nothing".
+ *
+ *  `currencyMap` is local to a single `findPaths` call, so `Pathfinder`
+ *  objects are never reused across ledger updates.
+ *
+ *  @param cache           Ledger snapshot for this update cycle.
+ *  @param currencyMap     Per-call cache of already-constructed pathfinders.
+ *  @param currency        The source asset to find paths from.
+ *  @param dstAmount       Effective destination amount (after `convert_all_`
+ *      conversion).
+ *  @param level           Search depth passed to `Pathfinder::findPaths`.
+ *  @param continueCallback Abort predicate; pathfinding stops if it returns
+ *      `false`.
+ *  @return Reference to the (possibly null) `unique_ptr` in `currencyMap`.
+ *  @note `raSrcAccount_` and `raDstAccount_` are asserted non-null by
+ *      `isValid()` before this is called.
+ */
 std::unique_ptr<Pathfinder> const&
 PathRequest::getPathFinder(
     std::shared_ptr<AssetCache> const& cache,
@@ -527,11 +672,49 @@ PathRequest::getPathFinder(
     }
     else
     {
-        pathfinder.reset();  // It's a bad request - clear it.
+        pathfinder.reset();
     }
     return currencyMap[currency] = std::move(pathfinder);
 }
 
+/** Enumerates viable payment paths for each candidate source asset and
+ *  appends `RippleCalc`-estimated results to `jvArray`.
+ *
+ *  Source asset resolution order:
+ *  1. Explicit `sciSourceAssets_` from `parseJson`.
+ *  2. The asset of `saSendMax_` when no explicit set was given.
+ *  3. Automatic enumeration from the source account's holdings via
+ *     `accountSourceAssets`, capped at `RPC::Tuning::kMAX_AUTO_SRC_CUR`
+ *     (88).  When source == destination, the destination asset is excluded.
+ *
+ *  For each source asset a `Pathfinder` is obtained or constructed via
+ *  `getPathFinder` (per-call cache; never reused across ledger updates).
+ *  `getBestPaths` selects up to `kMAX_PATHS` (4) candidates and may also
+ *  return a `fullLiquidityPath` — a single path unlocking more liquidity
+ *  at the cost of covering a wider graph segment.
+ *
+ *  `RippleCalc::rippleCalculate` is called on a non-committing
+ *  `PaymentSandbox` to obtain realistic `actualAmountIn`/`actualAmountOut`
+ *  estimates.  If the result is `terNO_LINE` or `tecPATH_PARTIAL` and a
+ *  `fullLiquidityPath` exists, a second attempt appends it to the path
+ *  set.  This two-shot fallback is skipped in `convert_all_` mode because
+ *  partial payments are already allowed there.
+ *
+ *  Resource cost formula: `clamp(size² + 34, 50, 400)` where `size` is
+ *  the number of source assets evaluated.  The quadratic term reflects
+ *  that path complexity grows super-linearly with source currencies.
+ *
+ *  @param cache            Ledger snapshot for this update cycle.
+ *  @param level            Pathfinder search depth.
+ *  @param jvArray          Output JSON array; successful path alternatives
+ *      are appended here.
+ *  @param continueCallback Abort predicate; work stops early if it returns
+ *      `false`.
+ *  @return Always `true`; resource charge is applied regardless of whether
+ *      any paths were found.
+ *  @note Legacy `ripple_path_find` responses include an empty
+ *      `"paths_canonical"` array for backwards compatibility.
+ */
 bool
 PathRequest::findPaths(
     std::shared_ptr<AssetCache> const& cache,
@@ -627,36 +810,37 @@ PathRequest::findPaths(
         auto sandbox = std::make_unique<PaymentSandbox>(&*cache->getLedger(), TapNone);
         auto rc = path::RippleCalc::rippleCalculate(
             *sandbox,
-            saMaxAmount,  // --> Amount to send is unlimited
-                          //     to get an estimate.
-            dstAmount,    // --> Amount to deliver.
+            saMaxAmount,
+            dstAmount,
             // NOLINTBEGIN(bugprone-unchecked-optional-access) isValid() ensures both are set
-            *raDstAccount_,  // --> Account to deliver to.
-            *raSrcAccount_,  // --> Account sending from.
+            *raDstAccount_,
+            *raSrcAccount_,
             // NOLINTEND(bugprone-unchecked-optional-access)
-            ps,       // --> Path set.
-            domain_,  // --> Domain.
+            ps,
+            domain_,
             app_,
             &rcInput);
 
         if (!convert_all_ && !fullLiquidityPath.empty() &&
             (rc.result() == terNO_LINE || rc.result() == tecPATH_PARTIAL))
         {
+            // Two-shot fallback: append the full-liquidity covering path and
+            // retry.  Often rescues paths that were partial due to limited
+            // liquidity in the ranked set.
             JLOG(journal_.debug()) << iIdentifier_ << " Trying with an extra path element";
 
             ps.pushBack(fullLiquidityPath);
             sandbox = std::make_unique<PaymentSandbox>(&*cache->getLedger(), TapNone);
             rc = path::RippleCalc::rippleCalculate(
                 *sandbox,
-                saMaxAmount,  // --> Amount to send is unlimited
-                              //     to get an estimate.
-                dstAmount,    // --> Amount to deliver.
+                saMaxAmount,
+                dstAmount,
                 // NOLINTBEGIN(bugprone-unchecked-optional-access) isValid() ensures both are set
-                *raDstAccount_,  // --> Account to deliver to.
-                *raSrcAccount_,  // --> Account sending from.
+                *raDstAccount_,
+                *raSrcAccount_,
                 // NOLINTEND(bugprone-unchecked-optional-access)
-                ps,       // --> Path set.
-                domain_,  // --> Domain.
+                ps,
+                domain_,
                 app_);
 
             if (!isTesSuccess(rc.result()))
@@ -687,7 +871,7 @@ PathRequest::findPaths(
 
             if (hasCompletion())
             {
-                // Old ripple_path_find API requires this
+                // Old ripple_path_find API requires this field (may be empty).
                 jvEntry[jss::paths_canonical] = json::ValueType::Array;
             }
 
@@ -700,15 +884,39 @@ PathRequest::findPaths(
         }
     }
 
-    /*  The resource fee is based on the number of source currencies used.
-        The minimum cost is 50 and the maximum is 400. The cost increases
-        after four source currencies, 50 - (4 * 4) = 34.
-    */
+    // Resource cost: clamp(size² + 34, 50, 400).  The constant 34 = 50 - 4²
+    // sets the inflection point at four source currencies.
     int const size = sourceAssets.size();
     consumer_.charge({std::clamp((size * size) + 34, 50, 400), "path update"});
     return true;
 }
 
+/** Runs one pathfinding pass, updates `jvStatus_`, and reports latency.
+ *
+ *  Calls `isValid` first; returns the current error status immediately if
+ *  the request is no longer valid against `cache`.  Then adapts `iLevel_`
+ *  (search depth) based on three signals:
+ *  - **Server load** (`isLoadedLocal`): depth is capped at `PATH_SEARCH_FAST`.
+ *  - **Fast pass**: first-pass depth is `PATH_SEARCH_FAST` regardless of load.
+ *  - **Last-pass success** (`bLastSuccess_`): depth decrements toward
+ *    `PATH_SEARCH` when paths were found; increments toward `PATH_SEARCH_MAX`
+ *    when they were not (unless load prevents it).
+ *
+ *  Delegates to `findPaths` for the actual computation.  On the first fast
+ *  pass, records `quick_reply_` and calls `owner_.reportFast`; on the first
+ *  full pass, records `full_reply_` and calls `owner_.reportFull`.
+ *
+ *  For legacy `ripple_path_find` requests, `destination_currencies` is
+ *  included in the result so clients can build a currency picker.
+ *
+ *  @param cache            Ledger snapshot for this update cycle.
+ *  @param fast             `true` for a preliminary shallow search
+ *      (`PATH_SEARCH_FAST` depth); `false` for the normal adaptive search.
+ *  @param continueCallback Abort predicate forwarded to `findPaths`; work
+ *      stops early if it returns `false`.
+ *  @return The newly computed status JSON object (also stored in
+ *      `jvStatus_` under `lock_`).
+ */
 json::Value
 PathRequest::doUpdate(
     std::shared_ptr<AssetCache> const& cache,
@@ -729,7 +937,8 @@ PathRequest::doUpdate(
 
     if (hasCompletion())
     {
-        // Old ripple_path_find API gives destination_currencies
+        // Legacy ripple_path_find API includes destination_currencies so the
+        // client can build a currency picker without a separate RPC call.
         auto& destAssets = (newStatus[jss::destination_currencies] = json::ValueType::Array);
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access) isValid() ensures both are set
         auto const assets = accountDestAssets(*raDstAccount_, cache, true);
@@ -749,35 +958,25 @@ PathRequest::doUpdate(
 
     bool const loaded = app_.getFeeTrack().isLoadedLocal();
 
+    // Adaptive depth: see doUpdate docstring for the full state-machine logic.
     if (iLevel_ == 0)
     {
-        // first pass
-        if (loaded || fast)
-        {
-            iLevel_ = app_.config().PATH_SEARCH_FAST;
-        }
-        else
-        {
-            iLevel_ = app_.config().PATH_SEARCH;
-        }
+        iLevel_ = (loaded || fast) ? app_.config().PATH_SEARCH_FAST : app_.config().PATH_SEARCH;
     }
     else if ((iLevel_ == app_.config().PATH_SEARCH_FAST) && !fast)
     {
-        // leaving fast pathfinding
         iLevel_ = app_.config().PATH_SEARCH;
         if (loaded && (iLevel_ > app_.config().PATH_SEARCH_FAST))
             --iLevel_;
     }
     else if (bLastSuccess_)
     {
-        // decrement, if possible
         if (iLevel_ > app_.config().PATH_SEARCH ||
             (loaded && (iLevel_ > app_.config().PATH_SEARCH_FAST)))
             --iLevel_;
     }
     else
     {
-        // adjust as needed
         if (!loaded && (iLevel_ < app_.config().PATH_SEARCH_MAX))
             ++iLevel_;
         if (loaded && (iLevel_ > app_.config().PATH_SEARCH_FAST))
@@ -818,6 +1017,14 @@ PathRequest::doUpdate(
     return newStatus;
 }
 
+/** Attempts to lock the subscriber weak pointer.
+ *
+ *  Returns a null `shared_ptr` if the subscriber has been destroyed by the
+ *  network layer.  Callers use this as the signal to abort background work
+ *  and remove the request from `PathRequestManager`.
+ *
+ *  @return The locked subscriber, or `nullptr` if the subscription is gone.
+ */
 InfoSub::pointer
 PathRequest::getSubscriber() const
 {

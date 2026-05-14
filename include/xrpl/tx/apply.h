@@ -13,87 +13,100 @@ class HashRouter;
 class ServiceRegistry;
 
 /** Describes the pre-processing validity of a transaction.
-
-    @see checkValidity, forceValidity
-*/
+ *
+ *  The three levels form a strict hierarchy: `SigBad < SigGoodOnly < Valid`.
+ *  Local checks are only worth performing when the signature is good, so
+ *  `SigGoodOnly` implies the signature passed but local checks failed.
+ *  This hierarchy maps directly to P2P relay semantics: `SigBad` transactions
+ *  are not forwarded; `SigGoodOnly` transactions are relayed but not applied;
+ *  `Valid` transactions are both relayed and applied.
+ *
+ *  @see checkValidity, forceValidity
+ */
 enum class Validity {
-    /// Signature is bad. Didn't do local checks.
+    /// Signature is invalid. Local checks were not attempted.
     SigBad,
-    /// Signature is good, but local checks fail.
+    /// Signature is valid, but local checks failed.
     SigGoodOnly,
-    /// Signature and local checks are good / passed.
+    /// Signature is valid and local checks passed.
     Valid
 };
 
-/** Checks transaction signature and local checks.
-
-    @return A `Validity` enum representing how valid the
-        `STTx` is and, if not `Valid`, a reason string.
-
-    @note Results are cached internally, so tests will not be
-        repeated over repeated calls, unless cache expires.
-
-    @return `std::pair`, where `.first` is the status, and
-            `.second` is the reason if appropriate.
-
-    @see Validity
-*/
+/** Check a transaction's cryptographic signature and local well-formedness.
+ *
+ *  Results are cached in the `HashRouter` using four private flag bits
+ *  (`PRIVATE1`–`PRIVATE4`). Subsequent calls for the same transaction ID
+ *  return immediately from the cache rather than re-verifying the signature.
+ *  The cache inherits its TTL from the `HashRouter`'s aged map.
+ *
+ *  Batch inner transactions (flagged `tfInnerBatchTxn`) follow a separate
+ *  code path: they must have no signature fields, and after `fixBatchInnerSigs`
+ *  activates they are permanently treated as never-valid to prevent erroneous
+ *  `SF_SIGGOOD` cache entries on unsigned objects.
+ *
+ *  @param router The hash router used to cache validity flags.
+ *  @param tx The transaction to check.
+ *  @param rules The current ledger rules (used for amendment-gated logic).
+ *  @return A pair whose `.first` is the `Validity` status and whose `.second`
+ *      is a human-readable reason string when the transaction is not `Valid`
+ *      (empty on success).
+ *
+ *  @see Validity, forceValidity
+ */
 std::pair<Validity, std::string>
 checkValidity(HashRouter& router, STTx const& tx, Rules const& rules);
 
-/** Sets the validity of a given transaction in the cache.
-
-    @warning Use with extreme care.
-
-    @note Can only raise the validity to a more valid state,
-          and can not override anything cached bad.
-
-    @see checkValidity, Validity
-*/
+/** Assert a specific validity level for a transaction in the hash-router cache.
+ *
+ *  Uses a deliberate `[[fallthrough]]` switch to enforce monotonicity: setting
+ *  `Valid` also sets the `SigGoodOnly` flag, because local checks cannot pass
+ *  without a valid signature. This can only raise the cached state — it never
+ *  marks a transaction as `SigBad`, so calling with `SigBad` is a no-op.
+ *
+ *  The primary use case is for locally-constructed transactions that were never
+ *  signed by a remote peer; the transaction queue can mark them pre-verified to
+ *  avoid redundant signature checks on re-application.
+ *
+ *  @param router The hash router that holds the cached flags.
+ *  @param txid The transaction ID whose cached validity to update.
+ *  @param validity The minimum validity level to assert. Passing `SigBad`
+ *      has no effect.
+ *
+ *  @warning Calling this bypasses real cryptographic verification. Only use
+ *      when you have an out-of-band guarantee that the transaction is valid
+ *      (e.g., a transaction you constructed locally and submitted yourself).
+ *
+ *  @see checkValidity, Validity
+ */
 void
 forceValidity(HashRouter& router, uint256 const& txid, Validity validity);
 
-/** Apply a transaction to an `OpenView`.
-
-    This function is the canonical way to apply a transaction
-    to a ledger. It rolls the validation and application
-    steps into one function. To do the steps manually, the
-    correct calling order is:
-    @code{.cpp}
-    preflight -> preclaim -> doApply
-    @endcode
-    The result of one function must be passed to the next.
-    The `preflight` result can be safely cached and reused
-    asynchronously, but `preclaim` and `doApply` must be called
-    in the same thread and with the same view.
-
-    @note Does not throw.
-
-    For open ledgers, the `Transactor` will catch exceptions
-    and return `tefEXCEPTION`. For closed ledgers, the
-    `Transactor` will attempt to only charge a fee,
-    and return `tecFAILED_PROCESSING`.
-
-    If the `Transactor` gets an exception while trying
-    to charge the fee, it will be caught and
-    turned into `tefEXCEPTION`.
-
-    For network health, a `Transactor` makes its
-    best effort to at least charge a fee if the
-    ledger is closed.
-
-    @param app The current running `Application`.
-    @param view The open ledger that the transaction
-        will attempt to be applied to.
-    @param tx The transaction to be checked.
-    @param flags `ApplyFlags` describing processing options.
-    @param journal A journal.
-
-    @see preflight, preclaim, doApply
-
-    @return A pair with the `TER` and a `bool` indicating
-            whether or not the transaction was applied.
-*/
+/** Apply a transaction to an `OpenView`, running all three pipeline stages.
+ *
+ *  Convenience wrapper that composes `preflight → preclaim → doApply` into a
+ *  single call. The `preflight` result can be safely cached and reused across
+ *  threads, but `preclaim` and `doApply` must run on the same thread and with
+ *  the same view.
+ *
+ *  This function does not throw. Exceptions inside a `Transactor` are caught
+ *  and converted to `tefEXCEPTION`. For closed ledgers, if full application
+ *  fails the `Transactor` will attempt a best-effort fee deduction and return
+ *  `tecFAILED_PROCESSING`; if even the fee-deduction path throws, that
+ *  exception is also caught and returned as `tefEXCEPTION`. This best-effort
+ *  fee guarantee prevents fee-free spam vectors during consensus.
+ *
+ *  @param registry The service registry providing transactor implementations.
+ *  @param view The open ledger to which the transaction will be applied.
+ *  @param tx The transaction to apply.
+ *  @param flags `ApplyFlags` controlling processing options (e.g., `tapRETRY`,
+ *      `tapDRY_RUN`).
+ *  @param journal Logging sink.
+ *  @return An `ApplyResult` whose `.ter` is the transaction result code and
+ *      whose `.applied` is `true` if the transaction's mutations were committed
+ *      to `view`.
+ *
+ *  @see preflight, preclaim, doApply, applyTransaction
+ */
 ApplyResult
 apply(
     ServiceRegistry& registry,
@@ -102,26 +115,58 @@ apply(
     ApplyFlags flags,
     beast::Journal journal);
 
-/** Enum class for return value from `applyTransaction`
-
-    @see applyTransaction
-*/
+/** Outcome classification returned by `applyTransaction`.
+ *
+ *  Wraps the raw `TER` code from `apply()` into the three-way decision the
+ *  transaction queue needs: commit, evict, or hold for a retry pass.
+ *
+ *  @see applyTransaction
+ */
 enum class ApplyTransactionResult {
-    /// Applied to this ledger
+    /// Transaction was applied and its mutations committed to the ledger view.
     Success,
-    /// Should not be retried in this ledger
+    /// Terminal failure — do not retry in this ledger.
+    /// Covers `tef*` (internal failures), `tem*` (malformed), and `tel*`
+    /// (local-node rejections).
     Fail,
-    /// Should be retried in this ledger
+    /// Soft failure — the transaction may succeed in a later pass or ledger.
+    /// Covers all other non-applied results (e.g., `ter*`, `tec*` with
+    /// `tapRETRY`).
     Retry
 };
 
-/** Transaction application helper
-
-    Provides more detailed logging and decodes the
-    correct behavior based on the `TER` type
-
-    @see ApplyTransactionResult
-*/
+/** Apply a transaction and classify the outcome for the transaction queue.
+ *
+ *  Calls `apply()` and maps its `TER` result to `ApplyTransactionResult`:
+ *  - `tefFailure`, `temMalformed`, `telLocal` → `Fail` (evict, no retry)
+ *  - Any other non-applied result → `Retry` (hold for later)
+ *  - Applied result → `Success`
+ *
+ *  When `retryAssured` is `true`, `tapRETRY` is added to `flags` before
+ *  calling `apply()`. With `tapRETRY` set, `tec` results are treated as soft
+ *  failures rather than hard fee-claims; this affects `preclaim`'s
+ *  `likelyToClaimFee` signal and determines whether the transaction is safe
+ *  to relay without first applying it to the open ledger.
+ *
+ *  For `ttBATCH` transactions that succeed, inner transactions are applied in
+ *  a nested `OpenView` sandbox. Inner-transaction changes are committed to the
+ *  main view only if the batch as a whole succeeds under its execution policy
+ *  (`tfAllOrNothing`, `tfUntilFailure`, `tfOnlyOne`, `tfIndependent`).
+ *
+ *  Exceptions from `apply()` are caught and returned as `Fail`.
+ *
+ *  @param registry The service registry providing transactor implementations.
+ *  @param view The open ledger to which the transaction will be applied.
+ *  @param tx The transaction to apply.
+ *  @param retryAssured If `true`, adds `tapRETRY` to `flags` so that `tec`
+ *      results are treated as retryable soft failures rather than fee claims.
+ *  @param flags Base `ApplyFlags` controlling processing options.
+ *  @param journal Logging sink.
+ *  @return An `ApplyTransactionResult` indicating success, terminal failure,
+ *      or retryable failure.
+ *
+ *  @see apply, ApplyTransactionResult
+ */
 ApplyTransactionResult
 applyTransaction(
     ServiceRegistry& registry,

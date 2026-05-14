@@ -76,24 +76,23 @@ SHAMap::visitNodes(std::function<bool(SHAMapTreeNode&)> const& function) const
                 }
                 else
                 {
-                    // If there are no more children, don't push this node
+                    // Avoid pushing if no further siblings remain; saves a
+                    // pointless push/pop cycle for trailing empty branches.
                     while ((pos != 15) && (node->isEmptyBranch(pos + 1)))
                         ++pos;
 
                     if (pos != 15)
                     {
-                        // save next position to resume at
                         stack.emplace(pos + 1, std::move(node));
                     }
 
-                    // descend to the child's first position
                     node = intr_ptr::staticPointerCast<SHAMapInnerNode>(child);
                     pos = 0;
                 }
             }
             else
             {
-                ++pos;  // move to next position
+                ++pos;
             }
         }
 
@@ -110,8 +109,6 @@ SHAMap::visitDifferences(
     SHAMap const* have,
     std::function<bool(SHAMapTreeNode const&)> const& function) const
 {
-    // Visit every node in this SHAMap that is not present
-    // in the specified SHAMap
     if (!root_)
         return;
 
@@ -128,7 +125,6 @@ SHAMap::visitDifferences(
             function(*root_);
         return;
     }
-    // contains unexplored non-matching inner node entries
     using StackEntry = std::pair<SHAMapInnerNode*, SHAMapNodeID>;
     std::stack<StackEntry, std::vector<StackEntry>> stack;
 
@@ -139,11 +135,9 @@ SHAMap::visitDifferences(
         auto const [node, nodeID] = stack.top();
         stack.pop();
 
-        // 1) Add this node to the pack
         if (!function(*node))
             return;
 
-        // 2) push non-matching child inner nodes
         for (int i = 0; i < 16; ++i)
         {
             if (!node->isEmptyBranch(i))
@@ -170,10 +164,23 @@ SHAMap::visitDifferences(
     }
 }
 
-// Starting at the position referred to by the specfied
-// StackEntry, process that node and its first resident
-// children, descending the SHAMap until we complete the
-// processing of a node.
+/** Process one inner node and its children during missing-node discovery.
+ *
+ *  Starting at the position described by `se`, iterates over children of the
+ *  current inner node in a randomised order.  For each non-empty branch it
+ *  either (a) skips via the FullBelowCache, (b) records a confirmed missing
+ *  hash, (c) posts an async read via `descendAsync` (incrementing
+ *  `mn.deferred`), or (d) pushes the current position and descends into a
+ *  child inner node.  Returns when the 16 branches are exhausted, when
+ *  `mn.max` reaches zero, or when `mn.deferred` would exceed `mn.maxDefer`.
+ *
+ *  On normal completion, marks the node full-below in both the in-memory
+ *  field and the `FullBelowCache` if no missing children were found below it.
+ *
+ *  @param mn  Mutable traversal context for the current `getMissingNodes` call.
+ *  @param se  Current stack entry; `node` is set to `nullptr` on normal
+ *      completion to signal to the caller that this node is done.
+ */
 void
 SHAMap::gmnProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
 {
@@ -206,7 +213,6 @@ SHAMap::gmnProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
                 pending,
                 [node, nodeID, branch, &mn](
                     intr_ptr::SharedPtr<SHAMapTreeNode> found, SHAMapHash const&) {
-                    // a read completed asynchronously
                     std::unique_lock<std::mutex> const lock{mn.deferLock};
                     mn.finishedReads.emplace_back(node, nodeID, branch, std::move(found));
                     mn.deferCondVar.notify_one();
@@ -219,8 +225,6 @@ SHAMap::gmnProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
             }
             else if (d == nullptr)
             {
-                // node is not in database
-
                 fullBelow = false;  // for now, not known full below
                 mn.missingHashes.insert(childHash);
                 mn.missingNodes.emplace_back(nodeID.getChildNodeID(branch), childHash.asUInt256());
@@ -231,8 +235,6 @@ SHAMap::gmnProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
             else if (d->isInner() && !safeDowncast<SHAMapInnerNode*>(d)->isFullBelow(mn.generation))
             {
                 mn.stack.push(se);
-
-                // Switch to processing the child node
                 node = safeDowncast<SHAMapInnerNode*>(d);
                 nodeID = nodeID.getChildNodeID(branch);
                 firstChild = randInt(255);
@@ -242,11 +244,8 @@ SHAMap::gmnProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
         }
     }
 
-    // We have finished processing an inner node
-    // and thus (for now) all its children
-
     if (fullBelow)
-    {  // No partial node encountered below this node
+    {
         node->setFullBelowGen(mn.generation);
         if (backed_)
         {
@@ -257,12 +256,23 @@ SHAMap::gmnProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
     node = nullptr;
 }
 
-// Wait for deferred reads to finish and
-// process their results
+/** Drain all pending async reads and integrate their results.
+ *
+ *  Blocks on `mn.deferCondVar` until all `mn.deferred` reads have called
+ *  back.  Successfully fetched nodes are canonicalized into their parent via
+ *  `canonicalizeChild` and the parent is added to `mn.resumes` so that
+ *  `getMissingNodes` will revisit it after this batch.  Nodes that resolve as
+ *  null (genuinely missing) are recorded in `mn.missingNodes` subject to
+ *  `mn.max`, with deduplication via `mn.missingHashes`.
+ *
+ *  @param mn  Mutable traversal context for the current `getMissingNodes` call.
+ *  @note Must only be called from the thread running `getMissingNodes`;
+ *      async callbacks write to `mn.finishedReads` under `mn.deferLock` and
+ *      signal `mn.deferCondVar`.
+ */
 void
 SHAMap::gmnProcessDeferredReads(MissingNodes& mn)
 {
-    // Process all deferred reads
     int complete = 0;
     while (complete != mn.deferred)
     {
@@ -283,11 +293,8 @@ SHAMap::gmnProcessDeferredReads(MissingNodes& mn)
         auto const& nodeHash = parent->getChildHash(branch);
 
         if (nodePtr)
-        {  // Got the node
+        {
             nodePtr = parent->canonicalizeChild(branch, std::move(nodePtr));
-
-            // When we finish this stack, we need to restart
-            // with the parent of this node
             mn.resumes[parent] = parentID;
         }
         else if ((mn.max > 0) && (mn.missingHashes.insert(nodeHash).second))
@@ -302,10 +309,26 @@ SHAMap::gmnProcessDeferredReads(MissingNodes& mn)
     mn.deferred = 0;
 }
 
-/** Get a list of node IDs and hashes for nodes that are part of this SHAMap
-    but not available locally.  The filter can hold alternate sources of
-    nodes that are not permanently stored locally
-*/
+/** Discover nodes that are referenced in this map but absent locally.
+ *
+ *  Performs a depth-first traversal using the `MissingNodes` engine, issuing
+ *  async reads (up to 512 in flight) via `descendAsync` and draining them in
+ *  batches through `gmnProcessDeferredReads`.  Subtrees confirmed complete by
+ *  the `FullBelowCache` are skipped entirely.
+ *
+ *  Each inner-node entry is visited with a randomly chosen starting child so
+ *  that concurrent callers on the same map are likely to request different
+ *  missing nodes — maximizing coverage per sync round rather than sending
+ *  redundant requests.
+ *
+ *  If the result vector is empty when the traversal finishes, the map is
+ *  transitioned out of `Synching` state via `clearSynching()`.
+ *
+ *  @param max     Stop after collecting this many missing-node entries.
+ *  @param filter  Optional sync filter; may be `nullptr`.
+ *  @return Vector of `(SHAMapNodeID, hash)` pairs for each unresolvable node,
+ *      ordered by traversal encounter.
+ */
 std::vector<std::pair<SHAMapNodeID, uint256>>
 SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
 {
@@ -325,19 +348,12 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
         return std::move(mn.missingNodes);
     }
 
-    // Start at the root.
-    // The firstChild value is selected randomly so if multiple threads
-    // are traversing the map, each thread will start at a different
-    // (randomly selected) inner node.  This increases the likelihood
-    // that the two threads will produce different request sets (which is
-    // more efficient than sending identical requests).
     MissingNodes::StackEntry pos{
         safeDowncast<SHAMapInnerNode*>(root_.get()), SHAMapNodeID(), randInt(255), 0, true};
     auto& node = std::get<0>(pos);
     auto& nextChild = std::get<3>(pos);
     auto& fullBelow = std::get<4>(pos);
 
-    // Traverse the map without blocking
     do
     {
         while ((node != nullptr) && (mn.deferred <= mn.maxDefer))
@@ -349,27 +365,22 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
 
             if ((node == nullptr) && !mn.stack.empty())
             {
-                // Pick up where we left off with this node's parent
-                bool const was = fullBelow;  // was full below
+                bool const was = fullBelow;
 
                 pos = mn.stack.top();
                 mn.stack.pop();
                 if (nextChild == 0)
                 {
-                    // This is a node we are processing for the first time
                     fullBelow = true;
                 }
                 else
                 {
-                    // This is a node we are continuing to process
-                    fullBelow = fullBelow && was;  // was and still is
+                    fullBelow = fullBelow && was;
                 }
                 XRPL_ASSERT(node, "xrpl::SHAMap::getMissingNodes : first non-null node");
             }
         }
 
-        // We have either emptied the stack or
-        // posted as many deferred reads as we can
         if (mn.deferred != 0)
             gmnProcessDeferredReads(mn);
 
@@ -377,11 +388,9 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
             return std::move(mn.missingNodes);
 
         if (node == nullptr)
-        {  // We weren't in the middle of processing a node
-
+        {
             if (mn.stack.empty() && !mn.resumes.empty())
             {
-                // Recheck nodes we could not finish before
                 for (auto const& [innerNode, nodeId] : mn.resumes)
                 {
                     if (!innerNode->isFullBelow(mn.generation))
@@ -393,16 +402,11 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
 
             if (!mn.stack.empty())
             {
-                // Resume at the top of the stack
                 pos = mn.stack.top();
                 mn.stack.pop();
                 XRPL_ASSERT(node, "xrpl::SHAMap::getMissingNodes : second non-null node");
             }
         }
-
-        // node will only still be nullptr if
-        // we finished the current node, the stack is empty
-        // and we have no nodes to resume
 
     } while (node != nullptr);
 
@@ -419,9 +423,6 @@ SHAMap::getNodeFat(
     bool fatLeaves,
     std::uint32_t depth) const
 {
-    // Gets a node and some of its children
-    // to a specified depth
-
     auto node = root_.get();
     SHAMapNodeID nodeID;
 
@@ -458,21 +459,17 @@ SHAMap::getNodeFat(
         std::tie(node, nodeID, depth) = stack.top();
         stack.pop();
 
-        // Add this node to the reply
         s.erase();
         node->serializeForWire(s);
         data.emplace_back(nodeID, s.getData());
 
         if (node->isInner())
         {
-            // We descend inner nodes with only a single child
-            // without decrementing the depth
             auto inner = safeDowncast<SHAMapInnerNode*>(node);
             int const bc = inner->getBranchCount();
 
             if ((depth > 0) || (bc == 1))
             {
-                // We need to process this node's children
                 for (int i = 0; i < 16; ++i)
                 {
                     if (!inner->isEmptyBranch(i))
@@ -482,13 +479,13 @@ SHAMap::getNodeFat(
 
                         if (childNode->isInner() && ((depth > 1) || (bc == 1)))
                         {
-                            // If there's more than one child, reduce the depth
-                            // If only one child, follow the chain
+                            // Single-child chains traverse without decrementing
+                            // the depth budget; multi-child nodes consume one
+                            // level of depth per branch.
                             stack.emplace(childNode, childID, (bc > 1) ? (depth - 1) : depth);
                         }
                         else if (childNode->isInner() || fatLeaves)
                         {
-                            // Just include this node
                             s.erase();
                             childNode->serializeForWire(s);
                             data.emplace_back(childID, s.getData());
@@ -511,7 +508,6 @@ SHAMap::serializeRoot(Serializer& s) const
 SHAMapAddNode
 SHAMap::addRootNode(SHAMapHash const& hash, Slice const& rootNode, SHAMapSyncFilter* filter)
 {
-    // we already have a root_ node
     if (root_->getHash().isNonZero())
     {
         JLOG(journal_.trace()) << "got root node, already have one";
@@ -601,7 +597,6 @@ SHAMap::addKnownNode(SHAMapNodeID const& node, Slice const& rawNode, SHAMapSyncF
             auto const& actualKey =
                 safeDowncast<SHAMapLeafNode const*>(newNode.get())->peekItem()->key();
 
-            // Validate that this leaf belongs at the target position
             auto const expectedNodeID = SHAMapNodeID::createID(node.getDepth(), actualKey);
             if (expectedNodeID.getNodeID() != node.getNodeID())
             {
@@ -618,7 +613,6 @@ SHAMap::addKnownNode(SHAMapNodeID const& node, Slice const& rawNode, SHAMapSyncF
         if ((currNodeID.getDepth() > kLEAF_DEPTH) ||
             (newNode->isInner() && currNodeID.getDepth() == kLEAF_DEPTH))
         {
-            // Map is provably invalid
             state_ = SHAMapState::Invalid;
             return SHAMapAddNode::useful();
         }
@@ -656,7 +650,6 @@ SHAMap::addKnownNode(SHAMapNodeID const& node, Slice const& rawNode, SHAMapSyncF
 bool
 SHAMap::deepCompare(SHAMap& other) const
 {
-    // Intended for debug/test only
     std::stack<std::pair<SHAMapTreeNode*, SHAMapTreeNode*>> stack;
 
     stack.emplace(root_.get(), other.root_.get());
@@ -722,7 +715,16 @@ SHAMap::deepCompare(SHAMap& other) const
     return true;
 }
 
-/** Does this map have this inner node?
+/** Walk the tree to `targetNodeID` and confirm it carries `targetNodeHash`.
+ *
+ *  Used by `visitDifferences` to short-circuit descending into subtrees that
+ *  are already in agreement between two maps.
+ *
+ *  @param targetNodeID    Tree address of the inner node to locate.
+ *  @param targetNodeHash  Expected hash of that node.
+ *  @return `true` if the walk reaches an inner node at `targetNodeID` whose
+ *      hash equals `targetNodeHash`; `false` if the path is empty, diverges,
+ *      or the hashes differ.
  */
 bool
 SHAMap::hasInnerNode(SHAMapNodeID const& targetNodeID, SHAMapHash const& targetNodeHash) const
@@ -744,7 +746,16 @@ SHAMap::hasInnerNode(SHAMapNodeID const& targetNodeID, SHAMapHash const& targetN
     return (node->isInner()) && (node->getHash() == targetNodeHash);
 }
 
-/** Does this map have this leaf node?
+/** Walk toward `tag` and confirm a leaf at that position carries `targetNodeHash`.
+ *
+ *  Traverses inner nodes following `tag`'s nibbles, stopping as soon as the
+ *  branch hash matches `targetNodeHash` (avoiding a full descent to the leaf)
+ *  or a dead-end branch is reached.
+ *
+ *  @param tag             256-bit key identifying the target leaf.
+ *  @param targetNodeHash  Expected hash of the leaf node.
+ *  @return `true` if a branch hash equal to `targetNodeHash` is found on the
+ *      path toward `tag`; `false` if the path is empty or the key is absent.
  */
 bool
 SHAMap::hasLeafNode(uint256 const& tag, SHAMapHash const& targetNodeHash) const
@@ -760,17 +771,16 @@ SHAMap::hasLeafNode(uint256 const& tag, SHAMapHash const& targetNodeHash) const
         int const branch = selectBranch(nodeID, tag);
         auto inner = safeDowncast<SHAMapInnerNode*>(node);
         if (inner->isEmptyBranch(branch))
-            return false;  // Dead end, node must not be here
+            return false;
 
-        if (inner->getChildHash(branch) == targetNodeHash)  // Matching leaf, no need to retrieve it
+        if (inner->getChildHash(branch) == targetNodeHash)
             return true;
 
         node = descendThrow(inner, branch);
         nodeID = nodeID.getChildNodeID(branch);
     } while (node->isInner());
 
-    return false;  // If this was a matching leaf, we would have caught it
-                   // already
+    return false;
 }
 
 std::optional<std::vector<Blob>>

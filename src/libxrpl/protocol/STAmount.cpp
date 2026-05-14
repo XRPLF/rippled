@@ -1,3 +1,19 @@
+/** @file
+ *  Implementation of STAmount — the universal value type for the XRP Ledger.
+ *
+ *  Every amount on the network (XRP drops, IOU tokens, or MPTs) is
+ *  represented, serialized, compared, and arithmetically manipulated through
+ *  this class and its companion free functions.  The canonical internal form
+ *  stores a `uint64_t` mantissa, an `int` base-10 exponent, and a sign bit;
+ *  the exact valid range differs by asset type:
+ *
+ *  - **XRP / MPT** (integral): `offset_ == 0`, `value_` is the raw drop/token
+ *    count.
+ *  - **IOU**: `value_` ∈ [10^15, 10^16 − 1], `offset_` ∈ [−96, +80];
+ *    zero is the special case `(value_=0, offset_=−100)`.
+ *
+ *  See `STAmount.h` for the full public interface.
+ */
 #include <xrpl/protocol/STAmount.h>
 
 #include <xrpl/basics/Log.h>
@@ -47,11 +63,28 @@
 
 namespace xrpl {
 
+/** 10^14 — scaling denominator used in IOU multiply to keep precision. */
 static std::uint64_t const kTEN_TO14 = 100000000000000ull;
+/** 10^14 − 1 — maximum rounding bias added before the final divide in
+ *  `muldivRound` when the result is positive and rounding up. */
 static std::uint64_t const kTEN_TO14M1 = kTEN_TO14 - 1;
+/** 10^17 — scaling multiplier used in IOU divide to maintain full precision. */
 static std::uint64_t const kTEN_TO17 = kTEN_TO14 * 1000;
 
 //------------------------------------------------------------------------------
+
+/** Extract the integral value from an XRP or MPT amount as a signed 64-bit integer.
+ *
+ *  Validates that `valid` is true, asserts the exponent is zero (canonical
+ *  for integral types), and applies the sign bit before returning.  Used
+ *  internally by `getSNValue` and `getMPTValue`.
+ *
+ *  @param amount The amount whose mantissa is extracted.
+ *  @param valid  Must be true; when false, throws with `error` as the message.
+ *  @param error  Error string thrown when `valid` is false.
+ *  @return The signed integer value of `amount`.
+ *  @throw std::runtime_error if `valid` is false.
+ */
 static std::int64_t
 getInt64Value(STAmount const& amount, bool valid, char const* error)
 {
@@ -71,18 +104,41 @@ getInt64Value(STAmount const& amount, bool valid, char const* error)
     return ret;
 }
 
+/** Return the signed drop value of a native XRP amount.
+ *
+ *  @param amount Must be a native (XRP) amount; throws otherwise.
+ *  @return The signed drop count.
+ *  @throw std::runtime_error if `amount` is not native.
+ */
 static std::int64_t
 getSNValue(STAmount const& amount)
 {
     return getInt64Value(amount, amount.native(), "amount is not native!");
 }
 
+/** Return the signed value of an MPT amount.
+ *
+ *  @param amount Must hold an `MPTIssue`; throws otherwise.
+ *  @return The signed MPT token count.
+ *  @throw std::runtime_error if `amount` does not hold an `MPTIssue`.
+ */
 static std::int64_t
 getMPTValue(STAmount const& amount)
 {
     return getInt64Value(amount, amount.holds<MPTIssue>(), "amount is not MPT!");
 }
 
+/** Determine whether two amounts represent the same asset and can be compared
+ *  or combined arithmetically.
+ *
+ *  Two IOU amounts are comparable when they share both nativeness and currency.
+ *  Two MPT amounts are comparable when their `MPTIssue` identities are equal.
+ *  Cross-type pairs (one IOU, one MPT) are never comparable.
+ *
+ *  @param v1 First amount.
+ *  @param v2 Second amount.
+ *  @return `true` if the amounts share the same asset identity.
+ */
 static bool
 areComparable(STAmount const& v1, STAmount const& v2)
 {
@@ -107,6 +163,18 @@ areComparable(STAmount const& v1, STAmount const& v2)
 
 static_assert(kINITIAL_XRP.drops() == STAmount::kMAX_NATIVE_N);
 
+/** Deserialize an `STAmount` from the wire format.
+ *
+ *  Decodes the 64-bit header word and, for issued currencies, the following
+ *  160-bit currency and 160-bit issuer fields; for MPT, the following 192-bit
+ *  MPTID.  Bit layout:
+ *  - Bit 63 (`kISSUED_CURRENCY`): 0 = XRP or MPT, 1 = IOU.
+ *  - Bit 62 (`kPOSITIVE`):        1 = positive, 0 = negative.
+ *  - Bit 61 (`kMP_TOKEN`):         1 = MPT (only when bit 63 is 0).
+ *
+ *  @throws std::runtime_error on negative-zero XRP, invalid IOU currency/
+ *      account, or mantissa/exponent outside the canonical range.
+ */
 STAmount::STAmount(SerialIter& sit, SField const& name) : STBase(name)
 {
     std::uint64_t value = sit.get64();
@@ -189,12 +257,23 @@ STAmount::STAmount(SerialIter& sit, SField const& name) : STBase(name)
     canonicalize();
 }
 
+/** Construct a native XRP amount from a signed mantissa.
+ *
+ *  Negative values are stored as positive mantissa + sign bit via `set()`.
+ *  No `canonicalize()` call is made; the caller is responsible for ensuring
+ *  the value is within the legal XRP drop range.
+ */
 STAmount::STAmount(SField const& name, std::int64_t mantissa)
     : STBase(name), asset_(xrpIssue()), offset_(0)
 {
     set(mantissa);
 }
 
+/** Construct a native XRP amount from an unsigned mantissa and explicit sign.
+ *
+ *  The mantissa must not exceed `INT64_MAX`; the assertion enforces this.
+ *  This constructor does not call `canonicalize()`.
+ */
 STAmount::STAmount(SField const& name, std::uint64_t mantissa, bool negative)
     : STBase(name), asset_(xrpIssue()), value_(mantissa), offset_(0), isNegative_(negative)
 {
@@ -204,6 +283,12 @@ STAmount::STAmount(SField const& name, std::uint64_t mantissa, bool negative)
         "mantissa input");
 }
 
+/** Copy-construct an STAmount while assigning a different SField name.
+ *
+ *  Used when an amount value needs to be re-associated with a different
+ *  serialized field (e.g. when promoting an inner object's amount into an
+ *  outer context).  Calls `canonicalize()` to ensure invariants hold.
+ */
 STAmount::STAmount(SField const& name, STAmount const& from)
     : STBase(name)
     , asset_(from.asset_)
@@ -219,6 +304,11 @@ STAmount::STAmount(SField const& name, STAmount const& from)
 
 //------------------------------------------------------------------------------
 
+/** Construct a bare (field-less) native XRP amount from an unsigned mantissa.
+ *
+ *  A negative sign is suppressed for zero (`mantissa == 0 && negative` is
+ *  treated as positive zero).  Does not call `canonicalize()`.
+ */
 STAmount::STAmount(std::uint64_t mantissa, bool negative)
     : asset_(xrpIssue()), value_(mantissa), offset_(0), isNegative_(mantissa != 0 && negative)
 {
@@ -228,6 +318,11 @@ STAmount::STAmount(std::uint64_t mantissa, bool negative)
         "input");
 }
 
+/** Promote an `XRPAmount` into an `STAmount`.
+ *
+ *  Preserves the sign of `amount` and calls `canonicalize()` to ensure
+ *  the drop count is within the legal XRP range.
+ */
 STAmount::STAmount(XRPAmount const& amount)
     : asset_(xrpIssue()), offset_(0), isNegative_(amount < beast::kZERO)
 {
@@ -266,6 +361,11 @@ STAmount::move(std::size_t n, void* buf)
 // Conversion
 //
 //------------------------------------------------------------------------------
+
+/** Convert to the lean `XRPAmount` representation.
+ *
+ *  @throw std::logic_error if this amount is not native (XRP).
+ */
 XRPAmount
 STAmount::xrp() const
 {
@@ -281,6 +381,10 @@ STAmount::xrp() const
     return XRPAmount{drops};
 }
 
+/** Convert to the lean `IOUAmount` representation.
+ *
+ *  @throw std::logic_error if this amount is integral (XRP or MPT).
+ */
 IOUAmount
 STAmount::iou() const
 {
@@ -296,6 +400,10 @@ STAmount::iou() const
     return {mantissa, exponent};
 }
 
+/** Convert to the lean `MPTAmount` representation.
+ *
+ *  @throw std::logic_error if this amount does not hold an `MPTIssue`.
+ */
 MPTAmount
 STAmount::mpt() const
 {
@@ -311,6 +419,12 @@ STAmount::mpt() const
     return MPTAmount{value};
 }
 
+/** Assign from an `IOUAmount`, preserving the existing asset identity.
+ *
+ *  The amount must already be an IOU (non-integral); the asset is unchanged.
+ *  Does not call `canonicalize()` — the `IOUAmount` is already in canonical
+ *  form.
+ */
 STAmount&
 STAmount::operator=(IOUAmount const& iou)
 {
@@ -328,6 +442,19 @@ STAmount::operator=(IOUAmount const& iou)
     return *this;
 }
 
+/** Assign from a `Number`, with feature-gated conversion path.
+ *
+ *  When `featureSingleAssetVault` or `featureLendingProtocol` is active, or
+ *  when no current transaction rules are set (e.g. in unit tests), delegates
+ *  to `fromNumber()` for asset-aware normalization.  The legacy path directly
+ *  copies the mantissa and exponent without asset-specific rounding; both
+ *  paths call `canonicalize()` afterward.
+ *
+ *  @note This operator exists to support the vault/loan transactor pattern
+ *      where `Number` arithmetic results are assigned back into an `STAmount`
+ *      field.  Callers must ensure `associateAsset()` is called after all
+ *      mutations if `sMD_NeedsAsset` fields are involved.
+ */
 STAmount&
 STAmount::operator=(Number const& number)
 {
@@ -367,6 +494,19 @@ STAmount::operator-=(STAmount const& a)
     return *this;
 }
 
+/** Add two amounts of the same asset.
+ *
+ *  For XRP, performs signed 64-bit integer addition on the drop counts.
+ *  For MPT, performs integer addition on the token values.
+ *  For IOU (legacy path), aligns exponents by truncating the lower-exponent
+ *  operand, then adds; results within [−10, +10] after alignment are
+ *  rounded to the asset's zero.
+ *  When `getSTNumberSwitchover()` is active, delegates to `IOUAmount::operator+`.
+ *
+ *  @note The int64 addition itself cannot overflow, but the resulting
+ *      `STAmount` can overflow during `canonicalize()`, which then throws.
+ *  @throw std::runtime_error if the amounts are not comparable or overflow.
+ */
 STAmount
 operator+(STAmount const& v1, STAmount const& v2)
 {
@@ -430,6 +570,12 @@ operator+(STAmount const& v1, STAmount const& v2)
     return STAmount{v1.getFName(), v1.asset(), static_cast<std::uint64_t>(-fv), ov1, true};
 }
 
+/** Subtract two amounts of the same asset.
+ *
+ *  Implemented as `v1 + (−v2)`.  The unary negation has no effect on zero.
+ *
+ *  @throw std::runtime_error if the amounts are not comparable or overflow.
+ */
 STAmount
 operator-(STAmount const& v1, STAmount const& v2)
 {
@@ -446,15 +592,19 @@ STAmount::setIssue(Asset const& asset)
     asset_ = asset;
 }
 
-// Convert an offer into an index amount so they sort by rate.
-// A taker will take the best, lowest, rate first.
-// (e.g. a taker will prefer pay 1 get 3 over pay 1 get 2.
-// --> offerOut: takerGets: How much the offerer is selling to the taker.
-// -->  offerIn: takerPays: How much the offerer is receiving from the taker.
-// <--    uRate: normalize(offerIn/offerOut)
-//             A lower rate is better for the person taking the order.
-//             The taker gets more for less with a lower rate.
-// Zero is returned if the offer is worthless.
+/** Encode an order-book offer as a 64-bit sort key (rate = takerPays / takerGets).
+ *
+ *  A lower value represents a better rate for the taker.  The key packs
+ *  `(exponent + 100) << 56 | mantissa`, exploiting the fact that the
+ *  canonical IOU mantissa fits in 56 bits.  Overflow or a zero quotient both
+ *  return 0 (offer treated as worthless).
+ *
+ *  @param offerOut `takerGets`: the amount the offerer sells.
+ *  @param offerIn  `takerPays`: the amount the offerer receives.
+ *  @return A 64-bit sort key where lower is better for takers; 0 for worthless
+ *      or overflow offers.
+ *  @see kU_RATE_ONE for the canonical 1:1 rate constant.
+ */
 std::uint64_t
 getRate(STAmount const& offerOut, STAmount const& offerIn)
 {
@@ -479,36 +629,28 @@ getRate(STAmount const& offerOut, STAmount const& offerIn)
     }
 }
 
-/**
- * @brief Safely checks if two STAmount values can be added without overflow,
- * underflow, or precision loss.
+/** Determine whether adding two amounts is safe without overflow or unacceptable
+ *  precision loss.
  *
- * This function determines whether the addition of two STAmount objects is
- * safe, depending on their type:
- * - For XRP amounts, it checks for integer overflow and underflow.
- * - For IOU amounts, it checks for acceptable precision loss.
- * - For MPT amounts, it checks for overflow and underflow within 63-bit signed
- * integer limits.
- * - If either amount is zero, addition is always considered safe.
- * - If the amounts are of different currencies or types, addition is not
- * allowed.
+ *  Returns `false` immediately for incomparable assets.  For XRP and MPT,
+ *  checks integer overflow/underflow bounds.  For IOU, applies a round-trip
+ *  relative error test: `|(a−b)+b − a| + |(b−a)+a − b| ≤ 10^−4`; this
+ *  catches cases where a large exponent gap would lose too many significant
+ *  digits, which could corrupt vault/AMM balances.
  *
- * @param a The first STAmount to add.
- * @param b The second STAmount to add.
- * @return true if the addition is safe; false otherwise.
+ *  @param a The first addend.
+ *  @param b The second addend.
+ *  @return `true` if `a + b` is safe to compute; `false` otherwise.
  */
 bool
 canAdd(STAmount const& a, STAmount const& b)
 {
-    // cannot add different currencies
     if (!areComparable(a, b))
         return false;
 
-    // special case: adding anything to zero is always fine
     if (a == beast::kZERO || b == beast::kZERO)
         return true;
 
-    // XRP case (overflow & underflow check)
     if (isXRP(a) && isXRP(b))
     {
         XRPAmount const aVal = a.xrp();
@@ -521,7 +663,6 @@ canAdd(STAmount const& a, STAmount const& b)
              aVal < XRPAmount{std::numeric_limits<XRPAmount::value_type>::min()} - bVal));
     }
 
-    // IOU case (precision check)
     auto const ret = std::visit(
         [&]<ValidIssueType TIss1, ValidIssueType TIss2>(
             TIss1 const&, TIss2 const&) -> std::optional<bool> {
@@ -534,7 +675,6 @@ canAdd(STAmount const& a, STAmount const& b)
                 return ((rhs.negative() ? -rhs : rhs) + (lhs.negative() ? -lhs : lhs)) <= kMAX_LOSS;
             }
 
-            // MPT (overflow & underflow check)
             if constexpr (kIS_MPTISSUE_V<TIss1> && kIS_MPTISSUE_V<TIss2>)
             {
                 MPTAmount const aVal = a.mpt();
@@ -557,44 +697,32 @@ canAdd(STAmount const& a, STAmount const& b)
     // LCOV_EXCL_STOP
 }
 
-/**
- * @brief Determines if it is safe to subtract one STAmount from another.
+/** Determine whether subtracting `b` from `a` is safe.
  *
- * This function checks whether subtracting amount `b` from amount `a` is valid,
- * considering currency compatibility and underflow conditions for specific
- * types.
+ *  For XRP and MPT, checks integer underflow and overflow bounds.  For IOU,
+ *  subtraction is always considered safe because negative IOU balances are
+ *  valid on the ledger.  Returns `false` for incomparable assets.
  *
- * - Subtracting zero is always allowed.
- * - Subtraction is only allowed between comparable currencies.
- * - For XRP amounts, ensures no underflow or overflow occurs.
- * - For IOU amounts, subtraction is always allowed (no underflow).
- * - For MPT amounts, ensures no underflow or overflow occurs.
- *
- * @param a The minuend (amount to subtract from).
- * @param b The subtrahend (amount to subtract).
- * @return true if subtraction is allowed, false otherwise.
+ *  @param a The minuend.
+ *  @param b The subtrahend.
+ *  @return `true` if `a - b` is safe to compute; `false` otherwise.
  */
 bool
 canSubtract(STAmount const& a, STAmount const& b)
 {
-    // Cannot subtract different currencies
     if (!areComparable(a, b))
         return false;
 
-    // Special case: subtracting zero is always fine
     if (b == beast::kZERO)
         return true;
 
-    // XRP case (underflow & overflow check)
     if (isXRP(a) && isXRP(b))
     {
         XRPAmount const aVal = a.xrp();
         XRPAmount const bVal = b.xrp();
-        // Check for underflow
         if (bVal > XRPAmount{0} && aVal < bVal)
             return false;
 
-        // Check for overflow
         if (bVal < XRPAmount{0} &&
             aVal > XRPAmount{std::numeric_limits<XRPAmount::value_type>::max()} + bVal)
             return false;
@@ -602,7 +730,6 @@ canSubtract(STAmount const& a, STAmount const& b)
         return true;
     }
 
-    // IOU case (no underflow)
     auto const ret = std::visit(
         [&]<ValidIssueType TIss1, ValidIssueType TIss2>(
             TIss1 const&, TIss2 const&) -> std::optional<bool> {
@@ -611,17 +738,14 @@ canSubtract(STAmount const& a, STAmount const& b)
                 return true;
             }
 
-            // MPT case (underflow & overflow check)
             if constexpr (kIS_MPTISSUE_V<TIss1> && kIS_MPTISSUE_V<TIss2>)
             {
                 MPTAmount const aVal = a.mpt();
                 MPTAmount const bVal = b.mpt();
 
-                // Underflow check
                 if (bVal > MPTAmount{0} && aVal < bVal)
                     return false;
 
-                // Overflow check
                 if (bVal < MPTAmount{0} &&
                     aVal > MPTAmount{std::numeric_limits<MPTAmount::value_type>::max()} + bVal)
                     return false;
@@ -639,6 +763,16 @@ canSubtract(STAmount const& a, STAmount const& b)
     // LCOV_EXCL_STOP
 }
 
+/** Serialize this amount into a `Json::Value`.
+ *
+ *  XRP amounts are emitted as a plain string (drop count).  IOU and MPT amounts
+ *  are emitted as a JSON object with `"value"` plus asset fields via
+ *  `Asset::setJson()`.
+ *
+ *  @note It is an error to call this for a non-native amount when the asset
+ *      does not have a valid currency and issuer; `Asset::setJson()` will throw
+ *      in that case.
+ */
 void
 STAmount::setJson(json::Value& elem) const
 {
@@ -669,6 +803,7 @@ STAmount::getSType() const
     return STI_AMOUNT;
 }
 
+/** Return a human-readable string including the asset identity (e.g. `"100/XRP"`). */
 std::string
 STAmount::getFullText() const
 {
@@ -679,6 +814,10 @@ STAmount::getFullText() const
     return ret;
 }
 
+/** Return a human-readable decimal string, applying decimal-point notation when
+ *  the exponent is in the range [−25, −5) and scientific notation otherwise.
+ *  Leading and trailing zeroes are stripped for readability.
+ */
 std::string
 STAmount::getText() const
 {
@@ -775,6 +914,10 @@ STAmount::getJson(JsonOptions) const
     return elem;
 }
 
+/** Serialize to wire format, producing the bit pattern described in the class
+ *  comment.  Inverse of the `SerialIter` constructor; round-trips losslessly
+ *  for any canonical amount.
+ */
 void
 STAmount::add(Serializer& s) const
 {
@@ -838,22 +981,23 @@ STAmount::isDefault() const
 
 //------------------------------------------------------------------------------
 
-// amount = value_ * [10 ^ offset_]
-// Representation range is 10^80 - 10^(-80).
-//
-// On the wire:
-// - high bit is 0 for XRP, 1 for issued currency
-// - next bit is 1 for positive, 0 for negative (except 0 issued currency, which
-//      is a special case of 0x8000000000000000
-// - for issued currencies, the next 8 bits are (offset_+97).
-//   The +97 is so that this value is always positive.
-// - The remaining bits are significant digits (mantissa)
-//   That's 54 bits for issued currency and 62 bits for native
-//   (but XRP only needs 57 bits for the max value of 10^17 drops)
-//
-// value_ is zero if the amount is zero, otherwise it's within the range
-//    10^15 to (10^16 - 1) inclusive.
-// offset_ is in the range -96 to +80.
+/** Bring the amount into its canonical internal form.
+ *
+ *  For **integral** types (XRP and MPT): repeatedly divides or multiplies
+ *  `value_` by 10 while adjusting `offset_` until `offset_ == 0`, checking
+ *  overflow bounds before each multiply.  When `getSTNumberSwitchover()` is
+ *  active, delegates to `XRPAmount` or `MPTAmount` conversion via `Number`.
+ *
+ *  For **IOU**: nudges the mantissa into the canonical window [10^15, 10^16)
+ *  by scaling up (multiply × 10, decrement offset) or down (divide ÷ 10,
+ *  increment offset).  Underflow below `kMIN_OFFSET` collapses the value to
+ *  canonical zero `(value_=0, offset_=−100)`.  Overflow throws.  When
+ *  `getSTNumberSwitchover()` is active, delegates to `iou()` which uses the
+ *  `IOUAmount` normalizer.
+ *
+ *  @throw std::runtime_error on XRP overflow (`> kMAX_NATIVE_N`), MPT overflow
+ *      (`> maxMPTokenAmount`), or IOU overflow.
+ */
 void
 STAmount::canonicalize()
 {
@@ -985,6 +1129,7 @@ STAmount::canonicalize()
         (value_ != 0) || (offset_ != -100), "xrpl::STAmount::canonicalize : value or offset set");
 }
 
+/** Decompose a signed integer into `isNegative_` and `value_` (unsigned mantissa). */
 void
 STAmount::set(std::int64_t v)
 {
@@ -1002,6 +1147,16 @@ STAmount::set(std::int64_t v)
 
 //------------------------------------------------------------------------------
 
+/** Decode a 64-bit order-book sort key back into an `STAmount` quality.
+ *
+ *  Inverts the encoding performed by `getRate()`: extracts the 8-bit
+ *  `(exponent + 100)` from the high bits and the 56-bit mantissa from the
+ *  low bits, returning the corresponding `noIssue()` amount.  A zero rate
+ *  returns a zero-valued `noIssue()` amount.
+ *
+ *  @param rate A 64-bit key as produced by `getRate()`.
+ *  @return An `STAmount` representing the decoded quality.
+ */
 STAmount
 amountFromQuality(std::uint64_t rate)
 {
@@ -1014,6 +1169,14 @@ amountFromQuality(std::uint64_t rate)
     return STAmount(noIssue(), mantissa, exponent);
 }
 
+/** Parse an amount string into an `STAmount` for the given asset.
+ *
+ *  @param asset  The asset (XRP, IOU, or MPT) for the resulting amount.
+ *  @param amount A decimal string such as `"100"` or `"1.5e2"`.
+ *  @return The parsed `STAmount`.
+ *  @throw std::runtime_error if `asset` is integral (XRP or MPT) and the
+ *      string encodes a fractional value (negative exponent).
+ */
 STAmount
 amountFromString(Asset const& asset, std::string const& amount)
 {
@@ -1023,6 +1186,24 @@ amountFromString(Asset const& asset, std::string const& amount)
     return {asset, parts.mantissa, parts.exponent, parts.negative};
 }
 
+/** Parse a JSON value into an `STAmount`, supporting four input formats.
+ *
+ *  Recognized formats:
+ *  - **Object** with `"value"` plus `"currency"` / `"issuer"` for IOU, or
+ *    `"mpt_issuance_id"` for MPT.
+ *  - **Array** `[value, currency_or_mptid, issuer]`.
+ *  - **Delimited string** `"value/currency/issuer"` (tabs, newlines, commas, or `/`).
+ *  - **Bare number or string** treated as an XRP drop count.
+ *
+ *  Asset type is inferred from which fields are present; fractional values
+ *  are rejected for XRP and MPT since those are integer-only types.
+ *
+ *  @param name The SField to associate with the returned `STAmount`.
+ *  @param v    The JSON value to parse.
+ *  @return The parsed `STAmount`.
+ *  @throw std::runtime_error on any format violation, invalid currency/issuer
+ *      strings, or fractional XRP/MPT specification.
+ */
 STAmount
 amountFromJson(SField const& name, json::Value const& v)
 {
@@ -1147,6 +1328,16 @@ amountFromJson(SField const& name, json::Value const& v)
     return {name, asset, parts.mantissa, parts.exponent, parts.negative};
 }
 
+/** Non-throwing wrapper around `amountFromJson()`.
+ *
+ *  On success, `result` is overwritten and `true` is returned.  On any
+ *  exception, the error is logged at WARN level, `result` is unchanged, and
+ *  `false` is returned.
+ *
+ *  @param result    Output parameter set on success.
+ *  @param jvSource  The JSON value to parse.
+ *  @return `true` on success; `false` if parsing threw.
+ */
 bool
 amountFromJsonNoThrow(STAmount& result, json::Value const& jvSource)
 {
@@ -1168,6 +1359,10 @@ amountFromJsonNoThrow(STAmount& result, json::Value const& jvSource)
 //
 //------------------------------------------------------------------------------
 
+/** Return `true` if both amounts represent the same asset and the same value.
+ *
+ *  Incomparable amounts (different asset types) are never equal.
+ */
 bool
 operator==(STAmount const& lhs, STAmount const& rhs)
 {
@@ -1175,6 +1370,13 @@ operator==(STAmount const& lhs, STAmount const& rhs)
         lhs.exponent() == rhs.exponent() && lhs.mantissa() == rhs.mantissa();
 }
 
+/** Return `true` if `lhs` is strictly less than `rhs`.
+ *
+ *  Ordering is by sign first, then exponent, then mantissa.  Amounts of
+ *  different assets cannot be ordered and throw.
+ *
+ *  @throw std::runtime_error if the amounts are not comparable.
+ */
 bool
 operator<(STAmount const& lhs, STAmount const& rhs)
 {
@@ -1209,6 +1411,7 @@ operator<(STAmount const& lhs, STAmount const& rhs)
     return false;
 }
 
+/** Negate an amount; zero is returned unchanged (no negative zero). */
 STAmount
 operator-(STAmount const& value)
 {
@@ -1229,8 +1432,15 @@ operator-(STAmount const& value)
 //
 //------------------------------------------------------------------------------
 
-// Calculate (a * b) / c when all three values are 64-bit
-// without loss of precision:
+/** Compute `(multiplier × multiplicand) / divisor` exactly using 128-bit
+ *  intermediate precision.
+ *
+ *  The 64-bit inputs are widened to `uint128_t` before multiplying, preventing
+ *  overflow in the intermediate product.  The final quotient is checked to fit
+ *  in 64 bits before truncation.
+ *
+ *  @throw std::overflow_error if the result exceeds `UINT64_MAX`.
+ */
 static std::uint64_t
 muldiv(std::uint64_t multiplier, std::uint64_t multiplicand, std::uint64_t divisor)
 {
@@ -1249,6 +1459,15 @@ muldiv(std::uint64_t multiplier, std::uint64_t multiplicand, std::uint64_t divis
     return static_cast<uint64_t>(ret);
 }
 
+/** Compute `(multiplier × multiplicand + rounding) / divisor` with 128-bit
+ *  intermediate precision.
+ *
+ *  Adds `rounding` to the product before dividing.  Callers pass
+ *  `divisor − 1` as `rounding` to implement round-up (away from zero), or
+ *  `0` for truncation.
+ *
+ *  @throw std::overflow_error if the result exceeds `UINT64_MAX`.
+ */
 static std::uint64_t
 muldivRound(
     std::uint64_t multiplier,
@@ -1272,6 +1491,20 @@ muldivRound(
     return static_cast<uint64_t>(ret);
 }
 
+/** Divide two amounts and produce a result with the given asset.
+ *
+ *  Integral operands are first scaled up into the IOU canonical mantissa
+ *  window [10^15, 10^16).  The formula `muldiv(numVal, 10^17, denVal)`
+ *  maintains full 15-digit precision; the `+5` bias provides a half-up
+ *  rounding approximation in the legacy (non-strict) path.  The combined
+ *  exponent is `numOffset − denOffset − 17`.
+ *
+ *  @param num   Numerator amount.
+ *  @param den   Denominator amount.
+ *  @param asset Asset identity for the result.
+ *  @return The quotient as an `STAmount` with the given asset.
+ *  @throw std::runtime_error on division by zero or result overflow.
+ */
 STAmount
 divide(STAmount const& num, STAmount const& den, Asset const& asset)
 {
@@ -1305,11 +1538,6 @@ divide(STAmount const& num, STAmount const& den, Asset const& asset)
         }
     }
 
-    // We divide the two mantissas (each is between 10^15
-    // and 10^16). To maintain precision, we multiply the
-    // numerator by 10^17 (the product is in the range of
-    // 10^32 to 10^33) followed by a division, so the result
-    // is in the range of 10^16 to 10^15.
     return STAmount(
         asset,
         muldiv(numVal, kTEN_TO17, denVal) + 5,
@@ -1317,6 +1545,23 @@ divide(STAmount const& num, STAmount const& den, Asset const& asset)
         num.negative() != den.negative());
 }
 
+/** Multiply two amounts and produce a result with the given asset.
+ *
+ *  For all-native XRP or all-MPT, guards against overflow using factored
+ *  comparisons against `sqrt(cMaxNative)` / `sqrt(maxMPTokenAmount)` before
+ *  the 64-bit multiply, avoiding the 128-bit path for the common case.
+ *
+ *  For mixed or IOU operands, each mantissa is scaled into [10^15, 10^16),
+ *  the 128-bit product is divided by 10^14, and `+7` provides a rounding
+ *  bias.  The combined exponent is `offset1 + offset2 + 14`.
+ *  When `getSTNumberSwitchover()` is active, delegates to `Number` arithmetic.
+ *
+ *  @param v1    First factor.
+ *  @param v2    Second factor.
+ *  @param asset Asset identity for the result.
+ *  @return The product as an `STAmount` with the given asset.
+ *  @throw std::runtime_error on overflow.
+ */
 STAmount
 multiply(STAmount const& v1, STAmount const& v2, Asset const& asset)
 {
@@ -1379,10 +1624,6 @@ multiply(STAmount const& v1, STAmount const& v2, Asset const& asset)
         }
     }
 
-    // We multiply the two mantissas (each is between 10^15
-    // and 10^16), so their product is in the 10^30 to 10^32
-    // range. Dividing their product by 10^14 maintains the
-    // precision, by scaling the result to 10^16 to 10^18.
     return STAmount(
         asset,
         muldiv(value1, value2, kTEN_TO14) + 7,
@@ -1390,26 +1631,22 @@ multiply(STAmount const& v1, STAmount const& v2, Asset const& asset)
         v1.negative() != v2.negative());
 }
 
-// This is the legacy version of canonicalizeRound.  It's been in use
-// for years, so it is deeply embedded in the behavior of cross-currency
-// transactions.
-//
-// However, in 2022 it was noticed that the rounding characteristics were
-// surprising.  When the code converts from IOU-like to XRP-like there may
-// be a fraction of the IOU-like representation that is too small to be
-// represented in drops.  `canonicalizeRound()` currently does some unusual
-// rounding.
-//
-//  1. If the fractional part is greater than or equal to 0.1, then the
-//     number of drops is rounded up.
-//
-//  2. However, if the fractional part is less than 0.1 (for example,
-//     0.099999), then the number of drops is rounded down.
-//
-// The XRP Ledger has this rounding behavior baked in.  But there are
-// situations where this rounding behavior led to undesirable outcomes.
-// So an alternative rounding approach was introduced.  You'll see that
-// alternative below.
+/** Bring a mantissa/exponent pair into the canonical range after multiply or
+ *  divide, using the legacy rounding rule.
+ *
+ *  For **integral** types: divides repeatedly until `offset >= −1`, adding 9
+ *  (or 10 when only one intermediate divide was needed) before the final
+ *  divide to round up.  The result is that fractions ≥ 0.1 round up while
+ *  fractions < 0.1 round down — a historically baked-in XRP Ledger behavior.
+ *
+ *  For **IOU**: if `value > kMAX_VALUE`, repeatedly divides until
+ *  `value <= 10 * kMAX_VALUE`, then adds 9 before the last divide to bias
+ *  toward ceiling.
+ *
+ *  @note The `bool` fourth parameter is accepted for interface compatibility
+ *      with `canonicalizeRoundStrict` but is ignored.
+ *  @see canonicalizeRoundStrict for the corrected rounding variant.
+ */
 static void
 canonicalizeRound(bool integral, std::uint64_t& value, int& offset, bool)
 {
@@ -1445,10 +1682,20 @@ canonicalizeRound(bool integral, std::uint64_t& value, int& offset, bool)
     }
 }
 
-// The original canonicalizeRound did not allow the rounding direction to
-// be specified.  It also ignored some of the bits that could contribute to
-// rounding decisions.  canonicalizeRoundStrict() tracks all of the bits in
-// the value being rounded.
+/** Bring a mantissa/exponent pair into the canonical range after multiply or
+ *  divide, tracking all remainder bits to round correctly.
+ *
+ *  Unlike `canonicalizeRound`, accumulates a `hadRemainder` flag across all
+ *  intermediate divides.  The final bias is 10 (round up) when a remainder
+ *  was observed and `roundUp` is true, otherwise 9.  This ensures that any
+ *  truncated bits influence the rounding decision — not just the last
+ *  fractional digit.
+ *
+ *  @param integral  `true` for XRP/MPT, `false` for IOU.
+ *  @param value     The mantissa, modified in place.
+ *  @param offset    The exponent, modified in place.
+ *  @param roundUp   `true` to round away from zero; `false` to truncate.
+ */
 static void
 canonicalizeRoundStrict(bool integral, std::uint64_t& value, int& offset, bool roundUp)
 {
@@ -1486,14 +1733,30 @@ canonicalizeRoundStrict(bool integral, std::uint64_t& value, int& offset, bool r
     }
 }
 
+/** Round an IOU amount to the precision implied by `scale`.
+ *
+ *  Constructs a reference value at `(kMIN_VALUE, scale)` and exploits IOU
+ *  addition's exponent-alignment truncation: adding the reference forces the
+ *  sum to be represented at the reference's precision, then subtracting the
+ *  reference yields a result rounded to that precision.
+ *
+ *  Integral types (XRP, MPT) and zero are returned unchanged — no rounding
+ *  is needed.  If `value.exponent() >= scale` the amount is already at or
+ *  coarser than the target precision and is returned as-is to avoid losing
+ *  information.
+ *
+ *  @param value    The IOU amount to round.
+ *  @param scale    Target exponent; `value.exponent()` must be less than this.
+ *  @param rounding Rounding mode applied to the intermediate addition via
+ *      `NumberRoundModeGuard`.
+ *  @return The rounded `STAmount`.
+ */
 STAmount
 roundToScale(STAmount const& value, std::int32_t scale, Number::RoundingMode rounding)
 {
-    // Nothing to do for integral types.
     if (value.integral())
         return value;
 
-    // Nothing to do for zero.
     if (value == beast::kZERO)
         return value;
 
@@ -1515,8 +1778,13 @@ roundToScale(STAmount const& value, std::int32_t scale, Number::RoundingMode rou
 
 namespace {
 
-// We need a class that has an interface similar to NumberRoundModeGuard
-// but does nothing.
+/** No-op substitute for `NumberRoundModeGuard`.
+ *
+ *  Used as the `MightSaveRound` template argument in `mulRoundImpl` and
+ *  `divRoundImpl` when the caller does not want to propagate a rounding mode
+ *  into the thread-local `Number` round mode (i.e. the legacy `mulRound` /
+ *  `divRound` paths).
+ */
 class DontAffectNumberRoundMode
 {
 public:
@@ -1532,10 +1800,32 @@ public:
 
 }  // anonymous namespace
 
-// Pass the canonicalizeRound function pointer as a template parameter.
-//
-// We might need to use NumberRoundModeGuard.  Allow the caller
-// to pass either that or a replacement as a template parameter.
+/** Shared implementation for `mulRound` and `mulRoundStrict`.
+ *
+ *  Template parameters allow selecting between the legacy and strict rounding
+ *  strategies without code duplication:
+ *  - `CanonicalizeFunc`: either `canonicalizeRound` (legacy) or
+ *    `canonicalizeRoundStrict` (remainder-tracking).
+ *  - `MightSaveRound`: either `NumberRoundModeGuard` (strict — propagates
+ *    rounding into `Number` during `canonicalize()`) or
+ *    `DontAffectNumberRoundMode` (legacy — no-op).
+ *
+ *  For all-native XRP and all-MPT, overflow is guarded via the same factored
+ *  comparisons as `multiply()`.  For IOU, operands are scaled into
+ *  [10^15, 10^16), multiplied via `muldivRound`, and the canonicalize function
+ *  trims back into the canonical window with the desired rounding direction.
+ *  When the rounded result is zero but `roundUp && !resultNegative`, the
+ *  smallest representable positive value is returned instead.
+ *
+ *  @tparam CanonicalizeFunc  Post-multiply rounding adjuster function.
+ *  @tparam MightSaveRound    RAII guard type for propagating rounding mode.
+ *  @param v1      First factor.
+ *  @param v2      Second factor.
+ *  @param asset   Asset for the result.
+ *  @param roundUp `true` to round away from zero; `false` to truncate.
+ *  @return The rounded product.
+ *  @throw std::runtime_error on overflow.
+ */
 template <void (*CanonicalizeFunc)(bool, std::uint64_t&, int&, bool), typename MightSaveRound>
 static STAmount
 mulRoundImpl(STAmount const& v1, STAmount const& v2, Asset const& asset, bool roundUp)
@@ -1594,14 +1884,6 @@ mulRoundImpl(STAmount const& v1, STAmount const& v2, Asset const& asset, bool ro
 
     bool const resultNegative = v1.negative() != v2.negative();
 
-    // We multiply the two mantissas (each is between 10^15
-    // and 10^16), so their product is in the 10^30 to 10^32
-    // range. Dividing their product by 10^14 maintains the
-    // precision, by scaling the result to 10^16 to 10^18.
-    //
-    // If we're rounding up, we want to round up away
-    // from zero, and if we're rounding down, truncation
-    // is implicit.
     std::uint64_t amount =
         muldivRound(value1, value2, kTEN_TO14, (resultNegative != roundUp) ? kTEN_TO14M1 : 0);
 
@@ -1611,8 +1893,8 @@ mulRoundImpl(STAmount const& v1, STAmount const& v2, Asset const& asset, bool ro
         CanonicalizeFunc(asset.integral(), amount, offset, roundUp);
     }
     STAmount result = [&]() {
-        // If appropriate, tell Number to round down.  This gives the desired
-        // result from STAmount::canonicalize.
+        // Tell Number to round toward zero so that STAmount::canonicalize
+        // does not re-round in the unexpected direction.
         MightSaveRound const savedRound(Number::RoundingMode::TowardsZero);
         return STAmount(asset, amount, offset, resultNegative);
     }();
@@ -1621,13 +1903,11 @@ mulRoundImpl(STAmount const& v1, STAmount const& v2, Asset const& asset, bool ro
     {
         if (asset.integral())
         {
-            // return the smallest value above zero
             amount = 1;
             offset = 0;
         }
         else
         {
-            // return the smallest value above zero
             amount = STAmount::kMIN_VALUE;
             offset = STAmount::kMIN_OFFSET;
         }
@@ -1636,20 +1916,63 @@ mulRoundImpl(STAmount const& v1, STAmount const& v2, Asset const& asset, bool ro
     return result;
 }
 
+/** Multiply with legacy rounding: fractions ≥ 0.1 round up, < 0.1 round down.
+ *
+ *  Uses `canonicalizeRound` (backward-compatible behavior baked into the
+ *  XRP Ledger since inception) and does not propagate a rounding mode to the
+ *  `Number` engine.
+ *
+ *  @param v1      First factor.
+ *  @param v2      Second factor.
+ *  @param asset   Asset for the result.
+ *  @param roundUp `true` to round away from zero.
+ *  @return The rounded product.
+ */
 STAmount
 mulRound(STAmount const& v1, STAmount const& v2, Asset const& asset, bool roundUp)
 {
     return mulRoundImpl<canonicalizeRound, DontAffectNumberRoundMode>(v1, v2, asset, roundUp);
 }
 
+/** Multiply with strict remainder-tracking rounding.
+ *
+ *  Uses `canonicalizeRoundStrict` and propagates the rounding direction to
+ *  the thread-local `Number` round mode via `NumberRoundModeGuard`, ensuring
+ *  `STAmount::canonicalize()` rounds consistently.
+ *
+ *  @param v1      First factor.
+ *  @param v2      Second factor.
+ *  @param asset   Asset for the result.
+ *  @param roundUp `true` to round away from zero.
+ *  @return The rounded product.
+ */
 STAmount
 mulRoundStrict(STAmount const& v1, STAmount const& v2, Asset const& asset, bool roundUp)
 {
     return mulRoundImpl<canonicalizeRoundStrict, NumberRoundModeGuard>(v1, v2, asset, roundUp);
 }
 
-// We might need to use NumberRoundModeGuard.  Allow the caller
-// to pass either that or a replacement as a template parameter.
+/** Shared implementation for `divRound` and `divRoundStrict`.
+ *
+ *  Scales each integral operand into [10^15, 10^16) before dividing, then
+ *  computes `muldivRound(numVal, 10^17, denVal, rounding)` where `rounding`
+ *  is `denVal − 1` when rounding away from zero, or `0` to truncate.
+ *  `canonicalizeRound` then trims the result back into the canonical window.
+ *  When the rounded result is zero but `roundUp && !resultNegative`, the
+ *  smallest representable positive value is returned.
+ *
+ *  The `MightSaveRound` template parameter has the same semantics as in
+ *  `mulRoundImpl`: use `NumberRoundModeGuard` for strict mode, or
+ *  `DontAffectNumberRoundMode` for the legacy path.
+ *
+ *  @tparam MightSaveRound RAII guard type for propagating rounding mode.
+ *  @param num     Numerator.
+ *  @param den     Denominator.
+ *  @param asset   Asset for the result.
+ *  @param roundUp `true` to round away from zero; `false` to truncate.
+ *  @return The rounded quotient.
+ *  @throw std::runtime_error on division by zero or overflow.
+ */
 template <typename MightSaveRound>
 static STAmount
 divRoundImpl(STAmount const& num, STAmount const& den, Asset const& asset, bool roundUp)
@@ -1683,14 +2006,6 @@ divRoundImpl(STAmount const& num, STAmount const& den, Asset const& asset, bool 
 
     bool const resultNegative = (num.negative() != den.negative());
 
-    // We divide the two mantissas (each is between 10^15
-    // and 10^16). To maintain precision, we multiply the
-    // numerator by 10^17 (the product is in the range of
-    // 10^32 to 10^33) followed by a division, so the result
-    // is in the range of 10^16 to 10^15.
-    //
-    // We round away from zero if we're rounding up or
-    // truncate if we're rounding down.
     std::uint64_t amount =
         muldivRound(numVal, kTEN_TO17, denVal, (resultNegative != roundUp) ? denVal - 1 : 0);
 
@@ -1712,13 +2027,11 @@ divRoundImpl(STAmount const& num, STAmount const& den, Asset const& asset, bool 
     {
         if (asset.integral())
         {
-            // return the smallest value above zero
             amount = 1;
             offset = 0;
         }
         else
         {
-            // return the smallest value above zero
             amount = STAmount::kMIN_VALUE;
             offset = STAmount::kMIN_OFFSET;
         }
@@ -1727,12 +2040,34 @@ divRoundImpl(STAmount const& num, STAmount const& den, Asset const& asset, bool 
     return result;
 }
 
+/** Divide with legacy rounding (same ≥ 0.1 / < 0.1 threshold as `mulRound`).
+ *
+ *  Does not propagate a rounding mode to the `Number` engine.
+ *
+ *  @param num     Numerator.
+ *  @param den     Denominator.
+ *  @param asset   Asset for the result.
+ *  @param roundUp `true` to round away from zero.
+ *  @return The rounded quotient.
+ */
 STAmount
 divRound(STAmount const& num, STAmount const& den, Asset const& asset, bool roundUp)
 {
     return divRoundImpl<DontAffectNumberRoundMode>(num, den, asset, roundUp);
 }
 
+/** Divide with strict remainder-tracking rounding.
+ *
+ *  Propagates the rounding direction to the thread-local `Number` round mode
+ *  via `NumberRoundModeGuard`, so that `STAmount::canonicalize()` rounds
+ *  consistently.
+ *
+ *  @param num     Numerator.
+ *  @param den     Denominator.
+ *  @param asset   Asset for the result.
+ *  @param roundUp `true` to round away from zero.
+ *  @return The rounded quotient.
+ */
 STAmount
 divRoundStrict(STAmount const& num, STAmount const& den, Asset const& asset, bool roundUp)
 {

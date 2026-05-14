@@ -1,3 +1,11 @@
+/** @file
+ *  Implements the `peers` admin RPC handler.
+ *
+ *  Aggregates two distinct views of the network into a single JSON response:
+ *  the real-time overlay snapshot (every TCP-connected peer) and the cluster
+ *  status table (trusted cluster members with their self-reported load).
+ */
+
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/TimeKeeper.h>
 #include <xrpld/overlay/Cluster.h>
@@ -16,6 +24,35 @@
 
 namespace xrpl {
 
+/** Respond to the `peers` admin RPC command.
+ *
+ *  Builds a JSON object with two top-level keys:
+ *
+ *  - `peers`: snapshot of every active overlay connection, sourced from
+ *    `Overlay::json()`.  Each entry carries a `track` field whose value
+ *    is `"diverged"` (peer is on a different chain) or `"unknown"`
+ *    (consensus not yet established); converged peers omit the field.
+ *
+ *  - `cluster`: one entry per configured cluster member (keyed by
+ *    base58-encoded node public key), excluding the local node.  Each
+ *    entry may carry:
+ *    - `tag` — human-readable name from `rippled.cfg`, omitted when empty.
+ *    - `fee` — load fee as a floating-point multiplier over `loadBase`,
+ *      omitted when equal to `loadBase` or zero (i.e., normal load).
+ *    - `age` — seconds since the member last broadcast its status,
+ *      omitted when the member has never reported; clamped to 0 on
+ *      clock-skew (reportTime >= now).
+ *
+ *  **API v1 compatibility**: when `context.apiVersion == 1` the handler
+ *  post-processes the peers array in-place, injecting a `sanity` field
+ *  alongside each `track` field: `"diverged"` → `"insane"`,
+ *  `"unknown"` → `"unknown"`.  Converged peers (no `track` field) receive
+ *  no `sanity` annotation under either version.
+ *
+ *  @param context  RPC dispatch context providing access to `Overlay`,
+ *      `Cluster`, `TimeKeeper`, and `LoadFeeTrack`.
+ *  @return JSON object with `peers` array and `cluster` object.
+ */
 json::Value
 doPeers(RPC::JsonContext& context)
 {
@@ -23,7 +60,6 @@ doPeers(RPC::JsonContext& context)
 
     jvResult[jss::peers] = context.app.getOverlay().json();
 
-    // Legacy support
     if (context.apiVersion == 1)
     {
         for (auto& p : jvResult[jss::peers])

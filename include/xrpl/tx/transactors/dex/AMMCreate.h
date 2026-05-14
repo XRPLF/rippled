@@ -4,35 +4,27 @@
 
 namespace xrpl {
 
-/** AMMCreate implements Automatic Market Maker(AMM) creation Transactor.
- *  It creates a new AMM instance with two tokens. Any trader, or Liquidity
- *  Provider (LP), can create the AMM instance and receive in return shares
- *  of the AMM pool in the form of LPTokens. The number of tokens that LP gets
- *  are determined by LPTokens = sqrt(A * B), where A and B is the current
- *  composition of the AMM pool. LP can add (AMMDeposit) or withdraw
- *  (AMMWithdraw) tokens from AMM and
- *  AMM can be used transparently in the payment or offer crossing transactions.
- *  Trading fee is charged to the traders for the trades executed against
- *  AMM instance. The fee is added to the AMM pool and distributed to the LPs
- *  in proportion to the LPTokens upon liquidity removal. The fee can be voted
- *  on by LP's (AMMVote). LP's can continuously bid (AMMBid) for the 24 hour
- *  auction slot, which enables LP's to trade at zero trading fee.
- *  AMM instance creates AccountRoot object with disabled master key
- *  for book-keeping of XRP balance if one of the tokens
- *  is XRP, a trustline for each IOU token, a trustline to keep track
- *  of LPTokens, and ltAMM ledger object. AccountRoot ID is generated
- *  internally from the parent's hash. ltAMM's object ID is
- * hash{token1.currency, token1.issuer, token2.currency, token2.issuer}, where
- * issue1 < issue2. ltAMM object provides mapping from the hash to AccountRoot
- * ID and contains: AMMAccount - AMM AccountRoot ID. TradingFee - AMM voted
- * TradingFee. VoteSlots - Array of VoteEntry, contains fee vote information.
- *  AuctionSlot - Auction slot, contains discounted fee bid information.
- *  LPTokenBalance - LPTokens outstanding balance.
- *  AMMToken - currency/issuer information for AMM tokens.
- *  AMMDeposit, AMMWithdraw, AMMVote, and AMMBid transactions use the hash
- *  to access AMM instance.
- *  @see [XLS30d:Creating AMM instance on
- * XRPL](https://github.com/XRPLF/XRPL-Standards/discussions/78)
+/** Bootstraps a new Automatic Market Maker pool on the XRP Ledger.
+ *
+ *  `AMMCreate` is the entry point for the AMM DEX subsystem. It creates the
+ *  four categories of ledger objects that constitute an AMM pool: a
+ *  pseudo-account `AccountRoot` (keyed from the AMM keylet, carrying a
+ *  disabled master key and tagged with `sfAMMID`), an `ltAMM` object keyed
+ *  by `hash{asset1.currency, asset1.issuer, asset2.currency, asset2.issuer}`
+ *  in canonical (`std::minmax`) order, the initial LP tokens computed as
+ *  `sqrt(sfAmount * sfAmount2)` and sent to the creator, and the asset
+ *  trustlines/MPToken entries required to hold the seeded liquidity.
+ *
+ *  No other AMM transaction (`AMMDeposit`, `AMMWithdraw`, `AMMVote`,
+ *  `AMMBid`, `AMMDelete`) can operate until this transaction succeeds.
+ *
+ *  @note The fee charged is one owner reserve (not the standard base fee)
+ *      because the transaction permanently allocates a scarce ledger object.
+ *  @note LP-token trustlines are created with a zero credit limit. A holder
+ *      can only receive LP tokens through affirmative action (deposit,
+ *      `TrustSet`, offer crossing) — the AMM cannot push tokens to an
+ *      unwilling account.
+ *  @see [XLS-30d: AMM on XRPL](https://github.com/XRPLF/XRPL-Standards/discussions/78)
  */
 class AMMCreate : public Transactor
 {
@@ -43,28 +35,96 @@ public:
     {
     }
 
+    /** Gate the transaction on required feature flags.
+     *
+     *  Returns false (and thereby rejects the transaction before any field
+     *  validation) when the AMM subsystem is not yet active on the current
+     *  rule set, or when either pool asset is an MPT issue and
+     *  `featureMPTokensV2` has not been enabled.
+     *
+     *  @param ctx  The preflight context providing the current rules and tx.
+     *  @return true if all required amendments are active; false otherwise.
+     */
     static bool
     checkExtraFeatures(PreflightContext const& ctx);
 
+    /** Validate the transaction fields without ledger access.
+     *
+     *  Rejects the transaction if the two pool assets are identical
+     *  (`temBAD_AMM_TOKENS`), if either amount is structurally invalid
+     *  (`invalidAMMAmount`), or if `sfTradingFee` exceeds
+     *  `kTRADING_FEE_THRESHOLD` (`temBAD_FEE`).
+     *
+     *  @param ctx  The preflight context containing the transaction.
+     *  @return `tesSUCCESS` on success, or a `tem*` error code on failure.
+     */
     static NotTEC
     preflight(PreflightContext const& ctx);
 
+    /** Return the fee required to submit this transaction.
+     *
+     *  Overrides the default base-fee logic and returns
+     *  `calculateOwnerReserveFee` instead — one owner reserve increment —
+     *  because `AMMCreate` permanently allocates a ledger object.
+     *
+     *  @param view  Read-only ledger view providing the current fee schedule.
+     *  @param tx    The transaction being evaluated.
+     *  @return Fee in drops equal to one owner reserve increment.
+     */
     static XRPAmount
     calculateBaseFee(ReadView const& view, STTx const& tx);
 
+    /** Check ledger state before applying the transaction.
+     *
+     *  Verifies that no AMM already exists for the asset pair
+     *  (`tecDUPLICATE`), that the creator is authorized for both assets,
+     *  that neither asset is frozen (`tecFROZEN`), that IOU issuers have
+     *  `lsfDefaultRipple` set (`terNO_RIPPLE`), that the creator holds
+     *  sufficient XRP for the LP-token trustline reserve plus seed funds
+     *  (`tecINSUF_RESERVE_LINE`, `tecUNFUNDED_AMM`), and that neither
+     *  seed asset is itself an existing LP token (`tecAMM_INVALID_TOKENS`).
+     *  Also validates MPT permissions via `checkMPTTxAllowed`.
+     *
+     *  When `featureAMMClawback` is not yet active, assets whose issuers
+     *  have clawback enabled (`lsfAllowTrustLineClawback` or
+     *  `lsfMPTCanClawback`) are rejected with `tecNO_PERMISSION`.
+     *
+     *  @param ctx  The preclaim context providing read-only ledger access.
+     *  @return `tesSUCCESS` on success, or an appropriate error `TER`.
+     */
     static TER
     preclaim(PreclaimContext const& ctx);
 
-    /** Attempt to create the AMM instance. */
+    /** Create all AMM ledger objects and seed initial liquidity.
+     *
+     *  Executes inside a `Sandbox` overlay: the pseudo-account, `ltAMM`
+     *  object, LP tokens, and asset trustlines/MPToken entries are created
+     *  inside `applyCreate()`. The sandbox is flushed to the live view only
+     *  when `applyCreate()` returns `tesSUCCESS`; any earlier failure leaves
+     *  the ledger unchanged. On success, both directions of the trading pair
+     *  are registered in the `OrderBookDB`.
+     *
+     *  @return `tesSUCCESS` on success, or a `tec*` error code on failure.
+     */
     TER
     doApply() override;
 
+    /** @copydoc Transactor::visitInvariantEntry
+     *
+     *  Currently a no-op for `AMMCreate`; reserved for future
+     *  transaction-specific invariants.
+     */
     void
     visitInvariantEntry(
         bool isDelete,
         std::shared_ptr<SLE const> const& before,
         std::shared_ptr<SLE const> const& after) override;
 
+    /** @copydoc Transactor::finalizeInvariants
+     *
+     *  Currently returns true unconditionally for `AMMCreate`; reserved for
+     *  future transaction-specific post-conditions.
+     */
     [[nodiscard]] bool
     finalizeInvariants(
         STTx const& tx,

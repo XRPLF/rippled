@@ -1,3 +1,13 @@
+/** @file
+ *  Policy functions that drive the XRP Ledger consensus phase transitions.
+ *
+ *  Contains three pure decision functions — `shouldCloseLedger`,
+ *  `checkConsensusReached`, and `checkConsensus` — that consume observable
+ *  network state and return boolean or enum results. All mutable consensus
+ *  state lives in the `Consensus<Adaptor>` template in `Consensus.h`; this
+ *  file holds only the timing and agreement policies that are independently
+ *  testable as free functions.
+ */
 #include <xrpld/consensus/Consensus.h>
 
 #include <xrpld/consensus/ConsensusParms.h>
@@ -21,8 +31,8 @@ shouldCloseLedger(
     std::size_t proposersClosed,
     std::size_t proposersValidated,
     std::chrono::milliseconds prevRoundTime,
-    std::chrono::milliseconds timeSincePrevClose,  // Time since last ledger's close time
-    std::chrono::milliseconds openTime,            // Time waiting to close this ledger
+    std::chrono::milliseconds timeSincePrevClose,
+    std::chrono::milliseconds openTime,
     std::chrono::milliseconds idleInterval,
     ConsensusParms const& parms,
     beast::Journal j,
@@ -40,7 +50,6 @@ shouldCloseLedger(
     using namespace std::chrono_literals;
     if ((prevRoundTime < -1s) || (prevRoundTime > 10min) || (timeSincePrevClose > 10min))
     {
-        // These are unexpected cases, we just close the ledger
         std::stringstream ss;
         ss << "shouldCloseLedger Trans=" << (anyTransactions ? "yes" : "no")
            << " Prop: " << prevProposers << "/" << proposersClosed
@@ -53,7 +62,6 @@ shouldCloseLedger(
 
     if ((proposersClosed + proposersValidated) > (prevProposers / 2))
     {
-        // If more than half of the network has closed, we close
         JLOG(j.trace()) << "Others have closed";
         CLOG(clog) << "closing ledger because enough others have already. ";
         return true;
@@ -61,12 +69,10 @@ shouldCloseLedger(
 
     if (!anyTransactions)
     {
-        // Only close at the end of the idle interval
         CLOG(clog) << "no transactions, returning. ";
-        return timeSincePrevClose >= idleInterval;  // normal idle
+        return timeSincePrevClose >= idleInterval;
     }
 
-    // Preserve minimum ledger open time
     if (openTime < parms.ledgerMIN_CLOSE)
     {
         JLOG(j.debug()) << "Must wait minimum time before closing";
@@ -74,9 +80,9 @@ shouldCloseLedger(
         return false;
     }
 
-    // Don't let this ledger close more than twice as fast as the previous
-    // ledger reached consensus so that slower validators can slow down
-    // the network
+    // Don't close more than twice as fast as the previous round: slower
+    // validators must be able to keep up, and this rate-limit prevents a
+    // fast node from driving the network beyond their capacity.
     if (openTime < (prevRoundTime / 2))
     {
         JLOG(j.debug()) << "Ledger has not been open long enough";
@@ -84,11 +90,37 @@ shouldCloseLedger(
         return false;
     }
 
-    // Close the ledger
     CLOG(clog) << "no reason to not close. ";
     return true;
 }
 
+/** Determine whether a raw vote count satisfies the consensus threshold.
+ *
+ *  Internal helper shared by `checkConsensus()` for two distinct queries:
+ *  "have we reached agreement?" and "have enough peers moved on?". The two
+ *  calls differ only in which counters are passed and whether `countSelf` is
+ *  set.
+ *
+ *  @param agreeing       Number of peers whose position matches ours.
+ *  @param total          Total number of current proposers (excluding self).
+ *  @param countSelf      If `true`, add one to both `agreeing` and `total`
+ *      before computing the percentage. Pass `proposing` from
+ *      `checkConsensus()`; observers never count themselves.
+ *  @param minConsensusPct Percentage threshold required to declare consensus
+ *      (typically `ConsensusParms::minCONSENSUS_PCT` = 80).
+ *  @param reachedMax     `true` when `currentAgreeTime > ledgerMAX_CONSENSUS`.
+ *      Used only in the zero-peer path to guard against premature self-close.
+ *  @param stalled        `true` when all disputed transactions have unambiguous
+ *      supermajority agreement either for or against inclusion. Bypasses the
+ *      percentage check and returns `true` immediately to prevent a Byzantine
+ *      minority from manipulating which transactions make the cut.
+ *  @param clog           Optional log buffer; appended when non-null.
+ *  @return `true` if consensus is considered reached, `false` otherwise.
+ *  @note When `total == 0` (no peer proposals received yet), the function
+ *      returns `false` until `reachedMax` is set. This guards against
+ *      prematurely closing on a solo position before any network proposals
+ *      have arrived, which would likely cause a desync once peers are heard.
+ */
 bool
 checkConsensusReached(
     std::size_t agreeing,
@@ -103,15 +135,6 @@ checkConsensusReached(
                << ", count_self: " << countSelf << ", minConsensusPct: " << minConsensusPct
                << ", reachedMax: " << reachedMax << ". ";
 
-    // If we are alone for too long, we have consensus.
-    // Delaying consensus like this avoids a circumstance where a peer
-    // gets ahead of proposers insofar as it has not received any proposals.
-    // This could happen if there's a slowdown in receiving proposals. Reaching
-    // consensus prematurely in this way means that the peer will likely desync.
-    // The check for reachedMax should allow plenty of time for proposals to
-    // arrive, and there should be no downside. If a peer is truly not
-    // receiving any proposals, then there should be no hurry. There's
-    // really nowhere to go.
     if (total == 0)
     {
         if (reachedMax)
@@ -124,11 +147,6 @@ checkConsensusReached(
         return false;
     }
 
-    // We only get stalled when there are disputed transactions and all of them
-    // unequivocally have 80% (minConsensusPct) agreement, either for or
-    // against. That is: either under 20% or over 80% consensus (respectively
-    // "nay" or "yay"). This prevents manipulation by a minority of byzantine
-    // peers of which transactions make the cut to get into the ledger.
     if (stalled)
     {
         CLOG(clog) << "consensus stalled. ";
@@ -188,8 +206,9 @@ checkConsensus(
 
     if (currentProposers < (prevProposers * 3 / 4))
     {
-        // Less than 3/4 of the last ledger's proposers are present; don't
-        // rush: we may need more time.
+        // Fewer than 75 % of the previous round's proposers are visible;
+        // wait an extra ledgerMIN_CONSENSUS before acting to allow laggards
+        // to arrive. Rushing here would exclude slow-but-honest validators.
         if (currentAgreeTime < (previousAgreeTime + parms.ledgerMIN_CONSENSUS))
         {
             JLOG(j.trace()) << "too fast, not enough proposers";
@@ -198,8 +217,6 @@ checkConsensus(
         }
     }
 
-    // Have we, together with the nodes on our UNL list, reached the threshold
-    // to declare consensus?
     if (checkConsensusReached(
             currentAgree,
             currentProposers,
@@ -215,8 +232,6 @@ checkConsensus(
         return ConsensusState::Yes;
     }
 
-    // Have sufficient nodes on our UNL list moved on and reached the threshold
-    // to declare consensus?
     if (checkConsensusReached(
             currentFinished,
             currentProposers,
@@ -242,7 +257,6 @@ checkConsensus(
         return ConsensusState::Expired;
     }
 
-    // no consensus yet
     JLOG(j.trace()) << "no consensus";
     CLOG(clog) << "No consensus. ";
     return ConsensusState::No;

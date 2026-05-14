@@ -1,3 +1,16 @@
+/** @file
+ *  Implements `detail::CachedViewImpl::read()` and `::exists()` — the two
+ *  methods that differentiate a `CachedView` from its underlying
+ *  `DigestAwareReadView`.
+ *
+ *  All caching logic is compiled here once so that the public `CachedView<Base>`
+ *  template does not generate a separate instantiation of these bodies for every
+ *  concrete `Base` type.
+ *
+ *  @see CachedView
+ *  @see CachedSLEs
+ */
+
 #include <xrpl/ledger/CachedView.h>
 
 #include <xrpl/basics/CountedObject.h>
@@ -22,9 +35,9 @@ CachedViewImpl::exists(Keylet const& k) const
 std::shared_ptr<SLE const>
 CachedViewImpl::read(Keylet const& k) const
 {
-    static CountedObjects::Counter kHITS{"CachedView::hit"};
-    static CountedObjects::Counter kHITSEXPIRED{"CachedView::hitExpired"};
-    static CountedObjects::Counter kMISSES{"CachedView::miss"};
+    static CountedObjects::Counter kHITS{"CachedView::hit"};         ///< key→digest in map_ AND SLE live in CachedSLEs; no base reads.
+    static CountedObjects::Counter kHITSEXPIRED{"CachedView::hitExpired"};  ///< key→digest in map_, but SLE evicted from CachedSLEs; base_.read() required.
+    static CountedObjects::Counter kMISSES{"CachedView::miss"};      ///< key absent from map_; both base_.digest() and base_.read() required.
     bool cacheHit = false;
     bool baseRead = false;
 

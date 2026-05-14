@@ -1,3 +1,10 @@
+/** @file
+ *  Implements AccountDelete: the only mechanism by which an account can be
+ *  permanently erased from the XRP Ledger.  Walks the four-phase pipeline
+ *  (checkExtraFeatures → preflight → preclaim → doApply), cleans up every
+ *  owned ledger object, sweeps the remaining XRP balance to a destination,
+ *  and finally erases the source account root SLE.
+ */
 #include <xrpl/tx/transactors/account/AccountDelete.h>
 
 #include <xrpl/basics/Log.h>
@@ -61,12 +68,27 @@ AccountDelete::preflight(PreflightContext const& ctx)
 XRPAmount
 AccountDelete::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
-    // The fee required for AccountDelete is one owner reserve.
     return calculateOwnerReserveFee(view, tx);
 }
 
 namespace {
-// Define a function pointer type that can be used to delete ledger node types.
+
+/** Uniform function-pointer type for per-type ledger object deleters.
+ *
+ *  Every adapter registered in `nonObligationDeleter` must match this
+ *  signature.  Adapters that do not need a particular parameter simply
+ *  omit its name to silence unused-parameter warnings.
+ *
+ *  @param registry  Service registry forwarded to deleters that require it
+ *      (e.g. `SignerListSet::removeFromLedger`).
+ *  @param view      Mutable apply view; deleters perform their erasure here.
+ *  @param account   Owner account whose object is being removed.
+ *  @param delIndex  Ledger key of the entry being deleted.
+ *  @param sleDel    Shared pointer to the SLE being deleted.
+ *  @param j         Journal for diagnostic logging.
+ *  @return `tesSUCCESS` on clean removal; a `tef*` sentinel (e.g.
+ *      `tefBAD_LEDGER`) on ledger-corruption detected during deletion.
+ */
 using DeleterFuncPtr = TER (*)(
     ServiceRegistry& registry,
     ApplyView& view,
@@ -75,7 +97,12 @@ using DeleterFuncPtr = TER (*)(
     std::shared_ptr<SLE> const& sleDel,
     beast::Journal j);
 
-// Local function definitions that provides signature compatibility.
+// --- Deleter adapters ---
+// Each adapter below adapts a feature-specific static deletion helper to
+// the uniform DeleterFuncPtr signature.  Unused parameters are intentionally
+// unnamed to suppress compiler warnings.
+
+/** Adapter: delete an offer via `offerDelete(view, sleDel, j)`. */
 TER
 offerDelete(
     ServiceRegistry&,
@@ -88,6 +115,7 @@ offerDelete(
     return offerDelete(view, sleDel, j);
 }
 
+/** Adapter: remove a signer list via `SignerListSet::removeFromLedger`. */
 TER
 removeSignersFromLedger(
     ServiceRegistry& registry,
@@ -100,6 +128,7 @@ removeSignersFromLedger(
     return SignerListSet::removeFromLedger(registry, view, account, j);
 }
 
+/** Adapter: remove a ticket via `Transactor::ticketDelete`. */
 TER
 removeTicketFromLedger(
     ServiceRegistry&,
@@ -112,6 +141,7 @@ removeTicketFromLedger(
     return Transactor::ticketDelete(view, account, delIndex, j);
 }
 
+/** Adapter: remove a deposit-preauth entry via `DepositPreauth::removeFromLedger`. */
 TER
 removeDepositPreauthFromLedger(
     ServiceRegistry&,
@@ -124,6 +154,12 @@ removeDepositPreauthFromLedger(
     return DepositPreauth::removeFromLedger(view, delIndex, j);
 }
 
+/** Adapter: remove an NFToken offer via `nft::deleteTokenOffer`.
+ *
+ *  Returns `tefBAD_LEDGER` if the offer cannot be found in the token-offer
+ *  directory — a condition that indicates ledger corruption because
+ *  `preclaim` verified the offer was present.
+ */
 TER
 removeNFTokenOfferFromLedger(
     ServiceRegistry&,
@@ -139,6 +175,7 @@ removeNFTokenOfferFromLedger(
     return tesSUCCESS;
 }
 
+/** Adapter: remove a DID entry via `DIDDelete::deleteSLE`. */
 TER
 removeDIDFromLedger(
     ServiceRegistry&,
@@ -151,6 +188,7 @@ removeDIDFromLedger(
     return DIDDelete::deleteSLE(view, sleDel, account, j);
 }
 
+/** Adapter: remove a price oracle via `OracleDelete::deleteOracle`. */
 TER
 removeOracleFromLedger(
     ServiceRegistry&,
@@ -163,6 +201,7 @@ removeOracleFromLedger(
     return OracleDelete::deleteOracle(view, sleDel, account, j);
 }
 
+/** Adapter: remove a credential entry via `credentials::deleteSLE`. */
 TER
 removeCredentialFromLedger(
     ServiceRegistry&,
@@ -175,6 +214,7 @@ removeCredentialFromLedger(
     return credentials::deleteSLE(view, sleDel, j);
 }
 
+/** Adapter: remove a delegate entry via `DelegateSet::deleteDelegate`. */
 TER
 removeDelegateFromLedger(
     ServiceRegistry&,
@@ -187,9 +227,25 @@ removeDelegateFromLedger(
     return DelegateSet::deleteDelegate(view, sleDel, j);
 }
 
-// Return nullptr if the LedgerEntryType represents an obligation that can't
-// be deleted.  Otherwise return the pointer to the function that can delete
-// the non-obligation
+/** Map a `LedgerEntryType` to its deletion adapter, or `nullptr` if the type
+ *  is a blocking obligation.
+ *
+ *  This function is the single source of truth for classifying whether an
+ *  owned ledger object can be deleted as part of `AccountDelete`.  It is
+ *  called in *both* `preclaim` (to detect obligations before any mutation)
+ *  and `doApply` (to invoke the actual deletion), keeping the two phases
+ *  perfectly in sync without duplicating the type list.
+ *
+ *  Deletable types: `ltOFFER`, `ltSIGNER_LIST`, `ltTICKET`,
+ *  `ltDEPOSIT_PREAUTH`, `ltNFTOKEN_OFFER`, `ltDID`, `ltORACLE`,
+ *  `ltCREDENTIAL`, `ltDELEGATE`.  Any other type — including trust lines,
+ *  escrows, checks, and payment channels — is treated as an obligation and
+ *  returns `nullptr`.
+ *
+ *  @param t  The ledger entry type of the owned object.
+ *  @return   A pointer to the adapter that deletes this type, or `nullptr`
+ *      if `t` represents a blocking obligation.
+ */
 DeleterFuncPtr
 nonObligationDeleter(LedgerEntryType t)
 {
@@ -234,15 +290,13 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     if ((((*sleDst)[sfFlags] & lsfRequireDestTag) != 0u) && !ctx.tx[~sfDestinationTag])
         return tecDST_TAG_NEEDED;
 
-    // If credentials are provided - check them anyway
     if (auto const err = credentials::valid(ctx.tx, ctx.view, account, ctx.j); !isTesSuccess(err))
         return err;
 
-    // if credentials then postpone auth check to doApply, to check for expired
-    // credentials
+    // Deposit-auth with credentials: defer to doApply so that expired
+    // credentials can be removed on the mutable ApplyView.
     if (!ctx.tx.isFieldPresent(sfCredentialIDs))
     {
-        // Check whether the destination account requires deposit authorization.
         if ((sleDst->getFlags() & lsfDepositAuth) != 0u)
         {
             if (!ctx.view.exists(keylet::depositPreauth(dst, account)))
@@ -255,12 +309,9 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     if (!sleAccount)
         return terNO_ACCOUNT;
 
-    // If an issuer has any issued NFTs resident in the ledger then it
-    // cannot be deleted.
     if ((*sleAccount)[~sfMintedNFTokens] != (*sleAccount)[~sfBurnedNFTokens])
         return tecHAS_OBLIGATIONS;
 
-    // If the account owns any NFTs it cannot be deleted.
     Keylet const first = keylet::nftpageMin(account);
     Keylet const last = keylet::nftpageMax(account);
 
@@ -269,34 +320,23 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     if (cp)
         return tecHAS_OBLIGATIONS;
 
-    // We don't allow an account to be deleted if its sequence number
-    // is within 256 of the current ledger.  This prevents replay of old
-    // transactions if this account is resurrected after it is deleted.
-    //
-    // We look at the account's Sequence rather than the transaction's
-    // Sequence in preparation for Tickets.
+    // Sequence freshness: must be ≥ 256 ledgers old to prevent transaction
+    // replay if the account is resurrected.  We inspect the account's
+    // Sequence (not the transaction's) to remain compatible with Tickets.
     constexpr std::uint32_t kSEQ_DELTA{255};
     if ((*sleAccount)[sfSequence] + kSEQ_DELTA > ctx.view.seq())
         return tecTOO_SOON;
 
-    // We don't allow an account to be deleted if
-    // <FirstNFTokenSequence + MintedNFTokens> is within 256 of the
-    // current ledger. This is to prevent having duplicate NFTokenIDs after
-    // account re-creation.
-    //
-    // Without this restriction, duplicate NFTokenIDs can be reproduced when
-    // authorized minting is involved. Because when the minter mints a NFToken,
-    // the issuer's sequence does not change. So when the issuer re-creates
-    // their account and mints a NFToken, it is possible that the
-    // NFTokenSequence of this NFToken is the same as the one that the
-    // authorized minter minted in a previous ledger.
+    // NFT-sequence freshness: FirstNFTokenSequence + MintedNFTokens must also
+    // be ≥ 256 ledgers old.  Authorized minting does not advance the issuer's
+    // account sequence, so without this guard the issuer could re-create and
+    // produce a duplicate NFTokenID matching one minted by an authorized minter
+    // before deletion.
     if ((*sleAccount)[~sfFirstNFTokenSequence].value_or(0) +
             (*sleAccount)[~sfMintedNFTokens].value_or(0) + kSEQ_DELTA >
         ctx.view.seq())
         return tecTOO_SOON;
 
-    // Verify that the account does not own any objects that would prevent
-    // the account from being deleted.
     Keylet const ownerDirKeylet{keylet::ownerDir(account)};
     if (dirIsEmpty(ctx.view, ownerDirKeylet))
         return tesSUCCESS;
@@ -305,20 +345,18 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     unsigned int uDirEntry{0};
     uint256 dirEntry{beast::kZERO};
 
-    // Account has no directory at all.  This _should_ have been caught
-    // by the dirIsEmpty() check earlier, but it's okay to catch it here.
+    // dirIsEmpty() should have caught an absent directory, but guard again
+    // to avoid undefined behaviour if the ledger is corrupt.
     if (!cdirFirst(ctx.view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry))
         return tesSUCCESS;
 
     std::uint32_t deletableDirEntryCount{0};
     do
     {
-        // Make sure any directory node types that we find are the kind
-        // we can delete.
         auto sleItem = ctx.view.read(keylet::child(dirEntry));
         if (!sleItem)
         {
-            // Directory node has an invalid index.  Bail out.
+            // Directory entry points to a missing object — ledger corruption.
             // LCOV_EXCL_START
             JLOG(ctx.j.fatal()) << "AccountDelete: directory node in ledger " << ctx.view.seq()
                                 << " has index to object that is missing: " << to_string(dirEntry);
@@ -331,8 +369,6 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
         if (nonObligationDeleter(nodeType) == nullptr)
             return tecHAS_OBLIGATIONS;
 
-        // We found a deletable directory entry.  Count it.  If we find too
-        // many deletable directory entries then bail out.
         if (++deletableDirEntryCount > kMAX_DELETABLE_DIR_ENTRIES)
             return tefTOO_BIG;
 
@@ -389,7 +425,6 @@ AccountDelete::doApply()
     if (!isTesSuccess(ter))
         return ter;
 
-    // Transfer any XRP remaining after the fee is paid to the destination:
     auto const remainingBalance = src->getFieldAmount(sfBalance).xrp();
     (*dst)[sfBalance] = (*dst)[sfBalance] + remainingBalance;
     (*src)[sfBalance] = (*src)[sfBalance] - remainingBalance;
@@ -398,15 +433,15 @@ AccountDelete::doApply()
     XRPL_ASSERT(
         (*src)[sfBalance] == XRPAmount(0), "xrpl::AccountDelete::doApply : source balance is zero");
 
-    // If there's still an owner directory associated with the source account
-    // delete it.
     if (view().exists(ownerDirKeylet) && !view().emptyDirDelete(ownerDirKeylet))
     {
         JLOG(j_.error()) << "AccountDelete cannot delete root dir node of " << toBase58(account_);
         return tecHAS_OBLIGATIONS;
     }
 
-    // Re-arm the password change fee if we can and need to.
+    // Re-arm the free password-change allowance on the destination: receiving
+    // XRP resets lsfPasswordSpent so the destination can change its password
+    // without an extra fee again.
     if (remainingBalance > XRPAmount(0) && dst->isFlag(lsfPasswordSpent))
         dst->clearFlag(lsfPasswordSpent);
 
@@ -422,7 +457,6 @@ AccountDelete::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
-    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -433,7 +467,6 @@ AccountDelete::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
-    // No transaction-specific invariants yet (future work).
     return true;
 }
 

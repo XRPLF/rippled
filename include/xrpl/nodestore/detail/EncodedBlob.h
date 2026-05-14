@@ -11,51 +11,80 @@
 
 namespace xrpl::NodeStore {
 
-/** Convert a NodeObject from in-memory to database format.
-
-    The (suboptimal) database format consists of:
-
-    - 8 prefix bytes which will typically be 0, but don't assume that's the
-      case; earlier versions of the code would use these bytes to store the
-      ledger index either once or twice.
-    - A single byte denoting the type of the object.
-    - The payload.
-
-    @note This class is typically instantiated on the stack, so the size of
-          the object does not matter as much as it normally would since the
-          allocation is, effectively, free.
-
-          We leverage that fact to preallocate enough memory to handle most
-          payloads as part of this object, eliminating the need for dynamic
-          allocation. As of this writing ~94% of objects require fewer than
-          1024 payload bytes.
+/** Serializes a `NodeObject` to the binary wire format expected by storage
+ *  backends (NuDB, RocksDB).
+ *
+ *  This is the write-direction half of the NodeStore on-disk format, paired
+ *  with `DecodedBlob`. Together they define the canonical binary schema for
+ *  persisted node objects; any format change must be reflected in both classes.
+ *
+ *  On-disk layout (canonical reference):
+ *  - Bytes 0–7: Eight zero bytes. Historically stored the ledger index;
+ *      zeroed since that field was removed. Readers must not assume all
+ *      zeros — older databases may contain non-zero values here.
+ *  - Byte 8: `NodeObjectType` cast to a single `uint8_t`.
+ *  - Bytes 9+: Raw serialized payload from `NodeObject::getData()`.
+ *
+ *  The 32-byte `uint256` hash is the storage key and is kept separate from
+ *  the value payload. `getKey()` and `getData()` expose these two pieces as
+ *  `void const*` pointers suitable for direct hand-off to NuDB or RocksDB
+ *  slice APIs.
+ *
+ *  Instances are intended to be constructed immediately before a backend
+ *  insert call and destroyed immediately after, keeping any heap-allocated
+ *  overflow buffer alive for exactly as long as needed.
+ *
+ *  @note This class is non-copyable. `ptr_` is a `const` raw pointer whose
+ *      ownership is conditional: it points into the inline `payload_` buffer
+ *      when the serialized size fits within 1033 bytes (~94% of real objects),
+ *      and into a heap buffer otherwise. Copying would require duplicating
+ *      that conditional ownership, so no copy or move constructor is provided.
+ *
+ *  @see DecodedBlob for the read-direction counterpart.
  */
 
 class EncodedBlob
 {
-    /** The 32-byte key of the serialized object. */
+    /** Storage key: the object's 32-byte `uint256` hash. */
     std::array<std::uint8_t, 32> key_{};
 
-    /** A pre-allocated buffer for the serialized object.
-
-         The buffer is large enough for the 9 byte prefix and at least
-         1024 more bytes. The precise size is calculated automatically
-         at compile time so as to avoid wasting space on padding bytes.
+    /** Inline stack buffer covering the 9-byte header plus up to 1024 bytes
+     *  of payload.
+     *
+     *  Sized at compile time via `boost::alignment::align_up` to the next
+     *  `uint32_t`-aligned boundary, eliminating any trailing padding that a
+     *  naive `9 + 1024` array would incur. When `size_` does not exceed this
+     *  array's capacity, `ptr_` aliases `payload_.data()` and no heap
+     *  allocation occurs.
      */
     std::array<std::uint8_t, boost::alignment::align_up(9 + 1024, alignof(std::uint32_t))>
         payload_{};
 
-    /** The size of the serialized data. */
+    /** Total byte length of the serialized value (header + payload). */
     std::uint32_t size_;
 
-    /** A pointer to the serialized data.
-
-        This may point to the pre-allocated buffer (if it is sufficiently
-        large) or to a dynamically allocated buffer.
+    /** Pointer to the serialized value buffer.
+     *
+     *  Set once at construction and never changed (`const`). Points into
+     *  `payload_` when `size_ <= payload_.size()`, or into a heap allocation
+     *  otherwise. The destructor uses `ptr_ != payload_.data()` to decide
+     *  whether to `delete[]`.
      */
     std::uint8_t* const ptr_;
 
 public:
+    /** Serialize `obj` into the on-disk wire format.
+     *
+     *  Fills `key_` with the object's hash, writes the 9-byte header into
+     *  `ptr_`, then copies the payload. If the total serialized size exceeds
+     *  the inline `payload_` buffer capacity the constructor heap-allocates
+     *  an exact-fit buffer; otherwise the inline buffer is used directly.
+     *
+     *  @param obj The node object to serialize. Must be non-null: a null
+     *      `shared_ptr` fires `XRPL_ASSERT` in debug builds and throws
+     *      `std::runtime_error` in all builds.
+     *  @throws std::runtime_error if `obj` is null.
+     */
     explicit EncodedBlob(std::shared_ptr<NodeObject> const& obj)
         : size_([&obj]() {
             XRPL_ASSERT(obj, "xrpl::NodeStore::EncodedBlob::EncodedBlob : non-null input");
@@ -73,6 +102,14 @@ public:
         std::copy_n(obj->getHash().data(), obj->getHash().size(), key_.data());
     }
 
+    /** Releases any heap-allocated overflow buffer.
+     *
+     *  If `ptr_` points outside `payload_` (i.e., a heap buffer was
+     *  allocated because the serialized size exceeded 1033 bytes), the buffer
+     *  is freed with `delete[]`. An `XRPL_ASSERT` verifies that the pointer
+     *  and size fields are mutually consistent before the free, catching any
+     *  state drift that would otherwise cause a double-free or memory leak.
+     */
     ~EncodedBlob()
     {
         XRPL_ASSERT(
@@ -85,18 +122,41 @@ public:
             delete[] ptr_;
     }
 
+    /** Returns a pointer to the 32-byte storage key (the object's hash).
+     *
+     *  The pointer is valid for the lifetime of this `EncodedBlob` and may
+     *  be passed directly to NuDB or RocksDB key-slice APIs.
+     *
+     *  @return `void const*` pointing to the 32-byte key buffer.
+     */
     [[nodiscard]] void const*
     getKey() const noexcept
     {
         return static_cast<void const*>(key_.data());
     }
 
+    /** Returns the total byte length of the serialized value buffer.
+     *
+     *  This is `obj->getData().size() + 9`: nine header bytes (eight
+     *  zero-prefix bytes plus the type byte) followed by the raw payload.
+     *
+     *  @return Byte count of the buffer returned by `getData()`.
+     */
     [[nodiscard]] std::size_t
     getSize() const noexcept
     {
         return size_;
     }
 
+    /** Returns a pointer to the serialized value buffer.
+     *
+     *  The buffer layout is: eight zero bytes, one `NodeObjectType` byte,
+     *  then the raw object payload. The pointer is valid for the lifetime of
+     *  this `EncodedBlob` and may be passed directly to NuDB compression
+     *  helpers or RocksDB value-slice APIs.
+     *
+     *  @return `void const*` pointing to `getSize()` bytes of serialized data.
+     */
     [[nodiscard]] void const*
     getData() const noexcept
     {

@@ -1,3 +1,13 @@
+/** @file
+ *  Implements the XRPL ledger directory data structure.
+ *
+ *  A directory is a circular doubly-linked list of `ltDIR_NODE` pages used to
+ *  associate sets of ledger object keys with an index.  Two flavors exist:
+ *  owner directories (all objects owned by one account) and book directories
+ *  (all open offers at one price point).  This file provides `ApplyView`'s
+ *  `dirAdd`, `dirRemove`, `emptyDirDelete`, and `dirDelete` implementations,
+ *  plus the low-level helpers in `namespace xrpl::directory`.
+ */
 #include <xrpl/ledger/ApplyView.h>
 
 #include <xrpl/basics/base_uint.h>
@@ -26,6 +36,21 @@ namespace xrpl {
 
 namespace directory {
 
+/** Bootstrap a brand-new single-entry directory.
+ *
+ *  Allocates the root `ltDIR_NODE` SLE at `directory`, stamps it with
+ *  `sfRootIndex`, invokes `describe` so callers can inject type-specific
+ *  fields (e.g. `sfOwner` for owner directories, `sfTakerPays`/`sfTakerGets`
+ *  for book directories), pushes `key` as the sole entry, and inserts the SLE
+ *  into `view`.
+ *
+ *  @param view      The mutable ledger view to insert into.
+ *  @param directory Keylet of the root page (page 0) to create.
+ *  @param key       The first entry to store in the new directory.
+ *  @param describe  Callback that stamps type-specific fields onto every new
+ *      page SLE; called once here for the root page.
+ *  @return Always returns 0, the page number of the root page.
+ */
 std::uint64_t
 createRoot(
     ApplyView& view,
@@ -45,6 +70,20 @@ createRoot(
     return std::uint64_t{0};
 }
 
+/** Locate the last page of a directory in O(1) time.
+ *
+ *  The root's `sfIndexPrevious` always points to the tail page, so no
+ *  traversal is needed regardless of chain length.  If `sfIndexPrevious` is
+ *  non-zero but the referenced page cannot be found, the directory is
+ *  structurally corrupt and `LogicError` terminates the process.
+ *
+ *  @param view      The mutable ledger view to read from.
+ *  @param directory Keylet of the directory root (used to build page keylets).
+ *  @param start     The root page SLE (page 0).
+ *  @return A tuple of `(pageNumber, pageSLE, sfIndexes)` for the last page.
+ *  @throw std::logic_error if `sfIndexPrevious` is non-zero but the page is
+ *      absent — indicates corrupted ledger state, not a recoverable error.
+ */
 auto
 findPreviousPage(ApplyView& view, Keylet const& directory, SLE::ref start)
 {
@@ -66,6 +105,26 @@ findPreviousPage(ApplyView& view, Keylet const& directory, SLE::ref start)
     return std::make_tuple(page, node, indexes);
 }
 
+/** Insert `key` into an existing directory page and write it back.
+ *
+ *  Two insertion strategies are controlled by `preserveOrder`:
+ *  - **`true`** (book directories / `dirAppend`): appends at the tail,
+ *    maintaining insertion order.  Duplicates call `LogicError`.
+ *  - **`false`** (owner directories / `dirInsert`): sorts the page first
+ *    (a legacy concession — older code may not have maintained sort order),
+ *    then binary-searches for the insertion point.  Duplicates call
+ *    `LogicError`.
+ *
+ *  @param view          The mutable ledger view.
+ *  @param node          The page SLE to modify (obtained via `peek`).
+ *  @param page          The page number; returned unchanged.
+ *  @param preserveOrder If `true`, append; if `false`, sort then insert.
+ *  @param indexes       The current `sfIndexes` vector (modified in place).
+ *  @param key           The key to insert.
+ *  @return The page number `page` (unchanged).
+ *  @throw std::logic_error if `key` is already present — double-insertion is
+ *      a programming error, not a protocol error.
+ */
 std::uint64_t
 insertKey(
     ApplyView& view,
@@ -101,6 +160,36 @@ insertKey(
     return page;
 }
 
+/** Append a new trailing page to a full directory and insert `key` into it.
+ *
+ *  Increments `page` to produce the new page number, links the new page at
+ *  the tail (updating both the former-last page's `sfIndexNext` and the root's
+ *  `sfIndexPrevious`), then inserts `key` as the sole entry.
+ *
+ *  Page-counter overflow is detected via deliberate `uint64_t` modulo
+ *  wraparound (defined behavior for unsigned integers per
+ *  [basic.fundamental] ¶2).  Two `static_assert` guards confirm at compile
+ *  time that the type is unsigned and that `max + 1 == 0`.  When the counter
+ *  wraps to zero, or when the pre-`fixDirectoryLimit` ceiling
+ *  (`kDIR_NODE_MAX_PAGES`) is reached, `std::nullopt` is returned — the
+ *  caller surfaces `tecDIR_FULL` to the transaction.
+ *
+ *  `nextPage` is always passed as 0 (appends only); the commented-out block
+ *  for setting `sfIndexNext` is reserved for a hypothetical future
+ *  insert-in-middle operation.
+ *
+ *  @param view      The mutable ledger view.
+ *  @param page      The current last page number; incremented to get the new
+ *      page number.
+ *  @param node      The current last page SLE (its `sfIndexNext` is updated).
+ *  @param nextPage  Reserved; must be 0.
+ *  @param next      The root page SLE (its `sfIndexPrevious` is updated).
+ *  @param key       The key to store in the new page.
+ *  @param directory Keylet of the directory root.
+ *  @param describe  Callback to stamp type-specific fields on the new page.
+ *  @return The new page number on success, or `std::nullopt` if the directory
+ *      has reached its maximum page capacity.
+ */
 std::optional<std::uint64_t>
 insertPage(
     ApplyView& view,
@@ -161,6 +250,22 @@ insertPage(
 
 }  // namespace directory
 
+/** Single entry point for all directory insertions.
+ *
+ *  Dispatches to one of three helpers depending on the current state of the
+ *  directory:
+ *  1. No root present → `createRoot()` (first insertion ever).
+ *  2. Last page has room → `insertKey()` (fast path, no new SLE).
+ *  3. Last page is full → `insertPage()` (allocates a new trailing page).
+ *
+ *  @param preserveOrder `true` for book directories (append order); `false`
+ *      for owner directories (sorted order).
+ *  @param directory Keylet of the directory root.
+ *  @param key       The `uint256` entry to insert.
+ *  @param describe  Callback to stamp type-specific fields on any new page.
+ *  @return The page number into which `key` was inserted, or `std::nullopt`
+ *      if the directory has reached its maximum page capacity.
+ */
 std::optional<std::uint64_t>
 ApplyView::dirAdd(
     bool preserveOrder,
@@ -187,6 +292,27 @@ ApplyView::dirAdd(
     return directory::insertPage(*this, page, node, 0, root, key, directory, describe);
 }
 
+/** Delete a directory root that is already empty, handling one legacy edge case.
+ *
+ *  Validates that `directory` refers to an `ltDIR_NODE` whose `sfRootIndex`
+ *  matches its own key (i.e. it really is a root, not an interior page).
+ *  Returns `false` without erasing if the root's `sfIndexes` is non-empty.
+ *
+ *  **Legacy cleanup:** older code occasionally left the last page empty rather
+ *  than deleting it.  If the root's `sfIndexNext` and `sfIndexPrevious` both
+ *  point to the same non-root page, and that page is empty, this function
+ *  unlinks and erases it before proceeding to erase the root.
+ *
+ *  Structural invariants are asserted with `LogicError` (not recoverable):
+ *  a forward link without a matching reverse link, or vice versa, indicates
+ *  corrupted ledger state.
+ *
+ *  @param directory Keylet of the root page (page 0) of the directory.
+ *  @return `true` if the directory was found and successfully erased;
+ *      `false` if not found or still contains entries.
+ *  @note Only call this with the root keylet.  Passing an interior page
+ *      keylet triggers `UNREACHABLE` and returns `false`.
+ */
 bool
 ApplyView::emptyDirDelete(Keylet const& directory)
 {
@@ -252,6 +378,36 @@ ApplyView::emptyDirDelete(Keylet const& directory)
     return true;
 }
 
+/** Remove one key from a directory, cleaning up empty pages as needed.
+ *
+ *  Peeks the page identified by `page`, finds `key` in `sfIndexes`, erases it
+ *  (preserving the relative order of remaining keys), and writes the page
+ *  back.  If the page is still non-empty, returns immediately.
+ *
+ *  **Empty-page cleanup** follows two distinct paths:
+ *  - **Root page (page 0):** never deleted when `keepRoot` is `true`; erased
+ *    only when `keepRoot` is `false` and no other pages remain.  A legacy
+ *    empty trailing page (`sfIndexNext == sfIndexPrevious != 0`) is also
+ *    reaped here.
+ *  - **Non-root page:** unlinked from both its predecessor and successor,
+ *    then erased.  An additional check reaps the new last page if it happens
+ *    to be empty (another legacy artifact).  If the chain has now collapsed
+ *    to only an empty root and `keepRoot` is `false`, the root is erased too.
+ *
+ *  Any structural inconsistency (missing neighbor page, self-referential link
+ *  on a non-root node, asymmetric forward/reverse links) calls `LogicError`
+ *  and terminates — these paths are `LCOV_EXCL_*`-marked because they are
+ *  only reachable via corrupted ledger state.
+ *
+ *  @param directory Keylet of the directory root.
+ *  @param page      Page number where `key` resides (stored by the caller
+ *      alongside the owning ledger entry at insertion time).
+ *  @param key       The `uint256` entry to remove.
+ *  @param keepRoot  If `true`, retain the root page even when it becomes
+ *      empty (used while the owning account still exists).
+ *  @return `true` if `key` was found and removed; `false` if the page or key
+ *      was not found.
+ */
 bool
 ApplyView::dirRemove(Keylet const& directory, std::uint64_t page, uint256 const& key, bool keepRoot)
 {
@@ -392,6 +548,19 @@ ApplyView::dirRemove(Keylet const& directory, std::uint64_t page, uint256 const&
     return true;
 }
 
+/** Bulk-destroy a directory, invoking `callback` for every stored key.
+ *
+ *  Walks the page chain via `sfIndexNext` starting at page 0, calling
+ *  `callback` for each `uint256` entry on every page, then erasing each page.
+ *  Used when an entire directory must be torn down — for example, during
+ *  account deletion.
+ *
+ *  @param directory Keylet of the directory root.
+ *  @param callback  Invoked once per stored key before its page is erased;
+ *      allows callers to perform per-object cleanup (e.g. releasing reserves).
+ *  @return `true` if the root page was found and all pages were erased;
+ *      `false` if the root page was not present.
+ */
 bool
 ApplyView::dirDelete(Keylet const& directory, std::function<void(uint256 const&)> const& callback)
 {

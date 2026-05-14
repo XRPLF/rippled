@@ -1,3 +1,11 @@
+/** @file
+ *  Implements `CanonicalTXSet`: the deterministically ordered transaction queue
+ *  used to retry deferred transactions between consensus passes.
+ *
+ *  The ordering guarantee — identical iteration order on every validator for
+ *  a given salt — is the mechanism that lets the network converge to the same
+ *  ledger state when replaying retried transactions.
+ */
 #include <xrpl/ledger/CanonicalTXSet.h>
 
 #include <xrpl/basics/base_uint.h>
@@ -12,6 +20,18 @@
 
 namespace xrpl {
 
+/** Three-level composite ordering for `CanonicalTXSet::Key`.
+ *
+ *  Compares in the order: salted account ID → `SeqProxy` → transaction ID.
+ *  This groups all transactions from the same account contiguously, orders
+ *  them within the account by `SeqProxy` (sequences always sort before tickets,
+ *  regardless of numeric value), and uses the transaction hash as a
+ *  deterministic tiebreaker.
+ *
+ *  @note The `SeqProxy` ordering enforces the dependency that a
+ *      `TicketCreate` transaction (sequence-based) must appear before any
+ *      transaction that consumes one of its tickets.
+ */
 bool
 operator<(CanonicalTXSet::Key const& lhs, CanonicalTXSet::Key const& rhs)
 {
@@ -53,17 +73,6 @@ CanonicalTXSet::insert(std::shared_ptr<STTx const> const& txn)
 std::shared_ptr<STTx const>
 CanonicalTXSet::popAcctTransaction(std::shared_ptr<STTx const> const& tx)
 {
-    // Determining the next viable transaction for an account with Tickets:
-    //
-    //  1. Prioritize transactions with Sequences over transactions with
-    //     Tickets.
-    //
-    //  2. For transactions not using Tickets, look for consecutive Sequence
-    //     numbers. For transactions using Tickets, don't worry about
-    //     consecutive Sequence numbers. Tickets can process out of order.
-    //
-    //  3. After handling all transactions with Sequences, return Tickets
-    //     with the lowest Ticket ID first.
     std::shared_ptr<STTx const> result;
     uint256 const effectiveAccount{accountKey(tx->getAccountID(sfAccount))};
 

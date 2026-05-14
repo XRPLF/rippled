@@ -1,3 +1,16 @@
+/** @file
+ *  Implements the central amendment registry for the XRP Ledger.
+ *
+ *  Every conditional code path gated by an amendment queries this registry at
+ *  runtime. The registry is populated entirely during static initialization —
+ *  before `main()` — via the X-macro expansion of `features.macro`. Once the
+ *  last file-scope variable is initialized, a `readOnly` fence is set and the
+ *  registry becomes permanently immutable. No runtime lock is ever needed.
+ *
+ *  @see Feature.h for `FeatureBitset` and the public free-function declarations.
+ *  @see include/xrpl/protocol/detail/features.macro for the amendment master list.
+ */
+
 #include <xrpl/protocol/Feature.h>
 
 #include <xrpl/basics/Slice.h>
@@ -22,6 +35,15 @@
 
 namespace xrpl {
 
+/** Boost hash extension for `uint256`, required by `hashed_unique` indexes.
+ *
+ *  Combines each byte of the 256-bit value into a seed using
+ *  `boost::hash_combine`. ADL finds this overload from the
+ *  `boost::multi_index` hashed indexes used in `FeatureCollections`.
+ *
+ *  @param feature The amendment identifier to hash.
+ *  @return A hash suitable for use in Boost unordered containers.
+ */
 inline std::size_t
 // NOLINTNEXTLINE(readability-identifier-naming)
 hash_value(xrpl::uint256 const& feature)
@@ -35,37 +57,40 @@ hash_value(xrpl::uint256 const& feature)
 
 namespace {
 
+/** Whether this build supports (and can vote for) a given amendment. */
 enum class Supported : bool { No = false, Yes };
 
-// *NOTE*
+// --- Amendment lifecycle notes ---
 //
-// Features, or Amendments as they are called elsewhere, are enabled on the
-// network at some specific time based on Validator voting.  Features are
-// enabled using run-time conditionals based on the state of the amendment.
-// There is value in retaining that conditional code for some time after
-// the amendment is enabled to make it simple to replay old transactions.
-// However, once an amendment has been enabled for, say, more than two years
-// then retaining that conditional code has less value since it is
-// uncommon to replay such old transactions.
+// Amendment conditionals from before January 2018 have been removed (as of
+// January 2020). Replaying ledgers from before that date requires an older
+// server build. A warning in Application.cpp documents this boundary.
 //
-// Starting in January of 2020 Amendment conditionals from before January
-// 2018 are being removed.  So replaying any ledger from before January
-// 2018 needs to happen on an older version of the server code.  There's
-// a log message in Application.cpp that warns about replaying old ledgers.
-//
-// At some point in the future someone may wish to remove amendment
-// conditional code for amendments that were enabled after January 2018.
-// When that happens then the log message in Application.cpp should be
-// updated.
-//
-// Generally, amendments which introduce new features should be set as
-// "VoteBehavior::DefaultNo" whereas in rare cases, amendments that fix
-// critical bugs should be set as "VoteBehavior::DefaultYes", if off-chain
-// consensus is reached amongst reviewers, validator operators, and other
-// participants.
+// New feature amendments use VoteBehavior::DefaultNo so that external
+// governance controls activation timing. Critical bug-fix amendments may
+// use VoteBehavior::DefaultYes after explicit off-chain community consensus.
 
+/** Central registry for all XRPL protocol amendments.
+ *
+ *  Maintains three simultaneous views over the amendment set:
+ *  - `features_` — a `multi_index_container` providing O(1) lookup by
+ *    insertion-order index (for `FeatureBitset` mapping), by `uint256`
+ *    hash, and by string name.
+ *  - `all_` — every registered amendment including retired ones, keyed by
+ *    name, mapped to `AmendmentSupport`.
+ *  - `supported_` — only amendments the server can vote on, keyed by name,
+ *    mapped to `VoteBehavior`.
+ *
+ *  The registry is write-only during static initialization. Once
+ *  `registrationIsDone()` is called, `readOnly_` is set to `true` and every
+ *  query method asserts this fence. No locking is required after that point.
+ *
+ *  @note `kNUM_FEATURES` is a compile-time ceiling, not an exact count. It
+ *      may exceed the actual number of registered amendments.
+ */
 class FeatureCollections
 {
+    /** Stores one amendment's string name and its on-chain `uint256` identifier. */
     struct Feature
     {
         std::string name;
@@ -77,44 +102,52 @@ class FeatureCollections
         {
         }
 
-        // These structs are used by the `features` multi_index_container to
-        // provide access to the features collection by size_t index, string
-        // name, and uint256 feature identifier
+        /** Tag type for the random-access (insertion-order) index. */
         struct ByIndex
         {
         };
+        /** Tag type for the hashed-unique name index. */
         struct ByName
         {
         };
+        /** Tag type for the hashed-unique `uint256` feature-hash index. */
         struct ByFeature
         {
         };
     };
 
-    // Intermediate types to help with readability
+    /** Alias for a hashed-unique index over one `Feature` member. */
     template <class Tag, typename Type, Type Feature::* PtrToMember>
     using feature_hashed_unique = boost::multi_index::hashed_unique<
         boost::multi_index::tag<Tag>,
         boost::multi_index::member<Feature, Type, PtrToMember>>;
 
-    // Intermediate types to help with readability
+    /** Combined index specification: random-access by insertion order,
+     *  hashed-unique by `uint256`, and hashed-unique by name.
+     */
     using feature_indexing = boost::multi_index::indexed_by<
         boost::multi_index::random_access<boost::multi_index::tag<Feature::ByIndex>>,
         feature_hashed_unique<Feature::ByFeature, uint256, &Feature::feature>,
         feature_hashed_unique<Feature::ByName, std::string, &Feature::name>>;
 
-    // This multi_index_container provides access to the features collection by
-    // name, index, and uint256 feature identifier
+    /** All registered amendments, accessible by index, name, or `uint256`. */
     boost::multi_index::multi_index_container<Feature, feature_indexing> features_;
+    /** Every amendment (including retired) mapped to its support status. */
     std::map<std::string, AmendmentSupport> all_;
+    /** Only supported amendments, mapped to their default vote behavior. */
     std::map<std::string, VoteBehavior> supported_;
+    /** Count of supported amendments with `VoteBehavior::DefaultYes`. */
     std::size_t upVotes_ = 0;
+    /** Count of supported amendments with `VoteBehavior::DefaultNo` or `Obsolete`. */
     std::size_t downVotes_ = 0;
+    /** Write-once fence; flipped by `registrationIsDone()` after all static vars init. */
     mutable std::atomic<bool> readOnly_ = false;
 
-    // These helper functions provide access to the features collection by name,
-    // index, and uint256 feature identifier, so the details of
-    // multi_index_container can be hidden
+    /** Return the `Feature` at insertion-order position `i`.
+     *
+     *  @param i Zero-based index into the registration sequence.
+     *  @throws LogicError if `i` is out of bounds.
+     */
     Feature const&
     getByIndex(size_t i) const
     {
@@ -123,6 +156,12 @@ class FeatureCollections
         auto const& sequence = features_.get<Feature::ByIndex>();
         return sequence[i];
     }
+
+    /** Return the insertion-order index of a `Feature` element.
+     *
+     *  @param feature A reference into `features_`; must belong to this container.
+     *  @return The zero-based position used as the corresponding `FeatureBitset` bit.
+     */
     size_t
     getIndex(Feature const& feature) const
     {
@@ -130,6 +169,12 @@ class FeatureCollections
         auto const itTo = sequence.iterator_to(feature);
         return itTo - sequence.begin();
     }
+
+    /** Look up an amendment by its on-chain `uint256` identifier.
+     *
+     *  @param feature The hash to search for.
+     *  @return Pointer to the matching `Feature`, or `nullptr` if not found.
+     */
     Feature const*
     getByFeature(uint256 const& feature) const
     {
@@ -137,6 +182,12 @@ class FeatureCollections
         auto const featureIt = featureIndex.find(feature);
         return featureIt == featureIndex.end() ? nullptr : &*featureIt;
     }
+
+    /** Look up an amendment by its string name.
+     *
+     *  @param name The amendment name to search for.
+     *  @return Pointer to the matching `Feature`, or `nullptr` if not found.
+     */
     Feature const*
     getByName(std::string const& name) const
     {
@@ -146,24 +197,75 @@ class FeatureCollections
     }
 
 public:
+    /** Reserve storage for `kNUM_FEATURES` entries. */
     FeatureCollections();
 
+    /** Look up an amendment by name, returning its `uint256` hash if registered.
+     *
+     *  @param name The amendment's string name (e.g. `"Checks"`).
+     *  @return The `uint256` identifier, or `std::nullopt` if not registered.
+     *  @note Asserts that `registrationIsDone()` has been called; it is a
+     *      programming error to query before static initialization completes.
+     */
     std::optional<uint256>
     getRegisteredFeature(std::string const& name) const;
 
+    /** Register a new amendment and return its deterministic `uint256` hash.
+     *
+     *  Computes the hash as `sha512Half(name)` and inserts into all three
+     *  internal indexes. Enforces at registration time:
+     *  - `Supported::No` implies `VoteBehavior::DefaultNo`.
+     *  - No duplicate names are allowed.
+     *  - Total count must stay within `detail::kNUM_FEATURES`.
+     *  - `upVotes_ + downVotes_` must equal `supported_.size()` after insertion.
+     *
+     *  @param name    The amendment's ASCII name (validated at call site).
+     *  @param support Whether this build supports the amendment.
+     *  @param vote    The server's default vote behavior.
+     *  @return The `uint256` on-chain identifier derived from `name`.
+     *  @throws LogicError on any invariant violation or duplicate registration.
+     */
     uint256
     registerFeature(std::string const& name, Supported support, VoteBehavior vote);
 
-    /** Tell FeatureCollections when registration is complete. */
+    /** Flip the write-once fence, marking registration as complete.
+     *
+     *  Called exactly once by the file-scope `kREAD_ONLY_SET` variable after all
+     *  amendment globals have been initialized. After this call, all query methods
+     *  become safe to use and all write methods are permanently disabled.
+     *
+     *  @return Always `true` (allows use as a static variable initializer).
+     */
     bool
     registrationIsDone();
 
+    /** Translate an amendment's `uint256` to its `FeatureBitset` bit position.
+     *
+     *  @param f The amendment identifier.
+     *  @return The zero-based bit index within `FeatureBitset`.
+     *  @throws LogicError if `f` is not a registered amendment.
+     *  @note Asserts `readOnly_` — must not be called before registration completes.
+     */
     std::size_t
     featureToBitsetIndex(uint256 const& f) const;
 
+    /** Translate a `FeatureBitset` bit position back to the amendment's `uint256`.
+     *
+     *  @param i The zero-based bit index.
+     *  @return A reference to the amendment's `uint256` hash (stable for process lifetime).
+     *  @throws LogicError if `i` is out of bounds.
+     *  @note Asserts `readOnly_` — must not be called before registration completes.
+     */
     uint256 const&
     bitsetIndexToFeature(size_t i) const;
 
+    /** Return the string name for an amendment hash, or its hex string if unknown.
+     *
+     *  @param f The amendment identifier to look up.
+     *  @return The registered name (e.g. `"Checks"`), or `to_string(f)` if `f`
+     *      is not in the registry.
+     *  @note Asserts `readOnly_` — must not be called before registration completes.
+     */
     std::string
     featureToName(uint256 const& f) const;
 
@@ -216,6 +318,15 @@ FeatureCollections::getRegisteredFeature(std::string const& name) const
     return std::nullopt;
 }
 
+/** Throw a `LogicError` with `logicErrorMessage` unless `condition` is true.
+ *
+ *  Used exclusively inside `registerFeature` to enforce registration-time
+ *  invariants. Failures here indicate a programming error in the amendment
+ *  macro list and abort the process at startup.
+ *
+ *  @param condition        The invariant that must hold.
+ *  @param logicErrorMessage Message passed to `logicError` on failure.
+ */
 void
 check(bool condition, char const* logicErrorMessage)
 {
@@ -267,11 +378,9 @@ FeatureCollections::registerFeature(std::string const& name, Supported support, 
         return f;
     }
 
-    // Each feature should only be registered once
     logicError("Duplicate feature registration");
 }
 
-/** Tell FeatureCollections when registration is complete. */
 bool
 FeatureCollections::registrationIsDone()
 {
@@ -320,23 +429,33 @@ allAmendments()
     return gFeatureCollections.allAmendments();
 }
 
-/** Amendments that this server supports.
-   Whether they are enabled depends on the Rules defined in the validated
-   ledger */
+/** Amendments that this server supports and their default voting behavior.
+ *
+ *  Whether any of these amendments is actually active depends on the
+ *  `Rules` object derived from the validated ledger's Amendments object.
+ */
 std::map<std::string, VoteBehavior> const&
 detail::supportedAmendments()
 {
     return gFeatureCollections.supportedAmendments();
 }
 
-/** Amendments that this server won't vote for by default. */
+/** Number of supported amendments this server will NOT vote for by default.
+ *
+ *  Includes both `VoteBehavior::DefaultNo` and `VoteBehavior::Obsolete`
+ *  entries. Used in unit tests to verify vote-tally invariants.
+ */
 std::size_t
 detail::numDownVotedAmendments()
 {
     return gFeatureCollections.numDownVotedAmendments();
 }
 
-/** Amendments that this server will vote for by default. */
+/** Number of supported amendments this server WILL vote for by default.
+ *
+ *  Counts only `VoteBehavior::DefaultYes` entries. Used in unit tests to
+ *  verify vote-tally invariants.
+ */
 std::size_t
 detail::numUpVotedAmendments()
 {
@@ -345,53 +464,108 @@ detail::numUpVotedAmendments()
 
 //------------------------------------------------------------------------------
 
+/** Look up a registered amendment by name and return its `uint256` hash.
+ *
+ *  @param name The amendment's string name.
+ *  @return The `uint256` identifier if registered, or `std::nullopt`.
+ */
 std::optional<uint256>
 getRegisteredFeature(std::string const& name)
 {
     return gFeatureCollections.getRegisteredFeature(name);
 }
 
+/** Register an amendment and return its deterministic `uint256` identifier.
+ *
+ *  Called during static initialization — once per amendment — via the
+ *  X-macro expansion of `features.macro`. Must not be called after
+ *  `registrationIsDone()` has been called.
+ *
+ *  @param name    The amendment's ASCII name.
+ *  @param support Whether this build supports the amendment.
+ *  @param vote    The server's default vote behavior.
+ *  @return The `uint256` hash computed as `sha512Half(name)`.
+ *  @throws LogicError on invariant violation or duplicate name.
+ */
 uint256
 registerFeature(std::string const& name, Supported support, VoteBehavior vote)
 {
     return gFeatureCollections.registerFeature(name, support, vote);
 }
 
-// Retired features are in the ledger and have no code controlled by the
-// feature. They need to be supported, but do not need to be voted on.
+/** Register an amendment whose conditional code has been removed from the codebase.
+ *
+ *  Retired amendments must remain registered because they may appear in the
+ *  Amendments ledger object. Removing them entirely would cause amendment
+ *  blocking. They are registered as `Supported::Yes, VoteBehavior::Obsolete`
+ *  so the server understands them but does not vote for them.
+ *
+ *  @param name The amendment's string name.
+ *  @return The `uint256` hash for the retired amendment.
+ */
 uint256
 retireFeature(std::string const& name)
 {
     return registerFeature(name, Supported::Yes, VoteBehavior::Obsolete);
 }
 
-/** Tell FeatureCollections when registration is complete. */
+/** Seal the registry against further writes.
+ *
+ *  Called exactly once by the file-scope `kREAD_ONLY_SET` initializer after
+ *  all amendment globals have been constructed. Subsequent query calls will
+ *  assert this fence.
+ *
+ *  @return Always `true`.
+ */
 bool
 registrationIsDone()
 {
     return gFeatureCollections.registrationIsDone();
 }
 
+/** Translate an amendment `uint256` to its `FeatureBitset` bit position.
+ *
+ *  @param f A registered amendment identifier.
+ *  @return The zero-based bit index within `FeatureBitset`.
+ *  @throws LogicError if `f` is not registered.
+ */
 size_t
 featureToBitsetIndex(uint256 const& f)
 {
     return gFeatureCollections.featureToBitsetIndex(f);
 }
 
+/** Translate a `FeatureBitset` bit position to its amendment `uint256`.
+ *
+ *  @param i Zero-based bit index within `FeatureBitset`.
+ *  @return The `uint256` hash for the amendment at that index.
+ *  @throws LogicError if `i` is out of bounds.
+ */
 uint256
 bitsetIndexToFeature(size_t i)
 {
     return gFeatureCollections.bitsetIndexToFeature(i);
 }
 
+/** Return the human-readable name for an amendment, or its hex string if unknown.
+ *
+ *  @param f The amendment identifier.
+ *  @return The registered name, or `to_string(f)` if `f` is not in the registry.
+ */
 std::string
 featureToName(uint256 const& f)
 {
     return gFeatureCollections.featureToName(f);
 }
 
-// All known amendments must be registered either here or below with the
-// "retired" amendments
+// --- Amendment registration via X-macro expansion ---
+//
+// The macros below expand features.macro to produce one file-scope
+// `uint256 const feature<Name>` variable per amendment. Each variable's
+// initializer calls `registerFeature`, which inserts into `gFeatureCollections`
+// and returns the hash. C++ guarantees top-to-bottom initialization within a
+// translation unit, so all amendments are registered before `kREAD_ONLY_SET`
+// seals the registry.
 
 #pragma push_macro("XRPL_FEATURE")
 #undef XRPL_FEATURE
@@ -402,6 +576,18 @@ featureToName(uint256 const& f)
 #pragma push_macro("XRPL_RETIRE_FIX")
 #undef XRPL_RETIRE_FIX
 
+/** Validate a feature name at compile time and return it as a C-string.
+ *
+ *  Wraps `validFeatureName` and `validFeatureNameSize` (both `consteval`) in
+ *  `static_assert` expressions so that an ill-formed name in `features.macro`
+ *  is a build error. Checks:
+ *  - No non-ASCII bytes (high bit set) or control characters (below 0x20).
+ *  - Length ≤ 63 bytes and length ≠ 32 bytes (the 32-byte length is reserved
+ *    for raw `uint256` hash values in WASM / interop contexts).
+ *
+ *  @param fn A `consteval` lambda returning `const char*` — the name literal.
+ *  @return The same C-string the lambda returns.
+ */
 consteval auto
 enforceValidFeatureName(auto fn) -> char const*
 {
@@ -442,10 +628,9 @@ enforceValidFeatureName(auto fn) -> char const*
 #undef XRPL_FEATURE
 #pragma pop_macro("XRPL_FEATURE")
 
-// All of the features should now be registered, since variables in a cpp file
-// are initialized from top to bottom.
-//
-// Use initialization of one final static variable to set featureCollections::readOnly_.
+// All amendments are now registered. This final static variable seals the
+// registry by flipping `readOnly_` to true. C++ guarantees that all
+// file-scope variables above are fully initialized before this line runs.
 [[maybe_unused]] static bool const kREAD_ONLY_SET = gFeatureCollections.registrationIsDone();
 
 }  // namespace xrpl

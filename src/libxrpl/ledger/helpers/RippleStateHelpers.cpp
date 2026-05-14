@@ -1,3 +1,19 @@
+/** @file
+ *  Implements trust-line (RippleState) lifecycle and IOU primitives for the
+ *  XRP Ledger.
+ *
+ *  Covers: credit-limit/balance queries, freeze enforcement, trust-line
+ *  creation and deletion, IOU issuance and redemption (including automatic
+ *  reserve cleanup), authorization checks, zero-balance holding management,
+ *  and AMM-specific cleanup operations.  Originally split across Credit.cpp
+ *  and this file; the two halves were merged and the section banners below
+ *  mark the original boundaries.
+ *
+ *  @note The `sfBalance` field on every `ltRIPPLE_STATE` SLE is stored from
+ *      the low account's perspective (positive = low account holds the IOU).
+ *      Every function that exposes a balance to the caller inverts the sign
+ *      when the querying account is the high side.
+ */
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 
 #include <xrpl/basics/Log.h>
@@ -32,11 +48,7 @@
 
 namespace xrpl {
 
-//------------------------------------------------------------------------------
-//
-// Credit functions (from Credit.cpp)
-//
-//------------------------------------------------------------------------------
+// --- Credit queries (merged from Credit.cpp) ---
 
 STAmount
 creditLimit(
@@ -96,11 +108,7 @@ creditBalance(
     return result;
 }
 
-//------------------------------------------------------------------------------
-//
-// Freeze checking (IOU-specific)
-//
-//------------------------------------------------------------------------------
+// --- Freeze checks (IOU-specific) ---
 
 bool
 isIndividualFrozen(
@@ -113,7 +121,6 @@ isIndividualFrozen(
         return false;
     if (issuer != account)
     {
-        // Check if the issuer froze the line
         auto const sle = view.read(keylet::line(account, issuer, currency));
         if (sle && sle->isFlag((issuer > account) ? lsfHighFreeze : lsfLowFreeze))
             return true;
@@ -121,8 +128,6 @@ isIndividualFrozen(
     return false;
 }
 
-// Can the specified account spend the specified currency issued by
-// the specified issuer or does the freeze flag prohibit it?
 bool
 isFrozen(
     ReadView const& view,
@@ -137,7 +142,6 @@ isFrozen(
         return true;
     if (issuer != account)
     {
-        // Check if the issuer froze the line
         sle = view.read(keylet::line(account, issuer, currency));
         if (sle && sle->isFlag((issuer > account) ? lsfHighFreeze : lsfLowFreeze))
             return true;
@@ -171,11 +175,7 @@ isDeepFrozen(
     return sle->isFlag(lsfHighDeepFreeze) || sle->isFlag(lsfLowDeepFreeze);
 }
 
-//------------------------------------------------------------------------------
-//
-// Trust line operations
-//
-//------------------------------------------------------------------------------
+// --- Trust-line lifecycle ---
 
 TER
 trustCreate(
@@ -183,16 +183,14 @@ trustCreate(
     bool const bSrcHigh,
     AccountID const& uSrcAccountID,
     AccountID const& uDstAccountID,
-    uint256 const& uIndex,      // --> ripple state entry
-    SLE::ref sleAccount,        // --> the account being set.
-    bool const bAuth,           // --> authorize account.
-    bool const bNoRipple,       // --> others cannot ripple through
-    bool const bFreeze,         // --> funds cannot leave
-    bool bDeepFreeze,           // --> can neither receive nor send funds
-    STAmount const& saBalance,  // --> balance of account being set.
-                                // Issuer should be noAccount()
-    STAmount const& saLimit,    // --> limit for account being set.
-                                // Issuer should be the account being set.
+    uint256 const& uIndex,
+    SLE::ref sleAccount,
+    bool const bAuth,
+    bool const bNoRipple,
+    bool const bFreeze,
+    bool bDeepFreeze,
+    STAmount const& saBalance,
+    STAmount const& saLimit,
     std::uint32_t uQualityIn,
     std::uint32_t uQualityOut,
     beast::Journal j)
@@ -240,7 +238,6 @@ trustCreate(
     if (!slePeer)
         return tecNO_TARGET;
 
-    // Remember deletion hints.
     sleRippleState->setFieldU64(sfLowNode, *lowNode);
     sleRippleState->setFieldU64(sfHighNode, *highNode);
 
@@ -276,14 +273,14 @@ trustCreate(
 
     if ((slePeer->getFlags() & lsfDefaultRipple) == 0)
     {
-        // The other side's default is no rippling
+        // Propagate the peer's preference: absent lsfDefaultRipple means the
+        // peer wants noRipple on by default for any new line.
         uFlags |= (bSetHigh ? lsfLowNoRipple : lsfHighNoRipple);
     }
 
     sleRippleState->setFieldU32(sfFlags, uFlags);
     adjustOwnerCount(view, sleAccount, 1, j);
 
-    // ONLY: Create ripple balance.
     sleRippleState->setFieldAmount(sfBalance, bSetHigh ? -saBalance : saBalance);
 
     view.creditHookIOU(uSrcAccountID, uDstAccountID, saBalance, saBalance.zeroed());
@@ -299,7 +296,6 @@ trustDelete(
     AccountID const& uHighAccountID,
     beast::Journal j)
 {
-    // Detect legacy dirs.
     std::uint64_t const uLowNode = sleRippleState->getFieldU64(sfLowNode);
     std::uint64_t const uHighNode = sleRippleState->getFieldU64(sfHighNode);
 
@@ -323,12 +319,39 @@ trustDelete(
     return tesSUCCESS;
 }
 
-//------------------------------------------------------------------------------
-//
-// IOU issuance/redemption
-//
-//------------------------------------------------------------------------------
+// --- IOU issuance / redemption ---
 
+/** Opportunistically release the sender's reserve and signal line deletion.
+ *
+ *  Called by `issueIOU` and `redeemIOU` after every balance mutation.
+ *  Releases the sender's owner-count reserve and clears `lsfLowReserve` /
+ *  `lsfHighReserve` when **all** of the following are true:
+ *    1. The sender's balance transitioned from positive to zero or negative.
+ *    2. The sender's reserve flag is currently set.
+ *    3. The sender's `lsfNoRipple` state disagrees with the issuer's
+ *       `lsfDefaultRipple` — meaning neither side wants this line kept alive.
+ *    4. The sender's side of the line is not frozen.
+ *    5. The sender's trust limit is zero.
+ *    6. The sender's `sfLowQualityIn` / `sfHighQualityIn` is zero.
+ *    7. The sender's `sfLowQualityOut` / `sfHighQualityOut` is zero.
+ *
+ *  Returns `true` only when the reserve was cleared *and* the final balance
+ *  is zero *and* the peer's reserve flag is also clear — meaning neither
+ *  side holds a stake in the line and the caller should delete it.  The
+ *  caller must write the final balance onto the SLE before calling
+ *  `trustDelete` so the deletion metadata captures accurate state.
+ *
+ *  @param view       Mutable ledger view.
+ *  @param state      The `ltRIPPLE_STATE` SLE, already peeked from @p view.
+ *  @param bSenderHigh `true` if the sender occupies the high slot.
+ *  @param sender     The account sending IOUs (issuer in `issueIOU`,
+ *      holder in `redeemIOU`).
+ *  @param before     Sender's balance before the transfer (sender perspective).
+ *  @param after      Sender's balance after the transfer (sender perspective).
+ *  @param j          Journal for trace/debug logging.
+ *  @return `true` if the trust line should be deleted (neither side has a
+ *      reserve and the balance is zero), `false` otherwise.
+ */
 static bool
 updateTrustLine(
     ApplyView& view,
@@ -347,33 +370,20 @@ updateTrustLine(
     if (!sle)
         return false;
 
-    // YYY Could skip this if rippling in reverse.
-    if (before > beast::kZERO
-        // Sender balance was positive.
-        && after <= beast::kZERO
-        // Sender is zero or negative.
-        && ((flags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve)) != 0u)
-        // Sender reserve is set.
-        && static_cast<bool>(flags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)) !=
+    if (before > beast::kZERO && after <= beast::kZERO &&
+        ((flags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve)) != 0u) &&
+        static_cast<bool>(flags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)) !=
             static_cast<bool>(sle->getFlags() & lsfDefaultRipple) &&
         ((flags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze)) == 0u) &&
-        !state->getFieldAmount(!bSenderHigh ? sfLowLimit : sfHighLimit)
-        // Sender trust limit is 0.
-        && (state->getFieldU32(!bSenderHigh ? sfLowQualityIn : sfHighQualityIn) == 0u)
-        // Sender quality in is 0.
-        && (state->getFieldU32(!bSenderHigh ? sfLowQualityOut : sfHighQualityOut) == 0u))
-    // Sender quality out is 0.
+        !state->getFieldAmount(!bSenderHigh ? sfLowLimit : sfHighLimit) &&
+        (state->getFieldU32(!bSenderHigh ? sfLowQualityIn : sfHighQualityIn) == 0u) &&
+        (state->getFieldU32(!bSenderHigh ? sfLowQualityOut : sfHighQualityOut) == 0u))
     {
-        // VFALCO Where is the line being deleted?
-        // Clear the reserve of the sender, possibly delete the line!
         adjustOwnerCount(view, sle, -1, j);
-
-        // Clear reserve flag.
         state->setFieldU32(sfFlags, flags & (!bSenderHigh ? ~lsfLowReserve : ~lsfHighReserve));
 
-        // Balance is zero, receiver reserve is clear.
-        if (!after  // Balance is zero.
-            && ((flags & (bSenderHigh ? lsfLowReserve : lsfHighReserve)) == 0u))
+        // Neither side holds a stake: caller should delete the line.
+        if (!after && ((flags & (bSenderHigh ? lsfLowReserve : lsfHighReserve)) == 0u))
             return true;
     }
     return false;
@@ -390,11 +400,7 @@ issueIOU(
     XRPL_ASSERT(
         !isXRP(account) && !isXRP(issue.account),
         "xrpl::issueIOU : neither account nor issuer is XRP");
-
-    // Consistency check
     XRPL_ASSERT(issue == amount.get<Issue>(), "xrpl::issueIOU : matching issue");
-
-    // Can't send to self!
     XRPL_ASSERT(issue.account != account, "xrpl::issueIOU : not issuer account");
 
     JLOG(j.trace()) << "issueIOU: " << to_string(account) << ": " << amount.getFullText();
@@ -422,9 +428,8 @@ issueIOU(
         if (bSenderHigh)
             finalBalance.negate();
 
-        // Adjust the balance on the trust line if necessary. We do this even
-        // if we are going to delete the line to reflect the correct balance
-        // at the time of deletion.
+        // Write the final balance even when mustDelete is true: deletion
+        // metadata must reflect accurate state at the moment of removal.
         state->setFieldAmount(sfBalance, finalBalance);
         if (mustDelete)
         {
@@ -484,11 +489,7 @@ redeemIOU(
     XRPL_ASSERT(
         !isXRP(account) && !isXRP(issue.account),
         "xrpl::redeemIOU : neither account nor issuer is XRP");
-
-    // Consistency check
     XRPL_ASSERT(issue == amount.get<Issue>(), "xrpl::redeemIOU : matching issue");
-
-    // Can't send to self!
     XRPL_ASSERT(issue.account != account, "xrpl::redeemIOU : not issuer account");
 
     JLOG(j.trace()) << "redeemIOU: " << to_string(account) << ": " << amount.getFullText();
@@ -514,9 +515,8 @@ redeemIOU(
         if (bSenderHigh)
             finalBalance.negate();
 
-        // Adjust the balance on the trust line if necessary. We do this even
-        // if we are going to delete the line to reflect the correct balance
-        // at the time of deletion.
+        // Write the final balance even when mustDelete is true: deletion
+        // metadata must reflect accurate state at the moment of removal.
         state->setFieldAmount(sfBalance, finalBalance);
 
         if (mustDelete)
@@ -533,9 +533,8 @@ redeemIOU(
         return tesSUCCESS;
     }
 
-    // In order to hold an IOU, a trust line *MUST* exist to track the
-    // balance. If it doesn't, then something is very wrong. Don't try
-    // to continue.
+    // A holder cannot redeem a balance without an existing trust line —
+    // ledger state is corrupt if we reach here.
     // LCOV_EXCL_START
     JLOG(j.fatal()) << "redeemIOU: " << to_string(account) << " attempts to "
                     << "redeem " << amount.getFullText() << " but no trust line exists!";
@@ -544,11 +543,7 @@ redeemIOU(
     // LCOV_EXCL_STOP
 }
 
-//------------------------------------------------------------------------------
-//
-// Authorization and transfer checks (IOU-specific)
-//
-//------------------------------------------------------------------------------
+// --- Authorization and transfer checks (IOU-specific) ---
 
 TER
 requireAuth(ReadView const& view, Issue const& issue, AccountID const& account, AuthType authType)
@@ -557,12 +552,9 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account, 
         return tesSUCCESS;
 
     auto const trustLine = view.read(keylet::line(account, issue.account, issue.currency));
-    // If account has no line, and this is a strong check, fail
     if (!trustLine && authType == AuthType::StrongAuth)
         return tecNO_LINE;
 
-    // If this is a weak or legacy check, or if the account has a line, fail if
-    // auth is required and not set on the line
     if (auto const issuerAccount = view.read(keylet::account(issue.account));
         issuerAccount && (((*issuerAccount)[sfFlags] & lsfRequireAuth) != 0u))
     {
@@ -593,8 +585,8 @@ canTransfer(ReadView const& view, Issue const& issue, AccountID const& from, Acc
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const isRippleDisabled = [&](AccountID account) -> bool {
-        // Line might not exist, but some transfers can create it. If this
-        // is the case, just check the default ripple on the issuer account.
+        // A payment may create the line on the fly; if none exists yet, fall
+        // back to the issuer's lsfDefaultRipple as the "intended" state.
         auto const line = view.read(keylet::line(account, issue));
         if (line)
         {
@@ -604,18 +596,13 @@ canTransfer(ReadView const& view, Issue const& issue, AccountID const& from, Acc
         return !sleIssuer->isFlag(lsfDefaultRipple);
     };
 
-    // Fail if rippling disabled on both trust lines
     if (isRippleDisabled(from) && isRippleDisabled(to))
         return terNO_RIPPLE;
 
     return tesSUCCESS;
 }
 
-//------------------------------------------------------------------------------
-//
-// Empty holding operations (IOU-specific)
-//
-//------------------------------------------------------------------------------
+// --- Empty holding operations (IOU-specific) ---
 
 TER
 addEmptyHolding(
@@ -625,7 +612,6 @@ addEmptyHolding(
     Issue const& issue,
     beast::Journal journal)
 {
-    // Every account can hold XRP. An issuer can issue directly.
     if (issue.native() || accountID == issue.getIssuer())
         return tesSUCCESS;
 
@@ -644,11 +630,9 @@ addEmptyHolding(
         return tefINTERNAL;  // LCOV_EXCL_LINE
     if (!sleSrc->isFlag(lsfDefaultRipple))
         return tecINTERNAL;  // LCOV_EXCL_LINE
-    // If the line already exists, don't create it again.
     if (view.read(index))
         return tecDUPLICATE;
 
-    // Can the account cover the trust line reserve ?
     std::uint32_t const ownerCount = sleDst->at(sfOwnerCount);
     if (priorBalance < view.fees().accountReserve(ownerCount + 1))
         return tecNO_LINE_INSUF_RESERVE;
@@ -691,9 +675,6 @@ removeEmptyHolding(
         return tesSUCCESS;
     }
 
-    // `asset` is an IOU.
-    // If the account is the issuer, then no line should exist. Check anyway.
-    // If a line does exist, it will get deleted. If not, return success.
     bool const accountIsIssuer = accountID == issue.account;
     auto const line = view.peek(keylet::line(accountID, issue));
     if (!line)
@@ -701,32 +682,25 @@ removeEmptyHolding(
     if (!accountIsIssuer && line->at(sfBalance)->iou() != beast::kZERO)
         return tecHAS_OBLIGATIONS;
 
-    // Adjust the owner count(s)
     if (line->isFlag(lsfLowReserve))
     {
-        // Clear reserve for low account.
         auto sleLowAccount = view.peek(keylet::account(line->at(sfLowLimit)->getIssuer()));
         if (!sleLowAccount)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         adjustOwnerCount(view, sleLowAccount, -1, journal);
-        // It's not really necessary to clear the reserve flag, since the line
-        // is about to be deleted, but this will make the metadata reflect an
-        // accurate state at the time of deletion.
+        // Clear now so deletion metadata reflects accurate owner-count state.
         line->clearFlag(lsfLowReserve);
     }
 
     if (line->isFlag(lsfHighReserve))
     {
-        // Clear reserve for high account.
         auto sleHighAccount = view.peek(keylet::account(line->at(sfHighLimit)->getIssuer()));
         if (!sleHighAccount)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         adjustOwnerCount(view, sleHighAccount, -1, journal);
-        // It's not really necessary to clear the reserve flag, since the line
-        // is about to be deleted, but this will make the metadata reflect an
-        // accurate state at the time of deletion.
+        // Clear now so deletion metadata reflects accurate owner-count state.
         line->clearFlag(lsfHighReserve);
     }
 
@@ -755,15 +729,12 @@ deleteAMMTrustLine(
     bool const ammLow = sleLow->isFieldPresent(sfAMMID);
     bool const ammHigh = sleHigh->isFieldPresent(sfAMMID);
 
-    // can't both be AMM
     if (ammLow && ammHigh)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    // at least one must be
     if (!ammLow && !ammHigh)
         return terNO_AMM;
 
-    // one must be the target amm
     if (ammAccountID && (low != *ammAccountID && high != *ammAccountID))
         return terNO_AMM;
 

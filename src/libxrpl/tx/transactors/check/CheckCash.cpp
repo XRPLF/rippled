@@ -1,3 +1,14 @@
+/** @file
+ *  Implements the `CheckCash` transactor: the payee-side half of the XRP Ledger
+ *  check mechanism. `CheckCreate` establishes a check ledger object; this file
+ *  contains the three-phase pipeline (`checkExtraFeatures` → `preflight` →
+ *  `preclaim` → `doApply`) that redeems it.
+ *
+ *  XRP transfers are handled directly via `transferXRP`; IOU and MPT transfers
+ *  route through the `flow()` payment engine inside a `PaymentSandbox`. See
+ *  `CheckCreate.cpp` for the creation side and `CheckCancel.cpp` for the
+ *  cancellation path.
+ */
 #include <xrpl/tx/transactors/check/CheckCash.h>
 
 #include <xrpl/basics/Log.h>
@@ -50,7 +61,6 @@ CheckCash::checkExtraFeatures(xrpl::PreflightContext const& ctx)
 NotTEC
 CheckCash::preflight(PreflightContext const& ctx)
 {
-    // Exactly one of Amount or DeliverMin must be present.
     auto const optAmount = ctx.tx[~sfAmount];
     auto const optDeliverMin = ctx.tx[~sfDeliverMin];
 
@@ -61,7 +71,6 @@ CheckCash::preflight(PreflightContext const& ctx)
         return temMALFORMED;
     }
 
-    // Make sure the amount is valid.
     STAmount const value{optAmount ? *optAmount : *optDeliverMin};
     if (!isLegalNet(value) || value.signum() <= 0)
     {
@@ -88,7 +97,6 @@ CheckCash::preclaim(PreclaimContext const& ctx)
         return tecNO_ENTRY;
     }
 
-    // Only cash a check with this account as the destination.
     AccountID const dstId = sleCheck->at(sfDestination);
     if (ctx.tx[sfAccount] != dstId)
     {
@@ -132,8 +140,6 @@ CheckCash::preclaim(PreclaimContext const& ctx)
     }
 
     {
-        // Preflight verified exactly one of Amount or DeliverMin is present.
-        // Make sure the requested amount is reasonable.
         STAmount const value{[](STTx const& tx) {
             auto const optAmount = tx[~sfAmount];
             return optAmount ? *optAmount : tx[sfDeliverMin];
@@ -157,8 +163,6 @@ CheckCash::preclaim(PreclaimContext const& ctx)
             return tecPATH_PARTIAL;
         }
 
-        // Make sure the check owner holds at least value.  If they have
-        // less than value the check cannot be cashed.
         {
             STAmount availableFunds{accountFunds(
                 ctx.view,
@@ -182,7 +186,6 @@ CheckCash::preclaim(PreclaimContext const& ctx)
             }
         }
 
-        // An issuer can always accept their own currency.
         if (!value.native() && (value.getIssuer() != dstId))
         {
             return value.asset().visit(
@@ -227,13 +230,9 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                         }
                     }
 
-                    // The trustline from source to issuer does not need to
-                    // be checked for freezing, since we already verified
-                    // that the source has sufficient non-frozen funds
-                    // available.
-
-                    // However, the trustline from destination to issuer may
-                    // not be frozen.
+                    // Source freeze is already covered by the accountFunds()
+                    // check above (FreezeHandling::ZeroIfFrozen).
+                    // Check the destination's trust line separately.
                     if (isFrozen(ctx.view, dstId, currency, issuerId))
                     {
                         JLOG(ctx.j.warn()) << "Cashing a check to a frozen trustline.";
@@ -281,8 +280,8 @@ CheckCash::preclaim(PreclaimContext const& ctx)
 TER
 CheckCash::doApply()
 {
-    // Flow requires that we operate on a PaymentSandbox, rather than
-    // directly on a View.
+    // PaymentSandbox is required: flow() uses deferred-credit accounting that
+    // must be isolated from the base view until the entire operation succeeds.
     PaymentSandbox psb(&ctx_.view());
 
     auto sleCheck = psb.peek(keylet::check(ctx_.tx[sfCheckID]));
@@ -303,16 +302,6 @@ CheckCash::doApply()
         // LCOV_EXCL_STOP
     }
 
-    // Preclaim already checked that source has at least the requested
-    // funds.
-    //
-    // Therefore, if this is a check written to self, (and it shouldn't be)
-    // we know they have sufficient funds to pay the check.  Since they are
-    // taking the funds from their own pocket and putting it back in their
-    // pocket no balance will change.
-    //
-    // If it is not a check to self (as should be the case), then there's
-    // work to do...
     auto viewJ = ctx_.registry.get().getJournal("View");
     auto const optDeliverMin = ctx_.tx[~sfDeliverMin];
 
@@ -320,54 +309,40 @@ CheckCash::doApply()
     {
         STAmount const sendMax = sleCheck->at(sfSendMax);
 
-        // Flow() doesn't do XRP to XRP transfers.
+        // flow() does not handle native XRP; handle it directly here.
         if (sendMax.native())
         {
-            // Here we need to calculate the amount of XRP src can send.
-            // The amount they have available is their balance minus their
-            // reserve.
-            //
-            // Since (if we're successful) we're about to remove an entry
-            // from src's directory, we allow them to send that additional
-            // incremental reserve amount in the transfer.  Hence the -1
-            // argument.
+            // Pass -1 as the owner-count adjustment: cashing the check will
+            // delete it and free one reserve slot, so the source effectively
+            // has that extra reserve available to send right now.
             STAmount const srcLiquid{xrpLiquid(psb, srcId, -1, viewJ)};
 
-            // Now, how much do they need in order to be successful?
             STAmount const xrpDeliver{
                 optDeliverMin ? std::max(*optDeliverMin, std::min(sendMax, srcLiquid))
                               : ctx_.tx.getFieldAmount(sfAmount)};
 
             if (srcLiquid < xrpDeliver)
             {
-                // Vote no. However the transaction might succeed if applied
-                // in a different order.
                 JLOG(j_.trace()) << "Cash Check: Insufficient XRP: " << srcLiquid.getFullText()
                                  << " < " << xrpDeliver.getFullText();
                 return tecUNFUNDED_PAYMENT;
             }
 
             if (optDeliverMin)
-            {
-                // Set the DeliveredAmount metadata.
                 ctx_.deliver(xrpDeliver);
-            }
 
-            // The source account has enough XRP so make the ledger change.
             if (TER const ter{transferXRP(psb, srcId, account_, xrpDeliver, viewJ)};
                 !isTesSuccess(ter))
             {
-                // The transfer failed.  Return the error code.
                 return ter;
             }
         }
         else
         {
-            // Note that for DeliverMin we don't know exactly how much
-            // currency we want flow to deliver.  We can't ask for the
-            // maximum possible currency because there might be a gateway
-            // transfer rate to account for.  Since the transfer rate cannot
-            // exceed 200%, we use 1/2 maxValue as our limit.
+            // Capped at half the type maximum: gateway transfer rates can be
+            // up to 200%, so asking flow() for the full maximum could overflow
+            // internal arithmetic. Half the maximum leaves headroom for any
+            // valid transfer rate.
             auto const maxDeliverMin = [&]() {
                 return optDeliverMin->asset().visit(
                     [&](Issue const&) {
@@ -383,12 +358,11 @@ CheckCash::doApply()
             STAmount const flowDeliver{
                 optDeliverMin ? maxDeliverMin() : ctx_.tx.getFieldAmount(sfAmount)};
 
-            // Check reserve. Return destination account SLE if enough reserve,
-            // otherwise return nullptr.
+            // Returns the destination SLE if the account can afford the
+            // reserve for a new trust line or MPToken entry, nullptr otherwise.
             auto checkReserve = [&]() -> std::shared_ptr<SLE> {
                 auto sleDst = psb.peek(keylet::account(account_));
 
-                // Can the account cover the trust line's or MPT reserve?
                 if (std::uint32_t const ownerCount = {sleDst->at(sfOwnerCount)};
                     preFeeBalance_ < psb.fees().accountReserve(ownerCount + 1))
                 {
@@ -406,24 +380,20 @@ CheckCash::doApply()
             AccountID const& deliverIssuer = flowDeliver.getIssuer();
             auto const err = flowDeliver.asset().visit(
                 [&](Issue const& issue) -> std::optional<TER> {
-                    // If a trust line does not exist yet create one.
                     Issue const& trustLineIssue = issue;
                     AccountID const truster = deliverIssuer == account_ ? srcId : account_;
                     trustLineKey = keylet::line(truster, trustLineIssue);
+                    // `destLow` encodes canonical high/low ordering used by
+                    // `sfLowLimit`/`sfHighLimit` in the trust line SLE.
                     destLow = deliverIssuer > account_;
 
                     if (!psb.exists(*trustLineKey))
                     {
-                        // 1. Can the check casher meet the reserve for the
-                        // trust line?
-                        // 2. Create trust line between destination (this)
-                        // account
-                        //    and the issuer.
-                        // 3. Apply correct noRipple settings on trust line.
-                        // Use...
-                        //     a. this (destination) account and
-                        //     b. issuing account (not sending account).
-
+                        // Auto-create the trust line: the destination's
+                        // signature on this transaction is explicit consent to
+                        // receive these funds, so creating the line on their
+                        // behalf is safe. noRipple is derived from the
+                        // destination account's lsfDefaultRipple flag.
                         auto const sleDst = checkReserve();
                         if (sleDst == nullptr)
                             return tecNO_LINE_INSUF_RESERVE;
@@ -440,7 +410,7 @@ CheckCash::doApply()
                                 trustLineKey->key,                             // ledger index
                                 sleDst,                                        // Account to add to
                                 false,                                         // authorize account
-                                (sleDst->getFlags() & lsfDefaultRipple) == 0,  //
+                                (sleDst->getFlags() & lsfDefaultRipple) == 0,  // noRipple
                                 false,                                         // freeze trust line
                                 false,                      // deep freeze trust line
                                 initialBalance,             // zero initial balance
@@ -454,18 +424,16 @@ CheckCash::doApply()
                         }
 
                         psb.update(sleDst);
-
-                        // Note that we _don't_ need to be careful about
-                        // destroying the trust line if the check cashing
-                        // fails.  The transaction machinery will
-                        // automatically clean it up.
+                        // If the subsequent flow() fails, the transaction
+                        // machinery discards the sandbox and the new trust
+                        // line never appears in the ledger.
                     }
 
-                    // Since the destination is signing the check, they
-                    // clearly want the funds even if their new total funds
-                    // would exceed the limit on their trust line.  So we
-                    // tweak the trust line limits before calling flow and
-                    // then restore the trust line limits afterwards.
+                    // The destination signed this transaction, so they
+                    // consent to receiving funds even beyond their current
+                    // trust line limit. Temporarily raise the limit to the
+                    // maximum representable value; a scope_exit guard below
+                    // restores it unconditionally when this scope exits.
                     auto const sleTrustLine = psb.peek(*trustLineKey);
                     if (!sleTrustLine)
                         return tecNO_LINE;
@@ -473,8 +441,6 @@ CheckCash::doApply()
                     SF_AMOUNT const& tweakedLimit = destLow ? sfLowLimit : sfHighLimit;
                     savedLimit = sleTrustLine->at(tweakedLimit);
 
-                    // Set the trust line limit to the highest possible
-                    // value while flow runs.
                     STAmount const bigAmount(
                         trustLineIssue, STAmount::kMAX_VALUE, STAmount::kMAX_OFFSET);
                     sleTrustLine->at(tweakedLimit) = bigAmount;
@@ -485,7 +451,6 @@ CheckCash::doApply()
                     if (account_ != deliverIssuer)
                     {
                         auto const& mptID = issue.getMptID();
-                        // Create MPT if it doesn't exist
                         auto const mptokenKey = keylet::mptoken(mptID, account_);
                         if (!psb.exists(mptokenKey))
                         {
@@ -505,8 +470,9 @@ CheckCash::doApply()
                 });
             if (err)
                 return *err;
-            // Make sure the tweaked limits are restored when we leave
-            // scope.
+            // RAII guard: restore the trust line limit regardless of whether
+            // flow() succeeds or fails. Only fires when trustLineKey is set
+            // (i.e., the asset is an IOU), so MPT paths are unaffected.
             ScopeExit const fixup([&psb, &trustLineKey, destLow, &savedLimit]() {
                 if (trustLineKey)
                 {
@@ -516,7 +482,6 @@ CheckCash::doApply()
                 }
             });
 
-            // Let flow() do the heavy lifting on a check for an IOU.
             auto const result = flow(
                 psb,
                 flowDeliver,
@@ -538,7 +503,6 @@ CheckCash::doApply()
                 return result.result();
             }
 
-            // Make sure that deliverMin was satisfied.
             if (optDeliverMin)
             {
                 if (result.actualAmountOut < *optDeliverMin)
@@ -549,16 +513,20 @@ CheckCash::doApply()
                 ctx_.deliver(result.actualAmountOut);
             }
 
-            // Set the delivered amount metadata in all cases, not just
-            // for DeliverMin.
+            // Record delivered amount in transaction metadata (required for
+            // both sfAmount and sfDeliverMin cases so consumers can observe
+            // the actual transfer amount).
             ctx_.deliver(result.actualAmountOut);
 
             sleCheck = psb.peek(keylet::check(ctx_.tx[sfCheckID]));
         }
     }
 
-    // Check was cashed.  If not a self send (and it shouldn't be), remove
-    // check link from destination directory.
+    // Remove the check from both owner directories, decrement the source's
+    // owner count, and erase the SLE. Directory removal failures are marked
+    // LCOV_EXCL because they indicate pre-existing ledger corruption — the
+    // page indices were stored in the SLE by CheckCreate and cannot be wrong
+    // unless the ledger is already inconsistent.
     if (srcId != account_ &&
         !psb.dirRemove(
             keylet::ownerDir(account_), sleCheck->at(sfDestinationNode), sleCheck->key(), true))
@@ -569,7 +537,6 @@ CheckCash::doApply()
         // LCOV_EXCL_STOP
     }
 
-    // Remove check from check owner's directory.
     if (!psb.dirRemove(keylet::ownerDir(srcId), sleCheck->at(sfOwnerNode), sleCheck->key(), true))
     {
         // LCOV_EXCL_START
@@ -578,10 +545,7 @@ CheckCash::doApply()
         // LCOV_EXCL_STOP
     }
 
-    // If we succeeded, update the check owner's reserve.
     adjustOwnerCount(psb, psb.peek(keylet::account(srcId)), -1, viewJ);
-
-    // Remove check from ledger.
     psb.erase(sleCheck);
 
     psb.apply(ctx_.rawView());

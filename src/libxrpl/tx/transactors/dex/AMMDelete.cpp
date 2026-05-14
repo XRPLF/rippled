@@ -1,3 +1,22 @@
+/** @file
+ *  Implements the `AMMDelete` transactor, which permanently removes a
+ *  fully-drained AMM pool from the XRP Ledger.
+ *
+ *  This file is intentionally thin: it owns only the three-phase validation
+ *  logic (`checkExtraFeatures`, `preflight`, `preclaim`) and the
+ *  `Sandbox`/commit pattern in `doApply`. The actual ledger-mutation
+ *  sequence — iterating the AMM owner directory, deleting trustlines and
+ *  MPToken objects, and erasing the `ltAMM` SLE and pseudo-account — lives
+ *  in `deleteAMMAccount()` in `AMMHelpers.cpp`, enabling the same deletion
+ *  logic to be reused by `AMMWithdraw` when a withdrawal drains a pool to
+ *  zero.
+ *
+ *  @note Deletion is chunked: each `doApply` removes at most
+ *      `maxDeletableAMMTrustLines` (512) trustlines and commits that
+ *      partial progress even when `tecINCOMPLETE` is returned, so the
+ *      submitter must re-submit until the pool is fully erased.
+ *  @see AMMHelpers.h, AMMWithdraw
+ */
 #include <xrpl/tx/transactors/dex/AMMDelete.h>
 
 #include <xrpl/basics/Log.h>
@@ -55,8 +74,6 @@ AMMDelete::preclaim(PreclaimContext const& ctx)
 TER
 AMMDelete::doApply()
 {
-    // This is the ledger view that we work against. Transactions are applied
-    // as we go on processing transactions.
     Sandbox sb(&ctx_.view());
 
     auto const ter = deleteAMMAccount(sb, ctx_.tx[sfAsset], ctx_.tx[sfAsset2], j_);

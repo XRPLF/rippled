@@ -1,3 +1,13 @@
+/** @file
+ *  Implementation of the OfferCancel transactor.
+ *
+ *  The file is intentionally small: static validation rejects only a zero
+ *  `sfOfferSequence`, preclaim enforces temporal ordering (the offer must
+ *  already exist), and `doApply` delegates the actual ledger teardown to the
+ *  shared `offerDelete` helper.  Cancelling a non-existent offer is
+ *  idempotent — `doApply` returns `tesSUCCESS` whether or not the target
+ *  offer is still on the book.
+ */
 #include <xrpl/tx/transactors/dex/OfferCancel.h>
 
 #include <xrpl/basics/Log.h>
@@ -75,13 +85,11 @@ OfferCancel::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
-    // No transaction-specific invariants yet (future work).
 }
 
 bool
 OfferCancel::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
-    // No transaction-specific invariants yet (future work).
     return true;
 }
 

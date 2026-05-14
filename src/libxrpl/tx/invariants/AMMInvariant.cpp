@@ -1,3 +1,13 @@
+/** @file
+ *  Implements `ValidAMM`, the post-transaction invariant checker for AMM ledger
+ *  state consistency.
+ *
+ *  `visitEntry` accumulates AMM-relevant state from every modified SLE during
+ *  a transaction; `finalize` dispatches to per-transaction-type helpers that
+ *  verify the constant-product and structural invariants. Enforcement is gated
+ *  on `fixAMMv1_3`: violations are always logged but only cause transaction
+ *  rejection once that amendment is active.
+ */
 #include <xrpl/tx/invariants/AMMInvariant.h>
 
 #include <xrpl/basics/Log.h>
@@ -36,13 +46,11 @@ ValidAMM::visitEntry(
     if (after)
     {
         auto const type = after->getType();
-        // AMM object changed
         if (type == ltAMM)
         {
             ammAccount_ = after->getAccountID(sfAccount);
             lptAMMBalanceAfter_ = after->getFieldAmount(sfLPTokenBalance);
         }
-        // AMM pool changed
         else if (
             (type == ltRIPPLE_STATE && ((after->getFlags() & lsfAMMNode) != 0u)) ||
             (type == ltACCOUNT_ROOT && after->isFieldPresent(sfAMMID)))
@@ -53,7 +61,6 @@ ValidAMM::visitEntry(
 
     if (before)
     {
-        // AMM object changed
         if (before->getType() == ltAMM)
         {
             lptAMMBalanceBefore_ = before->getFieldAmount(sfLPTokenBalance);
@@ -61,6 +68,19 @@ ValidAMM::visitEntry(
     }
 }
 
+/** Return true if the three AMM balances satisfy the sign constraint.
+ *
+ *  When `zeroAllowed` is `No`, all three values must be strictly positive.
+ *  When `zeroAllowed` is `Yes`, the simultaneous all-zeros state is also
+ *  accepted — this is the legitimate terminal state after the final LP
+ *  withdrawal drains the pool completely.
+ *
+ *  @param amount     First pool asset balance.
+ *  @param amount2    Second pool asset balance.
+ *  @param lptAMMBalance LP token supply.
+ *  @param zeroAllowed Whether an all-zeros pool state is valid.
+ *  @return `true` if the balances satisfy the constraint.
+ */
 static bool
 validBalances(
     STAmount const& amount,
@@ -83,7 +103,6 @@ ValidAMM::finalizeVote(bool enforce, beast::Journal const& j) const
 {
     if (lptAMMBalanceAfter_ != lptAMMBalanceBefore_ || ammPoolChanged_)
     {
-        // LPTokens and the pool can not change on vote
         // LCOV_EXCL_START
         JLOG(j.error()) << "AMMVote invariant failed: " << lptAMMBalanceBefore_.value_or(STAmount{})
                         << " " << lptAMMBalanceAfter_.value_or(STAmount{}) << " "
@@ -101,14 +120,12 @@ ValidAMM::finalizeBid(bool enforce, beast::Journal const& j) const
 {
     if (ammPoolChanged_)
     {
-        // The pool can not change on bid
         // LCOV_EXCL_START
         JLOG(j.error()) << "AMMBid invariant failed: pool changed";
         if (enforce)
             return false;
         // LCOV_EXCL_STOP
     }
-    // LPTokens are burnt, therefore there should be fewer LPTokens
     else if (
         lptAMMBalanceBefore_ && lptAMMBalanceAfter_ &&
         (*lptAMMBalanceAfter_ > *lptAMMBalanceBefore_ || *lptAMMBalanceAfter_ <= beast::kZERO))
@@ -149,9 +166,6 @@ ValidAMM::finalizeCreate(
             FreezeHandling::IgnoreFreeze,
             AuthHandling::IgnoreAuth,
             j);
-        // Create invariant:
-        // sqrt(amount * amount2) == LPTokens
-        // all balances are greater than zero
         // NOLINTBEGIN(bugprone-unchecked-optional-access) lptAMMBalanceAfter_ set with ammAccount_
         // in visitEntry
         if (!validBalances(amount, amount2, *lptAMMBalanceAfter_, ZeroAllowed::No) ||
@@ -217,10 +231,6 @@ ValidAMM::generalInvariant(
         FreezeHandling::IgnoreFreeze,
         AuthHandling::IgnoreAuth,
         j);
-    // Deposit and Withdrawal invariant:
-    // sqrt(amount * amount2) >= LPTokens
-    // all balances are greater than zero
-    // unless on last withdrawal
     auto const poolProductMean = root2(amount * amount2);
     bool const nonNegativeBalances =
         validBalances(amount, amount2, *lptAMMBalanceAfter_, zeroAllowed);

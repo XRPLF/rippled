@@ -1,3 +1,16 @@
+/** @file
+ *  Implements ServerHandler, the central dispatcher bridging the Beast HTTP/WebSocket
+ *  server with the XRPL RPC execution layer.
+ *
+ *  Every inbound client connection — HTTP RPC, WebSocket subscription, or load-balancer
+ *  health probe — flows through this class before any RPC command is touched. The file
+ *  also contains the free-function helpers for parsing port configuration from
+ *  `rippled.cfg` (`setupServerHandler`, `parsePorts`, `toPort`) and the factory
+ *  `makeServerHandler`.
+ *
+ *  @see ServerHandler.h for the public interface and the full architectural overview.
+ */
+
 #include <xrpld/rpc/ServerHandler.h>
 
 #include <xrpld/app/main/Application.h>
@@ -78,6 +91,15 @@ class Transaction;
 class ValidatorKeys;
 class CanonicalTXSet;
 
+/** Determine whether an HTTP request is a load-balancer health-check probe.
+ *
+ *  A status request is an HTTP/1.1 GET for exactly `"/"` with an empty body.
+ *  This shape is used by load balancers to test node availability; it is
+ *  answered by statusResponse() rather than entering the RPC pipeline.
+ *
+ *  @param request The incoming HTTP request to inspect.
+ *  @return True if the request matches the health-check shape.
+ */
 static bool
 isStatusRequest(http_request_type const& request)
 {
@@ -85,6 +107,16 @@ isStatusRequest(http_request_type const& request)
         request.method() == boost::beast::http::verb::get;
 }
 
+/** Build a minimal HTTP response for a request that cannot be serviced normally.
+ *
+ *  Used to reject WebSocket upgrade attempts on non-WebSocket ports (401) and
+ *  to signal internal errors during the upgrade itself (500). The response body
+ *  is the fixed string `"Invalid protocol."` regardless of status.
+ *
+ *  @param request The original request; its HTTP version is preserved in the reply.
+ *  @param status  The HTTP status to return (e.g., `unauthorized`, `internal_server_error`).
+ *  @return A Handoff carrying the pre-built response writer.
+ */
 static Handoff
 statusRequestResponse(http_request_type const& request, boost::beast::http::status status)
 {
@@ -103,6 +135,17 @@ statusRequestResponse(http_request_type const& request, boost::beast::http::stat
 }
 
 // VFALCO TODO Rewrite to use boost::beast::http::fields
+/** Verify HTTP Basic-Auth credentials against a port's configured user/password.
+ *
+ *  If the port has no configured credentials, every request is accepted
+ *  (auth is opt-in per port). When credentials are present, the function
+ *  decodes the Base64 `Authorization: Basic <payload>` header, splits on
+ *  the first `':'`, and compares against `port.user` / `port.password`.
+ *
+ *  @param port The listening port whose credentials are authoritative.
+ *  @param h    Lower-cased HTTP header map produced by buildMap().
+ *  @return True if the request is authorised to proceed.
+ */
 static bool
 authorized(Port const& port, std::map<std::string, std::string> const& h)
 {
@@ -261,12 +304,27 @@ ServerHandler::onHandoff(
     return {};
 }
 
+/** Create a json::Output sink that writes directly into a Session.
+ *
+ *  @param session The HTTP session to write response chunks into.
+ *  @return A callable that forwards string-view chunks to `session.write()`.
+ */
 static inline json::Output
 makeOutput(Session& session)
 {
     return [&](boost::beast::string_view const& b) { session.write(b.data(), b.size()); };
 }
 
+/** Flatten Boost.Beast HTTP fields into a lower-cased string→string map.
+ *
+ *  Header names are lower-cased so that lookups (e.g., `"authorization"`) are
+ *  case-insensitive without requiring the caller to know the original casing.
+ *  Keys are stored as `std::string` (not `std::string_view`) because the map
+ *  must own its keys independently of the fields object lifetime.
+ *
+ *  @param h The HTTP fields to flatten.
+ *  @return A map of lower-cased header name → header value.
+ */
 static std::map<std::string, std::string>
 buildMap(boost::beast::http::fields const& h)
 {
@@ -283,6 +341,17 @@ buildMap(boost::beast::http::fields const& h)
     return c;
 }
 
+/** Concatenate a Boost.Asio const-buffer sequence into a single string.
+ *
+ *  Pre-reserves capacity from the total buffer size to avoid repeated
+ *  reallocation. The range loop uses `auto&&` so that buffer sequences whose
+ *  iterators return temporaries (copies) and those that return references both
+ *  work correctly.
+ *
+ *  @tparam ConstBufferSequence A type satisfying the Boost.Asio ConstBufferSequence concept.
+ *  @param bs The buffer sequence to convert.
+ *  @return A string containing the concatenated bytes.
+ */
 template <class ConstBufferSequence>
 static std::string
 buffersToString(ConstBufferSequence const& bs)
@@ -392,6 +461,19 @@ ServerHandler::onStopped(Server&)
 
 //------------------------------------------------------------------------------
 
+/** Emit a duration-tiered log message for a completed RPC request.
+ *
+ *  Severity thresholds reflect the expectation that well-formed calls complete
+ *  in well under a second; escalating log levels flag contention or ledger load:
+ *  - `debug`   — below 1 second (normal)
+ *  - `warning` — 1–10 seconds (contention or heavy ledger)
+ *  - `error`   — above 10 seconds (severely degraded node)
+ *
+ *  @tparam T   A `std::chrono::duration`-compatible type.
+ *  @param request  The original request JSON (included in the log message).
+ *  @param duration Elapsed wall-clock time for the request.
+ *  @param journal  Journal to write the log entry to.
+ */
 template <class T>
 void
 logDuration(json::Value const& request, T const& duration, beast::Journal& journal)
@@ -582,6 +664,16 @@ ServerHandler::processSession(
     }
 }
 
+/** Build a JSON-RPC 2.0-style error envelope used in batch sub-request errors.
+ *
+ *  Produces `{ "error": { "code": <code>, "message": <message> } }`. This
+ *  shape is used inside batch responses only; singleton HTTP errors are
+ *  returned as plain HTTP status codes.
+ *
+ *  @param code    Numeric error code (one of the `k*` constants below).
+ *  @param message Human-readable error description.
+ *  @return JSON object containing the error envelope.
+ */
 static json::Value
 makeJsonError(json::Int code, json::Value&& message)
 {
@@ -593,9 +685,13 @@ makeJsonError(json::Int code, json::Value&& message)
     return r;
 }
 
+/** JSON-RPC 2.0 error code: requested method does not exist. */
 json::Int constexpr kMETHOD_NOT_FOUND = -32601;
+/** JSON-RPC 2.0 error code: server is at capacity / rate-limited. */
 json::Int constexpr kSERVER_OVERLOADED = -32604;
+/** JSON-RPC 2.0 error code: caller role is insufficient for the method. */
 json::Int constexpr kFORBIDDEN = -32605;
+/** JSON-RPC 2.0 error code: requested API version is not supported. */
 json::Int constexpr kWRONG_VERSION = -32606;
 
 void
@@ -1078,6 +1174,16 @@ ServerHandler::Setup::makeContexts()
     }
 }
 
+/** Convert a ParsedPort (raw config representation) to a fully validated Port.
+ *
+ *  Throws `std::exception` (via `Throw<>`) and writes a diagnostic to `log` if
+ *  any required field (`ip`, `port`, `protocol`) is absent in the parsed input.
+ *
+ *  @param parsed Intermediate port description produced by `parsePort()`.
+ *  @param log    Output stream for error messages on validation failure.
+ *  @return A fully populated Port ready for use by the server.
+ *  @throws std::exception if `ip`, `port`, or `protocol` is missing.
+ */
 static Port
 toPort(ParsedPort const& parsed, std::ostream& log)
 {
@@ -1124,6 +1230,22 @@ toPort(ParsedPort const& parsed, std::ostream& log)
     return p;
 }
 
+/** Parse all port sections from the node configuration into a Port vector.
+ *
+ *  Reads the `[server]` section for port names, then converts each named
+ *  subsection via toPort(). Special handling:
+ *  - `SECTION_PORT_GRPC` entries are skipped (parsed separately by GRPCServer).
+ *  - In standalone mode, `peer` is removed from every port's protocol set; any
+ *    port that becomes empty after removal is dropped entirely.
+ *  - In networked mode, exactly one `peer`-protocol port is required; zero
+ *    produces a warning, more than one throws.
+ *
+ *  @param config The loaded application configuration.
+ *  @param log    Output stream for warnings and errors during parsing.
+ *  @return Ordered vector of fully-validated Port descriptors.
+ *  @throws std::exception if `[server]` is absent, a named section is missing,
+ *      required port fields are absent, or more than one peer port is configured.
+ */
 static std::vector<Port>
 parsePorts(Config const& config, std::ostream& log)
 {
@@ -1197,7 +1319,16 @@ parsePorts(Config const& config, std::ostream& log)
     return result;
 }
 
-// Fill out the client portion of the Setup
+/** Populate the client-endpoint fields of a Setup from its first HTTP(S) port.
+ *
+ *  Scans `setup.ports` for the first entry whose protocol includes `http` or
+ *  `https` and copies its IP, port, and credentials into `setup.client`. If
+ *  the port's IP is unspecified (INADDR_ANY / `::`) the client IP is resolved
+ *  to the appropriate loopback address so local CLI calls work correctly.
+ *  Does nothing if no HTTP(S) port is configured.
+ *
+ *  @param setup The Setup to update in-place.
+ */
 static void
 setupClient(ServerHandler::Setup& setup)
 {
@@ -1226,7 +1357,15 @@ setupClient(ServerHandler::Setup& setup)
     setup.client.admin_password = iter->admin_password;
 }
 
-// Fill out the overlay portion of the Setup
+/** Populate the overlay endpoint of a Setup from its first peer-protocol port.
+ *
+ *  Finds the first port whose protocol set contains `peer` and stores its
+ *  IP/port as `setup.overlay`. Resets `setup.overlay` to a default-constructed
+ *  endpoint if no peer port exists (e.g., standalone mode after parsePorts
+ *  has stripped peer entries).
+ *
+ *  @param setup The Setup to update in-place.
+ */
 static void
 setupOverlay(ServerHandler::Setup& setup)
 {

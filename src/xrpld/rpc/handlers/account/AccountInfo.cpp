@@ -34,17 +34,19 @@
 
 namespace xrpl {
 
-/**
- * @brief Injects JSON describing a ledger entry.
+/** Serialize a ledger entry to JSON, augmenting account-root entries with a Gravatar URL.
  *
- * @param jv The JSON value to populate.
- * @param sle The ledger entry to describe.
+ *  Writes `sle.getJson(JsonOptions::none)` into `jv`.  When `sle` is an
+ *  `ltACCOUNT_ROOT` and the `sfEmailHash` field is set, appends a
+ *  `urlgravatar` field containing the Gravatar URL for that MD5 hash.  If
+ *  `sle` is any other entry type, sets `jv["Invalid"] = true` as a defensive
+ *  signal; in practice `doAccountInfo` only passes account-root SLEs, so that
+ *  branch is a safety net.
  *
- * @details
- * Populates the provided JSON value with the description of the specified
- * ledger entry. If the entry is an account root and contains an email hash,
- * adds a 'urlgravatar' field with the corresponding Gravatar URL.
- * If the entry is not an account root, sets the 'Invalid' field to true.
+ *  @param jv  Output JSON object; overwritten entirely on each call.
+ *  @param sle The ledger entry to serialize.
+ *  @note The Gravatar URL is constructed over HTTP, not HTTPS (known technical
+ *      debt; see the VFALCO TODO comment in the implementation).
  */
 void
 injectSLE(json::Value& jv, SLE const& sle)
@@ -69,20 +71,58 @@ injectSLE(json::Value& jv, SLE const& sle)
     }
 }
 
-// {
-//   account: <ident>,
-//   ledger_hash : <ledger>
-//   ledger_index : <ledger_index>
-//   signer_lists : <bool> // optional (default false)
-//                         //   if true return SignerList(s).
-//   queue : <bool>        // optional (default false)
-//                         //   if true return information about transactions
-//                         //   in the current TxQ, only if the requested
-//                         //   ledger is open. Otherwise if true, returns an
-//                         //   error.
-// }
-
-// TODO(tom): what is that "default"?
+/** Handle the `account_info` RPC command.
+ *
+ *  Reads the account root directly from the requested ledger and returns its
+ *  fields, a named-boolean `account_flags` map, and optional signer-list and
+ *  transaction-queue data.
+ *
+ *  The account identifier is read from the `account` field or, for backward
+ *  compatibility, the legacy `ident` alias; both must be strings.  Ledger
+ *  resolution runs before account lookup — an unknown ledger hash or index
+ *  causes an early return before any account state is touched.
+ *
+ *  **Flag serialization** — `account_flags` always contains the nine core
+ *  flags (`kLS_FLAGS`) and the four "disallow incoming" flags
+ *  (`kDISALLOW_INCOMING_FLAGS`).  `allowTrustLineClawback` is added only when
+ *  `featureClawback` is active in the requested ledger; `allowTrustLineLocking`
+ *  only when `featureTokenEscrow` is active.  This prevents false `false`
+ *  readings against older ledgers that have no concept of those flags.
+ *
+ *  **Signer lists** — when `signer_lists: true` is present the result includes
+ *  a single-element JSON array (reserved for a potential future multi-list
+ *  protocol).  On API v1 the array is nested inside `account_data`; on API v2+
+ *  it moves to the top-level response.  API v2+ also enforces strict boolean
+ *  typing: a non-boolean `signer_lists` value returns `rpcINVALID_PARAMS`.
+ *
+ *  **Queue data** — when `queue: true` is present the handler calls
+ *  `TxQ::getAccountTxs` and serializes each pending entry with its sequence or
+ *  ticket number, fee level, last-valid ledger, absolute fee, and
+ *  `max_spend_drops`.  This path requires the target ledger to be open;
+ *  requesting queue state against a closed or validated ledger returns
+ *  `rpcINVALID_PARAMS` because the queue is cleared at ledger close.
+ *
+ *  **Pseudo-accounts** — if the account root carries a pseudo-account designator
+ *  field (e.g., `sfAMMID`, `sfVaultID`, `sfLoanBrokerID`), the response includes
+ *  `pseudo_account.type` set to the trimmed field name (trailing `"ID"` suffix
+ *  removed).  Only one such field can be set per the `ValidPseudoAccounts`
+ *  invariant.
+ *
+ *  @param context  The RPC dispatch envelope carrying parsed parameters,
+ *      ledger access, app state, and API version.
+ *  @return A JSON object with `account_data`, `account_flags`, and optionally
+ *      `signer_lists`, `queue_data`, and `pseudo_account`; or an error object
+ *      on any validation failure.
+ *
+ *  @note Error conditions:
+ *      - `account`/`ident` wrong type → `rpcINVALID_FIELD`
+ *      - Neither field present → `rpcMISSING_FIELD`
+ *      - Unknown ledger → ledger-level error from `lookupLedger`
+ *      - Malformed Base58 address → `rpcACT_MALFORMED`
+ *      - `queue: true` on a non-open ledger → `rpcINVALID_PARAMS`
+ *      - `signer_lists` non-boolean on API v2+ → `rpcINVALID_PARAMS`
+ *      - Account not found → `rpcACT_NOT_FOUND`
+ */
 json::Value
 doAccountInfo(RPC::JsonContext& context)
 {
@@ -112,7 +152,6 @@ doAccountInfo(RPC::JsonContext& context)
     if (!ledger)
         return result;
 
-    // Get info on account.
     auto id = parseBase58<AccountID>(strIdent);
     if (!id)
     {
@@ -121,6 +160,8 @@ doAccountInfo(RPC::JsonContext& context)
     }
     auto const accountID{id.value()};
 
+    // Nine core account-root flags always present in `account_flags`, regardless
+    // of which amendments are enabled.  Clients can rely on this stable key set.
     static constexpr std::array<std::pair<std::string_view, LedgerSpecificFlags>, 9> kLS_FLAGS{
         {{"defaultRipple", lsfDefaultRipple},
          {"depositAuth", lsfDepositAuth},
@@ -132,6 +173,9 @@ doAccountInfo(RPC::JsonContext& context)
          {"requireAuthorization", lsfRequireAuth},
          {"requireDestinationTag", lsfRequireDestTag}}};
 
+    // Four "disallow incoming" flags introduced with the NFToken amendments.
+    // Always serialized into `account_flags`; the bit is simply `false` until
+    // the account sets it, giving clients a consistent key set.
     static constexpr std::array<std::pair<std::string_view, LedgerSpecificFlags>, 4>
         kDISALLOW_INCOMING_FLAGS{
             {{"disallowIncomingNFTokenOffer", lsfDisallowIncomingNFTokenOffer},
@@ -139,9 +183,15 @@ doAccountInfo(RPC::JsonContext& context)
              {"disallowIncomingPayChan", lsfDisallowIncomingPayChan},
              {"disallowIncomingTrustline", lsfDisallowIncomingTrustline}}};
 
+    // Amendment-gated flag; emitted in `account_flags` only when `featureClawback`
+    // is active in the requested ledger, preventing a misleading `false` against
+    // older ledgers that have no concept of the flag.
     static constexpr std::pair<std::string_view, LedgerSpecificFlags>
         kALLOW_TRUST_LINE_CLAWBACK_FLAG{"allowTrustLineClawback", lsfAllowTrustLineClawback};
 
+    // Amendment-gated flag; emitted in `account_flags` only when `featureTokenEscrow`
+    // is active in the requested ledger, for the same reason as
+    // `kALLOW_TRUST_LINE_CLAWBACK_FLAG`.
     static constexpr std::pair<std::string_view, LedgerSpecificFlags>
         kALLOW_TRUST_LINE_LOCKING_FLAG{"allowTrustLineLocking", lsfAllowTrustLineLocking};
 
@@ -152,8 +202,6 @@ doAccountInfo(RPC::JsonContext& context)
 
         if (queue && !ledger->open())
         {
-            // It doesn't make sense to request the queue
-            // with any closed or validated ledger.
             RPC::injectError(RpcInvalidParams, result);
             return result;
         }
@@ -191,7 +239,6 @@ doAccountInfo(RPC::JsonContext& context)
                 std::string name = pseudoField->fieldName;
                 if (name.ends_with("ID"))
                 {
-                    // Remove the ID suffix from the field name.
                     name = name.substr(0, name.size() - 2);
                     XRPL_ASSERT_PARTS(!name.empty(), "xrpl::doAccountInfo", "name is not empty");
                 }
@@ -202,10 +249,6 @@ doAccountInfo(RPC::JsonContext& context)
             }
         }
 
-        // The document[https://xrpl.org/account_info.html#account_info] states
-        // that signer_lists is a bool, however assigning any string value
-        // works. Do not allow this. This check is for api Version 2 onwards
-        // only
         if (context.apiVersion > 1u && params.isMember(jss::signer_lists) &&
             !params[jss::signer_lists].isBool())
         {
@@ -213,23 +256,16 @@ doAccountInfo(RPC::JsonContext& context)
             return result;
         }
 
-        // Return SignerList(s) if that is requested.
         if (params.isMember(jss::signer_lists) && params[jss::signer_lists].asBool())
         {
-            // We put the SignerList in an array because of an anticipated
-            // future when we support multiple signer lists on one account.
+            // The array is pre-allocated in anticipation of a future protocol
+            // that allows multiple signer lists per account.
             json::Value jvSignerList = json::ValueType::Array;
 
-            // This code will need to be revisited if in the future we support
-            // multiple SignerLists on one account.
             auto const sleSigners = ledger->read(keylet::signers(accountID));
             if (sleSigners)
                 jvSignerList.append(sleSigners->getJson(JsonOptions::Values::None));
 
-            // Documentation states this is returned as part of the account_info
-            // response, but previously the code put it under account_data. We
-            // can move this to the documented location from apiVersion 2
-            // onwards.
             if (context.apiVersion == 1)
             {
                 result[jss::account_data][jss::signer_lists] = std::move(jvSignerList);
@@ -239,7 +275,6 @@ doAccountInfo(RPC::JsonContext& context)
                 result[jss::signer_lists] = std::move(jvSignerList);
             }
         }
-        // Return queue info if that is requested
         if (queue)
         {
             json::Value jvQueueData = json::ValueType::Object;
@@ -261,8 +296,6 @@ doAccountInfo(RPC::JsonContext& context)
                 bool anyAuthChanged = false;
                 XRPAmount totalSpend(0);
 
-                // We expect txs to be returned sorted by SeqProxy.  Verify
-                // that with a couple of asserts.
                 SeqProxy prevSeqProxy = SeqProxy::sequence(0);
                 for (auto const& tx : txs)
                 {

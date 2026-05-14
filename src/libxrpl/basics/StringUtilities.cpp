@@ -1,3 +1,13 @@
+/** @file
+ *  Implements string and binary-data utilities used across the XRPL daemon.
+ *
+ *  Provides five free functions in the `xrpl` namespace: `sqlBlobLiteral`
+ *  for SQLite hex-literal encoding, `parseUrl` for URI decomposition,
+ *  `trimWhitespace` for whitespace stripping, `toUInt64` for safe decimal
+ *  conversion, and `isProperlyFormedTomlDomain` for validator-TOML domain
+ *  validation.  Both regex objects are `static` locals so they are compiled
+ *  once and reused across all calls.
+ */
 #include <xrpl/basics/StringUtilities.h>
 
 #include <xrpl/basics/Blob.h>
@@ -19,6 +29,15 @@
 
 namespace xrpl {
 
+/** Encode binary data as an SQLite blob literal of the form `X'AABBCC...'`.
+ *
+ *  Pre-reserves `(blob.size() * 2) + 3` bytes to hold the leading `X'`, the
+ *  hex body, and the closing `'` without reallocation.
+ *
+ *  @param blob Binary data to encode.
+ *  @return The input encoded as an SQLite blob literal.
+ *  @see https://sqlite.org/lang_expr.html#literal_values_constants_
+ */
 std::string
 sqlBlobLiteral(Blob const& blob)
 {
@@ -33,29 +52,49 @@ sqlBlobLiteral(Blob const& blob)
     return j;
 }
 
+/** Decompose a URI into its constituent parts, populating a `ParsedUrl`.
+ *
+ *  Only URIs with an `//authority` hier-part are accepted
+ *  (`scheme://[userinfo@]host[:port][/path]`).  Opaque URIs such as
+ *  `mailto:user@example.com` are rejected.  The extracted scheme is always
+ *  stored in lower-case regardless of the case in `strUrl`.
+ *
+ *  IPv6 addresses in bracket notation (e.g. `[::1]`) are normalised: the
+ *  brackets are stripped and the address is canonicalised via
+ *  `beast::IP::Endpoint`.  Plain hostnames are stored verbatim.
+ *
+ *  Port validation accepts only values in `[1, 65535]`.  Port 0 and ports
+ *  that overflow `uint16_t` (e.g. `65536`, `23498765`) all cause the
+ *  function to return `false`.
+ *
+ *  The regex is compiled once as a `static` local and reused across all
+ *  calls.  The entire match is wrapped in `catch (...)` because
+ *  `boost::regex_match` can throw `std::runtime_error` on pathological
+ *  inputs (e.g. a host component consisting of thousands of colons).
+ *
+ *  @param pUrl  Output struct populated on success; not modified on failure.
+ *  @param strUrl  The URI string to parse.
+ *  @return `true` if the URI was well-formed and all fields were extracted
+ *      successfully; `false` otherwise.
+ *  @note `ParsedUrl::operator==` intentionally ignores `username` and
+ *      `password` so two URLs pointing at the same endpoint compare equal
+ *      regardless of embedded credentials.
+ */
 bool
 parseUrl(ParsedUrl& pUrl, std::string const& strUrl)
 {
-    // scheme://username:password@hostname:port/rest
     static boost::regex const kRE_URL(
         "(?i)\\`\\s*"
-        // required scheme
         "([[:alpha:]][-+.[:alpha:][:digit:]]*?):"
-        // We choose to support only URIs whose `hier-part` has the form
-        // `"//" authority path-abempty`.
+        // Only `//authority` hier-part URIs are accepted.
         "//"
-        // optional userinfo
         "(?:([^:@/]*?)(?::([^@/]*?))?@)?"
-        // optional host
         "([[:digit:]:]*[[:digit:]]|\\[[^]]+\\]|[^:/?#]*?)"
-        // optional port
         "(?::([[:digit:]]+))?"
-        // optional path
         "(/.*)?"
         "\\s*?\\'");
     boost::smatch smMatch;
 
-    // Bail if there is no match.
     try
     {
         if (!boost::regex_match(strUrl, smMatch, kRE_URL))
@@ -71,9 +110,6 @@ parseUrl(ParsedUrl& pUrl, std::string const& strUrl)
     pUrl.username = smMatch[2];
     pUrl.password = smMatch[3];
     std::string const domain = smMatch[4];
-    // We need to use Endpoint to parse the domain to
-    // strip surrounding brackets from IPv6 addresses,
-    // e.g. [::1] => ::1.
     auto const result = beast::IP::Endpoint::fromStringChecked(domain);
     pUrl.domain = result ? result->address().to_string() : domain;
     std::string const port = smMatch[5];
@@ -81,8 +117,7 @@ parseUrl(ParsedUrl& pUrl, std::string const& strUrl)
     {
         pUrl.port = beast::lexicalCast<std::uint16_t>(port);
 
-        // For inputs larger than 2^32-1 (65535), lexicalCast returns 0.
-        // parseUrl returns false for such inputs.
+        // lexicalCast returns 0 for values outside [1, 65535].
         if (pUrl.port == 0)
         {
             return false;
@@ -93,6 +128,14 @@ parseUrl(ParsedUrl& pUrl, std::string const& strUrl)
     return true;
 }
 
+/** Strip leading and trailing whitespace from a string.
+ *
+ *  The argument is taken by value so the caller receives a new trimmed copy;
+ *  passing an rvalue avoids the extra copy entirely.
+ *
+ *  @param str The string to trim.
+ *  @return A copy of `str` with leading and trailing whitespace removed.
+ */
 std::string
 trimWhitespace(std::string str)
 {
@@ -100,6 +143,16 @@ trimWhitespace(std::string str)
     return str;
 }
 
+/** Convert a decimal string to a `uint64_t`, returning `nullopt` on failure.
+ *
+ *  Unlike a sentinel return value such as `0` or `-1`, `std::nullopt`
+ *  unambiguously distinguishes parse failure from the valid value `"0"`.
+ *  Used primarily in configuration parsing.
+ *
+ *  @param s Decimal string to convert.
+ *  @return The converted value, or `std::nullopt` if `s` is not a valid
+ *      decimal representation of a `uint64_t`.
+ */
 std::optional<std::uint64_t>
 toUInt64(std::string const& s)
 {
@@ -109,28 +162,39 @@ toUInt64(std::string const& s)
     return std::nullopt;
 }
 
+/** Validate that a domain string is plausibly well-formed for use in an
+ *  XRPL validator TOML file.
+ *
+ *  Two fast-path length checks (4–128 characters) guard the regex from
+ *  obviously invalid inputs.  The `static` regex enforces RFC-like hostname
+ *  structure: each label must be `[a-zA-Z0-9-]{1,63}` with no leading or
+ *  trailing hyphens, and the TLD must be pure alpha with at least two
+ *  characters.  The regex is compiled once with
+ *  `boost::regex_constants::optimize` and reused across all calls.
+ *
+ *  @param domain The domain string to validate.
+ *  @return `true` if the domain passes structural checks; `false` otherwise.
+ *  @note This is not a full RFC 5891 validator.  It rejects some valid
+ *      internationalised domain names and does not verify IANA TLD
+ *      registration.  Its purpose is to filter obviously malformed inputs
+ *      during TOML parsing, not to definitively resolve domains.
+ */
 bool
 isProperlyFormedTomlDomain(std::string_view domain)
 {
-    // The domain must be between 4 and 128 characters long
     if (domain.size() < 4 || domain.size() > 128)
         return false;
 
-    // This regular expression should do a decent job of weeding out
-    // obviously wrong domain names but it isn't perfect. It does not
-    // really support IDNs. If this turns out to be an issue, a more
-    // thorough regex can be used or this check can just be removed.
     static boost::regex const kRE(
-        "^"                   // Beginning of line
-        "("                   // Beginning of a segment
-        "(?!-)"               //  - must not begin with '-'
-        "[a-zA-Z0-9-]{1,63}"  //  - only alphanumeric and '-'
-        "(?<!-)"              //  - must not end with '-'
-        "\\."                 // segment separator
-        ")+"                  // 1 or more segments
-        "[A-Za-z]{2,63}"      // TLD
-        "$"                   // End of line
-        ,
+        "^"
+        "("
+        "(?!-)"
+        "[a-zA-Z0-9-]{1,63}"
+        "(?<!-)"
+        "\\."
+        ")+"
+        "[A-Za-z]{2,63}"
+        "$",
         boost::regex_constants::optimize);
 
     return boost::regex_match(domain.begin(), domain.end(), kRE);

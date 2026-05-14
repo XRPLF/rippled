@@ -1,3 +1,11 @@
+/** @file
+ *  Implements the `submit` RPC command handler.
+ *
+ *  Supports two mutually exclusive submission modes: a pre-signed binary blob
+ *  (`tx_blob`) and a server-side signing path (`tx_json` + `secret`). The blob
+ *  path is the production-safe mode; the signing path is deprecated.
+ */
+
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/rpc/Context.h>
@@ -26,6 +34,19 @@
 
 namespace xrpl {
 
+/** Parse and validate the optional `fail_hard` request parameter.
+ *
+ *  Converts the boolean `fail_hard` field from the request JSON into a
+ *  `NetworkOPs::FailHard` enum value. When `fail_hard` is true, the network
+ *  layer will reject the transaction outright if it cannot be applied to the
+ *  current open ledger, rather than queuing it for a future ledger. Omitting
+ *  the field produces lenient (non-hard-fail) behavior.
+ *
+ *  @param context  The RPC request context; `context.params` is inspected for
+ *      `jss::fail_hard`.
+ *  @return The resolved `NetworkOPs::FailHard` value on success, or an error
+ *      JSON value if `fail_hard` is present but not a boolean.
+ */
 static Expected<NetworkOPs::FailHard, json::Value>
 getFailHard(RPC::JsonContext const& context)
 {
@@ -37,10 +58,41 @@ getFailHard(RPC::JsonContext const& context)
         context.params.isMember(jss::fail_hard) && context.params[jss::fail_hard].asBool());
 }
 
-// {
-//   tx_blob: <string> XOR tx_json: <object>,
-//   secret: <secret>
-// }
+/** Handle the `submit` RPC command.
+ *
+ *  Dispatches to one of two submission paths based on the presence of `tx_blob`
+ *  in the request parameters:
+ *
+ *  - **tx_blob path (primary):** The hex-encoded, pre-signed transaction binary
+ *    is decoded, deserialized into an `STTx`, validated (signature and local
+ *    rules), wrapped in a `Transaction`, and forwarded to `NetworkOPs` for
+ *    application to the open ledger and P2P broadcast.
+ *  - **tx_json path (deprecated):** Falls back to server-side signing via
+ *    `RPC::transactionSubmit`. Requires `ADMIN` role or `canSign()` enabled in
+ *    configuration. Every response from this path includes a `deprecated`
+ *    warning.
+ *
+ *  On success the response contains `tx_json`, `tx_blob`, and — when the
+ *  network reached a deterministic result — `engine_result`,
+ *  `engine_result_code`, `engine_result_message`, `accepted`, `applied`,
+ *  `broadcast`, `queued`, `kept`, and advisory ledger-state fields
+ *  (`account_sequence_next`, `account_sequence_available`,
+ *  `open_ledger_cost`, `validated_ledger_index`).
+ *
+ *  @param context  The RPC request context. `context.params` must contain
+ *      either `tx_blob` (hex string) or `tx_json` + `secret`. The optional
+ *      `fail_hard` boolean controls queuing behaviour on rejection.
+ *  @return A JSON object representing the submission outcome, or a structured
+ *      error object. Possible error keys: `invalidTransaction` (bad binary or
+ *      local-check failure), `internalSubmit` (exception during network
+ *      dispatch), `internalJson` (exception during response serialization).
+ *  @note When `context.app.checkSigs()` is false, signature verification is
+ *      skipped via `forceValidity` (pre-marking the transaction as
+ *      `SigGoodOnly` in the `HashRouter` cache). This is intended only for
+ *      trusted internal submissions where the caller guarantees validity.
+ *  @note Resource cost is registered as `feeMediumBurdenRPC` at entry,
+ *      regardless of outcome.
+ */
 json::Value
 doSubmit(RPC::JsonContext& context)
 {

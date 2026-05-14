@@ -1,3 +1,13 @@
+/** @file
+ *  Implements the outbound peer connection state machine for the XRPL overlay.
+ *
+ *  `ConnectAttempt` drives a five-phase async pipeline — TCP connect, TLS
+ *  handshake, HTTP upgrade write, HTTP upgrade read, and response processing —
+ *  culminating in either promoting the result to a live `PeerImp` or reporting
+ *  failure back to `PeerFinder`.  All async I/O is serialized on a strand; the
+ *  dual-timer scheme (`timer_` global ceiling + `stepTimer_` per-phase budget)
+ *  gives fine-grained diagnostics without separate handler functions.
+ */
 #include <xrpld/overlay/detail/ConnectAttempt.h>
 
 #include <xrpld/app/main/Application.h>
@@ -46,6 +56,25 @@
 
 namespace xrpl {
 
+/** Construct a `ConnectAttempt` and bind it to its `PeerFinder` slot.
+ *
+ *  Initializes the TLS stream from the shared SSL context and wires
+ *  convenience references (`socket_`, `stream_`) into `streamPtr_`.
+ *  The slot is retained; it will be released to `PeerFinder::onClosed`
+ *  by the destructor unless ownership is moved to a `PeerImp` on success.
+ *  Call `run()` to begin the async pipeline.
+ *
+ *  @param app           Application context providing config and services.
+ *  @param ioContext      Asio I/O context for all async operations.
+ *  @param remoteEndpoint TCP endpoint of the peer to dial.
+ *  @param usage          Resource consumer used for rate-limiting this peer.
+ *  @param context        Shared SSL context (TLS version, ciphers, etc.).
+ *  @param id             Unique numeric identifier for this connection attempt.
+ *  @param slot           PeerFinder slot that was reserved for this outbound
+ *      connection; must not be null.
+ *  @param journal        Journal sink for diagnostic logging.
+ *  @param overlay        Parent overlay manager that owns this child.
+ */
 ConnectAttempt::ConnectAttempt(
     Application& app,
     boost::asio::io_context& ioContext,
@@ -76,14 +105,25 @@ ConnectAttempt::ConnectAttempt(
 {
 }
 
+/** Release the PeerFinder slot if the connection never succeeded.
+ *
+ *  On a successful connection, `processResponse()` moves `slot_` into the
+ *  newly created `PeerImp`, leaving `slot_` null here.  Any other outcome
+ *  (failure, timeout, early stop) leaves `slot_` non-null, so the destructor
+ *  reports the closure to `PeerFinder` to keep its bookkeeping consistent.
+ */
 ConnectAttempt::~ConnectAttempt()
 {
-    // slot_ will be null if we successfully connected
-    // and transferred ownership to a PeerImp
     if (slot_ != nullptr)
         overlay_.peerFinder().onClosed(slot_);
 }
 
+/** Abort the connection attempt from any thread.
+ *
+ *  If called from outside the strand, the call is re-posted to the strand
+ *  so that `shutdown()` always executes with strand ownership.  Idempotent
+ *  when the socket is already closed.
+ */
 void
 ConnectAttempt::stop()
 {
@@ -101,6 +141,12 @@ ConnectAttempt::stop()
     shutdown();
 }
 
+/** Begin the async connection pipeline from any thread.
+ *
+ *  Re-posts to the strand if necessary, then arms both the global timeout
+ *  and the `TcpConnect` step timer before issuing the async TCP connect.
+ *  `onConnect()` continues the pipeline on success.
+ */
 void
 ConnectAttempt::run()
 {
@@ -114,7 +160,6 @@ ConnectAttempt::run()
 
     ioPending_ = true;
 
-    // Allow up to connectTimeout_ seconds to establish remote peer connection
     setTimer(ConnectionStep::TcpConnect);
 
     stream_.next_layer().async_connect(
@@ -126,6 +171,17 @@ ConnectAttempt::run()
 
 //------------------------------------------------------------------------------
 
+/** Mark the connection as shutting down and begin teardown.
+ *
+ *  Sets `shutdown_` to prevent further protocol steps, cancels all pending
+ *  async I/O on the lowest-layer socket, then delegates to
+ *  `tryAsyncShutdown()` which will either start the SSL shutdown handshake
+ *  or close the socket directly, depending on how far the TLS handshake
+ *  progressed.
+ *
+ *  @note Must be called from the strand.  Idempotent when the socket is
+ *      already closed.
+ */
 void
 ConnectAttempt::shutdown()
 {
@@ -141,6 +197,20 @@ ConnectAttempt::shutdown()
     tryAsyncShutdown();
 }
 
+/** Initiate the SSL shutdown handshake when it is safe to do so.
+ *
+ *  This method is a no-op in three situations: shutdown has not been
+ *  requested yet, shutdown is already in progress, or an async I/O
+ *  operation is still in flight (`ioPending_`).  The last guard prevents
+ *  calling `stream_.async_shutdown()` while a concurrent `async_read` or
+ *  `async_write` is outstanding, which would be undefined behavior.
+ *
+ *  If the TLS handshake never completed (the connection is still in the
+ *  `TcpConnect` or `TlsHandshake` phase) there is no TLS session to
+ *  close, so `close()` is called directly instead.
+ *
+ *  @note Must be called from the strand.
+ */
 void
 ConnectAttempt::tryAsyncShutdown()
 {
@@ -154,7 +224,6 @@ ConnectAttempt::tryAsyncShutdown()
     if (ioPending_)
         return;
 
-    // gracefully shutdown the SSL socket, performing a shutdown handshake
     if (currentStep_ != ConnectionStep::TcpConnect && currentStep_ != ConnectionStep::TlsHandshake)
     {
         setTimer(ConnectionStep::ShutdownStarted);
@@ -167,6 +236,24 @@ ConnectAttempt::tryAsyncShutdown()
     close();
 }
 
+/** Handle completion of the async TLS shutdown handshake.
+ *
+ *  Several error codes are expected during connection teardown and are
+ *  intentionally suppressed to avoid log noise:
+ *  - `eof` — the stream was cleanly closed by the peer.
+ *  - `operation_aborted` — the step timer expired before the shutdown
+ *    handshake could complete.
+ *  - `stream_truncated` — the TCP connection dropped before the TLS close
+ *    notify exchange finished (benign if the peer doesn't do graceful
+ *    disconnect).
+ *  - `"application data after close notify"` — a benign OpenSSL condition
+ *    triggered by some peers sending application data after the close notify.
+ *
+ *  Any other error is logged at debug level.  In all cases `close()` is
+ *  called to finalize socket teardown.
+ *
+ *  @param ec Error code from the async TLS shutdown operation.
+ */
 void
 ConnectAttempt::onShutdown(error_code ec)
 {
@@ -174,12 +261,6 @@ ConnectAttempt::onShutdown(error_code ec)
 
     if (ec)
     {
-        // - eof: the stream was cleanly closed
-        // - operation_aborted: an expired timer (slow shutdown)
-        // - stream_truncated: the tcp connection closed (no handshake) it could
-        // occur if a peer does not perform a graceful disconnect
-        // - broken_pipe: the peer is gone
-        // - application data after close notify: benign SSL shutdown condition
         bool const shouldLog =
             (ec != boost::asio::error::eof && ec != boost::asio::error::operation_aborted &&
              ec.message().find("application data after close notify") == std::string::npos);
@@ -193,6 +274,16 @@ ConnectAttempt::onShutdown(error_code ec)
     close();
 }
 
+/** Cancel all timers and close the underlying TCP socket.
+ *
+ *  This is the terminal cleanup step, called after either a successful TLS
+ *  shutdown or when bypassing the TLS shutdown (pre-handshake teardown).
+ *  The error code from `socket_.close()` is deliberately discarded — the
+ *  connection is being torn down regardless of any OS-level close error.
+ *
+ *  @note Must be called from the strand.  Idempotent when the socket is
+ *      already closed.
+ */
 void
 ConnectAttempt::close()
 {
@@ -207,6 +298,10 @@ ConnectAttempt::close()
     socket_.close(ec);  // NOLINT(bugprone-unused-return-value)
 }
 
+/** Log a failure reason at debug level and begin connection teardown.
+ *
+ *  @param reason Human-readable description of why the connection failed.
+ */
 void
 ConnectAttempt::fail(std::string const& reason)
 {
@@ -214,6 +309,11 @@ ConnectAttempt::fail(std::string const& reason)
     shutdown();
 }
 
+/** Log a system error at debug level and begin connection teardown.
+ *
+ *  @param name Context label prepended to the error message (e.g. "onConnect").
+ *  @param ec   The system error code describing the failure.
+ */
 void
 ConnectAttempt::fail(std::string const& name, error_code ec)
 {
@@ -221,12 +321,32 @@ ConnectAttempt::fail(std::string const& name, error_code ec)
     shutdown();
 }
 
+/** Advance the current connection step and arm the appropriate timers.
+ *
+ *  Two timers are maintained:
+ *  - **Global timer** (`timer_`): armed once for the entire attempt
+ *    (`kCONNECT_TIMEOUT = 25 s`).  Subsequent calls to this method are
+ *    no-ops for the global timer (guarded by checking against the
+ *    default-constructed `time_point{}`).
+ *  - **Step timer** (`stepTimer_`): reset on every call via
+ *    `expires_after`, which automatically cancels the previous step timer.
+ *    Phase-specific budgets: TcpConnect 8 s, TlsHandshake 8 s,
+ *    HttpWrite 3 s, HttpRead 3 s, ShutdownStarted 2 s.
+ *
+ *  Both timers share `onTimer()` as their handler; the handler
+ *  distinguishes which fired by comparing their expiry against
+ *  `steady_clock::now()`.
+ *
+ *  `Init` and `Complete` steps do not arm a step timer.  On any exception
+ *  from the Asio timer API, `close()` is called immediately.
+ *
+ *  @param step The phase being entered; updates `currentStep_`.
+ */
 void
 ConnectAttempt::setTimer(ConnectionStep step)
 {
     currentStep_ = step;
 
-    // Set global timer (only if not already set)
     if (timer_.expiry() == std::chrono::steady_clock::time_point{})
     {
         try
@@ -246,7 +366,6 @@ ConnectAttempt::setTimer(ConnectionStep step)
         }
     }
 
-    // Set step-specific timer
     try
     {
         std::chrono::seconds stepTimeout;
@@ -269,10 +388,10 @@ ConnectAttempt::setTimer(ConnectionStep step)
                 break;
             case ConnectionStep::Complete:
             case ConnectionStep::Init:
-                return;  // No timer needed for init or complete step
+                return;
         }
 
-        // call to expires_after cancels previous timer
+        // expires_after implicitly cancels the previous step timer.
         stepTimer_.expires_after(stepTimeout);
         stepTimer_.async_wait(
             boost::asio::bind_executor(
@@ -290,6 +409,11 @@ ConnectAttempt::setTimer(ConnectionStep step)
     }
 }
 
+/** Cancel both the global timer and the current step timer.
+ *
+ *  Any `system_error` thrown by `cancel()` is swallowed — timers that are
+ *  already expired or closed produce benign errors that must not propagate.
+ */
 void
 ConnectAttempt::cancelTimer()
 {
@@ -304,6 +428,21 @@ ConnectAttempt::cancelTimer()
     }
 }
 
+/** Shared handler for both the global and step timers.
+ *
+ *  `operation_aborted` is returned whenever a timer is cancelled (e.g. by
+ *  `expires_after` or `cancelTimer()`); this is expected and ignored.  Any
+ *  other non-zero error code is unexpected and triggers an immediate
+ *  `close()`.
+ *
+ *  When the error code is zero (a genuine expiry), both timers' expiry
+ *  times are compared against `steady_clock::now()` to determine which
+ *  one fired — the global ceiling (`timer_`) or the per-step budget
+ *  (`stepTimer_`).  Either way the connection is closed; the distinction
+ *  exists only for logging granularity.
+ *
+ *  @param ec Error code from the Asio timer wait operation.
+ */
 void
 ConnectAttempt::onTimer(error_code ec)
 {
@@ -312,7 +451,8 @@ ConnectAttempt::onTimer(error_code ec)
 
     if (ec)
     {
-        // do not initiate shutdown, timers are frequently cancelled
+        // Timers are frequently cancelled (step transition, cleanup); do not
+        // treat operation_aborted as a failure.
         if (ec == boost::asio::error::operation_aborted)
             return;
 
@@ -322,7 +462,6 @@ ConnectAttempt::onTimer(error_code ec)
         return;
     }
 
-    // Determine which timer expired by checking their expiry times
     auto const now = std::chrono::steady_clock::now();
     bool const globalExpired = (timer_.expiry() <= now);
     bool const stepExpired = (stepTimer_.expiry() <= now);
@@ -343,6 +482,21 @@ ConnectAttempt::onTimer(error_code ec)
     close();
 }
 
+/** Handle completion of the async TCP connect.
+ *
+ *  Clears `ioPending_` first, then checks the error code.
+ *  `operation_aborted` means a timer fired while the connect was in flight;
+ *  in that case shutdown is already in progress and `tryAsyncShutdown()` is
+ *  called to continue teardown cleanly.
+ *
+ *  After a nominal connect, `local_endpoint()` is queried to confirm the OS
+ *  actually established a route (the connect can succeed at the Asio level
+ *  with a closed socket in rare edge cases).  TLS certificate verification
+ *  is explicitly disabled (`verify_none`); security derives from the
+ *  node-key signature in the HTTP handshake, not from the cert chain.
+ *
+ *  @param ec Error code from the async TCP connect.
+ */
 void
 ConnectAttempt::onConnect(error_code ec)
 {
@@ -363,7 +517,7 @@ ConnectAttempt::onConnect(error_code ec)
     if (!socket_.is_open())
         return;
 
-    // check if connection has really been established
+    // Confirm the route is live; a closed socket can slip through on some OSes.
     socket_.local_endpoint(ec);
     if (ec)
     {
@@ -389,6 +543,20 @@ ConnectAttempt::onConnect(error_code ec)
             std::bind(&ConnectAttempt::onHandshake, shared_from_this(), std::placeholders::_1)));
 }
 
+/** Handle completion of the async TLS handshake.
+ *
+ *  After a successful TLS handshake this method:
+ *  1. Confirms the connection is not a self-loop via
+ *     `peerFinder().onConnected()`.
+ *  2. Derives the TLS-channel-bound shared value with `makeSharedValue()`;
+ *     a degenerate zero-XOR result causes an immediate shutdown (logged
+ *     inside `makeSharedValue`).
+ *  3. Builds the HTTP upgrade request with `makeRequest()` and populates
+ *     identity headers with `buildHandshake()`.
+ *  4. Starts the async HTTP write to send the upgrade to the peer.
+ *
+ *  @param ec Error code from the async TLS handshake.
+ */
 void
 ConnectAttempt::onHandshake(error_code ec)
 {
@@ -415,7 +583,6 @@ ConnectAttempt::onHandshake(error_code ec)
 
     setTimer(ConnectionStep::HttpWrite);
 
-    // check if we connected to ourselves
     if (!overlay_.peerFinder().onConnected(
             slot_, beast::IPAddressConversion::fromAsio(localEndpoint)))
     {
@@ -461,6 +628,13 @@ ConnectAttempt::onHandshake(error_code ec)
             std::bind(&ConnectAttempt::onWrite, shared_from_this(), std::placeholders::_1)));
 }
 
+/** Handle completion of the async HTTP upgrade request write.
+ *
+ *  On success, arms the `HttpRead` step timer and starts the async read of
+ *  the peer's HTTP upgrade response into `response_`.
+ *
+ *  @param ec Error code from the async HTTP write.
+ */
 void
 ConnectAttempt::onWrite(error_code ec)
 {
@@ -497,6 +671,17 @@ ConnectAttempt::onWrite(error_code ec)
             std::bind(&ConnectAttempt::onRead, shared_from_this(), std::placeholders::_1)));
 }
 
+/** Handle completion of the async HTTP upgrade response read.
+ *
+ *  Cancels all timers and advances `currentStep_` to `Complete` before
+ *  inspecting the error code.  An `eof` here means the peer closed the
+ *  connection before sending a full HTTP response, which is treated as a
+ *  soft failure (logged at debug rather than warning).  On success,
+ *  delegates to `processResponse()` to validate the peer's identity and
+ *  promote the connection.
+ *
+ *  @param ec Error code from the async HTTP read.
+ */
 void
 ConnectAttempt::onRead(error_code ec)
 {
@@ -534,13 +719,44 @@ ConnectAttempt::onRead(error_code ec)
 
 //--------------------------------------------------------------------------
 
+/** Validate the peer's HTTP upgrade response and promote to a live `PeerImp`.
+ *
+ *  This is the security-critical terminal step of the connection pipeline.
+ *  Two response paths are handled:
+ *
+ *  **HTTP 101 (Switching Protocols)** — the normal success path:
+ *  1. The `Upgrade` header is parsed for exactly one protocol version that
+ *     is also locally supported via `isProtocolSupported()`; ambiguous or
+ *     unsupported negotiations are rejected.
+ *  2. `makeSharedValue()` re-derives the TLS channel-bound value; a
+ *     degenerate zero-XOR result triggers an immediate shutdown.
+ *  3. `verifyHandshake()` validates the peer's node-key signature over the
+ *     shared value, checks `Network-ID`, `Network-Time`, and IP headers.
+ *     Any failure throws `std::runtime_error`, caught below.
+ *  4. `peerFinder().activate()` confirms the slot is still acceptable
+ *     (duplicate-key check, slot-count limits).
+ *  5. `streamPtr_` and `slot_` are moved into a new `PeerImp`; after the
+ *     move both are null here, so the destructor skips `onClosed`.
+ *     `overlay_.addActive()` registers the live peer.
+ *
+ *  **HTTP 503 (Service Unavailable)** — the redirect path:
+ *  A 503 with a JSON body containing a `"peer-ips"` array is the XRPL
+ *  redirect mechanism: the peer is overloaded and provides alternative
+ *  addresses.  Valid endpoints are forwarded to
+ *  `peerFinder().onRedirects()` for future connection attempts.  A 503
+ *  without a valid redirect body (e.g. a plain HTTP proxy error) is
+ *  logged as a warning and the connection is torn down.  Either way this
+ *  `ConnectAttempt` is terminated after handling.
+ *
+ *  @note `verifyHandshake()` throws on any check failure; callers of this
+ *      method do not need to check a return value — failure is always
+ *      exception-based.
+ */
 void
 ConnectAttempt::processResponse()
 {
     if (!OverlayImpl::isPeerUpgrade(response_))
     {
-        // A peer may respond with service_unavailable and a list of alternative
-        // peers to connect to, a differing status code is unexpected
         if (response_.result() != boost::beast::http::status::service_unavailable)
         {
             JLOG(journal_.warn()) << "Unable to upgrade to peer protocol: " << response_.result()
@@ -549,8 +765,6 @@ ConnectAttempt::processResponse()
             return;
         }
 
-        // Parse response body to determine if this is a redirect or other
-        // service unavailable
         std::string responseBody;
         responseBody.reserve(boost::asio::buffer_size(response_.body().data()));
         for (auto const buffer : response_.body().data())
@@ -563,7 +777,6 @@ ConnectAttempt::processResponse()
         json::Reader reader;
         auto const isValidJson = reader.parse(responseBody, json);
 
-        // Check if this is a redirect response (contains peer-ips field)
         auto const isRedirect = isValidJson && json.isObject() && json.isMember("peer-ips");
 
         if (!isRedirect)
@@ -583,7 +796,6 @@ ConnectAttempt::processResponse()
             return;
         }
 
-        // Extract and validate peer endpoints
         std::vector<boost::asio::ip::tcp::endpoint> redirectEndpoints;
         redirectEndpoints.reserve(peerIps.size());
 
@@ -598,15 +810,15 @@ ConnectAttempt::processResponse()
                 redirectEndpoints.push_back(endpoint);
         }
 
-        // Notify PeerFinder about the redirect redirectEndpoints may be empty
+        // redirectEndpoints may be empty if all entries were malformed.
         overlay_.peerFinder().onRedirects(remoteEndpoint_, redirectEndpoints);
 
         fail("processResponse: failed to connect to peer: redirected");
         return;
     }
 
-    // Just because our peer selected a particular protocol version doesn't
-    // mean that it's acceptable to us. Check that it is:
+    // The peer echoes back the protocol version it selected; verify it is
+    // also acceptable to us (exactly one version, locally supported).
     std::optional<ProtocolVersion> negotiatedProtocol;
 
     {

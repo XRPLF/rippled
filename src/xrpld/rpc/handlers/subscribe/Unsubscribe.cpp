@@ -1,3 +1,12 @@
+/** @file
+ *  Implements the `unsubscribe` RPC/WebSocket command handler.
+ *
+ *  Tears down active push subscriptions previously registered by
+ *  `doSubscribe`. The symmetric counterpart is Subscribe.cpp in the same
+ *  directory. All state removal is delegated to `NetworkOPs` via
+ *  `context.netOps`.
+ */
+
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
@@ -17,6 +26,57 @@
 
 namespace xrpl {
 
+/** Remove active push subscriptions for a WebSocket or HTTP-callback client.
+ *
+ *  Resolves the subscriber identity, then processes up to five independent
+ *  subscription categories from the request, each gated by an `isMember`
+ *  check so clients need only include the categories they want removed:
+ *
+ *  - **streams** — named fan-out queues: `server`, `ledger`, `manifests`,
+ *    `transactions`, `transactions_proposed` (alias: `rt_transactions`),
+ *    `validations`, `peer_status`, `consensus`. Note: `book_changes` has no
+ *    unsubscribe path; those subscriptions are implicitly torn down when the
+ *    connection closes.
+ *  - **accounts** — validated transaction notifications for specific accounts.
+ *  - **accounts_proposed** (alias: `rt_accounts`) — proposed transaction
+ *    notifications.
+ *  - **books** — order book updates. `both`/`both_sides` (deprecated) triggers
+ *    a second `unsubBook` call with the reversed book to match the symmetric
+ *    subscribe behavior. Unlike `doSubscribe`, no `isConsistent` check is
+ *    performed — a subscription must be removable regardless of current state.
+ *  - **account_history_tx_stream** — experimental historical + live replay;
+ *    the optional `stop_history_tx_only` boolean halts historical replay while
+ *    preserving the live account subscription.
+ *
+ *  Subscriber identity is determined as follows: if the request carries a
+ *  `url` parameter, the existing `RPCSub` HTTP-push object is looked up by URL
+ *  (requires `Role::ADMIN`); if not found the handler returns an empty success
+ *  rather than an error — unsubscribing from a URL that was never registered
+ *  is a no-op. Otherwise `context.infoSub` (the live WebSocket `InfoSub`) is
+ *  used. A call with neither is rejected with `rpcINVALID_PARAMS`.
+ *
+ *  When the `url` path is taken, `tryRemoveRpcSub` is called only *after* all
+ *  individual `unsub*` operations complete. This ensures the subscriber is
+ *  fully drained before the URL registration is cleaned up.
+ *
+ *  @param context  RPC dispatch context carrying the parsed request params,
+ *      the `InfoSub` for the WebSocket connection (if any), the `NetworkOPs`
+ *      reference used for all unsub calls, and the resolved `Role`.
+ *  @return Empty JSON object on success. Returns an `rpcError` object on the
+ *      first validation failure encountered:
+ *      `rpcINVALID_PARAMS` for structural problems,
+ *      `rpcNO_PERMISSION` for the admin-only URL path,
+ *      `rpcSTREAM_MALFORMED` for unknown or non-string stream names,
+ *      `rpcACT_MALFORMED` for unparseable account addresses,
+ *      `rpcBAD_MARKET` for degenerate (same-asset) order books,
+ *      `rpcDOMAIN_MALFORMED` for malformed domain hex.
+ *  @note `peer_status` requires `Role::ADMIN` to *subscribe* but no role
+ *      check to *unsubscribe* — removal is always safe regardless of
+ *      permission level.
+ *  @note `book_changes` cannot be unsubscribed via this handler; it is torn
+ *      down automatically on connection close.
+ *  @see doSubscribe
+ */
 json::Value
 doUnsubscribe(RPC::JsonContext& context)
 {
@@ -26,7 +86,6 @@ doUnsubscribe(RPC::JsonContext& context)
 
     if (!context.infoSub && !context.params.isMember(jss::url))
     {
-        // Must be a JSON-RPC call.
         return rpcError(RpcInvalidParams);
     }
 
@@ -75,7 +134,7 @@ doUnsubscribe(RPC::JsonContext& context)
             }
             else if (
                 streamName == "transactions_proposed" ||
-                streamName == "rt_transactions")  // DEPRECATED
+                streamName == "rt_transactions")
             {
                 context.netOps.unsubRTTransactions(ispSub->getSeq());
             }
@@ -100,7 +159,7 @@ doUnsubscribe(RPC::JsonContext& context)
 
     auto accountsProposed = context.params.isMember(jss::accounts_proposed)
         ? jss::accounts_proposed
-        : jss::rt_accounts;  // DEPRECATED
+        : jss::rt_accounts;
     if (context.params.isMember(accountsProposed))
     {
         if (!context.params[accountsProposed].isArray())
@@ -188,7 +247,6 @@ doUnsubscribe(RPC::JsonContext& context)
 
             context.netOps.unsubBook(ispSub->getSeq(), book);
 
-            // both_sides is deprecated.
             if ((jv.isMember(jss::both) && jv[jss::both].asBool()) ||
                 (jv.isMember(jss::both_sides) && jv[jss::both_sides].asBool()))
             {

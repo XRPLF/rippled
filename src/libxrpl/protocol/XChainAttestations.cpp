@@ -1,3 +1,19 @@
+/** @file
+ *  Implements the attestation type system for XRPL's cross-chain bridge
+ *  protocol.
+ *
+ *  Two parallel hierarchies exist: `Attestations::AttestationClaim` and
+ *  `Attestations::AttestationCreateAccount` carry full witness-submitted
+ *  proofs including raw signatures; `XChainClaimAttestation` and
+ *  `XChainCreateAccountAttestation` are the stripped, ledger-stored variants
+ *  that retain only the key identity and event fields.  Conversion from the
+ *  signing side to the storage side is a one-step projection in the
+ *  `TSignedAttestation` constructors.
+ *
+ *  Template bodies for `XChainAttestationsBase<TAttestation>` are kept here
+ *  (not in the header) and explicitly instantiated at the bottom of the file
+ *  for the two concrete types, limiting compile-time overhead.
+ */
 #include <xrpl/protocol/XChainAttestations.h>
 
 #include <xrpl/basics/Buffer.h>
@@ -26,6 +42,7 @@
 namespace xrpl {
 namespace Attestations {
 
+/** Construct from individual field values supplied by the witness server. */
 AttestationBase::AttestationBase(
     AccountID attestationSignerAccount,
     PublicKey const& publicKey,
@@ -44,6 +61,17 @@ AttestationBase::AttestationBase(
 {
 }
 
+/** Compare all fields of two `AttestationBase` instances, including signer
+ *  identity and raw signature bytes.
+ *
+ *  Used by subclass `operator==` to test whether two attestations are
+ *  identical in every respect.  Compare with `sameEventHelper`, which
+ *  intentionally excludes the signer fields.
+ *
+ *  @param lhs Left-hand attestation.
+ *  @param rhs Right-hand attestation.
+ *  @return `true` if every base field matches.
+ */
 bool
 AttestationBase::equalHelper(AttestationBase const& lhs, AttestationBase const& rhs)
 {
@@ -65,6 +93,19 @@ AttestationBase::equalHelper(AttestationBase const& lhs, AttestationBase const& 
                rhs.wasLockingChainSend);
 }
 
+/** Check whether two attestations witness the same cross-chain event,
+ *  ignoring signer identity.
+ *
+ *  Two attestations from different witnesses for the same transfer share
+ *  identical `sendingAccount`, `sendingAmount`, and `wasLockingChainSend`
+ *  values.  Signer fields (`attestationSignerAccount`, `publicKey`,
+ *  `signature`) are deliberately excluded so that distinct witnesses
+ *  corroborating the same event can be aggregated toward quorum.
+ *
+ *  @param lhs Left-hand attestation.
+ *  @param rhs Right-hand attestation.
+ *  @return `true` if the event-identity fields match.
+ */
 bool
 AttestationBase::sameEventHelper(AttestationBase const& lhs, AttestationBase const& rhs)
 {
@@ -72,6 +113,18 @@ AttestationBase::sameEventHelper(AttestationBase const& lhs, AttestationBase con
         std::tie(rhs.sendingAccount, rhs.sendingAmount, rhs.wasLockingChainSend);
 }
 
+/** Cryptographically verify the witness signature against the stored fields.
+ *
+ *  Re-derives the canonical message bytes via the virtual `message()` call,
+ *  then checks them against `publicKey` and `signature`.  Called during
+ *  transaction preflight (`attestationPreflight` in `XChainBridge.cpp`); a
+ *  failure here returns `temXCHAIN_BAD_PROOF` before any ledger state is
+ *  modified.
+ *
+ *  @param bridge The bridge the attestation relates to; included in the
+ *      signed payload to scope the proof to a specific bridge instance.
+ *  @return `true` if the signature is valid.
+ */
 bool
 AttestationBase::verify(STXChainBridge const& bridge) const
 {
@@ -79,6 +132,7 @@ AttestationBase::verify(STXChainBridge const& bridge) const
     return xrpl::verify(publicKey, makeSlice(msg), signature);
 }
 
+/** Deserialize from a ledger `STObject`. */
 AttestationBase::AttestationBase(STObject const& o)
     : attestationSignerAccount{o[sfAttestationSignerAccount]}
     , publicKey{o[sfPublicKey]}
@@ -90,6 +144,11 @@ AttestationBase::AttestationBase(STObject const& o)
 {
 }
 
+/** Deserialize from a JSON value.
+ *
+ *  @throws std::runtime_error if any required field is missing or has the
+ *      wrong type (via `json::getOrThrow`).
+ */
 AttestationBase::AttestationBase(json::Value const& v)
     : attestationSignerAccount{json::getOrThrow<AccountID>(v, sfAttestationSignerAccount)}
     , publicKey{json::getOrThrow<PublicKey>(v, sfPublicKey)}
@@ -101,6 +160,13 @@ AttestationBase::AttestationBase(json::Value const& v)
 {
 }
 
+/** Populate `o` with the base attestation fields shared by both claim types.
+ *
+ *  Subclass `toSTObject()` implementations call this before setting their
+ *  own type-specific fields.
+ *
+ *  @param o The `STObject` to populate.
+ */
 void
 AttestationBase::addHelper(STObject& o) const
 {
@@ -113,6 +179,7 @@ AttestationBase::addHelper(STObject& o) const
     o[sfWasLockingChainSend] = wasLockingChainSend;
 }
 
+/** Construct from individual fields with a pre-computed signature. */
 AttestationClaim::AttestationClaim(
     AccountID attestationSignerAccount,
     PublicKey const& publicKey,
@@ -136,6 +203,16 @@ AttestationClaim::AttestationClaim(
 {
 }
 
+/** Construct and immediately sign.
+ *
+ *  Derives the canonical message bytes from the supplied fields and `bridge`,
+ *  then signs them with `secretKey`.  Intended for witness servers and test
+ *  harnesses that generate attestations from scratch.
+ *
+ *  @param bridge Bridge context included in the signed payload.
+ *  @param secretKey Signing key; the resulting signature is stored in
+ *      `AttestationBase::signature`.
+ */
 AttestationClaim::AttestationClaim(
     STXChainBridge const& bridge,
     AccountID attestationSignerAccount,
@@ -162,11 +239,17 @@ AttestationClaim::AttestationClaim(
     signature = sign(publicKey, secretKey, makeSlice(toSign));
 }
 
+/** Deserialize from a ledger `STObject`. */
 AttestationClaim::AttestationClaim(STObject const& o)
     : AttestationBase(o), claimID{o[sfXChainClaimID]}, dst{o[~sfDestination]}
 {
 }
 
+/** Deserialize from a JSON value.
+ *
+ *  @throws std::runtime_error if any required field is missing or has the
+ *      wrong type (via `json::getOrThrow`).
+ */
 AttestationClaim::AttestationClaim(json::Value const& v)
     : AttestationBase{v}, claimID{json::getOrThrow<std::uint64_t>(v, sfXChainClaimID)}
 {
@@ -174,6 +257,12 @@ AttestationClaim::AttestationClaim(json::Value const& v)
         dst = json::getOrThrow<AccountID>(v, sfDestination);
 }
 
+/** Serialize this attestation to an `STObject` for inclusion in a transaction
+ *  or `STArray`.
+ *
+ *  @return An inner object tagged `sfXChainClaimAttestationCollectionElement`
+ *      containing all claim attestation fields.
+ */
 STObject
 AttestationClaim::toSTObject() const
 {
@@ -185,6 +274,23 @@ AttestationClaim::toSTObject() const
     return o;
 }
 
+/** Produce the canonical bytes that a witness signs for a claim attestation.
+ *
+ *  Builds an `STObject{sfGeneric}` populated with all claim fields and
+ *  serializes it via `Serializer::add()`.  Fields are inserted in `SField`
+ *  sort order to ensure independent serializers (e.g., Python witness
+ *  implementations) produce byte-for-byte identical output.
+ *
+ *  @param bridge  Bridge context scoping the proof.
+ *  @param sendingAccount  Source account on the sending chain.
+ *  @param sendingAmount   Amount transferred on the sending chain.
+ *  @param rewardAccount   Destination-chain account receiving the reward share.
+ *  @param wasLockingChainSend  `true` if the transfer originated on the
+ *      locking chain.
+ *  @param claimID  Monotonic counter from the bridge that prevents replay.
+ *  @param dst  Optional destination override on the issuing chain.
+ *  @return Serialized bytes suitable for signing or verification.
+ */
 std::vector<std::uint8_t>
 AttestationClaim::message(
     STXChainBridge const& bridge,
@@ -212,6 +318,14 @@ AttestationClaim::message(
     return std::move(s.modData());
 }
 
+/** Instance overload delegating to the static form using stored field values.
+ *
+ *  Called by `AttestationBase::verify()` to regenerate the signed payload
+ *  for signature checking.
+ *
+ *  @param bridge Bridge context scoping the proof.
+ *  @return Serialized bytes identical to those that were originally signed.
+ */
 std::vector<std::uint8_t>
 AttestationClaim::message(STXChainBridge const& bridge) const
 {
@@ -219,12 +333,27 @@ AttestationClaim::message(STXChainBridge const& bridge) const
         bridge, sendingAccount, sendingAmount, rewardAccount, wasLockingChainSend, claimID, dst);
 }
 
+/** Check that `sendingAmount` is a legal network amount.
+ *
+ *  @return `true` if the amount is valid for wire transmission.
+ */
 bool
 AttestationClaim::validAmounts() const
 {
     return isLegalNet(sendingAmount);
 }
 
+/** Check whether `rhs` witnesses the same cross-chain claim event, ignoring
+ *  signer identity fields.
+ *
+ *  Two attestations for the same event may differ only in their
+ *  `attestationSignerAccount`, `publicKey`, and `signature` (i.e., they
+ *  come from different witnesses).  Both the base event fields and the
+ *  claim-specific `claimID` and `dst` must agree.
+ *
+ *  @param rhs The attestation to compare against.
+ *  @return `true` if both attestations describe the same claim event.
+ */
 bool
 AttestationClaim::sameEvent(AttestationClaim const& rhs) const
 {
@@ -232,6 +361,9 @@ AttestationClaim::sameEvent(AttestationClaim const& rhs) const
         tie(claimID, dst) == tie(rhs.claimID, rhs.dst);
 }
 
+/** Test full equality of two `AttestationClaim` values, including signer
+ *  identity and raw signature.
+ */
 bool
 operator==(AttestationClaim const& lhs, AttestationClaim const& rhs)
 {
@@ -239,6 +371,7 @@ operator==(AttestationClaim const& lhs, AttestationClaim const& rhs)
         tie(lhs.claimID, lhs.dst) == tie(rhs.claimID, rhs.dst);
 }
 
+/** Deserialize from a ledger `STObject`. */
 AttestationCreateAccount::AttestationCreateAccount(STObject const& o)
     : AttestationBase(o)
     , createCount{o[sfXChainAccountCreateCount]}
@@ -247,6 +380,11 @@ AttestationCreateAccount::AttestationCreateAccount(STObject const& o)
 {
 }
 
+/** Deserialize from a JSON value.
+ *
+ *  @throws std::runtime_error if any required field is missing or has the
+ *      wrong type (via `json::getOrThrow`).
+ */
 AttestationCreateAccount::AttestationCreateAccount(json::Value const& v)
     : AttestationBase{v}
     , createCount{json::getOrThrow<std::uint64_t>(v, sfXChainAccountCreateCount)}
@@ -255,6 +393,7 @@ AttestationCreateAccount::AttestationCreateAccount(json::Value const& v)
 {
 }
 
+/** Construct from individual fields with a pre-computed signature. */
 AttestationCreateAccount::AttestationCreateAccount(
     AccountID attestationSignerAccount,
     PublicKey const& publicKey,
@@ -280,6 +419,16 @@ AttestationCreateAccount::AttestationCreateAccount(
 {
 }
 
+/** Construct and immediately sign.
+ *
+ *  Derives the canonical message bytes from the supplied fields and `bridge`,
+ *  then signs them with `secretKey`.  Intended for witness servers and test
+ *  harnesses that generate account-creation attestations from scratch.
+ *
+ *  @param bridge Bridge context included in the signed payload.
+ *  @param secretKey Signing key; the resulting signature is stored in
+ *      `AttestationBase::signature`.
+ */
 AttestationCreateAccount::AttestationCreateAccount(
     STXChainBridge const& bridge,
     AccountID attestationSignerAccount,
@@ -308,6 +457,13 @@ AttestationCreateAccount::AttestationCreateAccount(
     signature = sign(publicKey, secretKey, makeSlice(toSign));
 }
 
+/** Serialize this attestation to an `STObject` for inclusion in a transaction
+ *  or `STArray`.
+ *
+ *  @return An inner object tagged
+ *      `sfXChainCreateAccountAttestationCollectionElement` containing all
+ *      account-creation attestation fields.
+ */
 STObject
 AttestationCreateAccount::toSTObject() const
 {
@@ -321,6 +477,27 @@ AttestationCreateAccount::toSTObject() const
     return o;
 }
 
+/** Produce the canonical bytes that a witness signs for an account-creation
+ *  attestation.
+ *
+ *  Builds an `STObject{sfGeneric}` with all account-creation fields and
+ *  serializes it via `Serializer::add()`.  Fields are inserted in `SField`
+ *  sort order to ensure cross-language serializers produce byte-for-byte
+ *  identical output.
+ *
+ *  @param bridge  Bridge context scoping the proof.
+ *  @param sendingAccount  Source account on the sending chain.
+ *  @param sendingAmount   Amount transferred on the sending chain.
+ *  @param rewardAmount    Total size of the witness-reward pool for this event.
+ *  @param rewardAccount   Destination-chain account receiving this witness's
+ *      reward share.
+ *  @param wasLockingChainSend  `true` if the transfer originated on the
+ *      locking chain.
+ *  @param createCount  Value of `XChainAccountCreateCount` on the sending-
+ *      chain bridge at the time of the event; prevents replay.
+ *  @param dst  Account to create on the destination chain.
+ *  @return Serialized bytes suitable for signing or verification.
+ */
 std::vector<std::uint8_t>
 AttestationCreateAccount::message(
     STXChainBridge const& bridge,
@@ -349,6 +526,14 @@ AttestationCreateAccount::message(
     return std::move(s.modData());
 }
 
+/** Instance overload delegating to the static form using stored field values.
+ *
+ *  Called by `AttestationBase::verify()` to regenerate the signed payload
+ *  for signature checking.
+ *
+ *  @param bridge Bridge context scoping the proof.
+ *  @return Serialized bytes identical to those that were originally signed.
+ */
 std::vector<std::uint8_t>
 AttestationCreateAccount::message(STXChainBridge const& bridge) const
 {
@@ -363,12 +548,25 @@ AttestationCreateAccount::message(STXChainBridge const& bridge) const
         toCreate);
 }
 
+/** Check that both `sendingAmount` and `rewardAmount` are legal network amounts.
+ *
+ *  @return `true` if both amounts are valid for wire transmission.
+ */
 bool
 AttestationCreateAccount::validAmounts() const
 {
     return isLegalNet(rewardAmount) && isLegalNet(sendingAmount);
 }
 
+/** Check whether `rhs` witnesses the same cross-chain account-creation event,
+ *  ignoring signer identity fields.
+ *
+ *  The base event fields plus the create-specific `createCount`, `toCreate`,
+ *  and `rewardAmount` must all agree.
+ *
+ *  @param rhs The attestation to compare against.
+ *  @return `true` if both attestations describe the same account-creation event.
+ */
 bool
 AttestationCreateAccount::sameEvent(AttestationCreateAccount const& rhs) const
 {
@@ -377,6 +575,9 @@ AttestationCreateAccount::sameEvent(AttestationCreateAccount const& rhs) const
         std::tie(rhs.createCount, rhs.toCreate, rhs.rewardAmount);
 }
 
+/** Test full equality of two `AttestationCreateAccount` values, including
+ *  signer identity and raw signature.
+ */
 bool
 operator==(AttestationCreateAccount const& lhs, AttestationCreateAccount const& rhs)
 {
@@ -387,9 +588,19 @@ operator==(AttestationCreateAccount const& lhs, AttestationCreateAccount const& 
 
 }  // namespace Attestations
 
+/** `SField` used to name the `STArray` containing claim attestations in
+ *  ledger objects.
+ */
 SField const& XChainClaimAttestation::arrayFieldName{sfXChainClaimAttestations};
+
+/** `SField` used to name the `STArray` containing account-creation
+ *  attestations in ledger objects.
+ */
 SField const& XChainCreateAccountAttestation::arrayFieldName{sfXChainCreateAccountAttestations};
 
+/** Construct from individual field values, used when promoting a ledger-stored
+ *  entry or creating a test fixture.
+ */
 XChainClaimAttestation::XChainClaimAttestation(
     AccountID const& keyAccount,
     PublicKey const& publicKey,
@@ -406,6 +617,11 @@ XChainClaimAttestation::XChainClaimAttestation(
 {
 }
 
+/** Construct from `STAccount` fields, unwrapping the `AccountID` values.
+ *
+ *  Convenience overload used when deserializing from an `STObject` whose
+ *  account fields are already wrapped in `STAccount`.
+ */
 XChainClaimAttestation::XChainClaimAttestation(
     STAccount const& keyAccount,
     PublicKey const& publicKey,
@@ -423,6 +639,7 @@ XChainClaimAttestation::XChainClaimAttestation(
 {
 }
 
+/** Deserialize from a ledger `STObject`. */
 XChainClaimAttestation::XChainClaimAttestation(STObject const& o)
     : XChainClaimAttestation{
           o[sfAttestationSignerAccount],
@@ -432,6 +649,11 @@ XChainClaimAttestation::XChainClaimAttestation(STObject const& o)
           o[sfWasLockingChainSend] != 0,
           o[~sfDestination]} {};
 
+/** Deserialize from a JSON value.
+ *
+ *  @throws std::runtime_error if any required field is missing or has the
+ *      wrong type (via `json::getOrThrow`).
+ */
 XChainClaimAttestation::XChainClaimAttestation(json::Value const& v)
     : XChainClaimAttestation{
           json::getOrThrow<AccountID>(v, sfAttestationSignerAccount),
@@ -445,6 +667,15 @@ XChainClaimAttestation::XChainClaimAttestation(json::Value const& v)
         dst = json::getOrThrow<AccountID>(v, sfDestination);
 };
 
+/** Project a signing-side `AttestationClaim` into its ledger-storage form,
+ *  dropping the raw signature.
+ *
+ *  The raw `signature` and signer-account fields are stripped; only the
+ *  event-identity and key-account fields that need to persist on-ledger are
+ *  retained.
+ *
+ *  @param claimAtt The full witness-submitted attestation to convert.
+ */
 XChainClaimAttestation::XChainClaimAttestation(
     XChainClaimAttestation::TSignedAttestation const& claimAtt)
     : XChainClaimAttestation{
@@ -457,6 +688,11 @@ XChainClaimAttestation::XChainClaimAttestation(
 {
 }
 
+/** Serialize this ledger-stored attestation to an `STObject`.
+ *
+ *  @return An inner object tagged `sfXChainClaimProofSig` containing the
+ *      ledger-side claim attestation fields (no raw signature).
+ */
 STObject
 XChainClaimAttestation::toSTObject() const
 {
@@ -471,6 +707,7 @@ XChainClaimAttestation::toSTObject() const
     return o;
 }
 
+/** Test equality of two ledger-stored claim attestations. */
 bool
 operator==(XChainClaimAttestation const& lhs, XChainClaimAttestation const& rhs)
 {
@@ -490,12 +727,30 @@ operator==(XChainClaimAttestation const& lhs, XChainClaimAttestation const& rhs)
                rhs.dst);
 }
 
+/** Construct `MatchFields` from the signing-side representation, projecting
+ *  only the fields used for quorum matching.
+ *
+ *  @param att The full witness-submitted attestation to extract match fields from.
+ */
 XChainClaimAttestation::MatchFields::MatchFields(
     XChainClaimAttestation::TSignedAttestation const& att)
     : amount{att.sendingAmount}, wasLockingChainSend{att.wasLockingChainSend}, dst{att.dst}
 {
 }
 
+/** Determine how closely this stored attestation matches the supplied fields.
+ *
+ *  The three-state result lets callers distinguish a fully matching
+ *  attestation from one that matches except for the destination:
+ *
+ *  - `XChainAddClaimAttestation` transactions require `Match` — all witnesses
+ *    must agree on the destination.
+ *  - `XChainClaim` transactions specify their own destination, so
+ *    `MatchExceptDst` is also accepted (the user overrides the dst).
+ *
+ *  @param rhs The fields from the incoming attestation or claim request.
+ *  @return `Match`, `MatchExceptDst`, or `NonDstMismatch`.
+ */
 AttestationMatch
 XChainClaimAttestation::match(XChainClaimAttestation::MatchFields const& rhs) const
 {
@@ -508,6 +763,7 @@ XChainClaimAttestation::match(XChainClaimAttestation::MatchFields const& rhs) co
 
 //------------------------------------------------------------------------------
 
+/** Construct from individual field values. */
 XChainCreateAccountAttestation::XChainCreateAccountAttestation(
     AccountID const& keyAccount,
     PublicKey const& publicKey,
@@ -526,6 +782,7 @@ XChainCreateAccountAttestation::XChainCreateAccountAttestation(
 {
 }
 
+/** Deserialize from a ledger `STObject`. */
 XChainCreateAccountAttestation::XChainCreateAccountAttestation(STObject const& o)
     : XChainCreateAccountAttestation{
           o[sfAttestationSignerAccount],
@@ -536,6 +793,11 @@ XChainCreateAccountAttestation::XChainCreateAccountAttestation(STObject const& o
           o[sfWasLockingChainSend] != 0,
           o[sfDestination]} {};
 
+/** Deserialize from a JSON value.
+ *
+ *  @throws std::runtime_error if any required field is missing or has the
+ *      wrong type (via `json::getOrThrow`).
+ */
 XChainCreateAccountAttestation ::XChainCreateAccountAttestation(json::Value const& v)
     : XChainCreateAccountAttestation{
           json::getOrThrow<AccountID>(v, sfAttestationSignerAccount),
@@ -548,6 +810,11 @@ XChainCreateAccountAttestation ::XChainCreateAccountAttestation(json::Value cons
 {
 }
 
+/** Project a signing-side `AttestationCreateAccount` into its ledger-storage
+ *  form, dropping the raw signature.
+ *
+ *  @param createAtt The full witness-submitted attestation to convert.
+ */
 XChainCreateAccountAttestation::XChainCreateAccountAttestation(
     XChainCreateAccountAttestation::TSignedAttestation const& createAtt)
     : XChainCreateAccountAttestation{
@@ -561,6 +828,11 @@ XChainCreateAccountAttestation::XChainCreateAccountAttestation(
 {
 }
 
+/** Serialize this ledger-stored attestation to an `STObject`.
+ *
+ *  @return An inner object tagged `sfXChainCreateAccountProofSig` containing
+ *      the ledger-side account-creation attestation fields (no raw signature).
+ */
 STObject
 XChainCreateAccountAttestation::toSTObject() const
 {
@@ -577,6 +849,11 @@ XChainCreateAccountAttestation::toSTObject() const
     return o;
 }
 
+/** Construct `MatchFields` from the signing-side representation, projecting
+ *  only the fields used for quorum matching.
+ *
+ *  @param att The full witness-submitted attestation to extract match fields from.
+ */
 XChainCreateAccountAttestation::MatchFields::MatchFields(
     XChainCreateAccountAttestation::TSignedAttestation const& att)
     : amount{att.sendingAmount}
@@ -586,6 +863,15 @@ XChainCreateAccountAttestation::MatchFields::MatchFields(
 {
 }
 
+/** Determine how closely this stored attestation matches the supplied fields.
+ *
+ *  Returns the same three-state `AttestationMatch` as the claim variant;
+ *  for account-creation, `amount`, `rewardAmount`, and `wasLockingChainSend`
+ *  must all agree before the destination is considered.
+ *
+ *  @param rhs The fields from the incoming attestation or claim request.
+ *  @return `Match`, `MatchExceptDst`, or `NonDstMismatch`.
+ */
 AttestationMatch
 XChainCreateAccountAttestation::match(XChainCreateAccountAttestation::MatchFields const& rhs) const
 {
@@ -597,6 +883,7 @@ XChainCreateAccountAttestation::match(XChainCreateAccountAttestation::MatchField
     return AttestationMatch::Match;
 }
 
+/** Test equality of two ledger-stored account-creation attestations. */
 bool
 operator==(XChainCreateAccountAttestation const& lhs, XChainCreateAccountAttestation const& rhs)
 {
@@ -619,7 +906,11 @@ operator==(XChainCreateAccountAttestation const& lhs, XChainCreateAccountAttesta
 }
 
 //------------------------------------------------------------------------------
-//
+
+/** Construct from a pre-built collection.
+ *
+ *  @param atts Attestation vector to take ownership of.
+ */
 template <class TAttestation>
 XChainAttestationsBase<TAttestation>::XChainAttestationsBase(
     XChainAttestationsBase<TAttestation>::AttCollection&& atts)
@@ -655,6 +946,12 @@ XChainAttestationsBase<TAttestation>::end()
     return attestations_.end();
 }
 
+/** Deserialize from a JSON value containing an `"attestations"` array.
+ *
+ *  @throws std::runtime_error if `v` is not a JSON object, if the array
+ *      exceeds `kMAX_ATTESTATIONS` (256), or if any element fails to
+ *      deserialize.
+ */
 template <class TAttestation>
 XChainAttestationsBase<TAttestation>::XChainAttestationsBase(json::Value const& v)
 {
@@ -679,6 +976,11 @@ XChainAttestationsBase<TAttestation>::XChainAttestationsBase(json::Value const& 
     }();
 }
 
+/** Deserialize from an `STArray` read out of a ledger object.
+ *
+ *  @throws std::runtime_error if `arr` contains more than `kMAX_ATTESTATIONS`
+ *      (256) elements.
+ */
 template <class TAttestation>
 XChainAttestationsBase<TAttestation>::XChainAttestationsBase(STArray const& arr)
 {
@@ -690,6 +992,11 @@ XChainAttestationsBase<TAttestation>::XChainAttestationsBase(STArray const& arr)
         attestations_.emplace_back(o);
 }
 
+/** Serialize the collection to an `STArray` for storage in a ledger object.
+ *
+ *  @return An `STArray` tagged with `TAttestation::arrayFieldName` whose
+ *      elements are the `STObject` representations of each attestation.
+ */
 template <class TAttestation>
 STArray
 XChainAttestationsBase<TAttestation>::toSTArray() const
@@ -700,6 +1007,8 @@ XChainAttestationsBase<TAttestation>::toSTArray() const
     return r;
 }
 
+// Explicit instantiations keep template bodies in this translation unit,
+// avoiding recompilation of the full implementation in every consumer.
 template class XChainAttestationsBase<XChainClaimAttestation>;
 template class XChainAttestationsBase<XChainCreateAccountAttestation>;
 

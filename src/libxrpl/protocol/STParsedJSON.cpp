@@ -1,3 +1,22 @@
+/** @file
+ *  JSON-to-protocol-object deserializer for the XRP Ledger.
+ *
+ *  Converts untyped `Json::Value` trees into the strongly-typed Serialized
+ *  Type (`ST*`) object graph required by transaction processing, ledger
+ *  validation, and RPC handlers.  Every RPC call that submits a transaction
+ *  or queries ledger state passes through this code before any validation or
+ *  execution.
+ *
+ *  All implementation lives in the anonymous `STParsedJSONDetail` namespace.
+ *  The three mutually-recursive entry points are `parseLeaf()` (primitives),
+ *  `parseObject()` (JSON objects / nested ST objects), and `parseArray()`
+ *  (JSON arrays / `STArray` values).  Both recursive functions enforce a
+ *  `kMAX_PARSED_JSON_DEPTH` nesting limit to prevent stack exhaustion from crafted
+ *  inputs.
+ *
+ *  No exceptions escape the public interface; all errors surface as a
+ *  `Json::Value` carrying RPC error codes.
+ */
 #include <xrpl/protocol/STParsedJSON.h>
 
 #include <xrpl/basics/StringUtilities.h>
@@ -49,6 +68,19 @@
 namespace xrpl {
 
 namespace STParsedJSONDetail {
+
+/** Safely narrow a signed integer to an unsigned type.
+ *
+ *  Eliminates silent truncation: if the JSON library delivers a negative
+ *  value for an unsigned field, the parse fails with an explicit error
+ *  instead of wrapping to the unsigned maximum.
+ *
+ *  @tparam U  The target unsigned integer type.
+ *  @tparam S  The source signed integer type.
+ *  @param  value  The signed value to convert.
+ *  @return The value cast to `U`.
+ *  @throws std::runtime_error if `value < 0` or `value > U::max`.
+ */
 template <typename U, typename S>
 constexpr std::enable_if_t<std::is_unsigned_v<U> && std::is_signed_v<S>, U>
 toUnsigned(S value)
@@ -58,6 +90,18 @@ toUnsigned(S value)
     return static_cast<U>(value);
 }
 
+/** Safely narrow an unsigned integer to a smaller unsigned type.
+ *
+ *  Rejects values that exceed the representable range of the target type,
+ *  preventing silent truncation when the JSON library returns a wider
+ *  unsigned integer than the field's wire type.
+ *
+ *  @tparam U1  The narrower target unsigned type.
+ *  @tparam U2  The wider source unsigned type.
+ *  @param  value  The value to convert.
+ *  @return The value cast to `U1`.
+ *  @throws std::runtime_error if `value > U1::max`.
+ */
 template <typename U1, typename U2>
 constexpr std::enable_if_t<std::is_unsigned_v<U1> && std::is_unsigned_v<U2>, U1>
 toUnsigned(U2 value)
@@ -68,6 +112,16 @@ toUnsigned(U2 value)
 }
 
 // LCOV_EXCL_START
+
+/** Build a dotted JSON path string for error messages.
+ *
+ *  Concatenates `object` and `field` with a '.' separator.  If `field` is
+ *  empty, returns `object` unchanged.
+ *
+ *  @param object  The parent path component (e.g. `"tx_json"`).
+ *  @param field   The child field name, or empty if the error is at `object`.
+ *  @return A path string suitable for embedding in an RPC error message.
+ */
 static inline std::string
 makeName(std::string const& object, std::string const& field)
 {
@@ -77,6 +131,12 @@ makeName(std::string const& object, std::string const& field)
     return object + "." + field;
 }
 
+/** Build an `RpcInvalidParams` error for a field that is not a JSON object.
+ *
+ *  @param object  The parent path component.
+ *  @param field   The offending field name.
+ *  @return A `Json::Value` error object ready to return as an RPC response.
+ */
 static inline json::Value
 notAnObject(std::string const& object, std::string const& field)
 {
@@ -84,24 +144,51 @@ notAnObject(std::string const& object, std::string const& field)
         RpcInvalidParams, "Field '" + makeName(object, field) + "' is not a JSON object.");
 }
 
+/** Build an `RpcInvalidParams` error for a path that is not a JSON object.
+ *
+ *  Overload for callers that have only the object path and no child field.
+ *
+ *  @param object  The full path that was expected to be an object.
+ *  @return A `Json::Value` error object ready to return as an RPC response.
+ */
 static inline json::Value
 notAnObject(std::string const& object)
 {
     return notAnObject(object, "");
 }
 
+/** Build an `RpcInvalidParams` error for a path that is not a JSON array.
+ *
+ *  @param object  The full path that was expected to be an array.
+ *  @return A `Json::Value` error object ready to return as an RPC response.
+ */
 static inline json::Value
 notAnArray(std::string const& object)
 {
     return RPC::makeError(RpcInvalidParams, "Field '" + object + "' is not a JSON array.");
 }
 
+/** Build an `RpcInvalidParams` error for an unrecognized field name.
+ *
+ *  Triggered when a JSON key does not correspond to any registered `SField`.
+ *
+ *  @param object  The parent path component.
+ *  @param field   The unrecognized field name.
+ *  @return A `Json::Value` error object ready to return as an RPC response.
+ */
 static inline json::Value
 unknownField(std::string const& object, std::string const& field)
 {
     return RPC::makeError(RpcInvalidParams, "Field '" + makeName(object, field) + "' is unknown.");
 }
 
+/** Build an `RpcInvalidParams` error for a numeric value outside the
+ *  target field's representable range.
+ *
+ *  @param object  The parent path component.
+ *  @param field   The offending field name.
+ *  @return A `Json::Value` error object ready to return as an RPC response.
+ */
 static inline json::Value
 outOfRange(std::string const& object, std::string const& field)
 {
@@ -109,6 +196,15 @@ outOfRange(std::string const& object, std::string const& field)
         RpcInvalidParams, "Field '" + makeName(object, field) + "' is out of range.");
 }
 
+/** Build an `RpcInvalidParams` error for a JSON value with the wrong type.
+ *
+ *  Used when the JSON node kind (string, int, object, …) does not match
+ *  what the field's `SerializedTypeID` requires.
+ *
+ *  @param object  The parent path component.
+ *  @param field   The offending field name.
+ *  @return A `Json::Value` error object ready to return as an RPC response.
+ */
 static inline json::Value
 badType(std::string const& object, std::string const& field)
 {
@@ -116,6 +212,15 @@ badType(std::string const& object, std::string const& field)
         RpcInvalidParams, "Field '" + makeName(object, field) + "' has bad type.");
 }
 
+/** Build an `RpcInvalidParams` error for a field with unparseable data.
+ *
+ *  Used when the JSON value has the correct type but its content cannot
+ *  be decoded (e.g. a hex string with invalid characters).
+ *
+ *  @param object  The parent path component.
+ *  @param field   The offending field name.
+ *  @return A `Json::Value` error object ready to return as an RPC response.
+ */
 static inline json::Value
 invalidData(std::string const& object, std::string const& field)
 {
@@ -123,12 +228,25 @@ invalidData(std::string const& object, std::string const& field)
         RpcInvalidParams, "Field '" + makeName(object, field) + "' has invalid data.");
 }
 
+/** Build an `RpcInvalidParams` error for a path with unparseable data.
+ *
+ *  Overload for callers that have only the full path, not a separate field.
+ *
+ *  @param object  The full path that has invalid data.
+ *  @return A `Json::Value` error object ready to return as an RPC response.
+ */
 static inline json::Value
 invalidData(std::string const& object)
 {
     return invalidData(object, "");
 }
 
+/** Build an `RpcInvalidParams` error when a JSON array was required.
+ *
+ *  @param object  The parent path component.
+ *  @param field   The offending field name.
+ *  @return A `Json::Value` error object ready to return as an RPC response.
+ */
 static inline json::Value
 arrayExpected(std::string const& object, std::string const& field)
 {
@@ -136,6 +254,12 @@ arrayExpected(std::string const& object, std::string const& field)
         RpcInvalidParams, "Field '" + makeName(object, field) + "' must be a JSON array.");
 }
 
+/** Build an `RpcInvalidParams` error when a string value was required.
+ *
+ *  @param object  The parent path component.
+ *  @param field   The offending field name.
+ *  @return A `Json::Value` error object ready to return as an RPC response.
+ */
 static inline json::Value
 arrayTooBig(std::string const& object, std::string const& field)
 {
@@ -152,12 +276,28 @@ stringExpected(std::string const& object, std::string const& field)
         RpcInvalidParams, "Field '" + makeName(object, field) + "' must be a string.");
 }
 
+/** Build an `RpcInvalidParams` error when JSON nesting exceeds `kMAX_PARSED_JSON_DEPTH`.
+ *
+ *  @param object  The full path at which the depth limit was reached.
+ *  @return A `Json::Value` error object ready to return as an RPC response.
+ */
 static inline json::Value
 tooDeep(std::string const& object)
 {
     return RPC::makeError(RpcInvalidParams, "Field '" + object + "' exceeds nesting depth limit.");
 }
 
+/** Build an `RpcInvalidParams` error for an `STArray` element that is not
+ *  a single-key JSON object.
+ *
+ *  XRPL canonical convention requires every array element to be a JSON
+ *  object with exactly one key (e.g. `[{"Memo": {...}}]`).  Null elements
+ *  and multi-keyed objects are both rejected with this error.
+ *
+ *  @param object  The array's JSON path.
+ *  @param index   The zero-based index of the offending element.
+ *  @return A `Json::Value` error object ready to return as an RPC response.
+ */
 static inline json::Value
 singletonExpected(std::string const& object, unsigned int index)
 {
@@ -167,6 +307,17 @@ singletonExpected(std::string const& object, unsigned int index)
             "]' must be an object with a single key/object value.");
 }
 
+/** Build an `RpcInvalidParams` error when parsed object contents do not
+ *  satisfy the `SOTemplate` associated with the enclosing `SField`.
+ *
+ *  This error is produced when `applyTemplateFromSField()` throws
+ *  `STObject::FieldErr` — typically because a required field is missing,
+ *  an unknown field is present, or a default-valued optional field was
+ *  explicitly supplied.
+ *
+ *  @param sField  The field whose template was violated.
+ *  @return A `Json::Value` error object ready to return as an RPC response.
+ */
 static inline json::Value
 templateMismatch(SField const& sField)
 {
@@ -175,6 +326,16 @@ templateMismatch(SField const& sField)
         "Object '" + sField.getName() + "' contents did not meet requirements for that type.");
 }
 
+/** Build an `RpcInvalidParams` error when an element inside an `STArray`
+ *  does not parse to an `STI_OBJECT`.
+ *
+ *  Each element of a JSON-encoded `STArray` must have field type
+ *  `STI_OBJECT` after parsing.  Any other result triggers this error.
+ *
+ *  @param item   A descriptive string identifying the offending item.
+ *  @param index  The zero-based index within the array.
+ *  @return A `Json::Value` error object ready to return as an RPC response.
+ */
 static inline json::Value
 nonObjectInArray(std::string const& item, json::UInt index)
 {
@@ -185,6 +346,24 @@ nonObjectInArray(std::string const& item, json::UInt index)
 }
 // LCOV_EXCL_STOP
 
+/** Parse a JSON number into an unsigned integer `ST*` field.
+ *
+ *  Accepts string (decimal, via `beast::lexicalCastThrow`), signed int, and
+ *  unsigned int JSON nodes.  Both signed and unsigned paths use `toUnsigned`
+ *  to reject out-of-range values rather than silently truncating.
+ *
+ *  @tparam STResult  The target `STInteger` specialization (e.g. `STUInt32`).
+ *  @tparam Integer   The intermediate integer type used for string parsing.
+ *  @param field      The `SField` describing the target field.
+ *  @param jsonName   The parent JSON path, used in error messages.
+ *  @param fieldName  The field's JSON key, used in error messages.
+ *  @param name       Pointer to the current template sentinel `SField`; unused
+ *      by this function but threaded through the call chain for consistency.
+ *  @param value      The JSON node to parse.
+ *  @param error      Output parameter set to an RPC error on failure.
+ *  @return The constructed `STVar` on success, or `nullopt` on failure
+ *      (with `error` populated).
+ */
 template <class STResult, class Integer>
 static std::optional<detail::STVar>
 parseUnsigned(
@@ -231,6 +410,31 @@ parseUnsigned(
     return ret;
 }
 
+/** Parse a JSON value into a `uint16` `ST*` field, with protocol-name support.
+ *
+ *  Extends `parseUnsigned` with special handling for `sfTransactionType` and
+ *  `sfLedgerEntryType`: when the JSON value is a non-numeric string (e.g.
+ *  `"Payment"` or `"Offer"`), the name is resolved through `TxFormats` or
+ *  `LedgerFormats` respectively.  As a side effect, when parsing at the top
+ *  level with `kSF_GENERIC` as the template sentinel, this function upgrades
+ *  `*name` to `sfTransaction` or `sfLedgerEntry` so that the subsequent
+ *  `applyTemplateFromSField()` call enforces the correct field schema.
+ *
+ *  @tparam STResult  The target `STInteger` specialization (typically
+ *      `STUInt16`).
+ *  @tparam Integer   The intermediate numeric type; defaults to `uint16_t`.
+ *  @param field      The `SField` describing the target field.
+ *  @param jsonName   The parent JSON path, used in error messages.
+ *  @param fieldName  The field's JSON key, used in error messages.
+ *  @param name       In/out pointer to the template sentinel.  May be
+ *      upgraded to `&sfTransaction` or `&sfLedgerEntry` when the field is
+ *      `sfTransactionType` / `sfLedgerEntryType` and the current sentinel is
+ *      `kSF_GENERIC`.
+ *  @param value      The JSON node to parse.
+ *  @param error      Output parameter set to an RPC error on failure.
+ *  @return The constructed `STVar` on success, or `nullopt` on failure
+ *      (with `error` populated).
+ */
 template <class STResult, class Integer = std::uint16_t>
 static std::optional<detail::STVar>
 parseUInt16(
@@ -292,6 +496,28 @@ parseUInt16(
     return ret;
 }
 
+/** Parse a JSON value into a `uint32` `ST*` field, with permission-name support.
+ *
+ *  Extends `parseUnsigned` with special handling for `sfPermissionValue`:
+ *  when the JSON value is a string, it is first looked up as a granular
+ *  permission name via `Permission::getInstance().getGranularValue()`, and
+ *  if not found, treated as a transaction-type name resolved through
+ *  `TxFormats` and then converted to a permission-type value.  All other
+ *  string-valued `uint32` fields are parsed as decimal integers.
+ *
+ *  @tparam STResult  The target `STInteger` specialization (typically
+ *      `STUInt32`).
+ *  @tparam Integer   The intermediate numeric type; defaults to `uint32_t`.
+ *  @param field      The `SField` describing the target field.
+ *  @param jsonName   The parent JSON path, used in error messages.
+ *  @param fieldName  The field's JSON key, used in error messages.
+ *  @param name       Pointer to the current template sentinel `SField`;
+ *      unused by this function but threaded through the call chain.
+ *  @param value      The JSON node to parse.
+ *  @param error      Output parameter set to an RPC error on failure.
+ *  @return The constructed `STVar` on success, or `nullopt` on failure
+ *      (with `error` populated).
+ */
 template <class STResult, class Integer = std::uint32_t>
 static std::optional<detail::STVar>
 parseUInt32(
@@ -346,8 +572,44 @@ parseUInt32(
     return ret;
 }
 
-// This function is used by parseObject to parse any JSON type that doesn't
-// recurse.  Everything represented here is a leaf-type.
+/** Parse a single non-container JSON value into a typed `STVar`.
+ *
+ *  Dispatches on `field.fieldType` across the full `SerializedTypeID` enum,
+ *  covering every primitive wire type: integer widths (`STI_UINT8` through
+ *  `STI_UINT256`, `STI_INT32`), variable-length blobs (`STI_VL`), amounts
+ *  (`STI_AMOUNT`, `STI_NUMBER`), accounts (`STI_ACCOUNT`), asset descriptors
+ *  (`STI_ISSUE`, `STI_CURRENCY`), paths (`STI_PATHSET`), and cross-chain
+ *  bridge descriptors (`STI_XCHAIN_BRIDGE`).
+ *
+ *  Type-specific protocol knowledge embedded here:
+ *  - `STI_UINT8` (`sfTransactionResult`): accepts TER result-code strings
+ *    (e.g. `"tesSUCCESS"`) and validates that the numeric value fits in 8
+ *    bits.
+ *  - `STI_UINT16`: delegates to `parseUInt16`, which resolves
+ *    `sfTransactionType` / `sfLedgerEntryType` human names and may upgrade
+ *    `*name` to enforce the matching `SOTemplate`.
+ *  - `STI_UINT32`: delegates to `parseUInt32`, which resolves
+ *    `sfPermissionValue` human names via the `Permission` registry.
+ *  - `STI_UINT64`: uses `std::from_chars` with base 16 by default, or base
+ *    10 when `field.shouldMeta(SField::kSMD_BASE_TEN)` is set.
+ *  - `STI_PATHSET`: handles both IOU paths (`currency`, `issuer`) and MPT
+ *    paths (`mpt_issuance_id`).  Rejects simultaneous presence of both asset
+ *    kinds, and validates that any explicit `issuer` matches the issuer
+ *    embedded in the MPTID.
+ *
+ *  @param jsonName   The parent JSON path, used in error messages.
+ *  @param fieldName  The field's JSON key used both for registry lookup
+ *      and in error messages.
+ *  @param name       In/out pointer to the template sentinel; may be
+ *      modified by `parseUInt16` for type-upgrade logic.
+ *  @param value      The JSON node to parse.
+ *  @param error      Output parameter set to an RPC error on failure.
+ *  @return The constructed `STVar` on success, or `nullopt` on failure
+ *      (with `error` populated).
+ *  @note `kSF_INVALID` lookup is checked by `parseObject` before calling
+ *      this function; the guard inside `parseLeaf` is dead code in normal
+ *      operation (guarded by `LCOV_EXCL` markers).
+ */
 static std::optional<detail::STVar>
 parseLeaf(
     std::string const& jsonName,
@@ -984,6 +1246,31 @@ parseArray(
     int depth,
     json::Value& error);
 
+/** Parse a JSON object into an `STObject`, recursing as needed.
+ *
+ *  Iterates over every member of `json`, looks each key up in the global
+ *  `SField` registry, and dispatches:
+ *  - Object-style containers (`STI_OBJECT`, `STI_TRANSACTION`,
+ *    `STI_LEDGERENTRY`, `STI_VALIDATION`) → recursion into `parseObject`.
+ *  - Array containers (`STI_ARRAY`) → recursion into `parseArray`.
+ *  - Everything else → `parseLeaf`.
+ *
+ *  After all fields are parsed, calls `data.applyTemplateFromSField(inName)`
+ *  to retroactively enforce the `SOTemplate` for the enclosing field.  A
+ *  schema mismatch throws `STObject::FieldErr`, which is caught and
+ *  translated into a `template_mismatch` RPC error.
+ *
+ *  @param jsonName  The JSON path to this object, prepended to child paths
+ *      in error messages.
+ *  @param json      The JSON object node to parse.
+ *  @param inName    The `SField` whose `SOTemplate` governs accepted fields.
+ *      Pass `kSF_GENERIC` at the top level to accept any known field.
+ *  @param depth     Current recursion depth; the call is rejected with
+ *      `too_deep` when `depth > kMAX_PARSED_JSON_DEPTH`.
+ *  @param error     Output parameter set to an RPC error on failure.
+ *  @return The populated `STObject` on success, or `nullopt` on failure
+ *      (with `error` populated).
+ */
 static std::optional<STObject>
 parseObject(
     std::string const& jsonName,
@@ -1097,6 +1384,28 @@ parseObject(
     return std::nullopt;
 }
 
+/** Parse a JSON array into an `STArray` wrapped in an `STVar`.
+ *
+ *  Enforces the XRPL canonical convention that every element of a
+ *  JSON-encoded `STArray` is a single-key JSON object, e.g.
+ *  `[{"Memo": {...}}, {"Memo": {...}}]`.  Null or multi-keyed elements are
+ *  rejected with `singleton_expected`.  Each element's inner object is
+ *  parsed via `parseObject`, and the resulting `STObject` must have field
+ *  type `STI_OBJECT`; any other type produces `non_object_in_array`.
+ *
+ *  On `parseObject` failure, the error message is enriched with the full
+ *  path to the failing element before being returned to the caller.
+ *
+ *  @param jsonName  The JSON path to this array, prepended to element paths
+ *      in error messages.
+ *  @param json      The JSON array node to parse.
+ *  @param inName    The `SField` that labels the array being built.
+ *  @param depth     Current recursion depth; the call is rejected with
+ *      `too_deep` when `depth > kMAX_PARSED_JSON_DEPTH`.
+ *  @param error     Output parameter set to an RPC error on failure.
+ *  @return An `STVar` holding the completed `STArray` on success, or
+ *      `nullopt` on failure (with `error` populated).
+ */
 static std::optional<detail::STVar>
 parseArray(
     std::string const& jsonName,

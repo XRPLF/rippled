@@ -26,9 +26,34 @@
 
 namespace xrpl {
 
-/** Get the current AssetCache, updating it if necessary.
-    Get the correct ledger to use.
-*/
+/** Return the shared AssetCache for the given ledger, rebuilding it when necessary.
+ *
+ *  The manager holds `assetCache_` as a `weak_ptr` so the cache lives only as
+ *  long as at least one `PathRequest` or in-progress update holds a
+ *  `shared_ptr` to it. The local `assetCache` variable is populated first and
+ *  then stored to `assetCache_`; if the assignment were made in the reverse
+ *  order the cache would be immediately destroyed because no other owner would
+ *  exist yet.
+ *
+ *  The cache is rebuilt when any of the following conditions hold:
+ *  - No prior cache exists (`lineSeq == 0`).
+ *  - `authoritative` is true and `ledger` is strictly newer — the normal
+ *    ledger-advance case.
+ *  - `authoritative` is true and `ledger` is more than 8 slots *older* than
+ *    the cached ledger — indicates a reorg or sync restart.
+ *  - `ledger` is more than 8 slots *newer* than the cached ledger — a forward
+ *    jump large enough to make the cache meaningfully stale.
+ *
+ *  The ±8 tolerance avoids unnecessary rebuilds during minor gaps while still
+ *  catching drift that would produce incorrect pathfinding results.
+ *
+ *  @param ledger        The ledger the caller intends to use for pathfinding.
+ *  @param authoritative True when called from the main background sweep
+ *      (`updateAll`); false for setup or one-shot calls. Only authoritative
+ *      callers trigger rebuilds on a normal ledger advance.
+ *  @return A `shared_ptr` to the current (possibly freshly built) cache for
+ *      `ledger`. Never null.
+ */
 std::shared_ptr<AssetCache>
 PathRequestManager::getAssetCache(std::shared_ptr<ReadView const> const& ledger, bool authoritative)
 {
@@ -56,6 +81,45 @@ PathRequestManager::getAssetCache(std::shared_ptr<ReadView const> const& ledger,
     return assetCache;
 }
 
+/** Drive one full background pass over all live `path_find` subscriptions.
+ *
+ *  Called on a `jtPATH_FIND` job-queue thread dispatched by `LedgerMaster`
+ *  whenever the validated ledger advances. The method re-snapshots `requests_`
+ *  under lock at the start of each pass so that individual `doUpdate` calls —
+ *  which can be lengthy — are made without holding the lock.
+ *
+ *  **Re-entrant loop:** new subscriptions arriving mid-pass are detected via
+ *  `LedgerMaster::isNewPathRequest()`. When a new request appears:
+ *  - `mustBreak` is set and the current pass aborts early.
+ *  - The loop restarts with `newRequests = true` so the newcomer is serviced
+ *    promptly rather than waiting for the next ledger close.
+ *  - After a pass that started with `newRequests = true`, one additional pass
+ *    is always performed to catch any further arrivals during the second pass.
+ *  - The loop exits only when a full pass completes with no new requests
+ *    detected at its end.
+ *
+ *  **Subscriber liveness (the `getSubscriber` lambda):** the subscriber weak
+ *  pointer is locked and its `getRequest()` is compared against the current
+ *  `PathRequest`. If they do not match — indicating the client closed and
+ *  reopened a session, replacing the subscriber's current request — the stale
+ *  request has `doAborting()` called and the lambda returns `nullptr`.
+ *
+ *  The subscriber `shared_ptr` is deliberately released (`ipSub.reset()`)
+ *  before calling `doUpdate` so that a client disconnecting during the
+ *  (potentially long) computation can free its `InfoSub` immediately. After
+ *  `doUpdate` returns, `getSubscriber` is called again; if the lock fails the
+ *  update result is silently discarded.
+ *
+ *  **Rate limiting:** if `Consumer::warn()` returns true the update is skipped
+ *  for that iteration; the request stays in the queue and is retried on the
+ *  next ledger pass.
+ *
+ *  **Removal:** a request is removed from `requests_` when its weak pointer
+ *  is expired, its subscriber has been replaced, or its one-shot callback has
+ *  fired. Dangling weak pointers are reaped in the same `remove_if` pass.
+ *
+ *  @param inLedger The newly validated ledger to use for this sweep.
+ */
 void
 PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 {
@@ -79,6 +143,10 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 
     int processed = 0, removed = 0;
 
+    // Two-part liveness check: the InfoSub weak pointer must be lockable AND
+    // its current request must still point to this PathRequest. A mismatch
+    // means the client opened a new path_find session; the old request is
+    // aborted and nullptr is returned so the caller skips the update.
     auto getSubscriber = [](PathRequest::pointer const& request) -> InfoSub::pointer {
         if (auto ipSub = request->getSubscriber(); ipSub && ipSub->getRequest() == request)
         {
@@ -203,6 +271,11 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
                            << " removed";
 }
 
+/** Return true if there is at least one active path request queued.
+ *
+ *  Used by `LedgerMaster` to decide whether a path-find job needs to be
+ *  dispatched after a ledger advance.
+ */
 bool
 PathRequestManager::requestsPending() const
 {
@@ -210,6 +283,17 @@ PathRequestManager::requestsPending() const
     return !requests_.empty();
 }
 
+/** Insert a new request into `requests_`, ahead of any already-serviced entries.
+ *
+ *  Maintains the invariant that unserviced (new) requests appear before
+ *  already-serviced ones. The insertion point is the first entry where
+ *  `!r->isNew()`, so new requests are encountered early during the next
+ *  `updateAll` pass and serviced quickly rather than buried behind a long
+ *  queue of already-updated subscriptions.
+ *
+ *  @param req The freshly constructed `PathRequest` to enqueue. Must be
+ *      non-null; the caller owns the `shared_ptr` contract.
+ */
 void
 PathRequestManager::insertPathRequest(PathRequest::pointer const& req)
 {
@@ -227,7 +311,22 @@ PathRequestManager::insertPathRequest(PathRequest::pointer const& req)
     requests_.emplace(ret, req);
 }
 
-// Make a new-style path_find request
+/** Create a subscription-based `path_find` request and push an initial result.
+ *
+ *  Implements the `path_find` WebSocket command. The request is registered in
+ *  `requests_` and the subscriber is notified of updates on every subsequent
+ *  ledger advance via `updateAll`. The subscriber holds a weak reference back
+ *  to the `PathRequest`; when the client disconnects the next `updateAll` pass
+ *  will detect the broken weak pointer and silently discard the request.
+ *
+ *  If `doCreate` reports the request parameters are invalid, the request is not
+ *  registered and the error JSON is returned directly.
+ *
+ *  @param subscriber  The WebSocket subscriber that will receive push updates.
+ *  @param inLedger    Current validated ledger to use for the initial result.
+ *  @param requestJson Parsed `path_find` request object from the client.
+ *  @return JSON response for the initial `path_find` reply (success or error).
+ */
 json::Value
 PathRequestManager::makePathRequest(
     std::shared_ptr<InfoSub> const& subscriber,
@@ -247,7 +346,33 @@ PathRequestManager::makePathRequest(
     return std::move(jvRes);
 }
 
-// Make an old-style ripple_path_find request
+/** Register an asynchronous `ripple_path_find` request for background processing.
+ *
+ *  Implements the legacy `ripple_path_find` coroutine variant. The request is
+ *  enqueued in `requests_` and `LedgerMaster::newPathRequest()` is called to
+ *  schedule a `jtPATH_FIND` job. The `completion` callback is invoked when
+ *  `updateAll` finishes processing this request.
+ *
+ *  `req` is assigned before `completion` could possibly fire so that the caller
+ *  always sees a valid pointer when the callback runs.
+ *
+ *  On failure (invalid parameters or job queue at capacity) `req` is reset to
+ *  `nullptr` and an error JSON is returned. Callers **must** check `req` on
+ *  return:
+ *  - If `req` is null and the return value is `rpcTOO_BUSY`, the job queue was
+ *    full; `LedgerMaster::newPathRequest()` returned false.
+ *  - If `req` is null for any other reason, parameter validation failed.
+ *
+ *  @param req        Out-parameter populated with the new `PathRequest` on
+ *      success; reset to `nullptr` on any failure.
+ *  @param completion Callback invoked by `updateAll` when the result is ready.
+ *      Must be set on `req` before this function returns.
+ *  @param consumer   RPC resource consumer for rate-limiting bookkeeping.
+ *  @param inLedger   Current validated ledger for the initial path computation.
+ *  @param request    Parsed `ripple_path_find` request object from the client.
+ *  @return JSON response — either the initial pathfinding result or an error
+ *      (`rpcTOO_BUSY` / parameter error).
+ */
 json::Value
 PathRequestManager::makeLegacyPathRequest(
     PathRequest::pointer& req,
@@ -281,6 +406,21 @@ PathRequestManager::makeLegacyPathRequest(
     return std::move(jvRes);
 }
 
+/** Execute a synchronous `ripple_path_find` immediately on the caller's ledger.
+ *
+ *  Fully synchronous fallback for the `ripple_path_find` command. Creates a
+ *  private, ephemeral `AssetCache` bound to `inLedger`, runs `doUpdate`
+ *  inline, and returns the result to the caller. The request is **never**
+ *  added to `requests_` and never interacts with the background thread or
+ *  `LedgerMaster`.
+ *
+ *  @param consumer  RPC resource consumer for rate-limiting bookkeeping.
+ *  @param inLedger  Ledger to use for path computation; typically the current
+ *      validated ledger supplied by the handler.
+ *  @param request   Parsed `ripple_path_find` request object from the client.
+ *  @return JSON result of the path computation, or an error object if the
+ *      request parameters are invalid.
+ */
 json::Value
 PathRequestManager::doLegacyPathRequest(
     Resource::Consumer& consumer,

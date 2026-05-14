@@ -1,3 +1,18 @@
+/** @file
+ *  Translation boundary between Boost.Asio networking types and
+ *  `beast::IP::Endpoint`.
+ *
+ *  Each function in this file is a single-expression body; the implementation
+ *  is intentionally placed here rather than inline in the header so that
+ *  Boost.Asio headers (`boost/asio/ip/address.hpp`, `boost/asio/ip/tcp.hpp`)
+ *  are not transitively included by code that only needs `IPEndpoint.h`.
+ *  No validation or policy enforcement is performed — conversion is purely
+ *  mechanical.
+ *
+ *  @see beast::IP::fromAsio(boost::asio::ip::address const&)
+ *  @see beast::IP::toAsioEndpoint(Endpoint const&)
+ */
+
 #include <xrpl/beast/net/IPAddressConversion.h>
 
 #include <xrpl/beast/net/IPEndpoint.h>

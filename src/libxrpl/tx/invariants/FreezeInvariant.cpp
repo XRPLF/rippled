@@ -1,3 +1,30 @@
+/** @file
+ *  Implements `TransfersNotFrozen`, the post-transaction invariant checker
+ *  that prevents token balances from moving across frozen trust lines.
+ *
+ *  The checker operates in two phases mandated by the `InvariantChecker_PROTOTYPE`
+ *  contract. During `visitEntry()` every modified `ltRIPPLE_STATE` and
+ *  `ltACCOUNT_ROOT` entry is processed to accumulate balance-change records
+ *  keyed by issuer (`balanceChanges_`) and a lightweight issuer cache
+ *  (`possibleIssuers_`). During `finalize()` those records are validated against
+ *  the three freeze tiers — global freeze, deep freeze, and directional freeze —
+ *  and the `AMMClawback` privilege exemption is applied where applicable.
+ *
+ *  Enforcement is gated on the `featureDeepFreeze` amendment via the `enforce`
+ *  flag. Before the amendment activates, violations are logged at `fatal`
+ *  severity and fire `XRPL_ASSERT` in debug builds (providing early warning to
+ *  operators and developers) but do not invalidate the transaction in release
+ *  builds. When the amendment — or any future fix amendment — is added, only
+ *  the single `enforce =` line in `finalize()` needs to change.
+ *
+ *  @note The `XRPL_ASSERT(enforce, ...)` calls throughout this file use
+ *      the counterintuitive pattern where the assert fires when `enforce`
+ *      is *false* and a violation is detected. This is intentional: in debug
+ *      builds it crashes the process to catch developer mistakes in tests that
+ *      exercise the invariant without activating the amendment. In release
+ *      builds the assert is a no-op and the `!enforce` return value lets the
+ *      transaction through.
+ */
 #include <xrpl/tx/invariants/FreezeInvariant.h>
 
 #include <xrpl/basics/Log.h>
@@ -21,22 +48,25 @@
 
 namespace xrpl {
 
+/** Accumulate one modified ledger entry into the freeze-check state.
+ *
+ *  A trust line's freeze flags alone cannot determine whether a transfer is
+ *  forbidden — the check must span all affected trust lines because both
+ *  sides of a transfer can carry different freeze states and directionality
+ *  matters. Balance changes are therefore accumulated here and all freeze
+ *  policy decisions are deferred to `finalize()` / `validateIssuerChanges()`.
+ *
+ *  As a side effect, `ltACCOUNT_ROOT` entries are cached in `possibleIssuers_`
+ *  so that `findIssuer()` can avoid an extra ledger lookup for issuers that
+ *  were already touched by the transaction. Non-trust-line, non-account-root
+ *  entries are silently ignored.
+ */
 void
 TransfersNotFrozen::visitEntry(
     bool isDelete,
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
-    /*
-     * A trust line freeze state alone doesn't determine if a transfer is
-     * frozen. The transfer must be examined "end-to-end" because both sides of
-     * the transfer may have different freeze states and freeze impact depends
-     * on the transfer direction. This is why first we need to track the
-     * transfers using IssuerChanges senders/receivers.
-     *
-     * Only in validateIssuerChanges, after we collected all changes can we
-     * determine if the transfer is valid.
-     */
     if (!isValidEntry(before, after))
     {
         return;
@@ -51,6 +81,23 @@ TransfersNotFrozen::visitEntry(
     recordBalanceChanges(after, balanceChange);
 }
 
+/** Validate all collected trust-line balance changes against freeze rules.
+ *
+ *  Iterates `balanceChanges_` and calls `validateIssuerChanges()` for each
+ *  issuer. The `enforce` flag — controlled by `featureDeepFreeze` — decides
+ *  whether a detected violation causes this method to return `false` (hard
+ *  enforcement) or merely logs and asserts (monitoring-only mode). To add a
+ *  fix amendment in the future, append `|| view.rules().enabled(fixFreezeExploit)`
+ *  to the single line that sets `enforce`; no other code needs to change.
+ *
+ *  It is considered impossible for an issuer account that owns a trust line
+ *  to be absent from the ledger, but the missing-issuer path is guarded
+ *  defensively to prevent a crash in release builds.
+ *
+ *  @return `true` if no frozen-fund movement is detected, or if enforcement
+ *      is disabled (`featureDeepFreeze` not yet active). `false` if a freeze
+ *      violation is found and the amendment is active.
+ */
 bool
 TransfersNotFrozen::finalize(
     STTx const& tx,
@@ -59,22 +106,6 @@ TransfersNotFrozen::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
-    /*
-     * We check this invariant regardless of deep freeze amendment status,
-     * allowing for detection and logging of potential issues even when the
-     * amendment is disabled.
-     *
-     * If an exploit that allows moving frozen assets is discovered,
-     * we can alert operators who monitor fatal messages and trigger assert in
-     * debug builds for an early warning.
-     *
-     * In an unlikely event that an exploit is found, this early detection
-     * enables encouraging the UNL to expedite deep freeze amendment activation
-     * or deploy hotfixes via new amendments. In case of a new amendment, we'd
-     * only have to change this line setting 'enforce' variable.
-     * enforce = view.rules().enabled(featureDeepFreeze) ||
-     *           view.rules().enabled(fixFreezeExploit);
-     */
     [[maybe_unused]] bool const enforce = view.rules().enabled(featureDeepFreeze);
 
     for (auto const& [issue, changes] : balanceChanges_)
@@ -84,8 +115,6 @@ TransfersNotFrozen::finalize(
         // just in case so xrpld doesn't crash in release.
         if (!issuerSle)
         {
-            // The comment above starting with "assert(enforce)" explains this
-            // assert.
             XRPL_ASSERT(
                 enforce,
                 "xrpl::TransfersNotFrozen::finalize : enforce "
@@ -106,6 +135,21 @@ TransfersNotFrozen::finalize(
     return true;
 }
 
+/** Return true if the entry is a trust line eligible for balance-change recording.
+ *
+ *  `ltACCOUNT_ROOT` entries are silently cached in `possibleIssuers_` and
+ *  excluded from further processing (returns `false`). All other entry types
+ *  return `false` and are ignored.
+ *
+ *  The explicit type guard against `ltRIPPLE_STATE` is necessary even though
+ *  the `LedgerEntryTypesMatch` invariant also checks types, because all
+ *  invariants run independently regardless of previous failures and a type
+ *  mismatch here could cause undefined behaviour in subsequent processing.
+ *
+ *  @param before Pre-transaction SLE; null for newly-created entries.
+ *  @param after Post-transaction SLE; must not be null.
+ *  @return `true` only for `ltRIPPLE_STATE` entries whose type is unchanged.
+ */
 bool
 TransfersNotFrozen::isValidEntry(
     std::shared_ptr<SLE const> const& before,
@@ -133,6 +177,25 @@ TransfersNotFrozen::isValidEntry(
     return after->getType() == ltRIPPLE_STATE && (!before || before->getType() == ltRIPPLE_STATE);
 }
 
+/** Compute the net balance change for a trust line, handling creation and deletion.
+ *
+ *  Two edge cases require special treatment to close freeze-bypass loopholes:
+ *
+ *  - **Created mid-transaction** (`before` is null): a `Payment` or
+ *    `OfferCreate` that crosses offers can create a trust line on the fly.
+ *    Such a line is not created frozen, but the sender's line may be.
+ *    Treating the pre-existing balance as zero ensures the full post-transaction
+ *    balance counts as the change, so the sender's freeze state is still checked.
+ *
+ *  - **Deleted mid-transaction** (`isDelete` is true): the final balance is
+ *    treated as zero so that deleting a trust line cannot be used to transfer
+ *    frozen funds to a third party while appearing to "clear" a balance.
+ *
+ *  @param before Pre-transaction SLE; null if the trust line was just created.
+ *  @param after Post-transaction SLE.
+ *  @param isDelete True when the entry is being deleted.
+ *  @return Signed `STAmount` representing `balanceAfter - balanceBefore`.
+ */
 STAmount
 TransfersNotFrozen::calculateBalanceChange(
     std::shared_ptr<SLE const> const& before,
@@ -161,6 +224,16 @@ TransfersNotFrozen::calculateBalanceChange(
     return balanceAfter - balanceBefore;
 }
 
+/** Insert a `BalanceChange` into `balanceChanges_` under the given issue.
+ *
+ *  Routes the change to `IssuerChanges::senders` when `balanceChangeSign < 0`
+ *  (balance decreased from this issuer's perspective) or to
+ *  `IssuerChanges::receivers` when positive. A zero sign is invalid and
+ *  triggers an assertion — callers must filter out zero-change entries first.
+ *
+ *  @param issue Currency and issuer account identifying the `balanceChanges_` bucket.
+ *  @param change Trust line SLE reference and directional sign; must be non-zero.
+ */
 void
 TransfersNotFrozen::recordBalance(Issue const& issue, BalanceChange change)
 {
@@ -179,6 +252,19 @@ TransfersNotFrozen::recordBalance(Issue const& issue, BalanceChange change)
     }
 }
 
+/** Record a trust line balance change from both sides' issuer perspectives.
+ *
+ *  XRPL stores trust line balances from the low account's perspective
+ *  (the account with the numerically lower `AccountID`). The same physical
+ *  balance movement therefore looks like opposite-signed changes when viewed
+ *  from the high account's side. To give `validateIssuerChanges()` consistent
+ *  issuer-relative directionality, the change is inserted twice: once for the
+ *  high-limit account's issuer using the raw sign, and once for the low-limit
+ *  account's issuer with the sign inverted.
+ *
+ *  @param after Post-transaction trust line SLE.
+ *  @param balanceChange Net signed balance change; must be non-zero.
+ */
 void
 TransfersNotFrozen::recordBalanceChanges(
     std::shared_ptr<SLE const> const& after,
@@ -198,6 +284,17 @@ TransfersNotFrozen::recordBalanceChanges(
         {.line = after, .balanceChangeSign = -balanceChangeSign});
 }
 
+/** Look up an issuer's `AccountRoot` SLE, using the transaction-local cache first.
+ *
+ *  Checks `possibleIssuers_` (populated during `visitEntry()`) before
+ *  falling back to `view.read()`. This avoids a redundant ledger lookup in
+ *  the common case where the issuer account was already modified by the
+ *  transaction being validated.
+ *
+ *  @param issuerID Account to look up.
+ *  @param view Post-transaction read-only ledger view used as the fallback.
+ *  @return The issuer's `AccountRoot` SLE, or nullptr if not found.
+ */
 std::shared_ptr<SLE const>
 TransfersNotFrozen::findIssuer(AccountID const& issuerID, ReadView const& view)
 {
@@ -209,6 +306,29 @@ TransfersNotFrozen::findIssuer(AccountID const& issuerID, ReadView const& view)
     return view.read(keylet::account(issuerID));
 }
 
+/** Validate all balance changes for one issuer's token against freeze rules.
+ *
+ *  Issuance (no senders) and redemption (no receivers) are unconditionally
+ *  allowed regardless of freeze flags — freeze restrictions apply only to
+ *  holder-to-holder transfers, where both `changes.senders` and
+ *  `changes.receivers` are non-empty. If either collection is empty,
+ *  tokens are flowing directly to or from the issuer. The holder may still
+ *  carry contradicting freeze flags for peer-to-peer transfers, but those
+ *  are validated when the holder is processed as an issuer in its own
+ *  `balanceChanges_` entry.
+ *
+ *  For holder-to-holder transfers, every sender and receiver trust line is
+ *  checked by `validateFrozenState()` against the three freeze tiers.
+ *
+ *  @param issuer The issuer's `AccountRoot` SLE; must not be null.
+ *  @param changes All senders and receivers for this issuer's token.
+ *  @param tx The transaction being applied.
+ *  @param j Journal for diagnostic logging.
+ *  @param enforce When `false`, violations log and assert but do not cause
+ *      this method to return `false` (pre-`featureDeepFreeze` mode).
+ *  @return `true` if all changes are permitted; `false` on a freeze violation
+ *      when `enforce` is `true`.
+ */
 bool
 TransfersNotFrozen::validateIssuerChanges(
     std::shared_ptr<SLE const> const& issuer,
@@ -225,13 +345,6 @@ TransfersNotFrozen::validateIssuerChanges(
     bool const globalFreeze = issuer->isFlag(lsfGlobalFreeze);
     if (changes.receivers.empty() || changes.senders.empty())
     {
-        /* If there are no receivers, then the holder(s) are returning
-         * their tokens to the issuer. Likewise, if there are no
-         * senders, then the issuer is issuing tokens to the holder(s).
-         * This is allowed regardless of the issuer's freeze flags. (The
-         * holder may have contradicting freeze flags, but that will be
-         * checked when the holder is treated as issuer.)
-         */
         return true;
     }
 
@@ -250,6 +363,41 @@ TransfersNotFrozen::validateIssuerChanges(
     return true;
 }
 
+/** Check whether a single trust line balance change violates freeze rules.
+ *
+ *  Evaluates three layered freeze conditions, any of which is sufficient to
+ *  block the transfer:
+ *
+ *  1. **Global freeze** (`lsfGlobalFreeze` on the issuer): all trust lines with
+ *     that issuer are frozen; no override is possible.
+ *  2. **Deep freeze** (`lsfLowDeepFreeze`/`lsfHighDeepFreeze`): blocks both
+ *     inbound and outbound movement regardless of directionality.
+ *  3. **Standard freeze** (`lsfLowFreeze`/`lsfHighFreeze`): direction-sensitive —
+ *     only blocks outgoing transfers (`balanceChangeSign < 0`).
+ *
+ *  The `high` parameter indicates whether the issuer under scrutiny is the
+ *  high-limit account on this trust line (numerically larger `AccountID`),
+ *  which determines which freeze-flag bits to inspect on the SLE.
+ *
+ *  **`AMMClawback` exception**: when `hasPrivilege(tx, OverrideFreeze)` is true,
+ *  the invariant permits movement across individually frozen or deep-frozen AMM
+ *  pool trust lines (`lsfAMMNode`). A global freeze is never overrideable, and
+ *  regular (non-AMM) trust lines cannot be clawed back even with the privilege.
+ *
+ *  When `enforce` is `false` (amendment not yet active), a detected violation
+ *  logs at `fatal` severity and fires `XRPL_ASSERT` in debug builds, but
+ *  returns `true` to allow the transaction through. See the `@file` docstring
+ *  for the rationale behind this pattern.
+ *
+ *  @param change Trust line SLE and direction of the balance change.
+ *  @param high `true` if the issuer is the high-limit account on this trust line.
+ *  @param tx The transaction being applied.
+ *  @param j Journal for diagnostic logging.
+ *  @param enforce When `false`, violations are logged but do not fail the check.
+ *  @param globalFreeze `true` if the issuer's `lsfGlobalFreeze` flag is set.
+ *  @return `true` if the transfer is permitted; `false` if it violates a freeze
+ *      rule and `enforce` is `true`.
+ */
 bool
 TransfersNotFrozen::validateFrozenState(
     BalanceChange const& change,
@@ -282,7 +430,6 @@ TransfersNotFrozen::validateFrozenState(
 
     JLOG(j.fatal()) << "Invariant failed: Attempting to move frozen funds for "
                     << tx.getTransactionID();
-    // The comment above starting with "assert(enforce)" explains this assert.
     XRPL_ASSERT(
         enforce,
         "xrpl::TransfersNotFrozen::validateFrozenState : enforce "

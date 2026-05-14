@@ -1,3 +1,13 @@
+/** @file
+ *  Implements the `Change` transactor, which processes the three
+ *  consensus-synthesized pseudo-transaction types: `ttAMENDMENT` (amendment
+ *  lifecycle events), `ttFEE` (fee-schedule updates), and `ttUNL_MODIFY`
+ *  (Negative UNL validator staging).  None of these are submitted by users;
+ *  they are injected directly into ledger proposals by the consensus machinery.
+ *
+ *  @see Change.h for class-level documentation and the `EnableAmendment`,
+ *      `SetFee`, and `UNLModify` semantic aliases.
+ */
 #include <xrpl/tx/transactors/system/Change.h>
 
 #include <xrpl/basics/Log.h>
@@ -29,14 +39,27 @@
 
 namespace xrpl {
 
+/** Full specialization of `Transactor::invokePreflight` for pseudo-transactions.
+ *
+ *  Pseudo-transactions violate nearly every rule enforced by the generic
+ *  pipeline: they carry no signature, no signing public key, no multisig
+ *  signers list, a zero fee, a zero sequence, and the zero account ID as
+ *  their source.  This specialization validates exactly those invariants
+ *  instead of delegating to `preflight1` / `preflight2`.
+ *
+ *  Flag-mask enforcement (`tfEnableAmendmentMask`) is gated behind
+ *  `featureLendingProtocol`.  That feature introduced the flag parameter; a
+ *  dedicated amendment purely to enable this guard would add protocol
+ *  complexity for no meaningful gain, so the existing feature acts as a proxy.
+ *
+ *  @param ctx  Preflight context carrying the transaction and current rules.
+ *  @return `tesSUCCESS`, `temBAD_SRC_ACCOUNT`, `temBAD_FEE`,
+ *      `temBAD_SIGNATURE`, or `temBAD_SEQUENCE`.
+ */
 template <>
 NotTEC
 Transactor::invokePreflight<Change>(PreflightContext const& ctx)
 {
-    // 0 means "Allow any flags"
-    // The check for tfEnableAmendmentMask is gated by LendingProtocol because
-    // that feature introduced this parameter, and it's not worth adding another
-    // amendment just for this.
     if (auto const ret =
             preflight0(ctx, ctx.rules.enabled(featureLendingProtocol) ? tfEnableAmendmentMask : 0))
         return ret;
@@ -48,7 +71,6 @@ Transactor::invokePreflight<Change>(PreflightContext const& ctx)
         return temBAD_SRC_ACCOUNT;
     }
 
-    // No point in going any further if the transaction fee is malformed.
     auto const fee = ctx.tx.getFieldAmount(sfFee);
     if (!fee.native() || fee != beast::kZERO)
     {
@@ -201,7 +223,6 @@ Change::applyAmendment()
             }
             else
             {
-                // pass through
                 newMajorities.pushBack(majority);
             }
         }
@@ -212,7 +233,6 @@ Change::applyAmendment()
 
     if (gotMajority)
     {
-        // This amendment now has a majority
         newMajorities.pushBack(STObject::makeInnerObject(sfMajority));
         auto& entry = newMajorities.back();
         entry[sfAmendment] = amendment;
@@ -225,7 +245,6 @@ Change::applyAmendment()
     }
     else if (!lostMajority)
     {
-        // No flags, enable amendment
         amendments.pushBack(amendment);
         amendmentObject->setFieldV256(sfAmendments, amendments);
 
@@ -351,14 +370,12 @@ Change::applyUNLModify()
 
     if (disabling)
     {
-        // cannot have more than one toDisable
         if (negUnlObject->isFieldPresent(sfValidatorToDisable))
         {
             JLOG(j_.warn()) << "N-UNL: applyUNLModify, already has ToDisable";
             return tefFAILURE;
         }
 
-        // cannot be the same as toReEnable
         if (negUnlObject->isFieldPresent(sfValidatorToReEnable))
         {
             if (negUnlObject->getFieldVL(sfValidatorToReEnable) == validator)
@@ -368,7 +385,6 @@ Change::applyUNLModify()
             }
         }
 
-        // cannot be in negative UNL already
         if (found)
         {
             JLOG(j_.warn()) << "N-UNL: applyUNLModify, ToDisable already in negative UNL";
@@ -379,14 +395,12 @@ Change::applyUNLModify()
     }
     else
     {
-        // cannot have more than one toReEnable
         if (negUnlObject->isFieldPresent(sfValidatorToReEnable))
         {
             JLOG(j_.warn()) << "N-UNL: applyUNLModify, already has ToReEnable";
             return tefFAILURE;
         }
 
-        // cannot be the same as toDisable
         if (negUnlObject->isFieldPresent(sfValidatorToDisable))
         {
             if (negUnlObject->getFieldVL(sfValidatorToDisable) == validator)
@@ -396,7 +410,6 @@ Change::applyUNLModify()
             }
         }
 
-        // must be in negative UNL
         if (!found)
         {
             JLOG(j_.warn()) << "N-UNL: applyUNLModify, ToReEnable is not in negative UNL";
@@ -416,13 +429,11 @@ Change::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
-    // No transaction-specific invariants yet (future work).
 }
 
 bool
 Change::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
-    // No transaction-specific invariants yet (future work).
     return true;
 }
 

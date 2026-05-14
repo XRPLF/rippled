@@ -52,7 +52,20 @@
 
 namespace xrpl {
 
-/** Performs early sanity checks on the txid */
+/** Gate every transaction on a minimal set of structural invariants.
+ *
+ *  Checks that apply to all transaction types before any type-specific
+ *  validation: pseudo-transaction / batch-inner exclusivity, network-ID
+ *  presence rules for legacy vs. modern networks, a non-zero transaction
+ *  ID, and the absence of unrecognised flag bits.
+ *
+ *  @param ctx      Preflight context carrying the transaction and network state.
+ *  @param flagMask Bitmask of bits that must NOT be set in the transaction
+ *      flags; bits set here are treated as invalid for this transaction type.
+ *  @return `tesSUCCESS` if all checks pass; a `tel*` or `tem*` code otherwise.
+ *  @note Pseudo-transactions are exempt from NetworkID checks unless they
+ *      explicitly carry `sfNetworkID`.
+ */
 NotTEC
 preflight0(PreflightContext const& ctx, std::uint32_t flagMask)
 {
@@ -70,15 +83,15 @@ preflight0(PreflightContext const& ctx, std::uint32_t flagMask)
 
         if (nodeNID <= 1024)
         {
-            // legacy networks have ids less than 1024, these networks cannot
-            // specify NetworkID in txn
+            // Legacy networks (ID ≤ 1024) never carry sfNetworkID — its
+            // presence would make the transaction non-canonical on those nets.
             if (txNID)
                 return telNETWORK_ID_MAKES_TX_NON_CANONICAL;
         }
         else
         {
-            // new networks both require the field to be present and require it
-            // to match
+            // Modern networks require sfNetworkID to be present and to match
+            // the local node's network ID, preventing cross-network replay.
             if (!txNID)
                 return telREQUIRES_NETWORK_ID;
 
@@ -107,9 +120,17 @@ preflight0(PreflightContext const& ctx, std::uint32_t flagMask)
 
 namespace detail {
 
-/** Checks the validity of the transactor signing key.
+/** Validate that `sfSigningPubKey`, when present, is a recognised key type.
  *
- * Normally called from preflight1.
+ *  An empty `sfSigningPubKey` is valid (multi-sign or simulation); a
+ *  non-empty key that is not a recognised curve type (secp256k1 / Ed25519)
+ *  is rejected immediately.
+ *
+ *  @param sigObject The STObject that carries `sfSigningPubKey` (typically
+ *      the transaction itself).
+ *  @param j         Journal for diagnostic logging.
+ *  @return `tesSUCCESS` if the key is absent or has a valid type;
+ *      `temBAD_SIGNATURE` otherwise.
  */
 NotTEC
 preflightCheckSigningKey(STObject const& sigObject, beast::Journal j)
@@ -123,6 +144,23 @@ preflightCheckSigningKey(STObject const& sigObject, beast::Journal j)
     return tesSUCCESS;
 }
 
+/** Validate signing-key state for dry-run (simulation) transactions.
+ *
+ *  Returns a result only when `TapDryRun` is set; returns `std::nullopt`
+ *  for normal (non-simulated) transactions so the caller continues with
+ *  regular validation.  In simulation mode a transaction must carry no
+ *  real signature: `sfTxnSignature` must be absent or empty, all entries
+ *  in `sfSigners` must have no signature, and `sfSigningPubKey` must be
+ *  empty (to avoid ambiguous single-sign + multi-sign state).
+ *
+ *  @param flags     Apply flags for this invocation; checked for `TapDryRun`.
+ *  @param sigObject The STObject holding signing fields (typically the tx).
+ *  @param j         Journal for diagnostic logging.
+ *  @return `tesSUCCESS` if simulation constraints are satisfied; `temINVALID`
+ *      if they are violated; `std::nullopt` if `TapDryRun` is not set.
+ *  @note The `temINVALID` branches are marked `LCOV_EXCL_LINE` because the
+ *      `simulate` RPC validates these constraints before reaching preflight.
+ */
 std::optional<NotTEC>
 preflightCheckSimulateKeys(ApplyFlags flags, STObject const& sigObject, beast::Journal j)
 {
@@ -165,7 +203,21 @@ preflightCheckSimulateKeys(ApplyFlags flags, STObject const& sigObject, beast::J
 
 }  // namespace detail
 
-/** Performs early sanity checks on the account and fee fields */
+/** Validate account identity, fee format, signing-key syntax, and ordering
+ *  constraints common to all transaction types.
+ *
+ *  Calls `preflight0` for transaction-ID / NetworkID / flag-mask checks,
+ *  then adds: non-zero `sfAccount`, non-negative native `sfFee`, valid
+ *  `sfSigningPubKey` format, and the mutual-exclusion rule between Tickets
+ *  and `sfAccountTxnID`.  Also validates `sfDelegate` field presence against
+ *  the `featurePermissionDelegationV1_1` amendment.
+ *
+ *  @param ctx      Preflight context carrying the transaction and rules.
+ *  @param flagMask Bitmask of disallowed flag bits, forwarded to `preflight0`.
+ *  @return `tesSUCCESS` if all checks pass; a `tem*` or `tel*` error otherwise.
+ *  @note Do not call this directly from a derived transactor's `preflight`.
+ *      It is invoked automatically by `invokePreflight<T>`.
+ */
 NotTEC
 Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
 {
@@ -188,7 +240,6 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
         return temBAD_SRC_ACCOUNT;
     }
 
-    // No point in going any further if the transaction fee is malformed.
     auto const fee = ctx.tx.getFieldAmount(sfFee);
     if (!fee.native() || fee.negative() || !isLegalAmount(fee.xrp()))
     {
@@ -219,7 +270,22 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
     return tesSUCCESS;
 }
 
-/** Checks whether the signature appears valid */
+/** Verify cryptographic signature validity using the hash-router cache.
+ *
+ *  In simulation mode (`TapDryRun`), delegates to
+ *  `detail::preflightCheckSimulateKeys` and returns early, skipping all
+ *  subsequent checks.  For `tfInnerBatchTxn` transactions the signature
+ *  check is skipped entirely — the outer batch already provides
+ *  authorization.  For all other transactions, consults the hash router's
+ *  cached `Validity` state; `SigBad` returns `temINVALID`.
+ *
+ *  @param ctx Preflight context carrying the transaction, rules, and flags.
+ *  @return `tesSUCCESS` if the signature is valid (or skipped legitimately);
+ *      `temINVALID` if the cached validity is `SigBad` or simulation
+ *      constraints are violated.
+ *  @note Do not call this directly from a derived transactor's `preflight`.
+ *      It is invoked automatically by `invokePreflight<T>`.
+ */
 NotTEC
 Transactor::preflight2(PreflightContext const& ctx)
 {
@@ -286,6 +352,20 @@ Transactor::preflightSigValidated(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Verify that the optional `sfDelegate` field authorises this transaction.
+ *
+ *  If `sfDelegate` is absent the transaction is self-signed and no
+ *  delegation check is needed.  If present, a `DelegateObject` at
+ *  `keylet::delegate(account, delegate)` must exist and must grant the
+ *  delegate permission to submit this specific transaction type via
+ *  `checkTxPermission`.
+ *
+ *  @param view Read-only ledger view used to look up the delegate object.
+ *  @param tx   The transaction carrying the optional `sfDelegate` field.
+ *  @return `tesSUCCESS` if delegation is not in use or the delegate is
+ *      authorised; `terNO_DELEGATE_PERMISSION` if the delegate object is
+ *      absent or the permission is not granted.
+ */
 NotTEC
 Transactor::checkPermission(ReadView const& view, STTx const& tx)
 {
@@ -302,38 +382,48 @@ Transactor::checkPermission(ReadView const& view, STTx const& tx)
     return checkTxPermission(sle, tx);
 }
 
+/** Compute the base fee for a transaction before load scaling.
+ *
+ *  The fee is `baseFee * (1 + signerCount)`: the network's base fee unit
+ *  plus one additional unit for each entry in `sfSigners` (multi-sign).
+ *  Derived transactors may override this for types that have a different
+ *  cost model (e.g., `AccountDelete` charges an owner-reserve fee).
+ *
+ *  @param view Read-only ledger view supplying the current `fees().base`.
+ *  @param tx   The transaction whose `sfSigners` array is inspected.
+ *  @return The unscaled base fee in drops.
+ */
 XRPAmount
 Transactor::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
-    // Returns the fee in fee units.
-
-    // The computation has two parts:
-    //  * The base fee, which is the same for most transactions.
-    //  * The additional cost of each multisignature on the transaction.
     XRPAmount const baseFee = view.fees().base;
 
-    // Each signer adds one more baseFee to the minimum required fee
-    // for the transaction.
     std::size_t const signerCount =
         tx.isFieldPresent(sfSigners) ? tx.getFieldArray(sfSigners).size() : 0;
 
     return baseFee + (signerCount * baseFee);
 }
 
-// Returns the fee in fee units, not scaled for load.
+/** Return the owner-reserve increment as a transaction fee (unscaled).
+ *
+ *  Used by transaction types whose cost is proportional to the reserve
+ *  rather than the base fee (e.g., `AccountDelete`, `AMMCreate`,
+ *  `LedgerStateFix`).  The current ledger's `fees().increment` is returned
+ *  directly; load scaling is applied separately by `minimumFee`.
+ *
+ *  @param view Read-only ledger view supplying `fees().increment`.
+ *  @param tx   The transaction (unused; present for the static interface
+ *      convention shared with `calculateBaseFee`).
+ *  @return The owner-reserve increment in drops.
+ *  @note An assertion fires if `increment ≤ base * 100`, because the
+ *      reserve-as-fee model breaks down when the reserve is not
+ *      substantially larger than the base fee.
+ */
 XRPAmount
 Transactor::calculateOwnerReserveFee(ReadView const& view, STTx const& tx)
 {
-    // Assumption: One reserve increment is typically much greater than one base
-    // fee.
-    // This check is in an assert so that it will come to the attention of
-    // developers if that assumption is not correct. If the owner reserve is not
-    // significantly larger than the base fee (or even worse, smaller), we will
-    // need to rethink charging an owner reserve as a transaction fee.
-    // TODO: This function is static, and I don't want to add more parameters.
-    // When it is finally refactored to be in a context that has access to the
-    // Application, include "app().getOverlay().networkID() > 2 ||" in the
-    // condition.
+    // The reserve must be significantly larger than the base fee; if it ever
+    // is not, charging an owner reserve as a tx fee needs to be reconsidered.
     XRPL_ASSERT(
         view.fees().increment > view.fees().base * 100,
         "xrpl::Transactor::calculateOwnerReserveFee : Owner reserve is "
@@ -351,6 +441,26 @@ Transactor::minimumFee(
     return scaleFeeLoad(baseFee, registry.getFeeTrack(), fees, (flags & TapUnlimited) != 0u);
 }
 
+/** Validate the transaction fee and the fee-payer's ability to cover it.
+ *
+ *  For open-ledger transactions, confirms the fee meets the load-adjusted
+ *  minimum (`minimumFee`).  For all transactions, confirms the fee-payer's
+ *  account balance is sufficient.
+ *
+ *  Batch inner transactions (`TapBatch`) must carry a zero fee; any
+ *  non-zero fee is rejected with `temBAD_FEE`.
+ *
+ *  @param ctx     Preclaim context with read-only ledger view and flags.
+ *  @param baseFee The unscaled base fee returned by `calculateBaseFee`.
+ *  @return `tesSUCCESS` if the fee is valid and the account can cover it;
+ *      a `tel*`, `tec*`, or `ter*` code otherwise.
+ *  @note Because preclaim evaluates against a static `ReadView`, it does not
+ *      reflect fee deductions from other in-flight transactions from the same
+ *      account within the current ledger.  The balance check here may
+ *      therefore pass optimistically; the `Transactor::reset` mechanism
+ *      corrects any shortfall by clamping the actual fee to the remaining
+ *      balance when the transaction is applied.
+ */
 TER
 Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
 {
@@ -394,13 +504,6 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
 
     auto const balance = (*sle)[sfBalance].xrp();
 
-    // NOTE: Because preclaim evaluates against a static readview, it
-    // does not reflect fee deductions from other transactions paid by
-    // the same account within the current ledger.
-    // As a result, if an account's balance is over-committed across multiple
-    // transactions, this check may pass optimistically.
-    // The fee shortfall will be handled by the Transactor::reset mechanism,
-    // which caps the fee to the remaining actual balance.
     if (balance < feePaid)
     {
         JLOG(ctx.j.trace()) << "Insufficient balance:" << " balance=" << to_string(balance)
@@ -418,6 +521,16 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
     return tesSUCCESS;
 }
 
+/** Deduct the transaction fee from the fee-payer's account balance.
+ *
+ *  Decrements `sfBalance` on the fee-payer's `AccountRoot` in the mutable
+ *  view.  If the fee-payer is the transaction account (`account_`), the SLE
+ *  update is deferred to `apply()` to avoid a redundant write; otherwise
+ *  `view().update` is called immediately.
+ *
+ *  @return `tesSUCCESS` on success; `tefINTERNAL` (unreachable in practice)
+ *      if the fee-payer account root is missing from the ledger.
+ */
 TER
 Transactor::payFee()
 {
@@ -428,16 +541,35 @@ Transactor::payFee()
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    // Deduct the fee, so it's not available during the transaction.
-    // Will only write the account back if the transaction succeeds.
+    // Deduct the fee so it is unavailable during the transaction body.
+    // The account SLE is written back in apply() when feePayer == account_.
     sle->setFieldAmount(sfBalance, sle->getFieldAmount(sfBalance) - feePaid);
     if (feePayer != account_)
-        view().update(sle);  // done in `apply()` for the account
+        view().update(sle);
 
     // VFALCO Should we call view().rawDestroyXRP() here as well?
     return tesSUCCESS;
 }
 
+/** Verify that the transaction's sequence or ticket is valid for the account.
+ *
+ *  For sequence-based transactions, enforces strict monotonic ordering:
+ *  the transaction sequence must equal the account's current sequence.
+ *  Future sequences return `terPRE_SEQ` (retryable); past sequences
+ *  return `tefPAST_SEQ` (permanently invalid).
+ *
+ *  For ticket-based transactions, the ticket's numeric value must be
+ *  strictly less than the account's current sequence (to rule out tickets
+ *  that have not yet been created), and the ticket SLE must actually exist.
+ *
+ *  @param view Read-only ledger view for account and ticket lookups.
+ *  @param tx   The transaction carrying `sfSequence` or `sfTicketSequence`.
+ *  @param j    Journal for diagnostic logging.
+ *  @return `tesSUCCESS` if the sequence or ticket is valid;
+ *      `terNO_ACCOUNT` if the source account does not exist;
+ *      `terPRE_SEQ` / `terPRE_TICKET` if retryable;
+ *      `tefPAST_SEQ` / `tefNO_TICKET` / `temSEQ_AND_TICKET` otherwise.
+ */
 NotTEC
 Transactor::checkSeqProxy(ReadView const& view, STTx const& tx, beast::Journal j)
 {
@@ -503,6 +635,22 @@ Transactor::checkSeqProxy(ReadView const& view, STTx const& tx, beast::Journal j
     return tesSUCCESS;
 }
 
+/** Verify ordering constraints: `sfAccountTxnID`, `sfLastLedgerSequence`,
+ *  and duplicate-transaction detection.
+ *
+ *  Checks three conditions in order:
+ *  1. If `sfAccountTxnID` is present, the account's recorded last-tx hash
+ *     must match (enforcing a strict prior-transaction chain).
+ *  2. If `sfLastLedgerSequence` is present, the current ledger index must
+ *     not exceed it (expiry check).
+ *  3. The transaction hash must not already exist in the current ledger
+ *     (replay / duplicate prevention).
+ *
+ *  @param ctx Preclaim context with read-only ledger view and transaction.
+ *  @return `tesSUCCESS` if all ordering checks pass;
+ *      `terNO_ACCOUNT` if the source account is missing;
+ *      `tefWRONG_PRIOR` / `tefMAX_LEDGER` / `tefALREADY` otherwise.
+ */
 NotTEC
 Transactor::checkPriorTxAndLastLedger(PreclaimContext const& ctx)
 {
@@ -531,6 +679,18 @@ Transactor::checkPriorTxAndLastLedger(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Advance the account sequence or consume the referenced ticket.
+ *
+ *  For sequence-based transactions, increments `sfSequence` to `seqProxy + 1`.
+ *  For ticket-based transactions, calls `ticketDelete` to erase the ticket SLE,
+ *  remove it from the owner directory, and adjust the owner count.
+ *
+ *  @param sleAccount Mutable account root SLE; must not be null.
+ *  @return `tesSUCCESS` on success; a `tef*` error if ticket deletion fails
+ *      (which indicates ledger corruption — see `ticketDelete`).
+ *  @note For `TicketCreate` transactions, `sfSequence` will be advanced a
+ *      second time by the transactor body to allocate the ticket IDs.
+ */
 TER
 Transactor::consumeSeqProxy(SLE::pointer const& sleAccount)
 {
@@ -538,16 +698,30 @@ Transactor::consumeSeqProxy(SLE::pointer const& sleAccount)
     SeqProxy const seqProx = ctx_.tx.getSeqProxy();
     if (seqProx.isSeq())
     {
-        // Note that if this transaction is a TicketCreate, then
-        // the transaction will modify the account root sfSequence
-        // yet again.
+        // TicketCreate will advance sfSequence again during doApply to
+        // allocate the requested ticket IDs.
         sleAccount->setFieldU32(sfSequence, seqProx.value() + 1);
         return tesSUCCESS;
     }
     return ticketDelete(view(), account_, getTicketIndex(account_, seqProx), j_);
 }
 
-// Remove a single Ticket from the ledger.
+/** Remove a single Ticket from the ledger and release its owner reserve.
+ *
+ *  Performs four coordinated mutations:
+ *  1. Removes the ticket SLE from the ledger.
+ *  2. Removes the ticket from the account's owner directory.
+ *  3. Decrements `sfTicketCount` on the account root, removing the field
+ *     entirely when it reaches zero.
+ *  4. Calls `adjustOwnerCount` to release the ticket's reserve unit.
+ *
+ *  @param view         Mutable ledger view to apply changes against.
+ *  @param account      The account that owns the ticket.
+ *  @param ticketIndex  The ledger index of the ticket SLE to delete.
+ *  @param j            Journal for diagnostic logging.
+ *  @return `tesSUCCESS` on success; `tefBAD_LEDGER` if any expected SLE is
+ *      missing (indicates ledger corruption; branches are `LCOV_EXCL`).
+ */
 TER
 Transactor::ticketDelete(
     ApplyView& view,
@@ -555,8 +729,6 @@ Transactor::ticketDelete(
     uint256 const& ticketIndex,
     beast::Journal j)
 {
-    // Delete the Ticket, adjust the account root ticket count, and
-    // reduce the owner count.
     SLE::pointer const sleTicket = view.peek(keylet::kTICKET(ticketIndex));
     if (!sleTicket)
     {
@@ -575,8 +747,6 @@ Transactor::ticketDelete(
         // LCOV_EXCL_STOP
     }
 
-    // Update the account root's TicketCount.  If the ticket count drops to
-    // zero remove the (optional) field.
     auto sleAccount = view.peek(keylet::account(account));
     if (!sleAccount)
     {
@@ -605,32 +775,44 @@ Transactor::ticketDelete(
         // LCOV_EXCL_STOP
     }
 
-    // Update the Ticket owner's reserve.
     adjustOwnerCount(view, sleAccount, -1, j);
 
-    // Remove Ticket from ledger.
     view.erase(sleTicket);
     return tesSUCCESS;
 }
 
-// check stuff before you bother to lock the ledger
+/** Perform inexpensive pre-apply setup before the ledger is mutated.
+ *
+ *  The base implementation just asserts that `account_` is non-zero.
+ *  Derived transactors override this to cache fields or compute derived
+ *  values they will need in `doApply`.
+ */
 void
 Transactor::preCompute()
 {
     XRPL_ASSERT(account_ != beast::kZERO, "xrpl::Transactor::preCompute : nonzero account");
 }
 
+/** Orchestrate the mutable phase of transaction processing.
+ *
+ *  Calls `preCompute()`, snapshots `preFeeBalance_` from the account's
+ *  current balance, then in order: `consumeSeqProxy`, `payFee`, updates
+ *  `sfAccountTxnID` if present, and finally calls `doApply`.
+ *
+ *  @return The `TER` from `doApply`, or an earlier error from
+ *      `consumeSeqProxy` / `payFee` if those fail.
+ *  @note Reserve checks inside `doApply` should compare against
+ *      `preFeeBalance_` (pre-fee snapshot), not the post-fee balance,
+ *      to correctly allow an account to dip into its reserve to pay the fee.
+ */
 TER
 Transactor::apply()
 {
     preCompute();
 
-    // If the transactor requires a valid account and the transaction doesn't
-    // list one, preflight will have already a flagged a failure.
     auto const sle = view().peek(keylet::account(account_));
 
-    // sle must exist except for transactions
-    // that allow zero account.
+    // sle must exist except for transactions that allow zero account.
     XRPL_ASSERT(
         sle != nullptr || account_ == beast::kZERO,
         "xrpl::Transactor::apply : non-null SLE or zero account");
@@ -656,6 +838,33 @@ Transactor::apply()
     return doApply();
 }
 
+/** Verify the signing authority for a single transaction or signer object.
+ *
+ *  Dispatches to one of four paths:
+ *  1. **Pseudo-account guard** — rejects with `tefBAD_AUTH` when
+ *     `featureLendingProtocol` is active and `idAccount` is a pseudo-account.
+ *  2. **Batch inner** — if `parentBatchId` is set and `featureBatch` is
+ *     active, asserts that no key/signature/signer-list is present (the
+ *     outer batch already authorised the inner transactions) and returns.
+ *  3. **Dry-run** — skips validation entirely when `TapDryRun` is set and
+ *     no signing key or signer list is present.
+ *  4. **Multi-sign** — if `sfSigners` is present, delegates to
+ *     `checkMultiSign`.
+ *  5. **Single-sign** — derives the signer account from the public key and
+ *     delegates to `checkSingleSign`.
+ *
+ *  @param view          Read-only ledger view for account lookups.
+ *  @param flags         Apply flags (checked for `TapDryRun`).
+ *  @param parentBatchId Set when this is an inner batch transaction.
+ *  @param idAccount     The account whose signing authority is being checked
+ *      (may be the delegate account when `sfDelegate` is present).
+ *  @param sigObject     The STObject carrying signing fields (`sfSigningPubKey`,
+ *      `sfTxnSignature`, `sfSigners`).
+ *  @param j             Journal for diagnostic logging.
+ *  @return `tesSUCCESS` if the signing authority is valid;
+ *      `tefBAD_AUTH`, `tefMASTER_DISABLED`, `tefNOT_MULTI_SIGNING`,
+ *      `tefBAD_QUORUM`, `temINVALID_FLAG`, or `terNO_ACCOUNT` otherwise.
+ */
 NotTEC
 Transactor::checkSign(
     ReadView const& view,
@@ -678,10 +887,9 @@ Transactor::checkSign(
     }
 
     auto const pkSigner = sigObject.getFieldVL(sfSigningPubKey);
-    // Ignore signature check on batch inner transactions
     if (parentBatchId && view.rules().enabled(featureBatch))
     {
-        // Defensive Check: These values are also checked in Batch::preflight
+        // Defensive: also checked in Batch::preflight, but guard here too.
         if (sigObject.isFieldPresent(sfTxnSignature) || !pkSigner.empty() ||
             sigObject.isFieldPresent(sfSigners))
         {
@@ -692,19 +900,14 @@ Transactor::checkSign(
 
     if (((flags & TapDryRun) != 0u) && pkSigner.empty() && !sigObject.isFieldPresent(sfSigners))
     {
-        // simulate: skip signature validation when neither SigningPubKey nor
-        // Signers are provided
         return tesSUCCESS;
     }
 
-    // If the pk is empty and not simulate or simulate and signers,
-    // then we must be multi-signing.
     if (sigObject.isFieldPresent(sfSigners))
     {
         return checkMultiSign(view, flags, idAccount, sigObject, j);
     }
 
-    // Check Single Sign
     XRPL_ASSERT(!pkSigner.empty(), "xrpl::Transactor::checkSign : non-empty signer");
 
     if (!publicKeyType(makeSlice(pkSigner)))
@@ -722,6 +925,14 @@ Transactor::checkSign(
     return checkSingleSign(view, idSigner, idAccount, sleAccount, j);
 }
 
+/** Convenience overload that extracts signing context from a `PreclaimContext`.
+ *
+ *  When `sfDelegate` is present, the signing identity is the delegate account;
+ *  otherwise it is `sfAccount`.  Forwards to the full `checkSign` overload.
+ *
+ *  @param ctx Preclaim context carrying the view, flags, and transaction.
+ *  @return The result of the underlying `checkSign` call.
+ */
 NotTEC
 Transactor::checkSign(PreclaimContext const& ctx)
 {
@@ -730,6 +941,20 @@ Transactor::checkSign(PreclaimContext const& ctx)
     return checkSign(ctx.view, ctx.flags, ctx.parentBatchId, idAccount, ctx.tx, ctx.j);
 }
 
+/** Verify the `sfBatchSigners` array on the outer Batch transaction.
+ *
+ *  Iterates each entry in `sfBatchSigners`.  An entry with an empty
+ *  `sfSigningPubKey` is validated as multi-sign; an entry with a non-empty
+ *  key is validated as single-sign.  A special case allows a signer whose
+ *  account does not yet exist in the ledger, provided the signing key
+ *  derives to that account (master key) — this permits a Batch to fund an
+ *  account creation as part of the same bundle.
+ *
+ *  @param ctx Preclaim context with read-only view, flags, and transaction.
+ *  @return `tesSUCCESS` if every batch signer is valid;
+ *      `tefBAD_AUTH`, `tefMASTER_DISABLED`, `tefNOT_MULTI_SIGNING`, or
+ *      `tefBAD_QUORUM` if any signer fails validation.
+ */
 NotTEC
 Transactor::checkBatchSign(PreclaimContext const& ctx)
 {
@@ -774,6 +999,22 @@ Transactor::checkBatchSign(PreclaimContext const& ctx)
     return ret;
 }
 
+/** Verify that a single-signature key is authorised for `idAccount`.
+ *
+ *  Applies three precedence rules in order:
+ *  1. Regular key: if `sfRegularKey` is set and equals `idSigner`, accept.
+ *  2. Enabled master key: if master is not disabled and `idAccount == idSigner`, accept.
+ *  3. Disabled master key: if master is disabled and `idAccount == idSigner`, reject with
+ *     `tefMASTER_DISABLED`.
+ *  Any other key returns `tefBAD_AUTH`.
+ *
+ *  @param view       Read-only ledger view (unused after caller reads `sleAccount`).
+ *  @param idSigner   AccountID derived from the transaction's signing public key.
+ *  @param idAccount  The account whose authority is being checked.
+ *  @param sleAccount The account root SLE for `idAccount`.
+ *  @param j          Journal for diagnostic logging.
+ *  @return `tesSUCCESS`, `tefMASTER_DISABLED`, or `tefBAD_AUTH`.
+ */
 NotTEC
 Transactor::checkSingleSign(
     ReadView const& view,
@@ -784,28 +1025,43 @@ Transactor::checkSingleSign(
 {
     bool const isMasterDisabled = sleAccount->isFlag(lsfDisableMaster);
 
-    // Signed with regular key.
     if ((*sleAccount)[~sfRegularKey] == idSigner)
-    {
         return tesSUCCESS;
-    }
 
-    // Signed with enabled master key.
     if (!isMasterDisabled && idAccount == idSigner)
-    {
         return tesSUCCESS;
-    }
 
-    // Signed with disabled master key.
     if (isMasterDisabled && idAccount == idSigner)
-    {
         return tefMASTER_DISABLED;
-    }
 
-    // Signed with any other key.
     return tefBAD_AUTH;
 }
 
+/** Verify a multi-signature against the account's registered signer list.
+ *
+ *  Performs a linear merge of the sorted `sfSigners` array from `sigObject`
+ *  against the account's sorted `SignerEntry` list, validating each signer
+ *  under three rules (established January 2015):
+ *  - **Phantom account**: `idSigner == txSignerAcctID` and no account root
+ *    in the ledger — always accepted.
+ *  - **Master key**: `idSigner == txSignerAcctID` and account root present
+ *    — accepted unless `lsfDisableMaster` is set.
+ *  - **Regular key**: `idSigner != txSignerAcctID` and account root present
+ *    — accepted only if `idSigner == sfRegularKey` on the account root.
+ *
+ *  Accumulates weights; fails with `tefBAD_QUORUM` if the total falls below
+ *  `sfSignerQuorum`.  All signers must be valid — the first invalid entry
+ *  short-circuits with a `tef*` error.
+ *
+ *  @param view      Read-only ledger view for account and signer-list lookups.
+ *  @param flags     Apply flags (checked for `TapDryRun` simulation mode).
+ *  @param id        The account whose `SignerList` is consulted.
+ *  @param sigObject The STObject carrying the `sfSigners` array.
+ *  @param j         Journal for diagnostic logging.
+ *  @return `tesSUCCESS` if quorum is met and all signers are valid;
+ *      `tefNOT_MULTI_SIGNING` if no signer list exists;
+ *      `tefBAD_SIGNATURE`, `tefMASTER_DISABLED`, or `tefBAD_QUORUM` otherwise.
+ */
 NotTEC
 Transactor::checkMultiSign(
     ReadView const& view,
@@ -814,17 +1070,14 @@ Transactor::checkMultiSign(
     STObject const& sigObject,
     beast::Journal const j)
 {
-    // Get id's SignerList and Quorum.
     std::shared_ptr<STLedgerEntry const> const sleAccountSigners = view.read(keylet::signers(id));
-    // If the signer list doesn't exist the account is not multi-signing.
     if (!sleAccountSigners)
     {
         JLOG(j.trace()) << "applyTransaction: Invalid: Not a multi-signing account.";
         return tefNOT_MULTI_SIGNING;
     }
 
-    // We have plans to support multiple SignerLists in the future.  The
-    // presence and defaulted value of the SignerListID field will enable that.
+    // SignerListID == 0 is reserved for future multi-list support.
     XRPL_ASSERT(
         sleAccountSigners->isFieldPresent(sfSignerListID),
         "xrpl::Transactor::checkMultiSign : has signer list ID");
@@ -836,22 +1089,14 @@ Transactor::checkMultiSign(
     if (!accountSigners)
         return accountSigners.error();
 
-    // Get the array of transaction signers.
     STArray const& txSigners(sigObject.getFieldArray(sfSigners));
 
-    // Walk the accountSigners performing a variety of checks and see if
-    // the quorum is met.
-
-    // Both the multiSigners and accountSigners are sorted by account.  So
-    // matching multi-signers to account signers should be a simple
-    // linear walk.  *All* signers must be valid or the transaction fails.
     std::uint32_t weightSum = 0;
     auto iter = accountSigners->begin();
     for (auto const& txSigner : txSigners)
     {
         AccountID const txSignerAcctID = txSigner.getAccountID(sfAccount);
 
-        // Attempt to match the SignerEntry with a Signer;
         while (iter->account < txSignerAcctID)
         {
             if (++iter == accountSigners->end())
@@ -862,18 +1107,13 @@ Transactor::checkMultiSign(
         }
         if (iter->account != txSignerAcctID)
         {
-            // The SigningAccount is not in the SignerEntries.
             JLOG(j.trace()) << "applyTransaction: Invalid SigningAccount.Account.";
             return tefBAD_SIGNATURE;
         }
 
-        // We found the SigningAccount in the list of valid signers.  Now we
-        // need to compute the accountID that is associated with the signer's
-        // public key.
         auto const spk = txSigner.getFieldVL(sfSigningPubKey);
 
-        // spk being non-empty in non-simulate is checked in
-        // STTx::checkMultiSign
+        // spk non-empty in non-simulate mode is enforced by STTx::checkMultiSign.
         if (!spk.empty() && !publicKeyType(makeSlice(spk)))
         {
             JLOG(j.trace()) << "checkMultiSign: signing public key type is unknown";
@@ -887,39 +1127,13 @@ Transactor::checkMultiSign(
         AccountID const signingAcctIDFromPubKey =
             spk.empty() ? txSignerAcctID : calcAccountID(PublicKey(makeSlice(spk)));
 
-        // Verify that the signingAcctID and the signingAcctIDFromPubKey
-        // belong together.  Here are the rules:
-        //
-        //   1. "Phantom account": an account that is not in the ledger
-        //      A. If signingAcctID == signingAcctIDFromPubKey and the
-        //         signingAcctID is not in the ledger then we have a phantom
-        //         account.
-        //      B. Phantom accounts are always allowed as multi-signers.
-        //
-        //   2. "Master Key"
-        //      A. signingAcctID == signingAcctIDFromPubKey, and signingAcctID
-        //         is in the ledger.
-        //      B. If the signingAcctID in the ledger does not have the
-        //         asfDisableMaster flag set, then the signature is allowed.
-        //
-        //   3. "Regular Key"
-        //      A. signingAcctID != signingAcctIDFromPubKey, and signingAcctID
-        //         is in the ledger.
-        //      B. If signingAcctIDFromPubKey == signingAcctID.RegularKey (from
-        //         ledger) then the signature is allowed.
-        //
-        // No other signatures are allowed.  (January 2015)
-
-        // In any of these cases we need to know whether the account is in
-        // the ledger.  Determine that now.
         auto const sleTxSignerRoot = view.read(keylet::account(txSignerAcctID));
 
         if (signingAcctIDFromPubKey == txSignerAcctID)
         {
-            // Either Phantom or Master.  Phantoms automatically pass.
+            // Phantom (no account root) or Master Key.  Phantoms pass automatically.
             if (sleTxSignerRoot)
             {
-                // Master Key.  Account may not have asfDisableMaster set.
                 std::uint32_t const signerAccountFlags = sleTxSignerRoot->getFieldU32(sfFlags);
 
                 if ((signerAccountFlags & lsfDisableMaster) != 0u)
@@ -931,8 +1145,7 @@ Transactor::checkMultiSign(
         }
         else
         {
-            // May be a Regular Key.  Let's find out.
-            // Public key must hash to the account's regular key.
+            // Regular Key: public key must hash to the account's sfRegularKey.
             if (!sleTxSignerRoot)
             {
                 JLOG(j.trace()) << "applyTransaction: Non-phantom signer "
@@ -951,23 +1164,31 @@ Transactor::checkMultiSign(
                 return tefBAD_SIGNATURE;
             }
         }
-        // The signer is legitimate.  Add their weight toward the quorum.
         weightSum += iter->weight;
     }
 
-    // Cannot perform transaction if quorum is not met.
     if (weightSum < sleAccountSigners->getFieldU32(sfSignerQuorum))
     {
         JLOG(j.trace()) << "applyTransaction: Signers failed to meet quorum.";
         return tefBAD_QUORUM;
     }
 
-    // Met the quorum.  Continue.
     return tesSUCCESS;
 }
 
 //------------------------------------------------------------------------------
 
+/** Delete up to `kUNFUNDED_OFFER_REMOVE_LIMIT` unfunded offers from the ledger.
+ *
+ *  Called after a `tecOVERSIZE` or `tecKILLED` failure to clean up offers
+ *  that were identified as unfunded during the failed transaction's execution.
+ *  Offer deletion is capped to avoid unbounded ledger growth from a single
+ *  failed transaction.
+ *
+ *  @param view   Mutable ledger view to apply deletions against.
+ *  @param offers Indices of offers to attempt to delete.
+ *  @param viewJ  Journal for logging inside `offerDelete`.
+ */
 static void
 removeUnfundedOffers(ApplyView& view, std::vector<uint256> const& offers, beast::Journal viewJ)
 {
@@ -985,6 +1206,15 @@ removeUnfundedOffers(ApplyView& view, std::vector<uint256> const& offers, beast:
     }
 }
 
+/** Delete up to `kEXPIRED_OFFER_REMOVE_LIMIT` expired NFToken offers.
+ *
+ *  Called after a `tecEXPIRED` failure to remove NFToken offers that were
+ *  found to have expired during the failed transaction's execution.
+ *
+ *  @param view   Mutable ledger view to apply deletions against.
+ *  @param offers Indices of NFToken offer SLEs to attempt to delete.
+ *  @param viewJ  Journal for logging inside `nft::deleteTokenOffer`.
+ */
 static void
 removeExpiredNFTokenOffers(
     ApplyView& view,
@@ -1004,6 +1234,16 @@ removeExpiredNFTokenOffers(
     }
 }
 
+/** Delete all expired credential SLEs collected during a failed transaction.
+ *
+ *  Called after a `tecEXPIRED` failure.  Unlike the offer-removal helpers
+ *  there is no cap on the number of credentials removed; any deletion
+ *  failure is logged but does not abort the loop.
+ *
+ *  @param view  Mutable ledger view to apply deletions against.
+ *  @param creds Indices of credential SLEs to attempt to delete.
+ *  @param viewJ Journal for error logging on deletion failures.
+ */
 static void
 removeExpiredCredentials(ApplyView& view, std::vector<uint256> const& creds, beast::Journal viewJ)
 {
@@ -1021,6 +1261,16 @@ removeExpiredCredentials(ApplyView& view, std::vector<uint256> const& creds, bea
     }
 }
 
+/** Delete obsolete AMM trust lines collected during a `tecINCOMPLETE` failure.
+ *
+ *  Called to clean up `ltRIPPLE_STATE` entries that were deleted during the
+ *  failed transaction's execution but must still be removed from the ledger.
+ *  Aborts without deletion if the count exceeds `kMAX_DELETABLE_AMM_TRUST_LINES`.
+ *
+ *  @param view       Mutable ledger view to apply deletions against.
+ *  @param trustLines Indices of trust-line SLEs to attempt to delete.
+ *  @param viewJ      Journal for error logging on deletion failures.
+ */
 static void
 removeDeletedTrustLines(
     ApplyView& view,
@@ -1044,10 +1294,21 @@ removeDeletedTrustLines(
     }
 }
 
+/** Delete obsolete AMM MPToken holders collected during a `tecINCOMPLETE` failure.
+ *
+ *  Called alongside `removeDeletedTrustLines` to clean up `ltMPTOKEN` entries
+ *  for each side of an AMM pool.  At most two MPTs can be present (one per
+ *  pool asset); a count exceeding two indicates an unexpected state and
+ *  is logged as an error without applying any deletions.
+ *
+ *  @param view  Mutable ledger view to apply deletions against.
+ *  @param mpts  Indices of MPToken SLEs to attempt to delete.
+ *  @param viewJ Journal for error logging on deletion failures.
+ */
 static void
 removeDeletedMPTs(ApplyView& view, std::vector<uint256> const& mpts, beast::Journal viewJ)
 {
-    // There could be at most two MPTs - one for each side of AMM pool
+    // At most two MPTs — one per side of the AMM pool.
     if (mpts.size() > 2)
     {
         JLOG(viewJ.error()) << "removeDeletedMPTs: deleted mpts exceed 2 " << mpts.size();
@@ -1064,10 +1325,24 @@ removeDeletedMPTs(ApplyView& view, std::vector<uint256> const& mpts, beast::Jour
     }
 }
 
-/** Reset the context, discarding any changes made and adjust the fee.
-
-    @param fee The transaction fee to be charged.
-    @return A pair containing the transaction result and the actual fee charged.
+/** Discard all ledger mutations and re-apply only the fee and sequence.
+ *
+ *  Calls `ctx_.discard()` to roll back every change made during `doApply`,
+ *  then re-deducts the fee from the fee-payer and re-consumes the sequence
+ *  or ticket.  If the fee exceeds the payer's current balance (possible
+ *  when multiple in-flight transactions over-commit the same account), the
+ *  fee is clamped to the remaining balance.
+ *
+ *  This is the mechanism that ensures a failing `tec*` transaction always
+ *  charges its fee even when the account's balance was over-committed by
+ *  other transactions evaluated against the same static `ReadView`.
+ *
+ *  @param fee The fee that should be charged; may be clamped downward.
+ *  @return A pair `{TER, actualFee}`.  `TER` is `tesSUCCESS` on success or
+ *      `tefINTERNAL` if the account or fee-payer SLE is unexpectedly absent.
+ *      `actualFee` is the fee after any clamping.
+ *  @note The fee is clamped only downward; it is never raised above what the
+ *      transaction declared in `sfFee`.
  */
 std::pair<TER, XRPAmount>
 Transactor::reset(XRPAmount fee)
@@ -1076,8 +1351,6 @@ Transactor::reset(XRPAmount fee)
 
     auto const txnAcct = view().peek(keylet::account(ctx_.tx.getAccountID(sfAccount)));
 
-    // The account should never be missing from the ledger.  But if it
-    // is missing then we can't very well charge it a fee, can we?
     if (!txnAcct)
         return {tefINTERNAL, beast::kZERO};
 
@@ -1087,23 +1360,16 @@ Transactor::reset(XRPAmount fee)
 
     auto const balance = payerSle->getFieldAmount(sfBalance).xrp();
 
-    // balance should have already been checked in checkFee / preFlight.
+    // balance should have already been checked in checkFee / preflight.
     XRPL_ASSERT(
         balance != beast::kZERO && (!view().open() || balance >= fee),
         "xrpl::Transactor::reset : valid balance");
 
-    // We retry/reject the transaction if the account balance is zero or
-    // we're applying against an open ledger and the balance is less than
-    // the fee
     if (fee > balance)
         fee = balance;
 
-    // Since we reset the context, we need to charge the fee and update
-    // the account's sequence number (or consume the Ticket) again.
-    //
-    // If for some reason we are unable to consume the ticket or sequence
-    // then the ledger is corrupted.  Rather than make things worse we
-    // reject the transaction.
+    // Re-deduct the fee and re-consume the sequence/ticket after discard.
+    // Failure here means ledger corruption — reject rather than making it worse.
     payerSle->setFieldAmount(sfBalance, balance - fee);
     TER const ter{consumeSeqProxy(txnAcct)};
     XRPL_ASSERT(isTesSuccess(ter), "xrpl::Transactor::reset : result is tesSUCCESS");
@@ -1118,26 +1384,45 @@ Transactor::reset(XRPAmount fee)
     return {ter, fee};
 }
 
-// The sole purpose of this function is to provide a convenient, named
-// location to set a breakpoint, to be used when replaying transactions.
+/** Named breakpoint location for replaying specific transactions in a debugger.
+ *
+ *  Does nothing except log the hash at debug level.  To replay a specific
+ *  transaction, set a breakpoint here and configure the node's trap-tx hash
+ *  via the `ServiceRegistry`.
+ *
+ *  @param txHash The hash of the trapped transaction, for logging.
+ */
 void
 Transactor::trapTransaction(uint256 txHash) const
 {
     JLOG(j_.debug()) << "Transaction trapped: " << txHash;
 }
 
+/** Run transaction-specific invariants over every modified ledger entry.
+ *
+ *  Two-phase execution:
+ *  1. Visits every SLE modified by this transaction via `visitInvariantEntry`.
+ *  2. Calls `finalizeInvariants` on the derived transactor to evaluate
+ *     accumulated state.
+ *
+ *  Any exception during either phase is caught and converted to
+ *  `tecINVARIANT_FAILED` to maintain determinism across validators.
+ *
+ *  @param result Tentative TER from transaction processing.
+ *  @param fee    Fee consumed by the transaction.
+ *  @return The original `result` if all invariants pass;
+ *      `tecINVARIANT_FAILED` otherwise.
+ */
 [[nodiscard]] TER
 Transactor::checkTransactionInvariants(TER result, XRPAmount fee)
 {
     try
     {
-        // Phase 1: visit modified entries
         ctx_.visit(
             [this](uint256 const&, bool isDelete, SLE::const_ref before, SLE::const_ref after) {
                 this->visitInvariantEntry(isDelete, before, after);
             });
 
-        // Phase 2: finalize
         if (!this->finalizeInvariants(ctx_.tx, result, fee, ctx_.view(), ctx_.journal))
         {
             JLOG(ctx_.journal.fatal()) <<                                             //
@@ -1160,18 +1445,28 @@ Transactor::checkTransactionInvariants(TER result, XRPAmount fee)
     return result;
 }
 
+/** Run both transaction-specific and protocol-level invariants.
+ *
+ *  Calls `checkTransactionInvariants` first (more specific — if these fail,
+ *  the transaction's core logic is wrong), then `ctx_.checkInvariants`
+ *  (broader protocol properties that must hold for any transaction).
+ *
+ *  Both layers always run; neither short-circuits the other.  If both
+ *  fail, `tefINVARIANT_FAILED` (the more severe code) is returned.
+ *
+ *  @param result Tentative TER from transaction processing.
+ *  @param fee    Fee consumed by the transaction.
+ *  @return The original `result` if all invariants pass;
+ *      `tecINVARIANT_FAILED` if either layer fails;
+ *      `tefINVARIANT_FAILED` if the protocol layer returns that code.
+ */
 [[nodiscard]] TER
 Transactor::checkInvariants(TER result, XRPAmount fee)
 {
-    // Transaction invariants first (more specific). These check post-conditions of the specific
-    // transaction. If these fail, the transaction's core logic is wrong.
     auto const txResult = checkTransactionInvariants(result, fee);
-
-    // Protocol invariants second (broader). These check properties that must hold regardless of
-    // transaction type.
     auto const protoResult = ctx_.checkInvariants(result, fee);
 
-    // Fail if either check failed. tef (fatal) takes priority over tec.
+    // tefINVARIANT_FAILED is more severe than tec; it prevents ledger inclusion.
     if (protoResult == tefINVARIANT_FAILED)
         return tefINVARIANT_FAILED;
     if (txResult == tecINVARIANT_FAILED || protoResult == tecINVARIANT_FAILED)
@@ -1179,18 +1474,39 @@ Transactor::checkInvariants(TER result, XRPAmount fee)
 
     return result;
 }
+
 //------------------------------------------------------------------------------
+
+/** Execute the full apply phase and return a result with optional metadata.
+ *
+ *  Entry point for phase 3 of the transaction pipeline.  Orchestrates:
+ *  1. RAII guards for numeric arithmetic rules (`NumberSO`,
+ *     `CurrentTransactionRulesGuard`).
+ *  2. Debug-only serdes round-trip check to catch serialisation mismatches.
+ *  3. Optional `trapTransaction` breakpoint for replay debugging.
+ *  4. Calls `apply()` when `ctx_.preclaimResult` is `tesSUCCESS`.
+ *  5. Enforces `tecOVERSIZE` when metadata exceeds `kOVERSIZE_META_DATA_CAP`.
+ *  6. For `tapFAIL_HARD` + `tec*`: discards immediately, nothing is applied.
+ *  7. For `tecOVERSIZE`, `tecKILLED`, `tecINCOMPLETE`, `tecEXPIRED`: visits
+ *     the context diff to collect deleted objects, calls `reset()`, then runs
+ *     the appropriate targeted cleanup helpers.
+ *  8. Runs `checkInvariants`; on failure, resets to fee-only and re-checks
+ *     protocol invariants.
+ *  9. For `tapDRY_RUN`, forces `applied = false` unconditionally.
+ *
+ *  @return An `ApplyResult` containing the final `TER`, whether the
+ *      transaction was applied, and optional `TxMeta`.
+ *  @note `applied = true` means the context was committed via `ctx_.apply()`.
+ *      Dry-run mode computes all mutations but never commits them.
+ */
 ApplyResult
 Transactor::operator()()
 {
     JLOG(j_.trace()) << "apply: " << ctx_.tx.getTransactionID();
 
-    // These global updates really should have been for every Transaction
-    // step: preflight, preclaim, and doApply. And even calculateBaseFee. See
-    // with_txn_type().
-    //
-    // raii classes for the current ledger rules.
-    // fixUniversalNumber predate the rulesGuard and should be replaced.
+    // NumberSO and CurrentTransactionRulesGuard ideally should apply for every
+    // pipeline phase (preflight/preclaim/doApply); they were retrofitted here.
+    // See with_txn_type() for the full story.
     NumberSO const stNumberSO{view().rules().enabled(fixUniversalNumber)};
     CurrentTransactionRulesGuard const currentTransactionRulesGuard(view().rules());
 
@@ -1238,8 +1554,7 @@ Transactor::operator()()
 
     if (isTecClaim(result) && ((view().flags() & TapFailHard) != 0u))
     {
-        // If the tapFAIL_HARD flag is set, a tec result
-        // must not do anything
+        // tapFAIL_HARD: discard all mutations; fee is not charged.
         ctx_.discard();
         applied = false;
     }
@@ -1249,10 +1564,6 @@ Transactor::operator()()
     {
         JLOG(j_.trace()) << "reapplying because of " << transToken(result);
 
-        // FIXME: This mechanism for doing work while returning a `tec` is
-        //        awkward and very limiting. A more general purpose approach
-        //        should be used, making it possible to do more useful work
-        //        when transactions fail with a `tec` code.
         std::vector<uint256> removedOffers;
         std::vector<uint256> removedTrustLines;
         std::vector<uint256> removedMPTs;
@@ -1314,7 +1625,6 @@ Transactor::operator()()
             });
         }
 
-        // Reset the context, potentially adjusting the fee.
         {
             auto const resetResult = reset(fee);
             if (!isTesSuccess(resetResult.first))
@@ -1323,7 +1633,6 @@ Transactor::operator()()
             fee = resetResult.second;
         }
 
-        // If necessary, remove any offers found unfunded during processing
         if ((result == tecOVERSIZE) || (result == tecKILLED))
         {
             removeUnfundedOffers(view(), removedOffers, ctx_.registry.get().getJournal("View"));
@@ -1353,28 +1662,24 @@ Transactor::operator()()
 
     if (applied)
     {
-        // Check invariants: if `tecINVARIANT_FAILED` is not returned, we can
-        // proceed to apply the tx
         result = checkInvariants(result, fee);
         if (result == tecINVARIANT_FAILED)
         {
-            // Reset to fee-claim only
+            // Invariants failed: reset to fee-only claim and re-check protocol invariants.
             auto const resetResult = reset(fee);
             if (!isTesSuccess(resetResult.first))
                 result = resetResult.first;
 
             fee = resetResult.second;
 
-            // Check invariants again to ensure the fee claiming doesn't violate
-            // invariants. After reset, only protocol invariants are re-checked.
-            // Transaction invariants are not meaningful here — the transaction's
-            // effects have been rolled back.
+            // After reset, only protocol invariants are re-checked; transaction
+            // invariants are not meaningful once effects have been rolled back.
             if (isTesSuccess(result) || isTecClaim(result))
                 result = ctx_.checkInvariants(result, fee);
         }
 
-        // We ran through the invariant checker, which can, in some cases,
-        // return a tef error code. Don't apply the transaction in that case.
+        // A tef* from the invariant checker means the transaction cannot be
+        // applied at all — not even as a fee claim.
         if (!isTecClaim(result) && !isTesSuccess(result))
             applied = false;
     }
@@ -1382,23 +1687,17 @@ Transactor::operator()()
     std::optional<TxMeta> metadata;
     if (applied)
     {
-        // Transaction succeeded fully or (retries are not allowed and the
-        // transaction could claim a fee)
-
-        // The transactor and invariant checkers guarantee that this will
-        // *never* trigger but if it, somehow, happens, don't allow a tx
-        // that charges a negative fee.
+        // The transactor and invariant checkers guarantee this never triggers,
+        // but guard against it anyway — a negative fee must never be committed.
         if (fee < beast::kZERO)
             Throw<std::logic_error>("fee charged is negative!");
 
-        // Charge whatever fee they specified. The fee has already been
-        // deducted from the balance of the account that issued the
-        // transaction. We just need to account for it in the ledger
-        // header.
+        // Burn the fee in the closed ledger header (already deducted from the
+        // account balance above; this records it as destroyed XRP).
         if (!view().open() && fee != beast::kZERO)
             ctx_.destroyXRP(fee);
 
-        // Once we call apply, we will no longer be able to look at view()
+        // ctx_.apply() commits the view to base_; view() is invalid after this.
         metadata = ctx_.apply(result);
     }
 

@@ -1,3 +1,15 @@
+/** @file
+ *  Implements the `AMMClawback` transactor (XLS-73), which lets a regulated
+ *  token issuer forcibly withdraw their assets from a holder's AMM liquidity
+ *  position.
+ *
+ *  The transactor is a policy layer on top of `AMMWithdraw`: it decides *how
+ *  much* to withdraw and *where the assets go*, but delegates all AMM-state
+ *  mutation (constant-product math, LP-token burn, pool-balance update) to
+ *  `AMMWithdraw::equalWithdrawTokens` and `AMMWithdraw::withdraw`. The trading
+ *  fee is always zero because the withdrawal is not a voluntary trade.
+ */
+
 #include <xrpl/tx/transactors/dex/AMMClawback.h>
 
 #include <xrpl/basics/Log.h>
@@ -33,12 +45,14 @@
 
 namespace xrpl {
 
+/** @copydoc AMMClawback::getFlagsMask */
 std::uint32_t
 AMMClawback::getFlagsMask(PreflightContext const& ctx)
 {
     return tfAMMClawbackMask;
 }
 
+/** @copydoc AMMClawback::checkExtraFeatures */
 bool
 AMMClawback::checkExtraFeatures(xrpl::PreflightContext const& ctx)
 {
@@ -52,6 +66,7 @@ AMMClawback::checkExtraFeatures(xrpl::PreflightContext const& ctx)
          !ctx.tx[sfAsset2].holds<MPTIssue>());
 }
 
+/** @copydoc AMMClawback::preflight */
 NotTEC
 AMMClawback::preflight(PreflightContext const& ctx)
 {
@@ -100,6 +115,7 @@ AMMClawback::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
+/** @copydoc AMMClawback::preclaim */
 TER
 AMMClawback::preclaim(PreclaimContext const& ctx)
 {
@@ -122,8 +138,8 @@ AMMClawback::preclaim(PreclaimContext const& ctx)
     std::uint32_t const issuerFlagsIn = sleIssuer->getFieldU32(sfFlags);
     if (!ctx.view.rules().enabled(featureMPTokensV2))
     {
-        // If AllowTrustLineClawback is not set or NoFreeze is set, return no
-        // permission
+        // Pre-MPTv2: enforce IOU clawback flags eagerly. Once MPTv2 is live,
+        // per-asset checks via checkClawAsset (below) supersede this path.
         if (((issuerFlagsIn & lsfAllowTrustLineClawback) == 0u) ||
             ((issuerFlagsIn & lsfNoFreeze) != 0u))
         {
@@ -157,6 +173,7 @@ AMMClawback::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+/** @copydoc AMMClawback::doApply */
 TER
 AMMClawback::doApply()
 {
@@ -169,6 +186,35 @@ AMMClawback::doApply()
     return ter;
 }
 
+/** Core clawback logic, executed inside a `Sandbox`.
+ *
+ *  Selects between two withdrawal paths based on whether `sfAmount` is
+ *  present in the transaction:
+ *
+ *  - **No `sfAmount`**: Calls `AMMWithdraw::equalWithdrawTokens` with the
+ *    holder's entire LP token balance, liquidating the full position.
+ *  - **With `sfAmount`**: Delegates to `equalWithdrawMatchingOneAmount` to
+ *    compute the pool fraction corresponding to the requested asset1 cap.
+ *
+ *  Both paths pass a trading fee of `0`. The AMM fee compensates LPs for
+ *  impermanent loss on voluntary swaps; charging it here would make a
+ *  regulatory clawback more expensive for the issuer without economic
+ *  justification.
+ *
+ *  When `fixAMMClawbackRounding` is active, `verifyAndAdjustLPTokenBalance`
+ *  is called before withdrawal to correct accumulated floating-point drift
+ *  in the AMM's `LPTokenBalance` field. The LP balance is re-read afterward
+ *  because the helper may have updated the ledger entry.
+ *
+ *  After withdrawal, `AMMWithdraw::deleteAMMAccountIfEmpty` tears down the
+ *  AMM object and its pseudo-account if all LP tokens have been burned.
+ *  The recovered asset1 is transferred from the holder to the issuer via
+ *  `directSendNoFee`. Asset2 is only transferred when `tfClawTwoAssets` is
+ *  set; otherwise it remains with the holder.
+ *
+ *  @param sb Sandbox accumulating all mutations for this transaction.
+ *  @return `tesSUCCESS` on success; a `tec*` error code on failure.
+ */
 TER
 AMMClawback::applyGuts(Sandbox& sb)
 {
@@ -217,16 +263,14 @@ AMMClawback::applyGuts(Sandbox& sb)
     STAmount amountWithdraw;
     std::optional<STAmount> amount2Withdraw;
 
-    // calling a second time on purpose since `verifyAndAdjustLPTokenBalance` rounds and may adjust
-    // the balance
+    // Re-read after the adjustment: verifyAndAdjustLPTokenBalance may have
+    // modified the AMM SLE, so the earlier lpTokenBalance snapshot is stale.
     auto const holdLPtokens = ammLPHolds(sb, *ammSle, holder, j_);
     if (holdLPtokens == beast::kZERO)
         return tecAMM_BALANCE;
 
     if (!clawAmount)
     {
-        // Because we are doing a two-asset withdrawal,
-        // tfee is actually not used, so pass tfee as 0.
         std::tie(result, newLPTokenBalance, amountWithdraw, amount2Withdraw) =
             AMMWithdraw::equalWithdrawTokens(
                 sb,
@@ -281,10 +325,6 @@ AMMClawback::applyGuts(Sandbox& sb)
     if (!isTesSuccess(ter))
         return ter;  // LCOV_EXCL_LINE
 
-    // if the issuer issues both assets and sets flag tfClawTwoAssets, we
-    // will claw the paired asset as well. We already checked if
-    // tfClawTwoAssets is enabled, the two assets have to be issued by the
-    // same issuer.
     if (!amount2Withdraw)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -295,6 +335,7 @@ AMMClawback::applyGuts(Sandbox& sb)
     return tesSUCCESS;
 }
 
+/** @copydoc AMMClawback::equalWithdrawMatchingOneAmount */
 std::tuple<TER, STAmount, STAmount, std::optional<STAmount>>
 AMMClawback::equalWithdrawMatchingOneAmount(
     Sandbox& sb,
@@ -313,9 +354,8 @@ AMMClawback::equalWithdrawMatchingOneAmount(
     auto const lpTokensWithdraw = toSTAmount(lptAMMBalance.asset(), lptAMMBalance * frac);
     if (lpTokensWithdraw > holdLPtokens)
     {
-        // if lptoken balance less than what the issuer intended to clawback,
-        // clawback all the tokens. Because we are doing a two-asset withdrawal,
-        // tfee is actually not used, so pass tfee as 0.
+        // Holder doesn't have enough LP tokens to cover sfAmount; fall back to
+        // a full clawback of whatever LP tokens the holder actually owns.
         return AMMWithdraw::equalWithdrawTokens(
             sb,
             ammSle,
@@ -367,8 +407,6 @@ AMMClawback::equalWithdrawMatchingOneAmount(
             ctx_.journal);
     }
 
-    // Because we are doing a two-asset withdrawal,
-    // tfee is actually not used, so pass tfee as 0.
     return AMMWithdraw::withdraw(
         sb,
         ammSle,
@@ -387,6 +425,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
         ctx_.journal);
 }
 
+/** @copydoc AMMClawback::visitInvariantEntry */
 void
 AMMClawback::visitInvariantEntry(
     bool,
@@ -396,6 +435,7 @@ AMMClawback::visitInvariantEntry(
     // No transaction-specific invariants yet (future work).
 }
 
+/** @copydoc AMMClawback::finalizeInvariants */
 bool
 AMMClawback::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {

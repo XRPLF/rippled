@@ -1,3 +1,15 @@
+/** @file
+ *  Implements the `NFTokenCancelOffer` transactor, which removes one or more
+ *  outstanding `NFTokenOffer` ledger objects in a single atomic transaction.
+ *
+ *  The three phases follow the standard transactor pattern: `preflight`
+ *  performs stateless list validation (size bounds, no duplicates), `preclaim`
+ *  checks per-offer cancellation rights on a read-only view, and `doApply`
+ *  calls `nft::deleteTokenOffer` to remove each offer and release its reserve.
+ *  Both `preclaim` and `doApply` silently skip offers that no longer exist,
+ *  making the operation idempotent when an offer is consumed between submission
+ *  and application.
+ */
 #include <xrpl/tx/transactors/nft/NFTokenCancelOffer.h>
 
 #include <xrpl/basics/Log.h>
@@ -47,25 +59,18 @@ NFTokenCancelOffer::preclaim(PreclaimContext const& ctx)
     auto ret = std::ranges::find_if(ids, [&ctx, &account](uint256 const& id) {
         auto const offer = ctx.view.read(keylet::child(id));
 
-        // If id is not in the ledger we assume the offer was consumed
-        // before we got here.
         if (!offer)
             return false;
 
-        // If id is in the ledger but is not an NFTokenOffer, then
-        // they have no permission.
         if (offer->getType() != ltNFTOKEN_OFFER)
             return true;
 
-        // Anyone can cancel, if expired
         if (hasExpired(ctx.view, (*offer)[~sfExpiration]))
             return false;
 
-        // The owner can always cancel
         if ((*offer)[sfOwner] == account)
             return false;
 
-        // The recipient can always cancel
         if (auto const dest = (*offer)[~sfDestination]; dest == account)
             return false;
 

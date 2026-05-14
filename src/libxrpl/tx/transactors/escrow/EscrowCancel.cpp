@@ -1,3 +1,12 @@
+/** @file
+ *  Implementation of the `EscrowCancel` transactor.
+ *
+ *  Handles the expiry-refund path of the escrow lifecycle: once the ledger's
+ *  parent close time has advanced past `sfCancelAfter`, any party may submit
+ *  an `EscrowCancel` to return the locked funds to the original escrow creator.
+ *  Supports XRP escrows (original design) and token escrows (IOU / MPT) gated
+ *  behind `featureTokenEscrow`.
+ */
 #include <xrpl/tx/transactors/escrow/EscrowCancel.h>
 
 #include <xrpl/basics/Log.h>
@@ -34,6 +43,18 @@ EscrowCancel::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Read-only authorization check for non-XRP escrow cancellations.
+ *
+ *  Primary template — no body; only the `Issue` and `MPTIssue` full
+ *  specializations are defined. Called via `std::visit` on the `Asset` variant
+ *  held by the escrow's `sfAmount`.
+ *
+ *  @tparam T Asset type; must be `Issue` (IOU) or `MPTIssue` (MPT).
+ *  @param ctx     Read-only preclaim context providing ledger access.
+ *  @param account Escrow creator (`sfAccount` on the escrow SLE).
+ *  @param amount  Escrowed token amount; its asset identifies the issuer.
+ *  @return `tesSUCCESS` if cancellation may proceed; a `tec` error otherwise.
+ */
 template <ValidIssueType T>
 static TER
 escrowCancelPreclaimHelper(
@@ -41,6 +62,18 @@ escrowCancelPreclaimHelper(
     AccountID const& account,
     STAmount const& amount);
 
+/** IOU specialization: verifies the escrow owner is still authorized by the issuer.
+ *
+ *  Authorization must remain valid at cancel time, not just at creation time.
+ *  The `issuer == account` case is impossible by construction but is guarded
+ *  defensively and marked unreachable for coverage purposes.
+ *
+ *  @param ctx     Read-only preclaim context.
+ *  @param account Escrow creator (`sfAccount` on the escrow SLE).
+ *  @param amount  Escrowed IOU amount.
+ *  @return `tesSUCCESS` if authorized; `tecINTERNAL` if issuer equals account
+ *          (unreachable); a `requireAuth` error if authorization was revoked.
+ */
 template <>
 TER
 escrowCancelPreclaimHelper<Issue>(
@@ -49,17 +82,31 @@ escrowCancelPreclaimHelper<Issue>(
     STAmount const& amount)
 {
     AccountID const& issuer = amount.getIssuer();
-    // If the issuer is the same as the account, return tecINTERNAL
     if (issuer == account)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    // If the issuer has requireAuth set, check if the account is authorized
     if (auto const ter = requireAuth(ctx.view, amount.get<Issue>(), account); !isTesSuccess(ter))
         return ter;
 
     return tesSUCCESS;
 }
 
+/** MPT specialization: verifies the MPT issuance still exists and the escrow
+ *  owner remains authorized to hold it.
+ *
+ *  Unlike the IOU path, an MPT issuance can be deleted while an escrow
+ *  referencing it is still open; this check surfaces that condition early.
+ *  Authorization uses `AuthType::WeakAuth` because MPTs operate under a less
+ *  strict per-transaction approval model than IOU trust lines.
+ *
+ *  @param ctx     Read-only preclaim context.
+ *  @param account Escrow creator (`sfAccount` on the escrow SLE).
+ *  @param amount  Escrowed MPT amount.
+ *  @return `tesSUCCESS` if authorized; `tecINTERNAL` if issuer equals account
+ *          (unreachable); `tecOBJECT_NOT_FOUND` if the MPT issuance was
+ *          deleted after the escrow was created; a `requireAuth` error if
+ *          weak authorization is denied.
+ */
 template <>
 TER
 escrowCancelPreclaimHelper<MPTIssue>(
@@ -68,18 +115,14 @@ escrowCancelPreclaimHelper<MPTIssue>(
     STAmount const& amount)
 {
     AccountID const issuer = amount.getIssuer();
-    // If the issuer is the same as the account, return tecINTERNAL
     if (issuer == account)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    // If the mpt does not exist, return tecOBJECT_NOT_FOUND
     auto const issuanceKey = keylet::mptIssuance(amount.get<MPTIssue>().getMptID());
     auto const sleIssuance = ctx.view.read(issuanceKey);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    // If the issuer has requireAuth set, check if the account is
-    // authorized
     auto const& mptIssue = amount.get<MPTIssue>();
     if (auto const ter = requireAuth(ctx.view, mptIssue, account, AuthType::WeakAuth);
         !isTesSuccess(ter))
@@ -130,17 +173,15 @@ EscrowCancel::doApply()
 
     auto const now = ctx_.view().header().parentCloseTime;
 
-    // No cancel time specified: can't execute at all.
+    // Escrows with no sfCancelAfter can never be cancelled.
     if (!(*slep)[~sfCancelAfter])
         return tecNO_PERMISSION;
 
-    // Too soon: can't execute before the cancel time.
     if (!after(now, (*slep)[sfCancelAfter]))
         return tecNO_PERMISSION;
 
     AccountID const account = (*slep)[sfAccount];
 
-    // Remove escrow from owner directory
     {
         auto const page = (*slep)[sfOwnerNode];
         if (!ctx_.view().dirRemove(keylet::ownerDir(account), page, k.key, true))
@@ -152,7 +193,6 @@ EscrowCancel::doApply()
         }
     }
 
-    // Remove escrow from recipient's owner directory, if present.
     if (auto const optPage = (*slep)[~sfDestinationNode]; optPage)
     {
         if (!ctx_.view().dirRemove(keylet::ownerDir((*slep)[sfDestination]), *optPage, k.key, true))
@@ -167,7 +207,6 @@ EscrowCancel::doApply()
     auto const sle = ctx_.view().peek(keylet::account(account));
     STAmount const amount = slep->getFieldAmount(sfAmount);
 
-    // Transfer amount back to the owner
     if (isXRP(amount))
     {
         (*sle)[sfBalance] = (*sle)[sfBalance] + amount;
@@ -197,7 +236,7 @@ EscrowCancel::doApply()
             !isTesSuccess(ret))
             return ret;  // LCOV_EXCL_LINE
 
-        // Remove escrow from issuers owner directory, if present.
+        // Non-XRP escrows also carry an sfIssuerNode directory entry.
         if (auto const optPage = (*slep)[~sfIssuerNode]; optPage)
         {
             if (!ctx_.view().dirRemove(keylet::ownerDir(issuer), *optPage, k.key, true))
@@ -213,7 +252,6 @@ EscrowCancel::doApply()
     adjustOwnerCount(ctx_.view(), sle, -1, ctx_.journal);
     ctx_.view().update(sle);
 
-    // Remove escrow from ledger
     ctx_.view().erase(slep);
 
     return tesSUCCESS;

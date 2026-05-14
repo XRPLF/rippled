@@ -19,12 +19,32 @@
 
 namespace xrpl {
 
+/** Gate `sfDomainID` on the `featurePermissionedDomains` amendment.
+ *
+ *  Allows domain support to be deployed independently of vault support: a
+ *  network that has vaults but not permissioned domains will reject any
+ *  `VaultSet` that tries to set `sfDomainID`, while all other `VaultSet`
+ *  transactions continue to work normally.
+ */
 bool
 VaultSet::checkExtraFeatures(PreflightContext const& ctx)
 {
     return !ctx.tx.isFieldPresent(sfDomainID) || ctx.rules.enabled(featurePermissionedDomains);
 }
 
+/** Validate transaction fields without ledger access.
+ *
+ *  Checks are ordered from cheapest to most specific:
+ *  1. `sfVaultID` must be non-zero — a zero ID cannot address any real vault.
+ *  2. `sfData`, if present, must be non-empty and within `kMAX_DATA_PAYLOAD_LENGTH`.
+ *  3. `sfAssetsMaximum`, if present, must be non-negative (zero means no cap).
+ *  4. At least one mutable field must be present — a no-op transaction is
+ *     rejected as `temMALFORMED` to prevent fee-burning with no ledger effect.
+ *
+ *  The cap-vs-total comparison (`tecLIMIT_EXCEEDED`) cannot be done here
+ *  because `sfAssetsTotal` is only readable from the ledger; that check lives
+ *  in `doApply`.
+ */
 NotTEC
 VaultSet::preflight(PreflightContext const& ctx)
 {
@@ -62,6 +82,25 @@ VaultSet::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Read-only ownership and consistency checks after signature verification.
+ *
+ *  Checks are ordered to fail as early as possible on the cheapest condition:
+ *  1. Vault existence — `tecNO_ENTRY` if the vault SLE is absent.
+ *  2. Ownership — `tecNO_PERMISSION` if submitter is not `sfOwner`.
+ *  3. Issuance existence — `tefINTERNAL` if the vault's `MPTokenIssuance` is
+ *     missing.  This path is covered by `LCOV_EXCL_*` because `VaultCreate`
+ *     and the `ValidVault` invariant checker together ensure a vault always
+ *     has a corresponding issuance; reaching this branch implies ledger
+ *     corruption, not a user error.
+ *  4. Domain checks (only when `sfDomainID` is present in the transaction):
+ *     - `lsfVaultPrivate` must be set on the vault (`tecNO_PERMISSION`);
+ *       domain restrictions can only be applied to private vaults.
+ *     - A non-zero domain hash must resolve to an existing
+ *       `PermissionedDomain` object (`tecOBJECT_NOT_FOUND`).
+ *     - `lsfMPTRequireAuth` must be set on the issuance (`tefINTERNAL`);
+ *       this flag is enforced at `VaultCreate` time for private vaults, so
+ *       its absence indicates ledger corruption (also `LCOV_EXCL_*`).
+ */
 TER
 VaultSet::preclaim(PreclaimContext const& ctx)
 {
@@ -88,7 +127,6 @@ VaultSet::preclaim(PreclaimContext const& ctx)
 
     if (auto const domain = ctx.tx[~sfDomainID])
     {
-        // We can only set domain if private flag was originally set
         if (!vault->isFlag(lsfVaultPrivate))
         {
             JLOG(ctx.j.debug()) << "VaultSet: vault is not private";
@@ -102,7 +140,6 @@ VaultSet::preclaim(PreclaimContext const& ctx)
                 return tecOBJECT_NOT_FOUND;
         }
 
-        // Sanity check only, this should be enforced by VaultCreate
         if ((sleIssuance->getFlags() & lsfMPTRequireAuth) == 0)
         {
             // LCOV_EXCL_START
@@ -115,6 +152,37 @@ VaultSet::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Apply vault configuration changes to the mutable ledger view.
+ *
+ *  Re-fetches the vault and its `MPTokenIssuance` via `view().peek()` to
+ *  obtain mutable SLE references, then applies updates in order:
+ *
+ *  **sfData**: written directly to the vault SLE when present.
+ *
+ *  **sfAssetsMaximum**: the ledger-state check that `preflight` cannot perform
+ *  happens here — if the requested cap is non-zero but less than the current
+ *  `sfAssetsTotal`, the transaction fails with `tecLIMIT_EXCEEDED`.  Zero is
+ *  the sentinel for "no cap" and always succeeds.
+ *
+ *  **sfDomainID**: written to (or removed from) the `MPTokenIssuance` SLE, NOT
+ *  the vault SLE.  The domain lives on the issuance because the MPT
+ *  authorization machinery (`lsfMPTRequireAuth`, `credentials::validDomain`)
+ *  operates at the issuance level; this avoids special-casing the vault layer
+ *  in the depositor authorization path.  A zero hash calls `makeFieldAbsent`
+ *  to clear the restriction compactly rather than storing a zero value.
+ *  Clearing the domain does not remove `lsfVaultPrivate` — once private,
+ *  always private (making a private vault public is not currently supported).
+ *
+ *  **view().update(vault)** is always called even when only the issuance
+ *  changed.  The `ValidVault` invariant checker inspects modified vault SLEs
+ *  to validate the operation; omitting the update would make it invisible to
+ *  the checker.
+ *
+ *  **associateAsset** is the final step and must remain last.  It re-rounds
+ *  all `STNumber` / `STTakesAsset`-derived fields in the vault SLE to the
+ *  precision of the vault's underlying asset type.  Calling it earlier would
+ *  produce silent precision corruption on any field written afterwards.
+ */
 TER
 VaultSet::doApply()
 {
@@ -124,7 +192,6 @@ VaultSet::doApply()
 
     auto const& tx = ctx_.tx;
 
-    // Update existing object.
     auto vault = view().peek(keylet::vault(tx[sfVaultID]));
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -141,7 +208,6 @@ VaultSet::doApply()
         // LCOV_EXCL_STOP
     }
 
-    // Update mutable flags and fields if given.
     if (tx.isFieldPresent(sfData))
         vault->at(sfData) = tx[sfData];
     if (tx.isFieldPresent(sfAssetsMaximum))
@@ -155,11 +221,6 @@ VaultSet::doApply()
     {
         if (*domainId != beast::kZERO)
         {
-            // In VaultSet::preclaim we enforce that lsfVaultPrivate must have
-            // been set in the vault. We currently do not support making such a
-            // vault public (i.e. removal of lsfVaultPrivate flag). The
-            // sfDomainID flag must be set in the MPTokenIssuance object and can
-            // be freely updated.
             sleIssuance->setFieldH256(sfDomainID, *domainId);
         }
         else if (sleIssuance->isFieldPresent(sfDomainID))
@@ -169,9 +230,6 @@ VaultSet::doApply()
         view().update(sleIssuance);
     }
 
-    // Note, we must update Vault object even if only DomainID is being updated
-    // in Issuance object. Otherwise it's really difficult for Vault invariants
-    // to verify the operation.
     view().update(vault);
 
     associateAsset(*vault, vaultAsset);

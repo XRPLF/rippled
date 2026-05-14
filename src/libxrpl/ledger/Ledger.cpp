@@ -1,3 +1,22 @@
+/** @file
+ *  Implements the `Ledger` class — the concrete, cryptographically-committed
+ *  snapshot of XRP Ledger global state at a single sequence number.
+ *
+ *  Responsibilities of this translation unit:
+ *  - All five `Ledger` constructor variants (genesis, successor, load,
+ *    header-only, database reconstruction).
+ *  - The mutable-→-immutable state machine (`setImmutable`, `setAccepted`).
+ *  - `setup()`: populating in-memory `fees_` and `rules_` from on-ledger SLEs,
+ *    including the old-integer vs. `featureXRPFees` drop-native format migration.
+ *  - Type-erased SHAMap iterator wrappers (`SlesIterImpl`, `TxsIterImpl`)
+ *    implementing `ReadView::detail::ReadViewFwdRange::iter_base`.
+ *  - Low-level raw mutation primitives (`rawInsert`, `rawReplace`, `rawErase`,
+ *    `rawTxInsert`) that directly manipulate `stateMap_` and `txMap_`.
+ *  - Two-tier skip-list maintenance (`updateSkipList`) for O(1) historical
+ *    hash lookup.
+ *  - Negative UNL read/write helpers (`negativeUNL`, `updateNegativeUNL`).
+ *  - Integrity checks (`walkLedger`, `isSensible`).
+ */
 #include <xrpl/ledger/Ledger.h>
 
 #include <xrpl/basics/Log.h>
@@ -50,6 +69,14 @@ CreateGenesisT const kCREATE_GENESIS{};
 
 //------------------------------------------------------------------------------
 
+/** Type-erased `SlesType::iter_base` implementation backed by a SHAMap iterator.
+ *
+ *  Wraps a `SHAMap::ConstIterator` and implements the polymorphic
+ *  `ReadViewFwdRange::iter_base` interface so callers can iterate state
+ *  entries via `ReadView::sles` without knowing the underlying storage type.
+ *  Each `dereference()` deserializes the raw SHAMap item into a freshly
+ *  allocated `SLE const`.
+ */
 class Ledger::SlesIterImpl : public SlesType::iter_base
 {
 private:
@@ -62,16 +89,23 @@ public:
 
     SlesIterImpl(SlesIterImpl const&) = default;
 
+    /** Construct from an existing SHAMap iterator position.
+     *
+     *  @param iter  Iterator into the ledger's `stateMap_`; may be
+     *      `begin()` or `end()`.
+     */
     SlesIterImpl(SHAMap::ConstIterator iter) : iter_(iter)
     {
     }
 
+    /** Return a heap-allocated copy of this iterator (value-semantics clone). */
     [[nodiscard]] std::unique_ptr<base_type>
     copy() const override
     {
         return std::make_unique<SlesIterImpl>(*this);
     }
 
+    /** Return `true` if `impl` is a `SlesIterImpl` at the same map position. */
     [[nodiscard]] bool
     equal(base_type const& impl) const override
     {
@@ -80,12 +114,14 @@ public:
         return false;
     }
 
+    /** Advance to the next SHAMap leaf. */
     void
     increment() override
     {
         ++iter_;
     }
 
+    /** Deserialize and return the current SHAMap item as an immutable `SLE`. */
     [[nodiscard]] SlesType::value_type
     dereference() const override
     {
@@ -96,9 +132,21 @@ public:
 
 //------------------------------------------------------------------------------
 
+/** Type-erased `TxsType::iter_base` implementation backed by a SHAMap iterator.
+ *
+ *  Wraps a `SHAMap::ConstIterator` over `txMap_` and implements the polymorphic
+ *  `ReadViewFwdRange::iter_base` interface for `ReadView::txs` traversal.
+ *
+ *  The `metadata_` flag captures whether the ledger was closed at iterator
+ *  construction time.  Closed ledgers store each item as
+ *  `addVL(txBytes) || addVL(metaBytes)`; open ledgers store only `txBytes`.
+ *  `dereference()` dispatches to `deserializeTxPlusMeta` or `deserializeTx`
+ *  accordingly — this dual-path deserialization is a protocol-level invariant.
+ */
 class Ledger::TxsIterImpl : public TxsType::iter_base
 {
 private:
+    /** `true` for closed ledgers (each item encodes tx + metadata). */
     bool metadata_;
     SHAMap::ConstIterator iter_;
 
@@ -109,16 +157,23 @@ public:
 
     TxsIterImpl(TxsIterImpl const&) = default;
 
+    /** Construct from a metadata flag and a SHAMap iterator position.
+     *
+     *  @param metadata  Pass `!ledger.open()` — `true` for closed ledgers.
+     *  @param iter      Iterator into the ledger's `txMap_`.
+     */
     TxsIterImpl(bool metadata, SHAMap::ConstIterator iter) : metadata_(metadata), iter_(iter)
     {
     }
 
+    /** Return a heap-allocated copy of this iterator (value-semantics clone). */
     [[nodiscard]] std::unique_ptr<base_type>
     copy() const override
     {
         return std::make_unique<TxsIterImpl>(*this);
     }
 
+    /** Return `true` if `impl` is a `TxsIterImpl` at the same map position. */
     [[nodiscard]] bool
     equal(base_type const& impl) const override
     {
@@ -127,12 +182,18 @@ public:
         return false;
     }
 
+    /** Advance to the next transaction SHAMap leaf. */
     void
     increment() override
     {
         ++iter_;
     }
 
+    /** Deserialize and return the current transaction, with metadata if closed.
+     *
+     *  Returns `{STTx, STObject}` for closed ledgers and `{STTx, nullptr}` for
+     *  open ones, reflecting the protocol wire format difference.
+     */
     [[nodiscard]] TxsType::value_type
     dereference() const override
     {
@@ -145,6 +206,15 @@ public:
 
 //------------------------------------------------------------------------------
 
+/** @see Ledger::Ledger(CreateGenesisT, Rules, Fees const&,
+ *       std::vector<uint256> const&, Family&) in Ledger.h for full contract.
+ *
+ *  The master account ID is derived as a `static` local — it is computed
+ *  exactly once per process from the well-known seed `"masterpassphrase"`.
+ *  The fee SLE uses drop-native `sfBaseFeeDrops` fields if `featureXRPFees`
+ *  is in `amendments`, and legacy integer fields otherwise; both paths must
+ *  remain valid for test environments that boot with modern amendments.
+ */
 Ledger::Ledger(
     CreateGenesisT,
     Rules rules,
@@ -162,6 +232,8 @@ Ledger::Ledger(
     header_.drops = kINITIAL_XRP;
     header_.closeTimeResolution = kLEDGER_GENESIS_TIME_RESOLUTION;
 
+    // The master account ID is consensus-critical and must be identical on
+    // every node; the static ensures the key derivation runs only once.
     static auto const kID =
         calcAccountID(generateKeyPair(KeyType::Secp256k1, generateSeed("masterpassphrase")).first);
     {
@@ -205,6 +277,15 @@ Ledger::Ledger(
     setImmutable();
 }
 
+/** @see Ledger::Ledger(LedgerHeader const&, bool&, bool, Rules, Fees const&,
+ *       Family&, beast::Journal) in Ledger.h for full contract.
+ *
+ *  `loaded` starts `true` and is set `false` on any of three failure
+ *  conditions: missing tx root, missing state root, or `setup()` detecting
+ *  a malformed fee SLE.  All three are checked independently so the caller
+ *  always gets a complete diagnosis in the journal.  When `!loaded && acquire`,
+ *  async acquisition is triggered only after the canonical hash is computed.
+ */
 Ledger::Ledger(
     LedgerHeader const& info,
     bool& loaded,
@@ -250,7 +331,14 @@ Ledger::Ledger(
     }
 }
 
-// Create a new ledger that follows this one
+/** @see Ledger::Ledger(Ledger const&, NetClock::time_point) in Ledger.h.
+ *
+ *  `stateMap_` is copy-on-write cloned from `prevLedger.stateMap_` so that
+ *  modifications to the new ledger do not touch the parent's nodes.
+ *  `txMap_` is freshly empty — no transactions have been applied yet.
+ *  The temporary `header_.hash = prevLedger.hash + 1` is a placeholder that
+ *  is replaced by the real hash when `setImmutable()` is called.
+ */
 Ledger::Ledger(Ledger const& prevLedger, NetClock::time_point closeTime)
     : immutable_(false)
     , txMap_(SHAMapType::TRANSACTION, prevLedger.txMap_.family())
@@ -278,6 +366,12 @@ Ledger::Ledger(Ledger const& prevLedger, NetClock::time_point closeTime)
     }
 }
 
+/** @see Ledger::Ledger(LedgerHeader const&, Rules, Family&) in Ledger.h.
+ *
+ *  Immediately computes `header_.hash` so callers can use this ledger as a
+ *  reference object (e.g. in validation pipelines) even though no SHAMap
+ *  nodes are fetched.
+ */
 Ledger::Ledger(LedgerHeader const& info, Rules rules, Family& family)
     : immutable_(true)
     , txMap_(SHAMapType::TRANSACTION, info.txHash, family)
@@ -289,6 +383,12 @@ Ledger::Ledger(LedgerHeader const& info, Rules rules, Family& family)
     header_.hash = calculateLedgerHash(header_);
 }
 
+/** @see Ledger::Ledger(uint32_t, NetClock::time_point, Rules, Fees const&,
+ *       Family&) in Ledger.h for full contract.
+ *
+ *  `setup()` is called immediately so that any state already loaded into
+ *  the empty maps (e.g. via `addSLE`) takes effect before the ledger is used.
+ */
 Ledger::Ledger(
     std::uint32_t ledgerSeq,
     NetClock::time_point closeTime,
@@ -308,6 +408,13 @@ Ledger::Ledger(
     setup();
 }
 
+/** @see Ledger::setImmutable(bool) in Ledger.h for full contract.
+ *
+ *  Hash computation is guarded by `!immutable_ && rehash` because once
+ *  `immutable_` is `true` the SHAMaps are locked and `getHash()` is safe to
+ *  call without the rehash branch.  `setup()` is always called last so
+ *  `fees_` and `rules_` reflect the final, committed state map.
+ */
 void
 Ledger::setImmutable(bool rehash)
 {
@@ -328,6 +435,14 @@ Ledger::setImmutable(bool rehash)
     setup();
 }
 
+/** @see Ledger::setAccepted(NetClock::time_point, NetClock::duration, bool)
+ *  in Ledger.h for full contract.
+ *
+ *  Sets `kS_LCF_NO_CONSENSUS_TIME` in `closeFlags` when `correctCloseTime`
+ *  is `false`, signalling that the network did not agree on a precise close
+ *  time.  Always delegates to `setImmutable()` to finalize hashes and lock
+ *  both SHAMaps.
+ */
 void
 Ledger::setAccepted(
     NetClock::time_point closeTime,
@@ -352,6 +467,14 @@ Ledger::addSLE(SLE const& sle)
 
 //------------------------------------------------------------------------------
 
+/** Deserialize a transaction-only SHAMap item (open-ledger format).
+ *
+ *  Open ledgers store the raw transaction bytes directly in the SHAMap item
+ *  with no metadata blob.  Each deserialization allocates a new `STTx`.
+ *
+ *  @param item  SHAMap leaf containing only serialized `STTx` bytes.
+ *  @return Shared pointer to the deserialized transaction.
+ */
 std::shared_ptr<STTx const>
 Ledger::deserializeTx(SHAMapItem const& item)
 {
@@ -359,6 +482,17 @@ Ledger::deserializeTx(SHAMapItem const& item)
     return std::make_shared<STTx const>(sit);
 }
 
+/** Deserialize a transaction + metadata SHAMap item (closed-ledger format).
+ *
+ *  Closed ledgers pack each item as `addVL(txBytes) || addVL(metaBytes)`.
+ *  The two variable-length fields are read sequentially from the same
+ *  `SerialIter`; the outer `sit` advances past the first VL prefix to reach
+ *  the second.
+ *
+ *  @param item  SHAMap leaf containing VL-prefixed tx followed by VL-prefixed
+ *      metadata.
+ *  @return Pair of `(STTx const*, STObject const*)` shared pointers.
+ */
 std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>
 Ledger::deserializeTxPlusMeta(SHAMapItem const& item)
 {
@@ -401,6 +535,14 @@ Ledger::succ(uint256 const& key, std::optional<uint256> const& last) const
     return item->key();
 }
 
+/** @see Ledger::read(Keylet const&) in Ledger.h for full contract.
+ *
+ *  The zero-key guard is a programming-error trap: a zero keylet indicates a
+ *  bug in the caller's key computation, so `UNREACHABLE` fires in debug builds
+ *  and `nullptr` is returned in release builds to prevent a corrupt SHAMap
+ *  lookup.  The `k.check()` call validates that the deserialized SLE type
+ *  matches the keylet type before handing back the pointer.
+ */
 std::shared_ptr<SLE const>
 Ledger::read(Keylet const& k) const
 {
@@ -523,6 +665,12 @@ Ledger::rawReplace(std::shared_ptr<SLE> const& sle)
     }
 }
 
+/** @see Ledger::rawTxInsert(uint256 const&, ...) in Ledger.h for full contract.
+ *
+ *  Encodes the item as `addVL(txBytes) || addVL(metaBytes)` — the closed-ledger
+ *  wire format consumed by `deserializeTxPlusMeta`.  The `+16` in the initial
+ *  capacity accounts for the two VL-length prefix bytes plus padding.
+ */
 void
 Ledger::rawTxInsert(
     uint256 const& key,
@@ -531,7 +679,6 @@ Ledger::rawTxInsert(
 {
     XRPL_ASSERT(metaData, "xrpl::Ledger::rawTxInsert : non-null metadata input");
 
-    // low-level - just add to table
     Serializer s(txn->getDataLength() + metaData->getDataLength() + 16);
     s.addVL(txn->peekData());
     s.addVL(metaData->peekData());
@@ -539,6 +686,20 @@ Ledger::rawTxInsert(
         logicError("duplicate_tx: " + to_string(key));
 }
 
+/** @see Ledger::setup() (private) in Ledger.h for the contract summary.
+ *
+ *  Fee-format migration logic: the on-ledger `keylet::fees()` SLE may carry
+ *  either old-style integer fields (`sfBaseFee` as `uint64`, `sfReserveBase`
+ *  as `uint32`) or new-style drop-native `STAmount` fields (`sfBaseFeeDrops`,
+ *  etc., gated by `featureXRPFees`).  Both sets are probed independently so
+ *  the validation can distinguish "neither present" (OK), "one present" (OK),
+ *  and "both present" (malformed → `ret = false`).  A new-format field found
+ *  before `featureXRPFees` is enabled is also treated as malformed.
+ *
+ *  `SHAMapMissingNode` from either `makeRulesGivenLedger` or the fee read is
+ *  caught and mapped to `ret = false`; other exceptions are re-thrown after
+ *  logging because they indicate a programming or data-integrity error.
+ */
 bool
 Ledger::setup()
 {
@@ -635,6 +796,13 @@ Ledger::peek(Keylet const& k) const
     return sle;
 }
 
+/** @see Ledger::negativeUNL() in Ledger.h for full contract.
+ *
+ *  Each `sfDisabledValidator` inner object is validated via `publicKeyType`
+ *  before insertion.  Entries with an unrecognised key type are silently
+ *  skipped rather than causing an error, preserving forward compatibility
+ *  if a future key type is introduced.
+ */
 hash_set<PublicKey>
 Ledger::negativeUNL() const
 {
@@ -688,6 +856,17 @@ Ledger::validatorToReEnable() const
     return std::nullopt;
 }
 
+/** @see Ledger::updateNegativeUNL() in Ledger.h for full contract.
+ *
+ *  State machine: the function rebuilds `sfDisabledValidators` in `newNUnl`
+ *  by copying every existing entry except the one matching
+ *  `sfValidatorToReEnable`, then appends a new entry for
+ *  `sfValidatorToDisable` if present.  The pending-action fields are cleared
+ *  with `makeFieldAbsent` once consumed.  If the resulting list is empty, the
+ *  entire SLE is erased rather than leaving an empty-array object on the ledger.
+ *
+ *  @note Must be called at flag ledgers only, before `UNLModify` transactions.
+ */
 void
 Ledger::updateNegativeUNL()
 {
@@ -737,6 +916,16 @@ Ledger::updateNegativeUNL()
 }
 
 //------------------------------------------------------------------------------
+
+/** @see Ledger::walkLedger(beast::Journal, bool) in Ledger.h for full contract.
+ *
+ *  The parallel path (`walkMapParallel` with 32 workers) returns early on the
+ *  first missing state-map node; sequential `walkMap` continues collecting up
+ *  to 32 missing nodes before returning.  The transaction map is always walked
+ *  sequentially regardless of `parallel`.  A zero `stateMap_.getHash()` with a
+ *  non-zero `header_.accountHash` means the root itself is absent; this is
+ *  reported as a single synthetic missing-node entry without walking further.
+ */
 bool
 Ledger::walkLedger(beast::Journal j, bool parallel) const
 {
@@ -802,8 +991,25 @@ Ledger::isSensible() const
     return true;
 }
 
-// update the skip list with the information from our previous ledger
-// VFALCO TODO Document this skip list concept
+/** @see Ledger::updateSkipList() in Ledger.h for the public contract.
+ *
+ *  Two-tier skip list implementation:
+ *
+ *  **Tier 1 — sparse permanent records** (`keylet::skip(prevIndex)`):
+ *  Written only when `(prevIndex & 0xff) == 0`, i.e., every 256 ledgers.
+ *  Stores a growing list of up to 256 ancestor hashes for that aligned
+ *  sequence window.  These SLEs are never deleted once created.
+ *
+ *  **Tier 2 — rolling recent window** (`keylet::skip()`):
+ *  Always updated.  Maintains the 256 most recent parent hashes in order.
+ *  When the list is full (`size() == 256`), the oldest entry at `begin()`
+ *  is evicted before appending the new one, keeping the window fixed-size.
+ *
+ *  Together the two tiers support `hashOfSeq`: O(1) lookup for any ledger
+ *  within the last 256 (via the rolling window) and O(1) lookup at
+ *  256-aligned sequences deep in history (via the permanent records).
+ *  Non-aligned ledgers older than 256 are not directly reachable.
+ */
 void
 Ledger::updateSkipList()
 {
@@ -812,7 +1018,7 @@ Ledger::updateSkipList()
 
     std::uint32_t const prevIndex = header_.seq - 1;
 
-    // update record of every 256th ledger
+    // --- Tier 1: permanent record for every 256-aligned predecessor ---
     if ((prevIndex & 0xff) == 0)
     {
         auto const k = keylet::skip(prevIndex);
@@ -846,7 +1052,7 @@ Ledger::updateSkipList()
         }
     }
 
-    // update record of past 256 ledger
+    // --- Tier 2: rolling window of the 256 most recent parent hashes ---
     auto const k = keylet::skip();
     auto sle = peek(k);
     std::vector<uint256> hashes;

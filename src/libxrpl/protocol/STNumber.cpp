@@ -1,3 +1,14 @@
+/** @file
+ *  Implements STNumber, the serializable precision-number field type for
+ *  XRPL ledger objects that store asset amounts without redundant asset identity.
+ *
+ *  STNumber stores only a mantissa+exponent pair (a `Number`) on the wire
+ *  (12 bytes: int64 mantissa + int32 exponent).  Asset binding is deferred to
+ *  runtime via the `STTakesAsset` mixin so that ledger objects such as Vault,
+ *  LoanBroker, and Loan — where many numeric fields all refer to the same asset
+ *  — do not pay the storage cost of duplicating asset identity in every field.
+ */
+
 #include <xrpl/protocol/STNumber.h>
 
 #include <xrpl/basics/Number.h>
@@ -31,10 +42,20 @@ STNumber::STNumber(SField const& field, Number const& value) : STTakesAsset(fiel
 {
 }
 
+/** Deserialize an STNumber from a byte stream.
+ *
+ *  Reads a 64-bit signed mantissa followed by a 32-bit exponent from @p sit.
+ *  The two reads are in separate statements to guarantee sequencing — C++
+ *  does not specify argument-evaluation order within a single call expression,
+ *  so merging them into `Number{sit.geti64(), sit.geti32()}` would produce
+ *  undefined behavior.
+ *
+ *  @param sit   Cursor positioned at the start of the 12-byte payload.
+ *  @param field The SField that identifies this value in its containing object.
+ */
 STNumber::STNumber(SerialIter& sit, SField const& field) : STTakesAsset(field)
 {
-    // We must call these methods in separate statements
-    // to guarantee their order of execution.
+    // Separate statements guarantee evaluation order (geti64 before geti32).
     auto mantissa = sit.geti64();
     auto exponent = sit.geti32();
     value_ = Number{mantissa, exponent};
@@ -52,6 +73,20 @@ STNumber::getText() const
     return to_string(value_);
 }
 
+/** Bind an Asset to this field and round the stored value to its precision.
+ *
+ *  Phase 1 of the two-phase rounding contract: stores the asset via
+ *  `STTakesAsset::associateAsset` and immediately rounds `value_` to the
+ *  asset's canonical precision via `roundToAsset`.  For XRP and MPT this
+ *  means truncating fractional drops; for IOU this means normalising to
+ *  15 significant decimal digits.  After this call, `add()` will assert
+ *  idempotency — calling `setValue()` without re-associating afterward is
+ *  a programming error.
+ *
+ *  @param a The asset whose precision governs rounding.
+ *  @note The field must carry the `sMD_NeedsAsset` metadata flag; the
+ *      assertion will fire in debug builds if it does not.
+ */
 void
 STNumber::associateAsset(Asset const& a)
 {
@@ -65,6 +100,26 @@ STNumber::associateAsset(Asset const& a)
     roundToAsset(a, value_);
 }
 
+/** Serialize this value as 12 bytes: int64 mantissa followed by int32 exponent.
+ *
+ *  For `sMD_NeedsAsset` fields this is Phase 2 of the two-phase rounding
+ *  contract.  When an asset is present the value is rounded again (via
+ *  `roundToAsset`) and the result is asserted to equal `value_`, verifying
+ *  idempotency — any mismatch means `setValue()` was called after
+ *  `associateAsset()` without re-associating, which would produce incorrect
+ *  ledger state.  When no asset is present (e.g., an already-rounded value
+ *  being re-serialized without going through a transactor), a debug-only
+ *  assertion confirms that `MantissaRange::Large` is active, because
+ *  serializing under `Small` scale would silently truncate precision.
+ *
+ *  The mantissa range assertion guards the wire format: although
+ *  `Number::mantissa()` returns `int64_t`, the internal representation uses an
+ *  unsigned 64-bit value extended to 19 digits under `Large` scale, and the
+ *  accessor divides by 10 when necessary; the assertion documents that the
+ *  result must always fit in a signed 64-bit wire field.
+ *
+ *  @param s Serializer accumulator to append to.
+ */
 void
 STNumber::add(Serializer& s) const
 {
@@ -78,23 +133,20 @@ STNumber::add(Serializer& s) const
     SField const& field = getFName();
     if (field.shouldMeta(SField::kSMD_NEEDS_ASSET))
     {
-        // asset is defined in the STTakesAsset base class
         if (asset_)
         {
-            // The number should be rounded to the asset's precision, but round
-            // it here if it has an asset assigned.
+            // Phase 2 idempotency check: re-round and assert the stored value
+            // was already rounded by associateAsset().
             roundToAsset(*asset_, value);
             XRPL_ASSERT_PARTS(value_ == value, "xrpl::STNumber::add", "value is already rounded");
         }
         else
         {
 #if !NDEBUG
-            // There are circumstances where an already-rounded Number is
-            // serialized without being touched by a transactor, and thus
-            // without an asset. We can't know if it's rounded, because it could
-            // represent _anything_, particularly when serializing user-provided
-            // Json. Regardless, the only time we should be serializing an
-            // STNumber is when the scale is large.
+            // Serializing without an asset (e.g., a pass-through re-serialization
+            // that bypassed a transactor). We cannot verify rounding, but we can
+            // assert the mantissa scale is Large — using Small scale here would
+            // silently truncate XRP/MPT integer values that exceed 15 digits.
             XRPL_ASSERT_PARTS(
                 Number::getMantissaScale() == MantissaRange::MantissaScale::Large,
                 "xrpl::STNumber::add",
@@ -157,6 +209,26 @@ operator<<(std::ostream& out, STNumber const& rhs)
     return out << rhs.getText();
 }
 
+/** Parse a decimal string into raw mantissa/exponent/sign parts.
+ *
+ *  Accepts optional sign, integer part (no leading zeroes unless the value is
+ *  exactly `"0"`), optional fractional part, and optional `e`/`E` exponent.
+ *  The fractional digits are concatenated with the integer digits to form the
+ *  mantissa; the exponent is adjusted by the negative of the fractional digit
+ *  count, then shifted by any explicit exponent.  No normalization is applied —
+ *  the caller receives the raw parsed representation.
+ *
+ *  @param number Decimal string to parse (e.g., `"3.14e2"`, `"-42"`, `"0"`).
+ *  @return Parsed `NumberParts` with unsigned mantissa, adjusted exponent, and
+ *      sign flag.
+ *  @throws std::runtime_error if the string does not match the expected decimal
+ *      format (e.g., leading zeroes, dangling decimal point, bare `"e"`,
+ *      empty string).
+ *  @throws std::bad_cast (from `boost::lexical_cast`) if the digit string
+ *      overflows `uint64_t` (e.g., a 200-digit integer literal).
+ *  @note The regex is compiled once as a `static` local with the `optimize`
+ *      flag to amortize construction cost across calls.
+ */
 NumberParts
 partsFromString(std::string const& number)
 {
@@ -174,36 +246,24 @@ partsFromString(std::string const& number)
     if (!boost::regex_match(number, match, kRE_NUMBER))
         Throw<std::runtime_error>("'" + number + "' is not a number");
 
-    // Match fields:
-    //   0 = whole input
-    //   1 = sign
-    //   2 = integer portion
-    //   3 = whole fraction (with '.')
-    //   4 = fraction (without '.')
-    //   5 = whole exponent (with 'e')
-    //   6 = exponent sign
-    //   7 = exponent number
-
     bool const negative = (match[1].matched && (match[1] == "-"));
 
     std::uint64_t mantissa = 0;
     int exponent = 0;
 
-    if (!match[4].matched)  // integer only
+    if (!match[4].matched)
     {
         mantissa = boost::lexical_cast<std::uint64_t>(std::string(match[2]));
         exponent = 0;
     }
     else
     {
-        // integer and fraction
         mantissa = boost::lexical_cast<std::uint64_t>(match[2] + match[4]);
         exponent = -(match[4].length());
     }
 
     if (match[5].matched)
     {
-        // we have an exponent
         if (match[6].matched && (match[6] == "-"))
         {
             exponent -= boost::lexical_cast<int>(std::string(match[7]));
@@ -217,6 +277,27 @@ partsFromString(std::string const& number)
     return {.mantissa = mantissa, .exponent = exponent, .negative = negative};
 }
 
+/** Construct an STNumber from a JSON value.
+ *
+ *  Dispatches on the JSON value type:
+ *  - **Integer** (`isInt`/`isUInt`): reads the native integer value directly,
+ *    preserving sign for signed integers via `asAbsUInt()` + `negative` flag.
+ *  - **String**: delegates to `partsFromString`; this path asserts that no
+ *    active transaction rules are present (`getCurrentTransactionRules()` is
+ *    null), because accepting user-supplied decimal strings inside a transactor
+ *    would expose precision-sensitive parsing to untrusted input.
+ *  - Anything else throws.
+ *
+ *  @param field The SField that identifies the resulting STNumber.
+ *  @param value JSON node containing the numeric value.
+ *  @return A new STNumber holding the parsed value (not yet asset-rounded).
+ *  @throws std::runtime_error if @p value is not an integer or string, or if
+ *      the string fails to parse as a valid decimal.
+ *  @throws std::bad_cast (via `boost::lexical_cast`) if a string mantissa
+ *      overflows `uint64_t`.
+ *  @note String input is forbidden during transaction processing; only numeric
+ *      JSON types are accepted in that context.
+ */
 STNumber
 numberFromJson(SField const& field, json::Value const& value)
 {

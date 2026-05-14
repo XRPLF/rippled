@@ -10,10 +10,37 @@
 
 namespace xrpl {
 
-// {
-//   tx_json: <object>,
-//   secret: <secret>
-// }
+/** Sign a transaction and return the signed blob without submitting it.
+ *
+ *  Implements the `sign` JSON-RPC command. Enforces the server's signing
+ *  access policy, tags the request as a heavy resource burden, then delegates
+ *  all cryptographic and structural work — key derivation, field auto-fill
+ *  (`Fee`, `Sequence`), serialization, and ECDSA/Ed25519 signing — to
+ *  `RPC::transactionSign`. The response always carries a `deprecated` field
+ *  steering callers toward client-side signing tools.
+ *
+ *  Access is granted when either condition holds:
+ *  - The caller holds `Role::ADMIN` (trusted local/credentialed connection), or
+ *  - The server is explicitly configured with `[signing_support] = 1`.
+ *  Both failing returns `rpcNOT_SUPPORTED`. The default configuration denies
+ *  non-admin callers, so a server inadvertently exposed to the internet will
+ *  not act as a signing oracle.
+ *
+ *  @param context  RPC dispatch envelope carrying `params` (must include
+ *      `tx_json` and a key field: `secret`, `seed`, `seed_hex`, or
+ *      `passphrase`), the negotiated API version, the caller's role, and
+ *      a reference to the application.
+ *  @return JSON object containing `tx_blob` and `tx_json` on success, or an
+ *      error object on failure. A `deprecated` field is always present.
+ *  @note `fail_hard` is read defensively via `isMember()` before `asBool()`
+ *      to handle its absence safely; the flag is forwarded to
+ *      `transactionSign` where it governs signing-pipeline error treatment.
+ *  @note Signing is rejected if the most recently validated ledger is older
+ *      than `Tuning::kMAX_VALIDATED_LEDGER_AGE` (2 minutes), preventing
+ *      transactions from being built against stale ledger state.
+ *  @see RPC::transactionSign
+ *  @see doSignFor
+ */
 json::Value
 doSign(RPC::JsonContext& context)
 {

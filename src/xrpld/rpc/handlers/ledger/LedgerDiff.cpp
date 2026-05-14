@@ -1,3 +1,12 @@
+/** @file
+ *  Implements the `GetLedgerDiff` gRPC handler (`doLedgerDiffGrpc`).
+ *
+ *  Computes the incremental SHAMap delta between two validated ledgers,
+ *  enabling light clients and indexers to track ledger state mutations
+ *  without replaying the full transaction set. See `GRPCHandlers.h` for
+ *  the full public contract.
+ */
+
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/GRPCHandlers.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
@@ -36,6 +45,10 @@ doLedgerDiffGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDiffRequest>& con
         return {response, errorStatus};
     }
 
+    // `ledgerFromSpecifier` can return a ReadView that is not a finalized
+    // Ledger (e.g., the currently-building open ledger). Only a concrete
+    // `Ledger` exposes `stateMap()`, so the downcast acts as a validation
+    // gate: a null result means the specifier resolved to an unvalidated view.
     std::shared_ptr<Ledger const> const baseLedger =
         std::dynamic_pointer_cast<Ledger const>(baseLedgerRv);
     if (!baseLedger)
@@ -54,6 +67,10 @@ doLedgerDiffGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDiffRequest>& con
 
     SHAMap::Delta differences;
 
+    // No practical cap: INT_MAX allows arbitrarily large diffs between
+    // distant ledgers. RESOURCE_EXHAUSTED is returned only if compare()
+    // somehow exhausts this limit, which guards against pathological
+    // SHAMap divergence bugs rather than normal operation.
     int const maxDifferences = std::numeric_limits<int>::max();
 
     bool const res =
@@ -65,15 +82,20 @@ doLedgerDiffGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDiffRequest>& con
         return {response, errorStatus};
     }
 
+    // Each SHAMap::Delta entry is a (base item, desired item) pair.
+    // A null desired item means the key was deleted; a null base item means
+    // it was added; both non-null means the serialized object changed.
+    // Only the desired-side blob is ever emitted — callers that need the
+    // old value of a modified key must fetch it separately.
     for (auto& [k, v] : differences)
     {
         auto diff = response.mutable_ledger_objects()->add_objects();
         auto inBase = v.first;
         auto inDesired = v.second;
 
-        // key does not exist in desired
         if (!inDesired)
         {
+            // Deleted key: emit the key with no data blob.
             diff->set_key(k.data(), k.size());
         }
         else

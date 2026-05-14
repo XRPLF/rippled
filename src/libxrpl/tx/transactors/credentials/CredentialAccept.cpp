@@ -1,3 +1,15 @@
+/** @file
+ *  Implements the `CredentialAccept` transactor — the subject-side step of
+ *  the two-phase W3C Verifiable Credentials issuance handshake.
+ *
+ *  `CredentialCreate` (issued by the credential's issuer) places the object
+ *  in both parties' owner directories and charges the reserve cost to the
+ *  issuer. This transactor completes the handshake: it sets `lsfAccepted` on
+ *  the credential SLE, shifts the reserve burden from issuer to subject, and
+ *  opportunistically deletes expired credentials encountered along the way.
+ *
+ *  @see CredentialCreate.cpp, CredentialDelete.cpp
+ */
 #include <xrpl/tx/transactors/credentials/CredentialAccept.h>
 
 #include <xrpl/basics/Log.h>
@@ -88,7 +100,6 @@ CredentialAccept::doApply()
 {
     AccountID const issuer{ctx_.tx[sfIssuer]};
 
-    // Both exist as credential object exist itself (checked in preclaim)
     auto const sleSubject = view().peek(keylet::account(account_));
     auto const sleIssuer = view().peek(keylet::account(issuer));
 
@@ -111,7 +122,8 @@ CredentialAccept::doApply()
     if (checkExpired(*sleCred, view().header().parentCloseTime))
     {
         JLOG(j_.trace()) << "Credential is expired: " << sleCred->getText();
-        // delete expired credentials even if the transaction failed
+        // tec-class returns still commit side effects: the deletion is
+        // persisted to the ledger even though the acceptance itself fails.
         auto const err = credentials::deleteSLE(view(), sleCred, j_);
         return isTesSuccess(err) ? tecEXPIRED : err;
     }

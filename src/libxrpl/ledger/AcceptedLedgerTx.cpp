@@ -1,3 +1,12 @@
+/** @file
+ *  Implements AcceptedLedgerTx: the post-acceptance packaging wrapper that
+ *  assembles a closed-ledger transaction into the envelope used by WebSocket
+ *  subscription delivery and the relational transaction database backend.
+ *
+ *  All serialization — JSON payload, raw metadata blob, affected-account set —
+ *  is performed once at construction time so downstream consumers share an
+ *  immutable, thread-safe object.
+ */
 #include <xrpl/ledger/AcceptedLedgerTx.h>
 
 #include <xrpl/basics/StringUtilities.h>
@@ -55,7 +64,11 @@ AcceptedLedgerTx::AcceptedLedgerTx(
         auto const& account = txn_->getAccountID(sfAccount);
         auto const amount = txn_->getFieldAmount(sfTakerGets);
 
-        // If the offer create is not self funded then add the owner balance
+        // Self-issued offers are excluded: an issuer's balance of its own
+        // currency is effectively unbounded, making owner_funds meaningless.
+        // FreezeHandling::IgnoreFreeze and AuthHandling::IgnoreAuth are
+        // intentional — owner_funds is a raw economic snapshot for order-book
+        // subscribers, not an effective-spendable-under-compliance query.
         if (account != amount.getIssuer())
         {
             auto const ownerFunds = accountFunds(

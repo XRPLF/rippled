@@ -1,3 +1,14 @@
+/**
+ * @file STPathSet.cpp
+ * @brief Binary serialization, deserialization, hashing, cycle-detection, and
+ *     JSON rendering for STPathSet, STPath, and STPathElement.
+ *
+ * Cross-currency payments carry candidate routes in the `Paths` field of a
+ * Payment transaction as an `STPathSet`. Each `STPath` is an ordered sequence
+ * of `STPathElement` hop descriptors that guide the payment engine through
+ * trust-line rippling nodes and order-book offer nodes.
+ */
+
 #include <xrpl/protocol/STPathSet.h>
 
 #include <xrpl/basics/Log.h>
@@ -20,6 +31,24 @@
 
 namespace xrpl {
 
+/**
+ * Compute a non-cryptographic hash over a path element's account, asset, and
+ * issuer fields for fast equality short-circuiting.
+ *
+ * Uses the pattern `hash = hash * prime ^ byte` with distinct small primes
+ * (257, 509, 911) per field to reduce collisions, then XORs the three
+ * sub-hashes together. The result is stored eagerly in `hash_value_` at
+ * construction time so that `operator==` can reject unequal elements without
+ * a full field comparison.
+ *
+ * @note The hash is derived from the actual `PathAsset` variant contents
+ *     (via `getPathAsset().visit()`), not from the `type_` bitmask, because
+ *     `Pathfinder::addLink()` may set `TypeAccount` while the asset slot still
+ *     holds a currency or MPT value.
+ * @note This hash need not be cryptographically secure; speed dominates.
+ * @param element The element to hash.
+ * @return Non-cryptographic hash combining account, asset, and issuer bytes.
+ */
 std::size_t
 STPathElement::getHash(STPathElement const& element)
 {
@@ -27,16 +56,12 @@ STPathElement::getHash(STPathElement const& element)
     std::size_t hashCurrency = 2654435761;
     std::size_t hashIssuer = 2654435761;
 
-    // NIKB NOTE: This doesn't have to be a secure hash as speed is more
-    //            important. We don't even really need to fully hash the whole
-    //            base_uint here, as a few bytes would do for our use.
-
     for (auto const x : element.getAccountID())
         hashAccount += (hashAccount * 257) ^ x;
 
-    // Check pathAsset type instead of element's type_
-    // In some cases type_ might be account but the asset
-    // is still set to either MPT or currency (see Pathfinder::addLink())
+    // Dispatch on actual PathAsset contents rather than type_ because type_
+    // may carry TypeAccount while the asset slot is still populated
+    // (e.g. from Pathfinder::addLink()).
     element.getPathAsset().visit(
         [&](MPTID const& mpt) { hashCurrency += beast::Uhash<>{}(mpt); },
         [&](Currency const& currency) {
@@ -50,6 +75,27 @@ STPathElement::getHash(STPathElement const& element)
     return (hashAccount ^ hashCurrency ^ hashIssuer);
 }
 
+/**
+ * Deserialize an STPathSet from a binary stream.
+ *
+ * Parses the wire format produced by `add()`: a sequence of one-byte type
+ * tags followed by the optional account (20 bytes), currency (20 bytes),
+ * MPT ID (24 bytes), and/or issuer (20 bytes) payloads for each hop.
+ * Paths are delimited by `TypeBoundary` (0xFF) bytes and the set is
+ * terminated by a `TypeNone` (0x00) byte.
+ *
+ * @param sit   Binary cursor positioned at the first type byte of the
+ *     path set; advanced past the terminating `TypeNone` on return.
+ * @param name  SField that names this path set field in the enclosing object.
+ * @throws std::runtime_error with message "empty path" if a `TypeBoundary`
+ *     or `TypeNone` marker is encountered before any hop has been accumulated,
+ *     indicating corrupt or malformed input.
+ * @throws std::runtime_error with message "bad path element" if a type byte
+ *     contains bits outside `TypeAll` (0x71), indicating an unknown element
+ *     kind.
+ * @note Setting both `TypeCurrency` and `TypeMpt` in a single hop's type byte
+ *     is a protocol invariant violation; an assertion fires in debug builds.
+ */
 STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
 {
     std::vector<STPathElement> path;
@@ -106,21 +152,61 @@ STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
     }
 }
 
+/**
+ * Copy-construct this STPathSet into an external buffer via placement-new.
+ *
+ * Supports the `detail::STVar` small-object storage used by `STObject` to
+ * keep serialized fields compact without per-field heap allocation.
+ *
+ * @param n   Size in bytes of the buffer at `buf`; must be at least
+ *     `sizeof(STPathSet)`.
+ * @param buf Aligned storage into which the copy is placement-constructed.
+ * @return Pointer to the newly constructed object within `buf`.
+ */
 STBase*
 STPathSet::copy(std::size_t n, void* buf) const
 {
     return emplace(n, buf, *this);
 }
 
+/**
+ * Move-construct this STPathSet into an external buffer via placement-new.
+ *
+ * Supports the `detail::STVar` small-object storage used by `STObject`.
+ *
+ * @param n   Size in bytes of the buffer at `buf`; must be at least
+ *     `sizeof(STPathSet)`.
+ * @param buf Aligned storage into which the object is placement-constructed.
+ * @return Pointer to the newly constructed object within `buf`.
+ */
 STBase*
 STPathSet::move(std::size_t n, void* buf)
 {
     return emplace(n, buf, std::move(*this));
 }
 
+/**
+ * Append `base` extended by `tail` to the set, unless an identical path is
+ * already present.
+ *
+ * Used by the pathfinder to build candidate paths incrementally. The candidate
+ * is formed by pushing `base` into `value_` and then appending `tail`. The
+ * existing paths are then scanned in reverse order — newest-first — to detect
+ * a duplicate; if one is found the candidate is popped and `false` is
+ * returned. Reverse iteration is a micro-optimisation because duplicates are
+ * most likely to be the most recently added paths.
+ *
+ * Deduplication at insertion time bounds the set size during pathfinding,
+ * preventing the payment engine from simulating redundant paths.
+ *
+ * @param base  Prefix path to extend.
+ * @param tail  Single hop to append to `base` before adding to this set.
+ * @return `true` if the path was added; `false` if it was a duplicate and
+ *     discarded.
+ */
 bool
 STPathSet::assembleAdd(STPath const& base, STPathElement const& tail)
-{  // assemble base+tail and add it to the set if it's not a duplicate
+{
     value_.push_back(base);
 
     std::vector<STPath>::reverse_iterator it = value_.rbegin();
@@ -139,6 +225,12 @@ STPathSet::assembleAdd(STPath const& base, STPathElement const& tail)
     return true;
 }
 
+/**
+ * Return `true` if `t` is an STPathSet with identical path contents.
+ *
+ * @param t Object to compare; returns `false` immediately if it is not an
+ *     STPathSet.
+ */
 bool
 STPathSet::isEquivalent(STBase const& t) const
 {
@@ -146,12 +238,31 @@ STPathSet::isEquivalent(STBase const& t) const
     return (v != nullptr) && (value_ == v->value_);
 }
 
+/**
+ * Return `true` when the path set contains no paths (default/empty state).
+ *
+ * Used by the serialization layer to elide the field from a transaction when
+ * no paths have been supplied.
+ */
 bool
 STPathSet::isDefault() const
 {
     return value_.empty();
 }
 
+/**
+ * Return `true` if the path already contains a hop with the given account,
+ * asset, and issuer combination.
+ *
+ * Used by the pathfinder for cycle detection: before extending a path with a
+ * new hop, calling `hasSeen()` prevents the payment engine from being handed
+ * a route that would loop back through a node it has already visited.
+ *
+ * @param account AccountID of the hop to look for.
+ * @param asset   PathAsset (Currency or MPTID) of the hop.
+ * @param issuer  Issuer AccountID of the hop.
+ * @return `true` if any element in the path matches all three fields exactly.
+ */
 bool
 STPath::hasSeen(AccountID const& account, PathAsset const& asset, AccountID const& issuer) const
 {
@@ -164,6 +275,21 @@ STPath::hasSeen(AccountID const& account, PathAsset const& asset, AccountID cons
     return false;
 }
 
+/**
+ * Serialize the path to a JSON array of hop objects.
+ *
+ * Each hop object always includes a numeric `type` field so consumers can
+ * identify the hop kind without re-parsing optional keys. Additional fields
+ * are present only when their corresponding type bit is set:
+ * - `TypeAccount` → `"account"` (base58-encoded AccountID)
+ * - `TypeCurrency` → `"currency"` (ISO currency string)
+ * - `TypeMpt` → `"mpt_issuance_id"` (hex-encoded MPTID)
+ * - `TypeIssuer` → `"issuer"` (base58-encoded AccountID)
+ *
+ * @note `TypeCurrency` and `TypeMpt` are mutually exclusive per protocol;
+ *     an assertion fires in debug builds if both bits are set.
+ * @return JSON array containing one object per hop.
+ */
 json::Value
 STPath::getJson(JsonOptions) const
 {
@@ -198,6 +324,16 @@ STPath::getJson(JsonOptions) const
     return ret;
 }
 
+/**
+ * Serialize the path set to a JSON array of path arrays.
+ *
+ * Delegates to `STPath::getJson()` for each path, producing a nested
+ * array structure: `[[hop, ...], [hop, ...], ...]`.
+ *
+ * @param options JSON rendering options forwarded to each path.
+ * @return JSON array where each element is the JSON representation of one
+ *     candidate payment path.
+ */
 json::Value
 STPathSet::getJson(JsonOptions options) const
 {
@@ -208,12 +344,35 @@ STPathSet::getJson(JsonOptions options) const
     return ret;
 }
 
+/**
+ * Return the serialized type identifier for this field (`STI_PATHSET`).
+ *
+ * Used by the generic serialization infrastructure to select the correct
+ * codec when encoding or decoding an `STPathSet` field.
+ */
 SerializedTypeID
 STPathSet::getSType() const
 {
     return STI_PATHSET;
 }
 
+/**
+ * Serialize the path set to its canonical binary wire format.
+ *
+ * Emits each path as a sequence of (type-byte, payload…) hop records.
+ * Consecutive paths are separated by a `TypeBoundary` (0xFF) byte, and the
+ * entire set is terminated by a `TypeNone` (0x00) byte. This is the inverse
+ * of the deserialization constructor.
+ *
+ * Wire layout per hop:
+ * - 1-byte type bitmask (`TypeAccount | TypeCurrency | TypeIssuer | TypeMpt`)
+ * - 20-byte AccountID, if `TypeAccount` is set
+ * - 24-byte MPTID, if `TypeMpt` is set
+ * - 20-byte Currency, if `TypeCurrency` is set
+ * - 20-byte issuer AccountID, if `TypeIssuer` is set
+ *
+ * @param s Serializer accumulator to which the encoded bytes are appended.
+ */
 void
 STPathSet::add(Serializer& s) const
 {

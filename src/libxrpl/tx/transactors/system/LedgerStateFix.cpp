@@ -1,3 +1,16 @@
+/** @file
+ *  Implements the LedgerStateFix transactor (`ttLEDGER_STATE_FIX`), a
+ *  privileged maintenance mechanism for correcting corrupted ledger state.
+ *
+ *  Currently supports one repair operation (`NfTokenPageLink`) that heals
+ *  broken doubly-linked page chains in an account's NFToken directory.
+ *  New repair types can be added by extending `FixType` and adding matching
+ *  cases to each pipeline phase.
+ *
+ *  Gated on the `fixNFTokenPageLinks` amendment; the framework rejects the
+ *  transaction type entirely before preflight when the amendment is inactive.
+ */
+
 #include <xrpl/tx/transactors/system/LedgerStateFix.h>
 
 #include <xrpl/beast/utility/Journal.h>
@@ -33,11 +46,18 @@ LedgerStateFix::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Override that prices the transaction at one owner reserve rather than the
+ *  standard base fee.
+ *
+ *  The elevated fee (identical to `AccountDelete`'s pricing) deters speculative
+ *  repair submissions: an operator pays a full reserve increment whether or not
+ *  `nft::repairNFTokenDirectoryLinks` finds anything to fix. This signals that
+ *  the transaction should only be submitted when there is strong reason to
+ *  believe the target account's NFToken directory is actually corrupt.
+ */
 XRPAmount
 LedgerStateFix::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
-    // The fee required for LedgerStateFix is one owner reserve, just like
-    // the fee for AccountDelete.
     return calculateOwnerReserveFee(view, tx);
 }
 
@@ -57,6 +77,13 @@ LedgerStateFix::preclaim(PreclaimContext const& ctx)
     return tecINTERNAL;  // LCOV_EXCL_LINE
 }
 
+/** @note A `false` return from `nft::repairNFTokenDirectoryLinks` means the
+ *  directory was already consistent — no corrections were applied. `doApply`
+ *  maps this to `tecFAILED_PROCESSING` so the submitter is charged the owner
+ *  reserve fee with no ledger state change; submitting a repair for a healthy
+ *  account is not an internal error, but is a failed operation from the
+ *  transaction's point of view.
+ */
 TER
 LedgerStateFix::doApply()
 {

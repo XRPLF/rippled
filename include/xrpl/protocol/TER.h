@@ -1,3 +1,15 @@
+/** @file
+ *  Transaction Engine Result (TER) code taxonomy for the XRP Ledger.
+ *
+ *  Defines the six result-code enumerations (tel/tem/tef/ter/tes/tec),
+ *  the strongly-typed `TERSubset<Trait>` wrapper that enforces which
+ *  categories are permitted in a given context, the `NotTEC` and `TER`
+ *  aliases, comparison operators, and lookup utilities.
+ *
+ *  Every code value is part of the wire protocol: numeric values are
+ *  stored in ledger metadata and consumed by `ripple-binary-codec`.
+ *  @see https://xrpl.org/transaction-results.html
+ */
 #pragma once
 
 // NOLINTBEGIN(readability-identifier-naming)
@@ -12,15 +24,29 @@
 
 namespace xrpl {
 
-// See https://xrpl.org/transaction-results.html
-//
-// "Transaction Engine Result"
-// or Transaction ERror.
-//
+/** Underlying integer type shared by all TER code enumerations.
+ *
+ *  Using a named typedef allows `TERSubset` to store a plain `int`
+ *  without naming a specific enum, and lets `TERtoInt` overloads share
+ *  a single return type that triggers the comparison-operator SFINAE.
+ *
+ *  @see https://xrpl.org/transaction-results.html
+ */
 using TERUnderlyingType = int;
 
 //------------------------------------------------------------------------------
 
+/** Local-error result codes (range −399..−300).
+ *
+ *  A `tel` result means this node alone rejected the transaction; the
+ *  decision is not propagated to the network. The transaction is not
+ *  forwarded to peers and no fee check is performed. Common causes:
+ *  fee below the local minimum, or path counts that exceed node-local
+ *  limits. These codes are only valid during non-consensus processing.
+ *
+ *  @note Numeric values are stable and encoded in `ripple-binary-codec`.
+ *      Never renumber or remove existing enumerators.
+ */
 // Protocol-critical, mixed with custom TER wrapper type, hundreds of usages
 // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum TELcodes : TERUnderlyingType {
@@ -28,11 +54,6 @@ enum TELcodes : TERUnderlyingType {
     // Exact numbers are used in ripple-binary-codec:
     //     https://github.com/XRPLF/xrpl.js/blob/main/packages/ripple-binary-codec/src/enums/definitions.json
     // Use tokens.
-
-    // -399 .. -300: L Local error (transaction fee inadequate, exceeds local
-    // limit) Only valid during non-consensus processing. Implications:
-    // - Not forwarded
-    // - No fee check
     telLOCAL_ERROR = -399,
     telBAD_DOMAIN,
     telBAD_PATH_COUNT,
@@ -54,6 +75,15 @@ enum TELcodes : TERUnderlyingType {
 
 //------------------------------------------------------------------------------
 
+/** Malformed-transaction result codes (range −299..−200).
+ *
+ *  A `tem` result means the transaction is structurally corrupt and
+ *  cannot succeed in any possible ledger state. The transaction is
+ *  rejected without being applied or forwarded, and no fee is charged.
+ *
+ *  @note Numeric values are stable and encoded in `ripple-binary-codec`.
+ *      Never renumber or remove existing enumerators.
+ */
 // Protocol-critical, mixed with custom TER wrapper type, hundreds of usages
 // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum TEMcodes : TERUnderlyingType {
@@ -61,15 +91,6 @@ enum TEMcodes : TERUnderlyingType {
     // Exact numbers are used in ripple-binary-codec:
     //     https://github.com/XRPLF/xrpl.js/blob/main/packages/ripple-binary-codec/src/enums/definitions.json
     // Use tokens.
-
-    // -299 .. -200: M Malformed (bad signature)
-    // Causes:
-    // - Transaction corrupt.
-    // Implications:
-    // - Not applied
-    // - Not forwarded
-    // - Reject
-    // - Cannot succeed in any imagined ledger.
     temMALFORMED = -299,
 
     temBAD_AMOUNT,
@@ -106,8 +127,8 @@ enum TEMcodes : TERUnderlyingType {
     temCANNOT_PREAUTH_SELF,
     temINVALID_COUNT,
 
-    temUNCERTAIN,  // An internal intermediate result; should never be returned.
-    temUNKNOWN,    // An internal intermediate result; should never be returned.
+    temUNCERTAIN,  ///< Internal sentinel — in the process of determining a result; never returned to callers.
+    temUNKNOWN,    ///< Internal sentinel — logic not yet implemented; never returned to callers.
 
     temSEQ_AND_TICKET,
     temBAD_NFTOKEN_TRANSFER_FEE,
@@ -132,6 +153,17 @@ enum TEMcodes : TERUnderlyingType {
 
 //------------------------------------------------------------------------------
 
+/** Failure result codes (range −199..−100).
+ *
+ *  A `tef` result means the transaction cannot be applied because of the
+ *  current ledger state (e.g., sequence already used, bad signature, or
+ *  an unexpected C++ exception). The transaction is not applied, not
+ *  forwarded, and no fee is charged. Unlike `tem`, a `tef` transaction
+ *  could theoretically succeed in a different ledger state.
+ *
+ *  @note Numeric values are stable and encoded in `ripple-binary-codec`.
+ *      Never renumber or remove existing enumerators.
+ */
 // Protocol-critical, mixed with custom TER wrapper type, hundreds of usages
 // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum TEFcodes : TERUnderlyingType {
@@ -139,19 +171,6 @@ enum TEFcodes : TERUnderlyingType {
     // Exact numbers are used in ripple-binary-codec:
     //     https://github.com/XRPLF/xrpl.js/blob/main/packages/ripple-binary-codec/src/enums/definitions.json
     // Use tokens.
-
-    // -199 .. -100: F
-    //    Failure (sequence number previously used)
-    //
-    // Causes:
-    // - Transaction cannot succeed because of ledger state.
-    // - Unexpected ledger state.
-    // - C++ exception.
-    //
-    // Implications:
-    // - Not applied
-    // - Not forwarded
-    // - Could succeed in an imagined ledger.
     tefFAILURE = -199,
     tefALREADY,
     tefBAD_ADD_AUTH,
@@ -178,6 +197,18 @@ enum TEFcodes : TERUnderlyingType {
 
 //------------------------------------------------------------------------------
 
+/** Retry result codes (range −99..−1).
+ *
+ *  A `ter` result means the transaction cannot succeed right now, but
+ *  might succeed after other transactions are applied — for example,
+ *  if the sequence number is too high or there are insufficient funds
+ *  for the fee. The transaction is not applied and leaves a sequence
+ *  gap that can block later transactions. It may be held in the
+ *  transaction queue (`terQUEUED`) to retry when fee levels drop.
+ *
+ *  @note Numeric values are stable and encoded in `ripple-binary-codec`.
+ *      Never renumber or remove existing enumerators.
+ */
 // Protocol-critical, mixed with custom TER wrapper type, hundreds of usages
 // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum TERcodes : TERUnderlyingType {
@@ -185,23 +216,6 @@ enum TERcodes : TERUnderlyingType {
     // Exact numbers are used in ripple-binary-codec:
     //     https://github.com/XRPLF/xrpl.js/blob/main/packages/ripple-binary-codec/src/enums/definitions.json
     // Use tokens.
-
-    // -99 .. -1: R Retry
-    //   sequence too high, no funds for txn fee, originating -account
-    //   non-existent
-    //
-    // Cause:
-    //   Prior application of another, possibly non-existent, transaction could
-    //   allow this transaction to succeed.
-    //
-    // Implications:
-    // - Not applied
-    // - May be forwarded
-    //   - Results indicating the txn was forwarded: terQUEUED
-    //   - All others are not forwarded.
-    // - Might succeed later
-    // - Hold
-    // - Makes hole in sequence which jams transactions.
     terRETRY = -99,
     terFUNDS_SPENT,             // DEPRECATED.
     terINSUF_FEE_B,             // Can't pay fee, therefore don't burden network.
@@ -224,57 +238,50 @@ enum TERcodes : TERUnderlyingType {
 
 //------------------------------------------------------------------------------
 
+/** Success result code (value 0).
+ *
+ *  `tesSUCCESS` is the sole member: the transaction was applied to the
+ *  ledger and forwarded to peers. Its numeric value (0) is stored in
+ *  ledger metadata and must never change.
+ *
+ *  @note `TERSubset::operator bool()` returns `false` for this code
+ *      (success = falsy), mirroring the conventional C error-code idiom.
+ */
 // Protocol-critical, mixed with custom TER wrapper type, hundreds of usages
 // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum TEScodes : TERUnderlyingType {
     // Note: Exact number must stay stable.  This code is stored by value
     // in metadata for historic transactions.
-
-    // 0: S Success (success)
-    // Causes:
-    // - Success.
-    // Implications:
-    // - Applied
-    // - Forwarded
     tesSUCCESS = 0
 };
 
 //------------------------------------------------------------------------------
 
+/** Fee-claim result codes (range 100..255).
+ *
+ *  A `tec` result means the fee is consumed and the sequence number is
+ *  spent, but no other effect is applied to the ledger. The transaction
+ *  is still applied and forwarded to peers. Typical causes: a payment
+ *  with no valid path, or a transaction that is logically invalid but
+ *  well-formed enough to charge a fee.
+ *
+ *  When `tapRETRY` is set during application, `tec` codes are demoted
+ *  to `terRETRY` so the transaction can be retried rather than
+ *  consuming the sequence number.
+ *
+ *  @note **DO NOT CHANGE THESE NUMBERS.** They are stored by value in
+ *      ledger metadata and parsed by external tools such as
+ *      `ripple-binary-codec`. Append new codes; never renumber or remove.
+ *  @note Naming convention: use `tecNO_ENTRY` when the primary ledger
+ *      object targeted by the transaction is missing; use
+ *      `tecOBJECT_NOT_FOUND` when an auxiliary object required to
+ *      complete the transaction cannot be found.
+ */
 // Protocol-critical, mixed with custom TER wrapper type, hundreds of usages
 // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum TECcodes : TERUnderlyingType {
     // Note: Exact numbers must stay stable.  These codes are stored by
     // value in metadata for historic transactions.
-
-    // 100 .. 255 C
-    //   Claim fee only (ripple transaction with no good paths, pay to
-    //   non-existent account, no path)
-    //
-    // Causes:
-    // - Success, but does not achieve optimal result.
-    // - Invalid transaction or no effect, but claim fee to use the sequence
-    //   number.
-    //
-    // Implications:
-    // - Applied
-    // - Forwarded
-    //
-    // Only allowed as a return code of appliedTransaction when !tapRETRY.
-    // Otherwise, treated as terRETRY.
-    //
-    // DO NOT CHANGE THESE NUMBERS: They appear in ledger meta data.
-    //
-    // Note:
-    //   tecNO_ENTRY is often used interchangeably with tecOBJECT_NOT_FOUND.
-    //   While there does not seem to be a clear rule which to use when, the
-    //   following guidance will help to keep errors consistent with the
-    //   majority of (but not all) transaction types:
-    // - tecNO_ENTRY : cannot find the primary ledger object on which the
-    //   transaction is being attempted
-    // - tecOBJECT_NOT_FOUND : cannot find the additional object(s) needed to
-    //   complete the transaction
-
     tecCLAIM = 100,
     tecPATH_PARTIAL = 101,
     tecUNFUNDED_ADD = 102,  // Unused legacy code
@@ -362,37 +369,56 @@ enum TECcodes : TERUnderlyingType {
 
 //------------------------------------------------------------------------------
 
-// For generic purposes, a free function that returns the value of a TE*codes.
+/** Convert a TEL/TEM/TEF/TER/TES/TEC code to its underlying integer value.
+ *
+ *  These overloads form the single conversion point used by `TERSubset`,
+ *  comparison operators, and any code that needs to inspect the raw
+ *  integer. A free-function overload set is used rather than an explicit
+ *  conversion operator on `TERSubset` to prevent silent implicit
+ *  conversions in constructor-initialization contexts (e.g., `Status(TER)`
+ *  would compile silently even with `explicit` — a named function does not).
+ *
+ *  A matching `friend` overload for `TERSubset<Trait>` is defined inside
+ *  the class template; the six overloads below cover the raw enum types.
+ *
+ *  @param v The enum code to convert.
+ *  @return The underlying `int` value of `v`.
+ */
 constexpr TERUnderlyingType
 TERtoInt(TELcodes v)
 {
     return safeCast<TERUnderlyingType>(v);
 }
 
+/** @copydoc TERtoInt(TELcodes) */
 constexpr TERUnderlyingType
 TERtoInt(TEMcodes v)
 {
     return safeCast<TERUnderlyingType>(v);
 }
 
+/** @copydoc TERtoInt(TELcodes) */
 constexpr TERUnderlyingType
 TERtoInt(TEFcodes v)
 {
     return safeCast<TERUnderlyingType>(v);
 }
 
+/** @copydoc TERtoInt(TELcodes) */
 constexpr TERUnderlyingType
 TERtoInt(TERcodes v)
 {
     return safeCast<TERUnderlyingType>(v);
 }
 
+/** @copydoc TERtoInt(TELcodes) */
 constexpr TERUnderlyingType
 TERtoInt(TEScodes v)
 {
     return safeCast<TERUnderlyingType>(v);
 }
 
+/** @copydoc TERtoInt(TELcodes) */
 constexpr TERUnderlyingType
 TERtoInt(TECcodes v)
 {
@@ -400,15 +426,37 @@ TERtoInt(TECcodes v)
 }
 
 //------------------------------------------------------------------------------
-// Template class that is specific to selected ranges of error codes.  The
-// Trait tells std::enable_if which ranges are allowed.
+
+/** Strongly-typed wrapper around a TER integer that restricts which
+ *  result-code categories may be implicitly assigned or constructed.
+ *
+ *  The `Trait` policy class template determines which `TE*codes` enum
+ *  types are accepted. A specialization of `Trait<T>` that inherits from
+ *  `std::true_type` permits `T`; one inheriting from `std::false_type`
+ *  rejects it at compile time via `std::enable_if`. This provides
+ *  category-level type safety without runtime overhead.
+ *
+ *  Two concrete aliases are provided:
+ *  - `NotTEC` — permits `tel`, `tem`, `tef`, `ter`, `tes`; **excludes
+ *    `tec`**. Used as the return type of `preflight()` to prevent fee-theft
+ *    via unsigned transactions (see `CanCvtToNotTEC`).
+ *  - `TER` — permits all six categories including `tec` and `NotTEC`
+ *    (widening assignment from `NotTEC` to `TER` is always valid).
+ *
+ *  Default-constructs to `tesSUCCESS`. Truthy (`operator bool`) when the
+ *  stored code is anything other than `tesSUCCESS`.
+ *
+ *  @tparam Trait A class template whose specializations for each `TE*codes`
+ *      type inherit from `std::true_type` (allowed) or `std::false_type`
+ *      (disallowed).
+ */
 template <template <typename> class Trait>
 class TERSubset
 {
     TERUnderlyingType code_;
 
 public:
-    // Constructors
+    /** Default-constructs to `tesSUCCESS`. */
     constexpr TERSubset() : code_(tesSUCCESS)
     {
     }
@@ -421,13 +469,30 @@ private:
     }
 
 public:
+    /** Construct from a raw integer, bypassing the Trait type check.
+     *
+     *  This escape hatch is intended for deserialization contexts (e.g.,
+     *  reconstructing a `TER` from ledger metadata) where the integer
+     *  originates from a validated source. Prefer enum-typed construction
+     *  everywhere else.
+     *
+     *  @param from The raw integer code to wrap.
+     *  @return A `TERSubset` holding `from`.
+     */
     static constexpr TERSubset
     fromInt(int from)
     {
         return TERSubset(from);
     }
 
-    // Trait tells enable_if which types are allowed for construction.
+    /** Construct from any `TE*codes` enum type permitted by `Trait`.
+     *
+     *  The constructor is disabled via `std::enable_if_t` for enum types
+     *  whose `Trait` specialization inherits from `std::false_type`, turning
+     *  category violations into hard compile errors.
+     *
+     *  @param rhs The source enum value.
+     */
     template <
         typename T,
         typename = std::enable_if_t<Trait<std::remove_cv_t<std::remove_reference_t<T>>>::value>>
@@ -435,13 +500,19 @@ public:
     {
     }
 
-    // Assignment
     constexpr TERSubset&
     operator=(TERSubset const& rhs) = default;
     constexpr TERSubset&
     operator=(TERSubset&& rhs) = default;
 
-    // Trait tells enable_if which types are allowed for assignment.
+    /** Assign from any `TE*codes` enum type permitted by `Trait`.
+     *
+     *  Disabled via `std::enable_if_t` for categories not allowed by
+     *  `Trait`, matching the construction constraint.
+     *
+     *  @param rhs The source enum value.
+     *  @return `*this`.
+     */
     template <typename T>
     constexpr auto
     operator=(T rhs) -> std::enable_if_t<Trait<T>::value, TERSubset&>
@@ -450,43 +521,46 @@ public:
         return *this;
     }
 
-    // Conversion to bool.
+    /** Return `true` when the code is anything other than `tesSUCCESS`.
+     *
+     *  Mirrors conventional C error-code semantics: a falsy result is
+     *  success, a truthy result means something went wrong. Use
+     *  `isTesSuccess()` for the positive sense.
+     */
     explicit
     operator bool() const
     {
         return code_ != tesSUCCESS;
     }
 
-    // Conversion to json::Value allows assignment to json::Objects
-    // without casting.
+    /** Implicit conversion to `json::Value` for use in JSON object assembly.
+     *
+     *  Allows `jsonObj["result"] = ter;` without an explicit cast.
+     */
     operator json::Value() const
     {
         return json::Value{code_};
     }
 
-    // Streaming operator.
+    /** Stream the raw integer code to `os`. */
     friend std::ostream&
     operator<<(std::ostream& os, TERSubset const& rhs)
     {
         return os << rhs.code_;
     }
 
-    // Return the underlying value.  Not a member so similarly named free
-    // functions can do the same work for the enums.
-    //
-    // It's worth noting that an explicit conversion operator was considered
-    // and rejected.  Consider this case, taken from Status.h
-    //
-    // class Status {
-    //     int code_;
-    // public:
-    //     Status (TER ter)
-    //     : code_ (ter) {}
-    // }
-    //
-    // This code compiles with no errors or warnings if TER has an explicit
-    // (unnamed) conversion to int.  To avoid silent conversions like these
-    // we provide (only) a named conversion.
+    /** Return the underlying integer value of this result code.
+     *
+     *  Implemented as a named `friend` free function rather than an
+     *  `explicit` conversion operator. An explicit operator would still
+     *  allow silent conversion in constructor-initialization contexts
+     *  (e.g., `Status(TER ter) : code_(ter) {}` compiles without warning
+     *  even with `explicit`). A named function forces the conversion to
+     *  be visible at every call site.
+     *
+     *  @param v The `TERSubset` to extract from.
+     *  @return The raw `int` code.
+     */
     friend constexpr TERUnderlyingType
     TERtoInt(TERSubset v)
     {
@@ -494,8 +568,16 @@ public:
     }
 };
 
-// Comparison operators.
-// Only enabled if both arguments return int if TERtiInt is called with them.
+/** @name TER comparison operators
+ *
+ *  Heterogeneous comparisons across any combination of raw `TE*codes`
+ *  enum types and `TERSubset` wrappers. Each operator is enabled only
+ *  when both operands have a `TERtoInt` overload returning `int`, so
+ *  unrelated types (e.g., plain `int`) are excluded by SFINAE — no
+ *  accidental numeric comparisons.
+ *
+ *  @{
+ */
 template <typename L, typename R>
 constexpr auto
 operator==(L const& lhs, R const& rhs) -> std::enable_if_t<
@@ -549,17 +631,23 @@ operator>=(L const& lhs, R const& rhs) -> std::enable_if_t<
 {
     return TERtoInt(lhs) >= TERtoInt(rhs);
 }
+/** @} */
 
 //------------------------------------------------------------------------------
 
-// Use traits to build a TERSubset that can convert from any of the TE*codes
-// enums *except* TECcodes: NotTEC
-
-// NOTE: NotTEC is useful for codes returned by preflight in transactors.
-// Preflight checks occur prior to signature checking.  If preflight returned
-// a tec code, then a malicious user could submit a transaction with a very
-// large fee and have that fee charged against an account without using that
-// account's valid signature.
+/** Trait that permits `tel`, `tem`, `tef`, `ter`, and `tes` but
+ *  explicitly **excludes** `TECcodes` for use with `NotTEC`.
+ *
+ *  The exclusion of `tec` is a security invariant. `preflight()`
+ *  executes before signature verification. If it could return a `tec`
+ *  code, a malicious actor could craft a transaction with a very large
+ *  fee and have that fee deducted from an account without supplying a
+ *  valid signature. Restricting `preflight` return types to `NotTEC`
+ *  makes this class of fee-theft structurally impossible at compile time.
+ *
+ *  @tparam FROM The candidate source type; only the five non-tec enums
+ *      yield `std::true_type`.
+ */
 template <typename FROM>
 class CanCvtToNotTEC : public std::false_type
 {
@@ -585,12 +673,27 @@ class CanCvtToNotTEC<TEScodes> : public std::true_type
 {
 };
 
+/** A `TERSubset` restricted to non-`tec` result categories.
+ *
+ *  Use as the return type of `preflight()` and any function that must
+ *  not be allowed to claim a fee. Assigning a `TECcodes` value to a
+ *  `NotTEC` variable is a compile-time error. A `NotTEC` can be
+ *  widened to a `TER` without a cast.
+ */
 using NotTEC = TERSubset<CanCvtToNotTEC>;
 
 //------------------------------------------------------------------------------
 
-// Use traits to build a TERSubset that can convert from any of the TE*codes
-// enums as well as from NotTEC.
+/** Trait that permits all six result-code categories plus `NotTEC` for
+ *  use with the `TER` alias.
+ *
+ *  The `NotTEC` specialization enables the widening assignment from
+ *  `NotTEC` to `TER` that is required in contexts where a function
+ *  returning `NotTEC` passes its result to code expecting `TER`.
+ *
+ *  @tparam FROM The candidate source type; all six `TE*codes` enums
+ *      and `NotTEC` yield `std::true_type`.
+ */
 template <typename FROM>
 class CanCvtToTER : public std::false_type
 {
@@ -624,35 +727,68 @@ class CanCvtToTER<NotTEC> : public std::true_type
 {
 };
 
-// TER allows all of the subsets.
+/** A `TERSubset` that accepts all six result-code categories.
+ *
+ *  This is the general result type used throughout the transaction engine
+ *  for `doApply()` and most ledger-application code. Use `NotTEC` for
+ *  `preflight()` return types where `tec` codes must be excluded.
+ */
 using TER = TERSubset<CanCvtToTER>;
 
 //------------------------------------------------------------------------------
 
+/** Return `true` if `x` is a local-error (`tel`) code (−399..−300).
+ *
+ *  @param x The code to test; accepts any `TER`-compatible value.
+ *  @return `true` iff `x` falls in the `tel` range.
+ */
 inline bool
 isTelLocal(TER x) noexcept
 {
     return (x >= telLOCAL_ERROR && x < temMALFORMED);
 }
 
+/** Return `true` if `x` is a malformed-transaction (`tem`) code (−299..−200).
+ *
+ *  @param x The code to test.
+ *  @return `true` iff `x` falls in the `tem` range.
+ */
 inline bool
 isTemMalformed(TER x) noexcept
 {
     return (x >= temMALFORMED && x < tefFAILURE);
 }
 
+/** Return `true` if `x` is a failure (`tef`) code (−199..−100).
+ *
+ *  @param x The code to test.
+ *  @return `true` iff `x` falls in the `tef` range.
+ */
 inline bool
 isTefFailure(TER x) noexcept
 {
     return (x >= tefFAILURE && x < terRETRY);
 }
 
+/** Return `true` if `x` is a retry (`ter`) code (−99..−1).
+ *
+ *  @param x The code to test.
+ *  @return `true` iff `x` falls in the `ter` range.
+ */
 inline bool
 isTerRetry(TER x) noexcept
 {
     return (x >= terRETRY && x < tesSUCCESS);
 }
 
+/** Return `true` if `x` is `tesSUCCESS` (0).
+ *
+ *  Relies on `TERSubset::operator bool()` returning `false` for
+ *  `tesSUCCESS` (the only falsy value), so this is equivalent to `!x`.
+ *
+ *  @param x The code to test.
+ *  @return `true` iff `x == tesSUCCESS`.
+ */
 inline bool
 isTesSuccess(TER x) noexcept
 {
@@ -660,24 +796,75 @@ isTesSuccess(TER x) noexcept
     return !(x);
 }
 
+/** Return `true` if `x` is a fee-claim (`tec`) code (≥ 100).
+ *
+ *  Any value at or above `tecCLAIM` (100) is treated as a fee-claim
+ *  result regardless of whether it is a recognized code.
+ *
+ *  @param x The code to test.
+ *  @return `true` iff `x >= tecCLAIM`.
+ */
 inline bool
 isTecClaim(TER x) noexcept
 {
     return ((x) >= tecCLAIM);
 }
 
+/** Return the complete registry mapping every known TER code to its
+ *  symbolic token and human-readable description.
+ *
+ *  The map is keyed by the underlying integer value and maps to a pair
+ *  of C-string literals: `{token, description}`. Token strings match
+ *  the enum identifier exactly (generated via preprocessor stringification).
+ *  The registry is a Meyers singleton — initialized once on first call,
+ *  thread-safe per C++11, and immutable thereafter.
+ *
+ *  @return A `const` reference to the singleton map, valid for the
+ *      lifetime of the process.
+ */
 std::unordered_map<TERUnderlyingType, std::pair<char const* const, char const* const>> const&
 transResults();
 
+/** Look up the token and human-readable description for a TER code.
+ *
+ *  @param code  The TER result code to look up.
+ *  @param token On success, populated with the symbolic token string
+ *      (e.g., `"tecNO_DST"`). Unchanged on failure.
+ *  @param text  On success, populated with the English description.
+ *      Unchanged on failure.
+ *  @return `true` if `code` is a registered code; `false` otherwise.
+ */
 bool
 transResultInfo(TER code, std::string& token, std::string& text);
 
+/** Return the symbolic token string for a TER code.
+ *
+ *  @param code The TER result code to look up.
+ *  @return The token string (e.g., `"tecNO_DST"`) for known codes, or
+ *      `"-"` if `code` is not in the registry.
+ */
 std::string
 transToken(TER code);
 
+/** Return the human-readable description for a TER code.
+ *
+ *  @param code The TER result code to look up.
+ *  @return The English description string for known codes, or `"-"` if
+ *      `code` is not in the registry.
+ */
 std::string
 transHuman(TER code);
 
+/** Convert a symbolic token string to the corresponding TER code.
+ *
+ *  Provides the reverse direction of `transToken()`. The reverse map is
+ *  built lazily as a function-local static on the first call by inverting
+ *  the primary registry; the two maps stay in sync automatically.
+ *
+ *  @param token The symbolic token string to look up (e.g., `"tecNO_DST"`).
+ *  @return The matching `TER` wrapped in `std::optional`, or
+ *      `std::nullopt` if `token` is not a recognized code name.
+ */
 std::optional<TER>
 transCode(std::string const& token);
 
