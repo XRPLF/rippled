@@ -32,6 +32,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SOTemplate.h>
 #include <xrpl/protocol/STAmount.h>
@@ -179,6 +180,10 @@ class Invariants_test : public beast::unit_test::Suite
         test::StreamSink sink{beast::Severity::Warning};
         beast::Journal const jlog{sink};
         ApplyContext ac{env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+
+        // Invariants normally run in Transactor::operator(), which installs
+        // the current ledger rules for rule-aware protocol helpers.
+        CurrentTransactionRulesGuard const rulesGuard(ov.rules());
 
         BEAST_EXPECT(precheck(a1, a2, ac));
 
