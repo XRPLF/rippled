@@ -186,9 +186,6 @@ test.shamap > xrpl.basics
 test.shamap > xrpl.nodestore
 test.shamap > xrpl.protocol
 test.shamap > xrpl.shamap
-test.telemetry > xrpl.basics
-test.telemetry > xrpl.core
-test.telemetry > xrpld.telemetry
 test.toplevel > test.csf
 test.toplevel > xrpl.json
 test.unit_test > xrpl.basics

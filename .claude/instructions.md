@@ -1,1 +1,0 @@
-/home/pratik/sourceCode/personal/Rippled/instructions.md
