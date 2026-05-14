@@ -8547,6 +8547,362 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
         }
     }
 
+    // Batch with delegated ConfidentialMPTSend txs, covering stale and updated inner
+    // send proofs.
+    void
+    testBatchDelegatedSend(FeatureBitset features)
+    {
+        testcase("Batch ConfidentialMPTSend with delegation");
+        using namespace test::jtx;
+
+        // AllOrNothing: two delegated sends from bob via dave, second proof is
+        // stale once the first send updates bob's spending, whole batch rolls back.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+            Account const dave("dave");
+
+            MPTTester mpt(env, alice, {.holders = {bob, carol, dave}});
+            setupBatchEnv(mpt, alice, bob, carol, dave, 100, 0);
+
+            env(delegate::set(bob, dave, {"ConfidentialMPTSend"}));
+            env.close();
+
+            auto const bobSeq = env.seq(bob);
+            auto const batchFee = batch::calcConfidentialBatchFee(env, 0, 2);
+
+            // jv1: proof against spending balance 100
+            auto jv1 = mpt.sendJV({.account = bob, .dest = carol, .amt = 60}, bobSeq + 1);
+            jv1[jss::Delegate] = dave.human();
+            // jv2: proof also against spending balance 100, which is stale once jv1 applies
+            auto jv2 = mpt.sendJV({.account = bob, .dest = dave, .amt = 60}, bobSeq + 2);
+            jv2[jss::Delegate] = dave.human();
+
+            env(batch::outer(bob, bobSeq, batchFee, tfAllOrNothing),
+                batch::Inner(jv1, bobSeq + 1),
+                batch::Inner(jv2, bobSeq + 2),
+                Ter(tesSUCCESS));
+            env.close();
+
+            // Stale proof on jv2, AllOrNothing rolls back everything.
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 100);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedInbox) == 0);
+            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedInbox) == 0);
+        }
+
+        // AllOrNothing: two delegated sends with correctly chained proofs both apply.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+            Account const dave("dave");
+
+            MPTTester mpt(env, alice, {.holders = {bob, carol, dave}});
+            setupBatchEnv(mpt, alice, bob, carol, dave, 100, 0);
+
+            env(delegate::set(bob, dave, {"ConfidentialMPTSend"}));
+            env.close();
+
+            auto const bobSeq = env.seq(bob);
+            auto const batchFee = batch::calcConfidentialBatchFee(env, 0, 2);
+
+            // jv1: proof against spending balance 100.
+            auto jv1 = mpt.sendJV({.account = bob, .dest = carol, .amt = 40}, bobSeq + 1);
+            jv1[jss::Delegate] = dave.human();
+            auto const chain1 = mpt.chainAfterSend(bob, 40, jv1);
+            // jv2: proof against predicted spending balance 60.
+            auto jv2 = mpt.sendJV({.account = bob, .dest = dave, .amt = 40}, bobSeq + 2, chain1);
+            jv2[jss::Delegate] = dave.human();
+
+            env(batch::outer(bob, bobSeq, batchFee, tfAllOrNothing),
+                batch::Inner(jv1, bobSeq + 1),
+                batch::Inner(jv2, bobSeq + 2),
+                Ter(tesSUCCESS));
+            env.close();
+
+            // Both inner tx applied
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 20);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedInbox) == 40);
+            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedInbox) == 40);
+        }
+    }
+
+    // Test missing delegation permission inside a batch.
+    void
+    testBatchDelegationMissingPermission(FeatureBitset features)
+    {
+        testcase("Batch delegation missing permission");
+        using namespace test::jtx;
+
+        // AllOrNothing: dave has no Send permission from bob, so the delegated
+        // inner send fails. The whole batch rolls back.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+            Account const dave("dave");
+
+            MPTTester mpt(env, alice, {.holders = {bob, carol, dave}});
+            setupBatchEnv(mpt, alice, bob, carol, dave, 100, 60);
+
+            // Bob grants dave only MergeInbox, not Send.
+            env(delegate::set(bob, dave, {"ConfidentialMPTMergeInbox"}));
+            env.close();
+
+            auto const bobSeq = env.seq(bob);
+            auto const carolSeq = env.seq(carol);
+            auto const batchFee = batch::calcConfidentialBatchFee(env, 1, 2);
+
+            // jv1: direct send from carol (valid proof).
+            auto const jv1 = mpt.sendJV({.account = carol, .dest = dave, .amt = 30}, carolSeq);
+            // jv2: delegated send, fails because dave has no Send permission.
+            auto jv2 = mpt.sendJV({.account = bob, .dest = carol, .amt = 50}, bobSeq + 1);
+            jv2[jss::Delegate] = dave.human();
+
+            env(batch::outer(bob, bobSeq, batchFee, tfAllOrNothing),
+                batch::Inner(jv1, carolSeq),
+                batch::Inner(jv2, bobSeq + 1),
+                batch::Sig(carol),
+                Ter(tesSUCCESS));
+            env.close();
+
+            // jv1 applied in the batch view, then jv2 failed, so
+            // AllOrNothing discards both inner effects.
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 100);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedSpending) == 60);
+            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedInbox) == 0);
+        }
+
+        // Independent: the delegated confidential send is skipped because lack of permission. The
+        // send from carol still applies.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+            Account const dave("dave");
+
+            MPTTester mpt(env, alice, {.holders = {bob, carol, dave}});
+            setupBatchEnv(mpt, alice, bob, carol, dave, 100, 60);
+
+            // Bob does not grant dave any permissions.
+            auto const bobSeq = env.seq(bob);
+            auto const carolSeq = env.seq(carol);
+            auto const batchFee = batch::calcConfidentialBatchFee(env, 1, 2);
+
+            auto jv1 = mpt.sendJV({.account = bob, .dest = carol, .amt = 50}, bobSeq + 1);
+            jv1[jss::Delegate] = dave.human();
+            auto const jv2 = mpt.sendJV({.account = carol, .dest = dave, .amt = 30}, carolSeq);
+
+            env(batch::outer(bob, bobSeq, batchFee, tfIndependent),
+                batch::Inner(jv1, bobSeq + 1),
+                batch::Inner(jv2, carolSeq),
+                batch::Sig(carol),
+                Ter(tesSUCCESS));
+            env.close();
+
+            // jv1 failed and jv2 applied.
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 100);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedSpending) == 30);
+            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedInbox) == 30);
+        }
+    }
+
+    // Test batch outer signer is the delegated account.
+    void
+    testBatchDelegatedSendWithDelegateAsOuterAccount(FeatureBitset features)
+    {
+        testcase("Test batch delegated send with delegate as outer account");
+        using namespace test::jtx;
+
+        // Dave has delegation permission, but the inner Account is bob.
+        // Without bob's BatchSigner, the batch is rejected.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+            Account const dave("dave");
+
+            MPTTester mpt(env, alice, {.holders = {bob, carol, dave}});
+            setupBatchEnv(mpt, alice, bob, carol, dave, 100, 0);
+
+            env(delegate::set(bob, dave, {"ConfidentialMPTSend"}));
+            env.close();
+
+            auto const daveSeq = env.seq(dave);
+            auto const bobSeq = env.seq(bob);
+            auto const batchFee = batch::calcConfidentialBatchFee(env, 0, 2);
+
+            auto jv1 = mpt.sendJV({.account = bob, .dest = carol, .amt = 40}, bobSeq);
+            jv1[jss::Delegate] = dave.human();
+            auto const jv2 = mpt.mergeInboxJV({.account = dave});
+
+            env(batch::outer(dave, daveSeq, batchFee, tfAllOrNothing),
+                batch::Inner(jv1, bobSeq),
+                batch::Inner(jv2, daveSeq + 1),
+                Ter(temBAD_SIGNER));
+            env.close();
+
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 100);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedInbox) == 0);
+        }
+
+        // Dave submits a mixed batch: bob signs inner tx1, and
+        // dave is the Delegate account signing for inner tx2.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+            Account const dave("dave");
+
+            MPTTester mpt(env, alice, {.holders = {bob, carol, dave}});
+            setupBatchEnv(mpt, alice, bob, carol, dave, 100, 0);
+
+            env(delegate::set(bob, dave, {"ConfidentialMPTSend"}));
+            env.close();
+
+            auto const daveSeq = env.seq(dave);
+            auto const bobSeq = env.seq(bob);
+            auto const batchFee = batch::calcConfidentialBatchFee(env, 1, 2);
+
+            auto const jv1 = mpt.sendJV({.account = bob, .dest = carol, .amt = 40}, bobSeq);
+            auto const chain1 = mpt.chainAfterSend(bob, 40, jv1);
+            auto jv2 = mpt.sendJV({.account = bob, .dest = carol, .amt = 30}, bobSeq + 1, chain1);
+            jv2[jss::Delegate] = dave.human();
+
+            // Dave is outer; bob signs because his account appears in inner txns.
+            env(batch::outer(dave, daveSeq, batchFee, tfAllOrNothing),
+                batch::Inner(jv1, bobSeq),
+                batch::Inner(jv2, bobSeq + 1),
+                batch::Sig(bob),
+                Ter(tesSUCCESS));
+            env.close();
+
+            // Both sends applied: bob 100→30, carol inbox=70.
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 30);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedInbox) == 70);
+        }
+
+        // Verify the delegator Bob's BatchSigner does not bypass the missing delegation permission.
+        // The delegated inner send fails.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+            Account const dave("dave");
+
+            MPTTester mpt(env, alice, {.holders = {bob, carol, dave}});
+            setupBatchEnv(mpt, alice, bob, carol, dave, 100, 60);
+
+            // Bob does not grant dave any permissions.
+            auto const daveSeq = env.seq(dave);
+            auto const bobSeq = env.seq(bob);
+            auto const carolSeq = env.seq(carol);
+            auto const batchFee = batch::calcConfidentialBatchFee(env, 2, 2);
+
+            auto jv1 = mpt.sendJV({.account = bob, .dest = carol, .amt = 50}, bobSeq);
+            jv1[jss::Delegate] = dave.human();
+            auto const jv2 = mpt.sendJV({.account = carol, .dest = dave, .amt = 30}, carolSeq);
+
+            env(batch::outer(dave, daveSeq, batchFee, tfAllOrNothing),
+                batch::Inner(jv1, bobSeq),
+                batch::Inner(jv2, carolSeq),
+                batch::Sig(bob, carol),
+                Ter(tesSUCCESS));
+            env.close();
+
+            // jv1 fails before jv2 is attempted.
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 100);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedSpending) == 60);
+            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedInbox) == 0);
+        }
+    }
+
+    // Mixed batch with delegated and non-delegated inner confidential MPT transactions.
+    void
+    testBatchDelegatedConfidentialMix(FeatureBitset features)
+    {
+        testcase("Batch delegated confidential multiple operations");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        Account const dave("dave");
+        Account const erin("erin");
+        Account const frank("frank");
+
+        MPTTester mpt(env, alice, {.holders = {bob, carol, dave, frank}});
+        setupBatchEnv(mpt, alice, bob, carol, dave, 100, 60);
+        mpt.pay(alice, bob, 50);
+        env.fund(XRP(10000), erin);
+        env.close();
+
+        mpt.authorize({.account = frank});
+        mpt.pay(alice, frank, 40);
+        mpt.generateKeyPair(frank);
+
+        env(delegate::set(bob, dave, {"ConfidentialMPTConvert", "ConfidentialMPTConvertBack"}));
+        env(delegate::set(carol, erin, {"ConfidentialMPTSend"}));
+        env(delegate::set(bob, erin, {"ConfidentialMPTMergeInbox"}));
+        env.close();
+
+        auto const daveSeq = env.seq(dave);
+        auto const bobSeq = env.seq(bob);
+        auto const carolSeq = env.seq(carol);
+        auto const frankSeq = env.seq(frank);
+        auto const batchFee = batch::calcConfidentialBatchFee(env, 3, 6);
+
+        // Dave submits the batch. Bob's convert and convertback use Dave as Delegate;
+        // Carol's send and Bob's mergeInbox use Erin as Delegate. Frank's
+        // convert and mergeInbox are non-delegated.
+        auto jv1 = mpt.convertBackJV({.account = bob, .amt = 30}, bobSeq);
+        jv1[jss::Delegate] = dave.human();
+        auto jv2 = mpt.convertJV({.account = bob, .amt = 20}, bobSeq + 1);
+        jv2[jss::Delegate] = dave.human();
+        auto jv3 = mpt.sendJV({.account = carol, .dest = bob, .amt = 15}, carolSeq);
+        jv3[jss::Delegate] = erin.human();
+        auto const jv4 = mpt.convertJV(
+            {.account = frank, .amt = 25, .holderPubKey = mpt.getPubKey(frank)}, frankSeq);
+        auto const jv5 = mpt.mergeInboxJV({.account = frank});
+        auto jv6 = mpt.mergeInboxJV({.account = bob});
+        jv6[jss::Delegate] = erin.human();
+
+        env(batch::outer(dave, daveSeq, batchFee, tfAllOrNothing),
+            batch::Inner(jv1, bobSeq),
+            batch::Inner(jv2, bobSeq + 1),
+            batch::Inner(jv3, carolSeq),
+            batch::Inner(jv4, frankSeq),
+            batch::Inner(jv5, frankSeq + 1),
+            batch::Inner(jv6, bobSeq + 2),
+            batch::Sig(bob, carol, frank),
+            Ter(tesSUCCESS));
+        env.close();
+
+        env.require(MptBalance(mpt, bob, 60));
+        BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 105);
+        BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedInbox) == 0);
+        env.require(MptBalance(mpt, carol, 0));
+        BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedSpending) == 45);
+        BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedInbox) == 0);
+        env.require(MptBalance(mpt, frank, 15));
+        BEAST_EXPECT(mpt.getDecryptedBalance(frank, MPTTester::HolderEncryptedSpending) == 25);
+        BEAST_EXPECT(mpt.getDecryptedBalance(frank, MPTTester::HolderEncryptedInbox) == 0);
+        env.require(MptBalance(mpt, dave, 0));
+        BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedSpending) == 0);
+        BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedInbox) == 0);
+        BEAST_EXPECT(mpt.getIssuanceOutstandingBalance() == 250);
+        BEAST_EXPECT(mpt.getIssuanceConfidentialBalance() == 175);
+    }
+
     // Test invalid scenarios for delegation with tickets.
     void
     testInvalidDelegationWithTickets(FeatureBitset features)
@@ -10272,6 +10628,12 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
         testDelegationRevocation(features);
         testDelegationWithAuditor(features);
         testDelegationClawbackIssuerOnly(features);
+
+        // Batch + Delegation Combination Tests
+        testBatchDelegatedSend(features);
+        testBatchDelegationMissingPermission(features);
+        testBatchDelegatedSendWithDelegateAsOuterAccount(features);
+        testBatchDelegatedConfidentialMix(features);
 
         // Delegation with Tickets Tests
         testInvalidDelegationWithTickets(features);
