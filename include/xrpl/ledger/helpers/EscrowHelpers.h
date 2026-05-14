@@ -41,6 +41,12 @@ escrowUnlockApplyHelper<Issue>(
     bool createAsset,
     beast::Journal journal)
 {
+    if (view.rules().enabled(fixTokenEscrowV1_1))
+    {
+        if (!sleDest || sleDest->getType() != ltACCOUNT_ROOT)
+            return tecINTERNAL;
+    }
+
     Issue const& issue = amount.get<Issue>();
     Keylet const trustLineKey = keylet::line(receiver, issue);
     bool const recvLow = issuer > receiver;
@@ -171,6 +177,12 @@ escrowUnlockApplyHelper<MPTIssue>(
     bool createAsset,
     beast::Journal journal)
 {
+    if (view.rules().enabled(fixTokenEscrowV1_1))
+    {
+        if (!sleDest || sleDest->getType() != ltACCOUNT_ROOT)
+            return tecINTERNAL;
+    }
+
     bool const senderIssuer = issuer == sender;
     bool const receiverIssuer = issuer == receiver;
 

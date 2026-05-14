@@ -99,7 +99,14 @@ isPseudoAccount(
  * createPseudoAccount.
  */
 [[nodiscard]] Expected<std::shared_ptr<SLE>, TER>
-createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey, SField const& ownerField);
+createPseudoAccount(
+    ApplyView& view,
+    uint256 const& pseudoOwnerKey,
+    SField const& ownerField,
+    std::uint32_t additionalFlags = 0);
+
+[[nodiscard]] bool
+isBlackholed(ReadView const& view, std::shared_ptr<SLE const> const& sle);
 
 /** Checks the destination and tag.
 

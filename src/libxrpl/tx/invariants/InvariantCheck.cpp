@@ -771,8 +771,11 @@ ValidNewAccountRoot::finalize(
 
         if (pseudoAccount)
         {
-            std::uint32_t const expected = (lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
-            if (flags_ != expected)
+            std::uint32_t const base = (lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
+            bool valid = (flags_ == base);
+            if (!valid && view.rules().enabled(fixTokenEscrowV1_1))
+                valid = (flags_ == (base | lsfAllowTrustLineLocking));
+            if (!valid)
             {
                 JLOG(j.fatal()) << "Invariant failed: pseudo-account created with "
                                    "wrong flags";
