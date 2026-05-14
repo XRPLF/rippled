@@ -366,18 +366,17 @@ TrustSet::doApply()
     // but the incremental reserve for the trust line as
     // well. A person with no intention of using the gateway
     // could use the extra XRP for their own purposes.
-    auto const txSponsorAcc = getTxReserveSponsorAccountID(ctx_.tx);
 
-    std::shared_ptr<SLE> txSponsorSle;
-    if (txSponsorAcc)
-        txSponsorSle = view().peek(keylet::account(*txSponsorAcc));
+    auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
+    if (!sponsorSle)
+        return sponsorSle.error();  // LCOV_EXCL_LINE
 
-    std::uint32_t const uOwnerCount = ownerCount(view(), txSponsorSle ? txSponsorSle : sle, j_);
+    std::uint32_t const uOwnerCount = ownerCount(view(), *sponsorSle ? *sponsorSle : sle, j_);
 
-    bool const isSponsoredAndPreFunded = txSponsorSle && !isSponsorReserveCoSigning(ctx_.tx);
+    bool const isSponsoredAndPreFunded = *sponsorSle && !isSponsorReserveCoSigning(ctx_.tx);
     // If PreFunded Sponsor, it must be checked whether sufficient
     // ReserveCount exists.
-    bool const freeTrustLine = uOwnerCount < 2 && !txSponsorSle;
+    bool const freeTrustLine = uOwnerCount < 2 && !*sponsorSle;
 
     std::uint32_t const uQualityIn(bQualityIn ? ctx_.tx.getFieldU32(sfQualityIn) : 0);
     std::uint32_t uQualityOut(bQualityOut ? ctx_.tx.getFieldU32(sfQualityOut) : 0);
@@ -581,15 +580,15 @@ TrustSet::doApply()
             // For PreFunded sponsors, we need to check if there are sufficient reserves before
             // calling adjustOwnerCount().
             if (auto const ret = checkInsufficientReserve(
-                    view(), ctx_.tx, sleLowAccount, preFeeBalance_, txSponsorSle, 1, 0, j_);
+                    view(), ctx_.tx, sleLowAccount, preFeeBalance_, *sponsorSle, 1, 0, j_);
                 isSponsoredAndPreFunded && !isTesSuccess(ret))
                 return tecINSUF_RESERVE_LINE;
 
             // Set reserve for low account.
-            adjustOwnerCount(view(), sleLowAccount, txSponsorSle, 1, viewJ);
+            adjustOwnerCount(view(), sleLowAccount, *sponsorSle, 1, viewJ);
             uFlagsOut |= lsfLowReserve;
 
-            addSponsorToLedgerEntry(sleRippleState, txSponsorSle, sfLowSponsor);
+            addSponsorToLedgerEntry(sleRippleState, *sponsorSle, sfLowSponsor);
 
             if (!bHigh)
                 bReserveIncrease = true;
@@ -610,15 +609,15 @@ TrustSet::doApply()
             // For PreFunded sponsors, we need to check if there are sufficient reserves before
             // calling adjustOwnerCount().
             if (auto const ret = checkInsufficientReserve(
-                    view(), ctx_.tx, sleHighAccount, preFeeBalance_, txSponsorSle, 1, 0, j_);
+                    view(), ctx_.tx, sleHighAccount, preFeeBalance_, *sponsorSle, 1, 0, j_);
                 isSponsoredAndPreFunded && !isTesSuccess(ret))
                 return tecINSUF_RESERVE_LINE;
 
             // Set reserve for high account.
-            adjustOwnerCount(view(), sleHighAccount, txSponsorSle, 1, viewJ);
+            adjustOwnerCount(view(), sleHighAccount, *sponsorSle, 1, viewJ);
             uFlagsOut |= lsfHighReserve;
 
-            addSponsorToLedgerEntry(sleRippleState, txSponsorSle, sfHighSponsor);
+            addSponsorToLedgerEntry(sleRippleState, *sponsorSle, sfHighSponsor);
 
             if (bHigh)
                 bReserveIncrease = true;
@@ -645,7 +644,7 @@ TrustSet::doApply()
         // Reserve is not scaled by load.
         else if (
             auto const ret = checkInsufficientReserve(
-                view(), ctx_.tx, sle, preFeeBalance_, txSponsorSle, 0, 0, j_);
+                view(), ctx_.tx, sle, preFeeBalance_, *sponsorSle, 0, 0, j_);
             !freeTrustLine && bReserveIncrease && !isTesSuccess(ret))
         {
             JLOG(j_.trace()) << "Delay transaction: Insufficent reserve to "
@@ -676,7 +675,7 @@ TrustSet::doApply()
     }
     else if (
         auto const ret = checkInsufficientReserve(
-            ctx_.view(), ctx_.tx, sle, preFeeBalance_, txSponsorSle, 1, 0, j_);
+            ctx_.view(), ctx_.tx, sle, preFeeBalance_, *sponsorSle, 1, 0, j_);
         !freeTrustLine && !isTesSuccess(ret))  // Reserve is not scaled by load.
     {
         JLOG(j_.trace()) << "Delay transaction: Line does not exist. "
@@ -711,7 +710,7 @@ TrustSet::doApply()
             saLimitAllow,  // Limit for who is being charged.
             uQualityIn,
             uQualityOut,
-            txSponsorAcc,
+            *sponsorSle,
             viewJ);
     }
 

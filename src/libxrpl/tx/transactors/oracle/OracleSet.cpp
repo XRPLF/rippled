@@ -183,9 +183,11 @@ OracleSet::preclaim(PreclaimContext const& ctx)
         return tecARRAY_TOO_LARGE;
 
     auto const& balance = sleSetter->getFieldAmount(sfBalance);
-    auto const sponsor = getTxReserveSponsor(ctx.view, ctx.tx);
+    auto const sponsorSle = getTxReserveSponsor(ctx.view, ctx.tx);
+    if (!sponsorSle)
+        return sponsorSle.error();  // LCOV_EXCL_LINE
     if (auto const ret = checkInsufficientReserve(
-            ctx.view, ctx.tx, sleSetter, balance, sponsor, adjustReserve, 0, ctx.j);
+            ctx.view, ctx.tx, sleSetter, balance, *sponsorSle, adjustReserve, 0, ctx.j);
         !isTesSuccess(ret))
         return ret;
 
@@ -283,13 +285,15 @@ OracleSet::doApply()
             // Otherwise, the sponsorship will be deleted.
 
             auto const newSponsorSle = getTxReserveSponsor(ctx_.view(), ctx_.tx);
+            if (!newSponsorSle)
+                return newSponsorSle.error();  // LCOV_EXCL_LINE
 
             // decrease current sponsored owner count
             adjustOwnerCountObj(ctx_.view(), accountSle, sle, -oldCount, ctx_.journal);
             removeSponsorFromLedgerEntry(sle);
             // increase new owner count
-            adjustOwnerCount(ctx_.view(), accountSle, newSponsorSle, newCount, ctx_.journal);
-            addSponsorToLedgerEntry(sle, newSponsorSle);
+            adjustOwnerCount(ctx_.view(), accountSle, *newSponsorSle, newCount, ctx_.journal);
+            addSponsorToLedgerEntry(sle, *newSponsorSle);
         }
         else if (adjust < 0)
         {
@@ -344,13 +348,15 @@ OracleSet::doApply()
         (*sle)[sfOwnerNode] = *page;
 
         auto const count = calculateOracleReserve(series.size());
-        auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
+        auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
+        if (!sponsorSle)
+            return sponsorSle.error();  // LCOV_EXCL_LINE
         auto const accountSle = ctx_.view().peek(keylet::account(ctx_.tx[sfAccount]));
         if (!accountSle)
             return tefINTERNAL;  // LCOV_EXCL_LINE
-        adjustOwnerCount(ctx_.view(), accountSle, sponsor, count, ctx_.journal);
 
-        addSponsorToLedgerEntry(sle, sponsor);
+        adjustOwnerCount(ctx_.view(), accountSle, *sponsorSle, count, ctx_.journal);
+        addSponsorToLedgerEntry(sle, *sponsorSle);
 
         ctx_.view().insert(sle);
     }

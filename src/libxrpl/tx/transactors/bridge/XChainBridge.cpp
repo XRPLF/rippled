@@ -1440,9 +1440,11 @@ XChainCreateBridge::preclaim(PreclaimContext const& ctx)
             return terNO_ACCOUNT;
 
         auto const balance = (*sleAcc)[sfBalance];
-        auto const sponsor = getTxReserveSponsor(ctx.view, ctx.tx);
-        if (auto const ret =
-                checkInsufficientReserve(ctx.view, ctx.tx, sleAcc, balance, sponsor, 1, 0, ctx.j);
+        auto const sponsorSle = getTxReserveSponsor(ctx.view, ctx.tx);
+        if (!sponsorSle)
+            return sponsorSle.error();  // LCOV_EXCL_LINE
+        if (auto const ret = checkInsufficientReserve(
+                ctx.view, ctx.tx, sleAcc, balance, *sponsorSle, 1, 0, ctx.j);
             !isTesSuccess(ret))
             return ret;
     }
@@ -1486,9 +1488,11 @@ XChainCreateBridge::doApply()
         (*sleBridge)[sfOwnerNode] = *page;
     }
 
-    auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
-    adjustOwnerCount(ctx_.view(), sleAcct, sponsor, 1, ctx_.journal);
-    addSponsorToLedgerEntry(sleBridge, sponsor);
+    auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
+    if (!sponsorSle)
+        return sponsorSle.error();  // LCOV_EXCL_LINE
+    adjustOwnerCount(ctx_.view(), sleAcct, *sponsorSle, 1, ctx_.journal);
+    addSponsorToLedgerEntry(sleBridge, *sponsorSle);
 
     ctx_.view().insert(sleBridge);
     ctx_.view().update(sleAcct);
@@ -1991,9 +1995,11 @@ XChainCreateClaimID::preclaim(PreclaimContext const& ctx)
             return terNO_ACCOUNT;
 
         auto const balance = (*sleAcc)[sfBalance];
-        auto const sponsor = getTxReserveSponsor(ctx.view, ctx.tx);
-        if (auto const ret =
-                checkInsufficientReserve(ctx.view, ctx.tx, sleAcc, balance, sponsor, 1, 0, ctx.j);
+        auto const sponsorSle = getTxReserveSponsor(ctx.view, ctx.tx);
+        if (!sponsorSle)
+            return sponsorSle.error();  // LCOV_EXCL_LINE
+        if (auto const ret = checkInsufficientReserve(
+                ctx.view, ctx.tx, sleAcc, balance, *sponsorSle, 1, 0, ctx.j);
             !isTesSuccess(ret))
             return ret;
     }
@@ -2051,9 +2057,11 @@ XChainCreateClaimID::doApply()
         (*sleClaimID)[sfOwnerNode] = *page;
     }
 
-    auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
-    adjustOwnerCount(ctx_.view(), sleAcct, sponsor, 1, ctx_.journal);
-    addSponsorToLedgerEntry(sleClaimID, sponsor);
+    auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
+    if (!sponsorSle)
+        return sponsorSle.error();  // LCOV_EXCL_LINE
+    adjustOwnerCount(ctx_.view(), sleAcct, *sponsorSle, 1, ctx_.journal);
+    addSponsorToLedgerEntry(sleClaimID, *sponsorSle);
 
     ctx_.view().insert(sleClaimID);
     ctx_.view().update(sleBridge);

@@ -616,7 +616,14 @@ AMMWithdraw::withdraw(
 
     // this is also called from AMMClawback, but only AMMWithdraw does sponsor
     // the new trustline
-    auto const sponsor = tx[sfAccount] == account ? getTxReserveSponsorAccountID(tx) : std::nullopt;
+    SLE::pointer sponsorSle;
+    if (tx[sfAccount] == account)
+    {
+        auto sle = getTxReserveSponsor(view, tx);
+        if (!sle)
+            return {sle.error(), STAmount{}, STAmount{}, STAmount{}};  // LCOV_EXCL_LINE
+        sponsorSle = std::move(*sle);
+    }
 
     // Check the reserve in case a trustline or MPT has to be created
     bool const enabledFixAmMv12 = view.rules().enabled(fixAMMv1_2);
@@ -644,8 +651,6 @@ AMMWithdraw::withdraw(
             if (!sleAccount)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
-            auto const sponsorSle = getTxReserveSponsor(view, tx);
-
             auto const balance = (*sleAccount)[sfBalance]->xrp();
             std::uint32_t const count =
                 ownerCount(view, sponsorSle ? sponsorSle : sleAccount, journal);
@@ -657,8 +662,7 @@ AMMWithdraw::withdraw(
                         tx,
                         sleAccount,
                         std::max(priorBalance, balance),
-                        sponsor ? view.read(keylet::account(*sponsor))
-                                : std::shared_ptr<SLE const>(),
+                        sponsorSle,
                         1,
                         0,
                         journal);
@@ -682,7 +686,7 @@ AMMWithdraw::withdraw(
                 !isTesSuccess(err))
                 return err;
 
-            if (auto const err = checkCreateMPT(view, mptIssue, account, sponsor, journal);
+            if (auto const err = checkCreateMPT(view, mptIssue, account, sponsorSle, journal);
                 !isTesSuccess(err))
             {
                 return err;
@@ -699,7 +703,7 @@ AMMWithdraw::withdraw(
 
     // Withdraw amountWithdraw
     auto res = accountSend(
-        view, ammAccount, account, amountWithdrawActual, journal, sponsor, WaiveTransferFee::Yes);
+        view, ammAccount, account, amountWithdrawActual, journal, sponsorSle, WaiveTransferFee::Yes);
     if (!isTesSuccess(res))
     {
         // LCOV_EXCL_START
@@ -723,7 +727,7 @@ AMMWithdraw::withdraw(
             account,
             *amount2WithdrawActual,
             journal,
-            sponsor,
+            sponsorSle,
             WaiveTransferFee::Yes);
         if (!isTesSuccess(res))
         {

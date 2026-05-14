@@ -239,8 +239,10 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
                 ctx.view.read(keylet::line(accountID, lpIssue.account, lpIssue.currency));
 
             auto const sponsorSle = getTxReserveSponsor(ctx.view, ctx.tx);
+            if (!sponsorSle)
+                return sponsorSle.error();  // LCOV_EXCL_LINE
             auto const accountSle = ctx.view.read(keylet::account(accountID));
-            auto const reserveAdj = (sponsorSle || sle) ? 0 : 1;
+            auto const reserveAdj = (*sponsorSle || sle) ? 0 : 1;
 
             if (xrpLiquid(ctx.view, accountID, reserveAdj, ctx.j) < deposit)
             {
@@ -254,11 +256,11 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
                     ctx.tx,
                     accountSle,
                     accountSle->getFieldAmount(sfBalance) - deposit,
-                    sponsorSle,
+                    *sponsorSle,
                     1,
                     !sle,
                     ctx.j);
-                sponsorSle && !isTesSuccess(ret))
+                *sponsorSle && !isTesSuccess(ret))
                 return tecINSUF_RESERVE_LINE;
 
             return tesSUCCESS;
@@ -383,14 +385,16 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
         if (ctx.view.rules().enabled(featureSponsor))
         {
             auto const accountSle = ctx.view.read(keylet::account(accountID));
-            auto const sponsor = getTxReserveSponsor(ctx.view, ctx.tx);
+            auto const sponsorSle = getTxReserveSponsor(ctx.view, ctx.tx);
+            if (!sponsorSle)
+                return sponsorSle.error();  // LCOV_EXCL_LINE
             // Insufficient reserve
             if (auto const ret = checkInsufficientReserve(
                     ctx.view,
                     ctx.tx,
                     accountSle,
                     accountSle->getFieldAmount(sfBalance),
-                    sponsor,
+                    *sponsorSle,
                     1,
                     0,
                     ctx.j);
@@ -554,7 +558,9 @@ AMMDeposit::deposit(
     std::optional<STAmount> const& lpTokensDepositMin,
     std::uint16_t tfee)
 {
-    auto const sponsor = getTxReserveSponsorAccountID(ctx_.tx);
+    auto const sponsorSle = getTxReserveSponsor(view, ctx_.tx);
+    if (!sponsorSle)
+        return {sponsorSle.error(), STAmount{}};  // LCOV_EXCL_LINE
 
     // Check account has sufficient funds.
     // Return true if it does, false otherwise.
@@ -567,7 +573,7 @@ AMMDeposit::deposit(
             // Adjust the reserve if LP doesn't have LPToken trustline
             auto const trustlineExists =
                 view.exists(keylet::line(account_, lpIssue.account, lpIssue.currency));
-            auto const reserveAdj = (sponsor || trustlineExists) ? 0 : 1;
+            auto const reserveAdj = (*sponsorSle || trustlineExists) ? 0 : 1;
             if (xrpLiquid(view, account_, reserveAdj, j_) >= depositAmount)
                 return tesSUCCESS;
         }
@@ -627,7 +633,7 @@ AMMDeposit::deposit(
         ammAccount,
         amountDepositActual,
         ctx_.journal,
-        std::nullopt,  // don't sponsor for AMM Trustline
+        {},  // don't sponsor for AMM Trustline
         WaiveTransferFee::Yes);
     if (!isTesSuccess(res))
     {
@@ -652,7 +658,7 @@ AMMDeposit::deposit(
             ammAccount,
             *amount2DepositActual,
             ctx_.journal,
-            std::nullopt,  // don't sponsor for AMM Trustline
+            {},  // don't sponsor for AMM Trustline
             WaiveTransferFee::Yes);
         if (!isTesSuccess(res))
         {
@@ -663,7 +669,7 @@ AMMDeposit::deposit(
     }
 
     // Deposit LP tokens
-    res = accountSend(view, ammAccount, account_, lpTokensDepositActual, ctx_.journal, sponsor);
+    res = accountSend(view, ammAccount, account_, lpTokensDepositActual, ctx_.journal, *sponsorSle);
     if (!isTesSuccess(res))
     {
         JLOG(ctx_.journal.debug()) << "AMM Deposit: failed to deposit LPTokens";

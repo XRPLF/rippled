@@ -261,7 +261,7 @@ VaultDeposit::doApply()
             vaultAccount,
             assetsDeposited,
             j_,
-            std::nullopt,
+            {},
             WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
@@ -281,11 +281,13 @@ VaultDeposit::doApply()
         // LCOV_EXCL_STOP
     }
 
-    auto const sponsor = getTxReserveSponsorAccountID(ctx_.tx);
+    auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
+    if (!sponsorSle)
+        return sponsorSle.error();  // LCOV_EXCL_LINE
 
     // Transfer shares from vault to depositor.
     if (auto const ter = accountSend(
-            view(), vaultAccount, account_, sharesCreated, j_, sponsor, WaiveTransferFee::Yes);
+            view(), vaultAccount, account_, sharesCreated, j_, *sponsorSle, WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
 

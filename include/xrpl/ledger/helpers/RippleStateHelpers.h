@@ -149,7 +149,7 @@ trustCreate(
                                 // Issuer should be the account being set.
     std::uint32_t uQualityIn,
     std::uint32_t uQualityOut,
-    std::optional<AccountID> const& sponsorAccountID,
+    SLE::ref sponsorSle,
     beast::Journal j);
 
 [[nodiscard]] TER

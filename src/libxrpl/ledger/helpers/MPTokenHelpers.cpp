@@ -190,9 +190,11 @@ authorizeMPToken(
         //      - add the new mptokenKey to the owner directory
         //      - create the MPToken object for the holder
 
-        auto const sponsor = getTxReserveSponsor(view, tx);
+        auto const sponsorSle = getTxReserveSponsor(view, tx);
+        if (!sponsorSle)
+            return sponsorSle.error();  // LCOV_EXCL_LINE
 
-        auto const isSponsoredAndPreFunded = sponsor && !isSponsorReserveCoSigning(tx);
+        auto const isSponsoredAndPreFunded = *sponsorSle && !isSponsorReserveCoSigning(tx);
 
         // The reserve that is required to create the MPToken. Note
         // that although the reserve increases with every item
@@ -201,10 +203,11 @@ authorizeMPToken(
         // items. This is similar to the reserve requirements of trust lines.
         // If PreFunded Sponsor, it must be checked whether sufficient
         // ReserveCount exists.
-        if (ownerCount(view, sponsor ? sponsor : sleAcct, journal) >= 2 || isSponsoredAndPreFunded)
+        if (ownerCount(view, *sponsorSle ? *sponsorSle : sleAcct, journal) >= 2 ||
+            isSponsoredAndPreFunded)
         {
             if (auto const ret = checkInsufficientReserve(
-                    view, tx, sleAcct, priorBalance, sponsor, 1, 0, journal);
+                    view, tx, sleAcct, priorBalance, *sponsorSle, 1, 0, journal);
                 !isTesSuccess(ret))
                 return ret;
         }
@@ -231,8 +234,8 @@ authorizeMPToken(
         view.insert(mptoken);
 
         // Update owner count.
-        adjustOwnerCount(view, sleAcct, sponsor, 1, journal);
-        addSponsorToLedgerEntry(mptoken, sponsor);
+        adjustOwnerCount(view, sleAcct, *sponsorSle, 1, journal);
+        addSponsorToLedgerEntry(mptoken, *sponsorSle);
 
         return tesSUCCESS;
     }
@@ -800,7 +803,7 @@ createMPToken(
     ApplyView& view,
     MPTID const& mptIssuanceID,
     AccountID const& account,
-    std::optional<AccountID> const& sponsor,
+    SLE::ref sponsorSle,
     std::uint32_t const flags)
 {
     auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
@@ -817,13 +820,8 @@ createMPToken(
     (*mptoken)[sfFlags] = flags;
     (*mptoken)[sfOwnerNode] = *ownerNode;
 
-    if (sponsor)
-    {
-        auto const sponsorSle = view.peek(keylet::account(*sponsor));
-        if (!sponsorSle)
-            return tecINTERNAL;
+    if (sponsorSle)
         addSponsorToLedgerEntry(mptoken, sponsorSle);
-    }
 
     view.insert(mptoken);
 
@@ -835,7 +833,7 @@ checkCreateMPT(
     xrpl::ApplyView& view,
     xrpl::MPTIssue const& mptIssue,
     xrpl::AccountID const& holder,
-    std::optional<xrpl::AccountID> const& sponsor,
+    SLE::ref sponsorSle,
     beast::Journal j)
 {
     if (mptIssue.getIssuer() == holder)
@@ -845,7 +843,7 @@ checkCreateMPT(
     auto const mptokenID = keylet::mptoken(mptIssuanceID.key, holder);
     if (!view.exists(mptokenID))
     {
-        if (auto const err = createMPToken(view, mptIssue.getMptID(), holder, sponsor, 0);
+        if (auto const err = createMPToken(view, mptIssue.getMptID(), holder, sponsorSle, 0);
             !isTesSuccess(err))
         {
             return err;
@@ -855,9 +853,8 @@ checkCreateMPT(
         {
             return tecINTERNAL;
         }
-        auto const sleSponsor =
-            sponsor ? view.peek(keylet::account(*sponsor)) : std::shared_ptr<SLE>();
-        adjustOwnerCount(view, sleAcct, sleSponsor, 1, j);
+
+        adjustOwnerCount(view, sleAcct, sponsorSle, 1, j);
     }
     return tesSUCCESS;
 }

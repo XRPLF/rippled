@@ -72,10 +72,12 @@ addSLE(ApplyContext& ctx, std::shared_ptr<SLE> const& sle, AccountID const& owne
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // Check reserve availability for new object creation
-    auto const sponsor = getTxReserveSponsor(ctx.view(), ctx.tx);
+    auto const sponsorSle = getTxReserveSponsor(ctx.view(), ctx.tx);
+    if (!sponsorSle)
+        return sponsorSle.error();  // LCOV_EXCL_LINE
     auto const balance = STAmount((*sleAccount)[sfBalance]).xrp();
     if (auto const ret = checkInsufficientReserve(
-            ctx.view(), ctx.tx, sleAccount, balance, sponsor, 1, 0, ctx.journal);
+            ctx.view(), ctx.tx, sleAccount, balance, *sponsorSle, 1, 0, ctx.journal);
         !isTesSuccess(ret))
         return ret;
 
@@ -90,8 +92,8 @@ addSLE(ApplyContext& ctx, std::shared_ptr<SLE> const& sle, AccountID const& owne
             return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*sle)[sfOwnerNode] = *page;
     }
-    adjustOwnerCount(ctx.view(), sleAccount, sponsor, 1, ctx.journal);
-    addSponsorToLedgerEntry(sle, sponsor);
+    adjustOwnerCount(ctx.view(), sleAccount, *sponsorSle, 1, ctx.journal);
+    addSponsorToLedgerEntry(sle, *sponsorSle);
     ctx.view().update(sleAccount);
 
     return tesSUCCESS;

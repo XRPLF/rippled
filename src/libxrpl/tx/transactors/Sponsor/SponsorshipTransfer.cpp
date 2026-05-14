@@ -233,7 +233,9 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
 {
     auto const index = ctx.tx[~sfObjectID];
     auto const flags = ctx.tx.getFlags();
-    auto const newSponsor = getTxReserveSponsor(ctx.view, ctx.tx);
+    auto const newSponsorSle = getTxReserveSponsor(ctx.view, ctx.tx);
+    if (!newSponsorSle)
+        return newSponsorSle.error();  // LCOV_EXCL_LINE
 
     bool const isObjectSponsor = index != std::nullopt;
 
@@ -260,7 +262,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
 
         if ((flags & tfSponsorshipCreate) != 0u)
         {
-            if (!newSponsor)
+            if (!*newSponsorSle)
                 return tecNO_PERMISSION;
 
             // check object is not sponsored yet
@@ -269,7 +271,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
         }
         else if ((flags & tfSponsorshipReassign) != 0u)
         {
-            if (!newSponsor)
+            if (!*newSponsorSle)
                 return tecNO_PERMISSION;
 
             // check object is already ctx.sponsored
@@ -278,7 +280,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
         }
         else if ((flags & tfSponsorshipEnd) != 0u)
         {
-            if (newSponsor)
+            if (*newSponsorSle)
                 return tecNO_PERMISSION;
 
             // check object is sponsored
@@ -298,7 +300,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
                 ctx.tx,
                 sponseeSle,
                 sponseeSle->getFieldAmount(sfBalance),
-                newSponsor,
+                *newSponsorSle,
                 ownerCountDelta,
                 0,
                 ctx.j);
@@ -309,7 +311,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
     {
         if ((flags & tfSponsorshipCreate) != 0u)
         {
-            if (!newSponsor)
+            if (!*newSponsorSle)
                 return tecNO_PERMISSION;
 
             // check account is not sponsored yet
@@ -318,7 +320,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
         }
         else if ((flags & tfSponsorshipReassign) != 0u)
         {
-            if (!newSponsor)
+            if (!*newSponsorSle)
                 return tecNO_PERMISSION;
 
             // check account is already sponsored
@@ -327,7 +329,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
         }
         else if ((flags & tfSponsorshipEnd) != 0u)
         {
-            if (newSponsor)
+            if (*newSponsorSle)
                 return tecNO_PERMISSION;
 
             // check account is sponsored
@@ -350,7 +352,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
                 ctx.tx,
                 sponseeSle,
                 sponseeSle->getFieldAmount(sfBalance),
-                newSponsor,
+                *newSponsorSle,
                 0,
                 1,
                 ctx.j);

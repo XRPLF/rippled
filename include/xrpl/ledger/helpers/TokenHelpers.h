@@ -272,7 +272,7 @@ accountSend(
     AccountID const& to,
     STAmount const& saAmount,
     beast::Journal j,
-    std::optional<AccountID> const& sponsorAccountID = std::nullopt,
+    SLE::ref sponsorSle = {},
     WaiveTransferFee waiveFee = WaiveTransferFee::No,
     AllowMPTOverflow allowOverflow = AllowMPTOverflow::No);
 
@@ -290,7 +290,7 @@ accountSendMulti(
     Asset const& asset,
     MultiplePaymentDestinations const& receivers,
     beast::Journal j,
-    std::optional<AccountID> const& sponsorAccountID,
+    SLE::ref sponsorSle,
     WaiveTransferFee waiveFee = WaiveTransferFee::No);
 
 [[nodiscard]] TER

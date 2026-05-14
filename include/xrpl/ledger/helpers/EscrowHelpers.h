@@ -59,12 +59,12 @@ escrowUnlockApplyHelper<Issue>(
     if (!view.exists(trustLineKey) && createAsset)
     {
         // Can the account cover the trust line's reserve?
-        auto const sponsorAccountID = getTxReserveSponsorAccountID(tx);
-        std::shared_ptr<SLE> sponsorSle = {};
-        if (sponsorAccountID)
-            sponsorSle = view.peek(keylet::account(*sponsorAccountID));
+        auto const sponsorSle = getTxReserveSponsor(view, tx);
+        if (!sponsorSle)
+            return sponsorSle.error();  // LCOV_EXCL_LINE
+
         if (auto const ret =
-                checkInsufficientReserve(view, tx, sleDest, xrpBalance, sponsorSle, 1, 0, journal);
+                checkInsufficientReserve(view, tx, sleDest, xrpBalance, *sponsorSle, 1, 0, journal);
             !isTesSuccess(ret))
         {
             JLOG(journal.trace()) << "Trust line does not exist. "
@@ -92,7 +92,7 @@ escrowUnlockApplyHelper<Issue>(
                 Issue(currency, receiver),                      // limit of zero
                 0,                                              // quality in
                 0,                                              // quality out
-                sponsorAccountID,                               // sponsor
+                *sponsorSle,                                    // sponsor
                 journal);                                       // journal
             !isTesSuccess(ter))
         {
@@ -189,25 +189,25 @@ escrowUnlockApplyHelper<MPTIssue>(
     auto const mptKeylet = keylet::mptoken(issuanceKey.key, receiver);
     if (!view.exists(mptKeylet) && createAsset && !receiverIssuer)
     {
-        auto const sponsorAccountID = getTxReserveSponsorAccountID(tx);
-        std::shared_ptr<SLE> sponsorSle = {};
-        if (sponsorAccountID)
-            sponsorSle = view.peek(keylet::account(*sponsorAccountID));
+        auto const sponsorSle = getTxReserveSponsor(view, tx);
+        if (!sponsorSle)
+            return sponsorSle.error();  // LCOV_EXCL_LINE
+
         if (auto const ret =
-                checkInsufficientReserve(view, tx, sleDest, xrpBalance, sponsorSle, 1, 0, journal);
+                checkInsufficientReserve(view, tx, sleDest, xrpBalance, *sponsorSle, 1, 0, journal);
             !isTesSuccess(ret))
             return ret;
 
-        if (auto const ter = createMPToken(view, mptID, receiver, sponsorAccountID, 0);
+        if (auto const ter = createMPToken(view, mptID, receiver, *sponsorSle, 0);
             !isTesSuccess(ter))
         {
             return ter;  // LCOV_EXCL_LINE
         }
 
         // update owner count.
-        adjustOwnerCount(view, sleDest, sponsorSle, 1, journal);
+        adjustOwnerCount(view, sleDest, *sponsorSle, 1, journal);
         auto mptSle = view.peek(mptKeylet);
-        addSponsorToLedgerEntry(mptSle, sponsorSle);
+        addSponsorToLedgerEntry(mptSle, *sponsorSle);
     }
 
     if (!view.exists(mptKeylet) && !receiverIssuer)

@@ -307,9 +307,12 @@ NFTokenMint::doApply()
             object.setFieldVL(sfURI, *uri);
     });
 
-    auto const sponsor = getTxReserveSponsorAccountID(ctx_.tx);
+    auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
+    if (!sponsorSle)
+        return sponsorSle.error();  // LCOV_EXCL_LINE
+
     if (TER const ret =
-            nft::insertToken(ctx_.view(), ctx_.tx, account_, sponsor, std::move(newToken));
+            nft::insertToken(ctx_.view(), ctx_.tx, account_, *sponsorSle, std::move(newToken));
         !isTesSuccess(ret))
         return ret;
 
@@ -340,14 +343,13 @@ NFTokenMint::doApply()
     if (auto const ownerCountAfter =
             view().read(keylet::account(account_))->getFieldU32(sfOwnerCount);
         ownerCountAfter > ownerCountBefore)
-    {
-        auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
+    {        
         if (auto const ret = checkInsufficientReserve(
                 ctx_.view(),
                 ctx_.tx,
                 view().read(keylet::account(account_)),
                 preFeeBalance_,
-                sponsor,
+                *sponsorSle,
                 0,
                 0,
                 j_);

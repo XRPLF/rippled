@@ -95,9 +95,11 @@ DelegateSet::doApply()
     if (permissions.empty())
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
+    auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
+    if (!sponsorSle)
+        return sponsorSle.error();  // LCOV_EXCL_LINE
     if (auto const ret = checkInsufficientReserve(
-            view(), ctx_.tx, sleOwner, preFeeBalance_, sponsor, 1, 0, ctx_.journal);
+            view(), ctx_.tx, sleOwner, preFeeBalance_, *sponsorSle, 1, 0, ctx_.journal);
         !isTesSuccess(ret))
         return ret;
 
@@ -127,8 +129,8 @@ DelegateSet::doApply()
     (*sle)[sfDestinationNode] = *destPage;
 
     ctx_.view().insert(sle);
-    adjustOwnerCount(ctx_.view(), sleOwner, sponsor, 1, ctx_.journal);
-    addSponsorToLedgerEntry(sle, sponsor);
+    adjustOwnerCount(ctx_.view(), sleOwner, *sponsorSle, 1, ctx_.journal);
+    addSponsorToLedgerEntry(sle, *sponsorSle);
 
     return tesSUCCESS;
 }

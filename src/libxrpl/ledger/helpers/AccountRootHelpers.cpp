@@ -337,7 +337,7 @@ checkInsufficientReserve(
     STAmount const& accBalance,
     SLE::const_ref sponsorSle,
     std::int32_t ownerCountDelta,
-    std::int32_t accountCountDelta,
+    std::int32_t reserveCountDelta,
     beast::Journal j)
 {
     if (sponsorSle)
@@ -353,14 +353,14 @@ checkInsufficientReserve(
 
         if (sle)
         {
-            auto const reserveCountAllowed = sle->getFieldU32(sfReserveCount);
-            if (reserveCountAllowed < ownerCountDelta)
+            auto const ownerCountAllowed = sle->getFieldU32(sfReserveCount);
+            if (ownerCountAllowed < ownerCountDelta)
                 return tecINSUFFICIENT_RESERVE;
         }
 
         auto const sponsorBalance = sponsorSle->getFieldAmount(sfBalance);
         STAmount const sponsorReserve =
-            accountReserve(view, sponsorSle, j, ownerCountDelta, accountCountDelta);
+            accountReserve(view, sponsorSle, j, ownerCountDelta, reserveCountDelta);
 
         if (sponsorBalance < sponsorReserve)
             return tecINSUFFICIENT_RESERVE;
@@ -368,7 +368,7 @@ checkInsufficientReserve(
     else
     {
         STAmount const reserve =
-            accountReserve(view, accSle, j, ownerCountDelta, accountCountDelta);
+            accountReserve(view, accSle, j, ownerCountDelta, reserveCountDelta);
         if (accBalance < reserve)
             return tecINSUFFICIENT_RESERVE;
     }

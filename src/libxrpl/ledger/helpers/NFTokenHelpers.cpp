@@ -75,14 +75,14 @@ getPageForToken(
     ApplyView& view,
     STTx const& tx,
     AccountID const& owner,
-    std::optional<AccountID> const& sponsor,
+    SLE::ref sponsorSle,
     uint256 const& id,
     std::function<
         TER(ApplyView&,
             STTx const&,
             std::shared_ptr<SLE> const&,
             AccountID const&,
-            std::optional<AccountID> const&)> const& createCallback)
+            SLE::ref)> const& createCallback)
 {
     auto const base = keylet::nftpageMin(owner);
     auto const first = keylet::nftpage(base, id);
@@ -102,7 +102,7 @@ getPageForToken(
         cp->setFieldArray(sfNFTokens, arr);
         view.insert(cp);
 
-        if (auto const ret = createCallback(view, tx, cp, owner, sponsor); !isTesSuccess(ret))
+        if (auto const ret = createCallback(view, tx, cp, owner, sponsorSle); !isTesSuccess(ret))
             return Unexpected(ret);
         return cp;
     }
@@ -216,7 +216,7 @@ getPageForToken(
     cp->setFieldH256(sfPreviousPageMin, np->key());
     view.update(cp);
 
-    if (auto const ret = createCallback(view, tx, np, owner, sponsor); ret != tesSUCCESS)
+    if (auto const ret = createCallback(view, tx, np, owner, sponsorSle); ret != tesSUCCESS)
         return Unexpected(ret);
 
     return (first.key < np->key()) ? np : cp;
@@ -273,12 +273,7 @@ changeTokenURI(
 
 /** Insert the token in the owner's token directory. */
 TER
-insertToken(
-    ApplyView& view,
-    STTx const& tx,
-    AccountID owner,
-    std::optional<AccountID> const& sponsor,
-    STObject&& nft)
+insertToken(ApplyView& view, STTx const& tx, AccountID owner, SLE::ref sponsorSle, STObject&& nft)
 {
     XRPL_ASSERT(nft.isFieldPresent(sfNFTokenID), "xrpl::nft::insertToken : has NFT token");
 
@@ -289,16 +284,13 @@ insertToken(
         view,
         tx,
         owner,
-        sponsor,
+        sponsorSle,
         nft[sfNFTokenID],
         [](ApplyView& view,
            STTx const& tx,
            std::shared_ptr<SLE> const& newPage,
            AccountID const& owner,
-           std::optional<AccountID> const& sponsor) -> TER {
-            std::shared_ptr<SLE> const sponsorSle =
-                sponsor ? view.peek(keylet::account(*sponsor)) : std::shared_ptr<SLE>();
-
+           SLE::ref sponsorSle) -> TER {
             if (isReserveSponsored(tx))
             {
                 auto const ownerSle = view.read(keylet::account(owner));
@@ -962,8 +954,11 @@ tokenOfferCreateApply(
 {
     Keylet const acctKeylet = keylet::account(acctID);
     auto const acct = view.read(acctKeylet);
-    auto const sponsor = getTxReserveSponsor(view, tx);
-    if (auto const ret = checkInsufficientReserve(view, tx, acct, priorBalance, sponsor, 1, 0, j);
+    auto const sponsorSle = getTxReserveSponsor(view, tx);
+    if (!sponsorSle)
+        return sponsorSle.error();  // LCOV_EXCL_LINE
+    if (auto const ret =
+            checkInsufficientReserve(view, tx, acct, priorBalance, *sponsorSle, 1, 0, j);
         !isTesSuccess(ret))
         return ret;
 
@@ -1012,13 +1007,13 @@ tokenOfferCreateApply(
         if (dest)
             (*offer)[sfDestination] = *dest;
 
-        addSponsorToLedgerEntry(offer, sponsor);
+        addSponsorToLedgerEntry(offer, *sponsorSle);
 
         view.insert(offer);
     }
 
     // Update owner count.
-    adjustOwnerCount(view, view.peek(acctKeylet), sponsor, 1, j);
+    adjustOwnerCount(view, view.peek(acctKeylet), *sponsorSle, 1, j);
 
     return tesSUCCESS;
 }

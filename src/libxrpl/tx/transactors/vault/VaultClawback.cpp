@@ -395,7 +395,7 @@ VaultClawback::doApply()
     auto const& vaultAccount = vault->at(sfAccount);
     // Transfer shares from holder to vault.
     if (auto const ter = accountSend(
-            view(), holder, vaultAccount, sharesDestroyed, j_, std::nullopt, WaiveTransferFee::Yes);
+            view(), holder, vaultAccount, sharesDestroyed, j_, {}, WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
 
@@ -430,13 +430,7 @@ VaultClawback::doApply()
     {
         // Transfer assets from vault to issuer.
         if (auto const ter = accountSend(
-                view(),
-                vaultAccount,
-                account_,
-                assetsRecovered,
-                j_,
-                std::nullopt,
-                WaiveTransferFee::Yes);
+                view(), vaultAccount, account_, assetsRecovered, j_, {}, WaiveTransferFee::Yes);
             !isTesSuccess(ter))
             return ter;
 

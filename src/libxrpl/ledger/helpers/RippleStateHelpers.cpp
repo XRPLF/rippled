@@ -197,7 +197,7 @@ trustCreate(
                                 // Issuer should be the account being set.
     std::uint32_t uQualityIn,
     std::uint32_t uQualityOut,
-    std::optional<AccountID> const& sponsorAccountID,
+    SLE::ref sponsorSle,
     beast::Journal j)
 {
     JLOG(j.trace()) << "trustCreate: " << to_string(uSrcAccountID) << ", "
@@ -282,10 +282,6 @@ trustCreate(
         // The other side's default is no rippling
         uFlags |= (bSetHigh ? lsfLowNoRipple : lsfHighNoRipple);
     }
-
-    std::shared_ptr<SLE> sponsorSle = {};
-    if (sponsorAccountID)
-        sponsorSle = view.peek(keylet::account(*sponsorAccountID));
 
     sleRippleState->setFieldU32(sfFlags, uFlags);
     adjustOwnerCount(view, sleAccount, sponsorSle, 1, j);
@@ -665,20 +661,19 @@ addEmptyHolding(
     // If the line already exists, don't create it again.
     if (view.read(index))
         return tecDUPLICATE;
-    auto const& sponsorAccountID =
-        !isPseudoAccount(sleDst) ? getTxReserveSponsorAccountID(tx) : std::nullopt;
+
+    SLE::pointer sponsorSle;
+    if (!isPseudoAccount(sleDst))
+    {
+        auto sle = getTxReserveSponsor(view, tx);
+        if (!sle)
+            return sle.error();  // LCOV_EXCL_LINE
+        sponsorSle = std::move(*sle);
+    }
 
     // Can the account cover the trust line reserve ?
-    if (auto const ret = checkInsufficientReserve(
-            view,
-            tx,
-            sleDst,
-            priorBalance,
-            sponsorAccountID ? view.read(keylet::account(*sponsorAccountID))
-                             : std::shared_ptr<SLE>(),
-            1,
-            0,
-            journal);
+    if (auto const ret =
+            checkInsufficientReserve(view, tx, sleDst, priorBalance, sponsorSle, 1, 0, journal);
         !isTesSuccess(ret))
         return tecNO_LINE_INSUF_RESERVE;
 
@@ -697,7 +692,7 @@ addEmptyHolding(
         /*saLimit=*/STAmount{Issue{currency, dstId}},
         /*uQualityIn=*/0,
         /*uQualityOut=*/0,
-        sponsorAccountID,
+        sponsorSle,
         journal);
 }
 
