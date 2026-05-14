@@ -352,182 +352,6 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
     };
 
     void
-    testConfidentialPerOperationAccounting(FeatureBitset features)
-    {
-        testcase("Confidential per-operation accounting");
-        using namespace test::jtx;
-
-        struct LedgerSnapshot
-        {
-            std::int64_t outstandingAmount = 0;
-            std::int64_t confidentialOutstandingAmount = 0;
-            std::int64_t bobMPTAmount = 0;
-            std::int64_t carolMPTAmount = 0;
-        };
-
-        auto const run = [&](bool const withAuditor) {
-            Env env{*this, features};
-            Account const alice("alice");
-            Account const bob("bob");
-            Account const carol("carol");
-            Account const auditor("auditor");
-            std::optional<Account> auditorAccount;
-            if (withAuditor)
-                auditorAccount = auditor;
-
-            MPTTester mptAlice(
-                env,
-                alice,
-                {
-                    .holders = {bob, carol},
-                    .auditor = auditorAccount,
-                });
-
-            mptAlice.create({
-                .ownerCount = 1,
-                .pay = {{MPTCreate::allHolders, 100}},
-                .flags =
-                    tfMPTCanTransfer | tfMPTCanLock | tfMPTCanClawback | tfMPTCanConfidentialAmount,
-            });
-
-            for (auto const& holder : {bob, carol})
-                mptAlice.generateKeyPair(holder);
-
-            mptAlice.generateKeyPair(alice);
-            if (withAuditor)
-                mptAlice.generateKeyPair(auditor);
-
-            std::optional<Buffer> auditorPubKey;
-            if (withAuditor)
-                auditorPubKey = mptAlice.getPubKey(auditor);
-
-            mptAlice.set(
-                {.account = alice,
-                 .issuerPubKey = mptAlice.getPubKey(alice),
-                 .auditorPubKey = auditorPubKey});
-
-            auto const snapshot = [&]() {
-                return LedgerSnapshot{
-                    .outstandingAmount = mptAlice.getIssuanceOutstandingBalance(),
-                    .confidentialOutstandingAmount = mptAlice.getIssuanceConfidentialBalance(),
-                    .bobMPTAmount = mptAlice.getBalance(bob),
-                    .carolMPTAmount = mptAlice.getBalance(carol),
-                };
-            };
-
-            auto const expectDeltas = [&](LedgerSnapshot const& before,
-                                          LedgerSnapshot const& after,
-                                          std::int64_t const bobMPTDelta,
-                                          std::int64_t const carolMPTDelta,
-                                          std::int64_t const outstandingDelta,
-                                          std::int64_t const confidentialOutstandingDelta) {
-                BEAST_EXPECT(after.bobMPTAmount - before.bobMPTAmount == bobMPTDelta);
-                BEAST_EXPECT(after.carolMPTAmount - before.carolMPTAmount == carolMPTDelta);
-                BEAST_EXPECT(
-                    after.outstandingAmount - before.outstandingAmount == outstandingDelta);
-                BEAST_EXPECT(
-                    after.confidentialOutstandingAmount - before.confidentialOutstandingAmount ==
-                    confidentialOutstandingDelta);
-            };
-
-            auto const expectNoConfidentialFields = [&](Account const& account) {
-                BEAST_EXPECT(
-                    !mptAlice.getEncryptedBalance(account, MPTTester::HolderEncryptedInbox));
-                BEAST_EXPECT(
-                    !mptAlice.getEncryptedBalance(account, MPTTester::HolderEncryptedSpending));
-                BEAST_EXPECT(
-                    !mptAlice.getEncryptedBalance(account, MPTTester::IssuerEncryptedBalance));
-                BEAST_EXPECT(
-                    !mptAlice.getEncryptedBalance(account, MPTTester::AuditorEncryptedBalance));
-            };
-
-            auto const expectConfidentialFields = [&](Account const& account) {
-                BEAST_EXPECT(
-                    mptAlice.getEncryptedBalance(account, MPTTester::HolderEncryptedInbox));
-                BEAST_EXPECT(
-                    mptAlice.getEncryptedBalance(account, MPTTester::HolderEncryptedSpending));
-                BEAST_EXPECT(
-                    mptAlice.getEncryptedBalance(account, MPTTester::IssuerEncryptedBalance));
-                BEAST_EXPECT(
-                    mptAlice.getEncryptedBalance(account, MPTTester::AuditorEncryptedBalance)
-                        .has_value() == withAuditor);
-            };
-
-            auto before = snapshot();
-
-            // zero-amount ConfidentialMPTConvert initializes confidential
-            // fields without changing sfMPTAmount, sfOutstandingAmount, or COA.
-            expectNoConfidentialFields(bob);
-            mptAlice.convert({
-                .account = bob,
-                .amt = 0,
-                .holderPubKey = mptAlice.getPubKey(bob),
-            });
-            auto after = snapshot();
-            expectDeltas(before, after, 0, 0, 0, 0);
-            expectConfidentialFields(bob);
-            before = after;
-
-            // destination initialization follows the same zero-amount
-            // accounting rules, in both auditor and no-auditor configurations.
-            expectNoConfidentialFields(carol);
-            mptAlice.convert({
-                .account = carol,
-                .amt = 0,
-                .holderPubKey = mptAlice.getPubKey(carol),
-            });
-            after = snapshot();
-            expectDeltas(before, after, 0, 0, 0, 0);
-            expectConfidentialFields(carol);
-            before = after;
-
-            // ConfidentialMPTConvert moves public holder balance into COA
-            // while leaving total OutstandingAmount unchanged.
-            mptAlice.convert({.account = bob, .amt = 30});
-            after = snapshot();
-            expectDeltas(before, after, -30, 0, 0, 30);
-            before = after;
-
-            // ConfidentialMPTMergeInbox only moves encrypted holder state.
-            mptAlice.mergeInbox({.account = bob});
-            after = snapshot();
-            expectDeltas(before, after, 0, 0, 0, 0);
-            before = after;
-
-            // ConfidentialMPTSend redistributes confidential balance only.
-            mptAlice.send({.account = bob, .dest = carol, .amt = 10});
-            after = snapshot();
-            expectDeltas(before, after, 0, 0, 0, 0);
-            before = after;
-
-            // receiver merge after a send is also public-accounting neutral.
-            mptAlice.mergeInbox({.account = carol});
-            after = snapshot();
-            expectDeltas(before, after, 0, 0, 0, 0);
-            before = after;
-
-            // ConfidentialMPTConvertBack restores public holder balance and
-            // decreases COA, while total OutstandingAmount remains unchanged.
-            mptAlice.convertBack({.account = carol, .amt = 10});
-            after = snapshot();
-            expectDeltas(before, after, 0, 10, 0, -10);
-            before = after;
-
-            // ConfidentialMPTClawback burns confidential supply, decreasing
-            // both sfOutstandingAmount and sfConfidentialOutstandingAmount.
-            mptAlice.confidentialClaw({.account = alice, .holder = bob, .amt = 20});
-            after = snapshot();
-            expectDeltas(before, after, 0, 0, -20, -20);
-        };
-
-        // run the exact same accounting matrix without an auditor.
-        run(false);
-
-        // run the exact same accounting matrix with an auditor configured.
-        run(true);
-    }
-
-    void
     testConvert(FeatureBitset features)
     {
         testcase("Convert");
@@ -1556,6 +1380,7 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
             Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
+            Account const carol("carol");
             MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             mptAlice.create({
@@ -1570,6 +1395,7 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
 
             mptAlice.generateKeyPair(alice);
             mptAlice.generateKeyPair(bob);
+            mptAlice.generateKeyPair(carol);
 
             mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
 
@@ -1586,6 +1412,26 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
                 .amt = 10,
                 .holderPubKey = mptAlice.getPubKey(bob),
                 .issuerEncryptedAmt = getTrivialCiphertext(),
+                .err = tecBAD_PROOF,
+            });
+
+            std::uint64_t const amount = 10;
+            Buffer const blindingFactor = generateBlindingFactor();
+            Buffer const holderCiphertext = mptAlice.encryptAmount(bob, amount, blindingFactor);
+
+            // Holder ciphertext is valid for the amount and
+            // blinding factor, but the issuer ciphertext is encrypted under a
+            // different public key than the registered issuer key.
+            Buffer const wrongIssuerCiphertext =
+                mptAlice.encryptAmount(carol, amount, blindingFactor);
+
+            mptAlice.convert({
+                .account = bob,
+                .amt = amount,
+                .holderPubKey = mptAlice.getPubKey(bob),
+                .holderEncryptedAmt = holderCiphertext,
+                .issuerEncryptedAmt = wrongIssuerCiphertext,
+                .blindingFactor = blindingFactor,
                 .err = tecBAD_PROOF,
             });
         }
@@ -10399,9 +10245,6 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
         testConvertBackWithAuditor(features);
         testConvertBackPedersenProof(features);
         testConvertBackBulletproof(features);
-
-        // Explicit check of balances
-        testConfidentialPerOperationAccounting(features);
 
         // Homomorphic operation tests
         testSendHomomorphicOverflow(features);
