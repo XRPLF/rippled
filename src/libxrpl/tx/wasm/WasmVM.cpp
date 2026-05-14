@@ -14,8 +14,8 @@
 
 namespace xrpl {
 // WARNING: Per XLS-0102, the host functions registered here form a stable
-// ABI. Their name, semantics, parameters, and return types must NOT be
-// changed. New host functions may be added and existing gas costs may be
+// ABI. Their name, semantics, parameters, and return types must NEVER be
+// changed, as there may always be a program that uses it. New host functions may be added and existing gas costs may be
 // adjusted, but every such change must be gated by an amendment.
 // See XLS-0102 §6.5 (Future-Proofing):
 // https://github.com/XRPLF/XRPL-Standards/tree/master/XLS-0102-wasm-vm#65-future-proofing
