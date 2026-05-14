@@ -195,7 +195,7 @@ public:
      * @see roundToScale
      */
     [[nodiscard]] bool
-    isZeroAtScale(int scale) const noexcept;
+    isZeroAtScale(int scale) const;
 
     //--------------------------------------------------------------------------
     //

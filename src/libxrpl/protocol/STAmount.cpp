@@ -1740,7 +1740,7 @@ divRoundStrict(STAmount const& num, STAmount const& den, Asset const& asset, boo
 }
 
 [[nodiscard]] bool
-STAmount::isZeroAtScale(int scale) const noexcept
+STAmount::isZeroAtScale(int scale) const
 {
     return roundToScale(*this, scale).signum() == 0;
 }
