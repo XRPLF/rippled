@@ -13,16 +13,50 @@
 
 namespace xrpl {
 
-// {
-//   feature : <feature>
-//   vetoed : true/false
-// }
+/** RPC handler for the `feature` command.
+ *
+ *  Exposes the XRPL amendment system to external clients and privileged
+ *  operators. Operates in two modes depending on whether the `feature`
+ *  parameter is present.
+ *
+ *  **List mode** (no `feature` param): returns a `features` object keyed by
+ *  amendment hash, sourced from `AmendmentTable::getJson(isAdmin)` and
+ *  augmented with majority timestamps read directly from the validated ledger's
+ *  amendment SLE. Reading majority data from the ledger (rather than relying
+ *  solely on the `AmendmentTable`'s internal vote tracking) is authoritative
+ *  because the two can briefly diverge.
+ *
+ *  **Single-feature mode** (with `feature` param): resolves the identifier
+ *  first as a human-readable amendment name via `AmendmentTable::find()`,
+ *  then falls back to parsing it as a 256-bit hex hash. Returns
+ *  `rpcBAD_FEATURE` if neither succeeds, or if the resolved hash is not
+ *  known to the amendment table.
+ *
+ *  **Veto control** (admin only): when `vetoed` is also present, calls
+ *  `AmendmentTable::veto()` or `AmendmentTable::unVeto()` to control whether
+ *  the local validator votes for the amendment. Non-admin callers who supply
+ *  `vetoed` receive `rpcNO_PERMISSION`. The handler is registered as
+ *  `Role::USER`, so any client can invoke the read paths; only the mutation
+ *  path is gated here by the explicit admin check.
+ *
+ *  Majority timestamps in the response are raw `NetClock::time_point` ticks
+ *  — seconds since the Ripple epoch (2000-01-01 00:00:00 UTC), **not** Unix
+ *  time. Callers must add the 946684800-second offset to convert to Unix time.
+ *
+ *  @param context The RPC dispatch context, including request params, role,
+ *      app reference, and ledger master.
+ *  @return A JSON object with a top-level `features` map (list mode) or a
+ *      single-amendment object keyed by hash (single-feature mode), or an
+ *      RPC error value on invalid input or insufficient permissions.
+ *  @note The `feature` parameter must be a JSON string; passing a number,
+ *      boolean, null, object, or array returns `rpcINVALID_PARAMS`.
+ *  @see AmendmentTable, getMajorityAmendments
+ */
 json::Value
 doFeature(RPC::JsonContext& context)
 {
     if (context.params.isMember(jss::feature))
     {
-        // ensure that the `feature` param is a string
         if (!context.params[jss::feature].isString())
         {
             return rpcError(RpcInvalidParams);
@@ -30,7 +64,6 @@ doFeature(RPC::JsonContext& context)
     }
 
     bool const isAdmin = context.role == Role::ADMIN;
-    // Get majority amendment status
     majorityAmendments_t majorities;
 
     if (auto const valLedger = context.ledgerMaster.getValidatedLedger())
@@ -54,8 +87,6 @@ doFeature(RPC::JsonContext& context)
 
     auto feature = table.find(context.params[jss::feature].asString());
 
-    // If the feature is not found by name, try to parse the `feature` param as
-    // a feature ID. If that fails, return an error.
     if (!feature && !feature.parseHex(context.params[jss::feature].asString()))
         return rpcError(RpcBadFeature);
 

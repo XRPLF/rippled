@@ -42,16 +42,32 @@ MPTokenIssuanceSet::getFlagsMask(PreflightContext const& ctx)
     return tfMPTokenIssuanceSetMask;
 }
 
-// Maps set/clear mutable flags in an MPTokenIssuanceSet transaction to the
-// corresponding ledger mutable flags that control whether the change is
-// allowed.
+/** Mapping between the set/clear bits in a transaction's `sfMutableFlags`
+ *  field and the corresponding `lsmfMPTCanMutate*` gate stored on the
+ *  `MPTokenIssuance` SLE.
+ *
+ *  The three fields implement a two-level flag design: `setFlag` and
+ *  `clearFlag` are the transaction-level request bits; `canMutateFlag` is
+ *  the issuance-level permission bit that must already be set before the
+ *  corresponding change is allowed.  The same struct drives three phases:
+ *  `preflight` (conflict detection), `preclaim` (permission gating), and
+ *  `doApply` (flag mutation) — ensuring all three always reason about the
+ *  same six properties with no possibility of a phase mismatch.
+ */
 struct MPTMutabilityFlags
 {
-    std::uint32_t setFlag;
-    std::uint32_t clearFlag;
-    std::uint32_t canMutateFlag;
+    std::uint32_t setFlag;        /**< Transaction bit requesting the feature be enabled. */
+    std::uint32_t clearFlag;      /**< Transaction bit requesting the feature be disabled. */
+    std::uint32_t canMutateFlag;  /**< Issuance SLE bit that gates whether this change is permitted. */
 };
 
+/** Table-driven mapping of the six mutable properties of an MPTokenIssuance.
+ *
+ *  Each entry covers one logical capability (lock, require-auth, escrow,
+ *  trade, transfer, clawback).  Using a compile-time array rather than
+ *  ad-hoc flag checks ensures that `preflight`, `preclaim`, and `doApply`
+ *  always agree on which properties exist and how they map to ledger bits.
+ */
 static constexpr std::array<MPTMutabilityFlags, 6> kMPT_MUTABILITY_FLAGS = {
     {{.setFlag = tmfMPTSetCanLock,
       .clearFlag = tmfMPTClearCanLock,
@@ -72,6 +88,31 @@ static constexpr std::array<MPTMutabilityFlags, 6> kMPT_MUTABILITY_FLAGS = {
       .clearFlag = tmfMPTClearCanClawback,
       .canMutateFlag = lsmfMPTCanMutateCanClawback}}};
 
+/** Stateless validation for `MPTokenIssuanceSet` transactions.
+ *
+ *  Operates in two modes depending on which fields are present:
+ *
+ *  **Lock/unlock mode** (no `sfMutableFlags`, `sfMPTokenMetadata`, or
+ *  `sfTransferFee`): validates flag exclusivity (`tfMPTLock` and
+ *  `tfMPTUnlock` cannot both be set) and that the submitter is not also
+ *  the named holder.  The no-op check under `featureSingleAssetVault` or
+ *  `featureDynamicMPT` rejects a transaction that changes nothing at all
+ *  (zero flags, no domain, no mutation fields), preventing fee-burning
+ *  submissions.
+ *
+ *  **Mutation mode** (any of `sfMutableFlags`, `sfMPTokenMetadata`,
+ *  `sfTransferFee` present): requires `featureDynamicMPT`; `sfHolder` and
+ *  non-universal tx flags are both forbidden because mutation targets the
+ *  issuance object rather than any individual holder slot.  The check for a
+ *  non-zero `sfTransferFee` alongside `tmfMPTClearCanTransfer` in
+ *  `sfMutableFlags` catches a single-transaction contradiction (setting a
+ *  fee while simultaneously removing transfer capability) before it reaches
+ *  the ledger.
+ *
+ *  The mutual exclusion of `sfDomainID` and `sfHolder` is validated here
+ *  because domain assignment operates on the issuance object while holder
+ *  operations target an individual `MPToken` slot — the two cannot coexist.
+ */
 NotTEC
 MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
 {
@@ -88,7 +129,6 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
 
     auto const txFlags = ctx.tx.getFlags();
 
-    // fails if both flags are set
     if (((txFlags & tfMPTLock) != 0u) && ((txFlags & tfMPTUnlock) != 0u))
         return temINVALID_FLAG;
 
@@ -99,18 +139,15 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
 
     if (ctx.rules.enabled(featureSingleAssetVault) || ctx.rules.enabled(featureDynamicMPT))
     {
-        // Is this transaction actually changing anything ?
         if (txFlags == 0 && !ctx.tx.isFieldPresent(sfDomainID) && !isMutate)
             return temMALFORMED;
     }
 
     if (ctx.rules.enabled(featureDynamicMPT))
     {
-        // Holder field is not allowed when mutating MPTokenIssuance
         if (isMutate && holderID)
             return temMALFORMED;
 
-        // Can not set flags when mutating MPTokenIssuance
         if (isMutate && ((txFlags & tfUniversalMask) != 0u))
             return temMALFORMED;
 
@@ -125,14 +162,11 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
             if ((*mutableFlags == 0u) || ((*mutableFlags & tmfMPTokenIssuanceSetMutableMask) != 0u))
                 return temINVALID_FLAG;
 
-            // Can not set and clear the same flag
             if (std::ranges::any_of(kMPT_MUTABILITY_FLAGS, [mutableFlags](auto const& f) {
                     return (*mutableFlags & f.setFlag) && (*mutableFlags & f.clearFlag);
                 }))
                 return temINVALID_FLAG;
 
-            // Trying to set a non-zero TransferFee and clear MPTCanTransfer
-            // in the same transaction is not allowed.
             if ((transferFee.value_or(0) != 0u) && ((*mutableFlags & tmfMPTClearCanTransfer) != 0u))
                 return temMALFORMED;
         }
@@ -141,6 +175,23 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Two-tier delegate authorization check for lock/unlock operations.
+ *
+ *  If `sfDelegate` is absent the issuer signed directly and is
+ *  unconditionally permitted (early return `tesSUCCESS`).
+ *
+ *  When a delegate is present, authorization is evaluated in order:
+ *  1. A broad transaction-type permission via `checkTxPermission()` — if
+ *     the delegate holds blanket `ttMPTOKEN_ISSUANCE_SET` authority, no
+ *     further checks are needed.
+ *  2. A flag-level guard is applied first (currently unreachable because no
+ *     transaction-level flags beyond lock/unlock exist, but retained as
+ *     forward-compatibility infrastructure — see `LCOV_EXCL_LINE`).
+ *  3. Granular fall-back: `MPTokenIssuanceLock` is required for `tfMPTLock`
+ *     and `MPTokenIssuanceUnlock` is required for `tfMPTUnlock`.  The
+ *     `loadGranularPermission()` helper populates the set from the delegate
+ *     SLE's permission list.
+ */
 NotTEC
 MPTokenIssuanceSet::checkPermission(ReadView const& view, STTx const& tx)
 {
@@ -176,17 +227,55 @@ MPTokenIssuanceSet::checkPermission(ReadView const& view, STTx const& tx)
     return tesSUCCESS;
 }
 
+/** Read-only ledger-state validation for `MPTokenIssuanceSet`.
+ *
+ *  Checks are ordered from cheap/general to expensive/specific:
+ *
+ *  1. **Issuance existence and ownership**: the `MPTokenIssuance` SLE must
+ *     exist and its `sfIssuer` must match the submitting account.
+ *
+ *  2. **`lsfMPTCanLock` gate** (asymmetric): under the original rules the
+ *     flag must be set for _any_ transaction.  Under `featureSingleAssetVault`
+ *     or `featureDynamicMPT`, the flag is only required when the transaction
+ *     actually requests a lock or unlock — mutation-only transactions on
+ *     issuances that lack locking capability are still permitted.  Two
+ *     separate `if` blocks are used rather than `||` to preserve this
+ *     readable asymmetric logic.
+ *
+ *  3. **Holder checks** (when `sfHolder` present): the holder account must
+ *     exist and the holder's `MPToken` slot for this issuance must exist.
+ *
+ *  4. **Domain checks** (when `sfDomainID` present): the issuance must have
+ *     `lsfMPTRequireAuth` set (binding a domain to an unauthorized issuance
+ *     is meaningless); a non-zero domain ID must reference an existing
+ *     `PermissionedDomain` object.
+ *
+ *  5. **Mutation permission checks** (`featureDynamicMPT`): each flag the
+ *     transaction sets or clears via `sfMutableFlags` must have the
+ *     corresponding `lsmfMPTCanMutate*` bit already set on the issuance SLE
+ *     (table-driven via `kMPT_MUTABILITY_FLAGS`).  Clearing
+ *     `lsfMPTRequireAuth` while a `DomainID` is set on the issuance is
+ *     blocked here because it would produce an internally inconsistent
+ *     ledger state.  `sfMPTokenMetadata` and `sfTransferFee` mutations
+ *     require `lsmfMPTCanMutateMetadata` and `lsmfMPTCanMutateTransferFee`
+ *     respectively.
+ *
+ *  6. **Transfer fee pre-existence requirement**: a non-zero `sfTransferFee`
+ *     requires `lsfMPTCanTransfer` to already be set on the _current_ ledger
+ *     object.  Enabling `tmfMPTSetCanTransfer` in the same transaction does
+ *     not satisfy this requirement — `preclaim` is the first phase where the
+ *     current ledger value of the flag is visible, so this check belongs here
+ *     rather than in `preflight`.
+ */
 TER
 MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
 {
-    // ensure that issuance exists
     auto const sleMptIssuance = ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
     if (!sleMptIssuance)
         return tecOBJECT_NOT_FOUND;
 
     if (!sleMptIssuance->isFlag(lsfMPTCanLock))
     {
-        // For readability two separate `if` rather than `||` of two conditions
         if (!ctx.view.rules().enabled(featureSingleAssetVault) &&
             !ctx.view.rules().enabled(featureDynamicMPT))
         {
@@ -198,17 +287,14 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    // ensure it is issued by the tx submitter
     if ((*sleMptIssuance)[sfIssuer] != ctx.tx[sfAccount])
         return tecNO_PERMISSION;
 
     if (auto const holderID = ctx.tx[~sfHolder])
     {
-        // make sure holder account exists
         if (!ctx.view.exists(keylet::account(*holderID)))
             return tecNO_DST;
 
-        // the mptoken must exist
         if (!ctx.view.exists(keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], *holderID)))
             return tecOBJECT_NOT_FOUND;
     }
@@ -226,8 +312,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    // sfMutableFlags is soeDEFAULT, defaulting to 0 if not specified on
-    // the ledger.
+    // sfMutableFlags defaults to 0 when absent (soeDEFAULT field).
     auto const currentMutableFlags = sleMptIssuance->getFieldU32(sfMutableFlags);
 
     auto isMutableFlag = [&](std::uint32_t mutableFlag) -> bool {
@@ -255,10 +340,6 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
 
     if (auto const fee = ctx.tx[~sfTransferFee])
     {
-        // A non-zero TransferFee is only valid if the lsfMPTCanTransfer flag
-        // was previously enabled (at issuance or via a prior mutation). Setting
-        // it by tmfMPTSetCanTransfer in the current transaction does not meet
-        // this requirement.
         if (fee > 0u && !sleMptIssuance->isFlag(lsfMPTCanTransfer))
             return tecNO_PERMISSION;
 
@@ -269,6 +350,40 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Apply the mutations described by the transaction to the ledger.
+ *
+ *  **SLE selection**: if `sfHolder` is present the holder's `MPToken` SLE is
+ *  used; otherwise the `MPTokenIssuance` SLE is used.  This single branch
+ *  lets both issuance-wide and per-holder locking share the same lock/unlock
+ *  code path.  A missing SLE at this point is a ledger-corruption sentinel
+ *  (`tecINTERNAL`) since `preclaim` already verified existence.
+ *
+ *  **Lock/unlock**: `lsfMPTLocked` is set or cleared directly on whichever
+ *  SLE was selected.  The two flags are mutually exclusive (enforced in
+ *  `preflight`), so a simple if/else-if suffices.
+ *
+ *  **Mutable-flag iteration**: `kMPT_MUTABILITY_FLAGS` is iterated to
+ *  translate each `tmfMPTSet*`/`tmfMPTClear*` bit in `sfMutableFlags` into
+ *  the corresponding `lsmfMPTCanMutate*` bit change on the issuance `sfFlags`.
+ *  Clearing `tmfMPTClearCanTransfer` atomically removes `sfTransferFee` from
+ *  the same SLE — you cannot have a fee-bearing issuance with transfer
+ *  capability disabled, and removing the fee in the same write keeps the
+ *  ledger internally consistent.
+ *
+ *  **`soeDEFAULT` semantics for `sfTransferFee`**: a zero fee value removes
+ *  the field entirely rather than storing zero, matching the convention that
+ *  an absent field is interpreted as zero by readers.
+ *
+ *  **`soeDEFAULT` semantics for `sfMPTokenMetadata`**: an empty blob removes
+ *  the field entirely.
+ *
+ *  **`beast::kZERO` sentinel for `sfDomainID`**: the zero 256-bit value
+ *  signals "remove the existing domain link"; any other value sets or
+ *  replaces the domain.  This mirrors the sentinel-clear pattern used for
+ *  similar optional-reference fields elsewhere in the protocol.
+ *
+ *  All changes are written in a single `view().update(sle)` at the end.
+ */
 TER
 MPTokenIssuanceSet::doApply()
 {
@@ -317,11 +432,7 @@ MPTokenIssuanceSet::doApply()
         }
 
         if ((mutableFlags & tmfMPTClearCanTransfer) != 0u)
-        {
-            // If the lsfMPTCanTransfer flag is being cleared, then also clear
-            // the TransferFee field.
             sle->makeFieldAbsent(sfTransferFee);
-        }
     }
 
     if (flagsIn != flagsOut)
@@ -329,10 +440,6 @@ MPTokenIssuanceSet::doApply()
 
     if (auto const transferFee = ctx_.tx[~sfTransferFee])
     {
-        // TransferFee uses soeDEFAULT style:
-        // - If the field is absent, it is interpreted as 0.
-        // - If the field is present, it must be non-zero.
-        // Therefore, when TransferFee is 0, the field should be removed.
         if (transferFee == 0)
         {
             sle->makeFieldAbsent(sfTransferFee);
@@ -357,7 +464,6 @@ MPTokenIssuanceSet::doApply()
 
     if (domainID)
     {
-        // This is enforced in preflight.
         XRPL_ASSERT(
             sle->getType() == ltMPTOKEN_ISSUANCE,
             "MPTokenIssuanceSet::doApply : modifying MPTokenIssuance");

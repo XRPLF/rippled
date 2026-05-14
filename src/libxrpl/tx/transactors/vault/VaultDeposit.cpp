@@ -1,3 +1,12 @@
+/** @file VaultDeposit.cpp
+ *  Implementation of the `ttVAULT_DEPOSIT` transactor.
+ *
+ *  Deposits a fungible asset (XRP, IOU, or MPT) into a vault and mints
+ *  vault-share MPTokens for the depositor. The share/asset exchange rate is
+ *  determined by the vault's current `sfAssetsTotal` and the share issuance's
+ *  `sfOutstandingAmount`; on a fresh vault both are zero and the initial rate
+ *  is seeded via `sfScale`. See VaultHelpers.h for the arithmetic.
+ */
 #include <xrpl/tx/transactors/vault/VaultDeposit.h>
 
 #include <xrpl/basics/Log.h>
@@ -40,6 +49,31 @@ VaultDeposit::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Read-only ledger validation for a vault deposit.
+ *
+ *  Checks are ordered from cheapest to most expensive and fail-fast on the
+ *  first violation. The private-vault authorization path has two deliberate
+ *  design choices worth noting:
+ *
+ *  - **`tecEXPIRED` suppression**: `credentials::validDomain` may return
+ *    `tecEXPIRED` when the account's credential has expired. This code is
+ *    suppressed here (the transaction proceeds) because deleting the expired
+ *    credential is a ledger state mutation, which is only permitted in
+ *    `doApply`. The `doApply` call to `enforceMPTokenAuthorization` handles
+ *    the deletion.
+ *
+ *  - **No issuer-grant fallback**: the vault's share MPT issuance is managed
+ *    by the vault pseudo-account, which cannot sign transactions and therefore
+ *    cannot proactively grant MPT authorizations to individual holders. The
+ *    only supported admission mechanism for private vaults is the domain-
+ *    credential path via `sfDomainID` on the share issuance. Absence of
+ *    `sfDomainID` on a private vault's issuance is an unconditional
+ *    `tecNO_AUTH`.
+ *
+ *  The `lsfMPTLocked` and identical-asset-type checks are classified as
+ *  `tefINTERNAL` and marked `LCOV_EXCL` because the `VaultCreate` transactor
+ *  guarantees they cannot occur under correct ledger logic.
+ */
 TER
 VaultDeposit::preclaim(PreclaimContext const& ctx)
 {
@@ -87,26 +121,17 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    // Cannot deposit inside Vault an Asset frozen for the depositor
     if (isFrozen(ctx.view, account, vaultAsset))
         return vaultAsset.holds<Issue>() ? tecFROZEN : tecLOCKED;
 
-    // Cannot deposit if the shares of the vault are frozen
     if (isFrozen(ctx.view, account, vaultShare))
         return tecLOCKED;
 
     if (vault->isFlag(lsfVaultPrivate) && account != vault->at(sfOwner))
     {
         auto const maybeDomainID = sleIssuance->at(~sfDomainID);
-        // Since this is a private vault and the account is not its owner, we
-        // perform authorization check based on DomainID read from sleIssuance.
-        // Had the vault shares been a regular MPToken, we would allow
-        // authorization granted by the Issuer explicitly, but Vault uses Issuer
-        // pseudo-account, which cannot grant an authorization.
         if (maybeDomainID)
         {
-            // As per validDomain documentation, we suppress tecEXPIRED error
-            // here, so we can delete any expired credentials inside doApply.
             if (auto const err = credentials::validDomain(ctx.view, *maybeDomainID, account);
                 !isTesSuccess(err) && err != tecEXPIRED)
                 return err;
@@ -117,7 +142,6 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    // Source MPToken must exist (if asset is an MPT)
     if (auto const ter = requireAuth(ctx.view, vaultAsset, account); !isTesSuccess(ter))
         return ter;
 
@@ -134,6 +158,63 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Mutate the ledger to execute a vault deposit.
+ *
+ *  ### MPToken provisioning
+ *
+ *  Before any arithmetic, the depositor must hold an MPToken for vault shares.
+ *  Two distinct code paths handle this:
+ *
+ *  - **Private vault, non-owner**: `enforceMPTokenAuthorization` is called.
+ *    It deletes any expired credentials found in the ledger (the deferred
+ *    side-effect suppressed in `preclaim`) and then creates the MPToken entry
+ *    for the depositor if it does not yet exist.
+ *
+ *  - **Public vault, or vault owner**: `authorizeMPToken` is called only when
+ *    the MPToken does not yet exist — no domain check is required. When the
+ *    depositor is the vault owner of a *private* vault, a second
+ *    `authorizeMPToken` call additionally provisions an MPToken on the vault's
+ *    pseudo-account (`sleIssuance->at(sfIssuer)`) authorised for the owner.
+ *    The pseudo-account cannot self-authorise, so this is the only mechanism
+ *    by which it can hold shares for internal accounting.
+ *
+ *  ### Exchange arithmetic (two-step, depositor-protective)
+ *
+ *  1. `assetsToSharesDeposit(vault, sleIssuance, amount)` — converts the
+ *     offered asset amount into shares, **truncating** (floor) to an integral
+ *     MPT unit. On a fresh vault (`sfAssetsTotal == 0`) the initial rate is
+ *     seeded using `sfScale`: `shares = floor(assets.mantissa * 10^(assets.exponent + scale))`.
+ *     Returns `tecPRECISION_LOSS` when the floor rounds to zero — the deposit
+ *     is too small relative to the current share price.
+ *
+ *  2. `sharesToAssetsDeposit(vault, sleIssuance, sharesCreated)` — inverts the
+ *     truncated share count back to an exact asset amount, guaranteeing
+ *     `assetsDeposited <= amount`. Any sub-share-unit fractional asset
+ *     remainder stays with the depositor. An assertion verifies this invariant;
+ *     violation indicates a bug in the arithmetic helpers.
+ *
+ *  `std::overflow_error` from either helper (reachable when `sfScale` is large
+ *  and balances are high) is caught and converted to `tecPATH_DRY`. The log
+ *  level is intentionally `debug`, not `error`, because this is a
+ *  user-triggerable condition rather than a ledger-corruption sentinel.
+ *
+ *  ### Mutation ordering and cap enforcement
+ *
+ *  `sfAssetsTotal` and `sfAssetsAvailable` are incremented and the vault SLE
+ *  flushed to the view *before* the cap check and before either `accountSend`.
+ *  This ordering is deliberate: the `sfAssetsMaximum` guard must see the
+ *  post-deposit total to correctly reject a deposit that would overflow the
+ *  cap. If it would exceed the cap the transaction returns `tecLIMIT_EXCEEDED`
+ *  and the framework discards all view mutations.
+ *
+ *  Both `accountSend` calls use `WaiveTransferFee::Yes` to prevent asset
+ *  transfer fees from distorting `sfAssetsTotal` accounting and corrupting the
+ *  exchange rate for future depositors.
+ *
+ *  `associateAsset` is the final call; per the `STTakesAsset` contract, it
+ *  re-rounds stored numeric values to the asset's precision and must execute
+ *  after all other writes to the vault SLE are complete.
+ */
 TER
 VaultDeposit::doApply()
 {
@@ -143,7 +224,6 @@ VaultDeposit::doApply()
     auto const vaultAsset = vault->at(sfAsset);
 
     auto const amount = ctx_.tx[sfAmount];
-    // Make sure the depositor can hold shares.
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
     auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
     if (!sleIssuance)
@@ -155,7 +235,6 @@ VaultDeposit::doApply()
     }
 
     auto const& vaultAccount = vault->at(sfAccount);
-    // Note, vault owner is always authorized
     if (vault->isFlag(lsfVaultPrivate) && account_ != vault->at(sfOwner))
     {
         if (auto const err = enforceMPTokenAuthorization(
@@ -163,9 +242,8 @@ VaultDeposit::doApply()
             !isTesSuccess(err))
             return err;
     }
-    else  // !vault->isFlag(lsfVaultPrivate) || account_ == vault->at(sfOwner)
+    else
     {
-        // No authorization needed, but must ensure there is MPToken
         if (!view().exists(keylet::mptoken(mptIssuanceID, account_)))
         {
             if (auto const err = authorizeMPToken(
@@ -174,7 +252,6 @@ VaultDeposit::doApply()
                 return err;
         }
 
-        // If the vault is private, set the authorized flag for the vault owner
         if (vault->isFlag(lsfVaultPrivate))
         {
             // This follows from the reverse of the outer enclosing if condition
@@ -197,7 +274,6 @@ VaultDeposit::doApply()
     STAmount sharesCreated = {vault->at(sfShareMPTID)}, assetsDeposited;
     try
     {
-        // Compute exchange before transferring any amounts.
         {
             auto const maybeShares = assetsToSharesDeposit(vault, sleIssuance, amount);
             if (!maybeShares)
@@ -223,8 +299,6 @@ VaultDeposit::doApply()
     }
     catch (std::overflow_error const&)
     {
-        // It's easy to hit this exception from Number with large enough Scale
-        // so we avoid spamming the log and only use debug here.
         JLOG(j_.debug())  //
             << "VaultDeposit: overflow error with"
             << " scale=" << (int)vault->at(sfScale).value()  //
@@ -241,18 +315,15 @@ VaultDeposit::doApply()
     vault->at(sfAssetsAvailable) += assetsDeposited;
     view().update(vault);
 
-    // A deposit must not push the vault over its limit.
     auto const maximum = *vault->at(sfAssetsMaximum);
     if (maximum != 0 && *vault->at(sfAssetsTotal) > maximum)
         return tecLIMIT_EXCEEDED;
 
-    // Transfer assets from depositor to vault.
     if (auto const ter =
             accountSend(view(), account_, vaultAccount, assetsDeposited, j_, WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
 
-    // Sanity check
     if (accountHolds(
             view(),
             account_,
@@ -267,7 +338,6 @@ VaultDeposit::doApply()
         // LCOV_EXCL_STOP
     }
 
-    // Transfer shares from vault to depositor.
     if (auto const ter =
             accountSend(view(), vaultAccount, account_, sharesCreated, j_, WaiveTransferFee::Yes);
         !isTesSuccess(ter))

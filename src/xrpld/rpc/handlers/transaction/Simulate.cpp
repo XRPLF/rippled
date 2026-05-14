@@ -1,3 +1,16 @@
+/** @file
+ *  Implements the `simulate` RPC command for dry-run transaction execution.
+ *
+ *  A client can test a transaction against the current ledger state and
+ *  receive realistic metadata and a TER result code without broadcasting
+ *  to the network, spending XRP, or persisting any state change. The
+ *  mechanism is `TapDryRun`: after the full transactor execution path
+ *  (including metadata generation), the snapshot of the open ledger is
+ *  discarded rather than committed.
+ *
+ *  @see doSimulate
+ */
+
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/misc/Transaction.h>
@@ -42,6 +55,24 @@
 
 namespace xrpl {
 
+/** Derive the sequence number to use when autofilling a simulated transaction.
+ *
+ *  Queries `TxQ::nextQueuableSeq()` against the live open ledger to obtain a
+ *  sequence number that is consistent with the account's current state. When
+ *  the transaction carries a `TicketSequence`, the wire-format rule requires
+ *  `Sequence = 0`, so that value is returned directly without a ledger lookup.
+ *
+ *  @param txJson  The transaction JSON object; must contain a valid `Account`
+ *      field.
+ *  @param context The RPC dispatch context providing access to the open ledger
+ *      and transaction queue.
+ *  @return The sequence number to insert, or an error JSON value if the source
+ *      account does not exist in the current ledger and no `TicketSequence` is
+ *      present, or if `Account` is malformed.
+ *  @note The account-not-found branch returns `rpcSRC_ACT_NOT_FOUND`, not a
+ *      fatal error — callers that supply `TicketSequence` bypass this check
+ *      entirely.
+ */
 static Expected<std::uint32_t, json::Value>
 getAutofillSequence(json::Value const& txJson, RPC::JsonContext& context)
 {
@@ -75,6 +106,27 @@ getAutofillSequence(json::Value const& txJson, RPC::JsonContext& context)
     return hasTicketSeq ? 0 : context.app.getTxQ().nextQueuableSeq(sle).value();
 }
 
+/** Autofill signature-related fields on a transaction or signer object.
+ *
+ *  Sets `SigningPubKey` and `TxnSignature` to empty strings when absent —
+ *  the canonical XRPL representation of an unsigned transaction. The
+ *  `TapDryRun` flag tells `Transactor::checkSign` to skip validation when
+ *  these fields are empty.
+ *
+ *  If the caller has pre-populated `TxnSignature` with a non-empty value
+ *  (on the top-level transaction or on any element of the `Signers` array),
+ *  the function returns `rpcTX_SIGNED` immediately. Simulate must not silently
+ *  execute an already-signed transaction, as that would mislead the caller
+ *  into believing signature validation passed.
+ *
+ *  @param sigObject  The transaction JSON object (or a `Signer` sub-object for
+ *      multi-sign) to inspect and mutate.
+ *  @return An error JSON value if the object is already signed or structurally
+ *      invalid; `std::nullopt` on success.
+ *  @note `Transactor.cpp` contains a defensive comment: "This code should
+ *      never be hit because it's checked in the `simulate` RPC" — this
+ *      function is the authoritative first line of defence.
+ */
 static std::optional<json::Value>
 autofillSignature(json::Value& sigObject)
 {
@@ -128,6 +180,25 @@ autofillSignature(json::Value& sigObject)
     return std::nullopt;
 }
 
+/** Synthesize mandatory transaction fields that the caller omitted.
+ *
+ *  Handles `Fee`, `Sequence`, `NetworkID`, and the signature fields in one
+ *  pass. Each field is only written when absent — explicit caller values are
+ *  preserved unchanged.
+ *
+ *  Fee is computed last because `RPC::getCurrentNetworkFee()` may depend on
+ *  other fields (e.g. transaction type) already being set. Sequence is filled
+ *  via `getAutofillSequence()`, which queries the live open ledger.
+ *  `NetworkID` is injected only when the network ID exceeds 1024, per the
+ *  XRPL protocol rule that mainnet and other low-numbered networks omit the
+ *  field.
+ *
+ *  @param txJson   The transaction JSON object to mutate in place.
+ *  @param context  RPC dispatch context providing access to fee-track, TxQ,
+ *      and the network-ID service.
+ *  @return An error JSON value if any autofill step fails (e.g. account not
+ *      found, transaction already signed); `std::nullopt` on success.
+ */
 static std::optional<json::Value>
 autofillTx(json::Value& txJson, RPC::JsonContext& context)
 {
@@ -169,6 +240,22 @@ autofillTx(json::Value& txJson, RPC::JsonContext& context)
     return std::nullopt;
 }
 
+/** Extract and normalize the transaction from the RPC request parameters.
+ *
+ *  Accepts either `tx_blob` (hex-encoded binary) or `tx_json` (structured
+ *  object), but not both. When `tx_blob` is supplied it is hex-decoded and
+ *  deserialized through `SerialIter` into an `STObject`, then immediately
+ *  re-serialized to JSON — this round-trip through canonical binary format
+ *  normalizes the input before downstream processing.
+ *
+ *  @param params  The top-level RPC request parameters object.
+ *  @return The extracted transaction as a JSON object, or a JSON error object
+ *      (containing an `error` key) if both or neither input key is present,
+ *      if `tx_blob` cannot be decoded or deserialized, or if the resulting
+ *      object is missing `TransactionType` or `Account`.
+ *  @note Mutual exclusion between `tx_blob` and `tx_json` is checked first
+ *      and is fatal — the caller must not supply both.
+ */
 static json::Value
 getTxJsonFromParams(json::Value const& params)
 {
@@ -228,6 +315,31 @@ getTxJsonFromParams(json::Value const& params)
     return txJson;
 }
 
+/** Execute a dry-run simulation of a transaction and assemble the response.
+ *
+ *  Copies the current `OpenView` by value, then invokes `TxQ::apply()` with
+ *  `TapDryRun`. The flag causes the full transactor execution path — including
+ *  metadata generation — to run, but forces `applied = false` at the end of
+ *  `Transactor::apply()` so the ledger snapshot is never committed. The copy
+ *  is therefore discarded without side effects.
+ *
+ *  The response always contains `applied`, `ledger_index`, `engine_result`,
+ *  `engine_result_code`, and `engine_result_message`. For `tesSUCCESS` the
+ *  message is overridden to "The simulated transaction would have been
+ *  applied." to prevent the generic success string from implying the
+ *  transaction was committed. When metadata is available it is serialized as
+ *  `meta_blob` (hex) or `meta` (JSON) according to the `binary` parameter;
+ *  JSON metadata receives the same three enrichment calls used in the live
+ *  transaction pipeline (`insertDeliveredAmount`, `insertNFTSyntheticInJson`,
+ *  `insertMPTokenIssuanceID`). The autofilled transaction is echoed back as
+ *  `tx_blob` or `tx_json`.
+ *
+ *  @param context      RPC dispatch context providing access to the open
+ *      ledger and transaction queue.
+ *  @param transaction  The fully constructed and autofilled transaction to
+ *      simulate.
+ *  @return A JSON object containing the simulation result.
+ */
 static json::Value
 simulateTxn(RPC::JsonContext& context, std::shared_ptr<Transaction> transaction)
 {
@@ -299,6 +411,39 @@ simulateTxn(RPC::JsonContext& context, std::shared_ptr<Transaction> transaction)
     return jvResult;
 }
 
+/** Handler for the `simulate` RPC command.
+ *
+ *  Validates the request, autofills any absent mandatory fields, and runs the
+ *  transaction through the full engine execution path with `TapDryRun` so no
+ *  state is committed. The caller receives a realistic TER result code and
+ *  complete transaction metadata without broadcasting to the network or
+ *  spending XRP.
+ *
+ *  Accepted parameters:
+ *  - `tx_blob` **XOR** `tx_json` — the transaction to simulate.
+ *  - `binary` (bool, optional) — if true, metadata and transaction are
+ *    returned as hex blobs (`meta_blob`, `tx_blob`) instead of JSON objects.
+ *
+ *  Credential fields (`secret`, `seed`, `seed_hex`, `passphrase`) are
+ *  explicitly rejected before any other processing — simulate is not a signing
+ *  endpoint and must not be a channel for key material.
+ *
+ *  `ttBATCH` transactions are rejected with `rpcNOT_IMPL`: batch execution
+ *  semantics cannot be faithfully replicated by the single-transaction
+ *  dry-run path.
+ *
+ *  @param context  RPC dispatch context for this call.
+ *  @return JSON object containing `applied`, `ledger_index`, `engine_result*`,
+ *      metadata (if generated), and the autofilled transaction. Returns a JSON
+ *      error object on invalid input or if the transaction cannot be
+ *      constructed.
+ *  @note Resource cost is `feeMediumBurdenRPC` — a full engine execution is
+ *      more expensive than a read-only query, though cheaper than a real
+ *      submission that triggers peer propagation and queue management.
+ *  @note The outer `try/catch` around `simulateTxn()` is marked `LCOV_EXCL`
+ *      and is not expected to fire under normal conditions; it exists solely
+ *      to prevent an unexpected exception from crashing the server.
+ */
 // {
 //   tx_blob: <string> XOR tx_json: <object>,
 //   binary: <bool>

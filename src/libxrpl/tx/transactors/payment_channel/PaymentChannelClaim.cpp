@@ -1,3 +1,15 @@
+/** @file
+ *  Implementation of the PaymentChannelClaim transactor.
+ *
+ *  Settles an off-chain XRP micropayment channel on the ledger by advancing
+ *  the channel's cumulative `sfBalance`, closing the channel on expiry or
+ *  request, or clearing a pending close via `tfRenew`. This is the only
+ *  transactor in the payment-channel family that transfers XRP to the
+ *  destination; `PaymentChannelCreate` and `PaymentChannelFund` only lock
+ *  or add XRP into the channel's escrow.
+ *
+ *  @see PaymentChannelClaim.h for the full class and method contracts.
+ */
 #include <xrpl/tx/transactors/payment_channel/PaymentChannelClaim.h>
 
 #include <xrpl/beast/utility/Zero.h>
@@ -150,10 +162,7 @@ PaymentChannelClaim::doApply()
             return tecUNFUNDED_PAYMENT;
 
         if (reqBalance <= chanBalance)
-        {
-            // nothing requested
             return tecUNFUNDED_PAYMENT;
-        }
 
         auto const sled = ctx_.view().peek(keylet::account(dst));
         if (!sled)

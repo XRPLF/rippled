@@ -25,25 +25,24 @@
 
 namespace xrpl {
 
-/*
-    PaymentChannel
-
-        Payment channels permit off-ledger checkpoints of XRP payments flowing
-        in a single direction. A channel sequesters the owner's XRP in its own
-        ledger entry. The owner can authorize the recipient to claim up to a
-        given balance by giving the receiver a signed message (off-ledger). The
-        recipient can use this signed message to claim any unpaid balance while
-        the channel remains open. The owner can top off the line as needed. If
-        the channel has not paid out all its funds, the owner must wait out a
-        delay to close the channel to give the recipient a chance to supply any
-        claims. The recipient can close the channel at any time. Any transaction
-        that touches the channel after the expiration time will close the
-        channel. The total amount paid increases monotonically as newer claims
-        are issued. When the channel is closed any remaining balance is returned
-        to the owner. Channels are intended to permit intermittent off-ledger
-        settlement of ILP trust lines as balances get substantial. For
-        bidirectional channels, a payment channel can be used in each direction.
-*/
+/** @file
+ *  Implements `PaymentChannelCreate` — the transactor that opens a
+ *  unidirectional XRP payment channel.
+ *
+ *  Payment channels sequesters the owner's XRP in a dedicated `PayChannel`
+ *  SLE so the owner can issue signed off-ledger claims to a recipient without
+ *  touching the ledger for every payment. The recipient presents claims
+ *  on-chain to settle; the paid total increases monotonically. When the channel
+ *  closes, any remaining balance is returned to the owner. For bidirectional
+ *  flow, two channels (one in each direction) are used.
+ *
+ *  This file covers only channel construction. Funding additions, claim
+ *  settlement, and closure are handled by `PaymentChannelFund.cpp` and
+ *  `PaymentChannelClaim.cpp` respectively. Crucially, `PaymentChannelCreate`
+ *  is the only transactor that allocates the `PayChannel` SLE and inserts
+ *  both directory entries; the sibling transactors always assume those
+ *  structures already exist.
+ */
 
 //------------------------------------------------------------------------------
 
@@ -76,7 +75,11 @@ PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
     if (!sle)
         return terNO_ACCOUNT;
 
-    // Check reserve and funds availability
+    // Two-step reserve check: first ensure the account can hold one more owned
+    // object (tecINSUFFICIENT_RESERVE), then that it can also fund the channel
+    // at the requested level (tecUNFUNDED). The distinction is intentional —
+    // callers can use it to tell whether the problem is reserve capacity or
+    // channel size.
     {
         auto const balance = (*sle)[sfBalance];
         auto const reserve = ctx.view.fees().accountReserve((*sle)[sfOwnerCount] + 1);
@@ -91,26 +94,25 @@ PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
     auto const dst = ctx.tx[sfDestination];
 
     {
-        // Check destination account
         auto const sled = ctx.view.read(keylet::account(dst));
         if (!sled)
+            // Deliberate design choice: channels to non-existent accounts are
+            // rejected even though XRP would be held in escrow. Allowing it
+            // would reserve funds to an address that may never be activated,
+            // effectively burning the sender's XRP in a dead-end channel.
             return tecNO_DST;
 
         auto const flags = sled->getFlags();
 
-        // Check if they have disallowed incoming payment channels
         if ((flags & lsfDisallowIncomingPayChan) != 0u)
             return tecNO_PERMISSION;
 
         if (((flags & lsfRequireDestTag) != 0u) && !ctx.tx[~sfDestinationTag])
             return tecDST_TAG_NEEDED;
 
-        // Pseudo-accounts cannot receive payment channels, other than native
-        // to their underlying ledger object - implemented in their respective
-        // transaction types. Note, this is not amendment-gated because all
-        // writes to pseudo-account discriminator fields **are** amendment
-        // gated, hence the behaviour of this check will always match the
-        // currently active amendments.
+        // Not amendment-gated: pseudo-account discriminator fields are only
+        // written under their own amendment guards, so this check automatically
+        // tracks the active amendment set without additional gating here.
         if (isPseudoAccount(sled))
             return tecNO_PERMISSION;
     }
@@ -135,16 +137,19 @@ PaymentChannelCreate::doApply()
 
     auto const dst = ctx_.tx[sfDestination];
 
-    // Create PayChan in ledger.
-    //
-    // Note that we use the value from the sequence or ticket as the
-    // payChan sequence.  For more explanation see comments in SeqProxy.h.
+    // The keylet hashes account, destination, and sequence (or ticket) number.
+    // Including the sequence ensures that two channels between the same pair of
+    // accounts are always addressable distinctly — each channel open has a
+    // unique sequence value, so their keylets never collide. getSeqValue()
+    // transparently returns either the transaction sequence or the ticket
+    // number, so the keylet is deterministic for both regular and ticket-based
+    // transactions. See SeqProxy.h for details.
     Keylet const payChanKeylet = keylet::payChan(account, dst, ctx_.tx.getSeqValue());
     auto const slep = std::make_shared<SLE>(payChanKeylet);
 
-    // Funds held in this channel
     (*slep)[sfAmount] = ctx_.tx[sfAmount];
-    // Amount channel has already paid
+    // zeroed() preserves the XRPAmount type, keeping sfBalance type-consistent
+    // with sfAmount from the start (as opposed to a bare integer zero).
     (*slep)[sfBalance] = ctx_.tx[sfAmount].zeroed();
     (*slep)[sfAccount] = account;
     (*slep)[sfDestination] = dst;
@@ -153,6 +158,11 @@ PaymentChannelCreate::doApply()
     (*slep)[~sfCancelAfter] = ctx_.tx[~sfCancelAfter];
     (*slep)[~sfSourceTag] = ctx_.tx[~sfSourceTag];
     (*slep)[~sfDestinationTag] = ctx_.tx[~sfDestinationTag];
+    // fixIncludeKeyletFields is a bug-fix amendment: channels created before it
+    // was activated lack sfSequence in the SLE, so callers must fetch the
+    // originating transaction to recompute the keylet. When active, storing
+    // sfSequence directly in the SLE lets any tool reconstruct the channel's
+    // keylet from the object alone, without additional transaction lookup.
     if (ctx_.view().rules().enabled(fixIncludeKeyletFields))
     {
         (*slep)[sfSequence] = ctx_.tx.getSeqValue();
@@ -160,7 +170,8 @@ PaymentChannelCreate::doApply()
 
     ctx_.view().insert(slep);
 
-    // Add PayChan to owner directory
+    // Dual directory insertion: both owner and recipient can enumerate this
+    // channel, and the stored page indices make O(1) removal possible on close.
     {
         auto const page = ctx_.view().dirInsert(
             keylet::ownerDir(account), payChanKeylet, describeOwnerDir(account));
@@ -169,7 +180,6 @@ PaymentChannelCreate::doApply()
         (*slep)[sfOwnerNode] = *page;
     }
 
-    // Add PayChan to the recipient's owner directory
     {
         auto const page =
             ctx_.view().dirInsert(keylet::ownerDir(dst), payChanKeylet, describeOwnerDir(dst));
@@ -178,7 +188,6 @@ PaymentChannelCreate::doApply()
         (*slep)[sfDestinationNode] = *page;
     }
 
-    // Deduct owner's balance, increment owner count
     (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
     adjustOwnerCount(ctx_.view(), sle, 1, ctx_.journal);
     ctx_.view().update(sle);

@@ -1,3 +1,16 @@
+/** @file VaultWithdraw.cpp
+ *  Implementation of the `ttVAULT_WITHDRAW` transactor.
+ *
+ *  Redeems vault-share MPTokens for the underlying pooled asset — the inverse
+ *  of `VaultDeposit`. The user specifies `sfAmount` in either the vault's
+ *  underlying asset (fixed assets, variable shares) or the vault's share MPT
+ *  (fixed shares, variable assets); the complementary quantity is computed via
+ *  `assetsToSharesWithdraw` / `sharesToAssetsWithdraw` from VaultHelpers.h.
+ *
+ *  Liquidity is gated on `sfAssetsAvailable` rather than the vault
+ *  pseudo-account's raw balance, so that assets pledged to lending brokers
+ *  are correctly excluded from on-demand redemptions.
+ */
 #include <xrpl/tx/transactors/vault/VaultWithdraw.h>
 
 #include <xrpl/basics/Log.h>
@@ -26,6 +39,21 @@
 
 namespace xrpl {
 
+/** Stateless, ledger-free validation of a `ttVAULT_WITHDRAW` transaction.
+ *
+ *  Checks are ordered cheapest-first and fail on the first violation. Each
+ *  rejected condition is a programming error or a structurally invalid
+ *  request that would be meaningless against any ledger state:
+ *
+ *  - A zero `sfVaultID` is always a null key; no valid vault can have this ID.
+ *  - A non-positive `sfAmount` cannot represent a redemption of any value.
+ *  - A zero explicit `sfDestination`, when present, cannot identify any real
+ *    account; only the absent-field case (withdraw to self) is permitted to
+ *    omit a destination.
+ *
+ *  @param ctx  Preflight context carrying the transaction and active rules.
+ *  @return `tesSUCCESS`, `temMALFORMED`, or `temBAD_AMOUNT`.
+ */
 NotTEC
 VaultWithdraw::preflight(PreflightContext const& ctx)
 {
@@ -49,6 +77,41 @@ VaultWithdraw::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Read-only ledger validation for a vault withdrawal.
+ *
+ *  Checks are ordered from cheapest to most expensive and fail fast on the
+ *  first violation. Several design choices merit explanation:
+ *
+ *  **`fixSecurity3_1_3` and the share-limit gap**: before this amendment, when
+ *  `sfAmount` was share-denominated, the withdrawal-limit check (`canWithdraw`)
+ *  was silently skipped — only the simpler two-argument overload ran. Post-
+ *  amendment, shares are first converted to an equivalent asset amount via
+ *  `sharesToAssetsWithdraw`, and that asset amount is fed to the full
+ *  four-argument `canWithdraw` overload. Overflow during this conversion
+ *  (easily reachable with large `sfScale` values) returns `tecPATH_DRY` rather
+ *  than crashing; the log level is deliberately `debug` because this is a
+ *  user-triggerable condition, not a ledger-corruption sentinel.
+ *
+ *  **Two-tier authorization**: if the destination is the submitting account
+ *  itself, `WeakAuth` is used — `doApply` will create a trust line or MPToken
+ *  on the submitter's behalf as needed. If `sfDestination` names a third party,
+ *  `StrongAuth` is required: the holding must already exist before the
+ *  withdrawal is applied.
+ *
+ *  **Dual freeze checks**: one call verifies the vault's underlying asset is
+ *  not frozen for the destination (the receiver must be able to accept it), and
+ *  a second call verifies the vault's share MPT is not frozen or locked for the
+ *  submitter (the redeemer must be able to surrender shares).
+ *
+ *  The `sfWithdrawalPolicy` guard and the missing-issuance guard are marked
+ *  `LCOV_EXCL` because `VaultCreate` invariants make them unreachable under
+ *  correct ledger state.
+ *
+ *  @param ctx  Preclaim context carrying a read-only ledger view and rules.
+ *  @return `tesSUCCESS`, `tecNO_ENTRY`, `tecWRONG_ASSET`, `tecPATH_DRY`,
+ *      `tefINTERNAL`, or a code from `canTransfer`, `canWithdraw`,
+ *      `requireAuth`, or `checkFrozen`.
+ */
 TER
 VaultWithdraw::preclaim(PreclaimContext const& ctx)
 {
@@ -71,7 +134,6 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         return ter;
     }
 
-    // Enforce valid withdrawal policy
     if (vault->at(sfWithdrawalPolicy) != kVAULT_STRATEGY_FIRST_COME_FIRST_SERVE)
     {
         // LCOV_EXCL_START
@@ -82,10 +144,6 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
 
     if (ctx.view.rules().enabled(fixSecurity3_1_3) && amount.asset() == vaultShare)
     {
-        // Post-fixSecurity3_1_3: if the user specified shares, convert
-        // to the equivalent asset amount before checking withdrawal
-        // limits. Pre-amendment the limit check was skipped for
-        // share-denominated withdrawals.
         auto const sleIssuance = ctx.view.read(keylet::mptIssuance(vaultShare));
         if (!sleIssuance)
         {
@@ -128,25 +186,80 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
             return ret;
     }
 
-    // If sending to Account (i.e. not a transfer), we will also create (only
-    // if authorized) a trust line or MPToken as needed, in doApply().
-    // Destination MPToken or trust line must exist if _not_ sending to Account.
     AuthType const authType = account == dstAcct ? AuthType::WeakAuth : AuthType::StrongAuth;
     if (auto const ter = requireAuth(ctx.view, vaultAsset, dstAcct, authType); !isTesSuccess(ter))
         return ter;
 
-    // Cannot withdraw from a Vault an Asset frozen for the destination account
     if (auto const ret = checkFrozen(ctx.view, dstAcct, vaultAsset))
         return ret;
 
-    // Cannot return shares to the vault, if the underlying asset was frozen for
-    // the submitter
     if (auto const ret = checkFrozen(ctx.view, account, Asset{vaultShare}))
         return ret;
 
     return tesSUCCESS;
 }
 
+/** Mutate the ledger to execute a vault withdrawal.
+ *
+ *  ### Exchange rate computation (two modes)
+ *
+ *  **Asset-denominated** (`sfAmount.asset() == vaultAsset`): `assetsToSharesWithdraw`
+ *  converts the requested asset quantity to an integer share count (truncating).
+ *  The result is immediately re-converted via `sharesToAssetsWithdraw` to
+ *  determine the exact assets to disburse — this double-conversion is not
+ *  redundant: it corrects for MPT integer truncation so the vault always pays
+ *  out the precise amount that the integer share count entitles, never more.
+ *  If the first conversion produces zero shares, `tecPRECISION_LOSS` is returned
+ *  (the requested amount is too small to represent even one share unit).
+ *
+ *  **Share-denominated** (`sfAmount.asset() == share`): the share count is used
+ *  directly; `sharesToAssetsWithdraw` computes the corresponding asset payout.
+ *  No rounding step is needed because the share count is already integral.
+ *
+ *  Both modes catch `std::overflow_error` and return `tecPATH_DRY`. The log
+ *  level is `debug` because large `sfScale` values make overflow arithmetically
+ *  trivial for legitimate users — this is not a ledger-corruption sentinel.
+ *
+ *  ### Liquidity gating
+ *
+ *  The check against `sfAssetsAvailable` (not the raw pseudo-account balance)
+ *  is deliberate: a vault may have pledged assets to lending brokers, reducing
+ *  what is actually liquid. `sfAssetsAvailable` tracks only unencumbered assets.
+ *  Both `sfAssetsTotal` and `sfAssetsAvailable` are decremented by
+ *  `assetsWithdrawn` on success.
+ *
+ *  ### Share redemption and MPToken cleanup
+ *
+ *  Shares flow back to the vault pseudo-account via `accountSend` with
+ *  `WaiveTransferFee::Yes` — shares are internal bookkeeping tokens, not
+ *  economic transfers subject to issuer-configured transfer fees.
+ *
+ *  After redemption, if the submitter's share balance drops to zero and the
+ *  submitter is not the vault owner, `removeEmptyHolding` attempts to delete
+ *  the now-empty MPToken. `tecHAS_OBLIGATIONS` is silently ignored (the holder
+ *  has associated obligations and must retain the MPToken). Vault owners are
+ *  excluded from cleanup because their MPToken may be needed for future
+ *  deposits and internal accounting.
+ *
+ *  ### `lsfVaultPrivate` omission (intentional)
+ *
+ *  `doApply` does not re-check the `lsfVaultPrivate` flag. Possession of vault
+ *  shares is proof of prior authorized deposit; withdrawal authorization is
+ *  effectively irrevocable once shares are held, regardless of whether the
+ *  vault's private flag or domain credentials have subsequently changed.
+ *
+ *  ### Completion ordering
+ *
+ *  `associateAsset` is called before `doWithdraw` to re-round stored `STNumber`
+ *  fields to the vault asset's precision. Per the `STTakesAsset` contract, this
+ *  must be the final write to the vault SLE. `doWithdraw` then handles trust
+ *  line or MPToken creation for the destination (under `WeakAuth`) and executes
+ *  the final `accountSend` from the vault pseudo-account to the destination.
+ *
+ *  @return `tesSUCCESS`, `tecPRECISION_LOSS`, `tecPATH_DRY`,
+ *      `tecINSUFFICIENT_FUNDS`, `tefINTERNAL`, or a code from `accountSend`,
+ *      `removeEmptyHolding`, or `doWithdraw`.
+ */
 TER
 VaultWithdraw::doApply()
 {
@@ -164,11 +277,6 @@ VaultWithdraw::doApply()
         // LCOV_EXCL_STOP
     }
 
-    // Note, we intentionally do not check lsfVaultPrivate flag on the Vault. If
-    // you have a share in the vault, it means you were at some point authorized
-    // to deposit into it, and this means you are also indefinitely authorized
-    // to withdraw from it.
-
     auto const amount = ctx_.tx[sfAmount];
     Asset const vaultAsset = vault->at(sfAsset);
 
@@ -179,7 +287,6 @@ VaultWithdraw::doApply()
     {
         if (amount.asset() == vaultAsset)
         {
-            // Fixed assets, variable shares.
             {
                 auto const maybeShares = assetsToSharesWithdraw(vault, sleIssuance, amount);
                 if (!maybeShares)
@@ -196,7 +303,6 @@ VaultWithdraw::doApply()
         }
         else if (amount.asset() == share)
         {
-            // Fixed shares, variable assets.
             sharesRedeemed = amount;
             auto const maybeAssets = sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed);
             if (!maybeAssets)
@@ -236,9 +342,6 @@ VaultWithdraw::doApply()
         lossUnrealized <= (assetsTotal - assetsAvailable),
         "xrpl::VaultWithdraw::doApply : loss and assets do balance");
 
-    // The vault must have enough assets on hand. The vault may hold assets
-    // that it has already pledged. That is why we look at AssetAvailable
-    // instead of the pseudo-account balance.
     if (*assetsAvailable < assetsWithdrawn)
     {
         JLOG(j_.debug()) << "VaultWithdraw: vault doesn't hold enough assets";
@@ -250,15 +353,12 @@ VaultWithdraw::doApply()
     view().update(vault);
 
     auto const& vaultAccount = vault->at(sfAccount);
-    // Transfer shares from depositor to vault.
     if (auto const ter =
             accountSend(view(), account_, vaultAccount, sharesRedeemed, j_, WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
 
-    // Try to remove MPToken for shares, if the account balance is zero. Vault
-    // pseudo-account will never set lsfMPTAuthorized, so we ignore flags.
-    // Keep MPToken if holder is the vault owner.
+    // Vault pseudo-account will never set lsfMPTAuthorized, so we ignore flags.
     if (account_ != vault->at(sfOwner))
     {
         if (auto const ter = removeEmptyHolding(view(), account_, sharesRedeemed.asset(), j_);
@@ -280,7 +380,6 @@ VaultWithdraw::doApply()
             return ter;
             // LCOV_EXCL_STOP
         }
-        // else quietly ignore, account balance is not zero
     }
 
     auto const dstAcct = ctx_.tx[~sfDestination].value_or(account_);
