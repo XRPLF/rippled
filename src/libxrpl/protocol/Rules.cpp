@@ -56,10 +56,16 @@ setCurrentTransactionRules(std::optional<Rules> r)
     XRPL_ASSERT(
         !r || useRulesGuards(*r) == (enableCuspRoundingFix || enableVaultNumbers),
         "setCurrentTransactionRules : rule decisions match");
-    Number::setMantissaScale(
-        enableCuspRoundingFix ? MantissaRange::MantissaScale::Large
-                              : (enableVaultNumbers ? MantissaRange::MantissaScale::LargeLegacy
-                                                    : MantissaRange::MantissaScale::Small));
+
+    // Declare the range this way to keep clang-tidy from complaining
+    auto const range = [enableCuspRoundingFix, enableVaultNumbers]() {
+        if (enableCuspRoundingFix)
+            return MantissaRange::MantissaScale::Large;
+        else if (enableVaultNumbers)
+            return MantissaRange::MantissaScale::LargeLegacy;
+        return MantissaRange::MantissaScale::Small;
+    }();
+    Number::setMantissaRange(range);
 
     *getCurrentTransactionRulesRef() = std::move(r);
 }
