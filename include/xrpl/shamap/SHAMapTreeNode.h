@@ -7,6 +7,7 @@
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
 
@@ -19,6 +20,9 @@ static constexpr unsigned char const kWIRE_TYPE_ACCOUNT_STATE = 1;
 static constexpr unsigned char const kWIRE_TYPE_INNER = 2;
 static constexpr unsigned char const kWIRE_TYPE_COMPRESSED_INNER = 3;
 static constexpr unsigned char const kWIRE_TYPE_TRANSACTION_WITH_META = 4;
+
+// Lower bound on SHAMap leaf item payload size, in bytes.
+inline constexpr std::size_t kMIN_SHA_MAP_ITEM_BYTES = 12;
 
 enum class SHAMapNodeType {
     TnInner = 1,

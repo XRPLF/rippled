@@ -213,7 +213,7 @@ PeerImp::run()
             return ret;
 
         if (auto const s = base64Decode(value); s.size() == uint256::size())
-            return uint256{s};
+            return uint256::fromRaw(s);
 
         return std::nullopt;
     };
@@ -1839,7 +1839,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
         return;
     }
 
-    uint256 const ledgerHash{m->ledgerhash()};
+    uint256 const ledgerHash = uint256::fromRaw(m->ledgerhash());
 
     // Otherwise check if received data for a candidate transaction set
     if (m->type() == protocol::liTS_CANDIDATE)
@@ -1901,8 +1901,8 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
             return;
     }
 
-    uint256 const proposeHash{set.currenttxhash()};
-    uint256 const prevLedger{set.previousledger()};
+    uint256 const proposeHash = uint256::fromRaw(set.currenttxhash());
+    uint256 const prevLedger = uint256::fromRaw(set.previousledger());
 
     NetClock::time_point const closeTime{NetClock::duration{set.closetime()}};
 
@@ -2185,7 +2185,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMHaveTransactionSet> const& m)
         return;
     }
 
-    uint256 const hash{m->hash()};
+    uint256 const hash = uint256::fromRaw(m->hash());
 
     if (m->status() == protocol::tsHAVE)
     {
@@ -2625,7 +2625,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
             auto const& obj = packet.objects(i);
             if (obj.has_hash() && stringIsUInt256Sized(obj.hash()))
             {
-                uint256 const hash{obj.hash()};
+                uint256 const hash = uint256::fromRaw(obj.hash());
                 // VFALCO TODO Move this someplace more sensible so we dont
                 //             need to inject the NodeStore interfaces.
                 std::uint32_t const seq{obj.has_ledgerseq() ? obj.ledgerseq() : 0};
@@ -2695,7 +2695,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
 
                 if (pLDo)
                 {
-                    uint256 const hash{obj.hash()};
+                    uint256 const hash = uint256::fromRaw(obj.hash());
 
                     app_.getLedgerMaster().addFetchPack(
                         hash, std::make_shared<Blob>(obj.data().begin(), obj.data().end()));
@@ -2747,7 +2747,7 @@ PeerImp::handleHaveTransactions(std::shared_ptr<protocol::TMHaveTransactions> co
             return;
         }
 
-        uint256 hash(m->hashes(i));
+        uint256 hash = uint256::fromRaw(m->hashes(i));
 
         auto txn = app_.getMasterTransaction().fetchFromCache(hash);
 
@@ -2881,7 +2881,7 @@ PeerImp::doFetchPack(std::shared_ptr<protocol::TMGetObjectByHash> const& packet)
 
     fee_.fee = Resource::kFEE_HEAVY_BURDEN_PEER;
 
-    uint256 const hash{packet->ledgerhash()};
+    uint256 const hash = uint256::fromRaw(packet->ledgerhash());
 
     std::weak_ptr<PeerImp> const weak = shared_from_this();
     auto elapsed = UptimeClock::now();
@@ -2916,7 +2916,7 @@ PeerImp::doTransactions(std::shared_ptr<protocol::TMGetObjectByHash> const& pack
             return;
         }
 
-        uint256 hash(obj.hash());
+        uint256 hash = uint256::fromRaw(obj.hash());
 
         auto txn = app_.getMasterTransaction().fetchFromCache(hash);
 
@@ -3262,7 +3262,7 @@ PeerImp::getLedger(std::shared_ptr<protocol::TMGetLedger> const& m)
     if (m->has_ledgerhash())
     {
         // Attempt to find ledger by hash
-        uint256 const ledgerHash{m->ledgerhash()};
+        uint256 const ledgerHash = uint256::fromRaw(m->ledgerhash());
         ledger = app_.getLedgerMaster().getLedgerByHash(ledgerHash);
         if (!ledger)
         {
@@ -3341,7 +3341,7 @@ PeerImp::getTxSet(std::shared_ptr<protocol::TMGetLedger> const& m) const
 {
     JLOG(pJournal_.trace()) << "getTxSet: TX set";
 
-    uint256 const txSetHash{m->ledgerhash()};
+    uint256 const txSetHash = uint256::fromRaw(m->ledgerhash());
     std::shared_ptr<SHAMap> shaMap{app_.getInboundTransactions().getSet(txSetHash, false)};
     if (!shaMap)
     {
