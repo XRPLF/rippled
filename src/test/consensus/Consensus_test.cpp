@@ -34,12 +34,12 @@ bool
 checkConsensusReached(
     std::size_t agreeing,
     std::size_t total,
-    bool count_self,
+    bool countSelf,
     std::size_t minConsensusPct,
     bool reachedMax,
     bool stalled,
     std::unique_ptr<std::stringstream> const& clog);
-}
+}  // namespace xrpl
 
 namespace xrpl::test {
 

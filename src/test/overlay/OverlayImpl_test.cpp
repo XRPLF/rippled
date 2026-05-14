@@ -2,13 +2,15 @@
 #include <test/jtx/envconfig.h>
 
 #include <xrpld/app/main/Application.h>
-#include <xrpld/overlay/Compression.h>
+#include <xrpld/core/Config.h>
 #include <xrpld/overlay/Message.h>
+#include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/detail/Handshake.h>
 #include <xrpld/overlay/detail/OverlayImpl.h>
 #include <xrpld/overlay/detail/PeerImp.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
 #include <xrpld/overlay/detail/TrafficCount.h>
+#include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/Slot.h>
 
 #include <xrpl/basics/base_uint.h>
@@ -22,7 +24,6 @@
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/server/Handoff.h>
 
-#include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/address.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/context.hpp>
@@ -31,8 +32,10 @@
 
 #include <xrpl.pb.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <set>
 #include <string>
 #include <utility>
@@ -181,7 +184,7 @@ class OverlayImpl_test : public beast::unit_test::Suite
         return peer;
     }
 
-    protocol::TMProposeSet
+    static protocol::TMProposeSet
     proposal()
     {
         protocol::TMProposeSet message;
@@ -194,7 +197,7 @@ class OverlayImpl_test : public beast::unit_test::Suite
         return message;
     }
 
-    protocol::TMValidation
+    static protocol::TMValidation
     validation()
     {
         protocol::TMValidation message;

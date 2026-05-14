@@ -1,5 +1,7 @@
+#include <test/jtx/Account.h>
 #include <test/jtx/CaptureLogs.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/jtx_json.h>
@@ -13,11 +15,18 @@
 #include <xrpld/app/misc/Transaction.h>
 
 #include <xrpl/basics/Slice.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/HashRouter.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/CanonicalTXSet.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STObject.h>
@@ -30,12 +39,16 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/InfoSub.h>
 #include <xrpl/server/Manifest.h>
 #include <xrpl/server/NetworkOPs.h>
 
 #include <boost/asio/ip/host_name.hpp>
 
+#include <cstdint>
 #include <memory>
+#include <string>
+#include <utility>
 
 namespace xrpl::test {
 

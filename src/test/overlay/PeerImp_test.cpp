@@ -2,15 +2,19 @@
 #include <test/jtx/envconfig.h>
 
 #include <xrpld/app/main/Application.h>
+#include <xrpld/core/Config.h>
 #include <xrpld/overlay/Compression.h>
 #include <xrpld/overlay/Message.h>
+#include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/detail/Handshake.h>
 #include <xrpld/overlay/detail/OverlayImpl.h>
 #include <xrpld/overlay/detail/PeerImp.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
+#include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/Slot.h>
 
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/basics/make_SSLContext.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/unit_test/suite.h>
@@ -150,7 +154,7 @@ class PeerImp_test : public beast::unit_test::Suite
         return sha512Half(value);
     }
 
-    protocol::TMValidation
+    static protocol::TMValidation
     makeValidationMessage(
         jtx::Env& env,
         std::string const& name,
@@ -175,7 +179,7 @@ class PeerImp_test : public beast::unit_test::Suite
         return message;
     }
 
-    void
+    static void
     pump(boost::asio::io_context& ioc)
     {
         ioc.restart();
@@ -215,8 +219,10 @@ class PeerImp_test : public beast::unit_test::Suite
         BEAST_EXPECT(result == PeerFinder::Result::Success);
 
         if (activateSlot)
+        {
             BEAST_EXPECT(
                 overlay.peerFinder().activate(slot, key, true) == PeerFinder::Result::Success);
+        }
 
         auto peer = std::make_shared<PeerTest>(
             env.app(),
