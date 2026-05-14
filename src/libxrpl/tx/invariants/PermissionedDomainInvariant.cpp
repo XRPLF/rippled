@@ -102,7 +102,7 @@ ValidPermissionedDomain::finalize(
         return true;
     };
 
-    if (view.rules().enabled(fixPermissionedDomainInvariant))
+    if (view.rules().enabled(fixCleanup3_1_3))
     {
         // No permissioned domains should be affected if the transaction failed
         if (!isTesSuccess(result))
