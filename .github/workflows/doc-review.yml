@@ -31,50 +31,41 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Python
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          python-version: '3.12'
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: .github/scripts/doc-agent/package-lock.json
 
-      - name: Install dependencies
-        run: pip install anthropic
-
-      - name: Determine changed C++ files
-        id: changes
-        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
-        with:
-          files: |
-            include/**/*.h
-            src/libxrpl/**/*.h
-            src/libxrpl/**/*.cpp
-            src/xrpld/**/*.h
-            src/xrpld/**/*.cpp
+      - name: Install doc-agent dependencies
+        working-directory: .github/scripts/doc-agent
+        run: npm ci
 
       - name: Run documentation review
-        if: steps.changes.outputs.any_changed == 'true'
         env:
-          CHANGED_FILES: ${{ steps.changes.outputs.all_changed_files }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: python3 .github/scripts/doc-review.py
+        run: |
+          cd .github/scripts/doc-agent
+          npm run review -- "${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
 
       - name: Post review summary
-        if: steps.changes.outputs.any_changed == 'true' && always()
+        if: always()
         uses: marocchino/sticky-pull-request-comment@67d0dec7b07ed060a405f9b2a64b8ab319fdd7db # v2.9.2
         with:
           header: doc-review
-          path: doc-review-report.md
+          path: .github/scripts/doc-agent/doc-review-report.md
 
       - name: Post inline review comments
-        if: steps.changes.outputs.any_changed == 'true' && always()
+        if: always()
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
           script: |
             const fs = require('fs');
-            if (!fs.existsSync('doc-review-comments.json')) return;
+            const path = '.github/scripts/doc-agent/doc-review-comments.json';
+            if (!fs.existsSync(path)) return;
 
-            const comments = JSON.parse(fs.readFileSync('doc-review-comments.json', 'utf8'));
+            const comments = JSON.parse(fs.readFileSync(path, 'utf8'));
             if (comments.length === 0) return;
 
             const pull_number = context.payload.pull_request.number;
