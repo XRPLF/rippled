@@ -10,6 +10,7 @@
  *   doc-agent regen-skills protocol
  */
 
+import { auditTarget } from './audit.js';
 import { documentTarget } from './document.js';
 import { regenSkills } from './regen-skills.js';
 import { reviewDiff } from './review.js';
@@ -21,6 +22,9 @@ Usage:
   doc-agent document <file-or-directory>   Add Doxygen documentation
   doc-agent review <base>..<head>          Detect doc drift in range
   doc-agent review --pr <number>           Detect doc drift for a PR
+  doc-agent audit <file-or-directory>      Measure how completely each file's
+                                           docstrings reflect its .ai.md intent;
+                                           outputs doc-audit-report.{md,json}
   doc-agent regen-skills <module>          Regenerate docs/skills/soul/<module>.md
                                            from sibling .ai.md files
 
@@ -59,6 +63,13 @@ async function main(): Promise<void> {
   if (mode === 'review') {
     if (args.length === 0) printUsageAndExit(1);
     await reviewDiff(args);
+    return;
+  }
+
+  if (mode === 'audit') {
+    const target = args[0];
+    if (target === undefined) printUsageAndExit(1);
+    await auditTarget(target);
     return;
   }
 

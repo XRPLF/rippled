@@ -13,6 +13,7 @@
     "dev": "tsx --env-file-if-exists=.env src/index.ts",
     "document": "tsx --env-file-if-exists=.env src/index.ts document",
     "review": "tsx --env-file-if-exists=.env src/index.ts review",
+    "audit": "tsx --env-file-if-exists=.env src/index.ts audit",
     "regen-skills": "tsx --env-file-if-exists=.env src/index.ts regen-skills",
     "typecheck": "tsc --noEmit",
     "lint": "biome lint src",
