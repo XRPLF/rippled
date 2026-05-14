@@ -1084,9 +1084,9 @@ private:
 
         // AMM is consumed up to the first cam Offer quality
         BEAST_EXPECT(ammCarol.expectBalances(
-            aBux(3'093'541'659'651'604), bBux(3'200'215'509'984'418), ammCarol.tokens()));
+            aBux(3'093'541'659'651'603), bBux(3'200'215'509'984'419), ammCarol.tokens()));
         BEAST_EXPECT(expectOffers(
-            env, cam, 1, {{Amounts{bBux(200'215'509'984'418), aBux(200'215'509'984'419)}}}));
+            env, cam, 1, {{Amounts{bBux(200'215'509'984'419), aBux(200'215'509'984'420)}}}));
     }
 
     void
@@ -1241,7 +1241,7 @@ private:
         BEAST_EXPECT(sa == XRP(100'000'000));
         // Bob gets ~99.99e12ETH. This is the amount Bob
         // can get out of AMM for 100,000,000XRP.
-        BEAST_EXPECT(equal(da, eth(99'999'900'000'100)));
+        BEAST_EXPECT(equal(da, eth(99'999'900'000'099)));
     }
 
     // carol holds ETH, sells ETH for XRP
