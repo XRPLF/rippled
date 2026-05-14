@@ -419,13 +419,14 @@ public:
         using namespace test::jtx;
         Env env{*this, testableAmendments()};
         Account const alice("alice");
+        Account const bob("bob");
         Account const sponsor("sponsor");
         Account const invalid("invalid");
 
         Account const signer1("signer1");
         Account const signer2("signer2");
 
-        env.fund(XRP(10000), alice, sponsor);
+        env.fund(XRP(10000), alice, bob, sponsor);
         env.close();
 
         env(signers(sponsor, 1, {{signer1, 1}, {signer2, 1}}));
@@ -439,10 +440,10 @@ public:
         signers1[sfTxnSignature.jsonName] = "DEADBEEF";
         env(tx, Fee(XRP(1)), sponsor::As(sponsor, spfSponsorReserve), Ter(telENV_RPC_FAILED));
 
-        // Signer account doesn't exist
+        // bob is not a multi-signing account.
         env(noop(alice),
             Fee(XRP(1)),
-            sponsor::As(invalid, spfSponsorReserve),
+            sponsor::As(bob, spfSponsorReserve),
             Msig(sfSponsorSignature, {signer1}),
             Ter(tefNOT_MULTI_SIGNING));
 
@@ -491,7 +492,7 @@ public:
         env(noop(alice), Sig(sfSponsorSignature, sponsor), Ter(temMALFORMED));
 
         // Invalid Sponsor Account (Sponsor.Account doesn't exist)
-        env(noop(alice), sponsor::As(noFunded, spfSponsorReserve), Ter(terNO_SPONSORSHIP));
+        env(noop(alice), sponsor::As(noFunded, spfSponsorReserve), Ter(terNO_ACCOUNT));
         env(noop(alice),
             sponsor::As(noFunded, spfSponsorReserve),
             Sig(sfSponsorSignature, noFunded),

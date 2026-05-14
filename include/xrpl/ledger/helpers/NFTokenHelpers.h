@@ -40,12 +40,7 @@ findTokenAndPage(ApplyView& view, AccountID const& owner, uint256 const& nftoken
 
 /** Insert the token in the owner's token directory. */
 TER
-insertToken(
-    ApplyView& view,
-    STTx const& tx,
-    AccountID owner,
-    std::optional<AccountID> const& sponsor,
-    STObject&& nft);
+insertToken(ApplyView& view, STTx const& tx, AccountID owner, SLE::ref sponsorSle, STObject&& nft);
 
 /** Remove the token from the owner's token directory. */
 TER

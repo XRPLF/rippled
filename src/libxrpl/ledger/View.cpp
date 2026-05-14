@@ -448,12 +448,14 @@ doWithdraw(
         // LCOV_EXCL_STOP
     }
 
-    auto const sponsorAccountID = getTxReserveSponsorAccountID(tx);
+    auto const sponsorSle = getTxReserveSponsor(view, tx);
+    if (!sponsorSle)
+        return sponsorSle.error();  // LCOV_EXCL_LINE
 
     // Move the funds directly from the broker's pseudo-account to the
     // dstAcct
     return accountSend(
-        view, sourceAcct, dstAcct, amount, j, sponsorAccountID, WaiveTransferFee::Yes);
+        view, sourceAcct, dstAcct, amount, j, *sponsorSle, WaiveTransferFee::Yes);
 }
 
 TER

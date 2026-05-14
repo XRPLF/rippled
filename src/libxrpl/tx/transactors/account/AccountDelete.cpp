@@ -420,24 +420,16 @@ AccountDelete::doApply()
         {
             // sanity check
             // Since sfSponsoringAccountCount is set to soeDEFAULT, the field will not be
-            // populated with a value of 0.
+            // present with a value of 0.
             return tefINTERNAL;  // LCOV_EXCL_LINE
         }
-
-        if (sponsoringAccountCount == 1)
-        {
-            sponsorSle->makeFieldAbsent(sfSponsoringAccountCount);
-        }
-        else
-        {
-            sponsorSle->setFieldU32(sfSponsoringAccountCount, sponsoringAccountCount - 1);
-        }
+        sponsorSle->at(sfSponsoringAccountCount) = sponsoringAccountCount - 1;
         view().update(sponsorSle);
 
         // Following line might look redundant, but without it, sfSponsor
         // would end up remaining in after-ltAccountRoot during the
         // InvariantCheck.
-        (*src).makeFieldAbsent(sfSponsor);
+        src->makeFieldAbsent(sfSponsor);
     }
 
     XRPL_ASSERT(

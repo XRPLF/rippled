@@ -155,13 +155,15 @@ VaultCreate::doApply()
     if (auto ter = dirLink(view(), account_, vault))
         return ter;
     // We will create Vault and PseudoAccount, hence increase OwnerCount by 2
-    auto const sponsor = getTxReserveSponsor(view(), tx);
+    auto const sponsorSle = getTxReserveSponsor(view(), tx);
+    if (!sponsorSle)
+        return sponsorSle.error();  // LCOV_EXCL_LINE
     if (!ctx_.view().rules().enabled(featureSponsor))
     {
-        adjustOwnerCount(view(), owner, sponsor, 2, j_);
-        addSponsorToLedgerEntry(vault, sponsor);
+        adjustOwnerCount(view(), owner, *sponsorSle, 2, j_);
+        addSponsorToLedgerEntry(vault, *sponsorSle);
         if (auto const ret =
-                checkInsufficientReserve(view(), tx, owner, preFeeBalance_, sponsor, 0, 0, j_);
+                checkInsufficientReserve(view(), tx, owner, preFeeBalance_, *sponsorSle, 0, 0, j_);
             !isTesSuccess(ret))
             return ret;
     }
@@ -169,11 +171,11 @@ VaultCreate::doApply()
     {
         // after Sponsor Amendment, check insufficient reserve first
         if (auto const ret =
-                checkInsufficientReserve(view(), tx, owner, preFeeBalance_, sponsor, 2, 0, j_);
+                checkInsufficientReserve(view(), tx, owner, preFeeBalance_, *sponsorSle, 2, 0, j_);
             !isTesSuccess(ret))
             return ret;
-        adjustOwnerCount(view(), owner, sponsor, 2, j_);
-        addSponsorToLedgerEntry(vault, sponsor);
+        adjustOwnerCount(view(), owner, *sponsorSle, 2, j_);
+        addSponsorToLedgerEntry(vault, *sponsorSle);
     }
 
     auto maybePseudo = createPseudoAccount(view(), vault->key(), sfVaultID);

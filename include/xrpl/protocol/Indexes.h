@@ -151,7 +151,7 @@ static TicketT const kTICKET{};
 Keylet
 signers(AccountID const& account) noexcept;
 
-/** A Sponsor */
+/** A Sponsorship */
 Keylet
 sponsor(AccountID const& sponsor, AccountID const& sponsee) noexcept;
 

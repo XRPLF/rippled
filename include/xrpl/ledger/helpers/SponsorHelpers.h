@@ -34,22 +34,36 @@ getTxReserveSponsorAccountID(STTx const& tx)
     return {};
 }
 
-inline SLE::pointer
+inline Expected<SLE::pointer, TER>
 getTxReserveSponsor(ApplyView& view, STTx const& tx)
 {
     auto const sponsorID = getTxReserveSponsorAccountID(tx);
     if (sponsorID)
-        return view.peek(keylet::account(*sponsorID));
-    return {};
+    {
+        auto sle = view.peek(keylet::account(*sponsorID));
+
+        // already checked in Transactor::checkSponsor
+        if (!sle)
+            return Unexpected(tecINTERNAL);
+        return sle;
+    }
+    return SLE::pointer();
 }
 
-inline SLE::const_pointer
+inline Expected<SLE::const_pointer, TER>
 getTxReserveSponsor(ReadView const& view, STTx const& tx)
 {
     auto const sponsorID = getTxReserveSponsorAccountID(tx);
     if (sponsorID)
-        return view.read(keylet::account(*sponsorID));
-    return {};
+    {
+        auto sle = view.read(keylet::account(*sponsorID));
+
+        // already checked in Transactor::checkSponsor
+        if (!sle)
+            return Unexpected(tecINTERNAL);
+        return sle;
+    }
+    return SLE::pointer();
 }
 
 inline std::optional<AccountID>
@@ -108,5 +122,14 @@ removeSponsorFromLedgerEntry(SLE::ref sle, SF_ACCOUNT const& field = sfSponsor)
     if (sle->isFieldPresent(field))
         sle->makeFieldAbsent(field);
 }
+
+// namespace sponsor
+// {
+// // Accessing the ledger to check if provided sponsor is valid.
+// [[nodiscard]] TER
+// valid(ReadView const& view, STTx const& tx, beast::Journal j)
+// {
+// }
+// }
 
 }  // namespace xrpl

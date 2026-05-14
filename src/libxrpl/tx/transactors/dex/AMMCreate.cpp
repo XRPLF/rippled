@@ -147,6 +147,9 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     if (ctx.view.rules().enabled(featureSponsor))
     {
         auto const sponsorSle = getTxReserveSponsor(ctx.view, ctx.tx);
+        if(!sponsorSle)
+            return sponsorSle.error(); // LCOV_EXCL_LINE
+
         // Check the reserve for LPToken trustline
         // Insufficient reserve
         auto const accountSle = ctx.view.read(keylet::account(accountID));
@@ -155,7 +158,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
                 ctx.tx,
                 accountSle,
                 accountSle->getFieldAmount(sfBalance),
-                sponsorSle,
+                *sponsorSle,
                 1,
                 0,
                 ctx.j);
@@ -316,8 +319,11 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
     sb.insert(ammSle);
 
     // Send LPT to LP.
-    auto const sponsor = getTxReserveSponsorAccountID(ctx.tx);
-    auto res = accountSend(sb, accountId, account, lpTokens, ctx.journal, sponsor);
+    auto const sponsorSle = getTxReserveSponsor(sb, ctx.tx);
+    if (!sponsorSle)
+        return {sponsorSle.error(), false};  // LCOV_EXCL_LINE
+
+    auto res = accountSend(sb, accountId, account, lpTokens, ctx.journal, *sponsorSle);
     if (!isTesSuccess(res))
     {
         JLOG(j.debug()) << "AMM Instance: failed to send LPT " << lpTokens;
@@ -346,7 +352,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
                     }
                 }
 
-                if (auto const err = createMPToken(sb, mptID, accountId, std::nullopt, flags);
+                if (auto const err = createMPToken(sb, mptID, accountId, {}, flags);
                     !isTesSuccess(err))
                     return err;
                 // Don't adjust AMM owner count.
@@ -357,7 +363,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
                     accountId,
                     amount,
                     ctx.journal,
-                    std::nullopt,  // don't sponsor for AMM Trustline
+                    {},  // don't sponsor for AMM Trustline
                     WaiveTransferFee::Yes);
             },
             // Set AMM flag on AMM trustline
@@ -368,7 +374,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
                         accountId,
                         amount,
                         ctx.journal,
-                        std::nullopt,  // don't sponsor for AMM Trustline
+                        {},  // don't sponsor for AMM Trustline
                         WaiveTransferFee::Yes))
                     return res;
                 // Set AMM flag on AMM trustline

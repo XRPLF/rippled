@@ -385,10 +385,9 @@ CheckCash::doApply()
             STAmount const flowDeliver{
                 optDeliverMin ? maxDeliverMin() : ctx_.tx.getFieldAmount(sfAmount)};
 
-            auto const sponsorAccountID = getTxReserveSponsorAccountID(ctx_.tx);
-            std::shared_ptr<SLE> sponsorSle = {};
-            if (sponsorAccountID)
-                sponsorSle = psb.peek(keylet::account(*sponsorAccountID));
+            auto const sponsorSle = getTxReserveSponsor(psb, ctx_.tx);
+            if (!sponsorSle)
+                return sponsorSle.error();  // LCOV_EXCL_LINE
 
             // Check reserve. Return destination account SLE if enough reserve,
             // otherwise return nullptr.
@@ -397,7 +396,7 @@ CheckCash::doApply()
 
                 // Can the account cover the trust line's or MPT reserve?
                 if (auto const ret = checkInsufficientReserve(
-                        psb, ctx_.tx, sleDst, preFeeBalance_, sponsorSle, 1, 0, j_);
+                        psb, ctx_.tx, sleDst, preFeeBalance_, *sponsorSle, 1, 0, j_);
                     !isTesSuccess(ret))
                 {
                     JLOG(j_.trace()) << "Trust line does not exist. "
@@ -455,7 +454,7 @@ CheckCash::doApply()
                                 Issue(currency, account_),  // limit of zero
                                 0,                          // quality in
                                 0,                          // quality out
-                                sponsorAccountID,           // sponsor
+                                *sponsorSle,                // sponsor
                                 viewJ);                     // journal
                             !isTesSuccess(ter))
                         {
@@ -503,7 +502,7 @@ CheckCash::doApply()
                                 return tecINSUFFICIENT_RESERVE;
 
                             if (auto const err =
-                                    checkCreateMPT(psb, mptID, account_, sponsorAccountID, j_);
+                                    checkCreateMPT(psb, mptID, account_, *sponsorSle, j_);
                                 !isTesSuccess(err))
                             {
                                 return err;

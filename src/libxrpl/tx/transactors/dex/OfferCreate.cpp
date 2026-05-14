@@ -823,25 +823,26 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     if (!sleCreator)
         return {tefINTERNAL, false};
 
+    auto const sponsorSle = getTxReserveSponsor(sb, ctx_.tx);
+    if (!sponsorSle)
+        return {sponsorSle.error(), false};  // LCOV_EXCL_LINE
+
+    if (auto const ret = checkInsufficientReserve(
+            sb, ctx_.tx, sleCreator, preFeeBalance_, *sponsorSle, 1, 0, j_);
+        !isTesSuccess(ret))
     {
-        auto const sponsor = getTxReserveSponsor(sb, ctx_.tx);
-        if (auto const ret = checkInsufficientReserve(
-                sb, ctx_.tx, sleCreator, preFeeBalance_, sponsor, 1, 0, j_);
-            !isTesSuccess(ret))
+        // If we are here, the signing account had an insufficient reserve
+        // *prior* to our processing. If something actually crossed, then
+        // we allow this; otherwise, we just claim a fee.
+        if (!crossed)
+            result = tecINSUF_RESERVE_OFFER;
+
+        if (!isTesSuccess(result))
         {
-            // If we are here, the signing account had an insufficient reserve
-            // *prior* to our processing. If something actually crossed, then
-            // we allow this; otherwise, we just claim a fee.
-            if (!crossed)
-                result = tecINSUF_RESERVE_OFFER;
-
-            if (!isTesSuccess(result))
-            {
-                JLOG(j_.debug()) << "final result: " << transToken(result);
-            }
-
-            return {result, true};
+            JLOG(j_.debug()) << "final result: " << transToken(result);
         }
+
+        return {result, true};
     }
 
     // We need to place the remainder of the offer into its order book.
@@ -860,8 +861,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     }
 
     // Update owner count.
-    auto const sponsor = getTxReserveSponsor(sb, ctx_.tx);
-    adjustOwnerCount(sb, sleCreator, sponsor, 1, viewJ);
+    adjustOwnerCount(sb, sleCreator, *sponsorSle, 1, viewJ);
 
     JLOG(j_.trace()) << "adding to book: " << to_string(saTakerPays.asset()) << " : "
                      << to_string(saTakerGets.asset())
@@ -930,7 +930,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         sleOffer->setFlag(lsfSell);
     if (domainID)
         sleOffer->setFieldH256(sfDomainID, *domainID);
-    addSponsorToLedgerEntry(sleOffer, sponsor);
+    addSponsorToLedgerEntry(sleOffer, *sponsorSle);
 
     // if it's a hybrid offer, set hybrid flag, and create an open dir
     if (bHybrid)

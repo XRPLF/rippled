@@ -62,7 +62,7 @@ accountReserve(
 XRPAmount
 baseAccountReserve(ReadView const& view, std::int32_t ownerCount);
 
-TER
+[[nodiscard]] TER
 checkInsufficientReserve(
     ReadView const& view,
     STTx const& tx,
@@ -70,7 +70,7 @@ checkInsufficientReserve(
     STAmount const& accBalance,
     SLE::const_ref sponsorSle,
     std::int32_t ownerCountDelta,
-    std::int32_t accountCountDelta = 0,
+    std::int32_t reserveCountDelta = 0,
     beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
 
 std::uint32_t

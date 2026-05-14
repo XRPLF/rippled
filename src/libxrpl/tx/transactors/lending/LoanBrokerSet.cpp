@@ -237,17 +237,19 @@ LoanBrokerSet::doApply()
         if (auto const ter = dirLink(view, vaultPseudoID, broker, sfVaultNode))
             return ter;  // LCOV_EXCL_LINE
 
-        auto const sponsor = getTxReserveSponsor(view, tx);
+        auto const sponsorSle = getTxReserveSponsor(view, tx);
+        if (!sponsorSle)
+            return sponsorSle.error();  // LCOV_EXCL_LINE
 
         if (auto const ret = checkInsufficientReserve(
-                view, tx, owner, preFeeBalance_, {}, sponsor ? 1 : 2, 0, j_);
+                view, tx, owner, preFeeBalance_, {}, *sponsorSle ? 1 : 2, 0, j_);
             !isTesSuccess(ret))
             return ret;
 
-        if (sponsor)
+        if (*sponsorSle)
         {
-            if (auto const ret =
-                    checkInsufficientReserve(view, tx, owner, preFeeBalance_, sponsor, 1, 0, j_);
+            if (auto const ret = checkInsufficientReserve(
+                    view, tx, owner, preFeeBalance_, *sponsorSle, 1, 0, j_);
                 !isTesSuccess(ret))
                 return ret;
         }
@@ -257,7 +259,7 @@ LoanBrokerSet::doApply()
         // Pseudo-account cannot be sponsored
         adjustOwnerCount(view, owner, {}, 1, j_);
         // LoanBroker object can be sponsored
-        adjustOwnerCount(view, owner, sponsor, 1, j_);
+        adjustOwnerCount(view, owner, *sponsorSle, 1, j_);
 
         auto maybePseudo = createPseudoAccount(view, broker->key(), sfLoanBrokerID);
         if (!maybePseudo)
@@ -287,7 +289,7 @@ LoanBrokerSet::doApply()
         if (auto const coverLiq = tx[~sfCoverRateLiquidation])
             broker->at(sfCoverRateLiquidation) = *coverLiq;
 
-        addSponsorToLedgerEntry(broker, sponsor);
+        addSponsorToLedgerEntry(broker, *sponsorSle);
 
         view.insert(broker);
 

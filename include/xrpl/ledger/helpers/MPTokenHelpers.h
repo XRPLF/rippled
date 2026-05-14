@@ -173,7 +173,7 @@ createMPToken(
     ApplyView& view,
     MPTID const& mptIssuanceID,
     AccountID const& account,
-    std::optional<AccountID> const& sponsor,
+    SLE::ref sponsorSle,
     std::uint32_t const flags);
 
 TER
@@ -181,7 +181,7 @@ checkCreateMPT(
     xrpl::ApplyView& view,
     xrpl::MPTIssue const& mptIssue,
     xrpl::AccountID const& holder,
-    std::optional<xrpl::AccountID> const& sponsor,
+    SLE::ref sponsorSle,
     beast::Journal j);
 
 //------------------------------------------------------------------------------
