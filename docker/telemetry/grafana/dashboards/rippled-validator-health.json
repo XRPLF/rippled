@@ -464,13 +464,146 @@
       }
     },
     {
+      "title": "UNL Blocked",
+      "description": "Whether the node's UNL (Unique Node List) is blocked (1=blocked, 0=normal). A UNL-blocked node cannot determine validator trust and may stop participating in consensus.",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 0,
+        "y": 18
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "xrpld_validator_health{metric=\"unl_blocked\",exported_instance=~\"$node\"}",
+          "legendFormat": "UNL Blocked [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "OK",
+                  "color": "green"
+                }
+              }
+            },
+            {
+              "type": "value",
+              "options": {
+                "1": {
+                  "text": "BLOCKED",
+                  "color": "red"
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "custom": {}
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Agreement/Missed Counters (Rate)",
+      "description": "Rate of cumulative validation agreements and misses per minute. These monotonic counters complement the rolling window percentages above.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 18,
+        "x": 6,
+        "y": 18
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rate(xrpld_validation_agreements_total{exported_instance=~\"$node\"}[5m]) * 60",
+          "legendFormat": "Agreements/min [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rate(xrpld_validation_missed_total{exported_instance=~\"$node\"}[5m]) * 60",
+          "legendFormat": "Missed/min [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "axisLabel": "Per Minute",
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "Missed.*"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
       "title": "--- Server State & Consensus ---",
       "type": "row",
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 18
+        "y": 26
       },
       "collapsed": false,
       "panels": []
@@ -483,7 +616,7 @@
         "h": 8,
         "w": 6,
         "x": 0,
-        "y": 19
+        "y": 27
       },
       "options": {
         "tooltip": {
@@ -516,7 +649,7 @@
         "h": 8,
         "w": 18,
         "x": 6,
-        "y": 19
+        "y": 27
       },
       "options": {
         "tooltip": {
@@ -561,7 +694,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 27
+        "y": 35
       },
       "options": {
         "tooltip": {
@@ -594,7 +727,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 27
+        "y": 35
       },
       "options": {
         "tooltip": {
@@ -643,7 +776,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 27
+        "y": 35
       },
       "options": {
         "tooltip": {

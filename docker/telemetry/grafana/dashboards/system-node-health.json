@@ -536,13 +536,123 @@
       }
     },
     {
+      "title": "NodeStore Bytes Read/Written",
+      "description": "Cumulative bytes read and written by the NodeStore backend. Sourced from MetricsRegistry nodestore_state observable gauge with metric=node_written_bytes, node_read_bytes.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 41
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "xrpld_nodestore_state{exported_instance=~\"$node\", metric=\"node_read_bytes\"}",
+          "legendFormat": "Bytes Read [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "xrpld_nodestore_state{exported_instance=~\"$node\", metric=\"node_written_bytes\"}",
+          "legendFormat": "Bytes Written [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "decbytes",
+          "custom": {
+            "axisLabel": "Bytes",
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "NodeStore Read Threads & Duration",
+      "description": "Read thread utilization and cumulative read duration. read_threads_running/read_threads_total shows thread saturation. node_reads_duration_us tracks cumulative time spent in read I/O. read_request_bundle tracks bundled read operations.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 41
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "xrpld_nodestore_state{exported_instance=~\"$node\", metric=\"read_threads_running\"}",
+          "legendFormat": "Read Threads Running [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "xrpld_nodestore_state{exported_instance=~\"$node\", metric=\"read_threads_total\"}",
+          "legendFormat": "Read Threads Total [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "xrpld_nodestore_state{exported_instance=~\"$node\", metric=\"read_request_bundle\"}",
+          "legendFormat": "Read Request Bundle [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "xrpld_nodestore_state{exported_instance=~\"$node\", metric=\"node_reads_duration_us\"}",
+          "legendFormat": "Read Duration (\u00b5s) [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "axisLabel": "Count / \u00b5s",
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
       "title": "--- OTel: Cache Hit Rates ---",
       "type": "row",
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 41
+        "y": 49
       },
       "collapsed": false,
       "panels": []
@@ -555,7 +665,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 42
+        "y": 50
       },
       "options": {
         "tooltip": {
@@ -610,13 +720,13 @@
     },
     {
       "title": "Cache Sizes",
-      "description": "TreeNode cache size, TreeNode track size, and FullBelow cache size. Sourced from MetricsRegistry cache_metrics observable gauge.",
+      "description": "TreeNode cache size, TreeNode track size, and FullBelow cache size. Sourced from MetricsRegistry cache_metrics observable gauge. Also includes AcceptedLedger (AL) cache size.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 42
+        "y": 50
       },
       "options": {
         "tooltip": {
@@ -645,6 +755,13 @@
           },
           "expr": "xrpld_cache_metrics{exported_instance=~\"$node\", metric=\"fullbelow_size\"}",
           "legendFormat": "FullBelow [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "xrpld_cache_metrics{exported_instance=~\"$node\", metric=\"AL_size\"}",
+          "legendFormat": "AcceptedLedger Size [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -670,7 +787,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 50
+        "y": 58
       },
       "collapsed": false,
       "panels": []
@@ -683,7 +800,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 51
+        "y": 59
       },
       "options": {
         "tooltip": {
@@ -728,7 +845,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 59
+        "y": 67
       },
       "collapsed": false,
       "panels": []
@@ -741,7 +858,7 @@
         "h": 8,
         "w": 6,
         "x": 0,
-        "y": 60
+        "y": 68
       },
       "options": {
         "tooltip": {
@@ -821,7 +938,7 @@
         "h": 8,
         "w": 6,
         "x": 6,
-        "y": 60
+        "y": 68
       },
       "options": {
         "tooltip": {
@@ -854,7 +971,7 @@
         "h": 8,
         "w": 6,
         "x": 12,
-        "y": 60
+        "y": 68
       },
       "options": {
         "tooltip": {
@@ -887,7 +1004,7 @@
         "h": 8,
         "w": 6,
         "x": 18,
-        "y": 60
+        "y": 68
       },
       "options": {
         "tooltip": {
@@ -920,7 +1037,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 68
+        "y": 76
       },
       "options": {
         "tooltip": {
@@ -967,7 +1084,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 68
+        "y": 76
       },
       "options": {
         "tooltip": {
@@ -994,13 +1111,87 @@
       }
     },
     {
+      "title": "Current Ledger Index",
+      "description": "Current open ledger sequence number. The gap between this and validated_ledger_seq represents ledgers in flight.",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 84
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "xrpld_server_info{exported_instance=~\"$node\", metric=\"ledger_current_index\"}",
+          "legendFormat": "Current Ledger [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {}
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "NuDB Storage Size",
+      "description": "NuDB backend file size in bytes. Sourced from MetricsRegistry storage_detail observable gauge. Tracks database growth over time.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 84
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "xrpld_storage_detail{exported_instance=~\"$node\", metric=\"nudb_bytes\"}",
+          "legendFormat": "NuDB Size [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "decbytes",
+          "custom": {
+            "axisLabel": "Size",
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
       "title": "--- OTel: Complete Ledgers & DB ---",
       "type": "row",
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 76
+        "y": 92
       },
       "collapsed": false,
       "panels": []
@@ -1013,7 +1204,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 77
+        "y": 93
       },
       "options": {
         "showHeader": true
@@ -1045,7 +1236,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 77
+        "y": 93
       },
       "options": {
         "tooltip": {
@@ -1100,7 +1291,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 85
+        "y": 101
       },
       "options": {
         "tooltip": {
@@ -1133,7 +1324,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 85
+        "y": 101
       },
       "options": {
         "tooltip": {
@@ -1172,7 +1363,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 93
+        "y": 109
       },
       "collapsed": false,
       "panels": []
@@ -1185,7 +1376,7 @@
         "h": 8,
         "w": 6,
         "x": 0,
-        "y": 94
+        "y": 110
       },
       "options": {
         "tooltip": {
@@ -1218,7 +1409,7 @@
         "h": 8,
         "w": 6,
         "x": 6,
-        "y": 94
+        "y": 110
       },
       "options": {
         "tooltip": {
@@ -1251,7 +1442,7 @@
         "h": 8,
         "w": 6,
         "x": 12,
-        "y": 94
+        "y": 110
       },
       "options": {
         "tooltip": {
@@ -1284,7 +1475,7 @@
         "h": 8,
         "w": 6,
         "x": 18,
-        "y": 94
+        "y": 110
       },
       "options": {
         "tooltip": {
@@ -1333,7 +1524,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 102
+        "y": 118
       },
       "options": {
         "tooltip": {

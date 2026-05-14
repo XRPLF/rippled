@@ -335,6 +335,67 @@
         },
         "overrides": []
       }
+    },
+    {
+      "title": "Transaction Overflow Rate",
+      "description": "Rate of job queue transaction overflows per minute. Overflows occur when the job queue's transaction limit is exceeded, causing transactions to be dropped. Non-zero values indicate the node is under heavy transaction load.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 32
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rate(xrpld_jq_trans_overflow_total{exported_instance=~\"$node\"}[5m]) * 60",
+          "legendFormat": "Overflows/min [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 10
+              }
+            ]
+          },
+          "custom": {
+            "axisLabel": "Overflows / Min",
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      }
     }
   ],
   "schemaVersion": 39,
