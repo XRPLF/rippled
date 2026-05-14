@@ -24,17 +24,47 @@
 
 namespace xrpl {
 
-// Get state nodes from a ledger
-//   Inputs:
-//     limit:        integer, maximum number of entries
-//     marker:       opaque, resume point
-//     binary:       boolean, format
-//     type:         string // optional, defaults to all ledger node types
-//   Outputs:
-//     ledger_hash:  chosen ledger's hash
-//     ledger_index: chosen ledger's index
-//     state:        array of state nodes
-//     marker:       resume point, if any
+/** Handle the `ledger_data` JSON-RPC command.
+ *
+ *  Returns a paginated forward scan of the raw state-node map for a specified
+ *  closed ledger, enabling bulk retrieval of the complete ledger state. The
+ *  canonical use case is ledger synchronization and archival: callers walk
+ *  the full state by following the opaque `marker` token across successive
+ *  calls.
+ *
+ *  Recognized request fields:
+ *  - `ledger_hash` / `ledger_index` — ledger selector (resolved via
+ *      `RPC::lookupLedger`; defaults to current).
+ *  - `marker` — hex-encoded 256-bit resume key from a prior response.
+ *      Absent on the first call; iteration starts from key zero.
+ *  - `limit` — maximum entries to return. Non-admin callers are silently
+ *      clamped to `RPC::Tuning::pageLength(isBinary)` (2048 binary,
+ *      256 JSON). Admin / unlimited-role clients may request larger pages.
+ *  - `binary` — boolean; when true, each entry is a hex-serialized blob
+ *      (`serializeHex`). When false (default), each entry is expanded JSON.
+ *  - `type` — optional string naming a `LedgerEntryType` to filter results
+ *      (e.g. `"offer"`, `"account"`). Omit or pass `ltANY` for all types.
+ *      An unrecognised type string returns `rpcINVALID_PARAMS`.
+ *
+ *  Response fields:
+ *  - `ledger_hash`, `ledger_index` — identity of the chosen ledger.
+ *  - `ledger` — full ledger header (JSON or binary). Present only on the
+ *      first page (no `marker` in the request) to avoid redundant data on
+ *      continuation calls.
+ *  - `state` — array of ledger entries for this page.
+ *  - `marker` — opaque resume token; absent when the scan is complete.
+ *
+ *  @note Pagination uses `upper_bound(key - 1)` fence-post arithmetic: when
+ *      the page limit is exhausted, `marker` is set to `sle->key() - 1` so
+ *      that the next `upper_bound` resumes on exactly that entry — no entry
+ *      is skipped or duplicated across page boundaries.
+ *  @note State entries are read via `keylet::unchecked`, which bypasses
+ *      keylet validation; this is safe because the keys originate from the
+ *      ledger's own state map rather than untrusted client input.
+ *  @param context  The dispatch envelope carrying request parameters,
+ *      application context, and role information.
+ *  @return JSON object containing the response or an error.
+ */
 json::Value
 doLedgerData(RPC::JsonContext& context)
 {
@@ -81,7 +111,6 @@ doLedgerData(RPC::JsonContext& context)
 
     if (!isMarker)
     {
-        // Return base ledger data on first query
         jvResult[jss::ledger] = getJson(LedgerFill(
             *lpLedger, &context, isBinary ? static_cast<int>(LedgerFill::Options::Binary) : 0));
     }
@@ -105,7 +134,6 @@ doLedgerData(RPC::JsonContext& context)
         auto sle = lpLedger->read(keylet::unchecked((*i)->key()));
         if (limit-- <= 0)
         {
-            // Stop processing before the current key.
             auto k = sle->key();
             jvResult[jss::marker] = to_string(--k);
             break;
@@ -130,6 +158,32 @@ doLedgerData(RPC::JsonContext& context)
     return jvResult;
 }
 
+/** Handle the `GetLedgerData` gRPC request.
+ *
+ *  Binary-only equivalent of `doLedgerData` for the gRPC transport. Every
+ *  SLE is serialized raw into the protobuf response via `Serializer::add`;
+ *  there is no JSON-format option.
+ *
+ *  Differences from the JSON path:
+ *  - Page size is always `RPC::Tuning::pageLength(true)` (2048); role-based
+ *    limit expansion is not available.
+ *  - Both a start key (`marker`) and an end key (`end_marker`) may be
+ *    supplied, bounding the scan from both sides. This allows callers to
+ *    partition the keyspace into disjoint ranges and parallelise state
+ *    downloads — a pattern absent from the JSON API.
+ *  - The resume marker is written as raw bytes into the response protobuf
+ *    rather than a JSON hex string.
+ *
+ *  Error mapping: `rpcINVALID_PARAMS` → `INVALID_ARGUMENT`; all other
+ *  failures → `NOT_FOUND`. A non-OK status discards the response object.
+ *
+ *  @note Like `doLedgerData`, entries are read via `keylet::unchecked` and
+ *      the fence-post `key - 1` marker arithmetic applies identically.
+ *  @param context  The gRPC dispatch envelope carrying the
+ *      `GetLedgerDataRequest` and application context.
+ *  @return A pair of `{GetLedgerDataResponse, grpc::Status}`. On error the
+ *      response is empty and the status carries the error detail.
+ */
 std::pair<org::xrpl::rpc::v1::GetLedgerDataResponse, grpc::Status>
 doLedgerDataGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>& context)
 {
@@ -184,7 +238,6 @@ doLedgerDataGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>& con
         auto sle = ledger->read(keylet::unchecked((*i)->key()));
         if (maxLimit-- <= 0)
         {
-            // Stop processing before the current key.
             auto k = sle->key();
             --k;
             response.set_marker(k.data(), k.size());

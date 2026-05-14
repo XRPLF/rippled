@@ -1,3 +1,17 @@
+/** @file
+ *  Implements `LoanBrokerCoverClawback`: the transaction that lets the
+ *  original asset issuer forcibly reclaim cover funds from a loan broker's
+ *  pseudo-account, subject to a minimum cover-to-debt ratio enforced via
+ *  asymmetric rounding.
+ *
+ *  The broker may be identified either explicitly via `sfLoanBrokerID` or
+ *  implicitly by encoding the pseudo-account as the IOU issuer in `sfAmount`.
+ *  XRP assets and MPTs cannot use the implicit path.
+ *
+ *  @see LoanBrokerCoverDeposit   structural inverse — adds cover, same
+ *      `WaiveTransferFee::Yes` convention
+ *  @see LoanBrokerCoverWithdraw  voluntary cover removal by broker owner
+ */
 #include <xrpl/tx/transactors/lending/LoanBrokerCoverClawback.h>
 
 #include <xrpl/basics/Expected.h>
@@ -83,6 +97,28 @@ LoanBrokerCoverClawback::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Resolve the target broker's ledger ID from the transaction.
+ *
+ *  Supports two identification modes:
+ *  - **Explicit**: `sfLoanBrokerID` is present in the transaction.
+ *  - **Implicit**: `sfAmount` is an IOU whose `issuer` field is the broker's
+ *    pseudo-account; the function reads that account's SLE and extracts its
+ *    `sfLoanBrokerID` field.
+ *
+ *  The implicit path exists because callers may naturally express the target
+ *  using the trust-line issuer convention (pseudo-account as issuer) without
+ *  knowing the broker's object ID up front.  `preflight` ensures the implicit
+ *  path is only reached when `sfAmount` holds an IOU.
+ *
+ *  @param view  Read-only ledger view used to look up the pseudo-account SLE.
+ *  @param tx    The transaction being applied.
+ *  @return The broker's `uint256` object ID on success, or:
+ *      - `tecINTERNAL` if the transaction state is inconsistent with what
+ *        `preflight` should have rejected (unreachable in practice).
+ *      - `tecNO_ENTRY` if the IOU issuer account does not exist.
+ *      - `tecOBJECT_NOT_FOUND` if the IOU issuer account exists but is not
+ *        a loan-broker pseudo-account.
+ */
 Expected<uint256, TER>
 determineBrokerID(ReadView const& view, STTx const& tx)
 {
@@ -126,6 +162,29 @@ determineBrokerID(ReadView const& view, STTx const& tx)
     // Or tecWRONG_ASSET?
 }
 
+/** Normalize the clawback asset to use the submitting account as issuer.
+ *
+ *  IOU trust lines are bidirectional: the same line can be expressed with
+ *  either endpoint as the `issuer` field.  This function canonicalises the
+ *  asset so that comparisons against the vault's `sfAsset` (which always
+ *  uses the actual issuer account) work correctly regardless of which
+ *  perspective the submitter used when constructing `sfAmount`.
+ *
+ *  MPT assets are returned as-is because MPTs have no trust-line issuer
+ *  ambiguity.
+ *
+ *  @param view                  Read-only ledger view (currently unused;
+ *      reserved for future validation).
+ *  @param account               The submitting account (the asset issuer).
+ *  @param brokerPseudoAccountID The broker pseudo-account ID resolved by
+ *      `determineBrokerID`.
+ *  @param amount                The `sfAmount` from the transaction, which may
+ *      encode the asset from either the issuer's or pseudo-account's
+ *      perspective.
+ *  @return The canonical `Asset` with `account` as issuer on success, or
+ *      `tecWRONG_ASSET` if the IOU issuer matches neither `account` nor
+ *      `brokerPseudoAccountID`.
+ */
 Expected<Asset, TER>
 determineAsset(
     ReadView const& view,
@@ -156,6 +215,29 @@ determineAsset(
     return Unexpected(tecWRONG_ASSET);
 }
 
+/** Compute the maximum amount the issuer may claw back while respecting the
+ *  broker's minimum cover floor.
+ *
+ *  The floor is `sfDebtTotal × sfCoverRateMinimum` (in tenth-basis-points),
+ *  computed with ceiling rounding so the ledger never permits cover to drop
+ *  below the contractual minimum.  The remaining surplus
+ *  (`sfCoverAvailable − minRequiredCover`) is then rounded down.  Asymmetric
+ *  rounding is deliberate: ceiling on the required minimum, floor on the
+ *  available surplus.
+ *
+ *  When `amount` is absent or zero the function returns the full surplus
+ *  (`maxClawAmount`).  When `amount` is provided but exceeds the surplus it
+ *  is silently capped — the submitter always receives at most what the floor
+ *  allows, without needing to know the exact number in advance.
+ *
+ *  @param sleBroker   The broker SLE supplying `sfDebtTotal`,
+ *      `sfCoverRateMinimum`, and `sfCoverAvailable`.
+ *  @param vaultAsset  Canonical vault asset used to type the returned
+ *      `STAmount` (avoids pseudo-account issuer ambiguity).
+ *  @param amount      Requested claw amount, or absent/zero for "take all".
+ *  @return The effective claw amount capped to `maxClawAmount`, or
+ *      `tecINSUFFICIENT_FUNDS` if cover is already at or below the floor.
+ */
 Expected<STAmount, TER>
 determineClawAmount(
     SLE const& sleBroker,
@@ -163,11 +245,9 @@ determineClawAmount(
     std::optional<STAmount> const& amount)
 {
     auto const maxClawAmount = [&]() {
-        // Always round the minimum required up
         NumberRoundModeGuard const mg1(Number::RoundingMode::Upward);
         auto const minRequiredCover =
             tenthBipsOfValue(sleBroker[sfDebtTotal], TenthBips32(sleBroker[sfCoverRateMinimum]));
-        // The subtraction probably won't round, but round down if it does.
         NumberRoundModeGuard const mg2(Number::RoundingMode::Downward);
         return sleBroker[sfCoverAvailable] - minRequiredCover;
     }();
@@ -185,22 +265,44 @@ determineClawAmount(
     return STAmount{vaultAsset, magnitude};
 }
 
+/** Asset-type-specific permission check for the vault asset issuer.
+ *
+ *  Dispatched from `preclaim` via `std::visit` on the vault asset variant.
+ *  Each specialisation enforces the clawback-permission model appropriate to
+ *  its asset type: `Issue` checks IOU account flags; `MPTIssue` checks the
+ *  `MPTIssuance` SLE flags.
+ *
+ *  @tparam T         Asset type: `Issue` or `MPTIssue`.
+ *  @param ctx        Preclaim context with read-only ledger view.
+ *  @param sleIssuer  The issuer's `AccountRoot` SLE.
+ *  @param clawAmount The effective claw amount (used by the MPT path to derive
+ *      the issuance keylet).
+ *  @return `tesSUCCESS` if the issuer holds the required permission flag, or
+ *      `tecNO_PERMISSION` / `tecOBJECT_NOT_FOUND` / `tecINTERNAL` otherwise.
+ */
 template <ValidIssueType T>
 static TER
 preclaimHelper(PreclaimContext const& ctx, SLE const& sleIssuer, STAmount const& clawAmount);
 
+/** IOU specialisation: enforces `lsfAllowTrustLineClawback` and absence of
+ *  `lsfNoFreeze` on the issuer account, mirroring the standard XRPL IOU
+ *  clawback permission model.
+ */
 template <>
 TER
 preclaimHelper<Issue>(PreclaimContext const& ctx, SLE const& sleIssuer, STAmount const& clawAmount)
 {
-    // If AllowTrustLineClawback is not set or NoFreeze is set, return no
-    // permission
     if (!(sleIssuer.isFlag(lsfAllowTrustLineClawback)) || (sleIssuer.isFlag(lsfNoFreeze)))
         return tecNO_PERMISSION;
 
     return tesSUCCESS;
 }
 
+/** MPT specialisation: looks up the `MPTIssuance` SLE and checks
+ *  `lsfMPTCanClawback`.  Also asserts (redundantly) that the issuance's
+ *  `sfIssuer` matches the submitting account — a consistency guard that
+ *  should be unreachable given upstream checks.
+ */
 template <>
 TER
 preclaimHelper<MPTIssue>(
@@ -261,8 +363,6 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
     }
 
-    // Only the issuer of the vault asset can claw it back from the broker's
-    // cover funds.
     if (vaultAsset.getIssuer() != account)
     {
         JLOG(ctx.j.warn()) << "Account is not the issuer of the vault asset.";
@@ -291,9 +391,6 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
     }
     STAmount const& clawAmount = *findClawAmount;
 
-    // Explicitly check the balance of the trust line / MPT to make sure the
-    // balance is actually there. It should always match `sfCoverAvailable`, so
-    // if there isn't, this is an internal error.
     if (accountHolds(
             ctx.view,
             brokerPseudoAccountID,
@@ -303,7 +400,6 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
             ctx.j) < clawAmount)
         return tecINTERNAL;  // tecINSUFFICIENT_FUNDS; LCOV_EXCL_LINE
 
-    // Check if the vault asset issuer has the correct flags
     auto const sleIssuer = ctx.view.read(keylet::account(vaultAsset.getIssuer()));
     if (!sleIssuer)
     {
@@ -349,13 +445,11 @@ LoanBrokerCoverClawback::doApply()
     if (clawAmount.native())
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    // Decrease the LoanBroker's CoverAvailable by Amount
     sleBroker->at(sfCoverAvailable) -= clawAmount;
     view().update(sleBroker);
 
     associateAsset(*sleBroker, vaultAsset);
 
-    // Transfer assets from pseudo-account to depositor.
     return accountSend(view(), brokerPseudoID, account, clawAmount, j_, WaiveTransferFee::Yes);
 }
 

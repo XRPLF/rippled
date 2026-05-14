@@ -752,12 +752,18 @@ doFeature(RPC::JsonContext&);
 json::Value
 doGetCounts(RPC::JsonContext&);
 
-/** Dump internal object state to the log (ADMIN).
+/** Serialize the application's `beast::PropertyStream` tree to JSON (ADMIN).
  *
- *  Triggers a diagnostic print of subsystem internals for offline analysis.
+ *  Returns a live introspection snapshot of every subsystem that has
+ *  registered itself as a `PropertyStream::Source` child of `Application`.
+ *  An optional dot-delimited path string in `params[0]` targets a specific
+ *  named sub-source; a missing or malformed parameter falls back silently to
+ *  the full tree. Always succeeds — never returns an error response.
  *
- *  @param context  RPC dispatch context for this call.
- *  @return JSON object confirming the print was triggered.
+ *  @param context  RPC dispatch context; optional path filter read from
+ *      `context.params[jss::params][0u]`.
+ *  @return JSON object containing the serialized property-stream tree.
+ *  @see JsonPropertyStream
  */
 json::Value
 doPrint(RPC::JsonContext&);

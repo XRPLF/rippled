@@ -1,3 +1,14 @@
+/** @file
+ *  Implements `LoanBrokerDelete`, the teardown transactor for a `LoanBroker`
+ *  and its associated pseudo-account.
+ *
+ *  Deletion is a strict multi-phase process: preclaim verifies that all loans
+ *  are closed and any residual debt rounds to zero, then doApply removes both
+ *  directory entries, refunds cover capital, clears the holding, and erases
+ *  both the pseudo-account SLE and the broker SLE — decrementing the human
+ *  owner's `sfOwnerCount` by exactly two to balance the two-unit increment
+ *  performed by `LoanBrokerSet`.
+ */
 #include <xrpl/tx/transactors/lending/LoanBrokerDelete.h>
 
 #include <xrpl/basics/Log.h>
@@ -95,8 +106,6 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
     }
 
     auto const coverAvailable = STAmount{asset, sleBroker->at(sfCoverAvailable)};
-    // If there are assets in the cover, broker will receive them on deletion.
-    // So we need to check if the broker owner is deep frozen for that asset.
     if (coverAvailable > beast::kZERO)
     {
         if (auto const ret = checkDeepFrozen(ctx.view, brokerOwner, asset))
@@ -116,7 +125,6 @@ LoanBrokerDelete::doApply()
 
     auto const brokerID = tx[sfLoanBrokerID];
 
-    // Delete the loan broker
     auto broker = view().peek(keylet::loanbroker(brokerID));
     if (!broker)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE

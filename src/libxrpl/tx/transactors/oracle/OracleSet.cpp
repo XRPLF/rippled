@@ -1,3 +1,19 @@
+/** @file
+ *  Implementation of the `OracleSet` transactor (XLS-47d).
+ *
+ *  Creates or updates an `ltORACLE` ledger object that stores off-chain
+ *  price-feed data — base/quote token-pair prices, optional scaling factors,
+ *  and a freshness timestamp — making external market data available to
+ *  on-ledger consumers.
+ *
+ *  Two amendments alter behaviour:
+ *  - **`fixPriceOracleOrder`**: on creation, sorts `sfPriceDataSeries` into
+ *    a canonical lexicographic order so all validators produce identical SLEs
+ *    regardless of client submission order.
+ *  - **`fixIncludeKeyletFields`**: back-fills `sfOracleDocumentID` into
+ *    existing SLEs that predate the amendment, making the object
+ *    self-describing without external context.
+ */
 #include <xrpl/tx/transactors/oracle/OracleSet.h>
 
 #include <xrpl/basics/chrono.h>
@@ -29,6 +45,16 @@
 
 namespace xrpl {
 
+/** Extract a canonical `(BaseAsset, QuoteAsset)` currency pair from a
+ *  `sfPriceData` entry or equivalent STObject, for use as a map/set key.
+ *
+ *  Factoring this out ensures the key-extraction logic is identical in both
+ *  `preclaim` (validation) and `doApply` (mutation), preventing subtle
+ *  divergence bugs.
+ *
+ *  @param pair An STObject containing at least `sfBaseAsset` and `sfQuoteAsset`.
+ *  @return A `std::pair<Currency, Currency>` suitable for ordered containers.
+ */
 static inline std::pair<Currency, Currency>
 tokenPairKey(STObject const& pair)
 {
@@ -66,8 +92,6 @@ OracleSet::preclaim(PreclaimContext const& ctx)
     if (!sleSetter)
         return terNO_ACCOUNT;  // LCOV_EXCL_LINE
 
-    // lastUpdateTime must be within maxLastUpdateTimeDelta seconds
-    // of the last closed ledger
     using namespace std::chrono;
     std::size_t const closeTime =
         duration_cast<seconds>(ctx.view.header().closeTime.time_since_epoch()).count();
@@ -84,10 +108,9 @@ OracleSet::preclaim(PreclaimContext const& ctx)
     auto const sle =
         ctx.view.read(keylet::oracle(ctx.tx.getAccountID(sfAccount), ctx.tx[sfOracleDocumentID]));
 
-    // token pairs to add/update
+    // Entries with sfAssetPrice go into `pairs` (create/update); entries
+    // without sfAssetPrice go into `pairsDel` (deletion request).
     std::set<std::pair<Currency, Currency>> pairs;
-    // token pairs to delete. if a token pair doesn't include
-    // the price then this pair should be deleted from the object.
     std::set<std::pair<Currency, Currency>> pairsDel;
     for (auto const& entry : ctx.tx.getFieldArray(sfPriceDataSeries))
     {
@@ -112,9 +135,8 @@ OracleSet::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    // Lambda is used to check if the value of a field, passed
-    // in the transaction, is equal to the value of that field
-    // in the on-ledger object.
+    // Returns true if `field` is absent from the transaction or matches the
+    // on-ledger value — enforcing immutability of sfProvider / sfAssetClass.
     auto isConsistent = [&ctx, &sle](auto const& field) {
         auto const v = ctx.tx[~field];
         return !v || *v == (*sle)[field];
@@ -123,10 +145,6 @@ OracleSet::preclaim(PreclaimContext const& ctx)
     std::int8_t adjustReserve = 0;
     if (sle)
     {
-        // update
-        // Account is the Owner since we can get sle
-
-        // lastUpdateTime must be more recent than the previous one
         if (ctx.tx[sfLastUpdateTime] <= (*sle)[sfLastUpdateTime])
             return tecINVALID_UPDATE_TIME;
 
@@ -157,8 +175,6 @@ OracleSet::preclaim(PreclaimContext const& ctx)
     }
     else
     {
-        // create
-
         if (!ctx.tx.isFieldPresent(sfProvider) || !ctx.tx.isFieldPresent(sfAssetClass))
             return temMALFORMED;
         adjustReserve = pairs.size() > 5 ? 2 : 1;
@@ -179,6 +195,18 @@ OracleSet::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Convenience wrapper around the ledger-helper `adjustOwnerCount` that
+ *  peeks the submitting account's SLE from `ctx` and delegates to the
+ *  standard helper.
+ *
+ *  The `false` return path is unreachable in practice: `preclaim` already
+ *  verified the account exists via `terNO_ACCOUNT`.
+ *
+ *  @param ctx   The apply context for the current transaction.
+ *  @param count Signed reserve-slot delta to apply (positive = increase).
+ *  @return `true` on success; `false` if the account SLE cannot be peeked
+ *      (dead code, annotated `LCOV_EXCL_LINE`).
+ */
 static bool
 adjustOwnerCount(ApplyContext& ctx, int count)
 {
@@ -191,6 +219,16 @@ adjustOwnerCount(ApplyContext& ctx, int count)
     return false;  // LCOV_EXCL_LINE
 }
 
+/** Apply the canonical `sfPriceData` inner-object SOTemplate to `obj`.
+ *
+ *  XRPL's serialization layer requires every inner object to declare its
+ *  field set via an `SOTemplate` before fields can be written to it.
+ *  Without this call, `setField*` operations on a freshly constructed
+ *  `STObject{sfPriceData}` would behave unpredictably.
+ *
+ *  @param obj A freshly constructed or pre-existing `STObject` that will
+ *      hold `sfPriceData` fields.  Modified in place.
+ */
 static void
 setPriceDataInnerObjTemplate(STObject& obj)
 {
@@ -215,12 +253,11 @@ OracleSet::doApply()
 
     if (auto sle = ctx_.view().peek(oracleID))
     {
-        // update
-        // the token pair that doesn't have their price updated will not
-        // include neither price nor scale in the updated PriceDataSeries
-
+        // Update path: build a keyed map of the current pairs, apply the
+        // transaction's deltas (delete / update-in-place / insert), then
+        // serialise the result back. Pairs not mentioned by this transaction
+        // carry over with their existing price and scale unchanged.
         std::map<std::pair<Currency, Currency>, STObject> pairs;
-        // collect current token pairs
         for (auto const& entry : sle->getFieldArray(sfPriceDataSeries))
         {
             STObject priceData{sfPriceData};
@@ -230,25 +267,21 @@ OracleSet::doApply()
             pairs.emplace(tokenPairKey(entry), std::move(priceData));
         }
         auto const oldCount = pairs.size() > 5 ? 2 : 1;
-        // update/add/delete pairs
         for (auto const& entry : ctx_.tx.getFieldArray(sfPriceDataSeries))
         {
             auto const key = tokenPairKey(entry);
             if (!entry.isFieldPresent(sfAssetPrice))
             {
-                // delete token pair
                 pairs.erase(key);
             }
             else if (auto iter = pairs.find(key); iter != pairs.end())
             {
-                // update the price
                 iter->second.setFieldU64(sfAssetPrice, entry.getFieldU64(sfAssetPrice));
                 if (entry.isFieldPresent(sfScale))
                     iter->second.setFieldU8(sfScale, entry.getFieldU8(sfScale));
             }
             else
             {
-                // add a token pair with the price
                 STObject priceData{sfPriceData};
                 populatePriceData(priceData, entry);
                 pairs.emplace(key, std::move(priceData));
@@ -276,8 +309,10 @@ OracleSet::doApply()
     }
     else
     {
-        // create
-
+        // Create path: allocate a new SLE, populate all fields, sort the
+        // sfPriceDataSeries canonically under fixPriceOracleOrder (pre-fix
+        // behaviour preserves raw transaction order for history consistency),
+        // insert into the owner directory, and increment the owner count.
         sle = std::make_shared<SLE>(oracleID);
         sle->setAccountID(sfOwner, ctx_.tx.getAccountID(sfAccount));
         if (ctx_.view().rules().enabled(fixIncludeKeyletFields))

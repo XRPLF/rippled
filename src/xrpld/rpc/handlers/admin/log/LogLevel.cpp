@@ -1,3 +1,12 @@
+/** @file
+ *  Implements `doLogLevel`, the handler for the `log_level` admin RPC command.
+ *
+ *  Operators use this command at runtime to query or change log verbosity
+ *  thresholds across all logging partitions — or a single named one — without
+ *  restarting the node.  The companion command `logrotate` (implemented in
+ *  `LogRotate.cpp`) completes the set of runtime log-management primitives.
+ */
+
 #include <xrpld/app/main/Application.h>
 #include <xrpld/rpc/Context.h>
 
@@ -15,13 +24,43 @@
 
 namespace xrpl {
 
+/** Query or set runtime log-verbosity thresholds (ADMIN).
+ *
+ *  Dispatches across three modes based on the shape of the request:
+ *
+ *  - **Query** (no `severity` field): returns a `levels` JSON object whose
+ *    `base` key holds the global threshold and whose remaining keys are the
+ *    per-partition thresholds for every named subsystem (e.g. `Ledger`,
+ *    `Consensus`).
+ *  - **Global set** (`severity` only, no `partition`): sets the global base
+ *    threshold; all partitions without an individual override are filtered at
+ *    this level from that point forward.
+ *  - **Partition set** (`severity` + `partition`): sets the threshold on a
+ *    single named partition.  The name `"base"` (case-insensitive) is an alias
+ *    for the global threshold and is handled identically to the global-set
+ *    mode.
+ *
+ *  **Severity conversion:** the raw string is validated by `Logs::fromString()`
+ *  and converted to `beast::severities::Severity` via `Logs::toSeverity()`.
+ *  An unrecognised string causes an immediate `rpcINVALID_PARAMS` error rather
+ *  than silently clamping to a default.
+ *
+ *  @param context  RPC dispatch context carrying `params` and `app` references.
+ *  @return In query mode, a JSON object with a `levels` key.  In set modes, an
+ *      empty JSON object on success, or an `rpcINVALID_PARAMS` error object for
+ *      an unrecognised severity string.
+ *
+ *  @note Unknown partition names are silently accepted: `Logs::get()` creates a
+ *      new sink on demand, so a misspelled partition name creates an isolated
+ *      threshold entry rather than returning an error.
+ *  @note The `"base"` partition alias comparison uses `boost::iequals`, matching
+ *      the case-insensitive storage key comparison used internally by `Logs`.
+ */
 json::Value
 doLogLevel(RPC::JsonContext& context)
 {
-    // log_level
     if (not context.params.isMember(jss::severity))
     {
-        // get log severities
         json::Value ret(json::ValueType::Object);
         json::Value lev(json::ValueType::Object);
 
@@ -40,18 +79,14 @@ doLogLevel(RPC::JsonContext& context)
     if (not severity.has_value())
         return rpcError(RpcInvalidParams);
 
-    // log_level severity
     if (not context.params.isMember(jss::partition))
     {
-        // set base log threshold
         context.app.getLogs().threshold(*severity);
         return json::ValueType::Object;
     }
 
-    // log_level partition severity base?
     if (context.params.isMember(jss::partition))
     {
-        // set partition threshold
         std::string const partition(context.params[jss::partition].asString());
 
         if (boost::iequals(partition, "base"))

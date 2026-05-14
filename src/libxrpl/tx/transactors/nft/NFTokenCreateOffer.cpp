@@ -1,3 +1,20 @@
+/**
+ * @file NFTokenCreateOffer.cpp
+ * @brief Transactor implementation for `ttNFTOKEN_CREATE_OFFER` (type 27).
+ *
+ * This file is intentionally thin: it acts as an adapter that extracts fields
+ * from the transaction context and forwards them to the three shared helpers
+ * declared in `NFTokenHelpers.h` — `tokenOfferCreatePreflight`,
+ * `tokenOfferCreatePreclaim`, and `tokenOfferCreateApply`. The same helpers
+ * are reused by `NFTokenMint`, which can create a sell offer atomically at
+ * mint time, ensuring the two transactors cannot drift apart on offer-creation
+ * rules.
+ *
+ * The only logic that lives here rather than in the shared helpers is the
+ * buy/sell token-ownership check in `preclaim` (which must switch on
+ * `tfSellNFToken` to choose the right account's NFT directory) and the
+ * pre-expiration guard (which requires the current ledger close time).
+ */
 #include <xrpl/tx/transactors/nft/NFTokenCreateOffer.h>
 
 #include <xrpl/basics/base_uint.h>
@@ -31,7 +48,6 @@ NFTokenCreateOffer::preflight(PreflightContext const& ctx)
 
     auto const nftFlags = nft::getFlags(ctx.tx[sfNFTokenID]);
 
-    // Use implementation shared with NFTokenMint
     if (NotTEC notTec = nft::tokenOfferCreatePreflight(
             ctx.tx[sfAccount],
             ctx.tx[sfAmount],
@@ -60,7 +76,6 @@ NFTokenCreateOffer::preclaim(PreclaimContext const& ctx)
             ctx.view, ctx.tx[((txFlags & tfSellNFToken) != 0u) ? sfAccount : sfOwner], nftokenID))
         return tecNO_ENTRY;
 
-    // Use implementation shared with NFTokenMint
     return nft::tokenOfferCreatePreclaim(
         ctx.view,
         ctx.tx[sfAccount],
@@ -77,7 +92,6 @@ NFTokenCreateOffer::preclaim(PreclaimContext const& ctx)
 TER
 NFTokenCreateOffer::doApply()
 {
-    // Use implementation shared with NFTokenMint
     return nft::tokenOfferCreateApply(
         view(),
         ctx_.tx[sfAccount],
@@ -97,7 +111,6 @@ NFTokenCreateOffer::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
-    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -108,7 +121,6 @@ NFTokenCreateOffer::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
-    // No transaction-specific invariants yet (future work).
     return true;
 }
 

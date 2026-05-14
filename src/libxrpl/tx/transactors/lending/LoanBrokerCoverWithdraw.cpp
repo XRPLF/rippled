@@ -1,3 +1,17 @@
+/** @file
+ *  Implementation of the `LoanBrokerCoverWithdraw` transactor (XLS-66).
+ *
+ *  This transactor is the only sanctioned path by which a broker owner can
+ *  reclaim idle cover capital from the broker's pseudo-account. It enforces
+ *  the minimum cover ratio — `roundUp(tenthBipsOfValue(sfDebtTotal,
+ *  sfCoverRateMinimum))` — before permitting any withdrawal, ensuring
+ *  outstanding loans remain adequately backed. Asset movement is delegated
+ *  to `doWithdraw` in `View.h`, which handles pseudo-account settlement
+ *  logic common across vault-adjacent withdrawal operations.
+ *
+ *  @see LoanBrokerCoverDeposit   symmetric deposit path (increments cover)
+ *  @see LoanBrokerCoverClawback  forced cover reclaim by the vault asset issuer
+ */
 #include <xrpl/tx/transactors/lending/LoanBrokerCoverWithdraw.h>
 
 #include <xrpl/basics/Log.h>
@@ -23,12 +37,25 @@
 
 namespace xrpl {
 
+/** Delegates amendment gating to `checkLendingProtocolDependencies`.
+ *
+ *  Returns `false` (causing `invokePreflight` to return `temDISABLED`) if
+ *  the lending protocol amendment or any of its dependencies is not yet
+ *  active on the ledger.
+ */
 bool
 LoanBrokerCoverWithdraw::checkExtraFeatures(PreflightContext const& ctx)
 {
     return checkLendingProtocolDependencies(ctx.rules, ctx.tx);
 }
 
+/** Stateless field validation — no ledger access.
+ *
+ *  Rejects structural nonsense before any state is consulted: a zero broker
+ *  ID cannot map to a valid SLE, a non-positive amount is never a meaningful
+ *  withdrawal, and a present-but-zero `sfDestination` would silently route
+ *  funds to a black-hole address.
+ */
 NotTEC
 LoanBrokerCoverWithdraw::preflight(PreflightContext const& ctx)
 {
@@ -53,6 +80,30 @@ LoanBrokerCoverWithdraw::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Read-only ledger checks for a cover withdrawal.
+ *
+ *  Layers of enforcement (in order):
+ *  - Destination must not be a pseudo-account.
+ *  - `LoanBroker` SLE must exist and be owned by the submitter.
+ *  - The broker's vault must exist (missing vault → `tefBAD_LEDGER`; excluded
+ *    from coverage because the broker cannot outlive its vault in a well-formed
+ *    ledger).
+ *  - `sfAmount` asset must match the vault's `sfAsset`.
+ *  - Asset transferability: `canTransfer` from the broker pseudo-account to
+ *    the destination.
+ *  - Third-party destination: upgrades to `StrongAuth` and calls `canWithdraw`
+ *    (checks account existence, deposit-auth, tag requirements, trust limits).
+ *    Withdrawing to self requires only `WeakAuth`, so the owner need not
+ *    pre-establish a trust relationship with their own account.
+ *  - Freeze checks against the pseudo-account (source) and destination, unless
+ *    the destination is the asset issuer.
+ *  - Minimum cover: `roundUp(tenthBipsOfValue(sfDebtTotal,
+ *    sfCoverRateMinimum))` must remain after the withdrawal. Upward rounding
+ *    is enforced via `NumberRoundModeGuard` to prevent rounding dust from
+ *    under-collateralizing outstanding loans.
+ *  - `accountHolds` confirms the pseudo-account's actual balance covers the
+ *    requested amount, guarding against any divergence from `sfCoverAvailable`.
+ */
 TER
 LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
 {
@@ -93,46 +144,41 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     if (amount.asset() != vaultAsset)
         return tecWRONG_ASSET;
 
-    // The broker's pseudo-account is the source of funds.
+    // The broker's pseudo-account is the source of funds, not the submitter.
     auto const pseudoAccountID = sleBroker->at(sfAccount);
-    // Cannot transfer a non-transferable Asset
     if (auto const ret = canTransfer(ctx.view, vaultAsset, pseudoAccountID, dstAcct))
         return ret;
 
-    // Withdrawal to a 3rd party destination account is essentially a transfer.
-    // Enforce all the usual asset transfer checks.
+    // Withdrawal to a 3rd party destination is functionally a transfer:
+    // enforce full consent checks and require StrongAuth (existing trust line
+    // or MPToken).
     AuthType authType = AuthType::WeakAuth;
     if (account != dstAcct)
     {
         if (auto const ret = canWithdraw(ctx.view, tx))
             return ret;
 
-        // The destination account must have consented to receive the asset by
-        // creating a RippleState or MPToken
         authType = AuthType::StrongAuth;
     }
 
-    // Destination MPToken must exist (if asset is an MPT)
     if (auto const ter = requireAuth(ctx.view, vaultAsset, dstAcct, authType))
         return ter;
 
-    // Check for freezes, unless sending directly to the issuer
+    // Freeze checks are skipped when sending directly to the asset issuer.
     if (dstAcct != vaultAsset.getIssuer())
     {
-        // Cannot send a frozen Asset
         if (auto const ret = checkFrozen(ctx.view, pseudoAccountID, vaultAsset))
             return ret;
-        // Destination account cannot receive if asset is deep frozen
         if (auto const ret = checkDeepFrozen(ctx.view, dstAcct, vaultAsset))
             return ret;
     }
 
     auto const coverAvail = sleBroker->at(sfCoverAvailable);
-    // Cover Rate is in 1/10 bips units
     auto const currentDebtTotal = sleBroker->at(sfDebtTotal);
     auto const minimumCover = [&]() {
-        // Always round the minimum required up.
-        // Applies to `tenthBipsOfValue` as well as `roundToAsset`.
+        // Always round the minimum required up — applies to both
+        // `tenthBipsOfValue` and `roundToAsset` — so fractional dust cannot
+        // be used to erode the collateral buffer below the required ratio.
         NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
         return roundToAsset(
             vaultAsset,
@@ -156,6 +202,19 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Executes the cover withdrawal against the mutable ledger view.
+ *
+ *  Decrements `sfCoverAvailable` on the `LoanBroker` SLE, then calls
+ *  `associateAsset` to re-round all `STNumber` fields to asset precision
+ *  (required after any numeric mutation on an SLE that holds asset-denominated
+ *  values). The actual token movement from the broker pseudo-account to the
+ *  destination is performed by `doWithdraw`.
+ *
+ *  @note `associateAsset` must be the last call before `doWithdraw`; failing
+ *      to call it produces silent precision corruption in the serialized SLE.
+ *  @note The broker and vault peek/read failures return `tecINTERNAL` and are
+ *      excluded from coverage — preclaim guarantees both objects exist.
+ */
 TER
 LoanBrokerCoverWithdraw::doApply()
 {
@@ -177,7 +236,6 @@ LoanBrokerCoverWithdraw::doApply()
 
     auto const brokerPseudoID = *broker->at(sfAccount);
 
-    // Decrease the LoanBroker's CoverAvailable by Amount
     broker->at(sfCoverAvailable) -= amount;
     view().update(broker);
 
@@ -186,6 +244,7 @@ LoanBrokerCoverWithdraw::doApply()
     return doWithdraw(view(), tx, account_, dstAcct, brokerPseudoID, preFeeBalance_, amount, j_);
 }
 
+/** No-op: no per-entry invariants are defined for this transaction type yet. */
 void
 LoanBrokerCoverWithdraw::visitInvariantEntry(
     bool,
@@ -195,6 +254,10 @@ LoanBrokerCoverWithdraw::visitInvariantEntry(
     // No transaction-specific invariants yet (future work).
 }
 
+/** No-op: no post-conditions are defined for this transaction type yet.
+ *
+ *  @return `true` unconditionally.
+ */
 bool
 LoanBrokerCoverWithdraw::finalizeInvariants(
     STTx const&,

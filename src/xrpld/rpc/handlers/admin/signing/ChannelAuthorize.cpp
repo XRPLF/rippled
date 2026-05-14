@@ -23,12 +23,51 @@
 
 namespace xrpl {
 
-// {
-//   secret_key: <signing_secret_key>
-//   key_type: optional; either ed25519 or secp256k1 (default to secp256k1)
-//   channel_id: 256-bit channel id
-//   drops: 64-bit uint (as string)
-// }
+/** Sign a payment channel authorization (`channel_authorize`).
+ *
+ *  Produces a cryptographic signature that a channel recipient can present
+ *  in a `PaymentChannelClaim` transaction to redeem up to `amount` drops
+ *  without requiring the channel owner to be online at redemption time.
+ *
+ *  The signed payload is constructed by `serializePayChanAuthorization`:
+ *  `HashPrefix::paymentChannelClaim` (4-byte domain separator `'CLM\0'`) +
+ *  32-byte channel ID + 8-byte drops in big-endian. The domain separator
+ *  prevents the signature from being reinterpreted as authorization for any
+ *  other XRPL data structure. The resulting binary signature is returned as a
+ *  hex string in `"signature"`.
+ *
+ *  **Access control:** The handler is restricted to `Role::ADMIN` callers
+ *  or nodes with `[signing_support]` enabled in their configuration. Public
+ *  nodes reject this call by default to avoid exposing key material on
+ *  internet-facing endpoints.
+ *
+ *  **Key material:** Accepts `secret`, `passphrase`, `seed`, or `seed_hex`,
+ *  optionally paired with `key_type` (`"secp256k1"` or `"ed25519"`). When
+ *  `key_type` is absent and `secret` is also absent, a `missingFieldError`
+ *  for `secret` is returned immediately, providing a clear error for legacy
+ *  clients that omit both fields. When `key_type` is present, `secret` alone
+ *  is rejected — the caller must use one of the explicit seed encodings.
+ *
+ *  **Amount encoding:** `amount` must be a decimal-integer string (not a JSON
+ *  number) to avoid precision loss for values that exceed JavaScript's safe
+ *  integer range (~10^17 drops ≈ max XRP supply).
+ *
+ *  @param context  RPC dispatch context carrying `params`, `role`, and `app`.
+ *  @return A JSON object with key `"signature"` containing the hex-encoded
+ *      signature, or an error object on any validation failure.
+ *
+ *  @note Required params: `channel_id` (64-hex-char uint256), `amount`
+ *      (decimal string, drops), and at least one of `secret` / `key_type`.
+ *      Optional: `key_type` (`"secp256k1"` default, or `"ed25519"`),
+ *      `passphrase`, `seed`, `seed_hex`.
+ *  @note Error codes: `rpcNOT_SUPPORTED` (signing disabled), `missingField`
+ *      (missing required param), `rpcCHANNEL_MALFORMED` (bad channel ID),
+ *      `rpcCHANNEL_AMT_MALFORMED` (non-string or unparseable amount),
+ *      `rpcINTERNAL` (unexpected exception from `sign()`; unreachable under
+ *      normal conditions — excluded from coverage via `LCOV_EXCL`).
+ *  @see doChannelVerify, serializePayChanAuthorization,
+ *      RPC::keypairForSignature
+ */
 json::Value
 doChannelAuthorize(RPC::JsonContext& context)
 {
@@ -44,9 +83,8 @@ doChannelAuthorize(RPC::JsonContext& context)
             return RPC::missingFieldError(p);
     }
 
-    // Compatibility if a key type isn't specified. If it is, the
-    // keypairForSignature code will validate parameters and return
-    // the appropriate error.
+    // Early guard for legacy clients that supply neither field; when key_type
+    // is present, keypairForSignature handles the error itself.
     if (!params.isMember(jss::key_type) && !params.isMember(jss::secret))
         return RPC::missingFieldError(jss::secret);
 

@@ -1,3 +1,18 @@
+/** @file
+ *  Implementation of the `NFTokenBurn` transactor.
+ *
+ *  Permanently destroys an NFToken by removing it from the owner's
+ *  NFTokenPage, incrementing the issuer's `sfBurnedNFTokens` counter, and
+ *  deleting associated buy/sell offers up to `kMAX_DELETABLE_TOKEN_OFFER_ENTRIES`.
+ *
+ *  Permission model (enforced in `preclaim`):
+ *  - The **token owner** may always burn their own token.
+ *  - A **non-owner** requires the token's `nft::kFLAG_BURNABLE` bit to be set
+ *    and must be either the issuer or the issuer's `sfNFTokenMinter` delegate.
+ *
+ *  The issuer is read directly from the packed 256-bit `sfNFTokenID` via
+ *  `nft::getIssuer()` — no secondary ledger lookup is needed to resolve it.
+ */
 #include <xrpl/tx/transactors/nft/NFTokenBurn.h>
 
 #include <xrpl/beast/utility/Journal.h>
@@ -36,8 +51,6 @@ NFTokenBurn::preclaim(PreclaimContext const& ctx)
     if (!nft::findToken(ctx.view, owner, ctx.tx[sfNFTokenID]))
         return tecNO_ENTRY;
 
-    // The owner of a token can always burn it, but the issuer can only
-    // do so if the token is marked as burnable.
     if (auto const account = ctx.tx[sfAccount]; owner != account)
     {
         if ((nft::getFlags(ctx.tx[sfNFTokenID]) & nft::kFLAG_BURNABLE) == 0)
@@ -59,7 +72,6 @@ NFTokenBurn::preclaim(PreclaimContext const& ctx)
 TER
 NFTokenBurn::doApply()
 {
-    // Remove the token, effectively burning it:
     auto const ret = nft::removeToken(
         view(),
         ctx_.tx.isFieldPresent(sfOwner) ? ctx_.tx.getAccountID(sfOwner)
@@ -76,10 +88,9 @@ NFTokenBurn::doApply()
         view().update(issuer);
     }
 
-    // Delete up to 500 offers in total.
-    // Because the number of sell offers is likely to be less than
-    // the number of buy offers, we prioritize the deletion of sell
-    // offers in order to clean up sell offer directory
+    // Sell offers are processed first: their directory is typically smaller,
+    // so clearing them first maximises the chance of a complete cleanup
+    // within the single-transaction 500-offer budget.
     std::size_t const deletedSellOffers = nft::removeTokenOffersWithLimit(
         view(), keylet::nftSells(ctx_.tx[sfNFTokenID]), kMAX_DELETABLE_TOKEN_OFFER_ENTRIES);
 

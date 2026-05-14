@@ -1,3 +1,13 @@
+/** @file
+ *  Implements `doRipplePathFind`, the handler for the deprecated
+ *  `ripple_path_find` JSON-RPC command.
+ *
+ *  The command provides a single synchronous-looking call that finds payment
+ *  paths and returns them in the HTTP response. Its successor, `path_find`
+ *  (`PathFind.cpp`), uses a WebSocket subscription model instead. This file
+ *  is retained only for backwards compatibility.
+ */
+
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/Role.h>
@@ -19,7 +29,60 @@
 
 namespace xrpl {
 
-// This interface is deprecated.
+/** Handle the deprecated `ripple_path_find` one-shot pathfinding RPC command.
+ *
+ *  Finds one or more payment paths between two parties and returns the result
+ *  synchronously in the HTTP response. The successor API is `path_find`, which
+ *  uses a WebSocket subscription to push continuous updates; this handler
+ *  remains only for backwards compatibility.
+ *
+ *  **Gate checks (cheapest first):**
+ *  1. `PATH_SEARCH_MAX == 0` → `rpcNOT_SUPPORTED` (pathfinding administratively
+ *     disabled).
+ *  2. `getValidatedLedgerAge()` > `kMAX_VALIDATED_LEDGER_AGE` (2 min) →
+ *     `rpcNO_NETWORK` (API v1) or `rpcNOT_SYNCED` (API v2+). Only checked in
+ *     the no-ledger (live-network) code path.
+ *  3. `LegacyPathFind` admission control → `rpcTOO_BUSY` when the concurrent
+ *     path-find ceiling (`kMAX_PATHFINDS_IN_PROGRESS = 2`) or job-queue depth
+ *     (`kMAX_PATHFIND_JOB_COUNT = 50`) is exceeded. Only checked in the
+ *     ledger-specified (synchronous) code path.
+ *
+ *  **Execution paths:**
+ *
+ *  - *No ledger specified* (networked mode only): Dispatches to the live
+ *    `PathRequestManager` via `makeLegacyPathRequest()`, then cooperatively
+ *    yields the `JobQueue::Coro` so the path-finding job can run on another
+ *    thread. The handler resumes after the completion callback re-posts the
+ *    coroutine, then calls `request->doStatus()` for the result. If
+ *    `makeLegacyPathRequest()` returns a null request (job queue full at
+ *    enqueue time), the error JSON it produced is returned directly without
+ *    yielding.
+ *
+ *  - *Ledger specified*: Fully synchronous. Resolves the ledger with
+ *    `RPC::lookupLedger()`, acquires a `LegacyPathFind` concurrency slot, and
+ *    calls `PathRequestManager::doLegacyPathRequest()` inline. Ledger metadata
+ *    already placed in `jvResult` by `lookupLedger()` is merged into the final
+ *    result.
+ *
+ *  `loadType` is set to `kFEE_HEAVY_BURDEN_RPC` unconditionally; path-finding
+ *  is one of the most compute-intensive operations on the RPC surface.
+ *
+ *  @note This function runs inside a `JobQueue::Coro` for the no-ledger path.
+ *      Two shutdown failure modes exist: (1) `makeLegacyPathRequest()` returns
+ *      null if the job queue rejects the path-find job; (2) the completion
+ *      callback's `Coro::post()` fails if the queue stops accepting work after
+ *      the path-find runs, in which case `Coro::resume()` is called instead so
+ *      the coroutine drains on the path-finding thread rather than deadlocking.
+ *  @note API v1 reports stale-ledger errors as `rpcNO_NETWORK`; API v2+
+ *      consolidates to `rpcNOT_SYNCED`.
+ *  @see `PathRequestManager::makeLegacyPathRequest()`,
+ *      `PathRequestManager::doLegacyPathRequest()`, `RPC::LegacyPathFind`
+ *  @deprecated Prefer `path_find` (WebSocket subscription) for new clients.
+ *  @param context  RPC dispatch context carrying the parsed request parameters,
+ *      resource consumer, coroutine handle, ledger master, and app handle.
+ *  @return JSON result containing the discovered paths, or an `rpcError` object
+ *      on any failure.
+ */
 json::Value
 doRipplePathFind(RPC::JsonContext& context)
 {
@@ -34,8 +97,6 @@ doRipplePathFind(RPC::JsonContext& context)
     if (!context.app.config().standalone() && !context.params.isMember(jss::ledger) &&
         !context.params.isMember(jss::ledger_index) && !context.params.isMember(jss::ledger_hash))
     {
-        // No ledger specified, use pathfinding defaults
-        // and dispatch to pathfinding engine
         if (context.app.getLedgerMaster().getValidatedLedgerAge() >
             RPC::Tuning::kMAX_VALIDATED_LEDGER_AGE)
         {
@@ -47,91 +108,25 @@ doRipplePathFind(RPC::JsonContext& context)
         PathRequest::pointer request;
         lpLedger = context.ledgerMaster.getClosedLedger();
 
-        // It doesn't look like there's much odd happening here, but you should
-        // be aware this code runs in a JobQueue::Coro, which is a coroutine.
-        // And we may be flipping around between threads.  Here's an overview:
+        // Shutdown failure modes for the coroutine/JobQueue interaction:
         //
-        // 1. We're running doRipplePathFind() due to a call to
-        //    ripple_path_find.  doRipplePathFind() is currently running
-        //    inside of a JobQueue::Coro using a JobQueue thread.
+        // 1. makeLegacyPathRequest() returns null if the JobQueue rejected
+        //    the path-find job (shutting down). The error JSON it produced
+        //    is returned directly; we do not yield.
         //
-        // 2. doRipplePathFind's call to makeLegacyPathRequest() enqueues the
-        //    path-finding request.  That request will (probably) run at some
-        //    indeterminate future time on a (probably different) JobQueue
-        //    thread.
-        //
-        // 3. As a continuation from that path-finding JobQueue thread, the
-        //    coroutine we're currently running in (!) is posted to the
-        //    JobQueue.  Because it is a continuation, that post won't
-        //    happen until the path-finding request completes.
-        //
-        // 4. Once the continuation is enqueued, and we have reason to think
-        //    the path-finding job is likely to run, then the coroutine we're
-        //    running in yield()s.  That means it surrenders its thread in
-        //    the JobQueue.  The coroutine is suspended, but ready to run,
-        //    because it is kept resident by a shared_ptr in the
-        //    path-finding continuation.
-        //
-        // 5. If all goes well then path-finding runs on a JobQueue thread
-        //    and executes its continuation.  The continuation posts this
-        //    same coroutine (!) to the JobQueue.
-        //
-        // 6. When the JobQueue calls this coroutine, this coroutine resumes
-        //    from the line below the coro->yield() and returns the
-        //    path-finding result.
-        //
-        // With so many moving parts, what could go wrong?
-        //
-        // Just in terms of the JobQueue refusing to add jobs at shutdown
-        // there are two specific things that can go wrong.
-        //
-        // 1. The path-finding Job queued by makeLegacyPathRequest() might be
-        //    rejected (because we're shutting down).
-        //
-        //    Fortunately this problem can be addressed by looking at the
-        //    return value of makeLegacyPathRequest().  If
-        //    makeLegacyPathRequest() cannot get a thread to run the path-find
-        //    on, then it returns an empty request.
-        //
-        // 2. The path-finding job might run, but the Coro::post() might be
-        //    rejected by the JobQueue (because we're shutting down).
-        //
-        //    We handle this case by resuming (not posting) the Coro.
-        //    By resuming the Coro, we allow the Coro to run to completion
-        //    on the current thread instead of requiring that it run on a
-        //    new thread from the JobQueue.
-        //
-        // Both of these failure modes are hard to recreate in a unit test
-        // because they are so dependent on inter-thread timing.  However
-        // the failure modes can be observed by synchronously (inside the
-        // xrpld source code) shutting down the application.  The code to
-        // do so looks like this:
-        //
-        //   context.app.signalStop();
-        //   while (! context.app.getJobQueue().jobCounter().joined()) { }
-        //
-        // The first line starts the process of shutting down the app.
-        // The second line waits until no more jobs can be added to the
-        // JobQueue before letting the thread continue.
-        //
-        // May 2017
+        // 2. The path-find job runs but Coro::post() is rejected (JobQueue
+        //    stopped accepting work). The completion lambda falls back to
+        //    Coro::resume() so the coroutine drains on the path-finding
+        //    thread rather than hanging the application on shutdown.
         jvResult = context.app.getPathRequestManager().makeLegacyPathRequest(
             request,
             [&context]() {
-                // Copying the shared_ptr keeps the coroutine alive up
-                // through the return.  Otherwise the storage under the
-                // captured reference could evaporate when we return from
-                // coroCopy->resume().  This is not strictly necessary, but
-                // will make maintenance easier.
+                // Copy the shared_ptr so the coroutine object stays alive
+                // through the return from resume(); the captured reference
+                // could otherwise evaporate beneath us.
                 std::shared_ptr<JobQueue::Coro> const coroCopy{context.coro};
                 if (!coroCopy->post())
-                {
-                    // The post() failed, so we won't get a thread to let
-                    // the Coro finish.  We'll call Coro::resume() so the
-                    // Coro can finish on our thread.  Otherwise the
-                    // application will hang on shutdown.
                     coroCopy->resume();
-                }
             },
             context.consumer,
             lpLedger,
@@ -145,7 +140,6 @@ doRipplePathFind(RPC::JsonContext& context)
         return jvResult;
     }
 
-    // The caller specified a ledger
     jvResult = RPC::lookupLedger(lpLedger, context);
     if (!lpLedger)
         return jvResult;

@@ -1,3 +1,12 @@
+/** @file
+ *  Implements the `LoanSet` transactor for the XLS-66 on-ledger lending protocol.
+ *
+ *  `LoanSet` is the entry point for creating a new loan: it disburses principal
+ *  from a vault's pool of assets to a borrower, records the full amortization
+ *  schedule as a `Loan` ledger entry, and updates the `LoanBroker` and `Vault`
+ *  SLEs accordingly.  Subsequent payments are handled by `LoanPay`; teardown by
+ *  `LoanDelete`.  All financial math is delegated to `LendingHelpers.cpp`.
+ */
 #include <xrpl/tx/transactors/lending/LoanSet.h>
 
 #include <xrpl/basics/Log.h>
@@ -92,7 +101,6 @@ LoanSet::preflight(PreflightContext const& ctx)
         if (!validNumericMinimum(tx[~*field]))
             return temINVALID;
     }
-    // Principal Requested is required
     auto const p = tx[sfPrincipalRequested];
     if (p <= 0)
         return temINVALID;
@@ -207,6 +215,16 @@ LoanSet::getValueFields()
     return kVALUE_FIELDS;
 }
 
+/** Return the current ledger close time as a raw 32-bit second count.
+ *
+ *  Used both as `sfStartDate` on the newly-created `Loan` SLE and as the base
+ *  value for the schedule-overflow arithmetic in `preclaim`.  The result is
+ *  directly comparable to `sfNextPaymentDueDate`, which is also stored as
+ *  `std::uint32_t` seconds since the XRPL epoch.
+ *
+ *  @param view  Read-only ledger view from which the close time is taken.
+ *  @return Close time in seconds since the XRPL epoch.
+ */
 static std::uint32_t
 getStartDate(ReadView const& view)
 {
@@ -568,11 +586,9 @@ LoanSet::doApply()
             WaiveTransferFee::Yes))
         return ter;
 
-    // Get shortcuts to the loan property values
     auto const startDate = getStartDate(view);
     auto loanSequenceProxy = brokerSle->at(sfLoanSequence);
 
-    // Create the loan
     auto loan = std::make_shared<SLE>(keylet::loan(brokerID, *loanSequenceProxy));
 
     // Prevent copy/paste errors
@@ -582,14 +598,12 @@ LoanSet::doApply()
         loan->at(field) = tx[field].value_or(defValue);
     };
 
-    // Set required and fixed tx fields
     loan->at(sfLoanScale) = properties.loanScale;
     loan->at(sfStartDate) = startDate;
     loan->at(sfPaymentInterval) = paymentInterval;
     loan->at(sfLoanSequence) = *loanSequenceProxy;
     loan->at(sfLoanBrokerID) = brokerID;
     loan->at(sfBorrower) = borrower;
-    // Set all other transaction fields directly from the transaction
     if (tx.isFlag(tfLoanOverpayment))
         loan->setFlag(lsfLoanOverpayment);
     setLoanField(~sfLoanOriginationFee);
@@ -602,7 +616,6 @@ LoanSet::doApply()
     setLoanField(~sfCloseInterestRate);
     setLoanField(~sfOverpaymentInterestRate);
     setLoanField(~sfGracePeriod, kDEFAULT_GRACE_PERIOD);
-    // Set dynamic / computed fields to their initial values
     loan->at(sfPrincipalOutstanding) = principalRequested;
     loan->at(sfPeriodicPayment) = properties.periodicPayment;
     loan->at(sfTotalValueOutstanding) = properties.loanState.valueOutstanding;
@@ -612,7 +625,6 @@ LoanSet::doApply()
     loan->at(sfPaymentRemaining) = paymentTotal;
     view.insert(loan);
 
-    // Update the balances in the vault
     vaultAvailableProxy -= principalRequested;
     vaultTotalProxy += state.interestDue;
     XRPL_ASSERT_PARTS(
@@ -621,7 +633,6 @@ LoanSet::doApply()
         "assets available must not be greater than assets outstanding");
     view.update(vaultSle);
 
-    // Update the balances in the loan broker
     adjustImpreciseNumber(brokerSle->at(sfDebtTotal), newDebtDelta, vaultAsset, vaultScale);
     // The broker's owner count is solely for the number of outstanding loans,
     // and is distinct from the broker's pseudo-account's owner count
@@ -633,10 +644,8 @@ LoanSet::doApply()
         return tecMAX_SEQUENCE_REACHED;
     view.update(brokerSle);
 
-    // Put the loan into the pseudo-account's directory
     if (auto const ter = dirLink(view, brokerPseudo, loan, sfLoanBrokerNode))
         return ter;
-    // Borrower is the owner of the loan
     if (auto const ter = dirLink(view, borrower, loan, sfOwnerNode))
         return ter;
 

@@ -23,20 +23,67 @@
 
 namespace xrpl {
 
-// {
-//   source_account : <ident>
-//   destination_account : <ident>
-//   ledger_hash : <ledger>
-//   ledger_index : <ledger_index>
-//   credentials : [<credentialID>,...]
-// }
+/** @file
+ *  Implements the `deposit_authorized` RPC handler.
+ *
+ *  Answers whether a payment from a source account to a destination account
+ *  would currently be permitted under the destination's DepositAuth rules,
+ *  optionally considering a caller-supplied set of credential IDs. This is a
+ *  pure read-only query — no ledger state is mutated.
+ */
 
+/** Determine whether a source account may deposit to a destination account.
+ *
+ *  Resolves the requested ledger, verifies that both accounts exist, inspects
+ *  the destination's `lsfDepositAuth` flag, and evaluates one or both of two
+ *  authorization paths:
+ *
+ *  1. **Account preauthorization** — the destination has posted a
+ *     `DepositPreauth` object keyed by `(dstAcct, srcAcct)`.
+ *  2. **Credential preauthorization** — the caller supplies credential IDs
+ *     (`credentials` array of hex-encoded `uint256` hashes), each credential
+ *     is valid for `source_account`, and the destination has posted a
+ *     `DepositPreauth` object keyed by the canonical sorted set of
+ *     `(issuer, credentialType)` pairs derived from those credentials.
+ *
+ *  Either path is sufficient; they are OR-ed together. Self-deposits (source
+ *  == destination) are always authorized regardless of the DepositAuth flag,
+ *  mirroring the rule enforced at transaction-apply time.
+ *
+ *  **Credential validation** (when `credentials` is present): each credential
+ *  must exist in the ledger (`lsfAccepted` flag set), must not be expired as
+ *  of `parentCloseTime`, and must belong to `source_account`. Duplicate
+ *  `(issuer, credentialType)` pairs are rejected. The array is capped at
+ *  `kMAX_CREDENTIALS_ARRAY_SIZE` (8) entries.
+ *
+ *  **`lifeExtender` invariant**: the `sorted` set holds `Slice` views into
+ *  `sfCredentialType` data inside SLE objects. `lifeExtender` keeps those
+ *  SLEs alive for the lifetime of `sorted` so the `Slice` references remain
+ *  valid through the `keylet::depositPreauth` call.
+ *
+ *  @note Results reflect the state of the selected ledger using
+ *      `parentCloseTime`. A credential that is valid at query time may expire
+ *      before the actual transaction is submitted; callers should re-query or
+ *      submit promptly. This handler uses a `ReadView` and cannot delete
+ *      expired credentials as `verifyDepositPreauth` (on an `ApplyView`) does.
+ *
+ *  @param context  RPC dispatch context; `context.params` must contain
+ *      `source_account` (Base58 account address string),
+ *      `destination_account` (Base58 account address string), and optionally
+ *      `ledger_hash`/`ledger_index` for ledger selection and `credentials`
+ *      (non-empty array of hex-encoded credential object IDs, at most
+ *      `kMAX_CREDENTIALS_ARRAY_SIZE` entries).
+ *  @return JSON object containing `source_account`, `destination_account`,
+ *      `deposit_authorized` (bool), and `credentials` (if supplied). On
+ *      error, returns a JSON error object with one of: `rpcINVALID_PARAMS`,
+ *      `rpcACT_MALFORMED`, `rpcSRC_ACT_NOT_FOUND`, `rpcDST_ACT_NOT_FOUND`,
+ *      or `rpcBAD_CREDENTIALS`.
+ */
 json::Value
 doDepositAuthorized(RPC::JsonContext& context)
 {
     json::Value const& params = context.params;
 
-    // Validate source_account.
     if (!params.isMember(jss::source_account))
         return RPC::missingFieldError(jss::source_account);
     if (!params[jss::source_account].isString())
@@ -50,7 +97,6 @@ doDepositAuthorized(RPC::JsonContext& context)
         return rpcError(RpcActMalformed);
     auto const srcAcct{srcID.value()};
 
-    // Validate destination_account.
     if (!params.isMember(jss::destination_account))
         return RPC::missingFieldError(jss::destination_account);
     if (!params[jss::destination_account].isString())
@@ -64,21 +110,18 @@ doDepositAuthorized(RPC::JsonContext& context)
         return rpcError(RpcActMalformed);
     auto const dstAcct{dstID.value()};
 
-    // Validate ledger.
     std::shared_ptr<ReadView const> ledger;
     json::Value result = RPC::lookupLedger(ledger, context);
 
     if (!ledger)
         return result;
 
-    // If source account is not in the ledger it can't be authorized.
     if (!ledger->exists(keylet::account(srcAcct)))
     {
         RPC::injectError(RpcSrcActNotFound, result);
         return result;
     }
 
-    // If destination account is not in the ledger you can't deposit to it, eh?
     auto const sleDest = ledger->read(keylet::account(dstAcct));
     if (!sleDest)
     {
@@ -164,8 +207,6 @@ doDepositAuthorized(RPC::JsonContext& context)
         }
     }
 
-    // If the two accounts are the same OR if that flag is
-    // not set, then the deposit should be fine.
     bool depositAuthorized = true;
     if (reqAuth)
     {

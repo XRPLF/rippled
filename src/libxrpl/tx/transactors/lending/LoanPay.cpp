@@ -1,3 +1,17 @@
+/** @file
+ *  Implementation of the `LoanPay` transactor for the XRPL Lending Protocol
+ *  (XLS-66).
+ *
+ *  Covers the full transaction pipeline — `checkExtraFeatures`, `getFlagsMask`,
+ *  `preflight`, `calculateBaseFee`, `preclaim`, and `doApply` — for the
+ *  `ttLOAN_PAY` transaction type.  `doApply` is the algorithmic core: it
+ *  unwinds any prior impairment, runs the amortization arithmetic via
+ *  `loanMakePayment`, routes the broker service fee to either the broker
+ *  owner or the first-loss cover pool, and atomically transfers funds from
+ *  the borrower to the vault pseudo-account and the broker payee.
+ *
+ *  See `LoanPay.h` for the class contract and per-method behavioral docs.
+ */
 #include <xrpl/tx/transactors/lending/LoanPay.h>
 
 #include <xrpl/basics/Expected.h>
@@ -70,6 +84,26 @@ LoanPay::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Fee scaling for multi-installment loan payments.
+ *
+ *  Late and full payments always return a single base fee — they perform a
+ *  bounded, fixed amount of work regardless of `sfAmount`.
+ *
+ *  For regular and overpayment types the method reads the loan → loanbroker →
+ *  vault hierarchy to derive `regularPayment = roundedPeriodicPayment +
+ *  serviceFee`, then estimates `numPayments = amount / regularPayment`.  One
+ *  base-fee unit is charged per `kLOAN_PAYMENTS_PER_FEE_INCREMENT` estimated
+ *  payments (minimum 1, rounded up).  When `fixSecurity3_1_3` is active the
+ *  result is capped at `kLOAN_MAXIMUM_PAYMENTS_PER_TRANSACTION /
+ *  kLOAN_PAYMENTS_PER_FEE_INCREMENT` fee increments — matching the hard
+ *  processing cap that `loanMakePayment` enforces at apply time, so the fee
+ *  is never charged for work that cannot happen.
+ *
+ *  Overpayments use upward rounding for the payment estimate (conservative
+ *  billing); regular payments use downward rounding.  If any ledger object
+ *  in the chain is missing or the asset does not match, the method falls back
+ *  to `normalCost` and defers the error to `preclaim`.
+ */
 XRPAmount
 LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
@@ -277,6 +311,59 @@ LoanPay::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Atomic loan repayment: state mutation, accounting, and fund transfer.
+ *
+ *  Execution proceeds in five sequential phases:
+ *
+ *  **1. Impairment reversal.**  If `lsfLoanImpaired` is set,
+ *  `LoanManage::unimpairLoan` is called first.  It reverses the paper loss
+ *  recorded in the vault's `sfLossUnrealized` and recalculates
+ *  `sfNextPaymentDueDate`.  This must precede `loanMakePayment` because the
+ *  payment classification (late vs. on-time) depends on the corrected due date.
+ *
+ *  **2. Payment computation.**  `loanMakePayment` runs the XLS-66 amortization
+ *  arithmetic and modifies `loanSle` in-place, returning a `LoanPaymentParts`
+ *  breakdown: `principalPaid`, `interestPaid`, `feePaid`, and `valueChange`.
+ *  `valueChange` is negative for overpayments (extra principal reduction) and
+ *  positive for late/full payments (penalty interest accrued).
+ *
+ *  **3. Broker fee routing.**  The service fee is sent to the broker owner's
+ *  account when cover available ≥ `tenthBipsOfValue(debtTotal, coverRateMinimum)`
+ *  (rounded up) AND the owner is neither deep-frozen nor unauthorized.  The
+ *  upward rounding is conservative: it ensures `sfCoverAvailable` never dips
+ *  below the theoretical minimum, protecting the broker's solvency.  If the
+ *  owner cannot receive funds, the fee accumulates in the broker pseudo-account
+ *  (first-loss cover pool).  Only when both the owner and the pseudo-account are
+ *  deep-frozen does the transaction fail.
+ *
+ *  **4. Scale-reconciled accounting.**  The vault and loan may operate at
+ *  different numeric scales.  `totalPaidToVaultRounded` is rounded down to the
+ *  vault scale (preventing over-crediting).  The broker's `sfDebtTotal` is
+ *  adjusted via `adjustImpreciseNumber`, which re-rounds to vault scale and
+ *  floors at zero so accumulated rounding drift across multiple loans never
+ *  produces a negative debt balance.  `sfAssetsTotal` is adjusted by
+ *  `valueChange`, while `sfAssetsAvailable` is adjusted by
+ *  `totalPaidToVaultRounded`; the invariant `available ≤ total` is asserted
+ *  (and guarded with `tecINTERNAL` as a last-resort failsafe).
+ *
+ *  **5. Atomic fund transfer.**  A single `accountSendMulti` call moves funds:
+ *  borrower → vault pseudo-account (`totalPaidToVaultRounded`) and borrower →
+ *  broker payee (`totalPaidToBroker`).  Transfer fees are waived
+ *  (`WaiveTransferFee::Yes`) because the amortization schedule dictates exact
+ *  amounts.  If the broker is also the transaction submitter, `addEmptyHolding`
+ *  recreates a token holding the broker may have previously deleted.
+ *
+ *  @note In debug builds two `#if !NDEBUG` blocks verify fund conservation and
+ *      that `sfAssetsAvailable` tracks the vault pseudo-account's actual balance
+ *      before and after the transfer.  These are too expensive for release builds;
+ *      `XRPL_ASSERT_PARTS` macros serve as lightweight release-build postcondition
+ *      guards.
+ *
+ *  @return `tesSUCCESS` on success; `tefBAD_LEDGER` if any required SLE is
+ *      missing (implies ledger corruption); a `tec` code from `loanMakePayment`
+ *      or `LoanManage::unimpairLoan` on computation failure; `tecINTERNAL` if
+ *      the `assetsAvailable ≤ assetsTotal` invariant is violated post-accounting.
+ */
 TER
 LoanPay::doApply()
 {

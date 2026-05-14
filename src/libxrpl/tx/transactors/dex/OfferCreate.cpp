@@ -157,7 +157,6 @@ OfferCreate::preflight(PreflightContext const& ctx)
         JLOG(j.debug()) << "Malformed offer: redundant (IOU for IOU)";
         return temREDUNDANT;
     }
-    // We don't allow a non-native currency to use the currency code XRP.
     if (badAsset() == uPaysAsset || badAsset() == uGetsAsset)
     {
         JLOG(j.debug()) << "Malformed offer: bad currency";
@@ -200,7 +199,8 @@ OfferCreate::preclaim(PreclaimContext const& ctx)
         return tecFROZEN;
     }
 
-    // Allow unfunded MPT for issuer (OutstandingAmount >= MaximumAmount)
+    // MPT issuers may place offers even when OutstandingAmount >= MaximumAmount
+    // (they have no "balance" to be funded from).
     if ((!saTakerGets.holds<MPTIssue>() || saTakerGets.getIssuer() != id) &&
         accountFunds(
             ctx.view,
@@ -214,8 +214,6 @@ OfferCreate::preclaim(PreclaimContext const& ctx)
         return tecUNFUNDED_OFFER;
     }
 
-    // This can probably be simplified to make sure that you cancel sequences
-    // before the transaction sequence number.
     if (cancelSequence && (uAccountSequence <= *cancelSequence))
     {
         JLOG(ctx.j.debug()) << "uAccountSequenceNext=" << uAccountSequence
@@ -230,7 +228,6 @@ OfferCreate::preclaim(PreclaimContext const& ctx)
         return tecEXPIRED;
     }
 
-    // Make sure that we are authorized to hold what the taker will pay us.
     if (!saTakerPays.native())
     {
         auto result = checkAcceptAsset(ctx.view, ctx.flags, id, ctx.j, uPaysAsset);
@@ -238,8 +235,6 @@ OfferCreate::preclaim(PreclaimContext const& ctx)
             return result;
     }
 
-    // if domain is specified, make sure that domain exists and the offer create
-    // is part of the domain
     if (ctx.tx.isFieldPresent(sfDomainID))
     {
         if (!permissioned_dex::accountInDomain(ctx.view, id, ctx.tx[sfDomainID]))
@@ -262,7 +257,6 @@ OfferCreate::checkAcceptAsset(
     beast::Journal const j,
     Asset const& asset)
 {
-    // Only valid for custom currencies
     XRPL_ASSERT(!isXRP(asset), "xrpl::OfferCreate::checkAcceptAsset : input is not XRP");
 
     auto const issuerAccount = view.read(keylet::account(asset.getIssuer()));
@@ -275,9 +269,8 @@ OfferCreate::checkAcceptAsset(
         return ((flags & TapRetry) != 0u) ? TER{terNO_ACCOUNT} : TER{tecNO_ISSUER};
     }
 
-    // An account cannot create a trustline to itself, so no line can exist
-    // to be frozen. Additionally, an issuer can always accept its own
-    // issuance.
+    // An issuer always accepts its own issuance; no trust line can exist
+    // between an account and itself, so no freeze check is needed either.
     if (asset.getIssuer() == id)
         return tesSUCCESS;
 
@@ -293,10 +286,8 @@ OfferCreate::checkAcceptAsset(
                     return ((flags & TapRetry) != 0u) ? TER{terNO_LINE} : TER{tecNO_LINE};
                 }
 
-                // Entries have a canonical representation, determined by a
-                // lexicographical "greater than" comparison employing
-                // strict weak ordering. Determine which entry we need to
-                // access.
+                // Trust-line entries use canonical account ordering (id > issuer
+                // selects the "low" side fields).
                 bool const canonicalGt(id > issuer);
 
                 bool const isAuthorized(
@@ -318,8 +309,8 @@ OfferCreate::checkAcceptAsset(
                 return tesSUCCESS;
             }
 
-            // There's no difference which side enacted deep freeze, accepting
-            // tokens shouldn't be possible.
+            // Either side can enact deep freeze; once set, token movement is
+            // prohibited regardless of which side initiated it.
             bool const deepFrozen =
                 ((*trustLine)[sfFlags] & (lsfLowDeepFreeze | lsfHighDeepFreeze)) != 0u;
 
@@ -331,8 +322,8 @@ OfferCreate::checkAcceptAsset(
             return tesSUCCESS;
         },
         [&](MPTIssue const& issue) -> TER {
-            // WeakAuth - don't check if MPToken exists since it's created
-            // if needed.
+            // WeakAuth: an MPToken holder entry need not pre-exist — it will
+            // be created lazily if the account has the right authorization.
             return requireAuth(view, issue, id, AuthType::WeakAuth);
         });
 }
@@ -539,10 +530,8 @@ OfferCreate::applyHybrid(
     if (!sleOffer->isFieldPresent(sfDomainID))
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    // set hybrid flag
     sleOffer->setFlag(lsfHybrid);
 
-    // if offer is hybrid, need to also place into open offer dir
     Book const book{saTakerPays.asset(), saTakerGets.asset(), std::nullopt};
 
     auto dir = keylet::quality(keylet::kBOOK(book), getRate(saTakerGets, saTakerPays));
@@ -722,8 +711,6 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         if (takerAmount != placeOffer)
             crossed = true;
 
-        // The offer that we need to place after offer crossing should
-        // never be negative. If it is, something went very very wrong.
         if (placeOffer.in < kZERO || placeOffer.out < kZERO)
         {
             JLOG(j_.fatal()) << "Cross left offer negative!"

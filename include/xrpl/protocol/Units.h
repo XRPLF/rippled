@@ -1,3 +1,12 @@
+/** @file
+ *  Type-safe unit arithmetic for the XRP Ledger.
+ *
+ *  Defines the `ValueUnit<UnitTag, T>` phantom-typed wrapper and its concrete
+ *  aliases (`FeeLevel64`, `Bips32`, etc.) that prevent silent mixing of
+ *  conceptually different integer quantities (drops, fee levels, basis points).
+ *  Also provides `mulDiv`, an overflow-safe scaled-arithmetic helper that
+ *  preserves unit constraints across cross-type computations.
+ */
 #pragma once
 
 #include <xrpl/basics/safe_cast.h>
@@ -16,35 +25,59 @@ namespace xrpl {
 
 namespace unit {
 
-/** "drops" are the smallest divisible amount of XRP. This is what most
-    of the code uses. */
+/** Tag type identifying a quantity measured in drops (the smallest XRP unit).
+ *
+ *  Used as the `UnitTag` parameter of `ValueUnit` to produce drop-valued
+ *  types. `XRPAmount` (defined in `XRPAmount.h`) is the primary alias.
+ */
 struct dropTag;
-/** "fee levels" are used by the transaction queue to compare the relative
-    cost of transactions that require different levels of effort to process.
-    See also: src/xrpld/app/misc/FeeEscalation.md#fee-level */
+
+/** Tag type identifying a fee-level quantity used by the transaction queue.
+ *
+ *  Fee levels are dimensionless ratios that let the queue compare the relative
+ *  cost of transactions with different processing effort.
+ *  @see src/xrpld/app/misc/FeeEscalation.md#fee-level
+ */
 struct feelevelTag;
-/** unitless values are plain scalars wrapped in a ValueUnit. They are
-    used for calculations in this header. */
+
+/** Tag type for plain scalars participating in unit-checked arithmetic.
+ *
+ *  Raw `uint64_t` arguments passed to `mulDiv` are wrapped in
+ *  `ValueUnit<unitlessTag, uint64_t>` via `unit::scalar()` so the inner
+ *  `mulDivU` implementation only needs to handle the typed case.
+ */
 struct unitlessTag;
 
-/** Units to represent basis points (bips) and 1/10 basis points */
+/** Tag type identifying a quantity measured in basis points (1/100 of 1%). */
 class BipsTag;
+
+/** Tag type identifying a quantity measured in tenth-basis-points (1/1000 of 1%). */
 class TenthBipsTag;
 
 // These names don't have to be too descriptive, because we're in the "unit"
 // namespace.
 
+/** Concept satisfied by any `ValueUnit` specialization.
+ *
+ *  Requires the nested `unit_type` and `value_type` aliases that every
+ *  `ValueUnit` exposes.  Used as the base constraint for all other
+ *  unit-system concepts.
+ *
+ *  @tparam T The type to check.
+ */
 template <class T>
 concept Valid = std::is_class_v<T> && std::is_object_v<typename T::unit_type> &&
     std::is_object_v<typename T::value_type>;
 
-/** `Usable` is checked to ensure that only values with
-    known valid type tags can be used (sometimes transparently) in
-    non-unit contexts. At the time of implementation, this includes
-    all known tags, but more may be added in the future, and they
-    should not be added automatically unless determined to be
-    appropriate.
-*/
+/** Concept satisfied by `ValueUnit` types whose tag is an approved known unit.
+ *
+ *  Acts as an explicit whitelist: new tags do not automatically gain access
+ *  to JSON serialisation (`jsonClipped`) or other non-unit-domain operations.
+ *  Currently admits `dropTag`, `feelevelTag`, `unitlessTag`, `BipsTag`, and
+ *  `TenthBipsTag`.
+ *
+ *  @tparam T The type to check.
+ */
 template <class T>
 concept Usable = Valid<T> &&
     (std::is_same_v<typename T::unit_type, feelevelTag> ||
@@ -53,21 +86,73 @@ concept Usable = Valid<T> &&
      std::is_same_v<typename T::unit_type, BipsTag> ||
      std::is_same_v<typename T::unit_type, TenthBipsTag>);
 
+/** Concept satisfied when `Other` is an arithmetic type convertible to `VU`'s
+ *  value type.
+ *
+ *  Enables cross-scalar arithmetic on a `ValueUnit` (e.g. multiplying a
+ *  `FeeLevel64` by a raw `uint64_t`).
+ *
+ *  @tparam Other The scalar type to check.
+ *  @tparam VU    The `ValueUnit` specialization to check compatibility with.
+ */
 template <class Other, class VU>
 concept Compatible =
     Valid<VU> && std::is_arithmetic_v<Other> && std::is_arithmetic_v<typename VU::value_type> &&
     std::is_convertible_v<Other, typename VU::value_type>;
 
+/** Concept satisfied when `T` is an integral type. */
 template <class T>
 concept Integral = std::is_integral_v<T>;
 
+/** Concept satisfied when a `ValueUnit`'s value type is integral.
+ *
+ *  Required for modulo (`%=`) and cast operations.
+ *
+ *  @tparam VU The `ValueUnit` specialization to check.
+ */
 template <class VU>
 concept IntegralValue = Integral<typename VU::value_type>;
 
+/** Concept satisfied when two `ValueUnit` types share the same unit tag and
+ *  both have integral value types.
+ *
+ *  Guards `safe_cast` and `unsafe_cast` between `ValueUnit` specializations
+ *  (e.g. `FeeLevel<uint32_t>` to `FeeLevel64`).
+ *
+ *  @tparam VU1 Source `ValueUnit` type.
+ *  @tparam VU2 Destination `ValueUnit` type.
+ */
 template <class VU1, class VU2>
 concept CastableValue = IntegralValue<VU1> && IntegralValue<VU2> &&
     std::is_same_v<typename VU1::unit_type, typename VU2::unit_type>;
 
+/** Phantom-typed wrapper that attaches a compile-time unit tag to an
+ *  arithmetic value, preventing silent mixing of incompatible quantities.
+ *
+ *  The `UnitTag` type is never instantiated; it only serves as a type-system
+ *  discriminator.  Arithmetic operators are generated by `boost::operators`
+ *  mixins from a small set of explicitly defined primitives:
+ *
+ *  - **Addition / subtraction** between two `ValueUnit` of the same unit, or
+ *    between a `ValueUnit` and a raw scalar, preserve the unit.
+ *  - **Multiplication** by a raw scalar preserves the unit (commutativity is
+ *    handled by a `friend operator*`).
+ *  - **Division** of two same-unit `ValueUnit`s returns the raw `value_type`
+ *    (a dimensionless ratio); division by a scalar preserves the unit.
+ *  - **Negation** is compile-time-rejected for unsigned value types via
+ *    `static_assert`.
+ *
+ *  A `ValueUnit<Unit, Wide>` can be implicitly constructed from
+ *  `ValueUnit<Unit, Narrow>` when `SafeToCast<Narrow, Wide>` is satisfied
+ *  (same-sign widening).  The reverse requires `safe_cast` or `unsafe_cast`.
+ *
+ *  Integrates with `beast::Zero`: an explicit constructor from `beast::Zero`
+ *  and `signum()` let the beast zero-comparison machinery generate all six
+ *  relational operators against zero without a temporary allocation.
+ *
+ *  @tparam UnitTag An empty tag type (e.g. `dropTag`, `feelevelTag`).
+ *  @tparam T       The underlying arithmetic value type.
+ */
 template <class UnitTag, class T>
 class ValueUnit : private boost::totally_ordered<ValueUnit<UnitTag, T>>,
                   private boost::additive<ValueUnit<UnitTag, T>>,
@@ -89,10 +174,12 @@ public:
     constexpr ValueUnit&
     operator=(ValueUnit const& other) = default;
 
+    /** Construct a zero-valued unit, integrating with `beast::Zero`. */
     constexpr explicit ValueUnit(beast::Zero) : value_(0)
     {
     }
 
+    /** Assign zero, integrating with `beast::Zero`. */
     constexpr ValueUnit&
     operator=(beast::Zero)
     {
@@ -100,10 +187,20 @@ public:
         return *this;
     }
 
+    /** Construct from a raw value of the underlying arithmetic type.
+     *
+     *  Explicit to prevent accidental construction from unrelated integers.
+     *
+     *  @param value The raw value to wrap.
+     */
     constexpr explicit ValueUnit(value_type value) : value_(value)
     {
     }
 
+    /** Assign from a raw value of the underlying arithmetic type.
+     *
+     *  @param value The raw value to wrap.
+     */
     constexpr ValueUnit&
     operator=(value_type value)
     {
@@ -111,9 +208,16 @@ public:
         return *this;
     }
 
-    /** Instances with the same unit, and a type that is
-        "safe" to convert to this one can be converted
-        implicitly */
+    /** Implicit widening conversion from a narrower same-unit `ValueUnit`.
+     *
+     *  Enabled only when `SafeToCast<Other, value_type>` is satisfied, i.e.
+     *  same signedness and `value_type` is at least as wide as `Other`.
+     *  This allows e.g. `FeeLevel<uint32_t>` to widen to `FeeLevel64`
+     *  without an explicit cast, mirroring ordinary C++ arithmetic widening.
+     *
+     *  @tparam Other The narrower underlying type of the source.
+     *  @param value  The source `ValueUnit` to convert from.
+     */
     template <Compatible<ValueUnit> Other>
     constexpr ValueUnit(ValueUnit<unit_type, Other> const& value)
         requires SafeToCast<Other, value_type>
@@ -121,12 +225,23 @@ public:
     {
     }
 
+    /** Add a raw scalar to this unit value, preserving the unit.
+     *
+     *  @param rhs Scalar to add.
+     *  @return A new `ValueUnit` of the same unit.
+     */
     constexpr ValueUnit
     operator+(value_type const& rhs) const
     {
         return ValueUnit{value_ + rhs};
     }
 
+    /** Add a `ValueUnit` to a raw scalar (commutative form).
+     *
+     *  @param lhs Scalar left-hand side.
+     *  @param rhs `ValueUnit` right-hand side.
+     *  @return A new `ValueUnit` of the same unit.
+     */
     friend constexpr ValueUnit
     operator+(value_type lhs, ValueUnit const& rhs)
     {
@@ -134,12 +249,25 @@ public:
         return rhs + lhs;
     }
 
+    /** Subtract a raw scalar from this unit value, preserving the unit.
+     *
+     *  @param rhs Scalar to subtract.
+     *  @return A new `ValueUnit` of the same unit.
+     */
     constexpr ValueUnit
     operator-(value_type const& rhs) const
     {
         return ValueUnit{value_ - rhs};
     }
 
+    /** Subtract a `ValueUnit` from a raw scalar.
+     *
+     *  Computed as `lhs + (-rhs)` so that addition commutativity applies.
+     *
+     *  @param lhs Scalar left-hand side.
+     *  @param rhs `ValueUnit` to subtract.
+     *  @return A new `ValueUnit` of the same unit.
+     */
     friend constexpr ValueUnit
     operator-(value_type lhs, ValueUnit const& rhs)
     {
@@ -148,12 +276,23 @@ public:
         return -rhs + lhs;
     }
 
+    /** Scale this unit value by a raw scalar, preserving the unit.
+     *
+     *  @param rhs Scalar multiplier.
+     *  @return A new `ValueUnit` of the same unit.
+     */
     constexpr ValueUnit
     operator*(value_type const& rhs) const
     {
         return ValueUnit{value_ * rhs};
     }
 
+    /** Scale a `ValueUnit` by a raw scalar (commutative form).
+     *
+     *  @param lhs Scalar left-hand side.
+     *  @param rhs `ValueUnit` right-hand side.
+     *  @return A new `ValueUnit` of the same unit.
+     */
     friend constexpr ValueUnit
     operator*(value_type lhs, ValueUnit const& rhs)
     {
@@ -161,6 +300,13 @@ public:
         return rhs * lhs;
     }
 
+    /** Divide two same-unit values to produce a dimensionless raw ratio.
+     *
+     *  Same-unit / same-unit = unitless scalar (e.g. drops / drops = 1).
+     *
+     *  @param rhs The divisor.
+     *  @return The raw `value_type` quotient.
+     */
     constexpr value_type
     operator/(ValueUnit const& rhs) const
     {
@@ -209,6 +355,11 @@ public:
         return *this;
     }
 
+    /** Modulo-assign by a raw scalar.  Only available when value type is integral.
+     *
+     *  @tparam Transparent Deduced; constrains the overload to integral value types.
+     *  @param rhs The divisor for the modulo operation.
+     */
     template <Integral Transparent = value_type>
     ValueUnit&
     operator%=(value_type const& rhs)
@@ -217,6 +368,12 @@ public:
         return *this;
     }
 
+    /** Negate this value.
+     *
+     *  @note Fails to compile with a `static_assert` when `T` is unsigned,
+     *      preventing silent integer wrapping on types like `uint64_t`.
+     *  @return A new `ValueUnit` holding `-value_`.
+     */
     ValueUnit
     operator-() const
     {
@@ -256,14 +413,23 @@ public:
         return value_ < other.value_;
     }
 
-    /** Returns true if the amount is not zero */
+    /** Returns `true` when the stored value is non-zero.
+     *
+     *  Allows `if (amount)` idiom analogous to pointer truthiness.
+     */
     explicit constexpr
     operator bool() const noexcept
     {
         return value_ != 0;
     }
 
-    /** Return the sign of the amount */
+    /** Returns the sign of the stored value as -1, 0, or +1.
+     *
+     *  Used by the `beast::Zero` comparison infrastructure to generate all
+     *  six relational operators against `zero` without a temporary allocation.
+     *
+     *  @return -1 if negative, 0 if zero, +1 if positive.
+     */
     [[nodiscard]] constexpr int
     signum() const noexcept
     {
@@ -272,7 +438,15 @@ public:
         return value_ ? 1 : 0;
     }
 
-    /** Returns the number of drops */
+    /** Returns the raw underlying value.
+     *
+     *  Named `fee()` for historical reasons; intended to migrate to a
+     *  dedicated tagged-fee class.
+     *
+     *  @note Prefer `value()` in generic code.  This accessor exists for
+     *      call sites that treat a `ValueUnit` specifically as a fee amount.
+     *  @return The raw `value_type`.
+     */
     // TODO: Move this to a new class, maybe with the old "TaggedFee" name
     [[nodiscard]] constexpr value_type
     fee() const
@@ -280,6 +454,15 @@ public:
         return value_;
     }
 
+    /** Express this value as a decimal fraction of a reference value.
+     *
+     *  Used to produce load-factor metrics for the JSON RPC layer (e.g.
+     *  `openLedgerFeeLevel / referenceFeeLevel`).
+     *
+     *  @tparam Other The underlying type of the reference (must share this unit).
+     *  @param reference The denominator value; behaviour is undefined if zero.
+     *  @return `static_cast<double>(value_) / reference.value()`.
+     */
     template <class Other>
     [[nodiscard]] constexpr double
     decimalFromReference(ValueUnit<unit_type, Other> reference) const
@@ -287,10 +470,19 @@ public:
         return static_cast<double>(value_) / reference.value();
     }
 
-    // `Usable` is checked to ensure that only values with
-    // known valid type tags can be converted to JSON. At the time
-    // of implementation, that includes all known tags, but more may
-    // be added in the future.
+    /** Convert this value to a `Json::Value`, clamping to the JSON integer range.
+     *
+     *  For integral value types, the result is clamped to
+     *  `[numeric_limits<json::Int>::min(), numeric_limits<json::UInt>::max()]`
+     *  to avoid JSON serialization overflow (JSON integers are 32-bit on many
+     *  platforms).  For floating-point value types, the value is returned
+     *  as-is.
+     *
+     *  Only available for `Usable` unit tags (explicit whitelist), so that
+     *  internal intermediate types cannot be accidentally exposed via RPC.
+     *
+     *  @return A `Json::Value` holding the clamped integer or double.
+     */
     [[nodiscard]] json::Value
     jsonClipped() const
         requires Usable<ValueUnit>
@@ -315,16 +507,20 @@ public:
         }
     }
 
-    /** Returns the underlying value. Code SHOULD NOT call this
-        function unless the type has been abstracted away,
-        e.g. in a templated function.
-    */
+    /** Returns the underlying raw value.
+     *
+     *  @note Prefer named accessors at call sites where the unit is known.
+     *      This function is intended for generic (templated) code where the
+     *      unit type has been abstracted away.
+     *  @return The stored `value_type`.
+     */
     [[nodiscard]] constexpr value_type
     value() const
     {
         return value_;
     }
 
+    /** Read a raw value from a stream into this `ValueUnit`. */
     friend std::istream&
     operator>>(std::istream& s, ValueUnit& val)
     {
@@ -333,7 +529,11 @@ public:
     }
 };
 
-// Output Values as just their numeric value.
+/** Write the raw numeric value of a `ValueUnit` to an output stream.
+ *
+ *  The unit tag is not written; the output is identical to streaming the
+ *  underlying `value_type`.
+ */
 template <class Char, class Traits, class UnitTag, class T>
 std::basic_ostream<Char, Traits>&
 operator<<(std::basic_ostream<Char, Traits>& os, ValueUnit<UnitTag, T> const& q)
@@ -341,6 +541,13 @@ operator<<(std::basic_ostream<Char, Traits>& os, ValueUnit<UnitTag, T> const& q)
     return os << q.value();
 }
 
+/** Convert a `ValueUnit` to a `std::string` representation of its raw value.
+ *
+ *  Equivalent to `std::to_string(amount.value())`.
+ *
+ *  @param amount The value to convert.
+ *  @return A string representation of the underlying value.
+ */
 template <class UnitTag, class T>
 std::string
 to_string(ValueUnit<UnitTag, T> const& amount)
@@ -348,27 +555,80 @@ to_string(ValueUnit<UnitTag, T> const& amount)
     return std::to_string(amount.value());
 }
 
+/** Concept satisfied by a `ValueUnit` whose value type is convertible to
+ *  `uint64_t`.  Constrains `mulDiv` source arguments.
+ *
+ *  @tparam Source The `ValueUnit` type to check.
+ */
 template <class Source>
 concept muldivSource =
     Valid<Source> && std::is_convertible_v<typename Source::value_type, std::uint64_t>;
 
+/** Concept satisfied by a `ValueUnit` that can also receive the result of a
+ *  `mulDiv` computation.
+ *
+ *  In addition to satisfying `muldivSource`, the destination type must accept
+ *  a `uint64_t` (the intermediate quotient) and its value type must be at
+ *  least 64 bits wide.
+ *
+ *  @tparam Dest The candidate destination `ValueUnit` type.
+ */
 template <class Dest>
 concept muldivDest = muldivSource<Dest> &&  // Dest is also a source
     std::is_convertible_v<std::uint64_t, typename Dest::value_type> &&
     sizeof(typename Dest::value_type) >= sizeof(std::uint64_t);
 
+/** Concept satisfied when two `ValueUnit` types are both valid `mulDiv`
+ *  sources with the same unit tag.
+ *
+ *  Ensures the numerator (`value`) and denominator (`div`) of a `mulDiv`
+ *  call are dimensionally compatible.
+ *
+ *  @tparam Source2 The type of the divisor argument.
+ *  @tparam Source1 The type of the value argument.
+ */
 template <class Source2, class Source1>
 concept muldivSources = muldivSource<Source1> && muldivSource<Source2> &&
     std::is_same_v<typename Source1::unit_type, typename Source2::unit_type>;
 
+/** Concept satisfied when a `mulDiv` call is well-typed: both source
+ *  arguments share a unit tag and the destination satisfies `muldivDest`.
+ *
+ *  Source and `Dest` may share the same unit (same-unit scaling).
+ *
+ *  @tparam Dest    The result `ValueUnit` type.
+ *  @tparam Source1 The value argument type.
+ *  @tparam Source2 The divisor argument type.
+ */
 template <class Dest, class Source1, class Source2>
 concept muldivable = muldivSources<Source1, Source2> && muldivDest<Dest>;
-// Source and Dest can be the same by default
 
+/** Concept satisfied when a `mulDiv` overload may reorder arguments
+ *  (commuted form).
+ *
+ *  Extends `muldivable` with the additional constraint that `Dest`'s unit
+ *  tag differs from the source unit tags.  This prevents the commuted
+ *  overload from being ambiguous with the non-commuted one when all three
+ *  types share the same unit.
+ *
+ *  @tparam Dest    The result `ValueUnit` type.
+ *  @tparam Source1 One source argument type.
+ *  @tparam Source2 The other source argument type.
+ */
 template <class Dest, class Source1, class Source2>
 concept muldivCommutable = muldivable<Dest, Source1, Source2> &&
     !std::is_same_v<typename Source1::unit_type, typename Dest::unit_type>;
 
+/** Wrap a raw scalar in a `unitlessTag` `ValueUnit` for use with `mulDivU`.
+ *
+ *  Raw integers cannot be passed directly to `mulDivU`, which requires typed
+ *  arguments.  `scalar()` provides the necessary wrapping without introducing
+ *  a named unit.
+ *
+ *  @tparam T The scalar arithmetic type.
+ *  @param value The value to wrap.
+ *  @return `ValueUnit<unitlessTag, T>{value}`.
+ */
 template <class T>
 ValueUnit<unitlessTag, T>
 scalar(T value)
@@ -376,6 +636,27 @@ scalar(T value)
     return ValueUnit<unitlessTag, T>{value};
 }
 
+/** Core overflow-safe multiply-then-divide for typed `ValueUnit` arguments.
+ *
+ *  Computes `(value * mul) / div` using a `boost::multiprecision::uint128_t`
+ *  intermediate to prevent overflow on the product.  Two fast paths avoid the
+ *  128-bit multiply when `value == div` (returns `mul`) or `mul == div`
+ *  (returns `value` after a range check).
+ *
+ *  All inputs must be non-negative; negative inputs trigger `XRPL_ASSERT` in
+ *  addition to returning `std::nullopt`.
+ *
+ *  The public `mulDiv` overloads in the `xrpl` namespace forward to this
+ *  function after normalising raw scalars with `unit::scalar()`.
+ *
+ *  @tparam Source1 Value and divisor unit type (must share a unit tag).
+ *  @tparam Source2 Divisor unit type (same constraint as Source1).
+ *  @tparam Dest    Result unit type; must satisfy `muldivable<Source1, Source2>`.
+ *  @param value    The value to scale.
+ *  @param mul      The multiplier (in `Dest`'s unit).
+ *  @param div      The divisor (in `Source`'s unit).
+ *  @return The scaled result, or `std::nullopt` on overflow or negative input.
+ */
 template <class Source1, class Source2, unit::muldivable<Source1, Source2> Dest>
 std::optional<Dest>
 mulDivU(Source1 value, Dest mul, Source2 div)
@@ -422,22 +703,69 @@ mulDivU(Source1 value, Dest mul, Source2 div)
 
 }  // namespace unit
 
-// Fee Levels
+/** Fee level as a `ValueUnit` parameterised on the underlying arithmetic type.
+ *
+ *  Fee levels are dimensionless ratios used by the transaction queue to compare
+ *  relative transaction cost independent of processing effort.
+ *
+ *  @tparam T The underlying arithmetic type (`uint64_t`, `double`, etc.).
+ */
 template <class T>
 using FeeLevel = unit::ValueUnit<unit::feelevelTag, T>;
+
+/** Fee level backed by a 64-bit unsigned integer.  The primary fee-level type
+ *  used by `TxQ` and the load-fee tracker. */
 using FeeLevel64 = FeeLevel<std::uint64_t>;
+
+/** Fee level backed by a `double`.  Used where a fractional fee-level ratio
+ *  must be represented (e.g. load-factor RPC fields). */
 using FeeLevelDouble = FeeLevel<double>;
 
-// Basis points (Bips)
+/** Basis-point quantity parameterised on the underlying type.
+ *
+ *  One basis point = 1/100 of one percent.
+ *
+ *  @tparam T The underlying arithmetic type.
+ */
 template <class T>
 using Bips = unit::ValueUnit<unit::BipsTag, T>;
+
+/** Basis points as a 16-bit unsigned integer. */
 using Bips16 = Bips<std::uint16_t>;
+
+/** Basis points as a 32-bit unsigned integer. */
 using Bips32 = Bips<std::uint32_t>;
+
+/** Tenth-of-a-basis-point quantity parameterised on the underlying type.
+ *
+ *  One tenth-bip = 1/1000 of one percent.  Used for interest rates and
+ *  management fees in the lending protocol where basis-point granularity
+ *  is insufficient.
+ *
+ *  @tparam T The underlying arithmetic type.
+ */
 template <class T>
 using TenthBips = unit::ValueUnit<unit::TenthBipsTag, T>;
+
+/** Tenth-basis-points as a 16-bit unsigned integer. */
 using TenthBips16 = TenthBips<std::uint16_t>;
+
+/** Tenth-basis-points as a 32-bit unsigned integer. */
 using TenthBips32 = TenthBips<std::uint32_t>;
 
+/** Compute `(value * mul) / div` with overflow protection, preserving unit types.
+ *
+ *  Delegates to `unit::mulDivU`.  Both `value` and `div` must share a unit
+ *  tag; `mul` carries the destination unit.  All inputs must be non-negative.
+ *
+ *  @tparam Source1 Type of `value` and `div` (same unit tag required).
+ *  @tparam Source2 Type of `div` (same unit tag as Source1).
+ *  @tparam Dest    Type of `mul` and the return value.
+ *  @param value    The value to scale.
+ *  @param mul      The multiplier in `Dest`'s unit.
+ *  @param div      The divisor in `Source`'s unit.
+ *  @return The scaled result, or `std::nullopt` on overflow or negative input.
+ */
 template <class Source1, class Source2, unit::muldivable<Source1, Source2> Dest>
 std::optional<Dest>
 mulDiv(Source1 value, Dest mul, Source2 div)
@@ -445,6 +773,21 @@ mulDiv(Source1 value, Dest mul, Source2 div)
     return unit::mulDivU(value, mul, div);
 }
 
+/** Compute `(value * mul) / div` with the `value` and `mul` arguments swapped
+ *  (commuted form for cross-unit conversions).
+ *
+ *  This overload is selected when `Dest`'s unit tag differs from the source
+ *  unit tags, avoiding ambiguity with the non-commuted form.  It reorders
+ *  the arguments to `unit::mulDivU` rather than duplicating the implementation.
+ *
+ *  @tparam Source1 Type of `mul` (same unit tag as Source2).
+ *  @tparam Source2 Type of `div` (same unit tag as Source1).
+ *  @tparam Dest    Type of `value` and the return value (different unit from sources).
+ *  @param value    The value to scale (in `Dest`'s unit).
+ *  @param mul      The multiplier (in the source unit).
+ *  @param div      The divisor (in the source unit).
+ *  @return The scaled result, or `std::nullopt` on overflow or negative input.
+ */
 template <class Source1, class Source2, unit::muldivCommutable<Source1, Source2> Dest>
 std::optional<Dest>
 mulDiv(Dest value, Source1 mul, Source2 div)
@@ -453,6 +796,17 @@ mulDiv(Dest value, Source1 mul, Source2 div)
     return unit::mulDivU(mul, value, div);
 }
 
+/** Compute `(value * mul) / div` when both scalars are raw `uint64_t`.
+ *
+ *  Wraps `value` and `div` in `unit::scalar()` so the typed `mulDivU`
+ *  path handles them uniformly.
+ *
+ *  @tparam Dest  The typed destination unit.
+ *  @param value  Raw scalar numerator.
+ *  @param mul    Typed multiplier (carries the destination unit).
+ *  @param div    Raw scalar divisor.
+ *  @return The scaled result, or `std::nullopt` on overflow.
+ */
 template <unit::muldivDest Dest>
 std::optional<Dest>
 mulDiv(std::uint64_t value, Dest mul, std::uint64_t div)
@@ -462,6 +816,15 @@ mulDiv(std::uint64_t value, Dest mul, std::uint64_t div)
     return unit::mulDivU(unit::scalar(value), mul, unit::scalar(div));
 }
 
+/** Compute `(value * mul) / div` when both scalars are raw `uint64_t`
+ *  and `value` carries the destination unit (commuted form).
+ *
+ *  @tparam Dest  The typed destination unit.
+ *  @param value  Typed value (carries the destination unit).
+ *  @param mul    Raw scalar multiplier.
+ *  @param div    Raw scalar divisor.
+ *  @return The scaled result, or `std::nullopt` on overflow.
+ */
 template <unit::muldivDest Dest>
 std::optional<Dest>
 mulDiv(Dest value, std::uint64_t mul, std::uint64_t div)
@@ -470,6 +833,19 @@ mulDiv(Dest value, std::uint64_t mul, std::uint64_t div)
     return mulDiv(mul, value, div);
 }
 
+/** Compute `(value * mul) / div` returning a raw `uint64_t` when `mul` is
+ *  a raw scalar.
+ *
+ *  Wraps `mul` in `unit::scalar()` and unwraps the typed result, allowing
+ *  callers to stay in the untyped domain for the output.
+ *
+ *  @tparam Source1 Type of `value` (must satisfy `muldivSource`).
+ *  @tparam Source2 Type of `div`   (same unit tag as Source1).
+ *  @param value    Typed numerator value.
+ *  @param mul      Raw scalar multiplier.
+ *  @param div      Typed divisor (same unit as `value`).
+ *  @return The raw quotient, or `std::nullopt` on overflow or negative input.
+ */
 template <unit::muldivSource Source1, unit::muldivSources<Source1> Source2>
 std::optional<std::uint64_t>
 mulDiv(Source1 value, std::uint64_t mul, Source2 div)
@@ -484,6 +860,16 @@ mulDiv(Source1 value, std::uint64_t mul, Source2 div)
     return unitresult->value();
 }
 
+/** Compute `(value * mul) / div` returning a raw `uint64_t` when `value` is
+ *  a raw scalar (commuted form of the scalar-`mul` overload).
+ *
+ *  @tparam Source1 Type of `mul` (must satisfy `muldivSource`).
+ *  @tparam Source2 Type of `div` (same unit tag as Source1).
+ *  @param value    Raw scalar numerator.
+ *  @param mul      Typed multiplier.
+ *  @param div      Typed divisor (same unit as `mul`).
+ *  @return The raw quotient, or `std::nullopt` on overflow or negative input.
+ */
 template <unit::muldivSource Source1, unit::muldivSources<Source1> Source2>
 std::optional<std::uint64_t>
 mulDiv(std::uint64_t value, Source1 mul, Source2 div)
@@ -492,6 +878,17 @@ mulDiv(std::uint64_t value, Source1 mul, Source2 div)
     return mulDiv(mul, value, div);
 }
 
+/** Checked narrowing or widening cast between two `ValueUnit`s of the same unit.
+ *
+ *  Unwraps `s`, applies the scalar `safeCast` to the underlying value, and
+ *  rewraps the result in `Dest`.  Requires that both types share a unit tag
+ *  and have integral value types (`CastableValue` concept).
+ *
+ *  @tparam Dest The destination `ValueUnit` type.
+ *  @tparam Src  The source `ValueUnit` type (same unit tag, integral value).
+ *  @param s     The source value.
+ *  @return `Dest` holding the safely cast value.
+ */
 template <unit::IntegralValue Dest, unit::CastableValue<Dest> Src>
 constexpr Dest
 safeCast(Src s) noexcept
@@ -500,6 +897,15 @@ safeCast(Src s) noexcept
     return Dest{safeCast<typename Dest::value_type>(s.value())};
 }
 
+/** Checked cast from a raw integral scalar into a `ValueUnit`.
+ *
+ *  Applies the scalar `safeCast` to `s` and wraps the result in `Dest`.
+ *
+ *  @tparam Dest The destination `ValueUnit` type (must have integral value type).
+ *  @tparam Src  An integral scalar type.
+ *  @param s     The raw scalar to cast.
+ *  @return `Dest` holding the safely cast value.
+ */
 template <unit::IntegralValue Dest, unit::Integral Src>
 constexpr Dest
 safeCast(Src s) noexcept
@@ -508,6 +914,17 @@ safeCast(Src s) noexcept
     return Dest{safeCast<typename Dest::value_type>(s)};
 }
 
+/** Unchecked narrowing cast between two `ValueUnit`s of the same unit.
+ *
+ *  Equivalent to `safeCast` but asserts at compile time that the cast is not
+ *  trivially safe, preventing misuse as a drop-in replacement for `safeCast`.
+ *  Use only when the value is known by contract to fit in `Dest`.
+ *
+ *  @tparam Dest The destination `ValueUnit` type.
+ *  @tparam Src  The source `ValueUnit` type (same unit tag, integral value).
+ *  @param s     The source value.
+ *  @return `Dest` holding the unsafely cast value.
+ */
 template <unit::IntegralValue Dest, unit::CastableValue<Dest> Src>
 constexpr Dest
 unsafeCast(Src s) noexcept
@@ -516,6 +933,15 @@ unsafeCast(Src s) noexcept
     return Dest{unsafeCast<typename Dest::value_type>(s.value())};
 }
 
+/** Unchecked cast from a raw integral scalar into a `ValueUnit`.
+ *
+ *  Use only when the value is known by contract to fit in `Dest`'s value type.
+ *
+ *  @tparam Dest The destination `ValueUnit` type (must have integral value type).
+ *  @tparam Src  An integral scalar type.
+ *  @param s     The raw scalar to cast.
+ *  @return `Dest` holding the unsafely cast value.
+ */
 template <unit::IntegralValue Dest, unit::Integral Src>
 constexpr Dest
 unsafeCast(Src s) noexcept

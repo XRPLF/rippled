@@ -1,3 +1,20 @@
+/** @file LoanDelete.cpp
+ *  Implements the `LoanDelete` transactor for the XRP Ledger lending protocol
+ *  (XLS-66).
+ *
+ *  The teardown sequence requires two ordered steps:
+ *  1. All `Loan` objects for a broker are deleted via `LoanDelete` — each call
+ *     decrements `sfOwnerCount` on the `LoanBroker` SLE.
+ *  2. Once `sfOwnerCount` reaches zero the `LoanBroker` itself may be removed
+ *     via `LoanBrokerDelete`.
+ *
+ *  A critical edge case handled here: accumulated sub-precision rounding dust
+ *  in `sfDebtTotal` is forgiven when the last loan is deleted. No future
+ *  payment path can reduce it further, and leaving a non-zero `sfDebtTotal`
+ *  would permanently block `LoanBrokerDelete` (which requires that the debt
+ *  round to zero). The `XRPL_ASSERT_PARTS` guard confirms the residual is
+ *  already representationally zero before the assignment.
+ */
 #include <xrpl/tx/transactors/lending/LoanDelete.h>
 
 #include <xrpl/basics/Log.h>
@@ -97,23 +114,23 @@ LoanDelete::doApply()
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultAsset = vaultSle->at(sfAsset);
 
-    // Remove LoanID from Directory of the LoanBroker pseudo-account.
     if (!view.dirRemove(
             keylet::ownerDir(brokerPseudoAccount), loanSle->at(sfLoanBrokerNode), loanID, false))
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-    // Remove LoanID from Directory of the Borrower.
     if (!view.dirRemove(keylet::ownerDir(borrower), loanSle->at(sfOwnerNode), loanID, false))
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
-    // Delete the Loan object
     view.erase(loanSle);
 
-    // Decrement the LoanBroker's owner count.
-    // The broker's owner count is solely for the number of outstanding loans,
-    // and is distinct from the broker's pseudo-account's owner count
+    // The broker's sfOwnerCount tracks outstanding loans only — it is distinct
+    // from the broker's pseudo-account owner count, which governs XRP reserves.
+    // LoanBrokerDelete decrements the pseudo-account count by two; LoanDelete
+    // only touches this broker-level count.
     adjustOwnerCount(view, brokerSle, -1, j_);
-    // If there are no loans left, then any remaining debt must be forgiven,
-    // because there is no other way to pay it back.
+    // If no loans remain, forgive any residual sfDebtTotal. Rounding dust
+    // accumulates over many payment cycles and cannot be recovered once there
+    // are no more loans to repay against. Leaving a non-zero value would
+    // permanently block LoanBrokerDelete, which requires debt to round to zero.
     if (brokerSle->at(sfOwnerCount) == 0)
     {
         auto debtTotalProxy = brokerSle->at(sfDebtTotal);
@@ -130,10 +147,12 @@ LoanDelete::doApply()
             debtTotalProxy = 0;
         }
     }
-    // Decrement the borrower's owner count
     adjustOwnerCount(view, borrowerSle, -1, j_);
 
-    // These associations shouldn't do anything, but do them just to be safe
+    // associateAsset is a lending-transactor convention: STNumber / STTakesAsset
+    // fields carry asset-precision metadata that must remain consistent. Even on
+    // deletion paths where no write-back of these fields is expected, the
+    // defensive call ensures correctness if the convention ever changes.
     associateAsset(*loanSle, vaultAsset);
     associateAsset(*brokerSle, vaultAsset);
     associateAsset(*vaultSle, vaultAsset);

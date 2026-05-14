@@ -1,3 +1,22 @@
+/** @file
+ *  Implements the EscrowCreate transactor, which locks XRP or token (IOU/MPT)
+ *  funds in a conditional escrow ledger object.  The escrow can later be
+ *  released by `EscrowFinish` or reclaimed by `EscrowCancel`.
+ *
+ *  Locked funds are completely unavailable to either party until one of those
+ *  outcomes occurs.  Time-based unlocks and crypto-conditions are both
+ *  supported unlock mechanisms.  Escrows may also carry an expiry after which
+ *  only `EscrowCancel` is permitted.
+ *
+ *  Token escrow (`Issue`/`MPTIssue`) is gated on `featureTokenEscrow`.
+ *
+ *  @see https://xrpl.org/escrowcreate.html
+ *  @see https://xrpl.org/escrowfinish.html
+ *  @see https://xrpl.org/escrowcancel.html
+ *  @see EscrowFinish
+ *  @see EscrowCancel
+ */
+
 #include <xrpl/tx/transactors/escrow/EscrowCreate.h>
 
 #include <xrpl/basics/Log.h>
@@ -38,40 +57,6 @@
 
 namespace xrpl {
 
-/*
-    Escrow
-    ======
-
-    Escrow is a feature of the XRP Ledger that allows you to send conditional
-    XRP payments. These conditional payments, called escrows, set aside XRP and
-    deliver it later when certain conditions are met. Conditions to successfully
-    finish an escrow include time-based unlocks and crypto-conditions. Escrows
-    can also be set to expire if not finished in time.
-
-    The XRP set aside in an escrow is locked up. No one can use or destroy the
-    XRP until the escrow has been successfully finished or canceled. Before the
-    expiration time, only the intended receiver can get the XRP. After the
-    expiration time, the XRP can only be returned to the sender.
-
-    For more details on escrow, including examples, diagrams and more please
-    visit https://xrpl.org/escrow.html
-
-    For details on specific transactions, including fields and validation rules
-    please see:
-
-    `EscrowCreate`
-    --------------
-        See: https://xrpl.org/escrowcreate.html
-
-    `EscrowFinish`
-    --------------
-        See: https://xrpl.org/escrowfinish.html
-
-    `EscrowCancel`
-    --------------
-        See: https://xrpl.org/escrowcancel.html
-*/
-
 //------------------------------------------------------------------------------
 
 TxConsequences
@@ -81,10 +66,30 @@ EscrowCreate::makeTxConsequences(PreflightContext const& ctx)
     return TxConsequences{ctx.tx, isXRP(amount) ? amount.xrp() : beast::kZERO};
 }
 
+/** Stateless preflight checks specific to each non-XRP asset type.
+ *
+ *  Specialised for `Issue` (IOU) and `MPTIssue` (MPT).  Called from
+ *  `EscrowCreate::preflight` after `featureTokenEscrow` has been confirmed
+ *  active.  Validates amount polarity, magnitude, and asset-type constraints
+ *  without touching the ledger.
+ *
+ *  @tparam T  `Issue` or `MPTIssue`.
+ *  @param ctx stateless preflight context.
+ *  @return    `tesSUCCESS`, or a `tem*` error code.
+ */
 template <ValidIssueType T>
 static NotTEC
 escrowCreatePreflightHelper(PreflightContext const& ctx);
 
+/** IOU-specific preflight helper.
+ *
+ *  Rejects native (XRP) amounts, non-positive values, and the bad-currency
+ *  sentinel.  The native guard prevents XRP amounts from reaching this path
+ *  via an `Issue`-typed specialisation.
+ *
+ *  @param ctx stateless preflight context.
+ *  @return    `temBAD_AMOUNT` for invalid amounts; `tesSUCCESS` otherwise.
+ */
 template <>
 NotTEC
 escrowCreatePreflightHelper<Issue>(PreflightContext const& ctx)
@@ -99,6 +104,17 @@ escrowCreatePreflightHelper<Issue>(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
+/** MPT-specific preflight helper.
+ *
+ *  In addition to the checks common to all non-XRP assets (non-native, positive
+ *  value), also requires `featureMPTokensV1` to be active and enforces the
+ *  `kMAX_MP_TOKEN_AMOUNT` ceiling on the raw MPT balance.
+ *
+ *  @param ctx stateless preflight context.
+ *  @return    `temDISABLED` if `featureMPTokensV1` is inactive;
+ *             `temBAD_AMOUNT` for out-of-range or non-positive amounts;
+ *             `tesSUCCESS` otherwise.
+ */
 template <>
 NotTEC
 escrowCreatePreflightHelper<MPTIssue>(PreflightContext const& ctx)
@@ -113,6 +129,7 @@ escrowCreatePreflightHelper<MPTIssue>(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
+/** @copydoc EscrowCreate::preflight */
 NotTEC
 EscrowCreate::preflight(PreflightContext const& ctx)
 {
@@ -134,20 +151,18 @@ EscrowCreate::preflight(PreflightContext const& ctx)
             return temBAD_AMOUNT;
     }
 
-    // We must specify at least one timeout value
+    // At least one of sfCancelAfter or sfFinishAfter must be present;
+    // an escrow with neither has no defined lifecycle.
     if (!ctx.tx[~sfCancelAfter] && !ctx.tx[~sfFinishAfter])
         return temBAD_EXPIRATION;
 
-    // If both finish and cancel times are specified then the cancel time must
-    // be strictly after the finish time.
     if (ctx.tx[~sfCancelAfter] && ctx.tx[~sfFinishAfter] &&
         ctx.tx[sfCancelAfter] <= ctx.tx[sfFinishAfter])
         return temBAD_EXPIRATION;
 
-    // In the absence of a FinishAfter, the escrow can be finished
-    // immediately, which can be confusing. When creating an escrow,
-    // we want to ensure that either a FinishAfter time is explicitly
-    // specified or a completion condition is attached.
+    // Without sfFinishAfter the escrow could be completed immediately on
+    // creation, which is almost certainly a mistake. Require sfCondition
+    // as an explicit unlock mechanism when no finish time is given.
     if (!ctx.tx[~sfFinishAfter] && !ctx.tx[~sfCondition])
         return temMALFORMED;
 
@@ -168,6 +183,20 @@ EscrowCreate::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Read-only ledger checks specific to each non-XRP asset type during preclaim.
+ *
+ *  Specialised for `Issue` (IOU) and `MPTIssue` (MPT).  Called from
+ *  `EscrowCreate::preclaim` after confirming `featureTokenEscrow` is active.
+ *  Validates issuer permissions, sender/destination authorisation, freeze
+ *  status, and spendable balance against the live ledger state.
+ *
+ *  @tparam T       `Issue` or `MPTIssue`.
+ *  @param ctx      read-only preclaim context.
+ *  @param account  sender's `AccountID`.
+ *  @param dest     destination's `AccountID`.
+ *  @param amount   escrowed amount.
+ *  @return         `tesSUCCESS`, or a `tec*` error code.
+ */
 template <ValidIssueType T>
 static TER
 escrowCreatePreclaimHelper(
@@ -176,6 +205,35 @@ escrowCreatePreclaimHelper(
     AccountID const& dest,
     STAmount const& amount);
 
+/** IOU-specific preclaim helper.
+ *
+ *  Enforces the following in order:
+ *  - Issuer and sender must differ (no self-escrow of issued credit).
+ *  - Issuer must have `lsfAllowTrustLineLocking` set — token escrow is
+ *    opt-in for issuers.
+ *  - A trust line between sender and issuer must exist.
+ *  - Trust line balance polarity must match the XRP Ledger address-ordering
+ *    convention (positive balance → issuer > account; negative → issuer <
+ *    account).
+ *  - Both sender and destination must satisfy `requireAuth` when the issuer
+ *    mandates authorisation.
+ *  - Neither the sender's nor the destination's trust line may be frozen.
+ *  - Sender's spendable balance (checked with `fhIGNORE_FREEZE` to obtain the
+ *    raw balance) must be positive and cover `amount`.
+ *  - `canAdd` precision guard: the amount must be addable back to the balance
+ *    without precision loss when the escrow later finishes.
+ *
+ *  @param ctx     read-only preclaim context.
+ *  @param account sender's `AccountID`.
+ *  @param dest    destination's `AccountID`.
+ *  @param amount  escrowed IOU amount.
+ *  @return        `tecNO_PERMISSION` if issuer == account or flags/auth fail;
+ *                 `tecNO_ISSUER` if the issuer account does not exist;
+ *                 `tecNO_LINE` if no trust line exists; `tecFROZEN` if either
+ *                 party is frozen; `tecINSUFFICIENT_FUNDS` if balance is
+ *                 insufficient; `tecPRECISION_LOSS` on arithmetic edge cases;
+ *                 `tesSUCCESS` otherwise.
+ */
 template <>
 TER
 escrowCreatePreclaimHelper<Issue>(
@@ -186,67 +244,85 @@ escrowCreatePreclaimHelper<Issue>(
 {
     Issue const& issue = amount.get<Issue>();
     AccountID const& issuer = amount.getIssuer();
-    // If the issuer is the same as the account, return tecNO_PERMISSION
     if (issuer == account)
         return tecNO_PERMISSION;
 
-    // If the lsfAllowTrustLineLocking is not enabled, return tecNO_PERMISSION
     auto const sleIssuer = ctx.view.read(keylet::account(issuer));
     if (!sleIssuer)
         return tecNO_ISSUER;
     if (!sleIssuer->isFlag(lsfAllowTrustLineLocking))
         return tecNO_PERMISSION;
 
-    // If the account does not have a trustline to the issuer, return tecNO_LINE
     auto const sleRippleState = ctx.view.read(keylet::line(account, issuer, issue.currency));
     if (!sleRippleState)
         return tecNO_LINE;
 
     STAmount const balance = (*sleRippleState)[sfBalance];
 
-    // If balance is positive, issuer must have higher address than account
+    // Trust line balance polarity encodes address ordering: positive balance
+    // means issuer has the higher address; negative means issuer has the lower.
     if (balance > beast::kZERO && issuer < account)
         return tecNO_PERMISSION;  // LCOV_EXCL_LINE
 
-    // If balance is negative, issuer must have lower address than account
     if (balance < beast::kZERO && issuer > account)
         return tecNO_PERMISSION;  // LCOV_EXCL_LINE
 
-    // If the issuer has requireAuth set, check if the account is authorized
     if (auto const ter = requireAuth(ctx.view, issue, account); !isTesSuccess(ter))
         return ter;
 
-    // If the issuer has requireAuth set, check if the destination is authorized
     if (auto const ter = requireAuth(ctx.view, issue, dest); !isTesSuccess(ter))
         return ter;
 
-    // If the issuer has frozen the account, return tecFROZEN
     if (isFrozen(ctx.view, account, issue))
         return tecFROZEN;
 
-    // If the issuer has frozen the destination, return tecFROZEN
     if (isFrozen(ctx.view, dest, issue))
         return tecFROZEN;
 
     STAmount const spendableAmount = accountHolds(
         ctx.view, account, issue.currency, issuer, FreezeHandling::IgnoreFreeze, ctx.j);
 
-    // If the balance is less than or equal to 0, return tecINSUFFICIENT_FUNDS
     if (spendableAmount <= beast::kZERO)
         return tecINSUFFICIENT_FUNDS;
 
-    // If the spendable amount is less than the amount, return
-    // tecINSUFFICIENT_FUNDS
     if (spendableAmount < amount)
         return tecINSUFFICIENT_FUNDS;
 
-    // If the amount is not addable to the balance, return tecPRECISION_LOSS
+    // Guard against precision loss that would occur when the locked amount is
+    // returned to the sender's trust line balance on finish.
     if (!canAdd(spendableAmount, amount))
         return tecPRECISION_LOSS;
 
     return tesSUCCESS;
 }
 
+/** MPT-specific preclaim helper.
+ *
+ *  Mirrors the IOU helper in structure but applies MPT-specific rules:
+ *  - Issuer and sender must differ.
+ *  - The `MPTokenIssuance` object must exist and carry `lsfMPTCanEscrow`.
+ *  - The sender must hold an `MPToken` object for this issuance.
+ *  - Both sender and destination must pass `requireAuth` (WeakAuth) when the
+ *    issuance mandates authorisation.
+ *  - Lock/freeze status is checked with `isFrozen`; violations return
+ *    `tecLOCKED` (not `tecFROZEN`) — the deliberate distinction reflects the
+ *    different freeze semantics for MPTs vs. IOU trust lines.
+ *  - Transfer eligibility is confirmed via `canTransfer`.
+ *  - Sender's spendable MPT balance must be positive and cover `amount`.
+ *
+ *  @note Unlike the IOU path there is no `canAdd` precision check here because
+ *      MPT arithmetic uses integer semantics without IOU rounding concerns.
+ *
+ *  @param ctx     read-only preclaim context.
+ *  @param account sender's `AccountID`.
+ *  @param dest    destination's `AccountID`.
+ *  @param amount  escrowed MPT amount.
+ *  @return        `tecNO_PERMISSION` if issuer == account or flags/auth fail;
+ *                 `tecOBJECT_NOT_FOUND` if the issuance or sender's `MPToken`
+ *                 is absent; `tecLOCKED` if either party is frozen/locked;
+ *                 `tecINSUFFICIENT_FUNDS` if balance is insufficient;
+ *                 `tesSUCCESS` otherwise.
+ */
 template <>
 TER
 escrowCreatePreclaimHelper<MPTIssue>(
@@ -256,51 +332,40 @@ escrowCreatePreclaimHelper<MPTIssue>(
     STAmount const& amount)
 {
     AccountID const issuer = amount.getIssuer();
-    // If the issuer is the same as the account, return tecNO_PERMISSION
     if (issuer == account)
         return tecNO_PERMISSION;
 
-    // If the mpt does not exist, return tecOBJECT_NOT_FOUND
     auto const issuanceKey = keylet::mptIssuance(amount.get<MPTIssue>().getMptID());
     auto const sleIssuance = ctx.view.read(issuanceKey);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    // If the lsfMPTCanEscrow is not enabled, return tecNO_PERMISSION
     if (!sleIssuance->isFlag(lsfMPTCanEscrow))
         return tecNO_PERMISSION;
 
-    // If the issuer is not the same as the issuer of the mpt, return
-    // tecNO_PERMISSION
     if (sleIssuance->getAccountID(sfIssuer) != issuer)
         return tecNO_PERMISSION;  // LCOV_EXCL_LINE
 
-    // If the account does not have the mpt, return tecOBJECT_NOT_FOUND
     if (!ctx.view.exists(keylet::mptoken(issuanceKey.key, account)))
         return tecOBJECT_NOT_FOUND;
 
-    // If the issuer has requireAuth set, check if the account is
-    // authorized
     auto const& mptIssue = amount.get<MPTIssue>();
     if (auto const ter = requireAuth(ctx.view, mptIssue, account, AuthType::WeakAuth);
         !isTesSuccess(ter))
         return ter;
 
-    // If the issuer has requireAuth set, check if the destination is
-    // authorized
     if (auto const ter = requireAuth(ctx.view, mptIssue, dest, AuthType::WeakAuth);
         !isTesSuccess(ter))
         return ter;
 
-    // If the issuer has frozen the account, return tecLOCKED
+    // MPT freeze violations use tecLOCKED rather than tecFROZEN to distinguish
+    // MPT lock semantics from IOU global/per-line freeze semantics.
     if (isFrozen(ctx.view, account, mptIssue))
         return tecLOCKED;
 
-    // If the issuer has frozen the destination, return tecLOCKED
     if (isFrozen(ctx.view, dest, mptIssue))
         return tecLOCKED;
 
-    // If the mpt cannot be transferred, return tecNO_AUTH
     if (auto const ter = canTransfer(ctx.view, mptIssue, account, dest); !isTesSuccess(ter))
         return ter;
 
@@ -312,18 +377,16 @@ escrowCreatePreclaimHelper<MPTIssue>(
         AuthHandling::IgnoreAuth,
         ctx.j);
 
-    // If the balance is less than or equal to 0, return tecINSUFFICIENT_FUNDS
     if (spendableAmount <= beast::kZERO)
         return tecINSUFFICIENT_FUNDS;
 
-    // If the spendable amount is less than the amount, return
-    // tecINSUFFICIENT_FUNDS
     if (spendableAmount < amount)
         return tecINSUFFICIENT_FUNDS;
 
     return tesSUCCESS;
 }
 
+/** @copydoc EscrowCreate::preclaim */
 TER
 EscrowCreate::preclaim(PreclaimContext const& ctx)
 {
@@ -358,6 +421,21 @@ EscrowCreate::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Debit the sender's token balance when creating a non-XRP escrow.
+ *
+ *  Specialised for `Issue` (IOU) and `MPTIssue` (MPT).  Performs the
+ *  asset-type-specific ledger mutation that removes funds from the sender's
+ *  spendable balance and places them under escrow control.
+ *
+ *  @tparam T        `Issue` or `MPTIssue`.
+ *  @param view      mutable apply view.
+ *  @param issuer    token issuer's `AccountID`.
+ *  @param sender    sender's `AccountID`.
+ *  @param amount    escrowed amount.
+ *  @param journal   logging journal.
+ *  @return          `tesSUCCESS`, `tecINTERNAL` (defensive; should never fire),
+ *                   or any error propagated from the underlying transfer helper.
+ */
 template <ValidIssueType T>
 static TER
 escrowLockApplyHelper(
@@ -367,6 +445,22 @@ escrowLockApplyHelper(
     STAmount const& amount,
     beast::Journal journal);
 
+/** IOU locking: transfer tokens fee-free from sender back to issuer.
+ *
+ *  Conceptually retires the tokens from circulation; they will be re-issued
+ *  to the destination by `EscrowFinish`.  `directSendNoFee` is used so no
+ *  transfer fee is charged at lock time (the fee, if any, is charged on
+ *  finish using the rate snapshotted in `sfTransferRate`).
+ *
+ *  @param view    mutable apply view.
+ *  @param issuer  token issuer's `AccountID`.
+ *  @param sender  sender's `AccountID`.
+ *  @param amount  escrowed IOU amount.
+ *  @param journal logging journal.
+ *  @return        `tecINTERNAL` if issuer == sender (defensive, should never
+ *                 fire in production); otherwise the result of
+ *                 `directSendNoFee`.
+ */
 template <>
 TER
 escrowLockApplyHelper<Issue>(
@@ -376,7 +470,8 @@ escrowLockApplyHelper<Issue>(
     STAmount const& amount,
     beast::Journal journal)
 {
-    // Defensive: Issuer cannot create an escrow
+    // Defensive: preclaim already rejected issuer == sender; tecINTERNAL
+    // here indicates an internal inconsistency rather than a user error.
     if (issuer == sender)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -387,6 +482,22 @@ escrowLockApplyHelper<Issue>(
     return tesSUCCESS;
 }
 
+/** MPT locking: atomically move tokens into the sender's locked-amount field.
+ *
+ *  `lockEscrowMPT` decrements `sfMPTAmount` and increments `sfLockedAmount`
+ *  on the sender's `MPToken` SLE, and increments `sfLockedAmount` on the
+ *  `MPTokenIssuance` SLE.  Ownership of the tokens does not change — no
+ *  issuer directory entry is needed because the issuance object tracks the
+ *  total locked supply directly.
+ *
+ *  @param view    mutable apply view.
+ *  @param issuer  token issuer's `AccountID`.
+ *  @param sender  sender's `AccountID`.
+ *  @param amount  escrowed MPT amount.
+ *  @param journal logging journal.
+ *  @return        `tecINTERNAL` if issuer == sender (defensive); otherwise
+ *                 the result of `lockEscrowMPT`.
+ */
 template <>
 TER
 escrowLockApplyHelper<MPTIssue>(
@@ -396,7 +507,7 @@ escrowLockApplyHelper<MPTIssue>(
     STAmount const& amount,
     beast::Journal journal)
 {
-    // Defensive: Issuer cannot create an escrow
+    // Defensive: see escrowLockApplyHelper<Issue> comment above.
     if (issuer == sender)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -406,11 +517,16 @@ escrowLockApplyHelper<MPTIssue>(
     return tesSUCCESS;
 }
 
+/** @copydoc EscrowCreate::doApply */
 TER
 EscrowCreate::doApply()
 {
     auto const closeTime = ctx_.view().header().parentCloseTime;
 
+    // Re-check time bounds against the current ledger's parentCloseTime.
+    // A transaction that was valid at preflight may arrive in a ledger where
+    // the expiry has already passed; creating an already-expired escrow must
+    // be rejected here rather than persisted.
     if (ctx_.tx[~sfCancelAfter] && after(closeTime, ctx_.tx[sfCancelAfter]))
         return tecNO_PERMISSION;
 
@@ -421,23 +537,22 @@ EscrowCreate::doApply()
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    // Check reserve and funds availability
     STAmount const amount{ctx_.tx[sfAmount]};
 
+    // Reserve check: the new escrow SLE adds one to the owner count.
     auto const reserve = ctx_.view().fees().accountReserve((*sle)[sfOwnerCount] + 1);
 
     auto const balance = sle->getFieldAmount(sfBalance).xrp();
     if (balance < reserve)
         return tecINSUFFICIENT_RESERVE;
 
-    // Check reserve and funds availability
+    // For XRP escrows the sender's balance must also cover the locked principal.
     if (isXRP(amount))
     {
         if (balance < reserve + STAmount(amount).xrp())
             return tecUNFUNDED;
     }
 
-    // Check destination account
     {
         auto const sled = ctx_.view().read(keylet::account(ctx_.tx[sfDestination]));
         if (!sled)
@@ -446,8 +561,8 @@ EscrowCreate::doApply()
             return tecDST_TAG_NEEDED;
     }
 
-    // Create escrow in ledger.  Note that we use the value from the
-    // sequence or ticket.  For more explanation see comments in SeqProxy.h.
+    // The escrow keylet is derived from the sender's account and the sequence
+    // (or ticket) value; see SeqProxy.h for the rationale.
     Keylet const escrowKeylet = keylet::escrow(account_, ctx_.tx.getSeqValue());
     auto const slep = std::make_shared<SLE>(escrowKeylet);
     (*slep)[sfAmount] = amount;
@@ -459,11 +574,17 @@ EscrowCreate::doApply()
     (*slep)[~sfFinishAfter] = ctx_.tx[~sfFinishAfter];
     (*slep)[~sfDestinationTag] = ctx_.tx[~sfDestinationTag];
 
+    // fixIncludeKeyletFields: store sfSequence in the SLE so that
+    // EscrowFinish/EscrowCancel can reconstruct the keylet without external
+    // input, enabling more robust cross-ledger object navigation.
     if (ctx_.view().rules().enabled(fixIncludeKeyletFields))
     {
         (*slep)[sfSequence] = ctx_.tx.getSeqValue();
     }
 
+    // Snapshot the issuer's transfer rate at creation time. EscrowFinish reads
+    // this stored rate to compute the correct delivery amount; the issuer cannot
+    // retroactively change the rate that applies to the locked funds.
     if (ctx_.view().rules().enabled(featureTokenEscrow) && !isXRP(amount))
     {
         auto const xferRate = transferRate(ctx_.view(), amount);
@@ -473,7 +594,7 @@ EscrowCreate::doApply()
 
     ctx_.view().insert(slep);
 
-    // Add escrow to sender's owner directory
+    // Register the escrow in the sender's owner directory unconditionally.
     {
         auto page = ctx_.view().dirInsert(
             keylet::ownerDir(account_), escrowKeylet, describeOwnerDir(account_));
@@ -482,7 +603,7 @@ EscrowCreate::doApply()
         (*slep)[sfOwnerNode] = *page;
     }
 
-    // If it's not a self-send, add escrow to recipient's owner directory.
+    // Register in the destination's owner directory for non-self-escrows.
     AccountID const dest = ctx_.tx[sfDestination];
     if (dest != account_)
     {
@@ -506,7 +627,8 @@ EscrowCreate::doApply()
         (*slep)[sfIssuerNode] = *page;
     }
 
-    // Deduct owner's balance
+    // Debit the sender. XRP is deducted directly from sfBalance; token amounts
+    // are handled by asset-type-specific helpers via std::visit.
     if (isXRP(amount))
     {
         (*sle)[sfBalance] = (*sle)[sfBalance] - amount;
@@ -524,7 +646,6 @@ EscrowCreate::doApply()
         }
     }
 
-    // increment owner count
     adjustOwnerCount(ctx_.view(), sle, 1, ctx_.journal);
     ctx_.view().update(sle);
     return tesSUCCESS;
