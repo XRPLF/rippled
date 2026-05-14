@@ -94,7 +94,7 @@ class Invariants_test : public beast::unit_test::Suite
     defaultAmendments()
     {
         return xrpl::test::jtx::testableAmendments() | featureInvariantsV1_1 |
-            featureSingleAssetVault;
+            featureSingleAssetVault | fixCleanup3_1_3 | fixCleanup3_2_0;
     }
 
     /** Run a specific test case to put the ledger into a state that will be
@@ -176,7 +176,7 @@ class Invariants_test : public beast::unit_test::Suite
         using namespace test::jtx;
 
         OpenView ov{*env.current()};
-        test::StreamSink sink{beast::severities::KWarning};
+        test::StreamSink sink{beast::Severity::Warning};
         beast::Journal const jlog{sink};
         ApplyContext ac{env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
 
@@ -1284,8 +1284,8 @@ class Invariants_test : public beast::unit_test::Suite
 
         if (numCreds != 0u)
         {
-            // This array is sorted naturally, but if you willing to change this
-            // behavior don't forget to use credentials::makeSorted
+            // This array is sorted naturally, but if you are going to change
+            // this behavior, don't forget to use credentials::makeSorted
             STArray credentials(sfAcceptedCredentials, numCreds);
             for (std::size_t n = 0; n < numCreds; ++n)
             {
@@ -1307,11 +1307,11 @@ class Invariants_test : public beast::unit_test::Suite
     {
         using namespace test::jtx;
 
-        bool const fixPDEnabled = features[fixPermissionedDomainInvariant];
+        bool const fixEnabled = features[fixCleanup3_1_3];
         std::initializer_list<TER> const badTers = {tecINVARIANT_FAILED, tecINVARIANT_FAILED};
         std::initializer_list<TER> const failTers = {tecINVARIANT_FAILED, tefINVARIANT_FAILED};
 
-        testcase << "PermissionedDomain" + std::string(fixPDEnabled ? " fix" : "");
+        testcase << "PermissionedDomain" + std::string(fixEnabled ? " fix" : "");
 
         doInvariantCheck(
             Env(*this, features),
@@ -1321,7 +1321,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
-            fixPDEnabled ? failTers : badTers);
+            fixEnabled ? failTers : badTers);
 
         testcase << "PermissionedDomain 2";
 
@@ -1334,7 +1334,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
-            fixPDEnabled ? failTers : badTers);
+            fixEnabled ? failTers : badTers);
 
         testcase << "PermissionedDomain 3";
         doInvariantCheck(
@@ -1358,7 +1358,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
-            fixPDEnabled ? failTers : badTers);
+            fixEnabled ? failTers : badTers);
 
         testcase << "PermissionedDomain 4";
         doInvariantCheck(
@@ -1381,7 +1381,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
-            fixPDEnabled ? failTers : badTers);
+            fixEnabled ? failTers : badTers);
 
         testcase << "PermissionedDomain Set 1";
         doInvariantCheck(
@@ -1402,7 +1402,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
-            fixPDEnabled ? failTers : badTers);
+            fixEnabled ? failTers : badTers);
 
         testcase << "PermissionedDomain Set 2";
         doInvariantCheck(
@@ -1433,7 +1433,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
-            fixPDEnabled ? failTers : badTers);
+            fixEnabled ? failTers : badTers);
 
         testcase << "PermissionedDomain Set 3";
         doInvariantCheck(
@@ -1463,7 +1463,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
-            fixPDEnabled ? failTers : badTers);
+            fixEnabled ? failTers : badTers);
 
         testcase << "PermissionedDomain Set 4";
         doInvariantCheck(
@@ -1491,7 +1491,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
-            fixPDEnabled ? failTers : badTers);
+            fixEnabled ? failTers : badTers);
 
         std::initializer_list<TER> const goodTers = {tesSUCCESS, tesSUCCESS};
 
@@ -1509,7 +1509,7 @@ class Invariants_test : public beast::unit_test::Suite
             testcase << "PermissionedDomain set 2 domains ";
             doInvariantCheck(
                 Env(*this, features),
-                fixPDEnabled ? badMoreThan1 : emptyV,
+                fixEnabled ? badMoreThan1 : emptyV,
                 [](Account const& a1, Account const& a2, ApplyContext& ac) {
                     createPermissionedDomain(ac, a1, a2);
                     createPermissionedDomain(ac, a1, a2, 2, 11);
@@ -1517,7 +1517,7 @@ class Invariants_test : public beast::unit_test::Suite
                 },
                 XRPAmount{},
                 STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
-                fixPDEnabled ? failTers : goodTers);
+                fixEnabled ? failTers : goodTers);
         }
 
         {
@@ -1538,7 +1538,7 @@ class Invariants_test : public beast::unit_test::Suite
                 std::move(env1),
                 a1,
                 a2,
-                fixPDEnabled ? badMoreThan1 : emptyV,
+                fixEnabled ? badMoreThan1 : emptyV,
                 [&pd1, &pd2](Account const&, Account const&, ApplyContext& ac) {
                     auto sle1 = ac.view().peek({ltPERMISSIONED_DOMAIN, pd1});
                     auto sle2 = ac.view().peek({ltPERMISSIONED_DOMAIN, pd2});
@@ -1548,18 +1548,18 @@ class Invariants_test : public beast::unit_test::Suite
                 },
                 XRPAmount{},
                 STTx{ttPERMISSIONED_DOMAIN_DELETE, [](STObject&) {}},
-                fixPDEnabled ? failTers : goodTers);
+                fixEnabled ? failTers : goodTers);
         }
 
         {
             testcase << "PermissionedDomain set 0 domains ";
             doInvariantCheck(
                 Env(*this, features),
-                fixPDEnabled ? badNoDomains : emptyV,
+                fixEnabled ? badNoDomains : emptyV,
                 [](Account const&, Account const&, ApplyContext&) { return true; },
                 XRPAmount{},
                 STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
-                fixPDEnabled ? badTers : goodTers);
+                fixEnabled ? badTers : goodTers);
         }
 
         {
@@ -1580,11 +1580,11 @@ class Invariants_test : public beast::unit_test::Suite
                 Env(*this, features),
                 a1,
                 a2,
-                fixPDEnabled ? badNoDomains : emptyV,
+                fixEnabled ? badNoDomains : emptyV,
                 [](Account const&, Account const&, ApplyContext&) { return true; },
                 XRPAmount{},
                 STTx{ttPERMISSIONED_DOMAIN_DELETE, [](STObject&) {}},
-                fixPDEnabled ? badTers : goodTers);
+                fixEnabled ? badTers : goodTers);
         }
 
         {
@@ -1604,7 +1604,7 @@ class Invariants_test : public beast::unit_test::Suite
                 std::move(env1),
                 a1,
                 a2,
-                fixPDEnabled ? badDeleted : emptyV,
+                fixEnabled ? badDeleted : emptyV,
                 [&pd1](Account const&, Account const&, ApplyContext& ac) {
                     auto sle1 = ac.view().peek({ltPERMISSIONED_DOMAIN, pd1});
                     ac.view().erase(sle1);
@@ -1612,28 +1612,28 @@ class Invariants_test : public beast::unit_test::Suite
                 },
                 XRPAmount{},
                 STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
-                fixPDEnabled ? failTers : goodTers);
+                fixEnabled ? failTers : goodTers);
         }
 
         {
             testcase << "PermissionedDomain del, create domain ";
             doInvariantCheck(
                 Env(*this, features),
-                fixPDEnabled ? badNotDeleted : emptyV,
+                fixEnabled ? badNotDeleted : emptyV,
                 [](Account const& a1, Account const& a2, ApplyContext& ac) {
                     createPermissionedDomain(ac, a1, a2);
                     return true;
                 },
                 XRPAmount{},
                 STTx{ttPERMISSIONED_DOMAIN_DELETE, [](STObject&) {}},
-                fixPDEnabled ? failTers : goodTers);
+                fixEnabled ? failTers : goodTers);
         }
 
         {
             testcase << "PermissionedDomain invalid tx";
 
             doInvariantCheck(
-                fixPDEnabled ? badTx : emptyV,
+                fixEnabled ? badTx : emptyV,
                 [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                     createPermissionedDomain(ac, a1, a2);
                     return true;
@@ -1793,11 +1793,9 @@ class Invariants_test : public beast::unit_test::Suite
     {
         using namespace test::jtx;
 
-        bool const fixPDEnabled = features[fixPermissionedDomainInvariant];
-        bool const fixS313Enabled = features[fixSecurity3_1_3];
+        bool const fixEnabled = features[fixCleanup3_1_3];
 
-        testcase << "PermissionedDEX" + std::string(fixPDEnabled ? " fixPD" : "") +
-                std::string(fixS313Enabled ? " fixS313" : "");
+        testcase << "PermissionedDEX" + std::string(fixEnabled ? " fix" : "");
 
         doInvariantCheck(
             Env(*this, features),
@@ -1901,8 +1899,8 @@ class Invariants_test : public beast::unit_test::Suite
                 std::move(env1),
                 a1,
                 a2,
-                fixS313Enabled ? std::vector<std::string>{{"hybrid offer is malformed"}}
-                               : std::vector<std::string>{},
+                fixEnabled ? std::vector<std::string>{{"hybrid offer is malformed"}}
+                           : std::vector<std::string>{},
                 [&pd1](Account const& a1, Account const& a2, ApplyContext& ac) {
                     Keylet const offerKey = keylet::offer(a2.id(), 10);
                     auto sleOffer = std::make_shared<SLE>(offerKey);
@@ -1919,9 +1917,8 @@ class Invariants_test : public beast::unit_test::Suite
                 },
                 XRPAmount{},
                 STTx{ttOFFER_CREATE, [&](STObject&) {}},
-                fixS313Enabled
-                    ? std::initializer_list<TER>{tecINVARIANT_FAILED, tecINVARIANT_FAILED}
-                    : std::initializer_list<TER>{tesSUCCESS, tesSUCCESS});
+                fixEnabled ? std::initializer_list<TER>{tecINVARIANT_FAILED, tecINVARIANT_FAILED}
+                           : std::initializer_list<TER>{tesSUCCESS, tesSUCCESS});
         }
 
         // hybrid offer missing sfAdditionalBooks
@@ -2380,7 +2377,7 @@ class Invariants_test : public beast::unit_test::Suite
             }
 
             // Test: cover available greater than pseudo-account asset balance
-            // (requires fixSecurity3_1_3)
+            // (requires fixCleanup3_1_3)
             doInvariantCheck(
                 {{"Loan Broker cover available is greater than pseudo-account asset balance"}},
                 [&](Account const&, Account const&, ApplyContext& ac) {
@@ -3394,7 +3391,7 @@ class Invariants_test : public beast::unit_test::Suite
 
                 sleShares->at(sfFlags) = 0;
                 // Setting wrong pseudo account ID
-                sleShares->at(sfIssuer) = AccountID(uint160(42));
+                sleShares->at(sfIssuer) = AccountID(42);
                 sleShares->at(sfOutstandingAmount) = 0;
                 sleShares->at(sfSequence) = sequence;
 
@@ -4101,6 +4098,139 @@ class Invariants_test : public beast::unit_test::Suite
         }
     }
 
+    // Test the invariant overwrite fix for both pre- and post-amendment
+    // behavior. With the fix enabled, |= accumulates violations across
+    // entries so a later valid entry cannot clear an earlier violation.
+    // Without the fix, = assignment means the last-visited entry wins.
+    void
+    testInvariantOverwrite(FeatureBitset features)
+    {
+        using namespace test::jtx;
+        bool const fixEnabled = features[fixCleanup3_1_3];
+        std::initializer_list<TER> const failTers = {tecINVARIANT_FAILED, tefINVARIANT_FAILED};
+        std::initializer_list<TER> const passTers = {tesSUCCESS, tesSUCCESS};
+
+        // Insert two trust line SLEs in hash-sorted order, with the "bad"
+        // entry at the lower-sorting key so it is visited first by
+        // ApplyStateTable::visit(). The configurer callables receive the
+        // SLE and the Issue corresponding to that side's keylet currency.
+        auto const insertOrderedTrustLinePair = [](ApplyContext& ac,
+                                                   Account const& a1,
+                                                   Account const& a2,
+                                                   Account const& a3,
+                                                   auto const& badConfig,
+                                                   auto const& goodConfig) {
+            char const* const c1 = "USD";
+            char const* const c2 = "EUR";
+            auto const k1 = keylet::line(a1, a2, a1[c1].currency);
+            auto const k2 = keylet::line(a1, a3, a1[c2].currency);
+
+            bool const k1First = k1.key < k2.key;
+            auto const& badKey = k1First ? k1 : k2;
+            auto const& goodKey = k1First ? k2 : k1;
+            Issue const badIss{k1First ? a1[c1].currency : a1[c2].currency, a1.id()};
+            Issue const goodIss{k1First ? a1[c2].currency : a1[c1].currency, a1.id()};
+
+            auto const sleBad = std::make_shared<SLE>(badKey);
+            badConfig(*sleBad, badIss);
+            ac.view().insert(sleBad);
+
+            auto const sleGood = std::make_shared<SLE>(goodKey);
+            goodConfig(*sleGood, goodIss);
+            ac.view().insert(sleGood);
+        };
+
+        // Regression: bad XRP trust line followed by a valid trust line.
+        // With the fix, the invariant catches the violation. Without it,
+        // the valid entry overwrites the flag to false. The keylet
+        // currencies are non-XRP (the invariant inspects sfLowLimit /
+        // sfHighLimit issue, not the keylet currency).
+        testcase << "overwrite: NoXRPTrustLines" + std::string(fixEnabled ? " fix" : "");
+        doInvariantCheck(
+            Env(*this, features),
+            fixEnabled ? std::vector<std::string>{{"an XRP trust line was created"}}
+                       : std::vector<std::string>{},
+            [&insertOrderedTrustLinePair](Account const& a1, Account const& a2, ApplyContext& ac) {
+                Account const a3{"A3"};
+                insertOrderedTrustLinePair(
+                    ac,
+                    a1,
+                    a2,
+                    a3,
+                    [](SLE& sle, Issue const& iss) {
+                        // sfLowLimit has xrpIssue, making isXrp = true
+                        sle.setFieldAmount(sfLowLimit, STAmount{xrpIssue(), 0});
+                        sle.setFieldAmount(sfHighLimit, STAmount{iss, 0});
+                    },
+                    [](SLE& sle, Issue const& iss) {
+                        sle.setFieldAmount(sfLowLimit, STAmount{iss, 0});
+                        sle.setFieldAmount(sfHighLimit, STAmount{iss, 0});
+                    });
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttACCOUNT_SET, [](STObject&) {}},
+            fixEnabled ? failTers : passTers);
+
+        // Regression: bad deep-freeze trust line followed by a valid one.
+        testcase << "overwrite: NoDeepFreeze" + std::string(fixEnabled ? " fix" : "");
+        doInvariantCheck(
+            Env(*this, features),
+            fixEnabled ? std::vector<std::string>{{"a trust line with deep freeze flag without "
+                                                   "normal freeze was created"}}
+                       : std::vector<std::string>{},
+            [&insertOrderedTrustLinePair](Account const& a1, Account const& a2, ApplyContext& ac) {
+                Account const a3{"A3"};
+                insertOrderedTrustLinePair(
+                    ac,
+                    a1,
+                    a2,
+                    a3,
+                    [](SLE& sle, Issue const& iss) {
+                        sle.setFieldAmount(sfLowLimit, STAmount{iss, 0});
+                        sle.setFieldAmount(sfHighLimit, STAmount{iss, 0});
+                        sle.setFieldU32(sfFlags, lsfLowDeepFreeze);
+                    },
+                    [](SLE& sle, Issue const& iss) {
+                        sle.setFieldAmount(sfLowLimit, STAmount{iss, 0});
+                        sle.setFieldAmount(sfHighLimit, STAmount{iss, 0});
+                        sle.setFieldU32(sfFlags, 0u);
+                    });
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttACCOUNT_SET, [](STObject&) {}},
+            fixEnabled ? failTers : passTers);
+
+        // Regression: MPT OutstandingAmount exceeds max, but locked <=
+        // outstanding. Plain assignment would overwrite bad_ = true.
+        // With the fix, NoZeroEscrow catches it.
+        // Without the fix, NoZeroEscrow passes but ValidMPTIssuance
+        // still fires ("a MPT issuance was created").
+        testcase << "overwrite: NoZeroEscrow MPT" + std::string(fixEnabled ? " fix" : "");
+        doInvariantCheck(
+            Env(*this, features),
+            fixEnabled ? std::vector<std::string>{{"escrow specifies invalid amount"}}
+                       : std::vector<std::string>{{"a MPT issuance was created"}},
+            [](Account const& a1, Account const&, ApplyContext& ac) {
+                auto const sle = ac.view().peek(keylet::account(a1.id()));
+                if (!sle)
+                    return false;
+
+                MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
+                auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
+                // outstanding exceeds kMAX_MP_TOKEN_AMOUNT -> checkAmount sets bad_
+                sleNew->setFieldU64(sfOutstandingAmount, kMAX_MP_TOKEN_AMOUNT + 1);
+                // locked is valid and <= outstanding -> must NOT clear bad_
+                sleNew->setFieldU64(sfLockedAmount, 10);
+                ac.view().insert(sleNew);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttACCOUNT_SET, [](STObject&) {}},
+            failTers);
+    }
+
     void
     testVaultComputeCoarsestScale()
     {
@@ -4240,19 +4370,17 @@ public:
         testNoZeroEscrow();
         testValidNewAccountRoot();
         testNFTokenPageInvariants();
-        testPermissionedDomainInvariants(defaultAmendments() | fixPermissionedDomainInvariant);
-        testPermissionedDomainInvariants(defaultAmendments() - fixPermissionedDomainInvariant);
-        testPermissionedDEX(defaultAmendments() | fixPermissionedDomainInvariant);
-        testPermissionedDEX(defaultAmendments() - fixPermissionedDomainInvariant);
-        testPermissionedDEX(
-            (defaultAmendments() | fixPermissionedDomainInvariant) - fixSecurity3_1_3);
-        testPermissionedDEX(
-            defaultAmendments() - fixPermissionedDomainInvariant - fixSecurity3_1_3);
+        testPermissionedDomainInvariants(defaultAmendments() | fixCleanup3_1_3);
+        testPermissionedDomainInvariants(defaultAmendments() - fixCleanup3_1_3);
+        testPermissionedDEX(defaultAmendments() | fixCleanup3_1_3);
+        testPermissionedDEX(defaultAmendments() - fixCleanup3_1_3);
         testNoModifiedUnmodifiableFields();
         testValidPseudoAccounts();
         testValidLoanBroker();
         testVault();
         testMPT();
+        testInvariantOverwrite(defaultAmendments());
+        testInvariantOverwrite(defaultAmendments() - fixCleanup3_1_3);
         testVaultComputeCoarsestScale();
     }
 };

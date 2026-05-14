@@ -94,6 +94,7 @@ OracleDelete::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -104,6 +105,7 @@ OracleDelete::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

@@ -745,6 +745,9 @@ TxQ::apply(
     if (auto directApplied = tryDirectApply(app, view, tx, flags, j))
         return *directApplied;
 
+    if ((flags & TapDryRun) != 0u)
+        return {telCAN_NOT_QUEUE, false};
+
     // If we get past tryDirectApply() without returning then we expect
     // one of the following to occur:
     //
@@ -1826,9 +1829,9 @@ TxQ::doRPC(Application& app) const
 
     auto const metrics = getMetrics(*view);
 
-    json::Value ret(json::ObjectValue);
+    json::Value ret(json::ValueType::Object);
 
-    auto& levels = ret[jss::levels] = json::ObjectValue;
+    auto& levels = ret[jss::levels] = json::ValueType::Object;
 
     ret[jss::ledger_current_index] = view->header().seq;
     ret[jss::expected_ledger_size] = std::to_string(metrics.txPerLedger);

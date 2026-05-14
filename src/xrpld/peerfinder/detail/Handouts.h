@@ -23,7 +23,7 @@ template <class Target, class HopContainer>
 std::size_t
 handoutOne(Target& t, HopContainer& h)
 {
-    XRPL_ASSERT(!t.full(), "xrpl::PeerFinder::detail::handout_one : target is not full");
+    XRPL_ASSERT(!t.full(), "xrpl::PeerFinder::detail::handoutOne : target is not full");
     for (auto it = h.begin(); it != h.end(); ++it)
     {
         auto const& e = *it;

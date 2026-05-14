@@ -2223,6 +2223,7 @@ XChainCreateBridge::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -2233,6 +2234,7 @@ XChainCreateBridge::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 
@@ -2242,6 +2244,7 @@ BridgeModify::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -2252,6 +2255,7 @@ BridgeModify::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 
@@ -2261,11 +2265,13 @@ XChainClaim::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
 XChainClaim::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 
@@ -2275,6 +2281,7 @@ XChainCommit::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -2285,6 +2292,7 @@ XChainCommit::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 
@@ -2294,6 +2302,7 @@ XChainCreateClaimID::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -2304,6 +2313,7 @@ XChainCreateClaimID::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 
@@ -2313,6 +2323,7 @@ XChainAddClaimAttestation::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -2323,6 +2334,7 @@ XChainAddClaimAttestation::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 
@@ -2332,6 +2344,7 @@ XChainAddAccountCreateAttestation::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -2342,6 +2355,7 @@ XChainAddAccountCreateAttestation::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 
@@ -2351,6 +2365,7 @@ XChainCreateAccountCommit::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -2361,6 +2376,7 @@ XChainCreateAccountCommit::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

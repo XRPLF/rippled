@@ -771,7 +771,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
                 // checks.  These variables must outlive the ApplyContext.
                 OpenView ov{*env.current()};
                 STTx const tx{ttACCOUNT_SET, [](STObject&) {}};
-                test::StreamSink sink{beast::severities::KWarning};
+                test::StreamSink sink{beast::Severity::Warning};
                 beast::Journal const jlog{sink};
                 ApplyContext ac{
                     env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
@@ -804,7 +804,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
                 // checks.  These variables must outlive the ApplyContext.
                 OpenView ov{*env.current()};
                 STTx const tx{ttACCOUNT_SET, [](STObject&) {}};
-                test::StreamSink sink{beast::severities::KWarning};
+                test::StreamSink sink{beast::Severity::Warning};
                 beast::Journal const jlog{sink};
                 ApplyContext ac{
                     env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};

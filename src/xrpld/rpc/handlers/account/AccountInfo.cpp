@@ -48,17 +48,16 @@ namespace xrpl {
 void
 injectSLE(json::Value& jv, RAccountRoot const& account)
 {
-    jv = account->getJson(JsonOptions::KNone);
+    jv = account->getJson(JsonOptions::Values::None);
     if (account->isFieldPresent(sfEmailHash))
     {
         auto const& hash = account->getFieldH128(sfEmailHash);
         Blob const b(hash.begin(), hash.end());
         std::string md5 = strHex(makeSlice(b));
         boost::to_lower(md5);
-        // VFALCO TODO Give a name and move this constant
-        //             to a more visible location. Also
-        //             shouldn't this be https?
-        jv[jss::urlgravatar] = str(boost::format("http://www.gravatar.com/avatar/%s") % md5);
+        // VFALCO TODO Give a name to this constant and move it
+        //             to a more visible location.
+        jv[jss::urlgravatar] = str(boost::format("https://www.gravatar.com/avatar/%s") % md5);
     }
 }
 
@@ -151,11 +150,11 @@ doAccountInfo(RPC::JsonContext& context)
             return result;
         }
 
-        json::Value jvAccepted(json::ObjectValue);
+        json::Value jvAccepted(json::ValueType::Object);
         injectSLE(jvAccepted, acctRoot);
         result[jss::account_data] = jvAccepted;
 
-        json::Value acctFlags{json::ObjectValue};
+        json::Value acctFlags{json::ValueType::Object};
         for (auto const& lsf : kLS_FLAGS)
             acctFlags[lsf.first.data()] = acctRoot->isFlag(lsf.second);
 
@@ -211,13 +210,13 @@ doAccountInfo(RPC::JsonContext& context)
         {
             // We put the SignerList in an array because of an anticipated
             // future when we support multiple signer lists on one account.
-            json::Value jvSignerList = json::ArrayValue;
+            json::Value jvSignerList = json::ValueType::Array;
 
             // This code will need to be revisited if in the future we support
             // multiple SignerLists on one account.
             auto const sleSigners = ledger->read(keylet::signers(accountID));
             if (sleSigners)
-                jvSignerList.append(sleSigners->getJson(JsonOptions::KNone));
+                jvSignerList.append(sleSigners->getJson(JsonOptions::Values::None));
 
             // Documentation states this is returned as part of the account_info
             // response, but previously the code put it under account_data. We
@@ -235,7 +234,7 @@ doAccountInfo(RPC::JsonContext& context)
         // Return queue info if that is requested
         if (queue)
         {
-            json::Value jvQueueData = json::ObjectValue;
+            json::Value jvQueueData = json::ValueType::Object;
 
             auto const txs = context.app.getTxQ().getAccountTxs(accountID);
             if (!txs.empty())
@@ -243,7 +242,7 @@ doAccountInfo(RPC::JsonContext& context)
                 jvQueueData[jss::txn_count] = static_cast<json::UInt>(txs.size());
 
                 auto& jvQueueTx = jvQueueData[jss::transactions];
-                jvQueueTx = json::ArrayValue;
+                jvQueueTx = json::ValueType::Array;
 
                 std::uint32_t seqCount = 0;
                 std::uint32_t ticketCount = 0;
@@ -259,7 +258,7 @@ doAccountInfo(RPC::JsonContext& context)
                 SeqProxy prevSeqProxy = SeqProxy::sequence(0);
                 for (auto const& tx : txs)
                 {
-                    json::Value jvTx = json::ObjectValue;
+                    json::Value jvTx = json::ValueType::Object;
 
                     if (tx.seqProxy.isSeq())
                     {

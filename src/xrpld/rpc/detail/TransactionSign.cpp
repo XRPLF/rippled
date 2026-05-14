@@ -14,6 +14,7 @@
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Buffer.h>
+#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/Slice.h>
@@ -55,6 +56,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cstdint>
 #include <exception>
 #include <functional>
 #include <memory>
@@ -320,10 +322,10 @@ checkPayment(
 
             auto j = app.getJournal("RPCHandler");
             JLOG(j.debug()) << "transactionSign: build_path: "
-                            << result.getJson(JsonOptions::KNone);
+                            << result.getJson(JsonOptions::Values::None);
 
             if (!result.empty())
-                txJson[jss::Paths] = result.getJson(JsonOptions::KNone);
+                txJson[jss::Paths] = result.getJson(JsonOptions::Values::None);
         }
     }
     return json::Value();
@@ -401,6 +403,25 @@ checkTxJsonFields(
     // It's all good.  Return the AccountID.
     ret.second = *srcAddressID;
     return ret;
+}
+
+static Expected<void, json::Value>
+checkNetworkID(json::Value const& txJson, uint32_t appNetworkId)
+{
+    if (appNetworkId > 1024)
+    {
+        if (!txJson.isMember(jss::NetworkID))
+        {
+            return Unexpected(
+                RPC::makeError(RpcInvalidParams, RPC::missingFieldMessage("tx_json.NetworkID")));
+        }
+        if (!txJson[jss::NetworkID].isIntegral() || txJson[jss::NetworkID].asUInt() != appNetworkId)
+        {
+            return Unexpected(
+                RPC::makeError(RpcInvalidParams, RPC::invalidFieldMessage("tx_json.NetworkID")));
+        }
+    }
+    return Expected<void, json::Value>();
 }
 
 //------------------------------------------------------------------------------
@@ -763,12 +784,12 @@ transactionFormatResultImpl(Transaction::pointer tpTrans, unsigned apiVersion)
     {
         if (apiVersion > 1)
         {
-            jvResult[jss::tx_json] = tpTrans->getJson(JsonOptions::KDisableApiPriorV2);
+            jvResult[jss::tx_json] = tpTrans->getJson(JsonOptions::Values::DisableApiPriorV2);
             jvResult[jss::hash] = to_string(tpTrans->getID());
         }
         else
         {
-            jvResult[jss::tx_json] = tpTrans->getJson(JsonOptions::KNone);
+            jvResult[jss::tx_json] = tpTrans->getJson(JsonOptions::Values::None);
         }
 
         RPC::insertDeliverMax(
@@ -975,7 +996,7 @@ checkFee(
 
 //------------------------------------------------------------------------------
 
-/** Returns a json::ObjectValue. */
+/** Returns a json::ValueType::Object. */
 json::Value
 transactionSign(
     json::Value jvRequest,
@@ -1009,7 +1030,7 @@ transactionSign(
     return transactionFormatResultImpl(txn.second, apiVersion);
 }
 
-/** Returns a json::ObjectValue. */
+/** Returns a json::ValueType::Object. */
 json::Value
 transactionSubmit(
     json::Value jvRequest,
@@ -1132,7 +1153,7 @@ sortAndValidateSigners(STArray& signers, AccountID const& signingForID)
 
 }  // namespace detail
 
-/** Returns a json::ObjectValue. */
+/** Returns a json::ValueType::Object. */
 json::Value
 transactionSignFor(
     json::Value jvRequest,
@@ -1168,8 +1189,16 @@ transactionSignFor(
         if (!txJson.isObject())
             return RPC::objectFieldError(jss::tx_json);
 
-        // If the tx_json.SigningPubKey field is missing,
-        // insert an empty one.
+        if (auto checkResult =
+                detail::checkNetworkID(txJson, app.getNetworkIDService().getNetworkID());
+            !checkResult)
+        {
+            return std::move(checkResult).error();
+        }
+
+        // If the tx_json.SigningPubKey field is missing, insert an empty one,
+        // in order for the `checkMultiSignFields` to not return an error
+        // for non-multisign transactions.
         if (!txJson.isMember(sfSigningPubKey.getJsonName()))
             txJson[sfSigningPubKey.getJsonName()] = "";
     }
@@ -1242,7 +1271,7 @@ transactionSignFor(
     return transactionFormatResultImpl(txn.second, apiVersion);
 }
 
-/** Returns a json::ObjectValue. */
+/** Returns a json::ValueType::Object. */
 json::Value
 transactionSubmitMultiSigned(
     json::Value jvRequest,

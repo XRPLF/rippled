@@ -110,12 +110,13 @@ PermissionedDomainSet::doApply()
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
 
-        Keylet const pdKeylet =
-            keylet::permissionedDomain(accountID_, ctx_.tx.getFieldU32(sfSequence));
+        bool const fixEnabled = view().rules().enabled(fixCleanup3_1_3);
+        auto const seq = fixEnabled ? ctx_.tx.getSeqValue() : ctx_.tx.getFieldU32(sfSequence);
+        Keylet const pdKeylet = keylet::permissionedDomain(accountID_, seq);
         auto slePd = std::make_shared<SLE>(pdKeylet);
 
         slePd->setAccountID(sfOwner, accountID_);
-        slePd->setFieldU32(sfSequence, ctx_.tx.getFieldU32(sfSequence));
+        slePd->setFieldU32(sfSequence, seq);
         slePd->peekFieldArray(sfAcceptedCredentials) = std::move(sortedLE);
         auto const page =
             view().dirInsert(keylet::ownerDir(accountID_), pdKeylet, describeOwnerDir(accountID_));
@@ -137,6 +138,7 @@ PermissionedDomainSet::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -147,6 +149,7 @@ PermissionedDomainSet::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

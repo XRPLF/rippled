@@ -40,7 +40,7 @@ static_assert(std::atomic<std::chrono::steady_clock::rep>::is_always_lock_free);
 SecondsClockThread::~SecondsClockThread()
 {
     XRPL_ASSERT(
-        thread_.joinable(), "beast::seconds_clock_thread::~seconds_clock_thread : thread joinable");
+        thread_.joinable(), "beast::SecondsClockThread::~SecondsClockThread : thread joinable");
     {
         std::scoped_lock const lock(mut_);
         stop_ = true;
