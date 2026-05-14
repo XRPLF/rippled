@@ -26,11 +26,10 @@ Add to `cfg/xrpld-example.cfg`:
 # # Enable/disable telemetry (default: 0 = disabled)
 # enabled=1
 #
-# # Exporter type: "otlp_grpc" (default), "otlp_http", or "none"
-# exporter=otlp_grpc
-#
-# # OTLP endpoint (default: localhost:4317 for gRPC, localhost:4318 for HTTP)
-# endpoint=localhost:4317
+# # OTLP endpoint (default: http://localhost:4318/v1/traces - OTLP/HTTP)
+# # Note: only OTLP/HTTP is shipped in Phase 1b. OTLP/gRPC support is
+# # planned as future work and is not yet parsed by TelemetryConfig.cpp.
+# endpoint=http://localhost:4318/v1/traces
 #
 # # Use TLS for exporter connection (default: 0)
 # use_tls=0
@@ -56,10 +55,12 @@ Add to `cfg/xrpld-example.cfg`:
 # trace_rpc=1              # RPC request handling
 # trace_peer=0             # Peer messages (high volume, disabled by default)
 # trace_ledger=1           # Ledger acquisition and building
-# trace_pathfind=1         # Path computation (can be expensive)
-# trace_txq=1              # Transaction queue and fee escalation
-# trace_validator=0        # Validator list and manifest updates (low volume)
-# trace_amendment=0        # Amendment voting (very low volume)
+#
+# # Planned (not yet parsed by TelemetryConfig.cpp):
+# # trace_pathfind=1       # Path computation (Phase 2)
+# # trace_txq=1            # Transaction queue (Phase 3)
+# # trace_validator=0      # Validator list / manifest (future)
+# # trace_amendment=0      # Amendment voting (future)
 #
 # # Service identification (automatically detected if not specified)
 # # service_name=xrpld
@@ -71,28 +72,35 @@ enabled=0
 
 ### 5.1.2 Configuration Options Summary
 
-| Option                | Type   | Default          | Description                               |
-| --------------------- | ------ | ---------------- | ----------------------------------------- |
-| `enabled`             | bool   | `false`          | Enable/disable telemetry                  |
-| `exporter`            | string | `"otlp_grpc"`    | Exporter type: otlp_grpc, otlp_http, none |
-| `endpoint`            | string | `localhost:4317` | OTLP collector endpoint                   |
-| `use_tls`             | bool   | `false`          | Enable TLS for exporter connection        |
-| `tls_ca_cert`         | string | `""`             | Path to CA certificate file               |
-| `sampling_ratio`      | float  | `1.0`            | Sampling ratio (0.0-1.0)                  |
-| `batch_size`          | uint   | `512`            | Spans per export batch                    |
-| `batch_delay_ms`      | uint   | `5000`           | Max delay before sending batch (ms)       |
-| `max_queue_size`      | uint   | `2048`           | Maximum queued spans                      |
-| `trace_transactions`  | bool   | `true`           | Enable transaction tracing                |
-| `trace_consensus`     | bool   | `true`           | Enable consensus tracing                  |
-| `trace_rpc`           | bool   | `true`           | Enable RPC tracing                        |
-| `trace_peer`          | bool   | `false`          | Enable peer message tracing (high volume) |
-| `trace_ledger`        | bool   | `true`           | Enable ledger tracing                     |
-| `trace_pathfind`      | bool   | `true`           | Enable path computation tracing           |
-| `trace_txq`           | bool   | `true`           | Enable transaction queue tracing          |
-| `trace_validator`     | bool   | `false`          | Enable validator list/manifest tracing    |
-| `trace_amendment`     | bool   | `false`          | Enable amendment voting tracing           |
-| `service_name`        | string | `"xrpld"`        | Service name for traces                   |
-| `service_instance_id` | string | `<node_pubkey>`  | Instance identifier                       |
+| Option                | Type   | Default                           | Description                               |
+| --------------------- | ------ | --------------------------------- | ----------------------------------------- |
+| `enabled`             | bool   | `false`                           | Enable/disable telemetry                  |
+| `endpoint`            | string | `http://localhost:4318/v1/traces` | OTLP/HTTP collector endpoint              |
+| `use_tls`             | bool   | `false`                           | Enable TLS for exporter connection        |
+| `tls_ca_cert`         | string | `""`                              | Path to CA certificate file               |
+| `sampling_ratio`      | float  | `1.0`                             | Sampling ratio (0.0-1.0)                  |
+| `batch_size`          | uint   | `512`                             | Spans per export batch                    |
+| `batch_delay_ms`      | uint   | `5000`                            | Max delay before sending batch (ms)       |
+| `max_queue_size`      | uint   | `2048`                            | Maximum queued spans                      |
+| `trace_transactions`  | bool   | `true`                            | Enable transaction tracing                |
+| `trace_consensus`     | bool   | `true`                            | Enable consensus tracing                  |
+| `trace_rpc`           | bool   | `true`                            | Enable RPC tracing                        |
+| `trace_peer`          | bool   | `false`                           | Enable peer message tracing (high volume) |
+| `trace_ledger`        | bool   | `true`                            | Enable ledger tracing                     |
+| `service_name`        | string | `"xrpld"`                         | Service name for traces                   |
+| `service_instance_id` | string | `<node_pubkey>`                   | Instance identifier                       |
+
+**Planned (not yet implemented)**: the following options appear in the design
+documents but are not parsed by `TelemetryConfig.cpp` in Phase 1b and later
+phases. They will be added as the corresponding subsystems are instrumented:
+
+| Option            | Planned Phase | Purpose                                  |
+| ----------------- | ------------- | ---------------------------------------- |
+| `exporter`        | Future        | Select between OTLP/HTTP and OTLP/gRPC   |
+| `trace_pathfind`  | Phase 2       | Path computation tracing toggle          |
+| `trace_txq`       | Phase 3       | Transaction queue tracing toggle         |
+| `trace_validator` | Future        | Validator list / manifest update tracing |
+| `trace_amendment` | Future        | Amendment voting tracing                 |
 
 ---
 
