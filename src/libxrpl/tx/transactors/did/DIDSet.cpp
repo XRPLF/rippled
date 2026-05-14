@@ -55,7 +55,7 @@ DIDSet::preflight(PreflightContext const& ctx)
         return false;
     };
 
-    if (isTooLong(sfURI, kMaxDiduriLength) || isTooLong(sfDIDDocument, kMaxDidDocumentLength) ||
+    if (isTooLong(sfURI, kMaxDidUriLength) || isTooLong(sfDIDDocument, kMaxDidDocumentLength) ||
         isTooLong(sfData, kMaxDidDataLength))
         return temMALFORMED;
 

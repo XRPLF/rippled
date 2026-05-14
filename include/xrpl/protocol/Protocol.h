@@ -206,7 +206,7 @@ constexpr std::size_t kMaxTokenUriLength = 256;
 constexpr std::size_t kMaxDidDocumentLength = 256;
 
 /** The maximum length of a URI inside a DID */
-constexpr std::size_t kMaxDiduriLength = 256;
+constexpr std::size_t kMaxDidUriLength = 256;
 
 /** The maximum length of an Attestation inside a DID */
 constexpr std::size_t kMaxDidDataLength = 256;
