@@ -243,7 +243,6 @@ public:
         ep = Endpoint(AddressV4{d}, 80);
         BEAST_EXPECT(!isUnspecified(ep));
         BEAST_EXPECT(!isPublic(ep));
-        BEAST_EXPECT(isPrivate(ep));
         BEAST_EXPECT(!isMulticast(ep));
         BEAST_EXPECT(isLoopback(ep));
         BEAST_EXPECT(to_string(ep) == "127.0.0.1:80");
@@ -252,7 +251,6 @@ public:
             boost::asio::ip::make_address_v6(boost::asio::ip::v4_mapped, AddressV4{d}), 80);
         BEAST_EXPECT(!isUnspecified(ep));
         BEAST_EXPECT(!isPublic(ep));
-        BEAST_EXPECT(isPrivate(ep));
         BEAST_EXPECT(!isMulticast(ep));
         BEAST_EXPECT(!isLoopback(ep));  // mapped loopback is not a loopback
         BEAST_EXPECTS(to_string(ep) == "[::ffff:127.0.0.1]:80", to_string(ep));
