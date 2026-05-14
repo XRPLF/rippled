@@ -40,7 +40,6 @@
 #include <xrpl.pb.h>
 
 #include <chrono>
-#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <optional>
