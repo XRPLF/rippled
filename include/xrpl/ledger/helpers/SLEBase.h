@@ -48,6 +48,7 @@ public:
     operator=(SLEBase const&) = delete;
     SLEBase&
     operator=(SLEBase&&) = delete;
+    SLEBase() = delete;
 
     // --- Common interface (always available) ---
 
@@ -176,8 +177,6 @@ public:
     }
 
 protected:
-    SLEBase() = delete;
-
     /** Constructor for read-only context */
     explicit SLEBase(
         SLE::const_pointer sle,

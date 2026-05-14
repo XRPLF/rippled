@@ -133,10 +133,17 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& accountId, beast::Jou
 
         // Find an entry with the least tokens/fee. Make the order deterministic
         // if the tokens/fees are equal.
-        if (!minTokens ||
-            (lpTokens < *minTokens ||
-             (lpTokens == *minTokens &&
-              (feeVal < minFee || (feeVal == minFee && account < minAccount)))))
+        if (!minTokens)
+        {
+            minTokens = lpTokens;
+            minPos = updatedVoteSlots.size();
+            minAccount = account;
+            minFee = feeVal;
+        }
+        else if (
+            auto const& minTokensValue = *minTokens; lpTokens < minTokensValue ||
+            (lpTokens == minTokensValue &&
+             (feeVal < minFee || (feeVal == minFee && account < minAccount))))
         {
             minTokens = lpTokens;
             minPos = updatedVoteSlots.size();
@@ -177,13 +184,22 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& accountId, beast::Jou
             // Add the entry if the account has more tokens than
             // the least token holder or same tokens and higher fee.
         }
-        else if (lpTokensNew > *minTokens || (lpTokensNew == *minTokens && feeNew > minFee))
+        else if (minTokens)
         {
-            auto const entry = updatedVoteSlots.begin() + minPos;
-            // Remove the least token vote entry.
-            num -= Number((*entry)[~sfTradingFee].valueOr(0)) * *minTokens;
-            den -= *minTokens;
-            update(minPos);
+            auto const& minTokensValue = *minTokens;
+            if (lpTokensNew > minTokensValue || (lpTokensNew == minTokensValue && feeNew > minFee))
+            {
+                auto const entry = updatedVoteSlots.begin() + minPos;
+                // Remove the least token vote entry.
+                num -= Number((*entry)[~sfTradingFee].valueOr(0)) * minTokensValue;
+                den -= minTokensValue;
+                update(minPos);
+            }
+            else
+            {
+                JLOG(j.debug()) << "AMMVote::applyVote, insufficient tokens to "
+                                   "override other votes";
+            }
         }
         // All slots are full and the account does not hold more LPTokens.
         // Update anyway to refresh the slots.

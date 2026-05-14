@@ -11,6 +11,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -43,6 +44,7 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <variant>
@@ -180,6 +182,8 @@ PathRequest::isValid(std::shared_ptr<AssetCache> const& crCache)
 {
     if (!raSrcAccount_ || !raDstAccount_)
         return false;
+    auto const& srcAccount = *raSrcAccount_;
+    auto const& dstAccount = *raDstAccount_;
 
     if (!convert_all_ && (saSendMax_ || saDstAmount_ <= beast::kZERO))
     {
@@ -190,14 +194,14 @@ PathRequest::isValid(std::shared_ptr<AssetCache> const& crCache)
 
     auto const& lrLedger = crCache->getLedger();
 
-    if (!lrLedger->exists(keylet::account(*raSrcAccount_)))
+    if (!lrLedger->exists(keylet::account(srcAccount)))
     {
         // Source account does not exist.
         jvStatus_ = rpcError(RpcSrcActNotFound);
         return false;
     }
 
-    AccountRoot const acctDest(*raDstAccount_, *lrLedger);
+    AccountRoot const acctDest(dstAccount, *lrLedger);
 
     json::Value& jvDestCur = (jvStatus_[jss::destination_currencies] = json::ValueType::Array);
 
@@ -222,7 +226,7 @@ PathRequest::isValid(std::shared_ptr<AssetCache> const& crCache)
     {
         bool const disallowXRP((acctDest->getFlags() & lsfDisallowXRP) != 0u);
 
-        auto const destAssets = accountDestAssets(*raDstAccount_, crCache, !disallowXRP);
+        auto const destAssets = accountDestAssets(dstAccount, crCache, !disallowXRP);
 
         for (auto const& asset : destAssets)
             jvDestCur.append(to_string(asset));
@@ -260,6 +264,7 @@ PathRequest::doCreate(std::shared_ptr<AssetCache> const& cache, json::Value cons
     {
         if (valid)
         {
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access) valid is from isValid()
             stream << iIdentifier_ << " valid: " << toBase58(*raSrcAccount_);
             stream << iIdentifier_ << " deliver: " << saDstAmount_.getFullText();
         }
@@ -510,16 +515,12 @@ PathRequest::getPathFinder(
     auto i = pathassetMap.find(asset);
     if (i != pathassetMap.end())
         return i->second;
+    if (!raSrcAccount_ || !raDstAccount_)
+        Throw<std::logic_error>("PathRequest::getPathFinder: missing accounts");
+    auto const& srcAccount = *raSrcAccount_;
+    auto const& dstAccount = *raDstAccount_;
     auto pathfinder = std::make_unique<Pathfinder>(
-        cache,
-        *raSrcAccount_,
-        *raDstAccount_,
-        asset,
-        std::nullopt,
-        dstAmount,
-        saSendMax_,
-        domain_,
-        app_);
+        cache, srcAccount, dstAccount, asset, std::nullopt, dstAmount, saSendMax_, domain_, app_);
     if (pathfinder->findPaths(level, continueCallback))
     {
         pathfinder->computePathRanks(kMAX_PATHS, continueCallback);
@@ -538,6 +539,10 @@ PathRequest::findPaths(
     json::Value& jvArray,
     std::function<bool(void)> const& continueCallback)
 {
+    if (!raSrcAccount_ || !raDstAccount_)
+        Throw<std::logic_error>("PathRequest::findPaths: missing accounts");
+    auto const& srcAccount = *raSrcAccount_;
+    auto const& dstAccount = *raDstAccount_;
     auto sourceAssets = sciSourceAssets_;
     if (sourceAssets.empty() && saSendMax_)
     {
@@ -545,8 +550,8 @@ PathRequest::findPaths(
     }
     if (sourceAssets.empty())
     {
-        auto assets = accountSourceAssets(*raSrcAccount_, cache, true);
-        bool const sameAccount = *raSrcAccount_ == *raDstAccount_;
+        auto assets = accountSourceAssets(srcAccount, cache, true);
+        bool const sameAccount = srcAccount == dstAccount;
         for (auto const& asset : assets)
         {
             if (!std::visit(
@@ -558,7 +563,7 @@ PathRequest::findPaths(
                             if constexpr (std::is_same_v<TAsset, Currency>)
                             {
                                 sourceAssets.insert(
-                                    Issue{a, a.isZero() ? xrpAccount() : *raSrcAccount_});
+                                    Issue{a, a.isZero() ? xrpAccount() : srcAccount});
                             }
                             else
                             {
@@ -603,7 +608,7 @@ PathRequest::findPaths(
             if (isXRP(asset))
                 return xrpAccount();
 
-            return *raSrcAccount_;
+            return srcAccount;
         }();
 
         STAmount const saMaxAmount = [&]() {
@@ -624,13 +629,13 @@ PathRequest::findPaths(
         auto sandbox = std::make_unique<PaymentSandbox>(&*cache->getLedger(), TapNone);
         auto rc = path::RippleCalc::rippleCalculate(
             *sandbox,
-            saMaxAmount,     // --> Amount to send is unlimited
-                             //     to get an estimate.
-            dstAmount,       // --> Amount to deliver.
-            *raDstAccount_,  // --> Account to deliver to.
-            *raSrcAccount_,  // --> Account sending from.
-            ps,              // --> Path set.
-            domain_,         // --> Domain.
+            saMaxAmount,  // --> Amount to send is unlimited
+                          //     to get an estimate.
+            dstAmount,    // --> Amount to deliver.
+            dstAccount,   // --> Account to deliver to.
+            srcAccount,   // --> Account sending from.
+            ps,           // --> Path set.
+            domain_,      // --> Domain.
             app_,
             &rcInput);
 
@@ -643,13 +648,13 @@ PathRequest::findPaths(
             sandbox = std::make_unique<PaymentSandbox>(&*cache->getLedger(), TapNone);
             rc = path::RippleCalc::rippleCalculate(
                 *sandbox,
-                saMaxAmount,     // --> Amount to send is unlimited
-                                 //     to get an estimate.
-                dstAmount,       // --> Amount to deliver.
-                *raDstAccount_,  // --> Account to deliver to.
-                *raSrcAccount_,  // --> Account sending from.
-                ps,              // --> Path set.
-                domain_,         // --> Domain.
+                saMaxAmount,  // --> Amount to send is unlimited
+                              //     to get an estimate.
+                dstAmount,    // --> Amount to deliver.
+                dstAccount,   // --> Account to deliver to.
+                srcAccount,   // --> Account sending from.
+                ps,           // --> Path set.
+                domain_,      // --> Domain.
                 app_);
 
             if (!isTesSuccess(rc.result()))
