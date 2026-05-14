@@ -11,7 +11,7 @@
   "panels": [
     {
       "title": "Active Peers",
-      "description": "Number of active inbound and outbound peer connections. Sourced from Peer_Finder.Active_Inbound_Peers and Peer_Finder.Active_Outbound_Peers gauges (PeerfinderManager.cpp:214-215). A healthy mainnet node typically has 10-21 outbound and 0-85 inbound peers depending on configuration.",
+      "description": "Number of active inbound and outbound peer connections. Sourced from Peer_Finder.Active_Inbound_Peers and Peer_Finder.Active_Outbound_Peers gauges (PeerfinderManager.cpp). A healthy mainnet node typically has 10-21 outbound and 0-85 inbound peers depending on configuration.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -30,14 +30,14 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_Peer_Finder_Active_Inbound_Peers",
+          "expr": "rippled_Peer_Finder_Active_Inbound_Peers{exported_instance=~\"$node\"}",
           "legendFormat": "Inbound Peers"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_Peer_Finder_Active_Outbound_Peers",
+          "expr": "rippled_Peer_Finder_Active_Outbound_Peers{exported_instance=~\"$node\"}",
           "legendFormat": "Outbound Peers"
         }
       ],
@@ -57,7 +57,7 @@
     },
     {
       "title": "Peer Disconnects",
-      "description": "Cumulative count of peer disconnections. Sourced from the Overlay.Peer_Disconnects gauge (OverlayImpl.h:557). A rising trend indicates network instability, aggressive peer management, or resource exhaustion causing connection drops.",
+      "description": "Cumulative count of peer disconnections. Sourced from the Overlay.Peer_Disconnects gauge (OverlayImpl.h). A rising trend indicates network instability, aggressive peer management, or resource exhaustion causing connection drops.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -76,7 +76,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_Overlay_Peer_Disconnects",
+          "expr": "rippled_Overlay_Peer_Disconnects{exported_instance=~\"$node\"}",
           "legendFormat": "Disconnects"
         }
       ],
@@ -96,7 +96,7 @@
     },
     {
       "title": "Total Network Bytes",
-      "description": "Rate of total bytes sent and received across all peer connections. Sourced from the total.Bytes_In and total.Bytes_Out traffic category gauges (OverlayImpl.h:535-548). Wrapped in rate() to show throughput rather than cumulative counter values.",
+      "description": "Rate of total bytes sent and received across all peer connections. Sourced from the total.Bytes_In and total.Bytes_Out traffic category gauges (OverlayImpl.h). Wrapped in rate() to show throughput rather than cumulative counter values.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -115,14 +115,14 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(rippled_total_Bytes_In[5m])",
+          "expr": "rate{exported_instance=~\"$node\"}(rippled_total_Bytes_In[5m])",
           "legendFormat": "Bytes In"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(rippled_total_Bytes_Out[5m])",
+          "expr": "rate{exported_instance=~\"$node\"}(rippled_total_Bytes_Out[5m])",
           "legendFormat": "Bytes Out"
         }
       ],
@@ -142,7 +142,7 @@
     },
     {
       "title": "Total Network Messages",
-      "description": "Total messages sent and received across all peer connections. Sourced from the total.Messages_In and total.Messages_Out traffic category gauges (OverlayImpl.h:535-548). Shows the overall message throughput of the overlay network.",
+      "description": "Total messages sent and received across all peer connections. Sourced from the total.Messages_In and total.Messages_Out traffic category gauges (OverlayImpl.h). Shows the overall message throughput of the overlay network.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -161,14 +161,14 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_total_Messages_In",
+          "expr": "rippled_total_Messages_In{exported_instance=~\"$node\"}",
           "legendFormat": "Messages In"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_total_Messages_Out",
+          "expr": "rippled_total_Messages_Out{exported_instance=~\"$node\"}",
           "legendFormat": "Messages Out"
         }
       ],
@@ -207,21 +207,21 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_transactions_Messages_In",
+          "expr": "rippled_transactions_Messages_In{exported_instance=~\"$node\"}",
           "legendFormat": "TX Messages In"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_transactions_Messages_Out",
+          "expr": "rippled_transactions_Messages_Out{exported_instance=~\"$node\"}",
           "legendFormat": "TX Messages Out"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_transactions_duplicate_Messages_In",
+          "expr": "rippled_transactions_duplicate_Messages_In{exported_instance=~\"$node\"}",
           "legendFormat": "TX Duplicate In"
         }
       ],
@@ -260,28 +260,28 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_proposals_Messages_In",
+          "expr": "rippled_proposals_Messages_In{exported_instance=~\"$node\"}",
           "legendFormat": "Proposals In"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_proposals_Messages_Out",
+          "expr": "rippled_proposals_Messages_Out{exported_instance=~\"$node\"}",
           "legendFormat": "Proposals Out"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_proposals_untrusted_Messages_In",
+          "expr": "rippled_proposals_untrusted_Messages_In{exported_instance=~\"$node\"}",
           "legendFormat": "Untrusted In"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_proposals_duplicate_Messages_In",
+          "expr": "rippled_proposals_duplicate_Messages_In{exported_instance=~\"$node\"}",
           "legendFormat": "Duplicate In"
         }
       ],
@@ -320,28 +320,28 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_validations_Messages_In",
+          "expr": "rippled_validations_Messages_In{exported_instance=~\"$node\"}",
           "legendFormat": "Validations In"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_validations_Messages_Out",
+          "expr": "rippled_validations_Messages_Out{exported_instance=~\"$node\"}",
           "legendFormat": "Validations Out"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_validations_untrusted_Messages_In",
+          "expr": "rippled_validations_untrusted_Messages_In{exported_instance=~\"$node\"}",
           "legendFormat": "Untrusted In"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_validations_duplicate_Messages_In",
+          "expr": "rippled_validations_duplicate_Messages_In{exported_instance=~\"$node\"}",
           "legendFormat": "Duplicate In"
         }
       ],
@@ -380,7 +380,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "topk(10, {__name__=~\"rippled_.*_Bytes_In\", __name__!~\"rippled_total_.*\"})",
+          "expr": "topk{exported_instance=~\"$node\"}(10, {__name__=~\"rippled_.*_Bytes_In\", __name__!~\"rippled_total_.*\"})",
           "legendFormat": "{{__name__}}"
         }
       ],
@@ -677,42 +677,42 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(rippled_transactions_duplicate_Bytes_In[5m])",
+          "expr": "rate{exported_instance=~\"$node\"}(rippled_transactions_duplicate_Bytes_In[5m])",
           "legendFormat": "TX Duplicate In"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(rippled_transactions_duplicate_Bytes_Out[5m])",
+          "expr": "rate{exported_instance=~\"$node\"}(rippled_transactions_duplicate_Bytes_Out[5m])",
           "legendFormat": "TX Duplicate Out"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(rippled_proposals_duplicate_Bytes_In[5m])",
+          "expr": "rate{exported_instance=~\"$node\"}(rippled_proposals_duplicate_Bytes_In[5m])",
           "legendFormat": "Proposals Duplicate In"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(rippled_proposals_duplicate_Bytes_Out[5m])",
+          "expr": "rate{exported_instance=~\"$node\"}(rippled_proposals_duplicate_Bytes_Out[5m])",
           "legendFormat": "Proposals Duplicate Out"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(rippled_validations_duplicate_Bytes_In[5m])",
+          "expr": "rate{exported_instance=~\"$node\"}(rippled_validations_duplicate_Bytes_In[5m])",
           "legendFormat": "Validations Duplicate In"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(rippled_validations_duplicate_Bytes_Out[5m])",
+          "expr": "rate{exported_instance=~\"$node\"}(rippled_validations_duplicate_Bytes_Out[5m])",
           "legendFormat": "Validations Duplicate Out"
         }
       ],
@@ -751,7 +751,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "topk(15, rate({__name__=~\"rippled_.*_Bytes_In\", __name__!~\"rippled_total_.*\"}[5m]))",
+          "expr": "topk{exported_instance=~\"$node\"}(15, rate({__name__=~\"rippled_.*_Bytes_In\", __name__!~\"rippled_total_.*\"}[5m]))",
           "legendFormat": "{{__name__}}"
         }
       ],
@@ -773,12 +773,33 @@
   "schemaVersion": 39,
   "tags": ["rippled", "statsd", "network", "telemetry"],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "name": "node",
+        "label": "Node",
+        "description": "Filter by xrpld node (service.instance.id \u2014 e.g. Node-1)",
+        "type": "query",
+        "query": "label_values(exported_instance)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      }
+    ]
   },
   "time": {
     "from": "now-1h",
     "to": "now"
   },
   "title": "Network Traffic (StatsD)",
-  "uid": "rippled-statsd-network"
+  "uid": "xrpld-statsd-network"
 }
