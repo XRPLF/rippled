@@ -346,9 +346,9 @@ updateTrustLine(
     if (!sle)
         return false;
 
-    auto const senderReserveFlag = !bSenderHigh ? lsfLowReserve : lsfHighReserve;
-    auto const senderNoRippleFlag = !bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple;
-    auto const senderFreezeFlag = !bSenderHigh ? lsfLowFreeze : lsfHighFreeze;
+    auto const senderReserveFlag = bSenderHigh ? lsfHighReserve : lsfLowReserve;
+    auto const senderNoRippleFlag = bSenderHigh ? lsfHighNoRipple : lsfLowNoRipple;
+    auto const senderFreezeFlag = bSenderHigh ? lsfHighFreeze : lsfLowFreeze;
     auto const receiverReserveFlag = bSenderHigh ? lsfLowReserve : lsfHighReserve;
 
     // YYY Could skip this if rippling in reverse.
