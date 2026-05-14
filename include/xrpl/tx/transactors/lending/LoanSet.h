@@ -53,15 +53,15 @@ public:
         beast::Journal const& j) override;
 
 public:
-    static std::uint32_t constexpr kMinPaymentTotal = 1;
-    static std::uint32_t constexpr kDefaultPaymentTotal = 1;
+    static constexpr std::uint32_t kMinPaymentTotal = 1;
+    static constexpr std::uint32_t kDefaultPaymentTotal = 1;
     static_assert(kDefaultPaymentTotal >= kMinPaymentTotal);
 
-    static std::uint32_t constexpr kMinPaymentInterval = 60;
-    static std::uint32_t constexpr kDefaultPaymentInterval = 60;
+    static constexpr std::uint32_t kMinPaymentInterval = 60;
+    static constexpr std::uint32_t kDefaultPaymentInterval = 60;
     static_assert(kDefaultPaymentInterval >= kMinPaymentInterval);
 
-    static std::uint32_t constexpr kDefaultGracePeriod = 60;
+    static constexpr std::uint32_t kDefaultGracePeriod = 60;
     static_assert(kDefaultGracePeriod >= kMinPaymentInterval);
 };
 

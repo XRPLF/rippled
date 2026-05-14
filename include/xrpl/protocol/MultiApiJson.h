@@ -47,7 +47,7 @@ struct MultiApiJson
         return (v < MinVer) ? 0 : static_cast<std::size_t>(v - MinVer);
     }
 
-    constexpr static std::size_t kSize = MaxVer + 1 - MinVer;
+    static constexpr std::size_t kSize = MaxVer + 1 - MinVer;
     std::array<json::Value, kSize> val = {};
 
     explicit MultiApiJson(json::Value const& init = {})

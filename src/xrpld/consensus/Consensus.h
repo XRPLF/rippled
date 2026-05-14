@@ -1249,7 +1249,7 @@ Consensus<Adaptor>::shouldPause(std::unique_ptr<std::stringstream> const& clog) 
      *  3: >=95%
      *  4: =100%
      */
-    constexpr static std::size_t kMaxPausePhase = 4;
+    static constexpr std::size_t kMaxPausePhase = 4;
 
     /**
      * No particular threshold guarantees consensus. Lower thresholds

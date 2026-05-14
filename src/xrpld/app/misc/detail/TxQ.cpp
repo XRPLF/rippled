@@ -202,7 +202,7 @@ TxQ::FeeMetrics::scaleFeeLevel(Snapshot const& snapshot, OpenView const& view)
 
 namespace detail {
 
-constexpr static std::pair<bool, std::uint64_t>
+static constexpr std::pair<bool, std::uint64_t>
 sumOfFirstSquares(std::size_t xIn)
 {
     // sum(n = 1->x) : n * n = x(x + 1)(2x + 1) / 6

@@ -1352,7 +1352,7 @@ struct Escrow_test : public beast::unit_test::Suite
             // bob creates a bunch of tickets because he will be burning
             // through them with tec transactions.  Just because we can
             // we'll use them up starting from largest and going smaller.
-            constexpr static std::uint32_t kBobTicketCount{20};
+            static constexpr std::uint32_t kBobTicketCount{20};
             env(ticket::create(bob, kBobTicketCount));
             env.close();
             std::uint32_t bobTicket{env.seq(bob)};

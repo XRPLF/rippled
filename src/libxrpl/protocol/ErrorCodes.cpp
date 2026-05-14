@@ -30,7 +30,7 @@ namespace detail {
 // status code.
 
 // clang-format off
-constexpr static ErrorInfo kUnorderedErrorInfos[]{
+static constexpr ErrorInfo kUnorderedErrorInfos[]{
     {RpcActMalformed,          "actMalformed",         "Account malformed."},
     {RpcActNotFound,          "actNotFound",          "Account not found."},
     {RpcAlreadyMultisig,       "alreadyMultisig",      "Already multisigned."},

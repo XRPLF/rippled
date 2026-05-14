@@ -30,7 +30,7 @@ using weeks = std::chrono::duration<int, std::ratio_multiply<days::period, std::
     = seconds(946684800)
 */
 
-constexpr static std::chrono::seconds kEpochOffset =
+static constexpr std::chrono::seconds kEpochOffset =
     date::sys_days{date::year{2000} / 1 / 1} - date::sys_days{date::year{1970} / 1 / 1};
 
 static_assert(kEpochOffset.count() == 946684800);

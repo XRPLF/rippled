@@ -42,22 +42,22 @@ private:
 public:
     using value_type = STAmount;
 
-    constexpr static int kMinOffset = -96;
-    constexpr static int kMaxOffset = 80;
+    static constexpr int kMinOffset = -96;
+    static constexpr int kMaxOffset = 80;
 
     // Maximum native value supported by the code
-    constexpr static std::uint64_t kMinValue = 1'000'000'000'000'000ull;
+    static constexpr std::uint64_t kMinValue = 1'000'000'000'000'000ull;
     static_assert(isPowerOfTen(kMinValue));
-    constexpr static std::uint64_t kMaxValue = (kMinValue * 10) - 1;
+    static constexpr std::uint64_t kMaxValue = (kMinValue * 10) - 1;
     static_assert(kMaxValue == 9'999'999'999'999'999ull);
-    constexpr static std::uint64_t kMaxNative = 9'000'000'000'000'000'000ull;
+    static constexpr std::uint64_t kMaxNative = 9'000'000'000'000'000'000ull;
 
     // Max native value on network.
-    constexpr static std::uint64_t kMaxNativeN = 100'000'000'000'000'000ull;
-    constexpr static std::uint64_t kIssuedCurrency = 0x8'000'000'000'000'000ull;
-    constexpr static std::uint64_t kPositive = 0x4'000'000'000'000'000ull;
-    constexpr static std::uint64_t kMpToken = 0x2'000'000'000'000'000ull;
-    constexpr static std::uint64_t kValueMask = ~(kPositive | kMpToken);
+    static constexpr std::uint64_t kMaxNativeN = 100'000'000'000'000'000ull;
+    static constexpr std::uint64_t kIssuedCurrency = 0x8'000'000'000'000'000ull;
+    static constexpr std::uint64_t kPositive = 0x4'000'000'000'000'000ull;
+    static constexpr std::uint64_t kMpToken = 0x2'000'000'000'000'000ull;
+    static constexpr std::uint64_t kValueMask = ~(kPositive | kMpToken);
 
     static std::uint64_t const kURateOne;
 

@@ -35,7 +35,7 @@ class STVar
 {
 private:
     // The largest "small object" we can accommodate
-    static std::size_t constexpr kMaxSize = 72;
+    static constexpr std::size_t kMaxSize = 72;
 
     std::aligned_storage<kMaxSize>::type d_ = {};
     STBase* p_ = nullptr;

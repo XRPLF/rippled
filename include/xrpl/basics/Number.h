@@ -214,10 +214,10 @@ class Number
 
 public:
     // The range for the exponent when normalized
-    constexpr static int kMinExponent = -32768;
-    constexpr static int kMaxExponent = 32768;
+    static constexpr int kMinExponent = -32768;
+    static constexpr int kMaxExponent = 32768;
 
-    constexpr static internalrep kMaxRep = std::numeric_limits<rep>::max();
+    static constexpr internalrep kMaxRep = std::numeric_limits<rep>::max();
     static_assert(kMaxRep == 9'223'372'036'854'775'807);
     static_assert(-kMaxRep == std::numeric_limits<rep>::min() + 1);
 
@@ -425,10 +425,10 @@ public:
     }
 
     /// oneSmall is needed because the ranges are private
-    constexpr static Number
+    static constexpr Number
     oneSmall();
     /// oneLarge is needed because the ranges are private
-    constexpr static Number
+    static constexpr Number
     oneLarge();
 
     // And one is needed because it needs to choose between oneSmall and
@@ -445,14 +445,14 @@ private:
     static thread_local RoundingMode mode;
     // The available ranges for mantissa
 
-    constexpr static MantissaRange kSmallRange{MantissaRange::MantissaScale::Small};
+    static constexpr MantissaRange kSmallRange{MantissaRange::MantissaScale::Small};
     static_assert(isPowerOfTen(kSmallRange.min));
     static_assert(kSmallRange.min == 1'000'000'000'000'000LL);
     static_assert(kSmallRange.max == 9'999'999'999'999'999LL);
     static_assert(kSmallRange.log == 15);
     static_assert(kSmallRange.min < kMaxRep);
     static_assert(kSmallRange.max < kMaxRep);
-    constexpr static MantissaRange kLargeRange{MantissaRange::MantissaScale::Large};
+    static constexpr MantissaRange kLargeRange{MantissaRange::MantissaScale::Large};
     static_assert(isPowerOfTen(kLargeRange.min));
     static_assert(kLargeRange.min == 1'000'000'000'000'000'000ULL);
     static_assert(kLargeRange.max == internalrep(9'999'999'999'999'999'999ULL));
@@ -521,7 +521,7 @@ constexpr Number::Number(internalrep mantissa, int exponent, Unchecked) noexcept
 {
 }
 
-constexpr static Number kNumZero{};
+static constexpr Number kNumZero{};
 
 inline Number::Number(bool negative, internalrep mantissa, int exponent, Normalized)
     : Number(negative, mantissa, exponent, Unchecked{})

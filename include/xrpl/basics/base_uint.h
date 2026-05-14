@@ -86,7 +86,7 @@ public:
     // STL Container Interface
     //
 
-    static std::size_t constexpr kBytes = Bits / 8;
+    static constexpr std::size_t kBytes = Bits / 8;
     static_assert(sizeof(data_) == kBytes, "");
 
     using size_type = std::size_t;
@@ -526,7 +526,7 @@ public:
         return parseHex(std::string_view{str});
     }
 
-    constexpr static std::size_t
+    static constexpr std::size_t
     size()
     {
         return kBytes;

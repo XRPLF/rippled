@@ -125,9 +125,9 @@ class RandomAccountParams
     std::uint32_t const initialBalance_;
 
     // probability of changing a value from its default
-    constexpr static double kProbChangeDefault = 0.75;
+    static constexpr double kProbChangeDefault = 0.75;
     // probability that an account redeems into another account
-    constexpr static double kProbRedeem = 0.5;
+    static constexpr double kProbRedeem = 0.5;
     std::uniform_real_distribution<> zeroOneDist_{0.0, 1.0};
     std::uniform_real_distribution<> transferRateDist_{1.0, 2.0};
     std::uniform_real_distribution<> qualityPercentDist_{80, 120};

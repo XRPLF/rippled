@@ -35,15 +35,15 @@ namespace xrpl {
 namespace RPC {
 
 template <unsigned int Version>
-constexpr static std::integral_constant<unsigned, Version> kApiVersion = {};
+static constexpr std::integral_constant<unsigned, Version> kApiVersion = {};
 
-constexpr static auto kApiInvalidVersion = kApiVersion<0>;
-constexpr static auto kApiMinimumSupportedVersion = kApiVersion<1>;
-constexpr static auto kApiMaximumSupportedVersion = kApiVersion<2>;
-constexpr static auto kApiVersionIfUnspecified = kApiVersion<1>;
-constexpr static auto kApiCommandLineVersion = kApiVersion<1>;  // TODO Bump to 2 later
-constexpr static auto kApiBetaVersion = kApiVersion<3>;
-constexpr static auto kApiMaximumValidVersion = kApiBetaVersion;
+static constexpr auto kApiInvalidVersion = kApiVersion<0>;
+static constexpr auto kApiMinimumSupportedVersion = kApiVersion<1>;
+static constexpr auto kApiMaximumSupportedVersion = kApiVersion<2>;
+static constexpr auto kApiVersionIfUnspecified = kApiVersion<1>;
+static constexpr auto kApiCommandLineVersion = kApiVersion<1>;  // TODO Bump to 2 later
+static constexpr auto kApiBetaVersion = kApiVersion<3>;
+static constexpr auto kApiMaximumValidVersion = kApiBetaVersion;
 
 static_assert(kApiInvalidVersion < kApiMinimumSupportedVersion);
 static_assert(

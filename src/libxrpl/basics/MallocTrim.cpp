@@ -86,7 +86,7 @@ mallocTrim(std::string_view tag, beast::Journal journal)
     // Keep glibc malloc_trim padding at 0 (default): 12h Mainnet tests across 0/256KB/1MB/16MB
     // showed no clear, consistent benefit from custom padding—0 provided the best overall balance
     // of RSS reduction and trim-latency stability without adding a tuning surface.
-    constexpr static std::size_t kTrimPad = 0;
+    static constexpr std::size_t kTrimPad = 0;
 
     report.supported = true;
 

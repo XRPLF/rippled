@@ -164,7 +164,7 @@ private:
     std::optional<beast::IP::Endpoint> local_endpoint_;
     std::optional<PublicKey> public_key_;
 
-    static std::int32_t constexpr kUnknownPort = -1;
+    static constexpr std::int32_t kUnknownPort = -1;
     std::atomic<std::int32_t> listening_port_;
 
 public:

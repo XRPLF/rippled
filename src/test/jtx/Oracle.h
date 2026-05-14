@@ -83,7 +83,7 @@ struct RemoveArg
 // The value doesn't matter much, it has to be greater
 // than maxLastUpdateTimeDelta in order to pass LastUpdateTime
 // validation {close-maxLastUpdateTimeDelta,close+maxLastUpdateTimeDelta}.
-constexpr static std::chrono::seconds kTestStartTime = kEpochOffset + std::chrono::seconds(10'000);
+static constexpr std::chrono::seconds kTestStartTime = kEpochOffset + std::chrono::seconds(10'000);
 
 /** Oracle class facilitates unit-testing of the Price Oracle feature.
  * It defines functions to create, update, and delete the Oracle object,

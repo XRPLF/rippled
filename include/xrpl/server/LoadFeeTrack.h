@@ -112,10 +112,10 @@ public:
     }
 
 private:
-    static std::uint32_t constexpr kLftNormalFee = 256;     // 256 is the minimum/normal load factor
-    static std::uint32_t constexpr kLftFeeIncFraction = 4;  // increase fee by 1/4
-    static std::uint32_t constexpr kLftFeeDecFraction = 4;  // decrease fee by 1/4
-    static std::uint32_t constexpr kLftFeeMax = kLftNormalFee * 1000000;
+    static constexpr std::uint32_t kLftNormalFee = 256;     // 256 is the minimum/normal load factor
+    static constexpr std::uint32_t kLftFeeIncFraction = 4;  // increase fee by 1/4
+    static constexpr std::uint32_t kLftFeeDecFraction = 4;  // decrease fee by 1/4
+    static constexpr std::uint32_t kLftFeeMax = kLftNormalFee * 1000000;
 
     beast::Journal const j_;
     std::mutex mutable lock_;

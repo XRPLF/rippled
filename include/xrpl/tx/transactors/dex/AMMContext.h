@@ -18,7 +18,7 @@ public:
     // Restrict number of AMM offers. If this restriction is removed
     // then need to restrict in some other way because AMM offers are
     // not counted in the BookStep offer counter.
-    constexpr static std::uint8_t kMaxIterations = 30;
+    static constexpr std::uint8_t kMaxIterations = 30;
 
 private:
     // Tx account owner is required to get the AMM trading fee in BookStep

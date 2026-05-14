@@ -69,7 +69,7 @@ class Vault_test : public beast::unit_test::Suite
     using PrettyAsset = xrpl::test::jtx::PrettyAsset;
     using PrettyAmount = xrpl::test::jtx::PrettyAmount;
 
-    static auto constexpr kNegativeAmount = [](PrettyAsset const& asset) -> PrettyAmount {
+    static constexpr auto kNegativeAmount = [](PrettyAsset const& asset) -> PrettyAmount {
         return {STAmount{asset.raw(), 1ul, 0, true, STAmount::Unchecked{}}, ""};
     };
 

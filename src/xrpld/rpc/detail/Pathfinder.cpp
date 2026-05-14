@@ -1042,9 +1042,9 @@ Pathfinder::addLink(
                 auto forAssets = [&]<typename AssetType>(AssetType const& assets) {
                     candidates.reserve(assets.size());
 
-                    static bool constexpr kIsLine =
+                    static constexpr bool kIsLine =
                         std::is_same_v<AssetType, std::vector<PathFindTrustLine>>;
-                    static bool constexpr kIsMpt =
+                    static constexpr bool kIsMpt =
                         std::is_same_v<AssetType, std::vector<PathFindMPT>>;
 
                     for (auto const& asset : assets)
