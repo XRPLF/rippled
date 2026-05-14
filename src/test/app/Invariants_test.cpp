@@ -93,8 +93,8 @@ class Invariants_test : public beast::unit_test::Suite
     static FeatureBitset
     defaultAmendments()
     {
-        return xrpl::test::jtx::testableAmendments() | featureInvariantsV1_1 |
-            featureSingleAssetVault | fixCleanup3_1_3 | fixCleanup3_2_0;
+        return xrpl::test::jtx::testableAmendments() | featureSingleAssetVault | fixCleanup3_1_3 |
+            fixCleanup3_2_0;
     }
 
     /** Run a specific test case to put the ledger into a state that will be
@@ -300,8 +300,8 @@ class Invariants_test : public beast::unit_test::Suite
             {{"account deletion left behind a non-zero balance"}},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 // A1 has a balance. Delete A1
-                auto const a1 = a1.id();
-                auto const sleA1 = ac.view().peek(keylet::account(a1));
+                auto const a1ID = a1.id();
+                auto const sleA1 = ac.view().peek(keylet::account(a1ID));
                 if (!sleA1)
                     return false;
                 if (!BEAST_EXPECT(*sleA1->at(sfBalance) != beast::kZERO))
@@ -318,8 +318,8 @@ class Invariants_test : public beast::unit_test::Suite
             {{"account deletion left behind a non-zero owner count"}},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 // Increment A1's owner count, then delete A1
-                auto const a1 = a1.id();
-                WAccountRoot wrappedA1(a1, ac.view());
+                auto const a1ID = a1.id();
+                WAccountRoot wrappedA1(a1ID, ac.view());
                 if (!wrappedA1)
                     return false;
                 // Clear the balance so the "account deletion left behind a
@@ -354,12 +354,12 @@ class Invariants_test : public beast::unit_test::Suite
                 [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                     // Add an object to the ledger for account A1, then delete
                     // A1
-                    auto const a1 = a1.id();
-                    auto sleA1 = ac.view().peek(keylet::account(a1));
+                    auto const a1ID = a1.id();
+                    auto sleA1 = ac.view().peek(keylet::account(a1ID));
                     if (!sleA1)
                         return false;
 
-                    auto const key = std::invoke(keyletfunc, a1);
+                    auto const key = std::invoke(keyletfunc, a1ID);
                     auto const newSLE = std::make_shared<SLE>(key);
                     ac.view().insert(newSLE);
                     // Clear the balance so the "account deletion left behind a

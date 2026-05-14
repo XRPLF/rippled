@@ -1701,7 +1701,6 @@ XChainClaim::doApply()
 {
     PaymentSandbox psb(&ctx_.view());
 
-    AccountID const account = ctx_.tx[sfAccount];
     auto const dst = ctx_.tx[sfDestination];
     STXChainBridge const bridgeSpec = ctx_.tx[sfXChainBridge];
     STAmount const& thisChainAmount = ctx_.tx[sfAmount];
@@ -1723,11 +1722,10 @@ XChainClaim::doApply()
         // `finalizeClaimHelper`. Since `finalizeClaimHelper` can create child
         // views, it's important that the sle's lifetime doesn't overlap.
 
-        AccountRoot const account(account, psb);
         auto const sleBridge = peekBridge(psb, bridgeSpec);
         auto const sleClaimID = psb.peek(claimIDKeylet);
 
-        if (!(sleBridge && sleClaimID && account))
+        if (!(sleBridge && sleClaimID && account_))
             return Unexpected(tecINTERNAL);
 
         AccountID const thisDoor = (*sleBridge)[sfAccount];
@@ -1795,7 +1793,7 @@ XChainClaim::doApply()
         bridgeSpec,
         dst,
         dstTag,
-        /*claimOwner*/ account,
+        /*claimOwner*/ accountID_,
         sendingAmount,
         rewardPoolSrc,
         signatureReward,
@@ -2173,13 +2171,11 @@ XChainCreateAccountCommit::doApply()
 {
     PaymentSandbox psb(&ctx_.view());
 
-    AccountID const account = ctx_.tx[sfAccount];
     STAmount const amount = ctx_.tx[sfAmount];
     STAmount const reward = ctx_.tx[sfSignatureReward];
     STXChainBridge const bridge = ctx_.tx[sfXChainBridge];
 
-    AccountRoot const account(account, psb);
-    if (!account)
+    if (!account_)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const sleBridge = peekBridge(psb, bridge);
@@ -2192,7 +2188,7 @@ XChainCreateAccountCommit::doApply()
     TransferHelperSubmittingAccountInfo submittingAccountInfo{
         .account = accountID_,
         .preFeeBalance = preFeeBalance_,
-        .postFeeBalance = (*account)[sfBalance]};
+        .postFeeBalance = (*account_)[sfBalance]};
     STAmount const toTransfer = amount + reward;
     auto const thTer = transferHelper(
         psb,

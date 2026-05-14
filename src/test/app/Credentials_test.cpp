@@ -1125,7 +1125,8 @@ struct Credentials_test : public beast::unit_test::Suite
         credHashes.pushBack(credKeylet.key);
         beast::Journal const j{beast::Journal::getNullSink()};
 
-        auto const dpTer = xrpl::verifyDepositPreauth(*stx, av, subject, becky, {}, j);
+        RAccountRoot const dst(becky.id(), av, j);
+        auto const dpTer = xrpl::verifyDepositPreauth(*stx, av, subject, dst, j);
         auto sleCredAfter = av.read(credKeylet);
         BEAST_EXPECT(sleCredAfter && (sleCredAfter->getFlags() & lsfAccepted));
 

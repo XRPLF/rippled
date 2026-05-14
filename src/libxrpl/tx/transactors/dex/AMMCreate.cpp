@@ -237,7 +237,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
 }
 
 static std::pair<TER, bool>
-applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& accountId, beast::Journal j)
+applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& creatorAccountID, beast::Journal j)
 {
     auto const amount = ctx.tx[sfAmount];
     auto const amount2 = ctx.tx[sfAmount2];
@@ -253,11 +253,11 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& accountId, beast::J
         return {maybeAccount.error(), false};
     }
     auto& account = *maybeAccount;
-    auto const accountId = (*account)[sfAccount];
+    auto const ammAccountID = (*account)[sfAccount];
 
     // LP Token already exists. (should not happen)
-    auto const lptIss = ammLPTIssue(amount.asset(), amount2.asset(), accountId);
-    if (sb.read(keylet::line(accountId, lptIss)))
+    auto const lptIss = ammLPTIssue(amount.asset(), amount2.asset(), ammAccountID);
+    if (sb.read(keylet::line(ammAccountID, lptIss)))
     {
         JLOG(j.error()) << "AMM Instance: LP Token already exists.";
         return {tecDUPLICATE, false};
@@ -274,16 +274,16 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& accountId, beast::J
 
     // Create ltAMM
     auto ammSle = std::make_shared<SLE>(ammKeylet);
-    ammSle->setAccountID(sfAccount, accountId);
+    ammSle->setAccountID(sfAccount, ammAccountID);
     ammSle->setFieldAmount(sfLPTokenBalance, lpTokens);
     auto const& [asset1, asset2] = std::minmax(amount.asset(), amount2.asset());
     ammSle->setFieldIssue(sfAsset, STIssue{sfAsset, asset1});
     ammSle->setFieldIssue(sfAsset2, STIssue{sfAsset2, asset2});
     // AMM creator gets the auction slot and the voting slot.
-    initializeFeeAuctionVote(ctx.view(), ammSle, accountId, lptIss, ctx.tx[sfTradingFee]);
+    initializeFeeAuctionVote(ctx.view(), ammSle, creatorAccountID, lptIss, ctx.tx[sfTradingFee]);
 
     // Add owner directory to link the root account and AMM object.
-    if (auto ter = dirLink(sb, accountId, ammSle); ter)
+    if (auto ter = dirLink(sb, ammAccountID, ammSle); ter)
     {
         JLOG(j.debug()) << "AMM Instance: failed to insert owner dir";
         return {ter, false};
@@ -291,7 +291,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& accountId, beast::J
     sb.insert(ammSle);
 
     // Send LPT to LP.
-    auto res = accountSend(sb, accountId, accountId, lpTokens, ctx.journal);
+    auto res = accountSend(sb, ammAccountID, creatorAccountID, lpTokens, ctx.journal);
     if (!isTesSuccess(res))
     {
         JLOG(j.debug()) << "AMM Instance: failed to send LPT " << lpTokens;
@@ -307,7 +307,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& accountId, beast::J
                 auto const& mptID = mptIssue.getMptID();
                 std::uint32_t flags = lsfMPTAMM;
                 if (auto const err =
-                        requireAuth(ctx.view(), mptIssue, accountId, AuthType::WeakAuth);
+                        requireAuth(ctx.view(), mptIssue, ammAccountID, AuthType::WeakAuth);
                     !isTesSuccess(err))
                 {
                     if (err == tecNO_AUTH)
@@ -320,22 +320,28 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& accountId, beast::J
                     }
                 }
 
-                if (auto const err = createMPToken(sb, mptID, accountId, flags); !isTesSuccess(err))
+                if (auto const err = createMPToken(sb, mptID, ammAccountID, flags);
+                    !isTesSuccess(err))
                     return err;
                 // Don't adjust AMM owner count.
                 // It's irrelevant for pseudo-account like AMM.
                 return accountSend(
-                    sb, accountId, accountId, amount, ctx.journal, WaiveTransferFee::Yes);
+                    sb, creatorAccountID, ammAccountID, amount, ctx.journal, WaiveTransferFee::Yes);
             },
             // Set AMM flag on AMM trustline
             [&](Issue const& issue) -> TER {
                 if (auto const res = accountSend(
-                        sb, accountId, accountId, amount, ctx.journal, WaiveTransferFee::Yes))
+                        sb,
+                        creatorAccountID,
+                        ammAccountID,
+                        amount,
+                        ctx.journal,
+                        WaiveTransferFee::Yes))
                     return res;
                 // Set AMM flag on AMM trustline
                 if (!isXRP(amount))
                 {
-                    SLE::pointer const sleRippleState = sb.peek(keylet::line(accountId, issue));
+                    SLE::pointer const sleRippleState = sb.peek(keylet::line(ammAccountID, issue));
                     if (!sleRippleState)
                     {
                         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -365,7 +371,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& accountId, beast::J
         return {res, false};
     }
 
-    JLOG(j.debug()) << "AMM Instance: success " << accountId << " " << ammKeylet.key << " "
+    JLOG(j.debug()) << "AMM Instance: success " << ammAccountID << " " << ammKeylet.key << " "
                     << lpTokens << " " << amount << " " << amount2;
     auto addOrderBook = [&](Asset const& assetIn, Asset const& assetOut, std::uint64_t uRate) {
         Book const book{assetIn, assetOut, std::nullopt};
