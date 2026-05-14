@@ -38,11 +38,17 @@ receivers:
   filelog:
     include: [/var/log/rippled/*/debug.log]
     operators:
+      # Log format emitted by Logs::format() is:
+      #   YYYY-Mmm-DD HH:MM:SS.ffffff UTC <partition>:<severity> [trace_id=... span_id=...] <message>
+      # The `partition:` prefix is omitted when partition is empty, so the
+      # capture group is non-capturing optional. Fractional seconds up to 6
+      # digits are parsed via the `%f` strptime directive.
       - type: regex_parser
-        regex: '^(?P<timestamp>\S+\s+\S+)\s+\S+\s+(?P<partition>\S+):(?P<severity>\S+)\s+(?:trace_id=(?P<trace_id>[a-f0-9]+)\s+span_id=(?P<span_id>[a-f0-9]+)\s+)?(?P<message>.*)$'
+        regex: '^(?P<timestamp>\S+\s+\S+)\s+\S+\s+(?:(?P<partition>\S+):)?(?P<severity>\S+)\s+(?:trace_id=(?P<trace_id>[a-f0-9]+)\s+span_id=(?P<span_id>[a-f0-9]+)\s+)?(?P<message>.*)$'
         timestamp:
           parse_from: attributes.timestamp
-          layout: "%Y-%b-%d %H:%M:%S"
+          layout: "%Y-%b-%d %H:%M:%S.%f"
+          location: UTC
 
 processors:
   batch:
@@ -51,6 +57,15 @@ processors:
   resource/logs:
     attributes:
       - key: service.name
+        value: xrpld
+        action: upsert
+      # Loki 3.x OTLP ingestion converts `service.name` to the label
+      # `service_name`. The runbook and integration-test queries use the
+      # canonical Loki label `job` so operators can paste `{job="xrpld"}`
+      # without guessing the otel-to-loki naming convention. Upsert the
+      # `job` resource attribute here so it round-trips through OTLP
+      # into Loki as the `job` label.
+      - key: job
         value: xrpld
         action: upsert
 
