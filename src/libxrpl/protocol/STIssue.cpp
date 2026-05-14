@@ -111,8 +111,6 @@ STIssue::add(Serializer& s) const
                 s.addBitString(issue.account);
         },
         [&](MPTIssue const& issue) {
-            // Return true if we're not in a transaction context, so that the new correct
-            // behavior will be used.
             auto const fixSerializationEnabled = isFeatureEnabled(fixCleanup3_2_0, false);
             s.addBitString(issue.getIssuer());
             // The sentinel distinguishes V2 (xrpAccount) from V1 (noAccount)
