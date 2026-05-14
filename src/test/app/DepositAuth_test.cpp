@@ -58,7 +58,7 @@ reserve(jtx::Env& env, std::uint32_t count)
 static bool
 hasDepositAuth(jtx::Env const& env, jtx::Account const& acct)
 {
-    return ((*env.le(acct))[sfFlags] & lsfDepositAuth) == lsfDepositAuth;
+    return env.le(acct)->isFlag(lsfDepositAuth);
 }
 
 struct DepositAuth_test : public beast::unit_test::Suite

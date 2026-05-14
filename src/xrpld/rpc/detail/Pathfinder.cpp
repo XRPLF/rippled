@@ -952,7 +952,7 @@ Pathfinder::isNoRipple(
 
     auto const flag((toAccount > fromAccount) ? lsfHighNoRipple : lsfLowNoRipple);
 
-    return sleRipple && ((sleRipple->getFieldU32(sfFlags) & flag) != 0u);
+    return sleRipple && sleRipple->isFlag(flag);
 }
 
 // Does this path end on an account-to-account link whose last account has
@@ -1032,7 +1032,7 @@ Pathfinder::addLink(
 
             if (sleEnd)
             {
-                bool const bRequireAuth((sleEnd->getFieldU32(sfFlags) & lsfRequireAuth) != 0u);
+                bool const bRequireAuth(sleEnd->isFlag(lsfRequireAuth));
                 bool const bIsEndAsset(uEndPathAsset == dstAmount_.asset());
                 bool const bIsNoRippleOut(isNoRippleOut(currentPath));
                 bool const bDestOnly((addFlags & kAF_AC_LAST) != 0u);

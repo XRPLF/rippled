@@ -198,7 +198,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     if (!expected)
         return expected.error();  // LCOV_EXCL_LINE
     auto const [amountBalance, amount2Balance, lptAMMBalance] = *expected;
-    if ((ctx.tx.getFlags() & tfTwoAssetIfEmpty) != 0u)
+    if (ctx.tx.isFlag(tfTwoAssetIfEmpty))
     {
         if (lptAMMBalance != beast::kZERO)
             return tecAMM_NOT_EMPTY;
@@ -331,7 +331,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     };
 
     // amount and amount2 are deposit min in case of tfLPToken
-    if ((ctx.tx.getFlags() & tfLPToken) == 0u)
+    if (!ctx.tx.isFlag(tfLPToken))
     {
         if (auto const ter = checkAmount(amount, true))
             return ter;

@@ -58,7 +58,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
         // before fetching the MPTIssuance object.
 
         // if holder wants to delete/unauthorize a mpt
-        if ((ctx.tx.getFlags() & tfMPTUnauthorize) != 0u)
+        if (ctx.tx.isFlag(tfMPTUnauthorize))
         {
             if (!sleMpt)
                 return tecOBJECT_NOT_FOUND;

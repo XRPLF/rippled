@@ -581,8 +581,7 @@ directSendNoFeeIOU(
             && ((uFlags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve)) != 0u)
             // Sender reserve is set.
             && static_cast<bool>(uFlags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)) !=
-                static_cast<bool>(
-                    view.read(keylet::account(uSenderID))->getFlags() & lsfDefaultRipple) &&
+                view.read(keylet::account(uSenderID))->isFlag(lsfDefaultRipple) &&
             ((uFlags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze)) == 0u) &&
             !sleRippleState->getFieldAmount(!bSenderHigh ? sfLowLimit : sfHighLimit)
             // Sender trust limit is 0.
@@ -640,7 +639,7 @@ directSendNoFeeIOU(
     if (!sleAccount)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    bool const noRipple = (sleAccount->getFlags() & lsfDefaultRipple) == 0;
+    bool const noRipple = !sleAccount->isFlag(lsfDefaultRipple);
 
     return trustCreate(
         view,

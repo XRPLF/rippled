@@ -274,7 +274,7 @@ OfferCreate::checkAcceptAsset(
     return asset.visit(
         [&](Issue const& issue) -> TER {
             auto const& issuer = issue.getIssuer();
-            if (((*issuerAccount)[sfFlags] & lsfRequireAuth) != 0u)
+            if (issuerAccount->isFlag(lsfRequireAuth))
             {
                 auto const trustLine = view.read(keylet::line(id, issuer, issue.currency));
 
@@ -289,8 +289,7 @@ OfferCreate::checkAcceptAsset(
                 // access.
                 bool const canonicalGt(id > issuer);
 
-                bool const isAuthorized(
-                    ((*trustLine)[sfFlags] & (canonicalGt ? lsfLowAuth : lsfHighAuth)) != 0u);
+                bool const isAuthorized(trustLine->isFlag(canonicalGt ? lsfLowAuth : lsfHighAuth));
 
                 if (!isAuthorized)
                 {
