@@ -1686,6 +1686,19 @@ ApplicationImp::run()
     // The order of these stop calls is delicate.
     // Re-ordering them risks undefined behavior.
     m_loadManager->stop();
+
+    // Detach MetricsRegistry observable-gauge callbacks BEFORE stopping
+    // any service the callbacks read from. The callbacks run on the OTel
+    // reader thread and touch nodeStore_, overlay_, networkOPs_,
+    // ledgerMaster, inboundLedgers, etc.  A final tick that fires after
+    // one of those services has shut down would dereference dangling
+    // state.  detachCallbacks() flips an atomic flag every callback
+    // acquire-loads at its entry, so subsequent ticks become no-ops.
+    // The final provider teardown still happens in metricsRegistry_->stop()
+    // farther down.
+    if (metricsRegistry_)
+        metricsRegistry_->detachCallbacks();
+
     m_shaMapStore->stop();
     m_jobQueue->stop();
     if (overlay_)
