@@ -49,8 +49,7 @@ exceptionExpected(Env& env, json::Value const& jv)
 
 class PermissionedDomains_test : public beast::unit_test::Suite
 {
-    FeatureBitset withoutFeature_{testableAmendments() - featurePermissionedDomains};
-    FeatureBitset withFeature_{testableAmendments()};
+    FeatureBitset withFeature_{testableAmendments() - fixCleanup3_1_3};
 
     FeatureBitset withFix_{testableAmendments()};
 
@@ -94,7 +93,7 @@ class PermissionedDomains_test : public beast::unit_test::Suite
     {
         testcase("Disabled");
         Account const alice("alice");
-        Env env(*this, withoutFeature_);
+        Env env(*this, testableAmendments() - featurePermissionedDomains);
         env.fund(XRP(1000), alice);
         pdomain::Credentials const credentials{{alice, "first credential"}};
         env(pdomain::setTx(alice, credentials), Ter(temDISABLED));
