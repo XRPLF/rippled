@@ -37,7 +37,7 @@ ValidMPTIssuance::visitEntry(
     // pre-amendment, and the holding-deletion rule does not apply).
     // Skip both blocks when the amendment is off so we avoid wasted work
     // on the hot path.
-    bool const cleanupEnabled = isFeatureEnabled(fixCleanup3_2_0);
+    bool const fix320Enabled = isFeatureEnabled(fixCleanup3_2_0);
 
     if (referenceHoldingMutated_)
         return;
@@ -51,10 +51,10 @@ ValidMPTIssuance::visitEntry(
         else if (!before)
         {
             mptIssuancesCreated_++;
-            if (cleanupEnabled && after->isFieldPresent(sfReferenceHolding))
+            if (fix320Enabled && after->isFieldPresent(sfReferenceHolding))
                 referenceHoldingSetOnCreate_ = true;
         }
-        else if (cleanupEnabled)
+        else if (fix320Enabled)
         {
             // Modified issuance: detect any change to sfReferenceHolding.
             bool const beforePresent = before->isFieldPresent(sfReferenceHolding);
@@ -74,7 +74,7 @@ ValidMPTIssuance::visitEntry(
         if (isDelete)
         {
             mptokensDeleted_++;
-            if (cleanupEnabled)
+            if (fix320Enabled)
                 deletedHoldings_.push_back(after);
         }
         else if (!before)
@@ -88,7 +88,7 @@ ValidMPTIssuance::visitEntry(
 
     // Capture deleted RippleState SLEs so finalize() can verify none of
     // them were owned by a vault pseudo-account outside VaultDelete.
-    if (cleanupEnabled && isDelete && after && after->getType() == ltRIPPLE_STATE)
+    if (fix320Enabled && isDelete && after && after->getType() == ltRIPPLE_STATE)
         deletedHoldings_.push_back(after);
 }
 

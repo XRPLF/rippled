@@ -321,7 +321,12 @@ requireAuth(
     if (featureSAVEnabled)
     {
         if (depth >= kMAX_ASSET_CHECK_DEPTH)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::MPTokenHelpers::requireAuth : reached asset check depth");
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         // requireAuth is recursive if the issuer is a vault pseudo-account
         auto const sleIssuer = view.read(keylet::account(mptIssuer));
@@ -556,7 +561,12 @@ canTransfer(
         // pre-amendment) and unreachable in practice (vault-of-vault-
         // shares is forbidden at VaultCreate).
         if (depth >= kMAX_ASSET_CHECK_DEPTH)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::MPTokenHelpers::canTransfer : reached asset check depth");
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         auto const sleHolding =
             view.read(keylet::unchecked(sleIssuance->getFieldH256(sfReferenceHolding)));
@@ -597,8 +607,12 @@ canTrade(ReadView const& view, Asset const& asset, int depth)
                 // in practice (vault-of-vault-shares forbidden at
                 // VaultCreate).
                 if (depth >= kMAX_ASSET_CHECK_DEPTH)
-                    return tecINTERNAL;  // LCOV_EXCL_LINE
-
+                {
+                    // LCOV_EXCL_START
+                    UNREACHABLE("xrpl::MPTokenHelpers::canTrade : reached asset check depth");
+                    return tecINTERNAL;
+                    // LCOV_EXCL_STOP
+                }
                 auto const sleHolding =
                     view.read(keylet::unchecked(sleIssuance->getFieldH256(sfReferenceHolding)));
                 if (!sleHolding)
@@ -1039,8 +1053,12 @@ checkMPTAllowed(
             // Reachable only post-fixCleanup3_2_0 and unreachable in
             // practice (vault-of-vault-shares forbidden at VaultCreate).
             if (depth >= kMAX_ASSET_CHECK_DEPTH)
-                return tecINTERNAL;  // LCOV_EXCL_LINE
-
+            {
+                // LCOV_EXCL_START
+                UNREACHABLE("xrpl::MPTokenHelpers::checkMPTAllowed : reached asset check depth");
+                return tecINTERNAL;
+                // LCOV_EXCL_STOP
+            }
             auto const sleHolding =
                 view.read(keylet::unchecked(issuanceSle->getFieldH256(sfReferenceHolding)));
             if (!sleHolding)
