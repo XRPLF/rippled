@@ -125,12 +125,12 @@ datasources:
             scope: span
             type: static
           - id: tx-origin
-            tag: xrpl.tx.local
+            tag: local
             operator: "="
             scope: span
             type: dynamic
           - id: tx-status
-            tag: xrpl.tx.status
+            tag: tx_status
             operator: "="
             scope: span
             type: dynamic
