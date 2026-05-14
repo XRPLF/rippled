@@ -64,20 +64,21 @@ All spans instrumented in xrpld, grouped by subsystem:
 
 ### RPC Spans (Phase 2)
 
-| Span Name            | Source File           | Attributes                                                                     | Description                                        |
-| -------------------- | --------------------- | ------------------------------------------------------------------------------ | -------------------------------------------------- |
-| `rpc.request`        | ServerHandler.cpp:271 | —                                                                              | Top-level HTTP RPC request                         |
-| `rpc.process`        | ServerHandler.cpp:573 | —                                                                              | RPC processing (child of rpc.request)              |
-| `rpc.ws_message`     | ServerHandler.cpp:384 | —                                                                              | WebSocket RPC message                              |
-| `rpc.command.<name>` | RPCHandler.cpp:161    | `command`, `version`, `rpc_role`, `rpc_status`, `duration_ms`, `error_message` | Per-command span (e.g., `rpc.command.server_info`) |
+| Span Name            | Source File       | Attributes                                                                     | Description                                           |
+| -------------------- | ----------------- | ------------------------------------------------------------------------------ | ----------------------------------------------------- |
+| `rpc.http_request`   | ServerHandler.cpp | —                                                                              | Top-level HTTP RPC request                            |
+| `rpc.ws_upgrade`     | ServerHandler.cpp | —                                                                              | WebSocket upgrade handshake                           |
+| `rpc.ws_message`     | ServerHandler.cpp | —                                                                              | WebSocket RPC message                                 |
+| `rpc.process`        | ServerHandler.cpp | —                                                                              | RPC processing (child of rpc.http_request/ws_message) |
+| `rpc.command.<name>` | RPCHandler.cpp    | `command`, `version`, `rpc_role`, `rpc_status`, `duration_ms`, `error_message` | Per-command span (e.g., `rpc.command.server_info`)    |
 
 ### Transaction Spans (Phase 3)
 
-| Span Name    | Source File         | Attributes                                                                | Description                           |
-| ------------ | ------------------- | ------------------------------------------------------------------------- | ------------------------------------- |
-| `tx.process` | NetworkOPs.cpp:1227 | `xrpl.tx.hash`, `local`, `path`                                           | Transaction submission and processing |
-| `tx.receive` | PeerImp.cpp:1273    | `xrpl.peer.id`, `xrpl.tx.hash`, `peer_version`, `suppressed`, `tx_status` | Transaction received from peer relay  |
-| `tx.apply`   | BuildLedger.cpp:88  | `xrpl.ledger.seq`, `tx_count`, `tx_failed`                                | Transaction set applied per ledger    |
+| Span Name    | Source File     | Attributes                                                                | Description                           |
+| ------------ | --------------- | ------------------------------------------------------------------------- | ------------------------------------- |
+| `tx.process` | NetworkOPs.cpp  | `xrpl.tx.hash`, `local`, `path`                                           | Transaction submission and processing |
+| `tx.receive` | PeerImp.cpp     | `xrpl.peer.id`, `xrpl.tx.hash`, `peer_version`, `suppressed`, `tx_status` | Transaction received from peer relay  |
+| `tx.apply`   | BuildLedger.cpp | `xrpl.ledger.seq`, `tx_count`, `tx_failed`                                | Transaction set applied per ledger    |
 
 ### Transaction Queue Spans (Phase 3)
 
@@ -452,9 +453,10 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 
 | Span Name                      | Prometheus Metric Filter                     | Grafana Dashboard                             |
 | ------------------------------ | -------------------------------------------- | --------------------------------------------- |
-| `rpc.request`                  | `{span_name="rpc.request"}`                  | RPC Performance (Overall Throughput)          |
-| `rpc.process`                  | `{span_name="rpc.process"}`                  | RPC Performance (Overall Throughput)          |
+| `rpc.http_request`             | `{span_name="rpc.http_request"}`             | RPC Performance (Overall Throughput)          |
+| `rpc.ws_upgrade`               | `{span_name="rpc.ws_upgrade"}`               | -- (available but not paneled)                |
 | `rpc.ws_message`               | `{span_name="rpc.ws_message"}`               | RPC Performance (WebSocket Rate)              |
+| `rpc.process`                  | `{span_name="rpc.process"}`                  | RPC Performance (Overall Throughput)          |
 | `rpc.command.*`                | `{span_name=~"rpc.command.*"}`               | RPC Performance (Rate, Latency, Error, Top)   |
 | `tx.process`                   | `{span_name="tx.process"}`                   | Transaction Overview (Rate, Latency, Heatmap) |
 | `tx.receive`                   | `{span_name="tx.receive"}`                   | Transaction Overview (Rate, Receive)          |

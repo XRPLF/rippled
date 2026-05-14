@@ -207,8 +207,7 @@ Phase 4a (establish-phase gap fill & cross-node correlation) adds:
   in the same round share the same `trace_id` (switchable via
   `consensus_trace_strategy` config: `"deterministic"` or `"attribute"`).
   See [Configuration Reference](./05-configuration-reference.md) for full
-  configuration options. The `consensus_trace_strategy` option will be
-  documented in the configuration reference as part of Phase 4a implementation.
+  configuration options.
 - **Round lifecycle spans**: `consensus.round` with round-to-round span links.
 - **Establish phase**: `consensus.establish`, `consensus.update_positions` (with
   `dispute.resolve` events), `consensus.check` (with threshold tracking).
@@ -378,7 +377,7 @@ The `StatsDMeterImpl` in `StatsDCollector.cpp:706` sends metrics with `|m` suffi
 
 ---
 
-## 6.9 Risk Assessment
+## 6.8 Risk Assessment
 
 ```mermaid
 quadrantChart
@@ -409,7 +408,7 @@ quadrantChart
 
 ---
 
-## 6.10 Success Metrics
+## 6.9 Success Metrics
 
 | Metric                   | Target                                                         | Measurement           |
 | ------------------------ | -------------------------------------------------------------- | --------------------- |
@@ -422,13 +421,13 @@ quadrantChart
 
 ---
 
-## 6.9 Quick Wins and Crawl-Walk-Run Strategy
+## 6.10 Quick Wins and Crawl-Walk-Run Strategy
 
 > **TxQ** = Transaction Queue
 
 This section outlines a prioritized approach to maximize ROI with minimal initial investment.
 
-### 6.9.1 Crawl-Walk-Run Overview
+### 6.10.1 Crawl-Walk-Run Overview
 
 <div align="center">
 
@@ -477,7 +476,7 @@ flowchart TB
 - **RUN (Weeks 6-9)**: Full consensus instrumentation, establish-phase gap fill, cross-node correlation, StatsD integration, and production deployment with sampling and alerting.
 - **Arrows (crawl → walk → run)**: Each phase builds on the prior one; you cannot skip ahead because later phases depend on infrastructure established earlier.
 
-### 6.9.2 Quick Wins (Immediate Value)
+### 6.10.2 Quick Wins (Immediate Value)
 
 | Quick Win                      | Value  | When to Deploy |
 | ------------------------------ | ------ | -------------- |
@@ -487,7 +486,7 @@ flowchart TB
 | **Transaction Submit Tracing** | High   | Week 3         |
 | **Consensus Round Duration**   | Medium | Week 6         |
 
-### 6.9.3 CRAWL Phase (Weeks 1-2)
+### 6.10.3 CRAWL Phase (Weeks 1-2)
 
 **Goal**: Get basic tracing working with minimal code changes.
 
@@ -509,7 +508,7 @@ flowchart TB
 - No cross-node complexity
 - Single file modification to existing code
 
-### 6.9.4 WALK Phase (Weeks 3-5)
+### 6.10.4 WALK Phase (Weeks 3-5)
 
 **Goal**: Add transaction lifecycle tracing across nodes.
 
@@ -530,7 +529,7 @@ flowchart TB
 - Moderate complexity (requires context propagation)
 - High value for debugging transaction issues
 
-### 6.9.5 RUN Phase (Weeks 6-9)
+### 6.10.5 RUN Phase (Weeks 6-9)
 
 **Goal**: Full observability including consensus.
 
@@ -553,7 +552,7 @@ flowchart TB
 - Requires thorough testing
 - Lower relative value (consensus issues are rarer)
 
-### 6.9.6 ROI Prioritization Matrix
+### 6.10.6 ROI Prioritization Matrix
 
 ```mermaid
 quadrantChart
@@ -575,13 +574,13 @@ quadrantChart
 
 ---
 
-## 6.13 Definition of Done
+## 6.11 Definition of Done
 
 > **TxQ** = Transaction Queue | **HA** = High Availability
 
 Clear, measurable criteria for each phase.
 
-### 6.13.1 Phase 1: Core Infrastructure
+### 6.11.1 Phase 1: Core Infrastructure
 
 | Criterion       | Measurement                                                | Target                       |
 | --------------- | ---------------------------------------------------------- | ---------------------------- |
@@ -593,7 +592,7 @@ Clear, measurable criteria for each phase.
 
 **Definition of Done**: All criteria met, PR merged, no regressions in CI.
 
-### 6.13.2 Phase 2: RPC Tracing
+### 6.11.2 Phase 2: RPC Tracing
 
 | Criterion          | Measurement                        | Target                     |
 | ------------------ | ---------------------------------- | -------------------------- |
@@ -605,7 +604,7 @@ Clear, measurable criteria for each phase.
 
 **Definition of Done**: RPC traces visible in Tempo for all commands, dashboard shows latency distribution.
 
-### 6.13.3 Phase 3: Transaction Tracing
+### 6.11.3 Phase 3: Transaction Tracing
 
 | Criterion             | Measurement                                       | Target                                                   |
 | --------------------- | ------------------------------------------------- | -------------------------------------------------------- |
@@ -620,7 +619,7 @@ Clear, measurable criteria for each phase.
 
 **Definition of Done**: Transaction traces span 3+ nodes in test network with deterministic trace_id correlation, parent-child ordering via protobuf propagation, and performance within bounds.
 
-### 6.13.4 Phase 4: Consensus Tracing
+### 6.11.4 Phase 4: Consensus Tracing
 
 | Criterion            | Measurement                   | Target                    |
 | -------------------- | ----------------------------- | ------------------------- |
@@ -632,7 +631,7 @@ Clear, measurable criteria for each phase.
 
 **Definition of Done**: Consensus rounds fully traceable, no impact on consensus timing.
 
-### 6.13.5 Phase 5: Production Deployment
+### 6.11.5 Phase 5: Production Deployment
 
 | Criterion    | Measurement                  | Target                     |
 | ------------ | ---------------------------- | -------------------------- |
@@ -645,7 +644,7 @@ Clear, measurable criteria for each phase.
 
 **Definition of Done**: Telemetry running in production, operators trained, alerts active.
 
-### 6.13.6 Success Metrics Summary
+### 6.11.6 Success Metrics Summary
 
 | Phase   | Primary Metric         | Secondary Metric            | Deadline      |
 | ------- | ---------------------- | --------------------------- | ------------- |
@@ -657,7 +656,7 @@ Clear, measurable criteria for each phase.
 
 ---
 
-## 6.14 Recommended Implementation Order
+## 6.12 Recommended Implementation Order
 
 Based on ROI analysis, implement in this exact order:
 
