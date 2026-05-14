@@ -21,13 +21,13 @@
 
 namespace xrpl::test {
 
-class RCLValidations_test : public beast::unit_test::suite
+class RCLValidations_test : public beast::unit_test::Suite
 {
     void
     testChangeTrusted()
     {
         testcase("Change validation trusted status");
-        auto keys = randomKeyPair(KeyType::secp256k1);
+        auto keys = randomKeyPair(KeyType::Secp256k1);
         auto v = std::make_shared<STValidation>(
             xrpl::NetClock::time_point{},
             keys.first,
@@ -69,7 +69,7 @@ class RCLValidations_test : public beast::unit_test::suite
         jtx::Env env(*this);
         Config const config;
         auto prev = std::make_shared<Ledger const>(
-            create_genesis,
+            kCREATE_GENESIS,
             Rules{config.features},
             config.FEES.toFees(),
             std::vector<uint256>{},
@@ -235,7 +235,7 @@ class RCLValidations_test : public beast::unit_test::suite
         auto& j = env.journal;
         Config const config;
         auto prev = std::make_shared<Ledger const>(
-            create_genesis,
+            kCREATE_GENESIS,
             Rules{config.features},
             config.FEES.toFees(),
             std::vector<uint256>{},
@@ -253,37 +253,37 @@ class RCLValidations_test : public beast::unit_test::suite
 
         // First, create the single branch trie, with ledgers
         // separated by exactly 256 ledgers
-        auto ledg_002 = RCLValidatedLedger{history[1], j};
-        auto ledg_258 = RCLValidatedLedger{history[257], j};
-        auto ledg_259 = RCLValidatedLedger{history[258], j};
+        auto ledg002 = RCLValidatedLedger{history[1], j};
+        auto ledg258 = RCLValidatedLedger{history[257], j};
+        auto ledg259 = RCLValidatedLedger{history[258], j};
 
-        trie.insert(ledg_002);
-        trie.insert(ledg_258, 4);
+        trie.insert(ledg002);
+        trie.insert(ledg258, 4);
         // trie.dump(std::cout);
         // 000000[0,1)(T:0,B:5)
         //                     |-AB868A..36C8[1,3)(T:1,B:5)
         //                                                 |-AB868A..37C8[3,259)(T:4,B:4)
-        BEAST_EXPECT(trie.tipSupport(ledg_002) == 1);
-        BEAST_EXPECT(trie.branchSupport(ledg_002) == 5);
-        BEAST_EXPECT(trie.tipSupport(ledg_258) == 4);
-        BEAST_EXPECT(trie.branchSupport(ledg_258) == 4);
+        BEAST_EXPECT(trie.tipSupport(ledg002) == 1);
+        BEAST_EXPECT(trie.branchSupport(ledg002) == 5);
+        BEAST_EXPECT(trie.tipSupport(ledg258) == 4);
+        BEAST_EXPECT(trie.branchSupport(ledg258) == 4);
 
         // Move three of the s258 ledgers to s259, which splits the trie
         // due to the 256 ancestry limit
-        BEAST_EXPECT(trie.remove(ledg_258, 3));
-        trie.insert(ledg_259, 3);
+        BEAST_EXPECT(trie.remove(ledg258, 3));
+        trie.insert(ledg259, 3);
         [[maybe_unused]] auto unused1 = trie.getPreferred(1);
         // trie.dump(std::cout);
         // 000000[0,1)(T:0,B:5)
         //                     |-AB868A..37C9[1,260)(T:3,B:3)
         //                     |-AB868A..36C8[1,3)(T:1,B:2)
         //                                                 |-AB868A..37C8[3,259)(T:1,B:1)
-        BEAST_EXPECT(trie.tipSupport(ledg_002) == 1);
-        BEAST_EXPECT(trie.branchSupport(ledg_002) == 2);
-        BEAST_EXPECT(trie.tipSupport(ledg_258) == 1);
-        BEAST_EXPECT(trie.branchSupport(ledg_258) == 1);
-        BEAST_EXPECT(trie.tipSupport(ledg_259) == 3);
-        BEAST_EXPECT(trie.branchSupport(ledg_259) == 3);
+        BEAST_EXPECT(trie.tipSupport(ledg002) == 1);
+        BEAST_EXPECT(trie.branchSupport(ledg002) == 2);
+        BEAST_EXPECT(trie.tipSupport(ledg258) == 1);
+        BEAST_EXPECT(trie.branchSupport(ledg258) == 1);
+        BEAST_EXPECT(trie.tipSupport(ledg259) == 3);
+        BEAST_EXPECT(trie.branchSupport(ledg259) == 3);
 
         // The last call to trie.getPreferred cycled the children of the root
         // node to make the new branch the first child (since it has support 3)
@@ -301,15 +301,15 @@ class RCLValidations_test : public beast::unit_test::suite
         // 000000[0,1)(T:0,B:5)
         //                      |-AB868A..37C9[1,260)(T:4,B:4)
         //                      |-AB868A..36C8[1,3)(T:1,B:1)
-        BEAST_EXPECT(trie.tipSupport(ledg_002) == 1);
-        BEAST_EXPECT(trie.branchSupport(ledg_002) == 1);
-        BEAST_EXPECT(trie.tipSupport(ledg_258) == 0);
+        BEAST_EXPECT(trie.tipSupport(ledg002) == 1);
+        BEAST_EXPECT(trie.branchSupport(ledg002) == 1);
+        BEAST_EXPECT(trie.tipSupport(ledg258) == 0);
         // 258 no longer lives on a tip in the tree, BUT it is an ancestor
         // of 259 which is a tip and therefore gets it's branchSupport value
         // implicitly
-        BEAST_EXPECT(trie.branchSupport(ledg_258) == 4);
-        BEAST_EXPECT(trie.tipSupport(ledg_259) == 4);
-        BEAST_EXPECT(trie.branchSupport(ledg_259) == 4);
+        BEAST_EXPECT(trie.branchSupport(ledg258) == 4);
+        BEAST_EXPECT(trie.tipSupport(ledg259) == 4);
+        BEAST_EXPECT(trie.branchSupport(ledg259) == 4);
     }
 
 public:

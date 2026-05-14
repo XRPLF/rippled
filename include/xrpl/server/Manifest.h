@@ -81,16 +81,16 @@ struct Manifest
     Manifest() = delete;
 
     Manifest(
-        std::string serialized_,
-        PublicKey const& masterKey_,
-        std::optional<PublicKey> const& signingKey_,
+        std::string serialized,
+        PublicKey const& masterKey,
+        std::optional<PublicKey> const& signingKey,
         std::uint32_t seq,
-        std::string domain_)
-        : serialized(std::move(serialized_))
-        , masterKey(masterKey_)
-        , signingKey(signingKey_)
+        std::string domain)
+        : serialized(std::move(serialized))
+        , masterKey(masterKey)
+        , signingKey(signingKey)
         , sequence(seq)
-        , domain(std::move(domain_))
+        , domain(std::move(domain))
     {
     }
 
@@ -194,19 +194,19 @@ loadValidatorToken(
 
 enum class ManifestDisposition {
     /// Manifest is valid
-    accepted = 0,
+    Accepted = 0,
 
     /// Sequence is too old
-    stale,
+    Stale,
 
     /// The master key is not acceptable to us
-    badMasterKey,
+    BadMasterKey,
 
     /// The ephemeral key is not acceptable to us
-    badEphemeralKey,
+    BadEphemeralKey,
 
     /// Timely, but invalid signature
-    invalid
+    Invalid
 };
 
 inline std::string
@@ -214,15 +214,15 @@ to_string(ManifestDisposition m)
 {
     switch (m)
     {
-        case ManifestDisposition::accepted:
+        case ManifestDisposition::Accepted:
             return "accepted";
-        case ManifestDisposition::stale:
+        case ManifestDisposition::Stale:
             return "stale";
-        case ManifestDisposition::badMasterKey:
+        case ManifestDisposition::BadMasterKey:
             return "badMasterKey";
-        case ManifestDisposition::badEphemeralKey:
+        case ManifestDisposition::BadEphemeralKey:
             return "badEphemeralKey";
-        case ManifestDisposition::invalid:
+        case ManifestDisposition::Invalid:
             return "invalid";
         default:
             return "unknown";
@@ -400,7 +400,7 @@ public:
     */
     template <class Function>
     void
-    for_each_manifest(Function&& f) const
+    forEachManifest(Function&& f) const
     {
         std::shared_lock const lock{mutex_};
         for (auto const& [_, manifest] : map_)
@@ -428,7 +428,7 @@ public:
     */
     template <class PreFun, class EachFun>
     void
-    for_each_manifest(PreFun&& pf, EachFun&& f) const
+    forEachManifest(PreFun&& pf, EachFun&& f) const
     {
         std::shared_lock const lock{mutex_};
         pf(map_.size());

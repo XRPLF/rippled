@@ -15,7 +15,7 @@ toSTAmount(IOUAmount const& iou, Asset const& asset)
     XRPL_ASSERT(asset.holds<Issue>(), "xrpl::toSTAmount : is Issue");
     bool const isNeg = iou.signum() < 0;
     std::uint64_t const umant = isNeg ? -iou.mantissa() : iou.mantissa();
-    return STAmount(asset, umant, iou.exponent(), isNeg, STAmount::unchecked());
+    return STAmount(asset, umant, iou.exponent(), isNeg, STAmount::Unchecked());
 }
 
 inline STAmount
@@ -96,9 +96,9 @@ inline MPTAmount
 toAmount<MPTAmount>(STAmount const& amt)
 {
     XRPL_ASSERT(
-        amt.holds<MPTIssue>() && amt.mantissa() <= maxMPTokenAmount && amt.exponent() == 0,
+        amt.holds<MPTIssue>() && amt.mantissa() <= kMAX_MP_TOKEN_AMOUNT && amt.exponent() == 0,
         "xrpl::toAmount<MPTAmount> : maximum mantissa");
-    if (amt.mantissa() > maxMPTokenAmount || amt.exponent() != 0)
+    if (amt.mantissa() > kMAX_MP_TOKEN_AMOUNT || amt.exponent() != 0)
         Throw<std::runtime_error>("toAmount<MPTAmount>: invalid mantissa or exponent");
     bool const isNeg = amt.negative();
     std::int64_t const sMant = isNeg ? -std::int64_t(amt.mantissa()) : amt.mantissa();
@@ -141,9 +141,9 @@ toAmount<MPTAmount>(MPTAmount const& amt)
 
 template <typename T>
 T
-toAmount(Asset const& asset, Number const& n, Number::rounding_mode mode = Number::getround())
+toAmount(Asset const& asset, Number const& n, Number::RoundingMode mode = Number::getround())
 {
-    saveNumberRoundMode const rm(Number::getround());
+    SaveNumberRoundMode const rm(Number::getround());
     if (isXRP(asset))
         Number::setround(mode);
 
@@ -167,8 +167,8 @@ toAmount(Asset const& asset, Number const& n, Number::rounding_mode mode = Numbe
     }
     else
     {
-        constexpr bool alwaysFalse = !std::is_same_v<T, T>;
-        static_assert(alwaysFalse, "Unsupported type for toAmount");
+        constexpr bool kALWAYS_FALSE = !std::is_same_v<T, T>;
+        static_assert(kALWAYS_FALSE, "Unsupported type for toAmount");
     }
 }
 
@@ -178,35 +178,35 @@ toMaxAmount(Asset const& asset)
 {
     if constexpr (std::is_same_v<IOUAmount, T>)
     {
-        return IOUAmount(STAmount::cMaxValue, STAmount::cMaxOffset);
+        return IOUAmount(STAmount::kMAX_VALUE, STAmount::kMAX_OFFSET);
     }
     else if constexpr (std::is_same_v<XRPAmount, T>)
     {
-        return XRPAmount(static_cast<std::int64_t>(STAmount::cMaxNativeN));
+        return XRPAmount(static_cast<std::int64_t>(STAmount::kMAX_NATIVE_N));
     }
     else if constexpr (std::is_same_v<MPTAmount, T>)
     {
-        return MPTAmount(maxMPTokenAmount);
+        return MPTAmount(kMAX_MP_TOKEN_AMOUNT);
     }
     else if constexpr (std::is_same_v<STAmount, T>)
     {
         return asset.visit(
             [](Issue const& issue) {
                 if (isXRP(issue))
-                    return STAmount(issue, static_cast<std::int64_t>(STAmount::cMaxNativeN));
-                return STAmount(issue, STAmount::cMaxValue, STAmount::cMaxOffset);
+                    return STAmount(issue, static_cast<std::int64_t>(STAmount::kMAX_NATIVE_N));
+                return STAmount(issue, STAmount::kMAX_VALUE, STAmount::kMAX_OFFSET);
             },
-            [](MPTIssue const& issue) { return STAmount(issue, maxMPTokenAmount); });
+            [](MPTIssue const& issue) { return STAmount(issue, kMAX_MP_TOKEN_AMOUNT); });
     }
     else
     {
-        constexpr bool alwaysFalse = !std::is_same_v<T, T>;
-        static_assert(alwaysFalse, "Unsupported type for toMaxAmount");
+        constexpr bool kALWAYS_FALSE = !std::is_same_v<T, T>;
+        static_assert(kALWAYS_FALSE, "Unsupported type for toMaxAmount");
     }
 }
 
 inline STAmount
-toSTAmount(Asset const& asset, Number const& n, Number::rounding_mode mode = Number::getround())
+toSTAmount(Asset const& asset, Number const& n, Number::RoundingMode mode = Number::getround())
 {
     return toAmount<STAmount>(asset, n, mode);
 }
@@ -233,8 +233,8 @@ getAsset(T const& amt)
     }
     else
     {
-        constexpr bool alwaysFalse = !std::is_same_v<T, T>;
-        static_assert(alwaysFalse, "Unsupported type for getIssue");
+        constexpr bool kALWAYS_FALSE = !std::is_same_v<T, T>;
+        static_assert(kALWAYS_FALSE, "Unsupported type for getIssue");
     }
 }
 
@@ -260,8 +260,8 @@ get(STAmount const& a)
     }
     else
     {
-        constexpr bool alwaysFalse = !std::is_same_v<T, T>;
-        static_assert(alwaysFalse, "Unsupported type for get");
+        constexpr bool kALWAYS_FALSE = !std::is_same_v<T, T>;
+        static_assert(kALWAYS_FALSE, "Unsupported type for get");
     }
 }
 

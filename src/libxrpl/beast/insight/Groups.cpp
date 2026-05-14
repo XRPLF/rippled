@@ -21,12 +21,12 @@ namespace detail {
 
 class GroupImp : public std::enable_shared_from_this<GroupImp>, public Group
 {
-public:
-    std::string const m_name;
-    Collector::ptr m_collector;
+    std::string const name_;
+    Collector::ptr collector_;
 
-    GroupImp(std::string name_, Collector::ptr collector)
-        : m_name(std::move(name_)), m_collector(std::move(collector))
+public:
+    GroupImp(std::string name, Collector::ptr collector)
+        : name_(std::move(name)), collector_(std::move(collector))
     {
     }
 
@@ -35,43 +35,43 @@ public:
     std::string const&
     name() const override
     {
-        return m_name;
+        return name_;
     }
 
     std::string
-    make_name(std::string const& name)
+    makeName(std::string const& name)
     {
-        return m_name + "." + name;
+        return name_ + "." + name;
     }
 
     Hook
-    make_hook(HookImpl::HandlerType const& handler) override
+    makeHook(HookImpl::HandlerType const& handler) override
     {
-        return m_collector->make_hook(handler);
+        return collector_->makeHook(handler);
     }
 
     Counter
-    make_counter(std::string const& name) override
+    makeCounter(std::string const& name) override
     {
-        return m_collector->make_counter(make_name(name));
+        return collector_->makeCounter(makeName(name));
     }
 
     Event
-    make_event(std::string const& name) override
+    makeEvent(std::string const& name) override
     {
-        return m_collector->make_event(make_name(name));
+        return collector_->makeEvent(makeName(name));
     }
 
     Gauge
-    make_gauge(std::string const& name) override
+    makeGauge(std::string const& name) override
     {
-        return m_collector->make_gauge(make_name(name));
+        return collector_->makeGauge(makeName(name));
     }
 
     Meter
-    make_meter(std::string const& name) override
+    makeMeter(std::string const& name) override
     {
-        return m_collector->make_meter(make_name(name));
+        return collector_->makeMeter(makeName(name));
     }
 
     GroupImp&
@@ -83,12 +83,12 @@ public:
 class GroupsImp : public Groups
 {
 public:
-    using Items = std::unordered_map<std::string, std::shared_ptr<Group>, uhash<>>;
+    using Items = std::unordered_map<std::string, std::shared_ptr<Group>, Uhash<>>;
 
-    Collector::ptr m_collector;
-    Items m_items;
+    Collector::ptr collector;
+    Items items;
 
-    explicit GroupsImp(Collector::ptr collector) : m_collector(std::move(collector))
+    explicit GroupsImp(Collector::ptr collector) : collector(std::move(collector))
     {
     }
 
@@ -97,10 +97,10 @@ public:
     Group::ptr const&
     get(std::string const& name) override
     {
-        std::pair<Items::iterator, bool> const result(m_items.emplace(name, Group::ptr()));
+        std::pair<Items::iterator, bool> const result(items.emplace(name, Group::ptr()));
         Group::ptr& group(result.first->second);
         if (result.second)
-            group = std::make_shared<GroupImp>(name, m_collector);
+            group = std::make_shared<GroupImp>(name, collector);
         return group;
     }
 };
@@ -112,7 +112,7 @@ public:
 Groups::~Groups() = default;
 
 std::unique_ptr<Groups>
-make_Groups(Collector::ptr const& collector)
+makeGroups(Collector::ptr const& collector)
 {
     return std::make_unique<detail::GroupsImp>(collector);
 }

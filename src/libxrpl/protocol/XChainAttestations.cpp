@@ -27,20 +27,20 @@ namespace xrpl {
 namespace Attestations {
 
 AttestationBase::AttestationBase(
-    AccountID attestationSignerAccount_,
-    PublicKey const& publicKey_,
-    Buffer signature_,
-    AccountID const& sendingAccount_,
-    STAmount sendingAmount_,
-    AccountID const& rewardAccount_,
-    bool wasLockingChainSend_)
-    : attestationSignerAccount{attestationSignerAccount_}
-    , publicKey{publicKey_}
-    , signature{std::move(signature_)}
-    , sendingAccount{sendingAccount_}
-    , sendingAmount{std::move(sendingAmount_)}
-    , rewardAccount{rewardAccount_}
-    , wasLockingChainSend{wasLockingChainSend_}
+    AccountID attestationSignerAccount,
+    PublicKey const& publicKey,
+    Buffer signature,
+    AccountID const& sendingAccount,
+    STAmount sendingAmount,
+    AccountID const& rewardAccount,
+    bool wasLockingChainSend)
+    : attestationSignerAccount{attestationSignerAccount}
+    , publicKey{publicKey}
+    , signature{std::move(signature)}
+    , sendingAccount{sendingAccount}
+    , sendingAmount{std::move(sendingAmount)}
+    , rewardAccount{rewardAccount}
+    , wasLockingChainSend{wasLockingChainSend}
 {
 }
 
@@ -90,14 +90,14 @@ AttestationBase::AttestationBase(STObject const& o)
 {
 }
 
-AttestationBase::AttestationBase(Json::Value const& v)
-    : attestationSignerAccount{Json::getOrThrow<AccountID>(v, sfAttestationSignerAccount)}
-    , publicKey{Json::getOrThrow<PublicKey>(v, sfPublicKey)}
-    , signature{Json::getOrThrow<Buffer>(v, sfSignature)}
-    , sendingAccount{Json::getOrThrow<AccountID>(v, sfAccount)}
-    , sendingAmount{Json::getOrThrow<STAmount>(v, sfAmount)}
-    , rewardAccount{Json::getOrThrow<AccountID>(v, sfAttestationRewardAccount)}
-    , wasLockingChainSend{Json::getOrThrow<bool>(v, sfWasLockingChainSend)}
+AttestationBase::AttestationBase(json::Value const& v)
+    : attestationSignerAccount{json::getOrThrow<AccountID>(v, sfAttestationSignerAccount)}
+    , publicKey{json::getOrThrow<PublicKey>(v, sfPublicKey)}
+    , signature{json::getOrThrow<Buffer>(v, sfSignature)}
+    , sendingAccount{json::getOrThrow<AccountID>(v, sfAccount)}
+    , sendingAmount{json::getOrThrow<STAmount>(v, sfAmount)}
+    , rewardAccount{json::getOrThrow<AccountID>(v, sfAttestationRewardAccount)}
+    , wasLockingChainSend{json::getOrThrow<bool>(v, sfWasLockingChainSend)}
 {
 }
 
@@ -114,52 +114,52 @@ AttestationBase::addHelper(STObject& o) const
 }
 
 AttestationClaim::AttestationClaim(
-    AccountID attestationSignerAccount_,
-    PublicKey const& publicKey_,
-    Buffer signature_,
-    AccountID const& sendingAccount_,
-    STAmount const& sendingAmount_,
-    AccountID const& rewardAccount_,
-    bool wasLockingChainSend_,
-    std::uint64_t claimID_,
-    std::optional<AccountID> const& dst_)
+    AccountID attestationSignerAccount,
+    PublicKey const& publicKey,
+    Buffer signature,
+    AccountID const& sendingAccount,
+    STAmount const& sendingAmount,
+    AccountID const& rewardAccount,
+    bool wasLockingChainSend,
+    std::uint64_t claimId,
+    std::optional<AccountID> const& dst)
     : AttestationBase(
-          attestationSignerAccount_,
-          publicKey_,
-          std::move(signature_),
-          sendingAccount_,
-          sendingAmount_,
-          rewardAccount_,
-          wasLockingChainSend_)
-    , claimID{claimID_}
-    , dst{dst_}
+          attestationSignerAccount,
+          publicKey,
+          std::move(signature),
+          sendingAccount,
+          sendingAmount,
+          rewardAccount,
+          wasLockingChainSend)
+    , claimID{claimId}
+    , dst{dst}
 {
 }
 
 AttestationClaim::AttestationClaim(
     STXChainBridge const& bridge,
-    AccountID attestationSignerAccount_,
-    PublicKey const& publicKey_,
-    SecretKey const& secretKey_,
-    AccountID const& sendingAccount_,
-    STAmount const& sendingAmount_,
-    AccountID const& rewardAccount_,
-    bool wasLockingChainSend_,
-    std::uint64_t claimID_,
-    std::optional<AccountID> const& dst_)
+    AccountID attestationSignerAccount,
+    PublicKey const& publicKey,
+    SecretKey const& secretKey,
+    AccountID const& sendingAccount,
+    STAmount const& sendingAmount,
+    AccountID const& rewardAccount,
+    bool wasLockingChainSend,
+    std::uint64_t claimId,
+    std::optional<AccountID> const& dst)
     : AttestationClaim{
-          attestationSignerAccount_,
-          publicKey_,
+          attestationSignerAccount,
+          publicKey,
           Buffer{},
-          sendingAccount_,
-          sendingAmount_,
-          rewardAccount_,
-          wasLockingChainSend_,
-          claimID_,
-          dst_}
+          sendingAccount,
+          sendingAmount,
+          rewardAccount,
+          wasLockingChainSend,
+          claimId,
+          dst}
 {
     auto const toSign = message(bridge);
-    signature = sign(publicKey_, secretKey_, makeSlice(toSign));
+    signature = sign(publicKey, secretKey, makeSlice(toSign));
 }
 
 AttestationClaim::AttestationClaim(STObject const& o)
@@ -167,11 +167,11 @@ AttestationClaim::AttestationClaim(STObject const& o)
 {
 }
 
-AttestationClaim::AttestationClaim(Json::Value const& v)
-    : AttestationBase{v}, claimID{Json::getOrThrow<std::uint64_t>(v, sfXChainClaimID)}
+AttestationClaim::AttestationClaim(json::Value const& v)
+    : AttestationBase{v}, claimID{json::getOrThrow<std::uint64_t>(v, sfXChainClaimID)}
 {
     if (v.isMember(sfDestination.getJsonName()))
-        dst = Json::getOrThrow<AccountID>(v, sfDestination);
+        dst = json::getOrThrow<AccountID>(v, sfDestination);
 }
 
 STObject
@@ -195,7 +195,7 @@ AttestationClaim::message(
     std::uint64_t claimID,
     std::optional<AccountID> const& dst)
 {
-    STObject o{sfGeneric};
+    STObject o{kSF_GENERIC};
     // Serialize in SField order to make python serializers easier to write
     o[sfXChainClaimID] = claimID;
     o[sfAmount] = sendingAmount;
@@ -247,65 +247,65 @@ AttestationCreateAccount::AttestationCreateAccount(STObject const& o)
 {
 }
 
-AttestationCreateAccount::AttestationCreateAccount(Json::Value const& v)
+AttestationCreateAccount::AttestationCreateAccount(json::Value const& v)
     : AttestationBase{v}
-    , createCount{Json::getOrThrow<std::uint64_t>(v, sfXChainAccountCreateCount)}
-    , toCreate{Json::getOrThrow<AccountID>(v, sfDestination)}
-    , rewardAmount{Json::getOrThrow<STAmount>(v, sfSignatureReward)}
+    , createCount{json::getOrThrow<std::uint64_t>(v, sfXChainAccountCreateCount)}
+    , toCreate{json::getOrThrow<AccountID>(v, sfDestination)}
+    , rewardAmount{json::getOrThrow<STAmount>(v, sfSignatureReward)}
 {
 }
 
 AttestationCreateAccount::AttestationCreateAccount(
-    AccountID attestationSignerAccount_,
-    PublicKey const& publicKey_,
-    Buffer signature_,
-    AccountID const& sendingAccount_,
-    STAmount const& sendingAmount_,
-    STAmount rewardAmount_,
-    AccountID const& rewardAccount_,
-    bool wasLockingChainSend_,
-    std::uint64_t createCount_,
-    AccountID const& toCreate_)
+    AccountID attestationSignerAccount,
+    PublicKey const& publicKey,
+    Buffer signature,
+    AccountID const& sendingAccount,
+    STAmount const& sendingAmount,
+    STAmount rewardAmount,
+    AccountID const& rewardAccount,
+    bool wasLockingChainSend,
+    std::uint64_t createCount,
+    AccountID const& toCreate)
     : AttestationBase(
-          attestationSignerAccount_,
-          publicKey_,
-          std::move(signature_),
-          sendingAccount_,
-          sendingAmount_,
-          rewardAccount_,
-          wasLockingChainSend_)
-    , createCount{createCount_}
-    , toCreate{toCreate_}
-    , rewardAmount{std::move(rewardAmount_)}
+          attestationSignerAccount,
+          publicKey,
+          std::move(signature),
+          sendingAccount,
+          sendingAmount,
+          rewardAccount,
+          wasLockingChainSend)
+    , createCount{createCount}
+    , toCreate{toCreate}
+    , rewardAmount{std::move(rewardAmount)}
 {
 }
 
 AttestationCreateAccount::AttestationCreateAccount(
     STXChainBridge const& bridge,
-    AccountID attestationSignerAccount_,
-    PublicKey const& publicKey_,
-    SecretKey const& secretKey_,
-    AccountID const& sendingAccount_,
-    STAmount const& sendingAmount_,
-    STAmount const& rewardAmount_,
-    AccountID const& rewardAccount_,
-    bool wasLockingChainSend_,
-    std::uint64_t createCount_,
-    AccountID const& toCreate_)
+    AccountID attestationSignerAccount,
+    PublicKey const& publicKey,
+    SecretKey const& secretKey,
+    AccountID const& sendingAccount,
+    STAmount const& sendingAmount,
+    STAmount const& rewardAmount,
+    AccountID const& rewardAccount,
+    bool wasLockingChainSend,
+    std::uint64_t createCount,
+    AccountID const& toCreate)
     : AttestationCreateAccount{
-          attestationSignerAccount_,
-          publicKey_,
+          attestationSignerAccount,
+          publicKey,
           Buffer{},
-          sendingAccount_,
-          sendingAmount_,
-          rewardAmount_,
-          rewardAccount_,
-          wasLockingChainSend_,
-          createCount_,
-          toCreate_}
+          sendingAccount,
+          sendingAmount,
+          rewardAmount,
+          rewardAccount,
+          wasLockingChainSend,
+          createCount,
+          toCreate}
 {
     auto const toSign = message(bridge);
-    signature = sign(publicKey_, secretKey_, makeSlice(toSign));
+    signature = sign(publicKey, secretKey, makeSlice(toSign));
 }
 
 STObject
@@ -332,7 +332,7 @@ AttestationCreateAccount::message(
     std::uint64_t createCount,
     AccountID const& dst)
 {
-    STObject o{sfGeneric};
+    STObject o{kSF_GENERIC};
     // Serialize in SField order to make python serializers easier to write
     o[sfXChainAccountCreateCount] = createCount;
     o[sfAmount] = sendingAmount;
@@ -387,39 +387,39 @@ operator==(AttestationCreateAccount const& lhs, AttestationCreateAccount const& 
 
 }  // namespace Attestations
 
-SField const& XChainClaimAttestation::ArrayFieldName{sfXChainClaimAttestations};
-SField const& XChainCreateAccountAttestation::ArrayFieldName{sfXChainCreateAccountAttestations};
+SField const& XChainClaimAttestation::arrayFieldName{sfXChainClaimAttestations};
+SField const& XChainCreateAccountAttestation::arrayFieldName{sfXChainCreateAccountAttestations};
 
 XChainClaimAttestation::XChainClaimAttestation(
-    AccountID const& keyAccount_,
-    PublicKey const& publicKey_,
-    STAmount const& amount_,
-    AccountID const& rewardAccount_,
-    bool wasLockingChainSend_,
-    std::optional<AccountID> const& dst_)
-    : keyAccount(keyAccount_)
-    , publicKey(publicKey_)
-    , amount(sfAmount, amount_)
-    , rewardAccount(rewardAccount_)
-    , wasLockingChainSend(wasLockingChainSend_)
-    , dst(dst_)
+    AccountID const& keyAccount,
+    PublicKey const& publicKey,
+    STAmount const& amount,
+    AccountID const& rewardAccount,
+    bool wasLockingChainSend,
+    std::optional<AccountID> const& dst)
+    : keyAccount(keyAccount)
+    , publicKey(publicKey)
+    , amount(sfAmount, amount)
+    , rewardAccount(rewardAccount)
+    , wasLockingChainSend(wasLockingChainSend)
+    , dst(dst)
 {
 }
 
 XChainClaimAttestation::XChainClaimAttestation(
-    STAccount const& keyAccount_,
-    PublicKey const& publicKey_,
-    STAmount const& amount_,
-    STAccount const& rewardAccount_,
-    bool wasLockingChainSend_,
-    std::optional<STAccount> const& dst_)
+    STAccount const& keyAccount,
+    PublicKey const& publicKey,
+    STAmount const& amount,
+    STAccount const& rewardAccount,
+    bool wasLockingChainSend,
+    std::optional<STAccount> const& dst)
     : XChainClaimAttestation{
-          keyAccount_.value(),
-          publicKey_,
-          amount_,
-          rewardAccount_.value(),
-          wasLockingChainSend_,
-          dst_ ? std::optional<AccountID>{dst_->value()} : std::nullopt}
+          keyAccount.value(),
+          publicKey,
+          amount,
+          rewardAccount.value(),
+          wasLockingChainSend,
+          dst ? std::optional<AccountID>{dst->value()} : std::nullopt}
 {
 }
 
@@ -432,17 +432,17 @@ XChainClaimAttestation::XChainClaimAttestation(STObject const& o)
           o[sfWasLockingChainSend] != 0,
           o[~sfDestination]} {};
 
-XChainClaimAttestation::XChainClaimAttestation(Json::Value const& v)
+XChainClaimAttestation::XChainClaimAttestation(json::Value const& v)
     : XChainClaimAttestation{
-          Json::getOrThrow<AccountID>(v, sfAttestationSignerAccount),
-          Json::getOrThrow<PublicKey>(v, sfPublicKey),
-          Json::getOrThrow<STAmount>(v, sfAmount),
-          Json::getOrThrow<AccountID>(v, sfAttestationRewardAccount),
-          Json::getOrThrow<bool>(v, sfWasLockingChainSend),
+          json::getOrThrow<AccountID>(v, sfAttestationSignerAccount),
+          json::getOrThrow<PublicKey>(v, sfPublicKey),
+          json::getOrThrow<STAmount>(v, sfAmount),
+          json::getOrThrow<AccountID>(v, sfAttestationRewardAccount),
+          json::getOrThrow<bool>(v, sfWasLockingChainSend),
           std::nullopt}
 {
     if (v.isMember(sfDestination.getJsonName()))
-        dst = Json::getOrThrow<AccountID>(v, sfDestination);
+        dst = json::getOrThrow<AccountID>(v, sfDestination);
 };
 
 XChainClaimAttestation::XChainClaimAttestation(
@@ -500,29 +500,29 @@ AttestationMatch
 XChainClaimAttestation::match(XChainClaimAttestation::MatchFields const& rhs) const
 {
     if (std::tie(amount, wasLockingChainSend) != std::tie(rhs.amount, rhs.wasLockingChainSend))
-        return AttestationMatch::nonDstMismatch;
+        return AttestationMatch::NonDstMismatch;
     if (dst != rhs.dst)
-        return AttestationMatch::matchExceptDst;
-    return AttestationMatch::match;
+        return AttestationMatch::MatchExceptDst;
+    return AttestationMatch::Match;
 }
 
 //------------------------------------------------------------------------------
 
 XChainCreateAccountAttestation::XChainCreateAccountAttestation(
-    AccountID const& keyAccount_,
-    PublicKey const& publicKey_,
-    STAmount const& amount_,
-    STAmount const& rewardAmount_,
-    AccountID const& rewardAccount_,
-    bool wasLockingChainSend_,
-    AccountID const& dst_)
-    : keyAccount(keyAccount_)
-    , publicKey(publicKey_)
-    , amount(sfAmount, amount_)
-    , rewardAmount(sfSignatureReward, rewardAmount_)
-    , rewardAccount(rewardAccount_)
-    , wasLockingChainSend(wasLockingChainSend_)
-    , dst(dst_)
+    AccountID const& keyAccount,
+    PublicKey const& publicKey,
+    STAmount const& amount,
+    STAmount const& rewardAmount,
+    AccountID const& rewardAccount,
+    bool wasLockingChainSend,
+    AccountID const& dst)
+    : keyAccount(keyAccount)
+    , publicKey(publicKey)
+    , amount(sfAmount, amount)
+    , rewardAmount(sfSignatureReward, rewardAmount)
+    , rewardAccount(rewardAccount)
+    , wasLockingChainSend(wasLockingChainSend)
+    , dst(dst)
 {
 }
 
@@ -536,15 +536,15 @@ XChainCreateAccountAttestation::XChainCreateAccountAttestation(STObject const& o
           o[sfWasLockingChainSend] != 0,
           o[sfDestination]} {};
 
-XChainCreateAccountAttestation ::XChainCreateAccountAttestation(Json::Value const& v)
+XChainCreateAccountAttestation ::XChainCreateAccountAttestation(json::Value const& v)
     : XChainCreateAccountAttestation{
-          Json::getOrThrow<AccountID>(v, sfAttestationSignerAccount),
-          Json::getOrThrow<PublicKey>(v, sfPublicKey),
-          Json::getOrThrow<STAmount>(v, sfAmount),
-          Json::getOrThrow<STAmount>(v, sfSignatureReward),
-          Json::getOrThrow<AccountID>(v, sfAttestationRewardAccount),
-          Json::getOrThrow<bool>(v, sfWasLockingChainSend),
-          Json::getOrThrow<AccountID>(v, sfDestination)}
+          json::getOrThrow<AccountID>(v, sfAttestationSignerAccount),
+          json::getOrThrow<PublicKey>(v, sfPublicKey),
+          json::getOrThrow<STAmount>(v, sfAmount),
+          json::getOrThrow<STAmount>(v, sfSignatureReward),
+          json::getOrThrow<AccountID>(v, sfAttestationRewardAccount),
+          json::getOrThrow<bool>(v, sfWasLockingChainSend),
+          json::getOrThrow<AccountID>(v, sfDestination)}
 {
 }
 
@@ -591,10 +591,10 @@ XChainCreateAccountAttestation::match(XChainCreateAccountAttestation::MatchField
 {
     if (std::tie(amount, rewardAmount, wasLockingChainSend) !=
         std::tie(rhs.amount, rhs.rewardAmount, rhs.wasLockingChainSend))
-        return AttestationMatch::nonDstMismatch;
+        return AttestationMatch::NonDstMismatch;
     if (dst != rhs.dst)
-        return AttestationMatch::matchExceptDst;
-    return AttestationMatch::match;
+        return AttestationMatch::MatchExceptDst;
+    return AttestationMatch::Match;
 }
 
 bool
@@ -656,7 +656,7 @@ XChainAttestationsBase<TAttestation>::end()
 }
 
 template <class TAttestation>
-XChainAttestationsBase<TAttestation>::XChainAttestationsBase(Json::Value const& v)
+XChainAttestationsBase<TAttestation>::XChainAttestationsBase(json::Value const& v)
 {
     if (!v.isObject())
     {
@@ -668,7 +668,7 @@ XChainAttestationsBase<TAttestation>::XChainAttestationsBase(Json::Value const& 
     attestations_ = [&] {
         auto const jAtts = v[jss::attestations];
 
-        if (jAtts.size() > maxAttestations)
+        if (jAtts.size() > kMAX_ATTESTATIONS)
             Throw<std::runtime_error>("XChainAttestationsBase exceeded max number of attestations");
 
         std::vector<TAttestation> r;
@@ -682,7 +682,7 @@ XChainAttestationsBase<TAttestation>::XChainAttestationsBase(Json::Value const& 
 template <class TAttestation>
 XChainAttestationsBase<TAttestation>::XChainAttestationsBase(STArray const& arr)
 {
-    if (arr.size() > maxAttestations)
+    if (arr.size() > kMAX_ATTESTATIONS)
         Throw<std::runtime_error>("XChainAttestationsBase exceeded max number of attestations");
 
     attestations_.reserve(arr.size());
@@ -694,9 +694,9 @@ template <class TAttestation>
 STArray
 XChainAttestationsBase<TAttestation>::toSTArray() const
 {
-    STArray r{TAttestation::ArrayFieldName, attestations_.size()};
+    STArray r{TAttestation::arrayFieldName, attestations_.size()};
     for (auto const& e : attestations_)
-        r.emplace_back(e.toSTObject());
+        r.emplaceBack(e.toSTObject());
     return r;
 }
 

@@ -15,7 +15,7 @@ namespace xrpl::test::jtx {
     exist even if the amount is 0, or else the test
     fails.
 */
-class balance
+class Balance
 {
 private:
     bool const none_;
@@ -23,16 +23,16 @@ private:
     STAmount const value_;
 
 public:
-    balance(Account account, none_t) : none_(true), account_(std::move(account)), value_(XRP)
+    Balance(Account account, NoneT) : none_(true), account_(std::move(account)), value_(XRP)
     {
     }
 
-    balance(Account account, None const& value)
+    Balance(Account account, None const& value)
         : none_(true), account_(std::move(account)), value_(value.asset)
     {
     }
 
-    balance(Account account, STAmount value)
+    Balance(Account account, STAmount value)
         : none_(false), account_(std::move(account)), value_(std::move(value))
     {
     }

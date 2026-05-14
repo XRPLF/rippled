@@ -57,10 +57,10 @@ template <class T>
 std::shared_ptr<T> const&
 SharedWeakCachePointer<T>::getStrong() const
 {
-    static std::shared_ptr<T> const empty;
+    static std::shared_ptr<T> const kEMPTY;
     if (auto p = std::get_if<std::shared_ptr<T>>(&combo_))
         return *p;
-    return empty;
+    return kEMPTY;
 }
 
 template <class T>
@@ -86,7 +86,7 @@ SharedWeakCachePointer<T>::get() const
 
 template <class T>
 std::size_t
-SharedWeakCachePointer<T>::use_count() const
+SharedWeakCachePointer<T>::useCount() const
 {
     if (auto p = std::get_if<std::shared_ptr<T>>(&combo_))
         return p->use_count();

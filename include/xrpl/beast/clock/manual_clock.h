@@ -17,18 +17,18 @@ namespace beast {
         http://en.cppreference.com/w/cpp/concept/Clock
 */
 template <class Clock>
-class manual_clock : public abstract_clock<Clock>
+class ManualClock : public AbstractClock<Clock>
 {
 public:
-    using typename abstract_clock<Clock>::rep;
-    using typename abstract_clock<Clock>::duration;
-    using typename abstract_clock<Clock>::time_point;
+    using typename AbstractClock<Clock>::rep;
+    using typename AbstractClock<Clock>::duration;
+    using typename AbstractClock<Clock>::time_point;
 
 private:
     time_point now_;
 
 public:
-    explicit manual_clock(time_point const& now = time_point(duration(0))) : now_(now)
+    explicit ManualClock(time_point const& now = time_point(duration(0))) : now_(now)
     {
     }
 
@@ -44,16 +44,16 @@ public:
     {
         XRPL_ASSERT(
             !Clock::is_steady || when >= now_,
-            "beast::manual_clock::set(time_point) : forward input");
+            "beast::ManualClock::set(time_point) : forward input");
         now_ = when;
     }
 
     /** Convenience for setting the time in seconds from epoch. */
     template <class Integer>
     void
-    set(Integer seconds_from_epoch)
+    set(Integer secondsFromEpoch)
     {
-        set(time_point(duration(std::chrono::seconds(seconds_from_epoch))));
+        set(time_point(duration(std::chrono::seconds(secondsFromEpoch))));
     }
 
     /** Advance the clock by a duration. */
@@ -63,12 +63,12 @@ public:
     {
         XRPL_ASSERT(
             !Clock::is_steady || (now_ + elapsed) >= now_,
-            "beast::manual_clock::advance(duration) : forward input");
+            "beast::ManualClock::advance(duration) : forward input");
         now_ += elapsed;
     }
 
     /** Convenience for advancing the clock by one second. */
-    manual_clock&
+    ManualClock&
     operator++()
     {
         advance(std::chrono::seconds(1));

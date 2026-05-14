@@ -16,8 +16,8 @@ public:
 
 private:
     JobTypes()
-        : m_unknown(
-              jtINVALID,
+        : unknown(
+              JtInvalid,
               "invalid",
               0,
               std::chrono::milliseconds{0},
@@ -32,15 +32,13 @@ private:
                        int limit,
                        std::chrono::milliseconds avgLatency,
                        std::chrono::milliseconds peakLatency) {
-            XRPL_ASSERT(
-                !m_map.contains(jt), "xrpl::JobTypes::JobTypes::add : unique job type input");
+            XRPL_ASSERT(!map.contains(jt), "xrpl::JobTypes::JobTypes::add : unique job type input");
 
             [[maybe_unused]] auto const inserted =
-                m_map
-                    .emplace(
-                        std::piecewise_construct,
-                        std::forward_as_tuple(jt),
-                        std::forward_as_tuple(jt, name, limit, avgLatency, peakLatency))
+                map.emplace(
+                       std::piecewise_construct,
+                       std::forward_as_tuple(jt),
+                       std::forward_as_tuple(jt, name, limit, avgLatency, peakLatency))
                     .second;
 
             XRPL_ASSERT(inserted == true, "xrpl::JobTypes::JobTypes::add : input is inserted");
@@ -49,53 +47,53 @@ private:
         // clang-format off
         //                                                           avg     peak
         //  JobType               name                    limit    latency  latency
-        add(jtPACK,              "makeFetchPack",               1,     0ms,     0ms);
-        add(jtPUBOLDLEDGER,      "publishAcqLedger",            2, 10000ms, 15000ms);
-        add(jtVALIDATION_ut,     "untrustedValidation",  maxLimit,  2000ms,  5000ms);
-        add(jtMANIFEST,          "manifest",             maxLimit,  2000ms,  5000ms);
-        add(jtTRANSACTION_l,     "localTransaction",     maxLimit,   100ms,   500ms);
-        add(jtREPLAY_REQ,        "ledgerReplayRequest",        10,   250ms,  1000ms);
-        add(jtLEDGER_REQ,        "ledgerRequest",               3,     0ms,     0ms);
-        add(jtPROPOSAL_ut,       "untrustedProposal",    maxLimit,   500ms,  1250ms);
-        add(jtREPLAY_TASK,       "ledgerReplayTask",     maxLimit,     0ms,     0ms);
-        add(jtLEDGER_DATA,       "ledgerData",                  3,     0ms,     0ms);
-        add(jtCLIENT,            "clientCommand",        maxLimit,  2000ms,  5000ms);
-        add(jtCLIENT_SUBSCRIBE,  "clientSubscribe",      maxLimit,  2000ms,  5000ms);
-        add(jtCLIENT_FEE_CHANGE, "clientFeeChange",      maxLimit,  2000ms,  5000ms);
-        add(jtCLIENT_CONSENSUS,  "clientConsensus",      maxLimit,  2000ms,  5000ms);
-        add(jtCLIENT_ACCT_HIST,  "clientAccountHistory", maxLimit,  2000ms,  5000ms);
-        add(jtCLIENT_RPC,        "clientRPC",            maxLimit,  2000ms,  5000ms);
-        add(jtCLIENT_WEBSOCKET,  "clientWebsocket",      maxLimit,  2000ms,  5000ms);
-        add(jtRPC,               "RPC",                  maxLimit,     0ms,     0ms);
-        add(jtUPDATE_PF,         "updatePaths",                 1,     0ms,     0ms);
-        add(jtTRANSACTION,       "transaction",          maxLimit,   250ms,  1000ms);
-        add(jtBATCH,             "batch",                maxLimit,   250ms,  1000ms);
-        add(jtADVANCE,           "advanceLedger",        maxLimit,     0ms,     0ms);
-        add(jtPUBLEDGER,         "publishNewLedger",     maxLimit,  3000ms,  4500ms);
-        add(jtTXN_DATA,          "fetchTxnData",                5,     0ms,     0ms);
-        add(jtWAL,               "writeAhead",           maxLimit,  1000ms,  2500ms);
-        add(jtVALIDATION_t,      "trustedValidation",    maxLimit,   500ms,  1500ms);
-        add(jtWRITE,             "writeObjects",         maxLimit,  1750ms,  2500ms);
-        add(jtACCEPT,            "acceptLedger",         maxLimit,     0ms,     0ms);
-        add(jtPROPOSAL_t,        "trustedProposal",      maxLimit,   100ms,   500ms);
-        add(jtSWEEP,             "sweep",                       1,     0ms,     0ms);
-        add(jtNETOP_CLUSTER,     "clusterReport",               1,  9999ms,  9999ms);
-        add(jtNETOP_TIMER,       "heartbeat",                   1,   999ms,   999ms);
-        add(jtADMIN,             "administration",       maxLimit,     0ms,     0ms);
-        add(jtMISSING_TXN,       "handleHaveTransactions",   1200,     0ms,     0ms);
-        add(jtREQUESTED_TXN,     "doTransactions",           1200,     0ms,     0ms);
+        add(JtPack,              "makeFetchPack",               1,     0ms,     0ms);
+        add(JtPuboldledger,      "publishAcqLedger",            2, 10000ms, 15000ms);
+        add(JtValidationUt,     "untrustedValidation",  maxLimit,  2000ms,  5000ms);
+        add(JtManifest,          "manifest",             maxLimit,  2000ms,  5000ms);
+        add(JtTransactionL,     "localTransaction",     maxLimit,   100ms,   500ms);
+        add(JtReplayReq,        "ledgerReplayRequest",        10,   250ms,  1000ms);
+        add(JtLedgerReq,        "ledgerRequest",               3,     0ms,     0ms);
+        add(JtProposalUt,       "untrustedProposal",    maxLimit,   500ms,  1250ms);
+        add(JtReplayTask,       "ledgerReplayTask",     maxLimit,     0ms,     0ms);
+        add(JtLedgerData,       "ledgerData",                  3,     0ms,     0ms);
+        add(JtClient,            "clientCommand",        maxLimit,  2000ms,  5000ms);
+        add(JtClientSubscribe,  "clientSubscribe",      maxLimit,  2000ms,  5000ms);
+        add(JtClientFeeChange, "clientFeeChange",      maxLimit,  2000ms,  5000ms);
+        add(JtClientConsensus,  "clientConsensus",      maxLimit,  2000ms,  5000ms);
+        add(JtClientAcctHist,  "clientAccountHistory", maxLimit,  2000ms,  5000ms);
+        add(JtClientRpc,        "clientRPC",            maxLimit,  2000ms,  5000ms);
+        add(JtClientWebsocket,  "clientWebsocket",      maxLimit,  2000ms,  5000ms);
+        add(JtRpc,               "RPC",                  maxLimit,     0ms,     0ms);
+        add(JtUpdatePf,         "updatePaths",                 1,     0ms,     0ms);
+        add(JtTransaction,       "transaction",          maxLimit,   250ms,  1000ms);
+        add(JtBatch,             "batch",                maxLimit,   250ms,  1000ms);
+        add(JtAdvance,           "advanceLedger",        maxLimit,     0ms,     0ms);
+        add(JtPubledger,         "publishNewLedger",     maxLimit,  3000ms,  4500ms);
+        add(JtTxnData,          "fetchTxnData",                5,     0ms,     0ms);
+        add(JtWal,               "writeAhead",           maxLimit,  1000ms,  2500ms);
+        add(JtValidationT,      "trustedValidation",    maxLimit,   500ms,  1500ms);
+        add(JtWrite,             "writeObjects",         maxLimit,  1750ms,  2500ms);
+        add(JtAccept,            "acceptLedger",         maxLimit,     0ms,     0ms);
+        add(JtProposalT,        "trustedProposal",      maxLimit,   100ms,   500ms);
+        add(JtSweep,             "sweep",                       1,     0ms,     0ms);
+        add(JtNetopCluster,     "clusterReport",               1,  9999ms,  9999ms);
+        add(JtNetopTimer,       "heartbeat",                   1,   999ms,   999ms);
+        add(JtAdmin,             "administration",       maxLimit,     0ms,     0ms);
+        add(JtMissingTxn,       "handleHaveTransactions",   1200,     0ms,     0ms);
+        add(JtRequestedTxn,     "doTransactions",           1200,     0ms,     0ms);
 
-        add(jtPEER,              "peerCommand",                 0,   200ms,  2500ms);
-        add(jtDISK,              "diskAccess",                  0,   500ms,  1000ms);
-        add(jtTXN_PROC,          "processTransaction",          0,     0ms,     0ms);
-        add(jtOB_SETUP,          "orderBookSetup",              0,     0ms,     0ms);
-        add(jtPATH_FIND,         "pathFind",                    0,     0ms,     0ms);
-        add(jtHO_READ,           "nodeRead",                    0,     0ms,     0ms);
-        add(jtHO_WRITE,          "nodeWrite",                   0,     0ms,     0ms);
-        add(jtGENERIC,           "generic",                     0,     0ms,     0ms);
-        add(jtNS_SYNC_READ,      "SyncReadNode",                0,     0ms,     0ms);
-        add(jtNS_ASYNC_READ,     "AsyncReadNode",               0,     0ms,     0ms);
-        add(jtNS_WRITE,          "WriteNode",                   0,     0ms,     0ms);
+        add(JtPeer,              "peerCommand",                 0,   200ms,  2500ms);
+        add(JtDisk,              "diskAccess",                  0,   500ms,  1000ms);
+        add(JtTxnProc,          "processTransaction",          0,     0ms,     0ms);
+        add(JtObSetup,          "orderBookSetup",              0,     0ms,     0ms);
+        add(JtPathFind,         "pathFind",                    0,     0ms,     0ms);
+        add(JtHoRead,           "nodeRead",                    0,     0ms,     0ms);
+        add(JtHoWrite,          "nodeWrite",                   0,     0ms,     0ms);
+        add(JtGeneric,           "generic",                     0,     0ms,     0ms);
+        add(JtNsSyncRead,      "SyncReadNode",                0,     0ms,     0ms);
+        add(JtNsAsyncRead,     "AsyncReadNode",               0,     0ms,     0ms);
+        add(JtNsWrite,          "WriteNode",                   0,     0ms,     0ms);
         // clang-format on
     }
 
@@ -103,8 +101,8 @@ public:
     static JobTypes const&
     instance()
     {
-        static JobTypes const types;
-        return types;
+        static JobTypes const kTYPES;
+        return kTYPES;
     }
 
     static std::string const&
@@ -116,53 +114,53 @@ public:
     [[nodiscard]] JobTypeInfo const&
     get(JobType jt) const
     {
-        Map::const_iterator const iter(m_map.find(jt));
-        XRPL_ASSERT(iter != m_map.end(), "xrpl::JobTypes::get : valid input");
+        Map::const_iterator const iter(map.find(jt));
+        XRPL_ASSERT(iter != map.end(), "xrpl::JobTypes::get : valid input");
 
-        if (iter != m_map.end())
+        if (iter != map.end())
             return iter->second;
 
-        return m_unknown;
+        return unknown;
     }
 
     [[nodiscard]] JobTypeInfo const&
     getInvalid() const
     {
-        return m_unknown;
+        return unknown;
     }
 
     [[nodiscard]] Map::size_type
     size() const
     {
-        return m_map.size();
+        return map.size();
     }
 
     [[nodiscard]] const_iterator
     begin() const
     {
-        return m_map.cbegin();
+        return map.cbegin();
     }
 
     [[nodiscard]] const_iterator
     cbegin() const
     {
-        return m_map.cbegin();
+        return map.cbegin();
     }
 
     [[nodiscard]] const_iterator
     end() const
     {
-        return m_map.cend();
+        return map.cend();
     }
 
     [[nodiscard]] const_iterator
     cend() const
     {
-        return m_map.cend();
+        return map.cend();
     }
 
-    JobTypeInfo m_unknown;
-    Map m_map;
+    JobTypeInfo unknown;
+    Map map;
 };
 
 }  // namespace xrpl

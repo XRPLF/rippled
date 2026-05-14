@@ -2,11 +2,11 @@
 
 #include <stdexcept>
 
-namespace Json {
+namespace json {
 
-struct error : std::runtime_error
+struct Error : std::runtime_error
 {
     using std::runtime_error::runtime_error;
 };
 
-}  // namespace Json
+}  // namespace json

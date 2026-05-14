@@ -46,7 +46,7 @@ template <std::integral T>
 constexpr XRPAmount
 XRP(T xrp)
 {
-    return XRPAmount{static_cast<std::int64_t>(xrp) * DROPS_PER_XRP.drops()};
+    return XRPAmount{static_cast<std::int64_t>(xrp) * kDROPS_PER_XRP.drops()};
 }
 
 /**
@@ -58,7 +58,7 @@ template <std::floating_point T>
 XRPAmount
 XRP(T xrp)
 {
-    return XRPAmount{static_cast<std::int64_t>(std::round(xrp * DROPS_PER_XRP.drops()))};
+    return XRPAmount{static_cast<std::int64_t>(std::round(xrp * kDROPS_PER_XRP.drops()))};
 }
 
 /**
@@ -69,7 +69,7 @@ XRP(T xrp)
 inline XRPAmount
 XRP(Number const& xrp)
 {
-    return XRPAmount{static_cast<std::int64_t>(xrp * DROPS_PER_XRP.drops())};
+    return XRPAmount{static_cast<std::int64_t>(xrp * kDROPS_PER_XRP.drops())};
 }
 
 //------------------------------------------------------------------------------
@@ -349,7 +349,7 @@ public:
 
 private:
     TestServiceRegistry registry_;
-    std::unordered_set<uint256, beast::uhash<>> featureSet_;
+    std::unordered_set<uint256, beast::Uhash<>> featureSet_;
     std::optional<Rules> rules_;
     std::shared_ptr<Ledger const> closedLedger_;
     std::shared_ptr<OpenView> openLedger_;
