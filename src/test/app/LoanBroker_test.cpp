@@ -55,6 +55,7 @@
 #include <optional>
 #include <string_view>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 namespace xrpl::test {
@@ -1849,7 +1850,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         // Shared setup: funds accounts, creates a vault + broker with 10 IOU
         // cover, and returns {brokerKeylet, iou}.
         auto const setup = [&](Env& env) -> std::pair<Keylet, PrettyAsset> {
-            Vault vault{env};
+            Vault const vault{env};
 
             env.fund(XRP(100'000), issuer, alice);
             env.close();
@@ -1954,7 +1955,7 @@ class LoanBroker_test : public beast::unit_test::Suite
             env(pay(issuer, alice, mptAsset(100)));
             env.close();
 
-            Vault vault{env};
+            Vault const vault{env};
             auto [createTx, vaultKeylet] = vault.create({.owner = alice, .asset = mptAsset});
             env(createTx);
             env.close();
