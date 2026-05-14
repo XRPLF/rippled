@@ -123,7 +123,7 @@ curl -s "$TEMPO/api/v2/search/tag/resource.service.name/values" | jq '.tagValues
 
 # Check RPC spans
 curl -s "$TEMPO/api/search" \
-  --data-urlencode 'q={resource.service.name="xrpld" && name="rpc.request"}' \
+  --data-urlencode 'q={resource.service.name="xrpld" && name="rpc.http_request"}' \
   --data-urlencode 'limit=5' | jq '.traces | length'
 
 curl -s "$TEMPO/api/search" \
@@ -159,7 +159,7 @@ rm -rf data/
 
 | Span Name                   | Expected | Notes                         |
 | --------------------------- | -------- | ----------------------------- |
-| `rpc.request`               | Yes      | Every HTTP RPC call           |
+| `rpc.http_request`          | Yes      | Every HTTP RPC call           |
 | `rpc.process`               | Yes      | Every RPC processing          |
 | `rpc.command.server_info`   | Yes      | server_info RPC               |
 | `rpc.command.server_state`  | Yes      | server_state RPC              |
@@ -285,7 +285,6 @@ online_delete=256
 [telemetry]
 enabled=1
 endpoint=http://localhost:4318/v1/traces
-exporter=otlp_http
 sampling_ratio=1.0
 batch_size=512
 batch_delay_ms=2000
@@ -412,7 +411,7 @@ TEMPO="http://localhost:3200"
 curl -s "$TEMPO/api/v2/search/tag/resource.service.name/values" | jq '.tagValues[].value'
 
 # Query traces by operation
-for op in "rpc.request" "rpc.process" \
+for op in "rpc.http_request" "rpc.ws_upgrade" "rpc.ws_message" "rpc.process" \
           "rpc.command.server_info" "rpc.command.server_state" "rpc.command.ledger" \
           "tx.process" "tx.receive" "tx.apply" \
           "consensus.proposal.send" "consensus.ledger_close" \
