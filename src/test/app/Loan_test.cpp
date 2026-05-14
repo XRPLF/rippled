@@ -5266,7 +5266,7 @@ protected:
             auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
             auto const keylet = keylet::loan(broker.brokerID, loanSequence);
 
-            auto const closeStartDate = (parentCloseTime() / 10 + 1) * 10;
+            auto const closeStartDate = ((parentCloseTime() / 10) + 1) * 10;
             auto const grace = 5'000;
             auto const interval = kMAX_TIME - closeStartDate - grace;
             auto const total = 1;
@@ -5295,7 +5295,7 @@ protected:
             env(pay(issuer, borrower, iouAsset(Number{1'055'524'81, -2})));
 
             // Start date when the ledger is closed will be larger
-            auto const closeStartDate = (parentCloseTime() / 10 + 1) * 10;
+            auto const closeStartDate = ((parentCloseTime() / 10) + 1) * 10;
             auto const grace = 5'000;
             auto const maxLoanTime = kMAX_TIME - closeStartDate - grace;
             auto const total = [&]() {
@@ -6895,7 +6895,7 @@ protected:
 
         auto credType = "credential1";
 
-        pdomain::Credentials const credentials1{{issuer, credType}};
+        pdomain::Credentials const credentials1 = {{.issuer = issuer, .credType = credType}};
         env(pdomain::setTx(issuer, credentials1));
         env.close();
 
@@ -6998,7 +6998,7 @@ protected:
 
         auto credType = "credential1";
 
-        pdomain::Credentials const credentials1{{issuer, credType}};
+        pdomain::Credentials const credentials1{{.issuer = issuer, .credType = credType}};
         env(pdomain::setTx(issuer, credentials1));
         env.close();
 
@@ -7503,7 +7503,7 @@ protected:
         auto createJson = env.json(
             set(borrower, brokerKeylet.key, Number{1000}, tfLoanOverpayment),
             Fee(env.current()->fees().base * 2),
-            Json(sfCounterpartySignature, json::ObjectValue));
+            Json(sfCounterpartySignature, json::ValueType::Object));
 
         createJson["InterestRate"] = 10000;
         createJson["PaymentTotal"] = 12;
@@ -7583,7 +7583,7 @@ protected:
         auto createJson = env.json(
             set(borrower, brokerKeylet.key, Number{1000}, tfLoanOverpayment),
             Fee(env.current()->fees().base * 2),
-            Json(sfCounterpartySignature, json::ObjectValue));
+            Json(sfCounterpartySignature, json::ValueType::Object));
 
         createJson["InterestRate"] = 10000;
         createJson["PaymentTotal"] = 12;
