@@ -295,7 +295,7 @@ public:
         testcase("Owned types");
 
         // We want to test PayChannels with the backlink.
-        Env env{*this, testableAmendments()};
+        Env env{*this};
         Account const alice("alice");
         Account const becky("becky");
         Account const gw("gw");

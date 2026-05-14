@@ -2620,7 +2620,7 @@ private:
         using namespace jtx;
         {
             // Payment path starting with XRP
-            Env env(*this, testableAmendments());
+            Env env(*this);
             // Note, if alice_ doesn't have default ripple, then pay
             // fails with tecPATH_DRY.
             fund(env, gw_, {alice_, bob_}, XRP(10'000), {USD(200), EUR(200)}, Fund::All);

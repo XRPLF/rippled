@@ -32,7 +32,7 @@ public:
         using namespace test::jtx;
 
         testcase("Set regular key");
-        Env env{*this, testableAmendments()};
+        Env env{*this};
         Account const alice("alice");
         Account const bob("bob");
         env.fund(XRP(10000), alice, bob);
@@ -65,7 +65,7 @@ public:
         using namespace test::jtx;
 
         testcase("Set regular key to master key");
-        Env env{*this, testableAmendments()};
+        Env env{*this};
         Account const alice("alice");
         env.fund(XRP(10000), alice);
 

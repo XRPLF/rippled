@@ -849,7 +849,7 @@ class Ticket_test : public beast::unit_test::Suite
         // and a TicketSequence field.  Verify that the error is detected.
         testcase("Fix both Seq and Ticket");
 
-        Env env{*this, testableAmendments()};
+        Env env{*this};
         Account const alice{"alice"};
 
         env.fund(XRP(10000), alice);
