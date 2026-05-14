@@ -790,10 +790,8 @@ ValidVault::finalize(
                 // Get the posterior scale to round calculations to
                 auto const minScale = computeVaultMinScale(*maybeVaultDeltaAssets, view.rules());
 
-                auto const vaultPseudoDeltaAssets = roundToAsset(
-                    vaultAsset,
-                    maybeVaultDeltaAssets->delta,
-                    scale(afterVault.assetsTotal, vaultAsset));
+                auto const vaultPseudoDeltaAssets =
+                    roundToAsset(vaultAsset, maybeVaultDeltaAssets->delta, minScale);
 
                 if (vaultPseudoDeltaAssets >= kZERO)
                 {
