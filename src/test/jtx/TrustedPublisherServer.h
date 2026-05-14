@@ -368,7 +368,7 @@ X1yu/XxHqchM+DOzzVw6wRKaM7Zsk80=
     static std::string const&
     key()
     {
-        static std::string const kEY{R"pkey(
+        static std::string const kKey{R"pkey(
 -----BEGIN RSA PRIVATE KEY-----
 MIIEpAIBAAKCAQEAueZ1hgRxwPgfeVx2AdngUYx7zYcaxcGYXyqi7izJqTuBUcVc
 TRC/9Ip67RAEhfcgGudRS/a4Sv1ljwiRknSCcD/ZjzOFDLgbqYGSZNEs+T/qkwmc
@@ -397,7 +397,7 @@ cK55dMILcbHqeIBq/wR6sIhw6IJcaDBfFfrJiKKDilfij2lHxR2FQrEngtTCCRV+
 ZzARzaWhQPvbDqEtLJDWuXZNXfL8/PTIs5NmuKuQ8F4+gQJpkQgwaw==
 -----END RSA PRIVATE KEY-----
 )pkey"};
-        return kEY;
+        return kKey;
     }
 
     static std::string const&

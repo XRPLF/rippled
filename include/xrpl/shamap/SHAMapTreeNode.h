@@ -22,7 +22,7 @@ static constexpr unsigned char const kWireTypeCompressedInner = 3;
 static constexpr unsigned char const kWireTypeTransactionWithMeta = 4;
 
 // Lower bound on SHAMap leaf item payload size, in bytes.
-inline constexpr std::size_t kMIN_SHA_MAP_ITEM_BYTES = 12;
+inline constexpr std::size_t kMinShaMapItemBytes = 12;
 
 enum class SHAMapNodeType {
     TnInner = 1,

@@ -269,8 +269,8 @@ forwardedFor(http_request_type const& request)
             found = std::search(
                 found,
                 it->value().end(),
-                kFOR_STR.begin(),
-                kFOR_STR.end(),
+                kForStr.begin(),
+                kForStr.end(),
                 [&asciiToLower](char c1, char c2) { return asciiToLower(c1) == asciiToLower(c2); });
 
             if (found == it->value().end())

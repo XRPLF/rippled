@@ -7196,7 +7196,7 @@ protected:
         auto const [currentSeq, vaultKeylet] = [&]() {
             auto const brokerSle = env.le(keylet::loanbroker(brokerInfo.brokerID));
             if (!BEAST_EXPECT(brokerSle))
-                return std::make_tuple(0u, keylet::unchecked(beast::kZERO));
+                return std::make_tuple(0u, keylet::unchecked(beast::kZero));
             auto const currentSeq = brokerSle->at(sfLoanSequence);
             auto const vaultKeylet = keylet::vault(brokerSle->at(sfVaultID));
             return std::make_tuple(currentSeq, vaultKeylet);
@@ -7211,9 +7211,9 @@ protected:
         auto const loanSetFee = Fee(env.current()->fees().base * 2);
         env(set(borrower, brokerInfo.brokerID, iou(principal).value(), flags),
             Sig(sfCounterpartySignature, lender),
-            loan::kINTEREST_RATE(interestRate),
-            loan::kPAYMENT_INTERVAL(paymentInterval),
-            loan::kPAYMENT_TOTAL(paymentTotal),
+            loan::kInterestRate(interestRate),
+            loan::kPaymentInterval(paymentInterval),
+            loan::kPaymentTotal(paymentTotal),
             Fee(loanSetFee));
         env.close();
 
@@ -7281,12 +7281,12 @@ protected:
             auto const delta = currentAssetsTotal - previousAssetsTotal;
 
             BEAST_EXPECT(
-                (delta == beast::kZERO && borrowerDelta <= roundedPayment) ||
-                (delta > beast::kZERO && borrowerDelta > roundedPayment));
+                (delta == beast::kZero && borrowerDelta <= roundedPayment) ||
+                (delta > beast::kZero && borrowerDelta > roundedPayment));
 
             // If tx succeeded but Assets Total didn't change, interest was
             // stolen.
-            if (delta == beast::kZERO && borrowerDelta > roundedPayment)
+            if (delta == beast::kZero && borrowerDelta > roundedPayment)
             {
                 yieldTheftCount++;
             }

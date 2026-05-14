@@ -538,7 +538,7 @@ LoanPay::doApply()
         return tecPRECISION_LOSS;
         // LCOV_EXCL_STOP
     }
-    if (paymentParts->valueChange != beast::kZERO && assetsTotalAfter == assetsTotalBefore)
+    if (paymentParts->valueChange != beast::kZero && assetsTotalAfter == assetsTotalBefore)
     {
         // Non-zero valueChange with an unchanged assetsTotal indicates that the
         // actual value change rounded to zero. That should be impossible, but I
@@ -554,7 +554,7 @@ LoanPay::doApply()
         return tecPRECISION_LOSS;
         // LCOV_EXCL_STOP
     }
-    if (paymentParts->valueChange == beast::kZERO && assetsTotalAfter != assetsTotalBefore)
+    if (paymentParts->valueChange == beast::kZero && assetsTotalAfter != assetsTotalBefore)
     {
         // A change in assetsTotal when there was no valueChange indicates that
         // something really weird happened. That should be flat out impossible.
@@ -690,7 +690,7 @@ LoanPay::doApply()
         // First find the minimum and maximum exponent of all the non-zero balances, before and
         // after. If min and max are equal, use that value. If they are not, use "max + 1" to reduce
         // rounding discrepancies without making the result meaningless. Cap the scale at
-        // STAmount::kMAX_OFFSET, just in case the numbers are all very large.
+        // STAmount::kMaxOffset, just in case the numbers are all very large.
         std::vector<int> exponents;
         exponents.reserve(6);
 
@@ -704,7 +704,7 @@ LoanPay::doApply()
              })
         {
             // Exclude zeroes
-            if (a != beast::kZERO)
+            if (a != beast::kZero)
                 exponents.push_back(a.exponent());
         }
         if (exponents.empty())
@@ -720,7 +720,7 @@ LoanPay::doApply()
         // to round to such an extreme that it becomes meaningless.  e.g. Everything rounds to one
         // digit. So add 1 to the max (reducing the number of digits after the decimal point by 1)
         // if the scales are not already all the same.
-        return std::min(min == max ? max : max + 1, STAmount::kMAX_OFFSET);
+        return std::min(min == max ? max : max + 1, STAmount::kMaxOffset);
     }();
 
     // No object changes are made below this point
