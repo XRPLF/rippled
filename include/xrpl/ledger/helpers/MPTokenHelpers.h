@@ -317,7 +317,7 @@ addEmptyHolding(
 
 /** Delete a zero-balance `MPToken` holding.
  *
- *  Requires `sfMPTAmount` to be zero and, when `fixSecurity3_1_3` is enabled,
+ *  Requires `sfMPTAmount` to be zero and, when `fixCleanup3_1_3` is enabled,
  *  `sfLockedAmount` to be zero as well; returns `tecHAS_OBLIGATIONS` otherwise.
  *  When `accountID` is the issuer and no `MPToken` SLE exists, returns
  *  `tesSUCCESS` immediately — the normal issuer state. Otherwise delegates to

@@ -283,7 +283,7 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
  *  a second time; any breach after truncation is treated as an arithmetic bug
  *  (`tecINTERNAL`).
  *
- *  **`fixSecurity3_1_3` branching (ledger replay compatibility)**: before this
+ *  **`fixCleanup3_1_3` branching (ledger replay compatibility)**: before this
  *  amendment, a zero-amount clawback returned early without clamping to
  *  `sfAssetsAvailable`, which allowed recovering more assets than the vault
  *  had liquid (bypassing outstanding loans). The pre-fix code path is retained
@@ -321,11 +321,11 @@ VaultClawback::assetsToClawback(
     auto const mptIssuanceID = *vault->at(sfShareMPTID);
     MPTIssue const share{mptIssuanceID};
 
-    // Pre-fixSecurity3_1_3: zero-amount clawback returned early without
+    // Pre-fixCleanup3_1_3: zero-amount clawback returned early without
     // clamping to assetsAvailable, allowing more assets to be recovered
     // than available when there was an outstanding loan. Retained for
     // ledger replay compatibility.
-    if (!ctx_.view().rules().enabled(fixSecurity3_1_3) && clawbackAmount == beast::kZERO)
+    if (!ctx_.view().rules().enabled(fixCleanup3_1_3) && clawbackAmount == beast::kZERO)
     {
         auto const sharesDestroyed = accountHolds(
             view(), holder, share, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth, j_);

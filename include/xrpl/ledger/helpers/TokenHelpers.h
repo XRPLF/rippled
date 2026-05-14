@@ -715,7 +715,7 @@ using MultiplePaymentDestinations = std::vector<std::pair<AccountID, Number>>;
  *  @p asset. Batching avoids repeated round-trips through the ledger state for
  *  the sender's balance and the issuance's `OutstandingAmount` field.
  *
- *  For MPT, the `fixSecurity3_1_3` amendment switches the aggregate
+ *  For MPT, the `fixCleanup3_1_3` amendment switches the aggregate
  *  `MaximumAmount` check from a per-iteration stale-snapshot check (pre-fix)
  *  to an exact `uint64_t` running-total check (post-fix) to prevent precision
  *  loss at 19-digit magnitudes near `kMAX_MP_TOKEN_AMOUNT`.

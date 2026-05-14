@@ -73,11 +73,11 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 
             if (hasExpired(ctx.view, (*offerSLE)[~sfExpiration]))
             {
-                // Before fixSecurity3_1_3, returning tecEXPIRED here left the
+                // Before fixCleanup3_1_3, returning tecEXPIRED here left the
                 // expired offer stranded on the ledger (doApply was never reached).
                 // After the amendment, we pass the expired SLE through so doApply
                 // can delete it before returning tecEXPIRED.
-                if (!ctx.view.rules().enabled(fixSecurity3_1_3))
+                if (!ctx.view.rules().enabled(fixCleanup3_1_3))
                     return {nullptr, tecEXPIRED};
             }
 
@@ -409,9 +409,9 @@ NFTokenAcceptOffer::doApply()
     auto bo = loadToken(ctx_.tx[~sfNFTokenBuyOffer]);
     auto so = loadToken(ctx_.tx[~sfNFTokenSellOffer]);
 
-    // Under fixSecurity3_1_3, expired offers are passed through preclaim so we
+    // Under fixCleanup3_1_3, expired offers are passed through preclaim so we
     // can delete them here, preventing them from becoming permanently stranded.
-    if (view().rules().enabled(fixSecurity3_1_3))
+    if (view().rules().enabled(fixCleanup3_1_3))
     {
         bool foundExpired = false;
 

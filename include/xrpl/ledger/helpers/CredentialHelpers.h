@@ -212,7 +212,7 @@ checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j);
  *      `tecEXPIRED` if only expired credentials were found; `tecNO_PERMISSION`
  *      if no matching credential exists; `tecOBJECT_NOT_FOUND` if the domain
  *      SLE is missing; or a propagated `TER` error from `removeExpired` under
- *      `fixSecurity3_1_3`.
+ *      `fixCleanup3_1_3`.
  */
 TER
 verifyValidDomain(ApplyView& view, AccountID const& account, uint256 domainID, beast::Journal j);

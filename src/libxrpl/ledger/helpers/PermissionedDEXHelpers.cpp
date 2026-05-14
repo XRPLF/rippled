@@ -70,7 +70,7 @@ accountInDomain(ReadView const& view, AccountID const& account, Domain const& do
  *  `accountInDomain`. The structural checks guard against internal invariant
  *  violations and are marked `LCOV_EXCL_LINE` because they cannot be triggered
  *  via any valid user-facing input path. Hybrid offers additionally require
- *  `sfAdditionalBooks`: post-`fixSecurity3_1_3` the array must contain exactly
+ *  `sfAdditionalBooks`: post-`fixCleanup3_1_3` the array must contain exactly
  *  one entry; pre-amendment only its presence is required.
  *
  *  @param view      The read-only ledger view to query.
@@ -101,9 +101,9 @@ offerInDomain(
     if (sleOffer->getFieldH256(sfDomainID) != domainID)
         return false;  // LCOV_EXCL_LINE
 
-    if (view.rules().enabled(fixSecurity3_1_3))
+    if (view.rules().enabled(fixCleanup3_1_3))
     {
-        // post-fixSecurity3_1_3: a valid hybrid offer must have
+        // post-fixCleanup3_1_3: a valid hybrid offer must have
         // sfAdditionalBooks present with exactly 1 entry
         if (sleOffer->isFlag(lsfHybrid) &&
             (!sleOffer->isFieldPresent(sfAdditionalBooks) ||
@@ -116,7 +116,7 @@ offerInDomain(
     }
     else
     {
-        // pre-fixSecurity3_1_3: a valid hybrid offer must have
+        // pre-fixCleanup3_1_3: a valid hybrid offer must have
         // sfAdditionalBooks present (size is not checked)
         if (sleOffer->isFlag(lsfHybrid) && !sleOffer->isFieldPresent(sfAdditionalBooks))
         {

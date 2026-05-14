@@ -138,7 +138,7 @@ private:
      *  the method clamps to `assetsAvailable` and recomputes shares with
      *  `TruncateShares::Yes` so the re-conversion cannot overshoot the cap.
      *
-     *  A legacy pre-`fixSecurity3_1_3` code path is preserved for ledger
+     *  A legacy pre-`fixCleanup3_1_3` code path is preserved for ledger
      *  replay: zero-amount clawback on old rules skips the `assetsAvailable`
      *  clamp, reproducing the original (incorrect) outcome.
      *

@@ -6,14 +6,22 @@
 
 namespace xrpl {
 
+/** Maximum JSON object nesting depth permitted during parsing. */
+inline constexpr std::size_t kMAX_PARSED_JSON_DEPTH = 64;
+
+/** Maximum number of elements permitted in any JSON array field during parsing.
+    Requests exceeding this limit are rejected with an invalidParams error. */
+inline constexpr std::size_t kMAX_PARSED_JSON_ARRAY_SIZE = 512;
+
 /** Single-use converter from a JSON object to an @ref STObject.
  *
  *  Sits at the boundary between the JSON/RPC layer and the binary-canonical
  *  Serialized Type (ST) system.  In a single constructor call it validates
  *  every field name against the XRPL protocol schema, coerces each value to
- *  its wire type, recurses into nested objects and arrays up to 64 levels
- *  deep, and applies the field template for the transaction or ledger-entry
- *  type discovered during parsing.
+ *  its wire type, recurses into nested objects and arrays up to
+ *  @ref kMAX_PARSED_JSON_DEPTH levels deep with each array bounded by
+ *  @ref kMAX_PARSED_JSON_ARRAY_SIZE elements, and applies the field template
+ *  for the transaction or ledger-entry type discovered during parsing.
  *
  *  Outcomes are communicated through two public members rather than via
  *  exceptions or a return value, which lets RPC handlers forward `error`

@@ -67,7 +67,7 @@ checkExpired(SLE const& sleCredential, NetClock::time_point const& closed)
  *  Existence and ownership of each credential are assumed to have been
  *  verified in preclaim; only expiration is re-checked here.
  *
- *  Under `fixSecurity3_1_3`, any `deleteSLE` failure is propagated as an
+ *  Under `fixCleanup3_1_3`, any `deleteSLE` failure is propagated as an
  *  error; prior to that amendment, deletion errors are silently ignored and
  *  the loop continues.
  *
@@ -76,7 +76,7 @@ checkExpired(SLE const& sleCredential, NetClock::time_point const& closed)
  *  @param j     Journal for trace/error logging.
  *  @return `Expected<bool, TER>`: holds `true` if any expired credential was
  *      found and deleted, `false` if none were expired, or an unexpected `TER`
- *      error if deletion failed under `fixSecurity3_1_3`.
+ *      error if deletion failed under `fixCleanup3_1_3`.
  */
 [[nodiscard]]
 static Expected<bool, TER>
@@ -96,7 +96,7 @@ removeExpired(ApplyView& view, STVector256 const& arr, beast::Journal const j)
             JLOG(j.trace()) << "Credentials are expired. Cred: " << sleCred->getText();
             // delete expired credentials even if the transaction failed
             auto const err = deleteSLE(view, sleCred, j);
-            if (view.rules().enabled(fixSecurity3_1_3) && !isTesSuccess(err))
+            if (view.rules().enabled(fixCleanup3_1_3) && !isTesSuccess(err))
                 return Unexpected(err);
             foundExpired = true;
         }
@@ -495,7 +495,7 @@ checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j)
  *      `tecEXPIRED` if only expired credentials were found; `tecNO_PERMISSION`
  *      if no matching credential exists; `tecOBJECT_NOT_FOUND` if the domain
  *      SLE is missing; or a `TER` error propagated from `removeExpired` under
- *      `fixSecurity3_1_3`.
+ *      `fixCleanup3_1_3`.
  */
 TER
 verifyValidDomain(ApplyView& view, AccountID const& account, uint256 domainID, beast::Journal j)

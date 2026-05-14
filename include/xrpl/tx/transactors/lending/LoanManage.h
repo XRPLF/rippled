@@ -187,7 +187,7 @@ public:
      *  then dispatches to `defaultLoan`, `impairLoan`, or `unimpairLoan`
      *  based on the transaction flags.  No flags is a valid no-op form.
      *  After the dispatch, calls `associateAsset` on all three SLEs when
-     *  the `fixSecurity3_1_3` amendment is active, ensuring stored numeric
+     *  the `fixCleanup3_1_3` amendment is active, ensuring stored numeric
      *  values are rounded to the asset's precision.
      *
      *  @return `tesSUCCESS` on success; a `tec` code from the dispatched

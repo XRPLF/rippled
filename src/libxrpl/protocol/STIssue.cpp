@@ -60,14 +60,14 @@ STIssue::STIssue(SerialIter& sit, SField const& name) : STBase{name}
 {
     auto const currencyOrAccount = sit.get160();
 
-    if (isXRP(static_cast<Currency>(currencyOrAccount)))
+    if (isXRP(Currency::fromRaw(currencyOrAccount)))
     {
         asset_ = xrpIssue();
     }
     else
     {
         // MPT wire layout: 160-bit issuer | 160-bit noAccount() sentinel | 32-bit sequence
-        AccountID const account = static_cast<AccountID>(sit.get160());
+        AccountID const account = AccountID::fromRaw(sit.get160());
         if (noAccount() == account)
         {
             MPTID mptID;

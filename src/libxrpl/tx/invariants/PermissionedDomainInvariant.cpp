@@ -164,7 +164,7 @@ ValidPermissionedDomain::finalize(
         return true;
     };
 
-    if (view.rules().enabled(fixPermissionedDomainInvariant))
+    if (view.rules().enabled(fixCleanup3_1_3))
     {
         if (!isTesSuccess(result))
         {

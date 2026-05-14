@@ -147,7 +147,7 @@ ValidLoanBroker::goodZeroDirectory(
  *  - `sfCoverAvailable` must not exceed the pseudo-account's on-ledger asset
  *    balance (`accountHolds` with freeze and auth both ignored, since
  *    pseudo-accounts are exempt from those controls).
- *  - Under `fixSecurity3_1_3`, `sfCoverAvailable` must equal the
+ *  - Under `fixCleanup3_1_3`, `sfCoverAvailable` must equal the
  *    pseudo-account balance exactly, except during `ttLOAN_BROKER_DELETE`
  *    where the field is not zeroed before removal.
  *
@@ -266,7 +266,7 @@ ValidLoanBroker::finalize(
             return false;
         }
 
-        if (view.rules().enabled(fixSecurity3_1_3))
+        if (view.rules().enabled(fixCleanup3_1_3))
         {
             // Don't check the balance when LoanBroker is deleted,
             // sfCoverAvailable is not zeroed

@@ -1396,12 +1396,12 @@ directSendNoLimitMPT(
  *    `directSendNoFeeMPT`. A single sender→issuer call follows the loop.
  *
  *  **`MaximumAmount` enforcement for issuer-as-sender** differs by amendment:
- *  - Post-`fixSecurity3_1_3`: accumulates a `uint64_t totalSendAmount`
+ *  - Post-`fixCleanup3_1_3`: accumulates a `uint64_t totalSendAmount`
  *    across all iterations and performs a three-part overflow-safe check
  *    (`sendAmount > max || total > max - send || outstanding > max - send -
  *    total`). The subtraction order is critical — each condition guards the
  *    next against unsigned underflow; do not reorder.
- *  - Pre-`fixSecurity3_1_3`: per-iteration check against the stale
+ *  - Pre-`fixCleanup3_1_3`: per-iteration check against the stale
  *    `view.read()` snapshot. Retained for ledger replay compatibility.
  *
  *  `uint64_t` arithmetic (not `STAmount`/`Number`) is used to avoid 16-digit
@@ -1437,7 +1437,7 @@ directSendNoLimitMultiMPT(
     // Snapshot MaximumAmount and OutstandingAmount once. view.read() returns a
     // const SLE that is NOT updated by directSendNoFeeMPT (which uses peek()),
     // so per-iteration re-reads would be stale. totalSendAmount tracks the
-    // running aggregate for the post-fixSecurity3_1_3 overflow check.
+    // running aggregate for the post-fixCleanup3_1_3 overflow check.
     // Use uint64_t — not STAmount/Number — to keep comparisons exact at
     // 19-digit magnitudes near kMAX_MP_TOKEN_AMOUNT.
     std::uint64_t totalSendAmount{0};
@@ -1471,12 +1471,12 @@ directSendNoLimitMultiMPT(
 
                 std::uint64_t const sendAmount = amount.mpt().value();
 
-                if (view.rules().enabled(fixSecurity3_1_3))
+                if (view.rules().enabled(fixCleanup3_1_3))
                 {
-                    // Post-fixSecurity3_1_3: aggregate MaximumAmount check.
-                    // WARNING: the order of conditions is critical — each
-                    // guards the subtraction in the next against unsigned
-                    // underflow. Do not reorder.
+                    // Post-fixCleanup3_1_3: aggregate MaximumAmount
+                    // check. WARNING: the order of conditions is
+                    // critical — each guards the subtraction in the
+                    // next against unsigned underflow. Do not reorder.
                     bool const exceedsMaximumAmount =
                         sendAmount > maximumAmount ||
                         totalSendAmount > maximumAmount - sendAmount ||
@@ -1488,8 +1488,10 @@ directSendNoLimitMultiMPT(
                 }
                 else
                 {
-                    // Pre-fixSecurity3_1_3: per-iteration check against
-                    // stale snapshot — retained for ledger replay.
+                    // Pre-fixCleanup3_1_3: per-iteration MaximumAmount
+                    // check. Reads sfOutstandingAmount from a stale
+                    // view.read() snapshot — incorrect for multi-destination
+                    // sends but retained for ledger replay compatibility.
                     if (sendAmount > maximumAmount ||
                         outstandingAmount > maximumAmount - sendAmount)
                         return tecPATH_DRY;

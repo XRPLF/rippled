@@ -128,7 +128,7 @@ public:
      *
      * For each offer ID present in the transaction, verifies:
      * - The offer SLE exists and has a non-negative `sfAmount`.
-     * - Expiration handling: before `fixSecurity3_1_3`, expired offers return
+     * - Expiration handling: before `fixCleanup3_1_3`, expired offers return
      *   `tecEXPIRED` immediately, leaving the ledger object stranded; after the
      *   amendment, expired offers are allowed through to `doApply()` where they are
      *   deleted before returning `tecEXPIRED`.
@@ -162,7 +162,7 @@ public:
     /**
      * Apply the `NFTokenAcceptOffer` transaction to the mutable ledger view.
      *
-     * Expired offer cleanup (when `fixSecurity3_1_3` is enabled): if any referenced
+     * Expired offer cleanup (when `fixCleanup3_1_3` is enabled): if any referenced
      * offer has expired since `preclaim`, it is deleted from the ledger and
      * `tecEXPIRED` is returned, ensuring proper garbage collection.
      *

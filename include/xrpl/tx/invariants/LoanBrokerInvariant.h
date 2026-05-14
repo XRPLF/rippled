@@ -28,7 +28,7 @@ namespace xrpl {
  *  4. **Vault linkage** — `sfVaultID` must reference an existing `ltVAULT`.
  *  5. **Cover–balance lower bound** — `sfCoverAvailable` must be ≥ the
  *     pseudo-account's actual asset balance (via `accountHolds`).
- *  6. **Cover–balance upper bound** (when `fixSecurity3_1_3` is active) —
+ *  6. **Cover–balance upper bound** (when `fixCleanup3_1_3` is active) —
  *     `sfCoverAvailable` must also be ≤ the pseudo-account balance, except
  *     during `ttLOAN_BROKER_DELETE` where `sfCoverAvailable` is intentionally
  *     left un-zeroed at deletion.

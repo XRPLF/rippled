@@ -61,10 +61,10 @@ accountInDomain(ReadView const& view, AccountID const& account, Domain const& do
  * - Offer SLE must exist (defensive; should not occur in a well-formed book).
  * - Offer must carry `sfDomainID` (defensive; should not occur).
  * - `sfDomainID` must match @p domainID (defensive; should not occur).
- * - **Post-`fixSecurity3_1_3`**: a hybrid offer (`lsfHybrid`) must have
+ * - **Post-`fixCleanup3_1_3`**: a hybrid offer (`lsfHybrid`) must have
  *   `sfAdditionalBooks` present with exactly one entry; a violation is logged
  *   as an error and `false` is returned.
- * - **Pre-`fixSecurity3_1_3`**: a hybrid offer must have `sfAdditionalBooks`
+ * - **Pre-`fixCleanup3_1_3`**: a hybrid offer must have `sfAdditionalBooks`
  *   present (size is not validated).
  * - Delegates the final membership check to `accountInDomain` for the offer's
  *   owner (`sfAccount`).
@@ -81,7 +81,7 @@ accountInDomain(ReadView const& view, AccountID const& account, Domain const& do
  * @return `true` if the offer passes all structural checks and its owner is
  *         currently a member of @p domainID; `false` otherwise.
  *
- * @note The `fixSecurity3_1_3` amendment tightens hybrid-offer validation from
+ * @note The `fixCleanup3_1_3` amendment tightens hybrid-offer validation from
  *     a presence-only check on `sfAdditionalBooks` to a presence-plus-size-one
  *     check. Both code paths must be preserved for deterministic historic replay.
  */

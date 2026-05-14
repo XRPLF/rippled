@@ -26,6 +26,7 @@
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Buffer.h>
+#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/Slice.h>
@@ -66,6 +67,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cstdint>
 #include <exception>
 #include <functional>
 #include <memory>
@@ -518,6 +520,25 @@ checkTxJsonFields(
     // It's all good.  Return the AccountID.
     ret.second = *srcAddressID;
     return ret;
+}
+
+static Expected<void, json::Value>
+checkNetworkID(json::Value const& txJson, uint32_t appNetworkId)
+{
+    if (appNetworkId > 1024)
+    {
+        if (!txJson.isMember(jss::NetworkID))
+        {
+            return Unexpected(
+                RPC::makeError(RpcInvalidParams, RPC::missingFieldMessage("tx_json.NetworkID")));
+        }
+        if (!txJson[jss::NetworkID].isIntegral() || txJson[jss::NetworkID].asUInt() != appNetworkId)
+        {
+            return Unexpected(
+                RPC::makeError(RpcInvalidParams, RPC::invalidFieldMessage("tx_json.NetworkID")));
+        }
+    }
+    return Expected<void, json::Value>();
 }
 
 //------------------------------------------------------------------------------
@@ -1460,8 +1481,16 @@ transactionSignFor(
         if (!txJson.isObject())
             return RPC::objectFieldError(jss::tx_json);
 
+        if (auto checkResult =
+                detail::checkNetworkID(txJson, app.getNetworkIDService().getNetworkID());
+            !checkResult)
+        {
+            return std::move(checkResult).error();
+        }
+
         // Insert an empty SigningPubKey if absent — the multi-signing protocol
-        // requires the root SigningPubKey to be empty bytes.
+        // requires the root SigningPubKey to be empty bytes, and
+        // `checkMultiSignFields` would otherwise reject non-multisign txns here.
         if (!txJson.isMember(sfSigningPubKey.getJsonName()))
             txJson[sfSigningPubKey.getJsonName()] = "";
     }

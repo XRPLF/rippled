@@ -23,7 +23,7 @@ namespace xrpl {
  *  structurally well-formed.
  *
  *  The definition of "well-formed" for hybrid offers is amendment-gated:
- *  before `fixSecurity3_1_3` activates, the checker rejects hybrids with a
+ *  before `fixCleanup3_1_3` activates, the checker rejects hybrids with a
  *  missing `sfDomainID`, missing `sfAdditionalBooks`, or an
  *  `sfAdditionalBooks` array larger than 1; after the amendment activates,
  *  the size must be exactly 1 (an empty array is also rejected).
@@ -36,8 +36,8 @@ namespace xrpl {
 class ValidPermissionedDEX
 {
     bool regularOffers_ = false;
-    bool badHybridsOld_ = false;  // pre-fixSecurity3_1_3: missing field/domain or size > 1
-    bool badHybrids_ = false;     // post-fixSecurity3_1_3: also catches size == 0 (size != 1)
+    bool badHybridsOld_ = false;  // pre-fixCleanup3_1_3: missing field/domain or size > 1
+    bool badHybrids_ = false;     // post-fixCleanup3_1_3: also catches size == 0 (size != 1)
     hash_set<uint256> domains_;
 
 public:
@@ -68,7 +68,7 @@ public:
      *  Checks (in order):
      *  - For `ttOFFER_CREATE`: no hybrid offer is structurally malformed.
      *    Which malformation predicate applies depends on whether
-     *    `fixSecurity3_1_3` is active in the current rule set (pre-amendment:
+     *    `fixCleanup3_1_3` is active in the current rule set (pre-amendment:
      *    `badHybridsOld_`; post-amendment: `badHybrids_`).
      *  - The `ltPERMISSIONED_DOMAIN` referenced by `sfDomainID` exists in
      *    the ledger — guards against a domain deleted within the same batch.

@@ -16,7 +16,7 @@ namespace xrpl {
  *    a zero explicit `sfDestination` without accessing the ledger.
  *  - `preclaim` — read-only checks: vault existence, asset denomination,
  *    transferability, withdrawal limits (with share-to-asset conversion when
- *    `fixSecurity3_1_3` is active), destination authorization, and freeze state.
+ *    `fixCleanup3_1_3` is active), destination authorization, and freeze state.
  *  - `doApply` — burns shares, decrements `sfAssetsTotal`/`sfAssetsAvailable`,
  *    and credits the underlying asset to the destination account.
  *
@@ -65,7 +65,7 @@ public:
      *    otherwise.
      *  - Withdrawal policy: only `vaultStrategyFirstComeFirstServe` is
      *    supported; any other value returns `tefINTERNAL` (invariant violation).
-     *  - Withdrawal limits: when `fixSecurity3_1_3` is active and the amount is
+     *  - Withdrawal limits: when `fixCleanup3_1_3` is active and the amount is
      *    share-denominated, shares are first converted to an equivalent asset
      *    amount before calling `canWithdraw`. Pre-amendment, share-denominated
      *    requests bypassed this check entirely. Overflow during conversion

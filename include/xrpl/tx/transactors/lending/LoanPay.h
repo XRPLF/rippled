@@ -99,7 +99,7 @@ public:
      *  to determine the asset, periodic payment, and service fee, then
      *  computes `numPaymentEstimate = amount / regularPayment`.  One base-fee
      *  unit is charged per `kLOAN_PAYMENTS_PER_FEE_INCREMENT` estimated
-     *  payments (rounded up, minimum 1).  When `fixSecurity3_1_3` is active,
+     *  payments (rounded up, minimum 1).  When `fixCleanup3_1_3` is active,
      *  the total is capped at `kLOAN_MAXIMUM_PAYMENTS_PER_TRANSACTION /
      *  kLOAN_PAYMENTS_PER_FEE_INCREMENT` increments — the hard processing
      *  cap that `loanMakePayment` enforces at execution time.
@@ -128,7 +128,7 @@ public:
      *    the transaction (`tecNO_PERMISSION`).
      *  - **Overpayment permission**: if `tfLoanOverpayment` is set but the
      *    loan's `lsfLoanOverpayment` flag is absent, returns `tecNO_PERMISSION`
-     *    when `fixSecurity3_1_3` is active, or `temINVALID_FLAG` otherwise
+     *    when `fixCleanup3_1_3` is active, or `temINVALID_FLAG` otherwise
      *    (a versioned correction to historical behaviour).
      *  - **Loan completeness**: if `sfPaymentRemaining == 0` or
      *    `sfPrincipalOutstanding == 0` the loan is already discharged

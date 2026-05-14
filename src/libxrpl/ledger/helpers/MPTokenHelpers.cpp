@@ -285,7 +285,7 @@ authorizeMPToken(
             auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
             auto const sleMpt = view.peek(mptokenKey);
             if (!sleMpt || (*sleMpt)[sfMPTAmount] != 0 ||
-                (view.rules().enabled(fixSecurity3_1_3) &&
+                (view.rules().enabled(fixCleanup3_1_3) &&
                  (*sleMpt)[~sfLockedAmount].valueOr(0) != 0))
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -366,7 +366,7 @@ authorizeMPToken(
  *  is the issuer and no `MPToken` SLE exists (the normal case). If an SLE is
  *  found for the issuer it is deleted defensively — MPT accounting does not
  *  create such a situation, but the guard prevents ledger imbalance. Rejects
- *  with `tecHAS_OBLIGATIONS` if `sfMPTAmount` or (under `fixSecurity3_1_3`)
+ *  with `tecHAS_OBLIGATIONS` if `sfMPTAmount` or (under `fixCleanup3_1_3`)
  *  `sfLockedAmount` is non-zero, because deleting a token with a live balance
  *  would corrupt `sfOutstandingAmount` on the issuance. On all other paths,
  *  delegates to `authorizeMPToken` with `tfMPTUnauthorize` to remove the SLE
@@ -392,7 +392,7 @@ removeEmptyHolding(
     if (!mptoken)
         return accountIsIssuer ? (TER)tesSUCCESS : (TER)tecOBJECT_NOT_FOUND;
     if (mptoken->at(sfMPTAmount) != 0 ||
-        (view.rules().enabled(fixSecurity3_1_3) && (*mptoken)[~sfLockedAmount].valueOr(0) != 0))
+        (view.rules().enabled(fixCleanup3_1_3) && (*mptoken)[~sfLockedAmount].valueOr(0) != 0))
         return tecHAS_OBLIGATIONS;
 
     return authorizeMPToken(
