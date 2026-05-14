@@ -413,5 +413,6 @@
     "to": "now"
   },
   "title": "RPC & Pathfinding (System Metrics)",
-  "uid": "rippled-system-rpc"
+  "uid": "rippled-system-rpc",
+  "refresh": "5s"
 }

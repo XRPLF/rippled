@@ -583,5 +583,6 @@
     "to": "now"
   },
   "title": "Overlay Traffic Detail (System Metrics)",
-  "uid": "rippled-system-overlay-detail"
+  "uid": "rippled-system-overlay-detail",
+  "refresh": "5s"
 }

@@ -69,9 +69,9 @@ connectors:
       - name: xrpl.consensus.mode
       - name: close_time_correct
       - name: local
-      - name: xrpl.tx.suppressed
-      - name: xrpl.peer.proposal.trusted
-      - name: xrpl.peer.validation.trusted
+      - name: suppressed
+      - name: proposal_trusted
+      - name: validation_trusted
 
 exporters:
   debug:

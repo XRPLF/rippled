@@ -223,5 +223,6 @@
     "to": "now"
   },
   "title": "Peer Network",
-  "uid": "rippled-peer-net"
+  "uid": "rippled-peer-net",
+  "refresh": "5s"
 }
