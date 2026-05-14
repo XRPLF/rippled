@@ -73,29 +73,29 @@ static std::chrono::seconds const kBootcacheCooldownTime(60);
 //------------------------------------------------------------------------------
 
 // Drop incoming messages with hops greater than this number
-std::uint32_t constexpr kMaxHops = 6;
+constexpr std::uint32_t kMaxHops = 6;
 
 // How many Endpoint to send in each mtENDPOINTS
-std::uint32_t constexpr kNumberOfEndpoints = 2 * kMaxHops;
+constexpr std::uint32_t kNumberOfEndpoints = 2 * kMaxHops;
 
 // The most Endpoint we will accept in mtENDPOINTS
-std::uint32_t constexpr kNumberOfEndpointsMax =
+constexpr std::uint32_t kNumberOfEndpointsMax =
     std::max<decltype(kNumberOfEndpoints)>(kNumberOfEndpoints * 2, 64);
 
 // Number of addresses we provide when redirecting.
-std::uint32_t constexpr kRedirectEndpointCount = 10;
+constexpr std::uint32_t kRedirectEndpointCount = 10;
 
 // How often we send or accept mtENDPOINTS messages per peer
 // (we use a prime number of purpose)
-std::chrono::seconds constexpr kSecondsPerMessage(151);
+constexpr std::chrono::seconds kSecondsPerMessage(151);
 
 // How long an Endpoint will stay in the cache
 // This should be a small multiple of the broadcast frequency
-std::chrono::seconds constexpr kLiveCacheSecondsToLive(30);
+constexpr std::chrono::seconds kLiveCacheSecondsToLive(30);
 
 // How much time to wait before trying an outgoing address again.
 // Note that we ignore the port for purposes of comparison.
-std::chrono::seconds constexpr kRecentAttemptDuration(60);
+constexpr std::chrono::seconds kRecentAttemptDuration(60);
 
 }  // namespace xrpl::PeerFinder::Tuning
 /** @} */

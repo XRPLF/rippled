@@ -35,6 +35,6 @@ static constexpr auto kCheckIdlePeers = 4;
 static constexpr auto kMaxQueryDepth = 3;
 
 /** Size of buffer used to read from the socket. */
-std::size_t constexpr kReadBufferBytes = 16384;
+constexpr std::size_t kReadBufferBytes = 16384;
 
 }  // namespace xrpl::Tuning

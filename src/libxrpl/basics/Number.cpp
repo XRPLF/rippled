@@ -367,9 +367,9 @@ doNormalize(
     MantissaRange::rep const& minMantissa,
     MantissaRange::rep const& maxMantissa)
 {
-    auto constexpr kMinExponent = Number::kMinExponent;
-    auto constexpr kMaxExponent = Number::kMaxExponent;
-    auto constexpr kMaxRep = Number::kMaxRep;
+    constexpr auto kMinExponent = Number::kMinExponent;
+    constexpr auto kMaxExponent = Number::kMaxExponent;
+    constexpr auto kMaxRep = Number::kMaxRep;
 
     using Guard = Number::Guard;
 

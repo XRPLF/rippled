@@ -522,7 +522,7 @@ public:
                 // carol's offer can be partially crossed when EUR is IOU:
                 // 10e-3EUR/1USD
                 using tEUR = std::decay_t<decltype(eur)>;
-                bool constexpr kIsEuriou = std::is_same_v<tEUR, IOU>;
+                constexpr bool kIsEuriou = std::is_same_v<tEUR, IOU>;
                 // partially crossed if IOU, removed but not taken if MPT
                 auto const balanceCarolUSD = kIsEuriou ? usd(0) : initialCarolUSD;
 
@@ -590,7 +590,7 @@ public:
                     // carol's offer can be partially crossed when EUR is IOU:
                     // 10e-3EUR/1USD
                     using tEUR = std::decay_t<decltype(eur)>;
-                    bool constexpr kIsEuriou = std::is_same_v<tEUR, IOU>;
+                    constexpr bool kIsEuriou = std::is_same_v<tEUR, IOU>;
                     // partially crossed if IOU, removed but not taken if MPT
                     auto const balanceCarolUSD = kIsEuriou ? usd(0) : initialCarolUSD;
                     env.require(offers(carol, 0));

@@ -1165,7 +1165,7 @@ public:
         testcase("hasUnsupportedEnabled");
 
         using namespace std::chrono_literals;
-        weeks constexpr kW(1);
+        constexpr weeks kW(1);
         test::jtx::Env env{*this, makeConfig()};
         auto table = makeTable(env, kW);
         BEAST_EXPECT(!table->hasUnsupportedEnabled());

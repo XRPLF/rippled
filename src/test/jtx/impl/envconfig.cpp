@@ -100,7 +100,7 @@ singleThreadIo(std::unique_ptr<Config> cfg)
     return cfg;
 }
 
-auto constexpr kDefaultSeed = "shUwVw52ofnCUX5m7kPTKzJdr4HEH";
+constexpr auto kDefaultSeed = "shUwVw52ofnCUX5m7kPTKzJdr4HEH";
 
 std::unique_ptr<Config>
 validator(std::unique_ptr<Config> cfg, std::string const& seed)

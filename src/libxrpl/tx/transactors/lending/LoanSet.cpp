@@ -226,7 +226,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         // overflows, and we kill the transaction.
         using timeType = decltype(sfNextPaymentDueDate)::type::value_type;
         static_assert(std::is_same_v<timeType, std::uint32_t>);
-        timeType constexpr kMaxTime = std::numeric_limits<timeType>::max();
+        constexpr timeType kMaxTime = std::numeric_limits<timeType>::max();
         static_assert(kMaxTime == 4'294'967'295);
 
         auto const timeAvailable = kMaxTime - getStartDate(ctx.view);

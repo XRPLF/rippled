@@ -55,7 +55,7 @@ getAlphabet()
 inline signed char const*
 getInverse()
 {
-    static signed char constexpr kTab[] = {
+    static constexpr signed char kTab[] = {
         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  //   0-15
         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  //  16-31
         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 62, -1, -1, -1, 63,  //  32-47
@@ -77,13 +77,15 @@ getInverse()
 }
 
 /// Returns max chars needed to encode a base64 string
-std::size_t constexpr encodedSize(std::size_t n)
+constexpr std::size_t
+encodedSize(std::size_t n)
 {
     return 4 * ((n + 2) / 3);
 }
 
 /// Returns max bytes needed to decode a base64 string
-std::size_t constexpr decodedSize(std::size_t n)
+constexpr std::size_t
+decodedSize(std::size_t n)
 {
     return ((n / 4) * 3) + 2;
 }

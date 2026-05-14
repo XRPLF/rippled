@@ -144,7 +144,7 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
                                      : Number::RoundingMode::Downward);
 
     static_assert(kLoanMaximumPaymentsPerTransaction % kLoanPaymentsPerFeeIncrement == 0);
-    std::int64_t constexpr kMaxFeeIncrements =
+    constexpr std::int64_t kMaxFeeIncrements =
         kLoanMaximumPaymentsPerTransaction / kLoanPaymentsPerFeeIncrement;
 
     if (view.rules().enabled(fixCleanup3_1_3) &&

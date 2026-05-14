@@ -105,13 +105,13 @@ namespace xrpl {
 
 namespace {
 /** The threshold above which we treat a peer connection as high latency */
-std::chrono::milliseconds constexpr kPeerHighLatency{300};
+constexpr std::chrono::milliseconds kPeerHighLatency{300};
 
 /** How often we PING the peer to check for latency and sendq probe */
-std::chrono::seconds constexpr kPeerTimerInterval{60};
+constexpr std::chrono::seconds kPeerTimerInterval{60};
 
 /** The timeout for a shutdown timer */
-std::chrono::seconds constexpr kShutdownTimerInterval{5};
+constexpr std::chrono::seconds kShutdownTimerInterval{5};
 
 }  // namespace
 

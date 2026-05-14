@@ -1332,7 +1332,7 @@ class Invariants_test : public beast::unit_test::Suite
 
         testcase << "PermissionedDomain 2";
 
-        auto constexpr kTooBig = kMaxPermissionedDomainCredentialsArraySize + 1;
+        constexpr auto kTooBig = kMaxPermissionedDomainCredentialsArraySize + 1;
         doInvariantCheck(
             Env(*this, features),
             {{"permissioned domain bad credentials size " + std::to_string(kTooBig)}},
@@ -2427,7 +2427,7 @@ class Invariants_test : public beast::unit_test::Suite
             std::optional<AccountAmount> accountShares = std::nullopt;
             // NOLINTEND(readability-redundant-member-init)
         };
-        auto constexpr kAdjust = [&](ApplyView& ac, xrpl::Keylet keylet, Adjustments args) {
+        constexpr auto kAdjust = [&](ApplyView& ac, xrpl::Keylet keylet, Adjustments args) {
             auto sleVault = ac.peek(keylet);
             if (!sleVault)
                 return false;

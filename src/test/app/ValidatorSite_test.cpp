@@ -45,8 +45,8 @@ realValidatorContents()
 )vl";
 }
 
-auto constexpr kDefaultExpires = std::chrono::seconds{3600};
-auto constexpr kDefaultEffectiveOverlap = std::chrono::seconds{30};
+constexpr auto kDefaultExpires = std::chrono::seconds{3600};
+constexpr auto kDefaultEffectiveOverlap = std::chrono::seconds{30};
 }  // namespace detail
 
 namespace test {
@@ -172,7 +172,7 @@ private:
         };
         std::vector<Publisher> servers;
 
-        auto constexpr kListSize = 20;
+        constexpr auto kListSize = 20;
         std::vector<std::string> cfgPublishers;
 
         for (auto const& cfg : paths)

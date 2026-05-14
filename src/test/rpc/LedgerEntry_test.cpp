@@ -2868,7 +2868,7 @@ class LedgerEntry_XChain_test : public beast::unit_test::Suite,
 
         // send less than quorum of attestations (otherwise funds are
         // immediately transferred and no "claim" object is created)
-        size_t constexpr kNumAttest = 3;
+        constexpr size_t kNumAttest = 3;
         auto attestations = createAccountAttestations(
             scAttester,
             jvb,

@@ -65,7 +65,7 @@ static constexpr auto kReqNodesReply = 128;     // Number of nodes to request fo
 static constexpr auto kReqNodes = 12;           // Number of nodes to request blindly
 
 // millisecond for each ledger timeout
-auto constexpr kLedgerAcquireTimeout = 3000ms;
+constexpr auto kLedgerAcquireTimeout = 3000ms;
 
 InboundLedger::InboundLedger(
     Application& app,

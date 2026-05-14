@@ -64,4 +64,4 @@ constexpr std::chrono::seconds const kDefaultAmendmentMajorityTime = weeks{2};
 }  // namespace xrpl
 
 /** Default peer port (IANA registered) */
-inline std::uint16_t constexpr kDefaultPeerPort{2459};
+inline constexpr std::uint16_t kDefaultPeerPort{2459};

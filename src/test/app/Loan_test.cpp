@@ -4264,7 +4264,7 @@ protected:
 
         env.fund(XRP(1'000), issuer, lender);
 
-        std::int64_t constexpr kIssuerBalance = 10'000'000;
+        constexpr std::int64_t kIssuerBalance = 10'000'000;
         MPTTester const asset(
             {.env = env, .issuer = issuer, .holders = {lender}, .pay = kIssuerBalance});
 
@@ -4853,7 +4853,7 @@ protected:
                 stateAfter.paymentRemaining == stateBefore.paymentRemaining - expectedChange);
         };
 
-        std::int64_t constexpr kMaxFeeIncrements =
+        constexpr std::int64_t kMaxFeeIncrements =
             kLoanMaximumPaymentsPerTransaction / kLoanPaymentsPerFeeIncrement;
 
         TER const failWithoutFix = feeCapped ? (TER)tesSUCCESS : (TER)telINSUF_FEE_P;
@@ -5125,7 +5125,7 @@ protected:
 
         using timeType = decltype(sfNextPaymentDueDate)::type::value_type;
         static_assert(std::is_same_v<timeType, std::uint32_t>);
-        timeType constexpr kMaxTime = std::numeric_limits<timeType>::max();
+        constexpr timeType kMaxTime = std::numeric_limits<timeType>::max();
         static_assert(kMaxTime == 4'294'967'295);
 
         auto const baseJson = [&]() {
@@ -5384,7 +5384,7 @@ protected:
                 err);
         });
 
-        std::uint32_t constexpr kLoanSequence = 1;
+        constexpr std::uint32_t kLoanSequence = 1;
         auto const loanKeylet = keylet::loan(brokerInfo.brokerID, kLoanSequence);
 
         // Can't loan pay if the borrower is not authorized

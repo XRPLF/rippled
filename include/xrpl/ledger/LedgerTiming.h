@@ -12,7 +12,7 @@ namespace xrpl {
     Values should not be duplicated.
     @see getNextLedgerTimeResolution
 */
-std::chrono::seconds constexpr kLedgerPossibleTimeResolutions[] = {
+constexpr std::chrono::seconds kLedgerPossibleTimeResolutions[] = {
     std::chrono::seconds{10},
     std::chrono::seconds{20},
     std::chrono::seconds{30},
@@ -21,16 +21,16 @@ std::chrono::seconds constexpr kLedgerPossibleTimeResolutions[] = {
     std::chrono::seconds{120}};
 
 //! Initial resolution of ledger close time.
-auto constexpr kLedgerDefaultTimeResolution = kLedgerPossibleTimeResolutions[2];
+constexpr auto kLedgerDefaultTimeResolution = kLedgerPossibleTimeResolutions[2];
 
 //! Close time resolution in genesis ledger
-auto constexpr kLedgerGenesisTimeResolution = kLedgerPossibleTimeResolutions[0];
+constexpr auto kLedgerGenesisTimeResolution = kLedgerPossibleTimeResolutions[0];
 
 //! How often we increase the close time resolution (in numbers of ledgers)
-auto constexpr kIncreaseLedgerTimeResolutionEvery = 8;
+constexpr auto kIncreaseLedgerTimeResolutionEvery = 8;
 
 //! How often we decrease the close time resolution (in numbers of ledgers)
-auto constexpr kDecreaseLedgerTimeResolutionEvery = 1;
+constexpr auto kDecreaseLedgerTimeResolutionEvery = 1;
 
 /** Calculates the close time resolution for the specified ledger.
 

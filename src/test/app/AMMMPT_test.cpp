@@ -6336,8 +6336,8 @@ private:
             };
         };
 
-        std::uint32_t constexpr kLowRate = 10'000;
-        std::uint32_t constexpr kHighRate = 50'000;
+        constexpr std::uint32_t kLowRate = 10'000;
+        constexpr std::uint32_t kHighRate = 50'000;
         for (auto const& rates :
              {std::make_pair(kLowRate, kHighRate), std::make_pair(kHighRate, kLowRate)})
         {

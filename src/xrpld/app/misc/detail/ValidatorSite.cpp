@@ -44,9 +44,9 @@
 
 namespace xrpl {
 
-auto constexpr kDefaultRefreshInterval = std::chrono::minutes{5};
-auto constexpr kErrorRetryInterval = std::chrono::seconds{30};
-unsigned short constexpr kMaxRedirects = 3;
+constexpr auto kDefaultRefreshInterval = std::chrono::minutes{5};
+constexpr auto kErrorRetryInterval = std::chrono::seconds{30};
+unsigned constexpr short kMaxRedirects = 3;
 
 ValidatorSite::Site::Resource::Resource(std::string inUri) : uri{std::move(inUri)}
 {

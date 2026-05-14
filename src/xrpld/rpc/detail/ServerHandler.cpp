@@ -592,10 +592,10 @@ makeJsonError(json::Int code, json::Value&& message)
     return r;
 }
 
-json::Int constexpr kMethodNotFound = -32601;
-json::Int constexpr kServerOverloaded = -32604;
-json::Int constexpr kForbidden = -32605;
-json::Int constexpr kWrongVersion = -32606;
+constexpr json::Int kMethodNotFound = -32601;
+constexpr json::Int kServerOverloaded = -32604;
+constexpr json::Int kForbidden = -32605;
+constexpr json::Int kWrongVersion = -32606;
 
 void
 ServerHandler::processRequest(

@@ -8,21 +8,21 @@
 
 namespace xrpl {
 
-std::uint16_t constexpr kTradingFeeThreshold = 1000;  // 1%
+constexpr std::uint16_t kTradingFeeThreshold = 1000;  // 1%
 
 // Auction slot
-std::uint32_t constexpr kTotalTimeSlotSecs = 24 * 3600;
-std::uint16_t constexpr kAuctionSlotTimeIntervals = 20;
-std::uint16_t constexpr kAuctionSlotMaxAuthAccounts = 4;
-std::uint32_t constexpr kAuctionSlotFeeScaleFactor = 100000;
-std::uint32_t constexpr kAuctionSlotDiscountedFeeFraction = 10;
-std::uint32_t constexpr kAuctionSlotMinFeeFraction = 25;
-std::uint32_t constexpr kAuctionSlotIntervalDuration =
+constexpr std::uint32_t kTotalTimeSlotSecs = 24 * 3600;
+constexpr std::uint16_t kAuctionSlotTimeIntervals = 20;
+constexpr std::uint16_t kAuctionSlotMaxAuthAccounts = 4;
+constexpr std::uint32_t kAuctionSlotFeeScaleFactor = 100000;
+constexpr std::uint32_t kAuctionSlotDiscountedFeeFraction = 10;
+constexpr std::uint32_t kAuctionSlotMinFeeFraction = 25;
+constexpr std::uint32_t kAuctionSlotIntervalDuration =
     kTotalTimeSlotSecs / kAuctionSlotTimeIntervals;
 
 // Votes
-std::uint16_t constexpr kVoteMaxSlots = 8;
-std::uint32_t constexpr kVoteWeightScaleFactor = 100000;
+constexpr std::uint16_t kVoteMaxSlots = 8;
+constexpr std::uint32_t kVoteWeightScaleFactor = 100000;
 
 class STObject;
 class STAmount;

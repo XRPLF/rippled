@@ -289,7 +289,7 @@ IntrusiveRefCounts::addWeakReleaseStrongRef() const
     using enum ReleaseStrongRefAction;
 
     static_assert(kWeakDelta > kStrongDelta);
-    auto constexpr kDelta = kWeakDelta - kStrongDelta;
+    constexpr auto kDelta = kWeakDelta - kStrongDelta;
     auto prevIntVal = refCounts_.load(std::memory_order_acquire);
     // This loop will almost always run once. The loop is needed to atomically
     // change the counts and flags (the count could be atomically changed, but

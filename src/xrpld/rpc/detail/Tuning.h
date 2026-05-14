@@ -42,7 +42,7 @@ static constexpr int kDefaultAutoFillFeeDivisor = 1;
 static constexpr int kMaxPathfindsInProgress = 2;
 static constexpr int kMaxPathfindJobCount = 50;
 static constexpr int kMaxJobQueueClients = 500;
-auto constexpr kMaxValidatedLedgerAge = std::chrono::minutes{2};
+constexpr auto kMaxValidatedLedgerAge = std::chrono::minutes{2};
 static constexpr int kMaxRequestSize = 1000000;
 
 /** Maximum number of pages in one response from a binary LedgerData request. */
@@ -52,7 +52,8 @@ static constexpr int kBinaryPageLength = 2048;
 static constexpr int kJsonPageLength = 256;
 
 /** Maximum number of pages in a LedgerData response. */
-int constexpr pageLength(bool isBinary)
+constexpr int
+pageLength(bool isBinary)
 {
     return isBinary ? kBinaryPageLength : kJsonPageLength;
 }

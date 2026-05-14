@@ -603,8 +603,8 @@ private:
         BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgPublisherKeys));
 
         std::map<std::size_t, std::vector<Validator>> const lists = []() {
-            auto constexpr kListSize = 20;
-            auto constexpr kNumLists = 9;
+            constexpr auto kListSize = 20;
+            constexpr auto kNumLists = 9;
             std::map<std::size_t, std::vector<Validator>> lists;
             // 1-based to correspond with the individually named blobs below.
             for (auto i = 1; i <= kNumLists; ++i)
@@ -949,7 +949,7 @@ private:
         BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgPublisherKeys));
 
         std::vector<Validator> const list = []() {
-            auto constexpr kListSize = 20;
+            constexpr auto kListSize = 20;
             std::vector<Validator> list;
             list.reserve(kListSize);
             while (list.size() < kListSize)

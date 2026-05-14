@@ -208,7 +208,7 @@ ApplyView::emptyDirDelete(Keylet const& directory)
     if (!node->getFieldV256(sfIndexes).empty())
         return false;
 
-    std::uint64_t constexpr kRootPage = 0;
+    constexpr std::uint64_t kRootPage = 0;
     auto prevPage = node->getFieldU64(sfIndexPrevious);
     auto nextPage = node->getFieldU64(sfIndexNext);
 
@@ -260,7 +260,7 @@ ApplyView::dirRemove(Keylet const& directory, std::uint64_t page, uint256 const&
     if (!node)
         return false;
 
-    std::uint64_t constexpr kRootPage = 0;
+    constexpr std::uint64_t kRootPage = 0;
 
     {
         auto entries = node->getFieldV256(sfIndexes);

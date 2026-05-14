@@ -29,7 +29,7 @@ namespace xrpl {
 using namespace std::chrono_literals;
 
 // Timeout interval in milliseconds
-auto constexpr kTxAcquireTimeout = 250ms;
+constexpr auto kTxAcquireTimeout = 250ms;
 
 static constexpr auto kNormTimeouts = 4;
 static constexpr auto kMaxTimeouts = 20;
