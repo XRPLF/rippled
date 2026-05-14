@@ -603,7 +603,7 @@ class Simulate_test : public beast::unit_test::Suite
             tx[sfDomain.jsonName] = kNEW_DOMAIN;
             tx[sfSponsor.jsonName] = sponsor.human();
             tx[sfSponsorFlags.jsonName] = spfSponsorFee;
-            tx[sfSponsorSignature.jsonName] = json::ObjectValue;
+            tx[sfSponsorSignature.jsonName] = json::ValueType::Object;
 
             // test with autofill
             testTx(env, tx, validateOutput);

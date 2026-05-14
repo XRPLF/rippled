@@ -2178,8 +2178,8 @@ public:
             json::Value jv;
             jv[jss::TransactionType] = jss::AMMCreate;
             jv[jss::Account] = account.human();
-            jv[jss::Amount] = amount1.getJson(JsonOptions::KNone);
-            jv[jss::Amount2] = amount2.getJson(JsonOptions::KNone);
+            jv[jss::Amount] = amount1.getJson(JsonOptions::Values::None);
+            jv[jss::Amount2] = amount2.getJson(JsonOptions::Values::None);
             jv[jss::TradingFee] = 0;
             jv[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
             return jv;
@@ -2192,10 +2192,10 @@ public:
             json::Value jv;
             jv[jss::TransactionType] = jss::AMMDeposit;
             jv[jss::Account] = account.human();
-            jv[jss::Asset] = STIssue(sfAsset, amount1.asset()).getJson(JsonOptions::KNone);
-            jv[jss::Asset2] = STIssue(sfAsset, amount2.asset()).getJson(JsonOptions::KNone);
-            jv[jss::Amount] = amount1.value().getJson(JsonOptions::KNone);
-            jv[jss::Amount2] = amount2.value().getJson(JsonOptions::KNone);
+            jv[jss::Asset] = STIssue(sfAsset, amount1.asset()).getJson(JsonOptions::Values::None);
+            jv[jss::Asset2] = STIssue(sfAsset, amount2.asset()).getJson(JsonOptions::Values::None);
+            jv[jss::Amount] = amount1.value().getJson(JsonOptions::Values::None);
+            jv[jss::Amount2] = amount2.value().getJson(JsonOptions::Values::None);
             jv[jss::Flags] = tfTwoAsset;
             return jv;
         };
@@ -2368,9 +2368,9 @@ public:
                 json::Value jv;
                 jv[jss::TransactionType] = jss::AMMWithdraw;
                 jv[jss::Account] = alice.human();
-                jv[jss::Asset] = STIssue(sfAsset, usd.issue()).getJson(JsonOptions::KNone);
-                jv[jss::Asset2] = STIssue(sfAsset, eur.issue()).getJson(JsonOptions::KNone);
-                jv[jss::Amount] = usd(100).value().getJson(JsonOptions::KNone);
+                jv[jss::Asset] = STIssue(sfAsset, usd.issue()).getJson(JsonOptions::Values::None);
+                jv[jss::Asset2] = STIssue(sfAsset, eur.issue()).getJson(JsonOptions::Values::None);
+                jv[jss::Amount] = usd(100).value().getJson(JsonOptions::Values::None);
                 jv[jss::Flags] = tfSingleAsset;
 
                 env(ticket::create(sponsor, 1));  // adjust for free
@@ -2418,8 +2418,8 @@ public:
                 json::Value jv;
                 jv[jss::TransactionType] = jss::AMMWithdraw;
                 jv[jss::Account] = alice.human();
-                jv[jss::Asset] = STIssue(sfAsset, usd.issue()).getJson(JsonOptions::KNone);
-                jv[jss::Asset2] = STIssue(sfAsset, eur.issue()).getJson(JsonOptions::KNone);
+                jv[jss::Asset] = STIssue(sfAsset, usd.issue()).getJson(JsonOptions::Values::None);
+                jv[jss::Asset2] = STIssue(sfAsset, eur.issue()).getJson(JsonOptions::Values::None);
                 jv[jss::Flags] = tfWithdrawAll;
 
                 env(ticket::create(sponsor, 1));  // adjust for free trustline
@@ -4217,7 +4217,7 @@ public:
                 duration_cast<seconds>(env.current()->header().closeTime.time_since_epoch())
                     .count() +
                 kEPOCH_OFFSET.count() + 100);
-            jv[jss::PriceDataSeries] = json::ArrayValue;
+            jv[jss::PriceDataSeries] = json::ValueType::Array;
             jv[jss::Provider] = strHex(std::string{"provider"});
             jv[jss::AssetClass] = strHex(std::string{"currency"});
 
@@ -4236,7 +4236,7 @@ public:
 
             DataSeries const actualSeries(series.begin(), series.begin() + dataSeriesSize);
 
-            json::Value dataSeries(json::ArrayValue);
+            json::Value dataSeries(json::ValueType::Array);
             for (auto const& data : actualSeries)
             {
                 json::Value priceData;

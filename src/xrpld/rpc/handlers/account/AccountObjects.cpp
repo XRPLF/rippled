@@ -112,7 +112,7 @@ getAccountObjects(
                     canAppendNFT = false;
             }
             if (canAppendNFT)
-                jvObjects.append(currentPage->getJson(JsonOptions::KNone));
+                jvObjects.append(currentPage->getJson(JsonOptions::Values::None));
             auto const npm = (*currentPage)[~sfNextPageMin];
             if (npm)
             {
