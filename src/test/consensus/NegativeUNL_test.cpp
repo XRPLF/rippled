@@ -956,9 +956,12 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::Suite
             //    (strict > check). With the amendment, it returns the
             //    score table (>= check).
 
-            auto const minVals = NegativeUNLVote::kNEGATIVE_UNL_MIN_LOCAL_VALS_TO_VOTE;
-
             // Without fixCleanup3_2_0 (default testableAmendments)
+            //
+            for (auto const& minVals :
+                 {NegativeUNLVote::kNEGATIVE_UNL_MIN_LOCAL_VALS_TO_VOTE - 1,
+                  NegativeUNLVote::kNEGATIVE_UNL_MIN_LOCAL_VALS_TO_VOTE,
+                  NegativeUNLVote::kNEGATIVE_UNL_MIN_LOCAL_VALS_TO_VOTE + 1})
             {
                 NetworkHistory history = {
                     *this,
@@ -991,12 +994,19 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::Suite
                     NegativeUNLVote vote(myId, history.env.journal);
                     // Without the amendment, exactly minVals should
                     // fail the strict > check.
-                    BEAST_EXPECT(!vote.buildScoreTable(
-                        history.lastLedger(), history.UNLNodeIDSet, history.validations));
+                    auto const scoreTable = vote.buildScoreTable(
+                        history.lastLedger(), history.UNLNodeIDSet, history.validations);
+                    auto const expected =
+                        minVals > NegativeUNLVote::kNEGATIVE_UNL_MIN_LOCAL_VALS_TO_VOTE;
+                    BEAST_EXPECT(scoreTable.has_value() == expected);
                 }
             }
 
             // With fixCleanup3_2_0 enabled
+            for (auto const& minVals :
+                 {NegativeUNLVote::kNEGATIVE_UNL_MIN_LOCAL_VALS_TO_VOTE - 1,
+                  NegativeUNLVote::kNEGATIVE_UNL_MIN_LOCAL_VALS_TO_VOTE,
+                  NegativeUNLVote::kNEGATIVE_UNL_MIN_LOCAL_VALS_TO_VOTE + 1})
             {
                 NetworkHistory history = {
                     *this,
@@ -1029,7 +1039,9 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::Suite
                     // pass the >= check.
                     auto scoreTable = vote.buildScoreTable(
                         history.lastLedger(), history.UNLNodeIDSet, history.validations);
-                    BEAST_EXPECT(scoreTable);
+                    auto const expected =
+                        minVals >= NegativeUNLVote::kNEGATIVE_UNL_MIN_LOCAL_VALS_TO_VOTE;
+                    BEAST_EXPECT(scoreTable.has_value() == expected);
                     if (scoreTable)
                     {
                         auto const it = scoreTable->find(myId);
