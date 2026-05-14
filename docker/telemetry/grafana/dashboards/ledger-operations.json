@@ -10,7 +10,7 @@
   "panels": [
     {
       "title": "Ledger Build Rate",
-      "description": "Rate at which new ledgers are being built. The ledger.build span (BuildLedger.cpp:31) wraps the entire buildLedgerImpl() function which creates a new ledger from a parent, applies transactions, flushes SHAMap nodes, and sets the accepted state. Should match the consensus close rate (~0.25/sec on mainnet with ~4s rounds).",
+      "description": "Rate at which new ledgers are being built. The ledger.build span (BuildLedger.cpp) wraps the entire buildLedgerImpl() function which creates a new ledger from a parent, applies transactions, flushes SHAMap nodes, and sets the accepted state. Should match the consensus close rate (~0.25/sec on mainnet with ~4s rounds).",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -88,7 +88,7 @@
     },
     {
       "title": "Ledger Validation Rate",
-      "description": "Rate at which ledgers pass the validation threshold and are accepted as fully validated. The ledger.validate span (LedgerMaster.cpp:915) fires in checkAccept() only after the ledger receives sufficient trusted validations (>= quorum). Records xrpl.ledger.seq and validations (the number of validations received).",
+      "description": "Rate at which ledgers pass the validation threshold and are accepted as fully validated. The ledger.validate span (LedgerMaster.cpp) fires in checkAccept() only after the ledger receives sufficient trusted validations (>= quorum). Records xrpl.ledger.seq and validations (the number of validations received).",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -156,7 +156,7 @@
     },
     {
       "title": "Transaction Apply Duration",
-      "description": "p95 and p50 duration of applying the consensus transaction set during ledger building. The tx.apply span (BuildLedger.cpp:88) wraps applyTransactions() which iterates through the CanonicalTXSet with multiple retry passes. Records tx_count (successful) and tx_failed (failed) as attributes.",
+      "description": "p95 and p50 duration of applying the consensus transaction set during ledger building. The tx.apply span (BuildLedger.cpp) wraps applyTransactions() which iterates through the CanonicalTXSet with multiple retry passes. Records tx_count (successful) and tx_failed (failed) as attributes.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -241,7 +241,7 @@
     },
     {
       "title": "Ledger Store Rate",
-      "description": "Rate at which ledgers are stored into the ledger history. The ledger.store span (LedgerMaster.cpp:409) wraps storeLedger() which inserts the ledger into the LedgerHistory cache. Records xrpl.ledger.seq. Should match the ledger build rate under normal operation.",
+      "description": "Rate at which ledgers are stored into the ledger history. The ledger.store span (LedgerMaster.cpp) wraps storeLedger() which inserts the ledger into the LedgerHistory cache. Records xrpl.ledger.seq. Should match the ledger build rate under normal operation.",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -349,5 +349,5 @@
     "to": "now"
   },
   "title": "Ledger Operations",
-  "uid": "rippled-ledger-ops"
+  "uid": "xrpld-ledger-ops"
 }

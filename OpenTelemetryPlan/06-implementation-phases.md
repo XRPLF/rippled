@@ -179,14 +179,14 @@ SHAMap tracing are not implemented.
 
 ### Spans Produced
 
-| Span Name                   | Location               | Attributes                                                                                                                                                                                                            |
-| --------------------------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `consensus.phase.open`      | `Consensus.h:707`      | _(none)_                                                                                                                                                                                                              |
-| `consensus.proposal.send`   | `RCLConsensus.cpp:232` | `xrpl.consensus.round`                                                                                                                                                                                                |
-| `consensus.ledger_close`    | `RCLConsensus.cpp:341` | `xrpl.consensus.ledger.seq`, `xrpl.consensus.mode`                                                                                                                                                                    |
-| `consensus.accept`          | `RCLConsensus.cpp:492` | `xrpl.consensus.proposers`, `xrpl.consensus.round_time_ms`, `xrpl.consensus.quorum`                                                                                                                                   |
-| `consensus.accept.apply`    | `RCLConsensus.cpp:541` | `xrpl.consensus.close_time`, `close_time_correct`, `close_resolution_ms`, `state`, `proposing`, `round_time_ms`, `ledger.seq`, `parent_close_time`, `close_time_self`, `close_time_vote_bins`, `resolution_direction` |
-| `consensus.validation.send` | `RCLConsensus.cpp:900` | `xrpl.consensus.ledger.seq`, `xrpl.consensus.proposing`                                                                                                                                                               |
+| Span Name                   | Location           | Attributes                                                                                                                                                                                                            |
+| --------------------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `consensus.phase.open`      | `Consensus.h`      | _(none)_                                                                                                                                                                                                              |
+| `consensus.proposal.send`   | `RCLConsensus.cpp` | `xrpl.consensus.round`                                                                                                                                                                                                |
+| `consensus.ledger_close`    | `RCLConsensus.cpp` | `xrpl.consensus.ledger.seq`, `xrpl.consensus.mode`                                                                                                                                                                    |
+| `consensus.accept`          | `RCLConsensus.cpp` | `xrpl.consensus.proposers`, `xrpl.consensus.round_time_ms`, `xrpl.consensus.quorum`                                                                                                                                   |
+| `consensus.accept.apply`    | `RCLConsensus.cpp` | `xrpl.consensus.close_time`, `close_time_correct`, `close_resolution_ms`, `state`, `proposing`, `round_time_ms`, `ledger.seq`, `parent_close_time`, `close_time_self`, `close_time_vote_bins`, `resolution_direction` |
+| `consensus.validation.send` | `RCLConsensus.cpp` | `xrpl.consensus.ledger.seq`, `xrpl.consensus.proposing`                                                                                                                                                               |
 
 ### Exit Criteria
 
@@ -207,8 +207,7 @@ Phase 4a (establish-phase gap fill & cross-node correlation) adds:
   in the same round share the same `trace_id` (switchable via
   `consensus_trace_strategy` config: `"deterministic"` or `"attribute"`).
   See [Configuration Reference](./05-configuration-reference.md) for full
-  configuration options. The `consensus_trace_strategy` option will be
-  documented in the configuration reference as part of Phase 4a implementation.
+  configuration options.
 - **Round lifecycle spans**: `consensus.round` with round-to-round span links.
 - **Establish phase**: `consensus.establish`, `consensus.update_positions` (with
   `dispute.resolve` events), `consensus.check` (with threshold tracking).
@@ -351,7 +350,7 @@ xrpld has a mature metrics framework (`beast::insight`) that emits StatsD-format
 
 ### Wire Format Fix (Task 6.1) — DEFERRED
 
-The `StatsDMeterImpl` in `StatsDCollector.cpp:706` sends metrics with `|m` suffix, which is non-standard StatsD. The OTel StatsD receiver silently drops these. Fix: change `|m` to `|c` (counter), which is semantically correct since meters are increment-only counters. Only 2 metrics are affected (`warn`, `drop` in Resource Manager).
+The `StatsDMeterImpl` in `StatsDCollector.cpp` sends metrics with `|m` suffix, which is non-standard StatsD. The OTel StatsD receiver silently drops these. Fix: change `|m` to `|c` (counter), which is semantically correct since meters are increment-only counters. Only 2 metrics are affected (`warn`, `drop` in Resource Manager).
 
 **Status**: Deferred as a separate change — this is a breaking change for any StatsD backend that previously consumed the custom `|m` type. The Resource Warnings and Resource Drops dashboard panels will show no data until this fix is applied.
 
@@ -602,13 +601,13 @@ quadrantChart
 
 ---
 
-## 6.9 Quick Wins and Crawl-Walk-Run Strategy
+## 6.11 Quick Wins and Crawl-Walk-Run Strategy
 
 > **TxQ** = Transaction Queue
 
 This section outlines a prioritized approach to maximize ROI with minimal initial investment.
 
-### 6.9.1 Crawl-Walk-Run Overview
+### 6.11.1 Crawl-Walk-Run Overview
 
 <div align="center">
 
@@ -657,7 +656,7 @@ flowchart TB
 - **RUN (Weeks 6-9)**: Full consensus instrumentation, establish-phase gap fill, cross-node correlation, StatsD integration, and production deployment with sampling and alerting.
 - **Arrows (crawl → walk → run)**: Each phase builds on the prior one; you cannot skip ahead because later phases depend on infrastructure established earlier.
 
-### 6.9.2 Quick Wins (Immediate Value)
+### 6.11.2 Quick Wins (Immediate Value)
 
 | Quick Win                      | Value  | When to Deploy |
 | ------------------------------ | ------ | -------------- |
@@ -667,7 +666,7 @@ flowchart TB
 | **Transaction Submit Tracing** | High   | Week 3         |
 | **Consensus Round Duration**   | Medium | Week 6         |
 
-### 6.9.3 CRAWL Phase (Weeks 1-2)
+### 6.11.3 CRAWL Phase (Weeks 1-2)
 
 **Goal**: Get basic tracing working with minimal code changes.
 
@@ -689,7 +688,7 @@ flowchart TB
 - No cross-node complexity
 - Single file modification to existing code
 
-### 6.9.4 WALK Phase (Weeks 3-5)
+### 6.11.4 WALK Phase (Weeks 3-5)
 
 **Goal**: Add transaction lifecycle tracing across nodes.
 
@@ -710,7 +709,7 @@ flowchart TB
 - Moderate complexity (requires context propagation)
 - High value for debugging transaction issues
 
-### 6.9.5 RUN Phase (Weeks 6-9)
+### 6.11.5 RUN Phase (Weeks 6-9)
 
 **Goal**: Full observability including consensus.
 
@@ -733,7 +732,7 @@ flowchart TB
 - Requires thorough testing
 - Lower relative value (consensus issues are rarer)
 
-### 6.9.6 ROI Prioritization Matrix
+### 6.11.6 ROI Prioritization Matrix
 
 ```mermaid
 quadrantChart
@@ -755,13 +754,13 @@ quadrantChart
 
 ---
 
-## 6.13 Definition of Done
+## 6.12 Definition of Done
 
 > **TxQ** = Transaction Queue | **HA** = High Availability
 
 Clear, measurable criteria for each phase.
 
-### 6.13.1 Phase 1: Core Infrastructure
+### 6.12.1 Phase 1: Core Infrastructure
 
 | Criterion       | Measurement                                                | Target                       |
 | --------------- | ---------------------------------------------------------- | ---------------------------- |
@@ -773,7 +772,7 @@ Clear, measurable criteria for each phase.
 
 **Definition of Done**: All criteria met, PR merged, no regressions in CI.
 
-### 6.13.2 Phase 2: RPC Tracing
+### 6.12.2 Phase 2: RPC Tracing
 
 | Criterion          | Measurement                        | Target                     |
 | ------------------ | ---------------------------------- | -------------------------- |
@@ -785,7 +784,7 @@ Clear, measurable criteria for each phase.
 
 **Definition of Done**: RPC traces visible in Tempo for all commands, dashboard shows latency distribution.
 
-### 6.13.3 Phase 3: Transaction Tracing
+### 6.12.3 Phase 3: Transaction Tracing
 
 | Criterion             | Measurement                                       | Target                                                   |
 | --------------------- | ------------------------------------------------- | -------------------------------------------------------- |
@@ -800,7 +799,7 @@ Clear, measurable criteria for each phase.
 
 **Definition of Done**: Transaction traces span 3+ nodes in test network with deterministic trace_id correlation, parent-child ordering via protobuf propagation, and performance within bounds.
 
-### 6.13.4 Phase 4: Consensus Tracing
+### 6.12.4 Phase 4: Consensus Tracing
 
 | Criterion            | Measurement                   | Target                    |
 | -------------------- | ----------------------------- | ------------------------- |
@@ -812,7 +811,7 @@ Clear, measurable criteria for each phase.
 
 **Definition of Done**: Consensus rounds fully traceable, no impact on consensus timing.
 
-### 6.13.5 Phase 5: Production Deployment
+### 6.12.5 Phase 5: Production Deployment
 
 | Criterion    | Measurement                  | Target                     |
 | ------------ | ---------------------------- | -------------------------- |
@@ -825,7 +824,7 @@ Clear, measurable criteria for each phase.
 
 **Definition of Done**: Telemetry running in production, operators trained, alerts active.
 
-### 6.13.6 Success Metrics Summary
+### 6.12.6 Success Metrics Summary
 
 | Phase   | Primary Metric               | Secondary Metric            | Deadline       |
 | ------- | ---------------------------- | --------------------------- | -------------- |
@@ -839,7 +838,7 @@ Clear, measurable criteria for each phase.
 
 ---
 
-## 6.14 Recommended Implementation Order
+## 6.13 Recommended Implementation Order
 
 Based on ROI analysis, implement in this exact order:
 
