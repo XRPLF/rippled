@@ -71,9 +71,7 @@ AMMClawback::preflight(PreflightContext const& ctx)
     if (isXRP(asset))
         return temMALFORMED;
 
-    auto const flags = ctx.tx.getFlags();
-
-    if (((flags & tfClawTwoAssets) != 0u) && asset.getIssuer() != asset2.getIssuer())
+    if (ctx.tx.isFlag(tfClawTwoAssets) && asset.getIssuer() != asset2.getIssuer())
     {
         JLOG(ctx.j.trace()) << "AMMClawback: tfClawTwoAssets can only be enabled when two "
                                "assets in the AMM pool are both issued by the issuer";
@@ -119,13 +117,11 @@ AMMClawback::preclaim(PreclaimContext const& ctx)
         return terNO_AMM;
     }
 
-    std::uint32_t const issuerFlagsIn = sleIssuer->getFieldU32(sfFlags);
     if (!ctx.view.rules().enabled(featureMPTokensV2))
     {
         // If AllowTrustLineClawback is not set or NoFreeze is set, return no
         // permission
-        if (((issuerFlagsIn & lsfAllowTrustLineClawback) == 0u) ||
-            ((issuerFlagsIn & lsfNoFreeze) != 0u))
+        if (!sleIssuer->isFlag(lsfAllowTrustLineClawback) || sleIssuer->isFlag(lsfNoFreeze))
         {
             return tecNO_PERMISSION;
         }
@@ -137,8 +133,8 @@ AMMClawback::preclaim(PreclaimContext const& ctx)
                 if (issue.native())
                     return false;  // LCOV_EXCL_LINE
 
-                return ((issuerFlagsIn & lsfAllowTrustLineClawback) != 0u) &&
-                    ((issuerFlagsIn & lsfNoFreeze) == 0u);
+                return sleIssuer->isFlag(lsfAllowTrustLineClawback) &&
+                    !sleIssuer->isFlag(lsfNoFreeze);
             },
             [&](MPTIssue const& issue) {
                 auto const sleIssuance = ctx.view.read(keylet::mptIssuance(issue.getMptID()));
@@ -288,8 +284,7 @@ AMMClawback::applyGuts(Sandbox& sb)
     if (!amount2Withdraw)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const flags = ctx_.tx.getFlags();
-    if ((flags & tfClawTwoAssets) != 0u)
+    if (ctx_.tx.isFlag(tfClawTwoAssets))
         return sendAmount(*amount2Withdraw);
 
     return tesSUCCESS;

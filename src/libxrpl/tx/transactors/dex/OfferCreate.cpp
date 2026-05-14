@@ -91,13 +91,11 @@ OfferCreate::preflight(PreflightContext const& ctx)
     auto& tx = ctx.tx;
     auto& j = ctx.j;
 
-    std::uint32_t const uTxFlags = tx.getFlags();
-
     if (tx.isFlag(tfHybrid) && !tx.isFieldPresent(sfDomainID))
         return temINVALID_FLAG;
 
-    bool const bImmediateOrCancel((uTxFlags & tfImmediateOrCancel) != 0u);
-    bool const bFillOrKill((uTxFlags & tfFillOrKill) != 0u);
+    bool const bImmediateOrCancel(tx.isFlag(tfImmediateOrCancel));
+    bool const bFillOrKill(tx.isFlag(tfFillOrKill));
 
     if (bImmediateOrCancel && bFillOrKill)
     {
@@ -309,8 +307,7 @@ OfferCreate::checkAcceptAsset(
 
             // There's no difference which side enacted deep freeze, accepting
             // tokens shouldn't be possible.
-            bool const deepFrozen =
-                ((*trustLine)[sfFlags] & (lsfLowDeepFreeze | lsfHighDeepFreeze)) != 0u;
+            bool const deepFrozen = trustLine->isFlag(lsfLowDeepFreeze | lsfHighDeepFreeze);
 
             if (deepFrozen)
             {
@@ -379,8 +376,7 @@ OfferCreate::flowCross(
 
         // If we're creating a passive offer adjust the threshold so we only
         // cross offers that have a better quality than this one.
-        std::uint32_t const txFlags = ctx_.tx.getFlags();
-        if ((txFlags & tfPassive) != 0u)
+        if (ctx_.tx.isFlag(tfPassive))
             ++threshold;
 
         // Don't send more than our balance.
@@ -402,7 +398,7 @@ OfferCreate::flowCross(
         STAmount deliver = takerAmount.out;
         auto const& deliverAsset = deliver.asset();
         OfferCrossing offerCrossing = OfferCrossing::Yes;
-        if ((txFlags & tfSell) != 0u)
+        if (ctx_.tx.isFlag(tfSell))
         {
             offerCrossing = OfferCrossing::Sell;
             // We are selling, so we will accept *more* than the offer
@@ -436,9 +432,9 @@ OfferCreate::flowCross(
             account_,
             account_,
             paths,
-            true,                            // default path
-            (txFlags & tfFillOrKill) == 0u,  // partial payment
-            true,                            // owner pays transfer fee
+            true,                           // default path
+            !ctx_.tx.isFlag(tfFillOrKill),  // partial payment
+            true,                           // owner pays transfer fee
             offerCrossing,
             threshold,
             sendMax,
@@ -477,7 +473,7 @@ OfferCreate::flowCross(
             {
                 STAmount const rate{Quality{takerAmount.out, takerAmount.in}.rate()};
 
-                if ((txFlags & tfSell) != 0u)
+                if (ctx_.tx.isFlag(tfSell))
                 {
                     // If selling then scale the new out amount based on how
                     // much we sold during crossing.  This preserves the offer
@@ -596,13 +592,11 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 {
     using beast::kZERO;
 
-    std::uint32_t const uTxFlags = ctx_.tx.getFlags();
-
-    bool const bPassive((uTxFlags & tfPassive) != 0u);
-    bool const bImmediateOrCancel((uTxFlags & tfImmediateOrCancel) != 0u);
-    bool const bFillOrKill((uTxFlags & tfFillOrKill) != 0u);
-    bool const bSell((uTxFlags & tfSell) != 0u);
-    bool const bHybrid((uTxFlags & tfHybrid) != 0u);
+    bool const bPassive(ctx_.tx.isFlag(tfPassive));
+    bool const bImmediateOrCancel(ctx_.tx.isFlag(tfImmediateOrCancel));
+    bool const bFillOrKill(ctx_.tx.isFlag(tfFillOrKill));
+    bool const bSell(ctx_.tx.isFlag(tfSell));
+    bool const bHybrid(ctx_.tx.isFlag(tfHybrid));
 
     auto saTakerPays = ctx_.tx[sfTakerPays];
     auto saTakerGets = ctx_.tx[sfTakerGets];

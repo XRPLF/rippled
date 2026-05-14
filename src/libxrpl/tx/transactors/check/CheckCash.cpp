@@ -199,7 +199,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                         return tecNO_ISSUER;
                     }
 
-                    if ((sleIssuer->at(sfFlags) & lsfRequireAuth) != 0u)
+                    if (sleIssuer->isFlag(lsfRequireAuth))
                     {
                         if (!sleTrustLine)
                         {

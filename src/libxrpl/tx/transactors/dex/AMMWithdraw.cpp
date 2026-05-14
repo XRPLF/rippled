@@ -83,37 +83,37 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
         JLOG(ctx.j.debug()) << "AMM Withdraw: invalid flags.";
         return temMALFORMED;
     }
-    if ((flags & tfLPToken) != 0u)
+    if (ctx.tx.isFlag(tfLPToken))
     {
         if (!lpTokens || amount || amount2 || ePrice)
             return temMALFORMED;
     }
-    else if ((flags & tfWithdrawAll) != 0u)
+    else if (ctx.tx.isFlag(tfWithdrawAll))
     {
         if (lpTokens || amount || amount2 || ePrice)
             return temMALFORMED;
     }
-    else if ((flags & tfOneAssetWithdrawAll) != 0u)
+    else if (ctx.tx.isFlag(tfOneAssetWithdrawAll))
     {
         if (!amount || lpTokens || amount2 || ePrice)
             return temMALFORMED;
     }
-    else if ((flags & tfSingleAsset) != 0u)
+    else if (ctx.tx.isFlag(tfSingleAsset))
     {
         if (!amount || lpTokens || amount2 || ePrice)
             return temMALFORMED;
     }
-    else if ((flags & tfTwoAsset) != 0u)
+    else if (ctx.tx.isFlag(tfTwoAsset))
     {
         if (!amount || !amount2 || lpTokens || ePrice)
             return temMALFORMED;
     }
-    else if ((flags & tfOneAssetLPToken) != 0u)
+    else if (ctx.tx.isFlag(tfOneAssetLPToken))
     {
         if (!amount || !lpTokens || amount2 || ePrice)
             return temMALFORMED;
     }
-    else if ((flags & tfLimitLPToken) != 0u)
+    else if (ctx.tx.isFlag(tfLimitLPToken))
     {
         if (!amount || !ePrice || lpTokens || amount2)
             return temMALFORMED;
@@ -145,7 +145,7 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
         if (auto const res = invalidAMMAmount(
                 *amount,
                 std::make_optional(std::make_pair(asset, asset2)),
-                ((flags & (tfOneAssetWithdrawAll | tfOneAssetLPToken)) != 0u) || ePrice))
+                ctx.tx.isFlag(tfOneAssetWithdrawAll | tfOneAssetLPToken) || ePrice))
         {
             JLOG(ctx.j.debug()) << "AMM Withdraw: invalid Asset1Out";
             return res;
@@ -297,7 +297,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
         return temBAD_AMM_TOKENS;
     }
 
-    if ((ctx.tx.getFlags() & (tfLPToken | tfWithdrawAll)) != 0u)
+    if (ctx.tx.isFlag(tfLPToken | tfWithdrawAll))
     {
         if (auto const ter = checkAmount(amountBalance, amountBalance))
             return ter;
@@ -1141,7 +1141,7 @@ AMMWithdraw::singleWithdrawEPrice(
 WithdrawAll
 AMMWithdraw::isWithdrawAll(STTx const& tx)
 {
-    if ((tx[sfFlags] & (tfWithdrawAll | tfOneAssetWithdrawAll)) != 0u)
+    if (tx.isFlag(tfWithdrawAll | tfOneAssetWithdrawAll))
         return WithdrawAll::Yes;
     return WithdrawAll::No;
 }

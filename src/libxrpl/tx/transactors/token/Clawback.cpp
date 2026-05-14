@@ -105,12 +105,9 @@ preclaimHelper<Issue>(
     AccountID const& holder,
     STAmount const& clawAmount)
 {
-    std::uint32_t const issuerFlagsIn = sleIssuer.getFieldU32(sfFlags);
-
     // If AllowTrustLineClawback is not set or NoFreeze is set, return no
     // permission
-    if (((issuerFlagsIn & lsfAllowTrustLineClawback) == 0u) ||
-        ((issuerFlagsIn & lsfNoFreeze) != 0u))
+    if (!sleIssuer.isFlag(lsfAllowTrustLineClawback) || sleIssuer.isFlag(lsfNoFreeze))
         return tecNO_PERMISSION;
 
     auto const sleRippleState =

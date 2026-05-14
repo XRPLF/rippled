@@ -352,7 +352,7 @@ Batch::preflight(PreflightContext const& ctx)
         }
 
         // Duplicate sequence and ticket checks
-        if ((flags & (tfAllOrNothing | tfUntilFailure)) != 0u)
+        if (ctx.tx.isFlag(tfAllOrNothing | tfUntilFailure))
         {
             if (auto const seq = stx.getFieldU32(sfSequence); seq != 0)
             {

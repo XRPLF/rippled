@@ -55,9 +55,7 @@ PaymentChannelClaim::preflight(PreflightContext const& ctx)
         return temBAD_AMOUNT;
 
     {
-        auto const flags = ctx.tx.getFlags();
-
-        if (((flags & tfClose) != 0u) && ((flags & tfRenew) != 0u))
+        if (ctx.tx.isFlag(tfClose) && ctx.tx.isFlag(tfRenew))
             return temMALFORMED;
     }
 

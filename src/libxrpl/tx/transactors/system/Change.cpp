@@ -177,10 +177,8 @@ Change::applyAmendment()
     if (std::ranges::find(amendments, amendment) != amendments.end())
         return tefALREADY;
 
-    auto flags = ctx_.tx.getFlags();
-
-    bool const gotMajority = (flags & tfGotMajority) != 0;
-    bool const lostMajority = (flags & tfLostMajority) != 0;
+    bool const gotMajority = ctx_.tx.isFlag(tfGotMajority);
+    bool const lostMajority = ctx_.tx.isFlag(tfLostMajority);
 
     if (gotMajority && lostMajority)
         return temINVALID_FLAG;

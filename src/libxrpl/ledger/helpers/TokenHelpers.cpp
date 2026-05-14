@@ -569,7 +569,6 @@ directSendNoFeeIOU(
                         << " amount=" << saAmount.getFullText()
                         << " after=" << saBalance.getFullText();
 
-        std::uint32_t const uFlags(sleRippleState->getFieldU32(sfFlags));
         bool bDelete = false;
 
         auto const senderReserveFlag = bSenderHigh ? lsfHighReserve : lsfLowReserve;
@@ -600,7 +599,7 @@ directSendNoFeeIOU(
             adjustOwnerCount(view, view.peek(keylet::account(uSenderID)), -1, j);
 
             // Clear reserve flag.
-            sleRippleState->setFieldU32(sfFlags, uFlags & ~senderReserveFlag);
+            sleRippleState->clearFlag(senderReserveFlag);
 
             // Balance is zero, receiver reserve is clear.
             bDelete = !saBalance  // Balance is zero.
