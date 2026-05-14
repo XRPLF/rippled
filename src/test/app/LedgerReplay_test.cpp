@@ -511,7 +511,7 @@ struct LedgerServer
         assert(param.initLedgers > 0);
         createAccounts(param.initAccounts);
         createLedgerHistory();
-        app.getLogs().threshold(beast::severities::KWarning);
+        app.getLogs().threshold(beast::Severity::Warning);
     }
 
     /**
@@ -611,7 +611,7 @@ public:
         PeerSetBehavior behavior = PeerSetBehavior::Good,
         InboundLedgersBehavior inboundBhvr = InboundLedgersBehavior::Good,
         PeerFeature peerFeature = PeerFeature::LedgerReplayEnabled)
-        : env(suite, jtx::envconfig(), nullptr, beast::severities::KDisabled)
+        : env(suite, jtx::envconfig(), nullptr, beast::Severity::Disabled)
         , app(env.app())
         , ledgerMaster(env.app().getLedgerMaster())
         , inboundLedgers(server.app.getLedgerMaster(), ledgerMaster, inboundBhvr)
@@ -843,12 +843,9 @@ public:
     LedgerReplayer replayer;
 };
 
-using namespace beast::severities;
+using beast::Severity;
 void
-logAll(
-    LedgerServer& server,
-    LedgerReplayClient& client,
-    beast::severities::Severity level = Severity::KTrace)
+logAll(LedgerServer& server, LedgerReplayClient& client, beast::Severity level = Severity::Trace)
 {
     server.app.getLogs().threshold(level);
     client.app.getLogs().threshold(level);

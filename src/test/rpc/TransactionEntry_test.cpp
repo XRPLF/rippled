@@ -44,7 +44,7 @@ class TransactionEntry_test : public beast::unit_test::Suite
         }
 
         {
-            json::Value params{json::ObjectValue};
+            json::Value params{json::ValueType::Object};
             params[jss::ledger] = 20;
             auto const result = env.client().invoke("transaction_entry", params)[jss::result];
             BEAST_EXPECT(result[jss::error] == "lgrNotFound");
@@ -52,7 +52,7 @@ class TransactionEntry_test : public beast::unit_test::Suite
         }
 
         {
-            json::Value params{json::ObjectValue};
+            json::Value params{json::ValueType::Object};
             params[jss::ledger] = "current";
             params[jss::tx_hash] = "DEADBEEF";
             auto const result = env.client().invoke("transaction_entry", params)[jss::result];
@@ -61,7 +61,7 @@ class TransactionEntry_test : public beast::unit_test::Suite
         }
 
         {
-            json::Value params{json::ObjectValue};
+            json::Value params{json::ValueType::Object};
             params[jss::ledger] = "closed";
             params[jss::tx_hash] = "DEADBEEF";
             auto const result = env.client().invoke("transaction_entry", params)[jss::result];
@@ -151,7 +151,7 @@ class TransactionEntry_test : public beast::unit_test::Suite
                            std::string const closeTimeIso = "") {
             // first request using ledger_index to lookup
             json::Value const resIndex{[&env, index, &txhash, apiVersion]() {
-                json::Value params{json::ObjectValue};
+                json::Value params{json::ValueType::Object};
                 params[jss::ledger_index] = index;
                 params[jss::tx_hash] = txhash;
                 params[jss::api_version] = apiVersion;
@@ -206,7 +206,7 @@ class TransactionEntry_test : public beast::unit_test::Suite
             // second request using ledger_hash to lookup and verify
             // both responses match
             {
-                json::Value params{json::ObjectValue};
+                json::Value params{json::ValueType::Object};
                 params[jss::ledger_hash] = resIndex[jss::ledger_hash];
                 params[jss::tx_hash] = txhash;
                 params[jss::api_version] = apiVersion;
