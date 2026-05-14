@@ -11,7 +11,7 @@
   "panels": [
     {
       "title": "Peer Proposal Receive Rate",
-      "description": "Rate of consensus proposals received from network peers. The peer.proposal.receive span (PeerImp.cpp:1667) fires in onMessage(TMProposeSet) for each incoming proposal. Records xrpl.peer.id (sending peer) and proposal_trusted (whether the proposer is in our UNL). Requires trace_peer=1 in the telemetry config.",
+      "description": "Rate of consensus proposals received from network peers. The peer.proposal.receive span (PeerImp.cpp) fires in onMessage(TMProposeSet) for each incoming proposal. Records xrpl.peer.id (sending peer) and proposal_trusted (whether the proposer is in our UNL). Requires trace_peer=1 in the telemetry config.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -50,7 +50,7 @@
     },
     {
       "title": "Peer Validation Receive Rate",
-      "description": "Rate of ledger validations received from network peers. The peer.validation.receive span (PeerImp.cpp:2264) fires in onMessage(TMValidation) for each incoming validation message. Records xrpl.peer.id (sending peer) and validation_trusted (whether the validator is trusted). Requires trace_peer=1 in the telemetry config.",
+      "description": "Rate of ledger validations received from network peers. The peer.validation.receive span (PeerImp.cpp) fires in onMessage(TMValidation) for each incoming validation message. Records xrpl.peer.id (sending peer) and validation_trusted (whether the validator is trusted). Requires trace_peer=1 in the telemetry config.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -223,6 +223,6 @@
     "to": "now"
   },
   "title": "Peer Network",
-  "uid": "rippled-peer-net",
+  "uid": "xrpld-peer-net",
   "refresh": "5s"
 }

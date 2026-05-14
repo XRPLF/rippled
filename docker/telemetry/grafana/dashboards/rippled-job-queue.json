@@ -451,7 +451,7 @@
   "timepicker": {},
   "timezone": "browser",
   "title": "Job Queue Analysis",
-  "uid": "rippled-job-queue",
+  "uid": "xrpld-job-queue",
   "version": 1,
   "refresh": "5s"
 }

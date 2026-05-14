@@ -10,7 +10,7 @@
   "panels": [
     {
       "title": "Transaction Processing Rate",
-      "description": "Rate of transactions entering the processing pipeline. tx.process (NetworkOPs.cpp:1227) fires when a transaction is submitted locally or received from a peer and enters processTransaction(). tx.receive (PeerImp.cpp:1273) fires when a raw transaction message arrives from a peer before deduplication.",
+      "description": "Rate of transactions entering the processing pipeline. tx.process (NetworkOPs.cpp) fires when a transaction is submitted locally or received from a peer and enters processTransaction(). tx.receive (PeerImp.cpp) fires when a raw transaction message arrives from a peer before deduplication.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -128,7 +128,7 @@
     },
     {
       "title": "Transaction Receive vs Suppressed",
-      "description": "Total rate of raw transaction messages received from peers (tx.receive span from PeerImp.cpp:1273). This fires before deduplication via the HashRouter, so the difference between tx.receive and tx.process reflects suppressed duplicate transactions.",
+      "description": "Total rate of raw transaction messages received from peers (tx.receive span from PeerImp.cpp). This fires before deduplication via the HashRouter, so the difference between tx.receive and tx.process reflects suppressed duplicate transactions.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -197,7 +197,7 @@
     },
     {
       "title": "Transaction Apply Duration per Ledger",
-      "description": "p95 and p50 latency of applying the consensus transaction set to a new ledger. The tx.apply span (BuildLedger.cpp:88) wraps the applyTransactions() function that iterates through the CanonicalTXSet and applies each transaction to the OpenView. Long durations indicate heavy transaction sets or expensive transaction processing.",
+      "description": "p95 and p50 latency of applying the consensus transaction set to a new ledger. The tx.apply span (BuildLedger.cpp) wraps the applyTransactions() function that iterates through the CanonicalTXSet and applies each transaction to the OpenView. Long durations indicate heavy transaction sets or expensive transaction processing.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -243,7 +243,7 @@
     },
     {
       "title": "Peer Transaction Receive Rate",
-      "description": "Rate of transaction messages received from network peers. Sourced from the tx.receive span (PeerImp.cpp:1273) which fires in the onMessage(TMTransaction) handler. High rates may indicate network-wide transaction volume spikes or peer flooding.",
+      "description": "Rate of transaction messages received from network peers. Sourced from the tx.receive span (PeerImp.cpp) which fires in the onMessage(TMTransaction) handler. High rates may indicate network-wide transaction volume spikes or peer flooding.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -380,6 +380,6 @@
     "to": "now"
   },
   "title": "Transaction Overview",
-  "uid": "rippled-transactions",
+  "uid": "xrpld-transactions",
   "refresh": "5s"
 }
