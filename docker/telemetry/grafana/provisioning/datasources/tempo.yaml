@@ -102,30 +102,30 @@ datasources:
             type: static
           # Phase 2: RPC tracing filters
           - id: rpc-command
-            tag: xrpl.rpc.command
+            tag: command
             operator: "="
             scope: span
             type: static
           - id: rpc-status
-            tag: xrpl.rpc.status
+            tag: rpc_status
             operator: "="
             scope: span
             type: dynamic
           - id: rpc-role
-            tag: xrpl.rpc.role
+            tag: rpc_role
             operator: "="
             scope: span
             type: dynamic
-          # Phase 2: Node health filters (Task 2.8)
+          # Phase 2: Node health filters (Task 2.8) — resource attributes
           - id: node-amendment-blocked
             tag: xrpl.node.amendment_blocked
             operator: "="
-            scope: span
+            scope: resource
             type: static
           - id: node-server-state
             tag: xrpl.node.server_state
             operator: "="
-            scope: span
+            scope: resource
             type: dynamic
           # Phase 3: Transaction tracing filters
           - id: tx-hash
@@ -134,12 +134,12 @@ datasources:
             scope: span
             type: static
           - id: tx-origin
-            tag: xrpl.tx.local
+            tag: local
             operator: "="
             scope: span
             type: dynamic
           - id: tx-status
-            tag: xrpl.tx.status
+            tag: tx_status
             operator: "="
             scope: span
             type: dynamic
@@ -155,42 +155,42 @@ datasources:
             scope: span
             type: dynamic
           - id: consensus-ledger-seq
-            tag: xrpl.consensus.ledger.seq
+            tag: xrpl.ledger.seq
             operator: "="
             scope: span
             type: static
           - id: consensus-close-time-correct
-            tag: xrpl.consensus.close_time_correct
+            tag: close_time_correct
             operator: "="
             scope: span
             type: dynamic
           - id: consensus-state
-            tag: xrpl.consensus.state
+            tag: consensus_state
             operator: "="
             scope: span
             type: dynamic
           - id: consensus-close-resolution
-            tag: xrpl.consensus.close_resolution_ms
+            tag: close_resolution_ms
             operator: "="
             scope: span
             type: dynamic
           - id: consensus-proposers
-            tag: xrpl.consensus.proposers
+            tag: proposers
             operator: "="
             scope: span
             type: dynamic
           - id: consensus-result
-            tag: xrpl.consensus.result
+            tag: consensus_result
             operator: "="
             scope: span
             type: dynamic
           - id: consensus-mode-old
-            tag: xrpl.consensus.mode.old
+            tag: mode_old
             operator: "="
             scope: span
             type: dynamic
           - id: consensus-mode-new
-            tag: xrpl.consensus.mode.new
+            tag: mode_new
             operator: "="
             scope: span
             type: dynamic
@@ -201,27 +201,27 @@ datasources:
             type: static
           # Phase 3/4: Additional transaction and queue filters
           - id: tx-path
-            tag: xrpl.tx.path
+            tag: path
             operator: "="
             scope: span
             type: dynamic
           - id: tx-suppressed
-            tag: xrpl.tx.suppressed
+            tag: suppressed
             operator: "="
             scope: span
             type: dynamic
           - id: peer-version
-            tag: xrpl.peer.version
+            tag: peer_version
             operator: "="
             scope: span
             type: dynamic
           - id: txq-status
-            tag: xrpl.txq.status
+            tag: txq_status
             operator: "="
             scope: span
             type: dynamic
           - id: txq-ter-code
-            tag: xrpl.txq.ter_code
+            tag: ter_code
             operator: "="
             scope: span
             type: dynamic
