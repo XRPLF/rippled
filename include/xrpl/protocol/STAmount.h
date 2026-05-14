@@ -184,6 +184,19 @@ public:
     [[nodiscard]] STAmount const&
     value() const noexcept;
 
+    /**
+     * Checks if this amount evaluates to zero when constrained to a specific
+     * accounting scale.
+     *
+     * @param scale The target accounting scale to evaluate against.
+     * @return `true` if this amount rounds to zero at the given scale,
+     * `false` otherwise.
+     *
+     * @see roundToScale
+     */
+    [[nodiscard]] bool
+    isZeroAtScale(int scale) const noexcept;
+
     //--------------------------------------------------------------------------
     //
     // Operators

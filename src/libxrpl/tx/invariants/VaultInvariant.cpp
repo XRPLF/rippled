@@ -445,6 +445,33 @@ ValidVault::finalize(
     }
 
     auto const& vaultAsset = afterVault.asset;
+
+    // Helper: compute the coarsest scale across the vault pseudo-account delta
+    // and the sfAssetsTotal / sfAssetsAvailable deltas.  beforeVault_[0] must be
+    // valid (guaranteed on deposit/withdraw/clawback paths).
+    auto const computeVaultMinScale = [&](DeltaInfo const& vaultDelta,
+                                          Rules const& rules) -> std::int32_t {
+        // IOU STAmounts are stored in normalized form: mantissa ∈ [10^15, 10^16).
+        // A larger magnitude therefore implies a coarser or equal exponent, so
+        // assetsTotal >= assetsAvailable ⟹ scale(assetsTotal) >= scale(assetsAvailable).
+        // Returning scale(afterVault.assetsTotal) is therefore equivalent to
+        // max(scale(afterVault.assetsTotal), scale(afterVault.assetsAvailable)) —
+        // the coarsest *posterior* scale needed to faithfully represent both vault
+        // fields after the transaction.  The pre-fixCleanup3_2_0 path used
+        // max(anterior, posterior) via makeDelta, which could pick the coarser
+        // anterior scale when a withdrawal crosses a power-of-10 boundary and
+        // cause roundToAsset to falsely collapse the delta to zero.
+        if (rules.enabled(fixCleanup3_2_0))
+            return scale(afterVault.assetsTotal, vaultAsset);
+
+        auto const& bv = beforeVault_[0];
+        auto const totalDelta =
+            DeltaInfo::makeDelta(bv.assetsTotal, afterVault.assetsTotal, vaultAsset);
+        auto const availableDelta =
+            DeltaInfo::makeDelta(bv.assetsAvailable, afterVault.assetsAvailable, vaultAsset);
+        return computeCoarsestScale({vaultDelta, totalDelta, availableDelta});
+    };
+
     auto const deltaAssets = [&](AccountID const& id) -> std::optional<DeltaInfo> {
         auto const get =  //
             [&](auto const& it, std::int8_t sign = 1) -> std::optional<DeltaInfo> {
@@ -630,15 +657,7 @@ ValidVault::finalize(
                 }
 
                 // Get the coarsest scale to round calculations to
-                auto const totalDelta = DeltaInfo::makeDelta(
-                    beforeVault.assetsTotal, afterVault.assetsTotal, vaultAsset);
-                auto const availableDelta = DeltaInfo::makeDelta(
-                    beforeVault.assetsAvailable, afterVault.assetsAvailable, vaultAsset);
-                auto const minScale = computeCoarsestScale({
-                    *maybeVaultDeltaAssets,
-                    totalDelta,
-                    availableDelta,
-                });
+                auto const minScale = computeVaultMinScale(*maybeVaultDeltaAssets, view.rules());
 
                 auto const vaultDeltaAssets =
                     roundToAsset(vaultAsset, maybeVaultDeltaAssets->delta, minScale);
@@ -786,12 +805,7 @@ ValidVault::finalize(
                 }
 
                 // Get the most coarse scale to round calculations to
-                auto const totalDelta = DeltaInfo::makeDelta(
-                    beforeVault.assetsTotal, afterVault.assetsTotal, vaultAsset);
-                auto const availableDelta = DeltaInfo::makeDelta(
-                    beforeVault.assetsAvailable, afterVault.assetsAvailable, vaultAsset);
-                auto const minScale =
-                    computeCoarsestScale({*maybeVaultDeltaAssets, totalDelta, availableDelta});
+                auto const minScale = computeVaultMinScale(*maybeVaultDeltaAssets, view.rules());
 
                 auto const vaultPseudoDeltaAssets =
                     roundToAsset(vaultAsset, maybeVaultDeltaAssets->delta, minScale);
@@ -841,7 +855,18 @@ ValidVault::finalize(
                     auto const roundedDestinationDelta =
                         roundToAsset(vaultAsset, destinationDelta.delta, localMinScale);
 
-                    if (roundedDestinationDelta <= kZERO)
+                    // Post-fixCleanup3_2_0: Tolerate zero-rounded destination deltas for IOUs only.
+                    // If the receiver's trust line sits at a coarser scale, the inflow may
+                    // safely round down to zero.
+                    //
+                    // XRP and MPT remain strict. Because they are integer-exact, a zero
+                    // destination delta indicates a true accounting bug, not a rounding artifact.
+                    bool const tolerateZeroDelta =
+                        view.rules().enabled(fixCleanup3_2_0) && vaultAsset.holds<Issue>();
+                    auto const invalidBalanceChange = tolerateZeroDelta
+                        ? roundedDestinationDelta < kZERO
+                        : roundedDestinationDelta <= kZERO;
+                    if (invalidBalanceChange)
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: withdrawal must increase "
@@ -942,12 +967,8 @@ ValidVault::finalize(
                 auto const maybeVaultDeltaAssets = deltaAssets(afterVault.pseudoId);
                 if (maybeVaultDeltaAssets)
                 {
-                    auto const totalDelta = DeltaInfo::makeDelta(
-                        beforeVault.assetsTotal, afterVault.assetsTotal, vaultAsset);
-                    auto const availableDelta = DeltaInfo::makeDelta(
-                        beforeVault.assetsAvailable, afterVault.assetsAvailable, vaultAsset);
                     auto const minScale =
-                        computeCoarsestScale({*maybeVaultDeltaAssets, totalDelta, availableDelta});
+                        computeVaultMinScale(*maybeVaultDeltaAssets, view.rules());
                     auto const vaultDeltaAssets =
                         roundToAsset(vaultAsset, maybeVaultDeltaAssets->delta, minScale);
                     if (vaultDeltaAssets >= kZERO)
