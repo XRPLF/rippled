@@ -7,7 +7,6 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/Serializer.h>
@@ -33,7 +32,9 @@ STIssue::STIssue(SerialIter& sit, SField const& name) : STBase{name}
     if (isXRP(Currency::fromRaw(currencyOrAccount)))
     {
         asset_ = xrpIssue();
+        return;
     }
+
     // The next 160-bit field selects the format:
     //   noAccount  → MPT V1 (pre-fixCleanup3_2_0)
     //   xrpAccount → MPT V2 (fixCleanup3_2_0)
@@ -50,38 +51,34 @@ STIssue::STIssue(SerialIter& sit, SField const& name) : STBase{name}
     //
     //   V2 uses addRaw()/getRaw(): the canonical BE bytes from
     //   makeMptID() reach the wire untouched.
-    else
+    AccountID const account = AccountID::fromRaw(sit.get160());
+    if (account == noAccount() || account == xrpAccount())
     {
-        AccountID const account = AccountID::fromRaw(sit.get160());
-        if (account == noAccount() || account == xrpAccount())
+        MPTID mptID{};
+        auto constexpr kSEQ_SIZE = sizeof(std::uint32_t);
+        if (account == noAccount())
         {
-            MPTID mptID{};
-            auto const seqSize = sizeof(std::uint32_t);
-            if (account == noAccount())
-            {
-                std::uint32_t sequence = sit.get32();
-                memcpy(mptID.data(), &sequence, sizeof(sequence));
-            }
-            else
-            {
-                auto const rawBytes = sit.getRaw(seqSize);
-                memcpy(mptID.data(), rawBytes.data(), rawBytes.size());
-            }
-            static_assert(MPTID::size() == seqSize + sizeof(currencyOrAccount));
-            memcpy(mptID.data() + seqSize, currencyOrAccount.data(), sizeof(currencyOrAccount));
-            MPTIssue const issue{mptID};
-            asset_ = issue;
+            std::uint32_t sequence = sit.get32();
+            memcpy(mptID.data(), &sequence, sizeof(sequence));
         }
         else
         {
-            Issue issue;
-            issue.currency = currencyOrAccount;
-            issue.account = account;
-            if (!isConsistent(issue))
-                Throw<std::runtime_error>("invalid issue: currency and account native mismatch");
-            asset_ = issue;
+            auto const rawBytes = sit.getRaw(kSEQ_SIZE);
+            memcpy(mptID.data(), rawBytes.data(), rawBytes.size());
         }
+        static_assert(MPTID::size() == kSEQ_SIZE + sizeof(currencyOrAccount));
+        memcpy(mptID.data() + kSEQ_SIZE, currencyOrAccount.data(), sizeof(currencyOrAccount));
+        MPTIssue const issue{mptID};
+        asset_ = issue;
+        return;
     }
+
+    Issue issue;
+    issue.currency = currencyOrAccount;
+    issue.account = account;
+    if (!isConsistent(issue))
+        Throw<std::runtime_error>("invalid issue: currency and account native mismatch");
+    asset_ = issue;
 }
 
 SerializedTypeID
@@ -114,27 +111,28 @@ STIssue::add(Serializer& s) const
                 s.addBitString(issue.account);
         },
         [&](MPTIssue const& issue) {
-            auto const rules = getCurrentTransactionRules();
-            auto const fixSerializationEnabled = rules && rules->enabled(fixCleanup3_2_0);
+            // Return true if we're not in a transaction context, so that the new correct
+            // behavior will be used.
+            auto const fixSerializationEnabled = isFeatureEnabled(fixCleanup3_2_0, false);
             s.addBitString(issue.getIssuer());
             // The sentinel distinguishes V2 (xrpAccount) from V1 (noAccount)
             // during deserialization; see the constructor for the full format
             // description.
             s.addBitString(fixSerializationEnabled ? xrpAccount() : noAccount());
-            // Copy the first 4 bytes of the MPTID (the canonical BE sequence)
-            // into a uint32_t so we can pass either to add32() or addRaw().
-            // memcpy preserves the byte pattern exactly, so for V2 addRaw()
-            // emits the same canonical bytes that were in the MPTID.
-            // For V1, add32() applies a native-to-BE swap on top of what is
-            // already a BE-in-memory value, producing LE wire bytes on LE hosts.
-            std::uint32_t sequence = 0;
-            memcpy(&sequence, issue.getMptID().data(), sizeof(sequence));
             if (fixSerializationEnabled)
             {
-                s.addRaw(&sequence, sizeof(sequence));
+                // memcpy preserves the byte pattern exactly, so for V2, addRaw()
+                // emits the same canonical bytes that were in the MPTID.
+                s.addRaw(issue.getMptID().data(), sizeof(std::uint32_t));
             }
             else
             {
+                // Copy the first 4 bytes of the MPTID (the canonical BE sequence)
+                // into a uint32_t so we can pass either to add32() or addRaw().
+                // For V1, add32() applies a native-to-BE swap on top of what is
+                // already a BE-in-memory value, producing LE wire bytes on LE hosts.
+                std::uint32_t sequence = 0;
+                memcpy(&sequence, issue.getMptID().data(), sizeof(sequence));
                 s.add32(sequence);
             }
         });

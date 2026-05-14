@@ -91,7 +91,14 @@ mptIssueFromJson(json::Value const& v)
         Throw<json::Error>("mptIssueFromJson MPTID is invalid");
     }
 
-    return MPTIssue{id};
+    MPTIssue const mptIssue{id};
+    auto const& issuer = mptIssue.getIssuer();
+    if (issuer == noAccount() || issuer == xrpAccount())
+    {
+        Throw<json::Error>("mptIssueFromJson issuer must be a valid account");
+    }
+
+    return mptIssue;
 }
 
 std::ostream&
