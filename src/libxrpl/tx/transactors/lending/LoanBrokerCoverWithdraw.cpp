@@ -93,6 +93,11 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     if (amount.asset() != vaultAsset)
         return tecWRONG_ASSET;
 
+    // helper handles both IOU and MPT correctly without explicit branching.
+    if (auto const ret = canApplyToBrokerCover(
+            ctx.view, sleBroker, vaultAsset, amount, ctx.j, "LoanBrokerCoverWithdraw"))
+        return ret;
+
     // The broker's pseudo-account is the source of funds.
     auto const pseudoAccountID = sleBroker->at(sfAccount);
     // Cannot transfer a non-transferable Asset

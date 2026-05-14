@@ -28,6 +28,31 @@
 
 namespace xrpl {
 
+[[nodiscard]] TER
+canApplyToBrokerCover(
+    ReadView const& view,
+    std::shared_ptr<SLE const> const& sleBroker,
+    Asset const& vaultAsset,
+    STAmount const& amount,
+    beast::Journal j,
+    std::string_view logPrefix)
+{
+    if (!view.rules().enabled(fixCleanup3_2_0))
+        return tesSUCCESS;
+    if (amount == beast::kZERO)
+        return tesSUCCESS;
+
+    int const coverScale = scale(sleBroker->at(sfCoverAvailable), vaultAsset);
+    if (amount.isZeroAtScale(coverScale))
+    {
+        JLOG(j.warn()) << logPrefix << ": amount " << amount.getFullText()
+                       << " rounds to zero at cover scale " << coverScale;
+        return tecPRECISION_LOSS;
+    }
+
+    return tesSUCCESS;
+}
+
 bool
 checkLendingProtocolDependencies(Rules const& rules, STTx const& tx)
 {

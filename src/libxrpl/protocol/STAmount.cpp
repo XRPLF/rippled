@@ -1739,4 +1739,9 @@ divRoundStrict(STAmount const& num, STAmount const& den, Asset const& asset, boo
     return divRoundImpl<NumberRoundModeGuard>(num, den, asset, roundUp);
 }
 
+[[nodiscard]] bool
+STAmount::isZeroAtScale(int scale) const
+{
+    return roundToScale(*this, scale).signum() == 0;
+}
 }  // namespace xrpl
