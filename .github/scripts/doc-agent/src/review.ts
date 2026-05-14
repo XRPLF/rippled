@@ -214,9 +214,19 @@ export async function reviewDiff(args: readonly string[]): Promise<void> {
   const report = buildReport(files.length, results);
   const allIssues = results.flatMap((r) => r.issues);
 
+  // Shape inline comments for the GitHub pulls.createReviewComment API,
+  // which expects `path`/`line`/`body` rather than the internal field names.
+  const apiComments = allIssues.map((issue) => ({
+    path: issue.file,
+    line: issue.line,
+    body: issue.suggestedDoc
+      ? `**[${issue.severity}]** ${issue.message}\n\n\`\`\`cpp\n${issue.suggestedDoc}\n\`\`\``
+      : `**[${issue.severity}]** ${issue.message}`,
+  }));
+
   await writeFile('doc-review-report.md', report);
-  await writeFile('doc-review-comments.json', JSON.stringify(allIssues, null, 2));
+  await writeFile('doc-review-comments.json', JSON.stringify(apiComments, null, 2));
 
   console.log('\nReport: doc-review-report.md');
-  console.log(`Inline comments: doc-review-comments.json (${allIssues.length} issues)`);
+  console.log(`Inline comments: doc-review-comments.json (${apiComments.length} issues)`);
 }
