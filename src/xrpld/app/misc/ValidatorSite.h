@@ -65,9 +65,9 @@ private:
 
         struct Resource
         {
-            explicit Resource(std::string uri_);
+            explicit Resource(std::string uri);
             std::string const uri;
-            parsedURL pUrl;
+            ParsedUrl pUrl;
         };
 
         explicit Site(std::string uri);
@@ -171,7 +171,7 @@ public:
 
     /** Return JSON representation of configured validator sites
      */
-    Json::Value
+    json::Value
     getJson() const;
 
 private:

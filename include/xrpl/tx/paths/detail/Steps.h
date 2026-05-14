@@ -18,21 +18,21 @@ class ReadView;
 class ApplyView;
 class AMMContext;
 
-enum class DebtDirection { issues, redeems };
-enum class QualityDirection { in, out };
-enum class StrandDirection { forward, reverse };
-enum class OfferCrossing { no = 0, yes = 1, sell = 2 };
+enum class DebtDirection { Issues, Redeems };
+enum class QualityDirection { In, Out };
+enum class StrandDirection { Forward, Reverse };
+enum class OfferCrossing { No = 0, Yes = 1, Sell = 2 };
 
 inline bool
 redeems(DebtDirection dir)
 {
-    return dir == DebtDirection::redeems;
+    return dir == DebtDirection::Redeems;
 }
 
 inline bool
 issues(DebtDirection dir)
 {
-    return dir == DebtDirection::issues;
+    return dir == DebtDirection::Issues;
 }
 
 /**
@@ -460,7 +460,7 @@ public:
     [[nodiscard]] bool
     isZero(EitherAmount const& out) const override
     {
-        return get<TOut>(out) == beast::zero;
+        return get<TOut>(out) == beast::kZERO;
     }
 
     [[nodiscard]] bool
@@ -547,24 +547,24 @@ struct StrandContext
 
     /** StrandContext constructor. */
     StrandContext(
-        ReadView const& view_,
-        std::vector<std::unique_ptr<Step>> const& strand_,
+        ReadView const& view,
+        std::vector<std::unique_ptr<Step>> const& strand,
         // A strand may not include an inner node that
         // replicates the source or destination.
-        AccountID const& strandSrc_,
-        AccountID const& strandDst_,
-        Asset const& strandDeliver_,
-        std::optional<Quality> const& limitQuality_,
-        bool isLast_,
-        bool ownerPaysTransferFee_,
-        OfferCrossing offerCrossing_,
-        bool isDefaultPath_,
+        AccountID const& strandSrc,
+        AccountID const& strandDst,
+        Asset const& strandDeliver,
+        std::optional<Quality> const& limitQuality,
+        bool isLast,
+        bool ownerPaysTransferFee,
+        OfferCrossing offerCrossing,
+        bool isDefaultPath,
         std::array<boost::container::flat_set<Asset>, 2>&
-            seenDirectAssets_,                             ///< For detecting currency loops
-        boost::container::flat_set<Asset>& seenBookOuts_,  ///< For detecting book loops
-        AMMContext& ammContext_,
+            seenDirectAssets,                             ///< For detecting currency loops
+        boost::container::flat_set<Asset>& seenBookOuts,  ///< For detecting book loops
+        AMMContext& ammContext,
         std::optional<uint256> const& domainID,
-        beast::Journal j_);  ///< Journal for logging
+        beast::Journal j);  ///< Journal for logging
 };
 
 /// @cond INTERNAL
@@ -592,45 +592,45 @@ bookStepEqual(Step const& step, xrpl::Book const& book);
 }  // namespace test
 
 std::pair<TER, std::unique_ptr<Step>>
-make_DirectStepI(
+makeDirectStepI(
     StrandContext const& ctx,
     AccountID const& src,
     AccountID const& dst,
     Currency const& c);
 
 std::pair<TER, std::unique_ptr<Step>>
-make_MPTEndpointStep(
+makeMptEndpointStep(
     StrandContext const& ctx,
     AccountID const& src,
     AccountID const& dst,
     MPTID const& a);
 
 std::pair<TER, std::unique_ptr<Step>>
-make_BookStepII(StrandContext const& ctx, Issue const& in, Issue const& out);
+makeBookStepIi(StrandContext const& ctx, Issue const& in, Issue const& out);
 
 std::pair<TER, std::unique_ptr<Step>>
-make_BookStepIX(StrandContext const& ctx, Issue const& in);
+makeBookStepIx(StrandContext const& ctx, Issue const& in);
 
 std::pair<TER, std::unique_ptr<Step>>
-make_BookStepXI(StrandContext const& ctx, Issue const& out);
+makeBookStepXi(StrandContext const& ctx, Issue const& out);
 
 std::pair<TER, std::unique_ptr<Step>>
-make_XRPEndpointStep(StrandContext const& ctx, AccountID const& acc);
+makeXrpEndpointStep(StrandContext const& ctx, AccountID const& acc);
 
 std::pair<TER, std::unique_ptr<Step>>
-make_BookStepMM(StrandContext const& ctx, MPTIssue const& in, MPTIssue const& out);
+makeBookStepMm(StrandContext const& ctx, MPTIssue const& in, MPTIssue const& out);
 
 std::pair<TER, std::unique_ptr<Step>>
-make_BookStepMX(StrandContext const& ctx, MPTIssue const& in);
+makeBookStepMx(StrandContext const& ctx, MPTIssue const& in);
 
 std::pair<TER, std::unique_ptr<Step>>
-make_BookStepXM(StrandContext const& ctx, MPTIssue const& out);
+makeBookStepXm(StrandContext const& ctx, MPTIssue const& out);
 
 std::pair<TER, std::unique_ptr<Step>>
-make_BookStepMI(StrandContext const& ctx, MPTIssue const& in, Issue const& out);
+makeBookStepMi(StrandContext const& ctx, MPTIssue const& in, Issue const& out);
 
 std::pair<TER, std::unique_ptr<Step>>
-make_BookStepIM(StrandContext const& ctx, Issue const& in, MPTIssue const& out);
+makeBookStepIm(StrandContext const& ctx, Issue const& in, MPTIssue const& out);
 
 template <StepAmount InAmt, StepAmount OutAmt>
 bool

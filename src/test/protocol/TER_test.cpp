@@ -8,7 +8,7 @@
 
 namespace xrpl {
 
-struct TER_test : public beast::unit_test::suite
+struct TER_test : public beast::unit_test::Suite
 {
     void
     testTransResultInfo()
@@ -44,7 +44,7 @@ struct TER_test : public beast::unit_test::suite
     public:
         template <typename Tup>
         void
-        operator()(Tup const& tup, beast::unit_test::suite&) const
+        operator()(Tup const& tup, beast::unit_test::Suite&) const
         {
             // Entries in the tuple should not be convertible or assignable
             // unless they are the same types.
@@ -73,7 +73,7 @@ struct TER_test : public beast::unit_test::suite
         template <std::size_t, std::size_t> class Func,
         typename Tup>
     std::enable_if_t<I1 != 0>
-    testIterate(Tup const& tup, beast::unit_test::suite& s)
+    testIterate(Tup const& tup, beast::unit_test::Suite& s)
     {
         Func<I1, I2> const func;
         func(tup, s);
@@ -87,7 +87,7 @@ struct TER_test : public beast::unit_test::suite
         template <std::size_t, std::size_t> class Func,
         typename Tup>
     std::enable_if_t<I1 == 0 && I2 != 0>
-    testIterate(Tup const& tup, beast::unit_test::suite& s)
+    testIterate(Tup const& tup, beast::unit_test::Suite& s)
     {
         Func<I1, I2> const func;
         func(tup, s);
@@ -101,7 +101,7 @@ struct TER_test : public beast::unit_test::suite
         template <std::size_t, std::size_t> class Func,
         typename Tup>
     std::enable_if_t<I1 == 0 && I2 == 0>
-    testIterate(Tup const& tup, beast::unit_test::suite& s)
+    testIterate(Tup const& tup, beast::unit_test::Suite& s)
     {
         Func<I1, I2> const func;
         func(tup, s);
@@ -114,12 +114,12 @@ struct TER_test : public beast::unit_test::suite
         // are not valid.
 
         // Examples of each kind of enum.
-        static auto const terEnums = std::make_tuple(
+        static auto const kTER_ENUMS = std::make_tuple(
             telLOCAL_ERROR, temMALFORMED, tefFAILURE, terRETRY, tesSUCCESS, tecCLAIM);
-        static int const hiIndex{std::tuple_size_v<decltype(terEnums)> - 1};
+        static int const kHI_INDEX{std::tuple_size_v<decltype(kTER_ENUMS)> - 1};
 
         // Verify that enums cannot be converted to other enum types.
-        testIterate<hiIndex, hiIndex, NotConvertible>(terEnums, *this);
+        testIterate<kHI_INDEX, kHI_INDEX, NotConvertible>(kTER_ENUMS, *this);
 
         // Lambda that verifies assignability and convertibility.
         auto isConvertible = [](auto from, auto to) {
@@ -181,7 +181,7 @@ struct TER_test : public beast::unit_test::suite
     public:
         template <typename Tup>
         void
-        operator()(Tup const& tup, beast::unit_test::suite& s) const
+        operator()(Tup const& tup, beast::unit_test::Suite& s) const
         {
             // All entries in the tuple should be comparable one to the other.
             auto const lhs = std::get<I1>(tup);
@@ -216,7 +216,7 @@ struct TER_test : public beast::unit_test::suite
         // All of the TER-related types should be comparable.
 
         // Examples of all the types we expect to successfully compare.
-        static auto const ters = std::make_tuple(
+        static auto const kTERS = std::make_tuple(
             telLOCAL_ERROR,
             temMALFORMED,
             tefFAILURE,
@@ -225,11 +225,11 @@ struct TER_test : public beast::unit_test::suite
             tecCLAIM,
             NotTEC{telLOCAL_ERROR},
             TER{tecCLAIM});
-        static int const hiIndex{std::tuple_size_v<decltype(ters)> - 1};
+        static int const kHI_INDEX{std::tuple_size_v<decltype(kTERS)> - 1};
 
         // Verify that all types in the ters tuple can be compared with all
         // the other types in ters.
-        testIterate<hiIndex, hiIndex, CheckComparable>(ters, *this);
+        testIterate<kHI_INDEX, kHI_INDEX, CheckComparable>(kTERS, *this);
     }
 
     void

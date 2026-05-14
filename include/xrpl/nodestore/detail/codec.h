@@ -21,16 +21,16 @@ namespace xrpl::NodeStore {
 
 template <class BufferFactory>
 std::pair<void const*, std::size_t>
-lz4_decompress(void const* in, std::size_t in_size, BufferFactory&& bf)
+lz4Decompress(void const* in, std::size_t inSize, BufferFactory&& bf)
 {
-    if (static_cast<int>(in_size) < 0)
+    if (static_cast<int>(inSize) < 0)
         Throw<std::runtime_error>("lz4_decompress: integer overflow (input)");
 
     std::size_t outSize = 0;
 
-    auto const n = read_varint(reinterpret_cast<std::uint8_t const*>(in), in_size, outSize);
+    auto const n = readVarint(reinterpret_cast<std::uint8_t const*>(in), inSize, outSize);
 
-    if (n == 0 || n >= in_size)
+    if (n == 0 || n >= inSize)
         Throw<std::runtime_error>("lz4_decompress: invalid blob");
 
     if (static_cast<int>(outSize) <= 0)
@@ -41,7 +41,7 @@ lz4_decompress(void const* in, std::size_t in_size, BufferFactory&& bf)
     if (LZ4_decompress_safe(
             reinterpret_cast<char const*>(in) + n,
             reinterpret_cast<char*>(out),
-            static_cast<int>(in_size - n),
+            static_cast<int>(inSize - n),
             static_cast<int>(outSize)) != static_cast<int>(outSize))
         Throw<std::runtime_error>("lz4_decompress: LZ4_decompress_safe");
 
@@ -50,22 +50,22 @@ lz4_decompress(void const* in, std::size_t in_size, BufferFactory&& bf)
 
 template <class BufferFactory>
 std::pair<void const*, std::size_t>
-lz4_compress(void const* in, std::size_t in_size, BufferFactory&& bf)
+lz4Compress(void const* in, std::size_t inSize, BufferFactory&& bf)
 {
     using std::runtime_error;
     using namespace nudb::detail;
     std::pair<void const*, std::size_t> result;
-    std::array<std::uint8_t, varint_traits<std::size_t>::max> vi{};
-    auto const n = write_varint(vi.data(), in_size);
-    auto const out_max = LZ4_compressBound(in_size);
-    std::uint8_t* out = reinterpret_cast<std::uint8_t*>(bf(n + out_max));
+    std::array<std::uint8_t, varint_traits<std::size_t>::kMAX> vi{};
+    auto const n = writeVarint(vi.data(), inSize);
+    auto const outMax = LZ4_compressBound(inSize);
+    std::uint8_t* out = reinterpret_cast<std::uint8_t*>(bf(n + outMax));
     result.first = out;
     std::memcpy(out, vi.data(), n);
-    auto const out_size = LZ4_compress_default(
-        reinterpret_cast<char const*>(in), reinterpret_cast<char*>(out + n), in_size, out_max);
-    if (out_size == 0)
+    auto const outSize = LZ4_compress_default(
+        reinterpret_cast<char const*>(in), reinterpret_cast<char*>(out + n), inSize, outMax);
+    if (outSize == 0)
         Throw<std::runtime_error>("lz4 compress");
-    result.second = n + out_size;
+    result.second = n + outSize;
     return result;
 }
 
@@ -82,17 +82,17 @@ lz4_compress(void const* in, std::size_t in_size, BufferFactory&& bf)
 
 template <class BufferFactory>
 std::pair<void const*, std::size_t>
-nodeobject_decompress(void const* in, std::size_t in_size, BufferFactory&& bf)
+nodeobjectDecompress(void const* in, std::size_t inSize, BufferFactory&& bf)
 {
     using namespace nudb::detail;
 
     std::uint8_t const* p = reinterpret_cast<std::uint8_t const*>(in);
     std::size_t type = 0;
-    auto const vn = read_varint(p, in_size, type);
+    auto const vn = readVarint(p, inSize, type);
     if (vn == 0)
         Throw<std::runtime_error>("nodeobject decompress");
     p += vn;
-    in_size -= vn;
+    inSize -= vn;
 
     std::pair<void const*, std::size_t> result;
     switch (type)
@@ -100,35 +100,35 @@ nodeobject_decompress(void const* in, std::size_t in_size, BufferFactory&& bf)
         case 0:  // uncompressed
         {
             result.first = p;
-            result.second = in_size;
+            result.second = inSize;
             break;
         }
         case 1:  // lz4
         {
-            result = lz4_decompress(p, in_size, bf);
+            result = lz4Decompress(p, inSize, bf);
             break;
         }
         case 2:  // compressed v1 inner node
         {
             auto const hs = field<std::uint16_t>::size;  // Mask
-            if (in_size < hs + 32)
+            if (inSize < hs + 32)
             {
                 Throw<std::runtime_error>(
                     "nodeobject codec v1: short inner node size: " + std::string("in_size = ") +
-                    std::to_string(in_size) + " hs = " + std::to_string(hs));
+                    std::to_string(inSize) + " hs = " + std::to_string(hs));
             }
-            istream is(p, in_size);
+            istream is(p, inSize);
             std::uint16_t mask = 0;
             read<std::uint16_t>(is, mask);  // Mask
-            in_size -= hs;
+            inSize -= hs;
             result.second = 525;
             void* const out = bf(result.second);
             result.first = out;
             ostream os(out, result.second);
             write<std::uint32_t>(os, 0);
             write<std::uint32_t>(os, 0);
-            write<std::uint8_t>(os, static_cast<std::uint8_t>(NodeObjectType::hotUNKNOWN));
-            write<std::uint32_t>(os, static_cast<std::uint32_t>(HashPrefix::innerNode));
+            write<std::uint8_t>(os, static_cast<std::uint8_t>(NodeObjectType::Unknown));
+            write<std::uint32_t>(os, static_cast<std::uint32_t>(HashPrefix::InnerNode));
             if (mask == 0)
                 Throw<std::runtime_error>("nodeobject codec v1: empty inner node");
             std::uint16_t bit = 0x8000;
@@ -136,45 +136,45 @@ nodeobject_decompress(void const* in, std::size_t in_size, BufferFactory&& bf)
             {
                 if (mask & bit)
                 {
-                    if (in_size < 32)
+                    if (inSize < 32)
                     {
                         Throw<std::runtime_error>(
                             "nodeobject codec v1: short inner node subsize: " +
-                            std::string("in_size = ") + std::to_string(in_size) +
+                            std::string("in_size = ") + std::to_string(inSize) +
                             " i = " + std::to_string(i));
                     }
                     std::memcpy(os.data(32), is(32), 32);
-                    in_size -= 32;
+                    inSize -= 32;
                 }
                 else
                 {
                     std::memset(os.data(32), 0, 32);
                 }
             }
-            if (in_size > 0)
+            if (inSize > 0)
             {
                 Throw<std::runtime_error>(
-                    "nodeobject codec v1: long inner node, in_size = " + std::to_string(in_size));
+                    "nodeobject codec v1: long inner node, in_size = " + std::to_string(inSize));
             }
             break;
         }
         case 3:  // full v1 inner node
         {
-            if (in_size != 16 * 32)
+            if (inSize != 16 * 32)
             {  // hashes
                 Throw<std::runtime_error>(
                     "nodeobject codec v1: short full inner node, in_size = " +
-                    std::to_string(in_size));
+                    std::to_string(inSize));
             }
-            istream is(p, in_size);
+            istream is(p, inSize);
             result.second = 525;
             void* const out = bf(result.second);
             result.first = out;
             ostream os(out, result.second);
             write<std::uint32_t>(os, 0);
             write<std::uint32_t>(os, 0);
-            write<std::uint8_t>(os, static_cast<std::uint8_t>(NodeObjectType::hotUNKNOWN));
-            write<std::uint32_t>(os, static_cast<std::uint32_t>(HashPrefix::innerNode));
+            write<std::uint8_t>(os, static_cast<std::uint8_t>(NodeObjectType::Unknown));
+            write<std::uint32_t>(os, static_cast<std::uint32_t>(HashPrefix::InnerNode));
             write(os, is(512), 512);
             break;
         }
@@ -188,21 +188,21 @@ template <class = void>
 void const*
 zero32()
 {
-    static std::array<char, 32> v{};
-    return v.data();
+    static std::array<char, 32> kV{};
+    return kV.data();
 }
 
 template <class BufferFactory>
 std::pair<void const*, std::size_t>
-nodeobject_compress(void const* in, std::size_t in_size, BufferFactory&& bf)
+nodeobjectCompress(void const* in, std::size_t inSize, BufferFactory&& bf)
 {
     using std::runtime_error;
     using namespace nudb::detail;
 
     // Check for inner node v1
-    if (in_size == 525)
+    if (inSize == 525)
     {
-        istream is(in, in_size);
+        istream is(in, inSize);
         std::uint32_t index = 0;
         std::uint32_t unused = 0;
         std::uint8_t kind = 0;
@@ -211,7 +211,7 @@ nodeobject_compress(void const* in, std::size_t in_size, BufferFactory&& bf)
         read<std::uint32_t>(is, unused);
         read<std::uint8_t>(is, kind);
         read<std::uint32_t>(is, prefix);
-        if (safe_cast<HashPrefix>(prefix) == HashPrefix::innerNode)
+        if (safeCast<HashPrefix>(prefix) == HashPrefix::InnerNode)
         {
             std::size_t n = 0;
             std::uint16_t mask = 0;
@@ -230,7 +230,7 @@ nodeobject_compress(void const* in, std::size_t in_size, BufferFactory&& bf)
             {
                 // 2 = v1 inner node compressed
                 auto const type = 2U;
-                auto const vs = size_varint(type);
+                auto const vs = sizeVarint(type);
                 result.second = vs + field<std::uint16_t>::size +  // mask
                     (n * 32);                                      // hashes
                 std::uint8_t* out = reinterpret_cast<std::uint8_t*>(bf(result.second));
@@ -243,7 +243,7 @@ nodeobject_compress(void const* in, std::size_t in_size, BufferFactory&& bf)
             }
             // 3 = full v1 inner node
             auto const type = 3U;
-            auto const vs = size_varint(type);
+            auto const vs = sizeVarint(type);
             result.second = vs + (n * 32);  // hashes
             std::uint8_t* out = reinterpret_cast<std::uint8_t*>(bf(result.second));
             result.first = out;
@@ -254,18 +254,18 @@ nodeobject_compress(void const* in, std::size_t in_size, BufferFactory&& bf)
         }
     }
 
-    std::array<std::uint8_t, varint_traits<std::size_t>::max> vi{};
+    std::array<std::uint8_t, varint_traits<std::size_t>::kMAX> vi{};
 
-    constexpr std::size_t codecType = 1;
-    auto const vn = write_varint(vi.data(), codecType);
+    constexpr std::size_t kCODEC_TYPE = 1;
+    auto const vn = writeVarint(vi.data(), kCODEC_TYPE);
     std::pair<void const*, std::size_t> result;
-    switch (codecType)
+    switch (kCODEC_TYPE)
     {
         // case 0 was uncompressed data; we always compress now.
         case 1:  // lz4
         {
             std::uint8_t* p = nullptr;
-            auto const lzr = NodeStore::lz4_compress(in, in_size, [&p, &vn, &bf](std::size_t n) {
+            auto const lzr = NodeStore::lz4Compress(in, inSize, [&p, &vn, &bf](std::size_t n) {
                 p = reinterpret_cast<std::uint8_t*>(bf(vn + n));
                 return p + vn;
             });
@@ -275,7 +275,7 @@ nodeobject_compress(void const* in, std::size_t in_size, BufferFactory&& bf)
             break;
         }
         default:
-            Throw<std::logic_error>("nodeobject codec: unknown=" + std::to_string(codecType));
+            Throw<std::logic_error>("nodeobject codec: unknown=" + std::to_string(kCODEC_TYPE));
     };
     return result;
 }
@@ -286,14 +286,14 @@ nodeobject_compress(void const* in, std::size_t in_size, BufferFactory&& bf)
 //
 template <class = void>
 void
-filter_inner(void* in, std::size_t in_size)
+filterInner(void* in, std::size_t inSize)
 {
     using namespace nudb::detail;
 
     // Check for inner node
-    if (in_size == 525)
+    if (inSize == 525)
     {
-        istream is(in, in_size);
+        istream is(in, inSize);
         std::uint32_t index = 0;
         std::uint32_t unused = 0;
         std::uint8_t kind = 0;
@@ -302,12 +302,12 @@ filter_inner(void* in, std::size_t in_size)
         read<std::uint32_t>(is, unused);
         read<std::uint8_t>(is, kind);
         read<std::uint32_t>(is, prefix);
-        if (safe_cast<HashPrefix>(prefix) == HashPrefix::innerNode)
+        if (safeCast<HashPrefix>(prefix) == HashPrefix::InnerNode)
         {
             ostream os(in, 9);
             write<std::uint32_t>(os, 0);
             write<std::uint32_t>(os, 0);
-            write<std::uint8_t>(os, static_cast<std::uint8_t>(NodeObjectType::hotUNKNOWN));
+            write<std::uint8_t>(os, static_cast<std::uint8_t>(NodeObjectType::Unknown));
         }
     }
 }

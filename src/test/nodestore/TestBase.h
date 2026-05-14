@@ -42,14 +42,14 @@ isSame(std::shared_ptr<NodeObject> const& lhs, std::shared_ptr<NodeObject> const
 
 // Some common code for the unit tests
 //
-class TestBase : public beast::unit_test::suite
+class TestBase : public beast::unit_test::Suite
 {
 public:
     // Tunable parameters
     //
-    static std::size_t const minPayloadBytes = 1;
-    static std::size_t const maxPayloadBytes = 2000;
-    static int const numObjectsToTest = 2000;
+    static std::size_t const kMIN_PAYLOAD_BYTES = 1;
+    static std::size_t const kMAX_PAYLOAD_BYTES = 2000;
+    static int const kNUM_OBJECTS_TO_TEST = 2000;
 
 public:
     // Create a predictable batch of objects
@@ -64,26 +64,26 @@ public:
         for (int i = 0; i < numObjects; ++i)
         {
             NodeObjectType const type = [&] {
-                switch (rand_int(rng, 3))
+                switch (randInt(rng, 3))
                 {
                     case 0:
-                        return NodeObjectType::hotLEDGER;
+                        return NodeObjectType::Ledger;
                     case 1:
-                        return NodeObjectType::hotACCOUNT_NODE;
+                        return NodeObjectType::AccountNode;
                     case 2:
-                        return NodeObjectType::hotTRANSACTION_NODE;
+                        return NodeObjectType::TransactionNode;
                     case 3:
-                        return NodeObjectType::hotUNKNOWN;
+                        return NodeObjectType::Unknown;
                     default:
                         // will never happen, but make static analysis tool happy.
-                        return NodeObjectType::hotUNKNOWN;
+                        return NodeObjectType::Unknown;
                 }
             }();
 
             uint256 hash;
             beast::rngfill(hash.begin(), hash.size(), rng);
 
-            Blob blob(rand_int(rng, minPayloadBytes, maxPayloadBytes));
+            Blob blob(randInt(rng, kMIN_PAYLOAD_BYTES, kMAX_PAYLOAD_BYTES));
             beast::rngfill(blob.data(), blob.size(), rng);
 
             batch.push_back(NodeObject::createObject(type, std::move(blob), hash));
@@ -140,9 +140,9 @@ public:
 
             Status const status = backend.fetch(batch[i]->getHash(), &object);
 
-            BEAST_EXPECT(status == Status::ok);
+            BEAST_EXPECT(status == Status::Ok);
 
-            if (status == Status::ok)
+            if (status == Status::Ok)
             {
                 BEAST_EXPECT(object != nullptr);
 
@@ -160,7 +160,7 @@ public:
 
             Status const status = backend.fetch(batch[i]->getHash(), &object);
 
-            BEAST_EXPECT(status == Status::notFound);
+            BEAST_EXPECT(status == Status::NotFound);
         }
     }
 

@@ -276,7 +276,7 @@ TransfersNotFrozen::validateFrozenState(
     // individually-frozen or deep-frozen AMM trust lines.
     // Post-fixCleanup3_2_0: AMMClawbacks are allowed to override all freeze types.
     bool const isAMMLine = !fixOverrideFreeze && change.line->isFlag(lsfAMMNode);
-    if ((!isAMMLine || globalFreeze) && hasPrivilege(tx, overrideFreeze))
+    if ((!isAMMLine || globalFreeze) && hasPrivilege(tx, OverrideFreeze))
     {
         JLOG(j.debug()) << "Invariant check allowing funds to be moved "
                         << (change.balanceChangeSign > 0 ? "to" : "from")

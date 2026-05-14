@@ -9,7 +9,7 @@ namespace xrpl {
 class NFTokenMint : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+    static constexpr auto kCONSEQUENCES_FACTORY = ConsequencesFactoryType::Normal;
 
     explicit NFTokenMint(ApplyContext& ctx) : Transactor(ctx)
     {

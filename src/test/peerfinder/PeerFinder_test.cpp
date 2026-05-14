@@ -25,7 +25,7 @@
 
 namespace xrpl::PeerFinder {
 
-class PeerFinder_test : public beast::unit_test::suite
+class PeerFinder_test : public beast::unit_test::Suite
 {
     test::SuiteJournal journal_;
 
@@ -62,7 +62,7 @@ public:
 
         template <class Handler>
         void
-        async_connect(beast::IP::Endpoint const& ep, Handler&& handler)
+        asyncConnect(beast::IP::Endpoint const& ep, Handler&& handler)
         {
             boost::system::error_code ec;
             handler(ep, ep, ec);
@@ -70,7 +70,7 @@ public:
     };
 
     void
-    test_backoff1()
+    testBackoff1()
     {
         auto const seconds = 10000;
         testcase("backoff 1");
@@ -78,7 +78,7 @@ public:
         TestChecker checker;
         TestStopwatch clock;
         Logic<TestChecker> logic(clock, store, checker, journal_);
-        logic.addFixedPeer("test", beast::IP::Endpoint::from_string("65.0.0.1:5"));
+        logic.addFixedPeer("test", beast::IP::Endpoint::fromString("65.0.0.1:5"));
         {
             Config c;
             c.autoConnect = false;
@@ -92,14 +92,14 @@ public:
             if (!list.empty())
             {
                 BEAST_EXPECT(list.size() == 1);
-                auto const [slot, _] = logic.new_outbound_slot(list.front());
+                auto const [slot, _] = logic.newOutboundSlot(list.front());
                 BEAST_EXPECT(
-                    logic.onConnected(slot, beast::IP::Endpoint::from_string("65.0.0.2:5")));
-                logic.on_closed(slot);
+                    logic.onConnected(slot, beast::IP::Endpoint::fromString("65.0.0.2:5")));
+                logic.onClosed(slot);
                 ++n;
             }
             clock.advance(std::chrono::seconds(1));
-            logic.once_per_second();
+            logic.oncePerSecond();
         }
         // Less than 20 attempts
         BEAST_EXPECT(n < 20);
@@ -107,7 +107,7 @@ public:
 
     // with activate
     void
-    test_backoff2()
+    testBackoff2()
     {
         auto const seconds = 10000;
         testcase("backoff 2");
@@ -115,7 +115,7 @@ public:
         TestChecker checker;
         TestStopwatch clock;
         Logic<TestChecker> logic(clock, store, checker, journal_);
-        logic.addFixedPeer("test", beast::IP::Endpoint::from_string("65.0.0.1:5"));
+        logic.addFixedPeer("test", beast::IP::Endpoint::fromString("65.0.0.1:5"));
         {
             Config c;
             c.autoConnect = false;
@@ -123,7 +123,7 @@ public:
             logic.config(c);
         }
 
-        PublicKey const pk(randomKeyPair(KeyType::secp256k1).first);
+        PublicKey const pk(randomKeyPair(KeyType::Secp256k1).first);
         std::size_t n = 0;
 
         for (std::size_t i = 0; i < seconds; ++i)
@@ -132,17 +132,17 @@ public:
             if (!list.empty())
             {
                 BEAST_EXPECT(list.size() == 1);
-                auto const [slot, _] = logic.new_outbound_slot(list.front());
+                auto const [slot, _] = logic.newOutboundSlot(list.front());
                 if (!BEAST_EXPECT(
-                        logic.onConnected(slot, beast::IP::Endpoint::from_string("65.0.0.2:5"))))
+                        logic.onConnected(slot, beast::IP::Endpoint::fromString("65.0.0.2:5"))))
                     return;
-                if (!BEAST_EXPECT(logic.activate(slot, pk, false) == PeerFinder::Result::success))
+                if (!BEAST_EXPECT(logic.activate(slot, pk, false) == PeerFinder::Result::Success))
                     return;
-                logic.on_closed(slot);
+                logic.onClosed(slot);
                 ++n;
             }
             clock.advance(std::chrono::seconds(1));
-            logic.once_per_second();
+            logic.oncePerSecond();
         }
         // No more often than once per minute
         BEAST_EXPECT(n <= (seconds + 59) / 60);
@@ -150,7 +150,7 @@ public:
 
     // test accepting an incoming slot for an already existing outgoing slot
     void
-    test_duplicateOutIn()
+    testDuplicateOutIn()
     {
         testcase("duplicate out/in");
         TestStore store;
@@ -165,26 +165,26 @@ public:
             logic.config(c);
         }
 
-        auto const remote = beast::IP::Endpoint::from_string("65.0.0.1:5");
-        auto const [slot1, r] = logic.new_outbound_slot(remote);
+        auto const remote = beast::IP::Endpoint::fromString("65.0.0.1:5");
+        auto const [slot1, r] = logic.newOutboundSlot(remote);
         BEAST_EXPECT(slot1 != nullptr);
-        BEAST_EXPECT(r == Result::success);
-        BEAST_EXPECT(logic.connectedAddresses_.count(remote.address()) == 1);
+        BEAST_EXPECT(r == Result::Success);
+        BEAST_EXPECT(logic.connectedAddresses.count(remote.address()) == 1);
 
-        auto const local = beast::IP::Endpoint::from_string("65.0.0.2:1024");
-        auto const [slot2, r2] = logic.new_inbound_slot(local, remote);
-        BEAST_EXPECT(logic.connectedAddresses_.count(remote.address()) == 1);
-        BEAST_EXPECT(r2 == Result::duplicatePeer);
+        auto const local = beast::IP::Endpoint::fromString("65.0.0.2:1024");
+        auto const [slot2, r2] = logic.newInboundSlot(local, remote);
+        BEAST_EXPECT(logic.connectedAddresses.count(remote.address()) == 1);
+        BEAST_EXPECT(r2 == Result::DuplicatePeer);
 
         if (!BEAST_EXPECT(slot2 == nullptr))
-            logic.on_closed(slot2);
+            logic.onClosed(slot2);
 
-        logic.on_closed(slot1);
+        logic.onClosed(slot1);
     }
 
     // test establishing outgoing slot for an already existing incoming slot
     void
-    test_duplicateInOut()
+    testDuplicateInOut()
     {
         testcase("duplicate in/out");
         TestStore store;
@@ -199,24 +199,24 @@ public:
             logic.config(c);
         }
 
-        auto const remote = beast::IP::Endpoint::from_string("65.0.0.1:5");
-        auto const local = beast::IP::Endpoint::from_string("65.0.0.2:1024");
+        auto const remote = beast::IP::Endpoint::fromString("65.0.0.1:5");
+        auto const local = beast::IP::Endpoint::fromString("65.0.0.2:1024");
 
-        auto const [slot1, r] = logic.new_inbound_slot(local, remote);
+        auto const [slot1, r] = logic.newInboundSlot(local, remote);
         BEAST_EXPECT(slot1 != nullptr);
-        BEAST_EXPECT(r == Result::success);
-        BEAST_EXPECT(logic.connectedAddresses_.count(remote.address()) == 1);
+        BEAST_EXPECT(r == Result::Success);
+        BEAST_EXPECT(logic.connectedAddresses.count(remote.address()) == 1);
 
-        auto const [slot2, r2] = logic.new_outbound_slot(remote);
-        BEAST_EXPECT(r2 == Result::duplicatePeer);
-        BEAST_EXPECT(logic.connectedAddresses_.count(remote.address()) == 1);
+        auto const [slot2, r2] = logic.newOutboundSlot(remote);
+        BEAST_EXPECT(r2 == Result::DuplicatePeer);
+        BEAST_EXPECT(logic.connectedAddresses.count(remote.address()) == 1);
         if (!BEAST_EXPECT(slot2 == nullptr))
-            logic.on_closed(slot2);
-        logic.on_closed(slot1);
+            logic.onClosed(slot2);
+        logic.onClosed(slot1);
     }
 
     void
-    test_peerLimitExceeded()
+    testPeerLimitExceeded()
     {
         testcase("peer limit exceeded");
         TestStore store;
@@ -231,29 +231,29 @@ public:
             logic.config(c);
         }
 
-        auto const local = beast::IP::Endpoint::from_string("65.0.0.2:1024");
+        auto const local = beast::IP::Endpoint::fromString("65.0.0.2:1024");
         auto const [slot, r] =
-            logic.new_inbound_slot(local, beast::IP::Endpoint::from_string("55.104.0.2:1025"));
+            logic.newInboundSlot(local, beast::IP::Endpoint::fromString("55.104.0.2:1025"));
         BEAST_EXPECT(slot != nullptr);
-        BEAST_EXPECT(r == Result::success);
+        BEAST_EXPECT(r == Result::Success);
 
         auto const [slot1, r1] =
-            logic.new_inbound_slot(local, beast::IP::Endpoint::from_string("55.104.0.2:1026"));
+            logic.newInboundSlot(local, beast::IP::Endpoint::fromString("55.104.0.2:1026"));
         BEAST_EXPECT(slot1 != nullptr);
-        BEAST_EXPECT(r1 == Result::success);
+        BEAST_EXPECT(r1 == Result::Success);
 
         auto const [slot2, r2] =
-            logic.new_inbound_slot(local, beast::IP::Endpoint::from_string("55.104.0.2:1027"));
-        BEAST_EXPECT(r2 == Result::ipLimitExceeded);
+            logic.newInboundSlot(local, beast::IP::Endpoint::fromString("55.104.0.2:1027"));
+        BEAST_EXPECT(r2 == Result::IpLimitExceeded);
 
         if (!BEAST_EXPECT(slot2 == nullptr))
-            logic.on_closed(slot2);
-        logic.on_closed(slot1);
-        logic.on_closed(slot);
+            logic.onClosed(slot2);
+        logic.onClosed(slot1);
+        logic.onClosed(slot);
     }
 
     void
-    test_activate_duplicate_peer()
+    testActivateDuplicatePeer()
     {
         testcase("test activate duplicate peer");
         TestStore store;
@@ -268,37 +268,37 @@ public:
             logic.config(c);
         }
 
-        auto const local = beast::IP::Endpoint::from_string("65.0.0.2:1024");
+        auto const local = beast::IP::Endpoint::fromString("65.0.0.2:1024");
 
-        PublicKey const pk1(randomKeyPair(KeyType::secp256k1).first);
+        PublicKey const pk1(randomKeyPair(KeyType::Secp256k1).first);
 
         auto const [slot, rSlot] =
-            logic.new_outbound_slot(beast::IP::Endpoint::from_string("55.104.0.2:1025"));
+            logic.newOutboundSlot(beast::IP::Endpoint::fromString("55.104.0.2:1025"));
         BEAST_EXPECT(slot != nullptr);
-        BEAST_EXPECT(rSlot == Result::success);
+        BEAST_EXPECT(rSlot == Result::Success);
 
         auto const [slot2, r2Slot] =
-            logic.new_outbound_slot(beast::IP::Endpoint::from_string("55.104.0.2:1026"));
+            logic.newOutboundSlot(beast::IP::Endpoint::fromString("55.104.0.2:1026"));
         BEAST_EXPECT(slot2 != nullptr);
-        BEAST_EXPECT(r2Slot == Result::success);
+        BEAST_EXPECT(r2Slot == Result::Success);
 
         BEAST_EXPECT(logic.onConnected(slot, local));
         BEAST_EXPECT(logic.onConnected(slot2, local));
 
-        BEAST_EXPECT(logic.activate(slot, pk1, false) == Result::success);
+        BEAST_EXPECT(logic.activate(slot, pk1, false) == Result::Success);
 
         // activating a different slot with the same node ID (pk) must fail
-        BEAST_EXPECT(logic.activate(slot2, pk1, false) == Result::duplicatePeer);
+        BEAST_EXPECT(logic.activate(slot2, pk1, false) == Result::DuplicatePeer);
 
-        logic.on_closed(slot);
+        logic.onClosed(slot);
 
         // accept the same key for a new slot after removing the old slot
-        BEAST_EXPECT(logic.activate(slot2, pk1, false) == Result::success);
-        logic.on_closed(slot2);
+        BEAST_EXPECT(logic.activate(slot2, pk1, false) == Result::Success);
+        logic.onClosed(slot2);
     }
 
     void
-    test_activate_inbound_disabled()
+    testActivateInboundDisabled()
     {
         testcase("test activate inbound disabled");
         TestStore store;
@@ -313,15 +313,15 @@ public:
             logic.config(c);
         }
 
-        PublicKey const pk1(randomKeyPair(KeyType::secp256k1).first);
-        auto const local = beast::IP::Endpoint::from_string("65.0.0.2:1024");
+        PublicKey const pk1(randomKeyPair(KeyType::Secp256k1).first);
+        auto const local = beast::IP::Endpoint::fromString("65.0.0.2:1024");
 
         auto const [slot, rSlot] =
-            logic.new_inbound_slot(local, beast::IP::Endpoint::from_string("55.104.0.2:1025"));
+            logic.newInboundSlot(local, beast::IP::Endpoint::fromString("55.104.0.2:1025"));
         BEAST_EXPECT(slot != nullptr);
-        BEAST_EXPECT(rSlot == Result::success);
+        BEAST_EXPECT(rSlot == Result::Success);
 
-        BEAST_EXPECT(logic.activate(slot, pk1, false) == Result::inboundDisabled);
+        BEAST_EXPECT(logic.activate(slot, pk1, false) == Result::InboundDisabled);
 
         {
             Config c;
@@ -332,25 +332,25 @@ public:
             logic.config(c);
         }
         // new inbound slot must succeed when inbound connections are enabled
-        BEAST_EXPECT(logic.activate(slot, pk1, false) == Result::success);
+        BEAST_EXPECT(logic.activate(slot, pk1, false) == Result::Success);
 
         // creating a new inbound slot must succeed as IP Limit is not exceeded
         auto const [slot2, r2Slot] =
-            logic.new_inbound_slot(local, beast::IP::Endpoint::from_string("55.104.0.2:1026"));
+            logic.newInboundSlot(local, beast::IP::Endpoint::fromString("55.104.0.2:1026"));
         BEAST_EXPECT(slot2 != nullptr);
-        BEAST_EXPECT(r2Slot == Result::success);
+        BEAST_EXPECT(r2Slot == Result::Success);
 
-        PublicKey const pk2(randomKeyPair(KeyType::secp256k1).first);
+        PublicKey const pk2(randomKeyPair(KeyType::Secp256k1).first);
 
         // an inbound slot exceeding inPeers limit must fail
-        BEAST_EXPECT(logic.activate(slot2, pk2, false) == Result::full);
+        BEAST_EXPECT(logic.activate(slot2, pk2, false) == Result::Full);
 
-        logic.on_closed(slot2);
-        logic.on_closed(slot);
+        logic.onClosed(slot2);
+        logic.onClosed(slot);
     }
 
     void
-    test_addFixedPeer_no_port()
+    testAddFixedPeerNoPort()
     {
         testcase("test addFixedPeer no port");
         TestStore store;
@@ -359,7 +359,7 @@ public:
         Logic<TestChecker> logic(clock, store, checker, journal_);
         try
         {
-            logic.addFixedPeer("test", beast::IP::Endpoint::from_string("65.0.0.2"));
+            logic.addFixedPeer("test", beast::IP::Endpoint::fromString("65.0.0.2"));
             fail("invalid endpoint successfully added");
         }
         catch (std::runtime_error const& e)
@@ -369,7 +369,7 @@ public:
     }
 
     void
-    test_onConnected_self_connection()
+    testOnConnectedSelfConnection()
     {
         testcase("test onConnected self connection");
         TestStore store;
@@ -377,18 +377,18 @@ public:
         TestStopwatch clock;
         Logic<TestChecker> logic(clock, store, checker, journal_);
 
-        auto const local = beast::IP::Endpoint::from_string("65.0.0.2:1234");
-        auto const [slot, r] = logic.new_outbound_slot(local);
+        auto const local = beast::IP::Endpoint::fromString("65.0.0.2:1234");
+        auto const [slot, r] = logic.newOutboundSlot(local);
         BEAST_EXPECT(slot != nullptr);
-        BEAST_EXPECT(r == Result::success);
+        BEAST_EXPECT(r == Result::Success);
 
         // Must fail when a slot is to our own IP address
         BEAST_EXPECT(!logic.onConnected(slot, local));
-        logic.on_closed(slot);
+        logic.onClosed(slot);
     }
 
     void
-    test_config()
+    testConfig()
     {
         // if peers_max is configured then peers_in_max and peers_out_max
         // are ignored
@@ -429,7 +429,7 @@ public:
             Counts counts;
             counts.onConfig(config);
             BEAST_EXPECT(
-                counts.out_max() == expectOut && counts.in_max() == expectIn &&
+                counts.outMax() == expectOut && counts.inMax() == expectIn &&
                 config.ipLimit == expectIpLimit);
 
             TestStore store;
@@ -466,7 +466,7 @@ public:
     }
 
     void
-    test_invalid_config()
+    testInvalidConfig()
     {
         testcase("invalid config");
 
@@ -513,17 +513,17 @@ public:
     void
     run() override
     {
-        test_backoff1();
-        test_backoff2();
-        test_duplicateOutIn();
-        test_duplicateInOut();
-        test_config();
-        test_invalid_config();
-        test_peerLimitExceeded();
-        test_activate_duplicate_peer();
-        test_activate_inbound_disabled();
-        test_addFixedPeer_no_port();
-        test_onConnected_self_connection();
+        testBackoff1();
+        testBackoff2();
+        testDuplicateOutIn();
+        testDuplicateInOut();
+        testConfig();
+        testInvalidConfig();
+        testPeerLimitExceeded();
+        testActivateDuplicatePeer();
+        testActivateInboundDisabled();
+        testAddFixedPeerNoPort();
+        testOnConnectedSelfConnection();
     }
 };
 

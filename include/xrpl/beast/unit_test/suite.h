@@ -20,7 +20,7 @@ namespace detail {
 
 template <class String>
 static std::string
-make_reason(String const& reason, char const* file, int line)
+makeReason(String const& reason, char const* file, int line)
 {
     std::string s(reason);
     if (!s.empty())
@@ -37,7 +37,7 @@ make_reason(String const& reason, char const* file, int line)
 
 class Thread;
 
-enum class abort_t { no_abort_on_fail, abort_on_fail };
+enum class AbortT { NoAbortOnFail, AbortOnFail };
 
 /** A testsuite class.
 
@@ -46,16 +46,16 @@ enum class abort_t { no_abort_on_fail, abort_on_fail };
     derive from it and use the BEAST_DEFINE_UNIT_TEST macro in a
     translation unit.
 */
-class suite
+class Suite
 {
 private:
     bool abort_ = false;
     bool aborted_ = false;
-    runner* runner_ = nullptr;
+    Runner* runner_ = nullptr;
 
     // This exception is thrown internally to stop the current suite
     // in the event of a failure, if the option to stop is set.
-    struct abort_exception : public std::exception
+    struct AbortException : public std::exception
     {
         [[nodiscard]] char const*
         what() const noexcept override
@@ -65,16 +65,16 @@ private:
     };
 
     template <class CharT, class Traits, class Allocator>
-    class log_buf : public std::basic_stringbuf<CharT, Traits, Allocator>
+    class LogBuf : public std::basic_stringbuf<CharT, Traits, Allocator>
     {
-        suite& suite_;
+        Suite& suite_;
 
     public:
-        explicit log_buf(suite& self) : suite_(self)
+        explicit LogBuf(Suite& self) : suite_(self)
         {
         }
 
-        ~log_buf() override
+        ~LogBuf() override
         {
             sync();
         }
@@ -94,25 +94,25 @@ private:
         class CharT,
         class Traits = std::char_traits<CharT>,
         class Allocator = std::allocator<CharT>>
-    class log_os : public std::basic_ostream<CharT, Traits>
+    class LogOs : public std::basic_ostream<CharT, Traits>
     {
-        log_buf<CharT, Traits, Allocator> buf_;
+        LogBuf<CharT, Traits, Allocator> buf_;
 
     public:
-        explicit log_os(suite& self) : std::basic_ostream<CharT, Traits>(&buf_), buf_(self)
+        explicit LogOs(Suite& self) : std::basic_ostream<CharT, Traits>(&buf_), buf_(self)
         {
         }
     };
 
-    class scoped_testcase;
+    class ScopedTestcase;
 
-    class testcase_t
+    class TestcaseT
     {
-        suite& suite_;
+        Suite& suite_;
         std::stringstream ss_;
 
     public:
-        explicit testcase_t(suite& self) : suite_(self)
+        explicit TestcaseT(Suite& self) : suite_(self)
         {
         }
 
@@ -127,13 +127,13 @@ private:
             @param abort Determines if suite continues running after a failure.
         */
         void
-        operator()(std::string const& name, abort_t abort = abort_t::no_abort_on_fail);
+        operator()(std::string const& name, AbortT abort = AbortT::NoAbortOnFail);
 
-        scoped_testcase
-        operator()(abort_t abort);
+        ScopedTestcase
+        operator()(AbortT abort);
 
         template <class T>
-        scoped_testcase
+        ScopedTestcase
         operator<<(T const& t);
     };
 
@@ -143,28 +143,28 @@ public:
         Text sent to the log output stream will be forwarded to
         the output stream associated with the runner.
     */
-    log_os<char> log;
+    LogOs<char> log;
 
     /** Memberspace for declaring test cases. */
-    testcase_t testcase;
+    TestcaseT testcase;
 
     /** Returns the "current" running suite.
         If no suite is running, nullptr is returned.
     */
-    static suite*
-    this_suite()
+    static Suite*
+    thisSuite()
     {
-        return *p_this_suite();
+        return *pThisSuite();
     }
 
-    suite() : log(*this), testcase(*this)
+    Suite() : log(*this), testcase(*this)
     {
     }
 
-    virtual ~suite() = default;
-    suite(suite const&) = delete;
-    suite&
-    operator=(suite const&) = delete;
+    virtual ~Suite() = default;
+    Suite(Suite const&) = delete;
+    Suite&
+    operator=(Suite const&) = delete;
 
     /** Invokes the test using the specified runner.
 
@@ -175,7 +175,7 @@ public:
     */
     template <class = void>
     void
-    operator()(runner& r);
+    operator()(Runner& r);
 
     /** Record a successful test condition. */
     template <class = void>
@@ -296,11 +296,11 @@ public:
 private:
     friend class Thread;
 
-    static suite**
-    p_this_suite()
+    static Suite**
+    pThisSuite()
     {
-        static suite* pts = nullptr;  // NOLINT(misc-const-correctness)
-        return &pts;
+        static Suite* kP_TS = nullptr;  // NOLINT TODO
+        return &kP_TS;
     }
 
     /** Runs the suite. */
@@ -308,41 +308,41 @@ private:
     run() = 0;
 
     void
-    propagate_abort() const;
+    propagateAbort() const;
 
     template <class = void>
     void
-    run(runner& r);
+    run(Runner& r);
 };
 
 //------------------------------------------------------------------------------
 
 // Helper for streaming testcase names
-class suite::scoped_testcase
+class Suite::ScopedTestcase
 {
 private:
-    suite& suite_;
+    Suite& suite_;
     std::stringstream& ss_;
 
 public:
-    scoped_testcase&
-    operator=(scoped_testcase const&) = delete;
+    ScopedTestcase&
+    operator=(ScopedTestcase const&) = delete;
 
-    ~scoped_testcase()
+    ~ScopedTestcase()
     {
         auto const& name = ss_.str();
         if (!name.empty())
             suite_.runner_->testcase(name);
     }
 
-    scoped_testcase(suite& self, std::stringstream& ss) : suite_(self), ss_(ss)
+    ScopedTestcase(Suite& self, std::stringstream& ss) : suite_(self), ss_(ss)
     {
         ss_.clear();
         ss_.str({});
     }
 
     template <class T>
-    scoped_testcase(suite& self, std::stringstream& ss, T const& t) : suite_(self), ss_(ss)
+    ScopedTestcase(Suite& self, std::stringstream& ss, T const& t) : suite_(self), ss_(ss)
     {
         ss_.clear();
         ss_.str({});
@@ -350,7 +350,7 @@ public:
     }
 
     template <class T>
-    scoped_testcase&
+    ScopedTestcase&
     operator<<(T const& t)
     {
         ss_ << t;
@@ -361,22 +361,22 @@ public:
 //------------------------------------------------------------------------------
 
 inline void
-suite::testcase_t::operator()(std::string const& name, abort_t abort)
+Suite::TestcaseT::operator()(std::string const& name, AbortT abort)
 {
-    suite_.abort_ = abort == abort_t::abort_on_fail;
+    suite_.abort_ = abort == AbortT::AbortOnFail;
     suite_.runner_->testcase(name);
 }
 
-inline suite::scoped_testcase
-suite::testcase_t::operator()(abort_t abort)
+inline Suite::ScopedTestcase
+Suite::TestcaseT::operator()(AbortT abort)
 {
-    suite_.abort_ = abort == abort_t::abort_on_fail;
+    suite_.abort_ = abort == AbortT::AbortOnFail;
     return {suite_, ss_};
 }
 
 template <class T>
-inline suite::scoped_testcase
-suite::testcase_t::operator<<(T const& t)
+inline Suite::ScopedTestcase
+Suite::TestcaseT::operator<<(T const& t)
 {
     return {suite_, ss_, t};
 }
@@ -385,24 +385,24 @@ suite::testcase_t::operator<<(T const& t)
 
 template <class>
 void
-suite::operator()(runner& r)
+Suite::operator()(Runner& r)
 {
-    *p_this_suite() = this;
+    *pThisSuite() = this;
     try
     {
         run(r);
-        *p_this_suite() = nullptr;
+        *pThisSuite() = nullptr;
     }
     catch (...)
     {
-        *p_this_suite() = nullptr;
+        *pThisSuite() = nullptr;
         throw;
     }
 }
 
 template <class Condition, class String>
 bool
-suite::expect(Condition const& shouldBeTrue, String const& reason)
+Suite::expect(Condition const& shouldBeTrue, String const& reason)
 {
     if (shouldBeTrue)
     {
@@ -415,14 +415,14 @@ suite::expect(Condition const& shouldBeTrue, String const& reason)
 
 template <class Condition, class String>
 bool
-suite::expect(Condition const& shouldBeTrue, String const& reason, char const* file, int line)
+Suite::expect(Condition const& shouldBeTrue, String const& reason, char const* file, int line)
 {
     if (shouldBeTrue)
     {
         pass();
         return true;
     }
-    fail(detail::make_reason(reason, file, line));
+    fail(detail::makeReason(reason, file, line));
     return false;
 }
 
@@ -430,7 +430,7 @@ suite::expect(Condition const& shouldBeTrue, String const& reason, char const* f
 
 template <class F, class String>
 bool
-suite::except(F&& f, String const& reason)
+Suite::except(F&& f, String const& reason)
 {
     try
     {
@@ -447,7 +447,7 @@ suite::except(F&& f, String const& reason)
 
 template <class E, class F, class String>
 bool
-suite::except(F&& f, String const& reason)
+Suite::except(F&& f, String const& reason)
 {
     try
     {
@@ -464,7 +464,7 @@ suite::except(F&& f, String const& reason)
 
 template <class F, class String>
 bool
-suite::unexcept(F&& f, String const& reason)
+Suite::unexcept(F&& f, String const& reason)
 {
     try
     {
@@ -481,7 +481,7 @@ suite::unexcept(F&& f, String const& reason)
 
 template <class Condition, class String>
 bool
-suite::unexpected(Condition shouldBeFalse, String const& reason)
+Suite::unexpected(Condition shouldBeFalse, String const& reason)
 {
     bool const b = static_cast<bool>(shouldBeFalse);
     if (!b)
@@ -497,43 +497,43 @@ suite::unexpected(Condition shouldBeFalse, String const& reason)
 
 template <class>
 void
-suite::pass()
+Suite::pass()
 {
-    propagate_abort();
+    propagateAbort();
     runner_->pass();
 }
 
 // ::fail
 template <class>
 void
-suite::fail(std::string const& reason)
+Suite::fail(std::string const& reason)
 {
-    propagate_abort();
+    propagateAbort();
     runner_->fail(reason);
     if (abort_)
     {
         aborted_ = true;
-        BOOST_THROW_EXCEPTION(abort_exception());
+        BOOST_THROW_EXCEPTION(AbortException());
     }
 }
 
 template <class String>
 void
-suite::fail(String const& reason, char const* file, int line)
+Suite::fail(String const& reason, char const* file, int line)
 {
-    fail(detail::make_reason(reason, file, line));
+    fail(detail::makeReason(reason, file, line));
 }
 
 inline void
-suite::propagate_abort() const
+Suite::propagateAbort() const
 {
     if (abort_ && aborted_)
-        BOOST_THROW_EXCEPTION(abort_exception());
+        BOOST_THROW_EXCEPTION(AbortException());
 }
 
 template <class>
 void
-suite::run(runner& r)
+Suite::run(Runner& r)
 {
     runner_ = &r;
 
@@ -541,7 +541,7 @@ suite::run(runner& r)
     {
         run();
     }
-    catch (abort_exception const&)  // NOLINT(bugprone-empty-catch)
+    catch (AbortException const&)  // NOLINT(bugprone-empty-catch)
     {
         // ends the suite
     }
@@ -579,7 +579,7 @@ suite::run(runner& r)
 // detail:
 // This inserts the suite with the given manual flag
 #define BEAST_DEFINE_TESTSUITE_INSERT(Class, Module, Library, manual, priority) \
-    static beast::unit_test::detail::insert_suite<Class##_test>                 \
+    static beast::unit_test::detail::InsertSuite<Class##_test>                  \
         Library##Module##Class##_test_instance(#Class, #Module, #Library, manual, priority)
 
 //------------------------------------------------------------------------------

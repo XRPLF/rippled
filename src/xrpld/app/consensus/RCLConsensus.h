@@ -33,7 +33,7 @@ class RCLConsensus
 {
     /** Warn for transactions that haven't been included every so many ledgers.
      */
-    constexpr static unsigned int censorshipWarnInternal = 15;
+    constexpr static unsigned int kCENSORSHIP_WARN_INTERNAL = 15;
 
     // Implements the Adaptor template interface required by Consensus.
     class Adaptor
@@ -63,7 +63,7 @@ class RCLConsensus
         std::atomic<bool> validating_{false};
         std::atomic<std::size_t> prevProposers_{0};
         std::atomic<std::chrono::milliseconds> prevRoundTime_{std::chrono::milliseconds{0}};
-        std::atomic<ConsensusMode> mode_{ConsensusMode::observing};
+        std::atomic<ConsensusMode> mode_{ConsensusMode::Observing};
 
         RCLCensorshipDetector<TxID, LedgerIndex> censorshipDetector_;
         NegativeUNLVote nUnlVote_;
@@ -300,7 +300,7 @@ class RCLConsensus
             NetClock::duration const& closeResolution,
             ConsensusCloseTimes const& rawCloseTimes,
             ConsensusMode const& mode,
-            Json::Value&& consensusJson,
+            json::Value&& consensusJson,
             bool const validating);
 
         /** Process the accepted ledger that was a result of simulation/force
@@ -315,7 +315,7 @@ class RCLConsensus
             NetClock::duration const& closeResolution,
             ConsensusCloseTimes const& rawCloseTimes,
             ConsensusMode const& mode,
-            Json::Value&& consensusJson);
+            json::Value&& consensusJson);
 
         /** Notify peers of a consensus state change
 
@@ -337,7 +337,7 @@ class RCLConsensus
             NetClock::duration closeResolution,
             ConsensusCloseTimes const& rawCloseTimes,
             ConsensusMode const& mode,
-            Json::Value&& consensusJson);
+            json::Value&& consensusJson);
 
         /** Build the new last closed ledger.
 
@@ -443,7 +443,7 @@ public:
     }
 
     //! @see Consensus::getJson
-    Json::Value
+    json::Value
     getJson(bool full) const;
 
     /** Adjust the set of trusted validators and kick-off the next round of

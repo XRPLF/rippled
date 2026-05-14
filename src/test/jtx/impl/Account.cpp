@@ -21,17 +21,17 @@
 
 namespace xrpl::test::jtx {
 
-std::unordered_map<std::pair<std::string, KeyType>, Account, beast::uhash<>> Account::cache_;
+std::unordered_map<std::pair<std::string, KeyType>, Account, beast::Uhash<>> Account::cache;
 
-Account const Account::master(
+Account const Account::kMASTER(
     "master",
-    generateKeyPair(KeyType::secp256k1, generateSeed("masterpassphrase")),
-    Account::privateCtorTag{});
+    generateKeyPair(KeyType::Secp256k1, generateSeed("masterpassphrase")),
+    Account::PrivateCtorTag{});
 
 Account::Account(
     std::string name,
     std::pair<PublicKey, SecretKey> const& keys,
-    Account::privateCtorTag)
+    Account::PrivateCtorTag)
     : name_(std::move(name))
     , pk_(keys.first)
     , sk_(keys.second)
@@ -44,13 +44,13 @@ Account
 Account::fromCache(AcctStringType stringType, std::string name, KeyType type)
 {
     auto p = std::make_pair(name, type);  // non-const so it can be moved from
-    auto const iter = cache_.find(p);
-    if (iter != cache_.end())
+    auto const iter = cache.find(p);
+    if (iter != cache.end())
         return iter->second;
 
     auto const keys = [stringType, &name, type]() {
         // Special handling for base58Seeds.
-        if (stringType == AcctStringType::base58Seed)
+        if (stringType == AcctStringType::Base58Seed)
         {
             std::optional<Seed> const seed = parseBase58<Seed>(name);
             if (!seed.has_value())
@@ -60,28 +60,28 @@ Account::fromCache(AcctStringType stringType, std::string name, KeyType type)
         }
         return generateKeyPair(type, generateSeed(name));
     }();
-    auto r = cache_.emplace(
+    auto r = cache.emplace(
         std::piecewise_construct,
         std::forward_as_tuple(std::move(p)),
-        std::forward_as_tuple(std::move(name), keys, privateCtorTag{}));
+        std::forward_as_tuple(std::move(name), keys, PrivateCtorTag{}));
     return r.first->second;
 }
 
 Account::Account(std::string name, KeyType type)
-    : Account(fromCache(Account::AcctStringType::other, std::move(name), type))
+    : Account(fromCache(Account::AcctStringType::Other, std::move(name), type))
 {
 }
 
 Account::Account(AcctStringType stringType, std::string base58SeedStr)
     : Account(fromCache(
-          Account::AcctStringType::base58Seed,
+          Account::AcctStringType::Base58Seed,
           std::move(base58SeedStr),
-          KeyType::secp256k1))
+          KeyType::Secp256k1))
 {
 }
 
 Account::Account(std::string name, AccountID const& id)
-    : Account(name, randomKeyPair(KeyType::secp256k1), privateCtorTag{})
+    : Account(name, randomKeyPair(KeyType::Secp256k1), PrivateCtorTag{})
 {
     // override the randomly generated values
     id_ = id;
@@ -91,7 +91,7 @@ Account::Account(std::string name, AccountID const& id)
 IOU
 Account::operator[](std::string const& s) const
 {
-    auto const currency = to_currency(s);
+    auto const currency = toCurrency(s);
     assert(currency != noCurrency());
     return IOU(*this, currency);
 }

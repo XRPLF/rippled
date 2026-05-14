@@ -25,31 +25,31 @@ public:
     set(std::shared_ptr<Ledger const> ledger)
     {
         if (!ledger)
-            LogicError("LedgerHolder::set with nullptr");
+            logicError("LedgerHolder::set with nullptr");
         if (!ledger->isImmutable())
-            LogicError("LedgerHolder::set with mutable Ledger");
-        std::scoped_lock const sl(m_lock);
-        m_heldLedger = std::move(ledger);
+            logicError("LedgerHolder::set with mutable Ledger");
+        std::scoped_lock const sl(lock_);
+        heldLedger_ = std::move(ledger);
     }
 
     // Return the (immutable) held ledger
     std::shared_ptr<Ledger const>
     get()
     {
-        std::scoped_lock const sl(m_lock);
-        return m_heldLedger;
+        std::scoped_lock const sl(lock_);
+        return heldLedger_;
     }
 
     bool
     empty()
     {
-        std::scoped_lock const sl(m_lock);
-        return m_heldLedger == nullptr;
+        std::scoped_lock const sl(lock_);
+        return heldLedger_ == nullptr;
     }
 
 private:
-    std::mutex m_lock;
-    std::shared_ptr<Ledger const> m_heldLedger;
+    std::mutex lock_;
+    std::shared_ptr<Ledger const> heldLedger_;
 };
 
 }  // namespace xrpl
