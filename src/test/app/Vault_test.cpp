@@ -6420,13 +6420,11 @@ class Vault_test : public beast::unit_test::Suite
             Account const issuer{"issuer"};
             Account const alice{"alice"};
             Account const bob{"bob"};
-            Account const borrower{"borrower"};
 
-            env.fund(XRP(100'000), issuer, alice, bob, borrower);
+            env.fund(XRP(100'000), issuer, alice, bob);
             env.close();
 
             env(fset(issuer, asfDefaultRipple));
-            env(fset(issuer, asfAllowTrustLineClawback));
             env.close();
 
             PrettyAsset const usd{issuer["USD"]};
@@ -6436,7 +6434,6 @@ class Vault_test : public beast::unit_test::Suite
 
             env(trust(alice, trustLimit));
             env(trust(bob, trustLimit));
-            env(trust(borrower, trustLimit));
             env.close();
 
             env(pay(issuer, alice, aliceFund));
