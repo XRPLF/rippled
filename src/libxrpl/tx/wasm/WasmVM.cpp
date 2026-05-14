@@ -61,7 +61,7 @@ setCommonHostFunctions(HostFunctions* hfs, ImportVec& i)
     WASM_IMPORT_FUNC2(i, ticketKeylet, "ticket_keylet", hfs,                                                   350);
     WASM_IMPORT_FUNC2(i, vaultKeylet, "vault_keylet", hfs,                                                     350);
 
-    WASM_IMPORT_FUNC2(i, getNFT, "get_nft", hfs,                                                              1000);
+    WASM_IMPORT_FUNC2(i, getNFT, "get_nft", hfs,                                                             5'000);
     WASM_IMPORT_FUNC2(i, getNFTIssuer, "get_nft_issuer", hfs,                                                   70);
     WASM_IMPORT_FUNC2(i, getNFTTaxon, "get_nft_taxon", hfs,                                                     60);
     WASM_IMPORT_FUNC2(i, getNFTFlags, "get_nft_flags", hfs,                                                     60);

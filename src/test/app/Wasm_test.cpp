@@ -396,7 +396,7 @@ struct Wasm_test : public beast::unit_test::suite
             auto re = engine.run(
                 allHostFuncWasm, hfs, 1'000'000, ESCROW_FUNCTION_NAME, {}, imp, env.journal);
 
-            checkResult(re, 1, 66'340);
+            checkResult(re, 1, 70'340);
 
             env.close();
         }
@@ -435,7 +435,7 @@ struct Wasm_test : public beast::unit_test::suite
         {
             TestHostFunctions hfs(env, 0);
             auto re = runEscrowWasm(allHFWasm, hfs, 100'000, ESCROW_FUNCTION_NAME, {});
-            checkResult(re, 1, 66'340);
+            checkResult(re, 1, 70'340);
         }
 
         {
@@ -459,7 +459,7 @@ struct Wasm_test : public beast::unit_test::suite
             TestHostFunctions hfs(env, 0);
             auto re = runEscrowWasm(
                 allHFWasm, hfs, std::numeric_limits<int64_t>::max(), ESCROW_FUNCTION_NAME, {});
-            checkResult(re, 1, 66'340);
+            checkResult(re, 1, 70'340);
         }
 
         {  // fail because trying to access nonexistent field
@@ -628,7 +628,7 @@ struct Wasm_test : public beast::unit_test::suite
         auto const codecovWasm = hexToBytes(codecovTestsWasmHex);
         TestHostFunctions hfs(env, 0);
 
-        auto const allowance = 208'169;
+        auto const allowance = 220'169;
         auto re = runEscrowWasm(codecovWasm, hfs, allowance, ESCROW_FUNCTION_NAME, {});
 
         checkResult(re, 1, allowance);
