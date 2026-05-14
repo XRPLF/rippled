@@ -219,10 +219,22 @@ NegativeUNLVote::buildScoreTable(
                          << " The reliability measurement could be wrong.";
         return {};
     }
-    if (myValidationCount > kNEGATIVE_UNL_MIN_LOCAL_VALS_TO_VOTE &&
-        myValidationCount <= kFLAG_LEDGER_INTERVAL)
+
+    if (prevLedger->rules().enabled(fixCleanup3_2_0))
     {
-        return scoreTable;
+        if (myValidationCount >= kNEGATIVE_UNL_MIN_LOCAL_VALS_TO_VOTE &&
+            myValidationCount <= kFLAG_LEDGER_INTERVAL)
+        {
+            return scoreTable;
+        }
+    }
+    else
+    {
+        if (myValidationCount > kNEGATIVE_UNL_MIN_LOCAL_VALS_TO_VOTE &&
+            myValidationCount <= kFLAG_LEDGER_INTERVAL)
+        {
+            return scoreTable;
+        }
     }
 
     // cannot happen because validations.getTrustedForLedger does not

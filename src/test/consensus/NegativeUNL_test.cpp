@@ -12,6 +12,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/Protocol.h>
@@ -541,8 +542,13 @@ struct NetworkHistory
         std::optional<int> numLedgers;
     };
 
-    NetworkHistory(beast::unit_test::Suite& suite, Parameter const& p)
-        : env(suite, jtx::testableAmendments()), param(p), validations(env.app().getValidations())
+    NetworkHistory(
+        beast::unit_test::Suite& suite,
+        Parameter const& p,
+        std::optional<FeatureBitset> amendments = std::nullopt)
+        : env(suite, amendments.value_or(jtx::testableAmendments()))
+        , param(p)
+        , validations(env.app().getValidations())
     {
         createNodes();
         if (!param.numLedgers)
@@ -782,6 +788,7 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::Suite
          * 4. a node double validated some seq
          * 5. local node had enough validations but on a wrong chain
          * 6. a good case, long enough history and perfect scores
+         * 7. fixCleanup3_2_0 boundary: exactly minVals validations
          */
         {
             // 1. no skip list
@@ -937,6 +944,96 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::Suite
                     {
                         (void)_;
                         BEAST_EXPECT(score == 256);
+                    }
+                }
+            }
+        }
+
+        {
+            // 7. fixCleanup3_2_0 boundary: local node has exactly
+            //    kNEGATIVE_UNL_MIN_LOCAL_VALS_TO_VOTE validations.
+            //    Without the amendment, buildScoreTable returns empty
+            //    (strict > check). With the amendment, it returns the
+            //    score table (>= check).
+
+            auto const minVals = NegativeUNLVote::kNEGATIVE_UNL_MIN_LOCAL_VALS_TO_VOTE;
+
+            // Without fixCleanup3_2_0 (default testableAmendments)
+            {
+                NetworkHistory history = {
+                    *this,
+                    {.numNodes = 10,
+                     .negUNLSize = 0,
+                     .hasToDisable = false,
+                     .hasToReEnable = false,
+                     .numLedgers = 256 + 2},
+                    jtx::testableAmendments() - fixCleanup3_2_0};
+                BEAST_EXPECT(history.goodHistory);
+                if (history.goodHistory)
+                {
+                    NodeID myId = history.UNLNodeIDs[3];
+                    // Add exactly minVals validations for my node,
+                    // and full validations for everyone else.
+                    std::uint32_t myCount = 0;
+                    history.walkHistoryAndAddValidations(
+                        [&](std::shared_ptr<Ledger const> const& l, std::size_t idx) -> bool {
+                            if (history.UNLNodeIDs[idx] == myId)
+                            {
+                                if (myCount < minVals)
+                                {
+                                    ++myCount;
+                                    return true;
+                                }
+                                return false;
+                            }
+                            return true;
+                        });
+                    NegativeUNLVote vote(myId, history.env.journal);
+                    // Without the amendment, exactly minVals should
+                    // fail the strict > check.
+                    BEAST_EXPECT(!vote.buildScoreTable(
+                        history.lastLedger(), history.UNLNodeIDSet, history.validations));
+                }
+            }
+
+            // With fixCleanup3_2_0 enabled
+            {
+                NetworkHistory history = {
+                    *this,
+                    {.numNodes = 10,
+                     .negUNLSize = 0,
+                     .hasToDisable = false,
+                     .hasToReEnable = false,
+                     .numLedgers = 256 + 2},
+                    jtx::testableAmendments() | fixCleanup3_2_0};
+                BEAST_EXPECT(history.goodHistory);
+                if (history.goodHistory)
+                {
+                    NodeID myId = history.UNLNodeIDs[3];
+                    std::uint32_t myCount = 0;
+                    history.walkHistoryAndAddValidations(
+                        [&](std::shared_ptr<Ledger const> const& l, std::size_t idx) -> bool {
+                            if (history.UNLNodeIDs[idx] == myId)
+                            {
+                                if (myCount < minVals)
+                                {
+                                    ++myCount;
+                                    return true;
+                                }
+                                return false;
+                            }
+                            return true;
+                        });
+                    NegativeUNLVote vote(myId, history.env.journal);
+                    // With the amendment, exactly minVals should
+                    // pass the >= check.
+                    auto scoreTable = vote.buildScoreTable(
+                        history.lastLedger(), history.UNLNodeIDSet, history.validations);
+                    BEAST_EXPECT(scoreTable);
+                    if (scoreTable)
+                    {
+                        auto const it = scoreTable->find(myId);
+                        BEAST_EXPECT(it != scoreTable->end() && it->second == minVals);
                     }
                 }
             }
