@@ -33,6 +33,7 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 
 #include <utility/mpt_utility.h>
