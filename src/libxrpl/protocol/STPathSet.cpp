@@ -93,7 +93,7 @@ STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
             XRPL_ASSERT(
                 !(hasCurrency && hasMPT), "xrpl::STPathSet::STPathSet : not has Currency and MPT");
             if (hasCurrency)
-                asset = static_cast<Currency>(sit.get160());
+                asset = Currency::fromRaw(sit.get160());
 
             if (hasMPT)
                 asset = sit.get192();

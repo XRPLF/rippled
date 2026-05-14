@@ -46,6 +46,11 @@ struct IsContiguousContainer<Slice> : std::true_type
 {
 };
 
+template <typename...>
+struct AlwaysFalseT : std::bool_constant<false>
+{
+};
+
 }  // namespace detail
 
 /** Integers of any length that is a multiple of 32-bits
@@ -272,10 +277,28 @@ public:
             std::is_trivially_copyable_v<typename Container::value_type>>>
     explicit BaseUInt(Container const& c)
     {
+        // Use AlwaysFalseT so the static_assert condition is dependent
+        // and only triggers when this constructor template is instantiated.
+        static_assert(
+            detail::AlwaysFalseT<Container>::value,
+            "This constructor is not intended to be used and will be soon removed. "
+            "Use base_uint::fromRaw instead.");
+    }
+
+    template <
+        class Container,
+        class = std::enable_if_t<
+            detail::IsContiguousContainer<Container>::value &&
+            std::is_trivially_copyable_v<typename Container::value_type>>>
+    static BaseUInt
+    fromRaw(Container const& c)
+    {
+        BaseUInt result;
         XRPL_ASSERT(
             c.size() * sizeof(typename Container::value_type) == size(),
-            "xrpl::BaseUInt::BaseUInt(Container auto) : input size match");
-        std::memcpy(data_.data(), c.data(), size());
+            "xrpl::BaseUInt::fromRaw(Container auto) : input size match");
+        std::memcpy(result.data_.data(), c.data(), size());
+        return result;
     }
 
     template <class Container>
