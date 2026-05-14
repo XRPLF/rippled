@@ -849,6 +849,6 @@
     "to": "now"
   },
   "title": "Validator Health",
-  "uid": "rippled-validator-health",
+  "uid": "xrpld-validator-health",
   "refresh": "5s"
 }

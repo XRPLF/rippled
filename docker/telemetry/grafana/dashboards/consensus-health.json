@@ -10,7 +10,7 @@
   "panels": [
     {
       "title": "Consensus Round Duration",
-      "description": "p95 and p50 duration of consensus accept rounds. The consensus.accept span (RCLConsensus.cpp:395) measures the time to process an accepted ledger including transaction application and state finalization. The span carries proposers and round_time_ms attributes. Normal range is 3-6 seconds on mainnet.",
+      "description": "p95 and p50 duration of consensus accept rounds. The consensus.accept span (RCLConsensus.cpp) measures the time to process an accepted ledger including transaction application and state finalization. The span carries proposers and round_time_ms attributes. Normal range is 3-6 seconds on mainnet.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -56,7 +56,7 @@
     },
     {
       "title": "Consensus Proposals Sent Rate",
-      "description": "Rate at which this node sends consensus proposals to the network. Sourced from the consensus.proposal.send span (RCLConsensus.cpp:177) which fires each time the node proposes a transaction set. The span carries xrpl.consensus.round identifying the consensus round number. A healthy proposing node should show steady proposal output.",
+      "description": "Rate at which this node sends consensus proposals to the network. Sourced from the consensus.proposal.send span (RCLConsensus.cpp) which fires each time the node proposes a transaction set. The span carries xrpl.consensus.round identifying the consensus round number. A healthy proposing node should show steady proposal output.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -95,7 +95,7 @@
     },
     {
       "title": "Ledger Close Duration",
-      "description": "p95 duration of the ledger close event. The consensus.ledger_close span (RCLConsensus.cpp:282) measures the time from when consensus triggers a ledger close to completion. Carries xrpl.ledger.seq and xrpl.consensus.mode attributes. Compare with Consensus Round Duration to understand how close timing relates to overall round time.",
+      "description": "p95 duration of the ledger close event. The consensus.ledger_close span (RCLConsensus.cpp) measures the time from when consensus triggers a ledger close to completion. Carries xrpl.ledger.seq and xrpl.consensus.mode attributes. Compare with Consensus Round Duration to understand how close timing relates to overall round time.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -134,7 +134,7 @@
     },
     {
       "title": "Validation Send Rate",
-      "description": "Rate at which this node sends ledger validations to the network. Sourced from the consensus.validation.send span (RCLConsensus.cpp:753). Each validation confirms the node has fully validated a ledger. The span carries xrpl.ledger.seq and proposing. Should closely track the ledger close rate when the node is healthy.",
+      "description": "Rate at which this node sends ledger validations to the network. Sourced from the consensus.validation.send span (RCLConsensus.cpp). Each validation confirms the node has fully validated a ledger. The span carries xrpl.ledger.seq and proposing. Should closely track the ledger close rate when the node is healthy.",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -772,6 +772,6 @@
     "to": "now"
   },
   "title": "Consensus Health",
-  "uid": "rippled-consensus",
+  "uid": "xrpld-consensus",
   "refresh": "5s"
 }

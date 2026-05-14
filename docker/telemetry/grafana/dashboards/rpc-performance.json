@@ -166,7 +166,7 @@
     },
     {
       "title": "Overall RPC Throughput",
-      "description": "Aggregate RPC throughput showing two layers of the request pipeline. rpc.request is the outer HTTP handler (ServerHandler.cpp:271) that accepts incoming connections. rpc.process is the inner processing layer (ServerHandler.cpp:573) that parses and dispatches. A gap between the two indicates requests being queued or rejected before processing.",
+      "description": "Aggregate RPC throughput showing two layers of the request pipeline. rpc.http_request is the outer HTTP handler (ServerHandler.cpp) that accepts incoming connections. rpc.process is the inner processing layer (ServerHandler.cpp) that parses and dispatches. A gap between the two indicates requests being queued or rejected before processing.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -185,8 +185,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", command=~\"$command\", span_name=\"rpc.request\"}[5m]))",
-          "legendFormat": "rpc.request / Sec [{{exported_instance}}]"
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", command=~\"$command\", span_name=\"rpc.http_request\"}[5m]))",
+          "legendFormat": "rpc.http_request / Sec [{{exported_instance}}]"
         },
         {
           "datasource": {
@@ -290,7 +290,7 @@
     },
     {
       "title": "WebSocket Message Rate",
-      "description": "Rate of incoming WebSocket RPC messages processed by the server. Sourced from the rpc.ws_message span (ServerHandler.cpp:384). Only active when clients connect via WebSocket instead of HTTP. Zero is normal if only HTTP RPC is in use.",
+      "description": "Rate of incoming WebSocket RPC messages processed by the server. Sourced from the rpc.ws_message span (ServerHandler.cpp). Only active when clients connect via WebSocket instead of HTTP. Zero is normal if only HTTP RPC is in use.",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -372,6 +372,6 @@
     "to": "now"
   },
   "title": "RPC Performance",
-  "uid": "rippled-rpc-perf",
+  "uid": "xrpld-rpc-perf",
   "refresh": "5s"
 }

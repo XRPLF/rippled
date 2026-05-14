@@ -129,6 +129,7 @@
 
 #include <xrpl/beast/utility/Journal.h>
 
+#include <atomic>
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -231,7 +232,30 @@ public:
     void
     start(std::string const& endpoint, std::string const& instanceId = {});
 
-    /** Flush pending metrics and shut down the pipeline. */
+    /** Detach all ObservableGauge callbacks so they no-op on the next
+        reader-thread tick.
+
+        Must be called BEFORE any Application service that the callbacks
+        read (nodeStore, overlay, networkOPs, ledgerMaster, etc.) is
+        stopped. The flag is checked with acquire ordering at the top of
+        every callback; together with the release store here it
+        guarantees that once `detachCallbacks()` returns, no subsequent
+        callback invocation will dereference an already-stopped service.
+
+        Idempotent. Safe to call multiple times. Safe to call before
+        `start()` (has no effect). The actual SDK-level provider
+        shutdown still happens in `stop()`.
+    */
+    void
+    detachCallbacks() noexcept;
+
+    /** Flush pending metrics and shut down the pipeline.
+
+        @pre `detachCallbacks()` should have been called earlier in the
+             shutdown sequence; otherwise there is a narrow race between
+             the final reader-thread tick and the destruction of
+             Application services that the gauge callbacks read from.
+    */
     void
     stop();
 
@@ -354,6 +378,14 @@ private:
 
     /// Journal for logging.
     beast::Journal const journal_;
+
+    /// Set by detachCallbacks() during shutdown so every ObservableGauge
+    /// callback returns early before reading Application services that
+    /// may already be stopped. Checked with memory_order_acquire at the
+    /// top of each callback to pair with the memory_order_release store
+    /// in detachCallbacks().
+    std::atomic<bool> callbacksDetached_{false};
+
     /// The SDK MeterProvider that owns the export pipeline.
     std::shared_ptr<opentelemetry::sdk::metrics::MeterProvider> provider_;
 

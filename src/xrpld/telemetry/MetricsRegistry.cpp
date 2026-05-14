@@ -177,6 +177,15 @@ MetricsRegistry::start(std::string const& endpoint, std::string const& instanceI
 }
 
 void
+MetricsRegistry::detachCallbacks() noexcept
+{
+#ifdef XRPL_ENABLE_TELEMETRY
+    // Release so every subsequent callback acquire-load sees true.
+    callbacksDetached_.store(true, std::memory_order_release);
+#endif  // XRPL_ENABLE_TELEMETRY
+}
+
+void
 MetricsRegistry::stop()
 {
 #ifdef XRPL_ENABLE_TELEMETRY
@@ -185,10 +194,16 @@ MetricsRegistry::stop()
 
     JLOG(journal_.info()) << "MetricsRegistry: stopping";
 
+    // Belt-and-suspenders: detachCallbacks() should have already been
+    // called by Application shutdown before any service the callbacks
+    // observe was stopped. Setting the flag here is redundant for a
+    // correct caller but protects against a future caller that forgets
+    // to detach first.
+    callbacksDetached_.store(true, std::memory_order_release);
+
     // Force-flush any pending metrics, then destroy the provider.
     // This stops the PeriodicExportingMetricReader, which in turn
-    // stops invoking observable gauge callbacks.  No explicit
-    // RemoveCallback is needed — the provider destruction handles it.
+    // stops invoking observable gauge callbacks.
     provider_->ForceFlush();
     provider_.reset();
 
@@ -344,6 +359,8 @@ MetricsRegistry::registerCacheHitRateGauge()
     cacheHitRateGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
             auto& app = self->app_;
 
             try
@@ -413,6 +430,8 @@ MetricsRegistry::registerTxqGauge()
     txqGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
             auto& app = self->app_;
 
             try
@@ -457,7 +476,10 @@ MetricsRegistry::registerObjectCountGauge()
     objectCountGauge_ = meter_->CreateInt64ObservableGauge(
         "xrpld_object_count", "Live instance counts for key internal object types");
     objectCountGauge_->AddCallback(
-        [](opentelemetry::metrics::ObserverResult result, void* /* state */) {
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
             try
             {
                 // Iterate through all CountedObject types via the linked
@@ -488,6 +510,8 @@ MetricsRegistry::registerLoadFactorGauge()
     loadFactorGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
             auto& app = self->app_;
 
             try
@@ -562,6 +586,8 @@ MetricsRegistry::registerNodeStoreGauge()
     nodeStoreGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
             auto& app = self->app_;
 
             try
@@ -633,6 +659,8 @@ MetricsRegistry::registerServerInfoGauge()
     serverInfoGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
             auto& app = self->app_;
 
             try
@@ -721,6 +749,8 @@ MetricsRegistry::registerCompleteLedgersGauge()
     completeLedgersGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
             auto& app = self->app_;
 
             try
@@ -778,6 +808,8 @@ MetricsRegistry::registerDbMetricsGauge()
     dbMetricsGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
             auto& app = self->app_;
 
             try
@@ -815,6 +847,8 @@ MetricsRegistry::registerValidatorHealthGauge()
     validatorHealthGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
             auto& app = self->app_;
 
             try
@@ -862,6 +896,8 @@ MetricsRegistry::registerPeerQualityGauge()
     peerQualityGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
             auto& app = self->app_;
 
             try
@@ -941,6 +977,8 @@ MetricsRegistry::registerLedgerEconomyGauge()
     ledgerEconomyGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
             auto& app = self->app_;
 
             try
@@ -999,6 +1037,8 @@ MetricsRegistry::registerStateTrackingGauge()
     stateTrackingGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
             auto& app = self->app_;
 
             try
@@ -1046,6 +1086,8 @@ MetricsRegistry::registerStorageDetailGauge()
     storageDetailGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
             auto& app = self->app_;
 
             try
@@ -1083,6 +1125,8 @@ MetricsRegistry::registerValidationAgreementGauge()
     validationAgreementGauge_->AddCallback(
         [](opentelemetry::metrics::ObserverResult result, void* state) {
             auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
 
             try
             {

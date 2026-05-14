@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "Job queue analysis: per-job-type throughput rates, queue wait times, and execution times. Sourced from OTel MetricsRegistry synchronous counters and histograms (Phase 9).",
+  "description": "Per-RPC-method performance: call rates, error rates, and latency distributions. Sourced from OTel MetricsRegistry synchronous counters and histograms (Phase 9).",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -10,8 +10,8 @@
   "links": [],
   "panels": [
     {
-      "title": "Job Throughput Rate (Per Second)",
-      "description": "Rate of jobs queued, started, and finished across all job types. Computed as rate() over the OTel counter values. High queue rates with low finish rates indicate backlog.",
+      "title": "RPC Call Rate (All Methods)",
+      "description": "Aggregate rate of RPC calls started, finished, and errored across all methods. Computed as rate() over OTel counters.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -30,22 +30,22 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (exported_instance) (rate(xrpld_job_queued_total{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m]))",
-          "legendFormat": "Queued/s [{{exported_instance}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "sum by (exported_instance) (rate(xrpld_job_started_total{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m]))",
+          "expr": "sum by (exported_instance) (rate(xrpld_rpc_method_started_total{exported_instance=~\"$node\", method=~\"$method\"}[5m]))",
           "legendFormat": "Started/s [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (exported_instance) (rate(xrpld_job_finished_total{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m]))",
+          "expr": "sum by (exported_instance) (rate(xrpld_rpc_method_finished_total{exported_instance=~\"$node\", method=~\"$method\"}[5m]))",
           "legendFormat": "Finished/s [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (exported_instance) (rate(xrpld_rpc_method_errored_total{exported_instance=~\"$node\", method=~\"$method\"}[5m]))",
+          "legendFormat": "Errored/s [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -69,8 +69,8 @@
       }
     },
     {
-      "title": "Per-Job-Type Queued Rate",
-      "description": "Rate of jobs queued broken down by job_type label. Identifies which job types contribute most to queue activity.",
+      "title": "Per-Method Call Rate (Top 10)",
+      "description": "Per-method RPC call rate, showing the 10 most active methods. Useful for identifying hot paths.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -94,8 +94,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "topk(10, rate(xrpld_job_queued_total{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m]))",
-          "legendFormat": "{{job_type}} [{{exported_instance}}]"
+          "expr": "topk(10, rate(xrpld_rpc_method_started_total{exported_instance=~\"$node\", method=~\"$method\"}[5m]))",
+          "legendFormat": "{{method}} [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -119,8 +119,8 @@
       }
     },
     {
-      "title": "Per-Job-Type Finish Rate",
-      "description": "Rate of jobs completing broken down by job_type. Compare with queued rate to identify backlog per type.",
+      "title": "Per-Method Error Rate (Top 10)",
+      "description": "Per-method RPC error rate. Non-zero values warrant investigation. Common culprits: invalid parameters, resource exhaustion.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -144,8 +144,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "topk(10, rate(xrpld_job_finished_total{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m]))",
-          "legendFormat": "{{job_type}} [{{exported_instance}}]"
+          "expr": "topk(10, rate(xrpld_rpc_method_errored_total{exported_instance=~\"$node\", method=~\"$method\"}[5m]))",
+          "legendFormat": "{{method}} [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -169,8 +169,8 @@
       }
     },
     {
-      "title": "Job Queue Wait Time (P50, P95, P99)",
-      "description": "Histogram quantiles for time jobs spend waiting in the queue before execution starts. High values indicate thread pool saturation.",
+      "title": "RPC Latency (P50, P95, P99) - All Methods",
+      "description": "Histogram quantiles for RPC execution time across all methods. Sourced from rpc_method_duration_us histogram.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -189,21 +189,21 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.50, sum by (le, exported_instance) (rate(xrpld_job_queued_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m])))",
+          "expr": "histogram_quantile(0.50, sum by (le, exported_instance) (rate(xrpld_rpc_method_duration_us_bucket{exported_instance=~\"$node\", method=~\"$method\"}[5m])))",
           "legendFormat": "P50 [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(xrpld_job_queued_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(xrpld_rpc_method_duration_us_bucket{exported_instance=~\"$node\", method=~\"$method\"}[5m])))",
           "legendFormat": "P95 [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.99, sum by (le, exported_instance) (rate(xrpld_job_queued_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m])))",
+          "expr": "histogram_quantile(0.99, sum by (le, exported_instance) (rate(xrpld_rpc_method_duration_us_bucket{exported_instance=~\"$node\", method=~\"$method\"}[5m])))",
           "legendFormat": "P99 [{{exported_instance}}]"
         }
       ],
@@ -228,8 +228,8 @@
       }
     },
     {
-      "title": "Job Execution Time (P50, P95, P99)",
-      "description": "Histogram quantiles for actual job execution time. High values indicate expensive operations or resource contention.",
+      "title": "Per-Method Latency P95 (Top 10 Slowest)",
+      "description": "95th percentile execution time per method. Identifies the slowest RPC endpoints.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -241,6 +241,11 @@
         "tooltip": {
           "mode": "multi",
           "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": ["mean", "max"]
         }
       },
       "targets": [
@@ -248,22 +253,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.50, sum by (le, exported_instance) (rate(xrpld_job_running_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m])))",
-          "legendFormat": "P50 [{{exported_instance}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(xrpld_job_running_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m])))",
-          "legendFormat": "P95 [{{exported_instance}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.99, sum by (le, exported_instance) (rate(xrpld_job_running_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m])))",
-          "legendFormat": "P99 [{{exported_instance}}]"
+          "expr": "topk(10, histogram_quantile(0.95, sum by (le, method, exported_instance) (rate(xrpld_rpc_method_duration_us_bucket{exported_instance=~\"$node\", method=~\"$method\"}[5m]))))",
+          "legendFormat": "{{method}} [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -271,7 +262,7 @@
           "unit": "us",
           "custom": {
             "drawStyle": "line",
-            "lineWidth": 2,
+            "lineWidth": 1,
             "fillOpacity": 5,
             "axisLabel": "Duration (\u03bcs)",
             "spanNulls": true,
@@ -287,8 +278,8 @@
       }
     },
     {
-      "title": "Per-Job-Type Execution Time (P95)",
-      "description": "95th percentile execution time broken down by job type. Identifies the slowest job types.",
+      "title": "RPC Error Ratio by Method",
+      "description": "Error ratio (errors / total started) per method. Values above 0.05 (5%) warrant investigation.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -312,18 +303,20 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "topk(10, histogram_quantile(0.95, sum by (le, job_type, exported_instance) (rate(xrpld_job_running_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m]))))",
-          "legendFormat": "{{job_type}} [{{exported_instance}}]"
+          "expr": "topk(10, rate(xrpld_rpc_method_errored_total{exported_instance=~\"$node\", method=~\"$method\"}[5m]) / (rate(xrpld_rpc_method_started_total{exported_instance=~\"$node\", method=~\"$method\"}[5m]) > 0))",
+          "legendFormat": "{{method}} [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "us",
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
             "fillOpacity": 5,
-            "axisLabel": "Duration (\u03bcs)",
+            "axisLabel": "Error Ratio",
             "spanNulls": true,
             "insertNulls": false,
             "showPoints": "auto",
@@ -331,39 +324,7 @@
           },
           "color": {
             "mode": "palette-classic"
-          }
-        },
-        "overrides": []
-      }
-    },
-    {
-      "title": "Transaction Overflow Rate",
-      "description": "Rate of job queue transaction overflows per minute. Overflows occur when the job queue's transaction limit is exceeded, causing transactions to be dropped. Non-zero values indicate the node is under heavy transaction load.",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 24,
-        "x": 0,
-        "y": 32
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
           },
-          "expr": "rate(xrpld_jq_trans_overflow_total{exported_instance=~\"$node\"}[5m]) * 60",
-          "legendFormat": "Overflows/min [{{exported_instance}}]"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "none",
           "thresholds": {
             "steps": [
               {
@@ -372,26 +333,13 @@
               },
               {
                 "color": "yellow",
-                "value": 1
+                "value": 0.05
               },
               {
                 "color": "red",
-                "value": 10
+                "value": 0.25
               }
             ]
-          },
-          "custom": {
-            "axisLabel": "Overflows / Min",
-            "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 10,
-            "spanNulls": true,
-            "insertNulls": false,
-            "showPoints": "auto",
-            "pointSize": 3
-          },
-          "color": {
-            "mode": "palette-classic"
           }
         },
         "overrides": []
@@ -399,7 +347,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["rippled", "otel", "job-queue"],
+  "tags": ["rippled", "otel", "rpc"],
   "templating": {
     "list": [
       {
@@ -423,11 +371,11 @@
         "sort": 1
       },
       {
-        "name": "job_type",
-        "label": "Job Type",
-        "description": "Filter by job type",
+        "name": "method",
+        "label": "RPC Method",
+        "description": "Filter by RPC method",
         "type": "query",
-        "query": "label_values(xrpld_job_queued_total, job_type)",
+        "query": "label_values(xrpld_rpc_method_started_total, method)",
         "datasource": {
           "type": "prometheus",
           "uid": "prometheus"
@@ -450,8 +398,8 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "Job Queue Analysis",
-  "uid": "rippled-job-queue",
+  "title": "RPC Performance (OTel)",
+  "uid": "xrpld-rpc-perf-otel",
   "version": 1,
   "refresh": "5s"
 }

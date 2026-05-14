@@ -11,7 +11,7 @@
   "panels": [
     {
       "title": "Active Peers",
-      "description": "Number of active inbound and outbound peer connections. Sourced from Peer_Finder.Active_Inbound_Peers and Peer_Finder.Active_Outbound_Peers gauges (PeerfinderManager.cpp:214-215). A healthy mainnet node typically has 10-21 outbound and 0-85 inbound peers depending on configuration.",
+      "description": "Number of active inbound and outbound peer connections. Sourced from Peer_Finder.Active_Inbound_Peers and Peer_Finder.Active_Outbound_Peers gauges (PeerfinderManager.cpp). A healthy mainnet node typically has 10-21 outbound and 0-85 inbound peers depending on configuration.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -57,7 +57,7 @@
     },
     {
       "title": "Peer Disconnects",
-      "description": "Cumulative count of peer disconnections. Sourced from the Overlay.Peer_Disconnects gauge (OverlayImpl.h:557). A rising trend indicates network instability, aggressive peer management, or resource exhaustion causing connection drops.",
+      "description": "Cumulative count of peer disconnections. Sourced from the Overlay.Peer_Disconnects gauge (OverlayImpl.h). A rising trend indicates network instability, aggressive peer management, or resource exhaustion causing connection drops.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -96,7 +96,7 @@
     },
     {
       "title": "Total Network Bytes",
-      "description": "Total bytes sent and received across all peer connections. Sourced from the total.Bytes_In and total.Bytes_Out traffic category gauges (OverlayImpl.h:535-548). Provides a high-level view of network bandwidth consumption.",
+      "description": "Total bytes sent and received across all peer connections. Sourced from the total.Bytes_In and total.Bytes_Out traffic category gauges (OverlayImpl.h). Provides a high-level view of network bandwidth consumption.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -142,7 +142,7 @@
     },
     {
       "title": "Total Network Messages",
-      "description": "Total messages sent and received across all peer connections. Sourced from the total.Messages_In and total.Messages_Out traffic category gauges (OverlayImpl.h:535-548). Shows the overall message throughput of the overlay network.",
+      "description": "Total messages sent and received across all peer connections. Sourced from the total.Messages_In and total.Messages_Out traffic category gauges (OverlayImpl.h). Shows the overall message throughput of the overlay network.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -801,6 +801,6 @@
     "to": "now"
   },
   "title": "Network Traffic (System Metrics)",
-  "uid": "rippled-system-network",
+  "uid": "xrpld-system-network",
   "refresh": "5s"
 }
