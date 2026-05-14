@@ -2232,9 +2232,9 @@ private:
 
         // singleWithdrawEPrice: crafted ePrice = lptAMMBalance*f/amountBalance
         // makes the denominator (T*f - A*E) exactly zero.
-        // Pre-fixSecurity3_1_3: std::overflow_error escapes as tefEXCEPTION
+        // Pre-fixCleanup3_2_0: std::overflow_error escapes as tefEXCEPTION
         // (fee-free); the try-catch backstop converts it to tecINTERNAL.
-        // Post-fixSecurity3_1_3: denominator check returns tecAMM_FAILED.
+        // Post-fixCleanup3_2_0: denominator check returns tecAMM_FAILED.
         //
         // Pool: USD(100)/EUR(100), baseFee=1000 (1%).
         // Alice is the creator so her discounted fee is 100 (0.1%), f=0.001.
@@ -2253,7 +2253,7 @@ private:
             {{USD(100), EUR(100)}},
             1000,
             std::nullopt,
-            {all | fixCleanup3_2_0, all});
+            {all - fixCleanup3_2_0, all});
     }
 
     void
