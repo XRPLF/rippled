@@ -19,6 +19,12 @@ Release/
 /.build/
 /.venv/
 /build/
+/build-base/
+/doc-coverage.info
+/base-doc-coverage.info
+/doc-coverage-report.md
+/doc-review-report.md
+/doc-review-comments.json
 /db/
 /out.txt
 /Testing/
