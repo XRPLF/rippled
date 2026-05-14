@@ -307,7 +307,8 @@ OfferCreate::checkAcceptAsset(
 
             // There's no difference which side enacted deep freeze, accepting
             // tokens shouldn't be possible.
-            bool const deepFrozen = trustLine->isFlag(lsfLowDeepFreeze | lsfHighDeepFreeze);
+            bool const deepFrozen =
+                ((*trustLine)[sfFlags] & (lsfLowDeepFreeze | lsfHighDeepFreeze)) != 0u;
 
             if (deepFrozen)
             {

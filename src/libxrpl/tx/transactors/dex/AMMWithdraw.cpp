@@ -145,7 +145,7 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
         if (auto const res = invalidAMMAmount(
                 *amount,
                 std::make_optional(std::make_pair(asset, asset2)),
-                ctx.tx.isFlag(tfOneAssetWithdrawAll | tfOneAssetLPToken) || ePrice))
+                ((flags & (tfOneAssetWithdrawAll | tfOneAssetLPToken)) != 0u) || ePrice))
         {
             JLOG(ctx.j.debug()) << "AMM Withdraw: invalid Asset1Out";
             return res;
@@ -297,7 +297,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
         return temBAD_AMM_TOKENS;
     }
 
-    if (ctx.tx.isFlag(tfLPToken | tfWithdrawAll))
+    if ((ctx.tx.getFlags() & (tfLPToken | tfWithdrawAll)) != 0u)
     {
         if (auto const ter = checkAmount(amountBalance, amountBalance))
             return ter;
@@ -1141,7 +1141,7 @@ AMMWithdraw::singleWithdrawEPrice(
 WithdrawAll
 AMMWithdraw::isWithdrawAll(STTx const& tx)
 {
-    if (tx.isFlag(tfWithdrawAll | tfOneAssetWithdrawAll))
+    if ((tx[sfFlags] & (tfWithdrawAll | tfOneAssetWithdrawAll)) != 0u)
         return WithdrawAll::Yes;
     return WithdrawAll::No;
 }

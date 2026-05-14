@@ -193,7 +193,7 @@ AccountSet::checkPermission(ReadView const& view, STTx const& tx)
     // AccountSet transaction. If any delegated account is trying to
     // update the flag on behalf of another account, it is not
     // authorized.
-    if (uSetFlag != 0 || uClearFlag != 0 || tx.isFlag(tfUniversalMask))
+    if (uSetFlag != 0 || uClearFlag != 0 || ((tx.getFlags() & tfUniversalMask) != 0u))
         return terNO_DELEGATE_PERMISSION;
 
     if (tx.isFieldPresent(sfEmailHash) && !granularPermissions.contains(AccountEmailHashSet))

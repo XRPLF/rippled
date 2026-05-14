@@ -82,7 +82,7 @@ TrustSet::preflight(PreflightContext const& ctx)
     {
         // Even though the deep freeze flags are included in the
         // `tfTrustSetMask`, they are not valid if the amendment is not enabled.
-        if (tx.isFlag(tfSetDeepFreeze | tfClearDeepFreeze))
+        if ((tx.getFlags() & (tfSetDeepFreeze | tfClearDeepFreeze)) != 0u)
         {
             return temINVALID_FLAG;
         }
@@ -143,7 +143,7 @@ TrustSet::checkPermission(ReadView const& view, STTx const& tx)
     // Currently we only support TrustlineAuthorize, TrustlineFreeze and
     // TrustlineUnfreeze granular permission. Setting other flags returns
     // error.
-    if (tx.isFlag(tfTrustSetPermissionMask))
+    if ((tx.getFlags() & tfTrustSetPermissionMask) != 0u)
         return terNO_DELEGATE_PERMISSION;
 
     if (tx.isFieldPresent(sfQualityIn) || tx.isFieldPresent(sfQualityOut))

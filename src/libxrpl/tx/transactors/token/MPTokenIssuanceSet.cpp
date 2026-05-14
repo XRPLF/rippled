@@ -109,7 +109,7 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
             return temMALFORMED;
 
         // Can not set flags when mutating MPTokenIssuance
-        if (isMutate && ctx.tx.isFlag(tfUniversalMask))
+        if (isMutate && ((ctx.tx.getFlags() & tfUniversalMask) != 0u))
             return temMALFORMED;
 
         if (transferFee && *transferFee > kMAX_TRANSFER_FEE)
@@ -157,7 +157,7 @@ MPTokenIssuanceSet::checkPermission(ReadView const& view, STTx const& tx)
 
     // this is added in case more flags will be added for MPTokenIssuanceSet
     // in the future. Currently unreachable.
-    if (tx.isFlag(tfMPTokenIssuanceSetMask))
+    if ((tx.getFlags() & tfMPTokenIssuanceSetMask) != 0u)
         return terNO_DELEGATE_PERMISSION;  // LCOV_EXCL_LINE
 
     std::unordered_set<GranularPermissionType> granularPermissions;
