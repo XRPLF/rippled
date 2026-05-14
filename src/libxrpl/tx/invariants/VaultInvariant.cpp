@@ -453,7 +453,7 @@ ValidVault::finalize(
         // 1. Because STAmounts are normalized, `assetsTotal` (being >= `assetsAvailable`)
         // safely represents the coarsest exponent needed for both fields.
         //
-        // 2. The scale may increase (withdraw/clawback) or increase (deposit). In both cases
+        // 2. The scale may decrease (withdraw/clawback) or increase (deposit). In both cases
         // we ensure the vault is in a legitimate state in the post-transaction scale.
         if (rules.enabled(fixCleanup3_2_0))
             return scale(afterVault.assetsTotal, vaultAsset);
@@ -650,7 +650,7 @@ ValidVault::finalize(
                     return false;  // That's all we can do
                 }
 
-                // Get the coarsest scale to round calculations to
+                // Get the posterior scale to round calculations to
                 auto const minScale = computeVaultMinScale(*maybeVaultDeltaAssets, view.rules());
 
                 auto const vaultDeltaAssets =
@@ -787,7 +787,7 @@ ValidVault::finalize(
                     return false;  // That's all we can do
                 }
 
-                // Get the most coarse scale to round calculations to
+                // Get the posterior scale to round calculations to
                 auto const minScale = computeVaultMinScale(*maybeVaultDeltaAssets, view.rules());
 
                 auto const vaultPseudoDeltaAssets = roundToAsset(
@@ -861,7 +861,7 @@ ValidVault::finalize(
                     if (localPseudoDeltaAssets * -1 != roundedDestinationDelta)
                     {
                         JLOG(j.fatal()) << "Invariant failed: " <<  //
-                            " withdrawal must change vault and destination balance by equal amount";
+                            "withdrawal must change vault and destination balance by equal amount";
                         result = false;
                     }
                 }
@@ -892,7 +892,7 @@ ValidVault::finalize(
                 if (vaultDeltaShares->delta * -1 != accountDeltaShares->delta)
                 {
                     JLOG(j.fatal()) << "Invariant failed: " <<  //
-                        " withdrawal must change depositor and vault shares by equal amount";
+                        "withdrawal must change depositor and vault shares by equal amount";
                     result = false;
                 }
 

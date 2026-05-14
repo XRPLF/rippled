@@ -6371,8 +6371,8 @@ class Vault_test : public beast::unit_test::Suite
         }
         {
             testcase(
-                "bug: VaultWithdraw to third-party at IOU edge rejected with "
-                "tecPRECISION_LOSS (post-fixCleanup3_2_0)");
+                "bug: VaultWithdraw to third-party at IOU edge succeeds "
+                "(post-fixCleanup3_2_0)");
             runScenario(testableAmendments(), DestKind::ThirdParty, tesSUCCESS);
         }
         {
@@ -6384,8 +6384,8 @@ class Vault_test : public beast::unit_test::Suite
         }
         {
             testcase(
-                "bug: VaultWithdraw to self at IOU edge rejected with "
-                "tecPRECISION_LOSS (post-fixCleanup3_2_0)");
+                "bug: VaultWithdraw to self at IOU edge succeeds "
+                "(post-fixCleanup3_2_0)");
             runScenario(testableAmendments(), DestKind::Self, tesSUCCESS);
         }
     }
