@@ -1,3 +1,4 @@
+#include <test/jtx/AMM.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
@@ -4646,6 +4647,13 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
             .amt = 50,
         });
 
+        // Confidential clawback is burn/reduce outstanding amount.
+        // The holder public balance is unchanged, and OA/COA decrease.
+        auto const preBobPublicBalance = mptAlice.getBalance(bob);
+        auto const preOutstandingAmount = mptAlice.getIssuanceOutstandingBalance();
+        auto const preConfidentialOutstandingAmount = mptAlice.getIssuanceConfidentialBalance();
+        BEAST_EXPECT(!env.le(keylet::mptoken(mptAlice.issuanceID(), alice.id())));
+
         // alice clawback all confidential balance from bob, 110 in total.
         // bob has balance in both inbox and spending. These balances should
         // become zero after clawback, which is verified in the
@@ -4655,6 +4663,11 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
             .holder = bob,
             .amt = 110,
         });
+        BEAST_EXPECT(mptAlice.getBalance(bob) == preBobPublicBalance);
+        BEAST_EXPECT(mptAlice.getIssuanceOutstandingBalance() == preOutstandingAmount - 110);
+        BEAST_EXPECT(
+            mptAlice.getIssuanceConfidentialBalance() == preConfidentialOutstandingAmount - 110);
+        BEAST_EXPECT(!env.le(keylet::mptoken(mptAlice.issuanceID(), alice.id())));
 
         // alice clawback all confidential balance from carol, which is 70.
         // carol only has balance in spending.
@@ -4785,6 +4798,65 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
             .holder = dave,
             .amt = 200,
         });
+    }
+
+    // Bob creates the AMM, but Bob is not the MPT holder checked below.
+    // The AMM has its own pseudo-account (`ammHolder`) that can hold the
+    // public MPT pool balance. That pseudo-account cannot normally
+    // initialize confidential state because the confidential txn's must be
+    // signed by sfAccount, and the AMM pseudo-account has no signing key.
+    // So this is a construction/impossibility test: public AMM MPT state exists
+    // but the corresponding confidential AMM clawback flow is not normally reachable.
+    void
+    testAMMHolderCannotHaveConfidentialStateClawback(FeatureBitset features)
+    {
+        testcase("AMM holder cannot have confidential state");
+        using namespace test::jtx;
+
+        Account const alice("alice");
+        Account const bob("bob");
+
+        for (bool const enablePseudoAccount : {false, true})
+        {
+            Env env{
+                *this,
+                enablePseudoAccount ? features | featureSingleAssetVault
+                                    : features - featureSingleAssetVault};
+
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create({
+                .flags = kMPT_DEX_FLAGS | tfMPTCanClawback | tfMPTCanConfidentialAmount,
+            });
+            mptAlice.authorize({.account = bob});
+            mptAlice.pay(alice, bob, 1'000);
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+            AMM const amm(env, bob, XRP(100), mptAlice(100));
+            Account const ammHolder("amm", amm.ammAccount());
+            auto const ammSle = env.le(keylet::account(ammHolder.id()));
+
+            BEAST_EXPECT(ammSle && ammSle->isFieldPresent(sfAMMID));
+            BEAST_EXPECT(mptAlice.getBalance(ammHolder) == 100);
+
+            BEAST_EXPECT(!mptAlice.getEncryptedBalance(ammHolder, MPTTester::HolderEncryptedInbox));
+            BEAST_EXPECT(
+                !mptAlice.getEncryptedBalance(ammHolder, MPTTester::HolderEncryptedSpending));
+            BEAST_EXPECT(
+                !mptAlice.getEncryptedBalance(ammHolder, MPTTester::IssuerEncryptedBalance));
+            BEAST_EXPECT(
+                !mptAlice.getEncryptedBalance(ammHolder, MPTTester::AuditorEncryptedBalance));
+
+            mptAlice.confidentialClaw({
+                .account = alice,
+                .holder = ammHolder,
+                .amt = 100,
+                .proof = strHex(gMakeZeroBuffer(kEC_CLAWBACK_PROOF_LENGTH)),
+                .err = tecNO_PERMISSION,
+            });
+        }
     }
 
     void
@@ -10212,6 +10284,7 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
         testClawbackPreclaim(features);
         testClawbackProof(features);
         testClawbackWithAuditor(features);
+        testAMMHolderCannotHaveConfidentialStateClawback(features);
 
         testDelete(features);
 
