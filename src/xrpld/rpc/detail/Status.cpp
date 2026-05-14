@@ -1,3 +1,14 @@
+/** @file
+ *  Method implementations for `RPC::Status`, the unified error-result type
+ *  for the XRPL RPC layer.
+ *
+ *  Converts internal status state — spanning three error code spaces (`TER`,
+ *  `error_code_i`, and raw integers) — into human-readable strings and
+ *  structured JSON output. All output methods short-circuit to empty/no-op
+ *  when `code_ == kOK`, consistent with the `operator bool()` invariant
+ *  defined in the header.
+ */
+
 #include <xrpld/rpc/Status.h>
 
 #include <xrpl/beast/utility/instrumentation.h>
@@ -11,6 +22,24 @@
 
 namespace xrpl::RPC {
 
+/** Returns a human-readable string describing the error code.
+ *
+ *  Dispatches on `type_` to the appropriate lookup function for each code
+ *  space:
+ *  - `Type::None`: decimal representation of `code_` via `std::to_string`.
+ *  - `Type::TER`: TER token and description from `transResultInfo()`, e.g.
+ *    `"temBAD_AMOUNT: Malformed: Bad amount."`. The `[[maybe_unused]]` on the
+ *    return value acknowledges that in release builds the `XRPL_ASSERT` is
+ *    elided, but the call is still required for its output arguments.
+ *  - `Type::ErrorCodeI`: token and message from `getErrorInfo()`, formatted
+ *    as `"token: message"` via `ostringstream`.
+ *
+ *  The final `UNREACHABLE` / `LCOV_EXCL_*` block documents that no valid
+ *  `type_` value reaches that path; coverage tooling is instructed to ignore
+ *  the dead branch.
+ *
+ *  @return Formatted code string, or empty string if `code_ == kOK`.
+ */
 std::string
 Status::codeString() const
 {
@@ -44,6 +73,19 @@ Status::codeString() const
     // LCOV_EXCL_STOP
 }
 
+/** Populates a JSON-RPC 2.0 error object into `value`.
+ *
+ *  Writes `value["error"]["code"]` (raw integer), `value["error"]["message"]`
+ *  (`codeString()` result), and — when `messages_` is non-empty —
+ *  `value["error"]["data"]` (array of supplemental diagnostic strings).
+ *  Has no effect when `code_ == kOK`, so callers may invoke this
+ *  unconditionally.
+ *
+ *  @note This method is not used by the active RPC dispatch pipeline; `inject()`
+ *      is the production path. `fillJson()` is preserved as a future migration
+ *      target toward full JSON-RPC 2.0 conformance.
+ *  @param value The JSON object to populate with the error sub-object.
+ */
 void
 Status::fillJson(json::Value& value)
 {
@@ -54,7 +96,6 @@ Status::fillJson(json::Value& value)
     error[jss::code] = code_;
     error[jss::message] = codeString();
 
-    // Are there any more messages?
     if (!messages_.empty())
     {
         auto& messages = error[jss::data];
@@ -63,6 +104,13 @@ Status::fillJson(json::Value& value)
     }
 }
 
+/** Returns all attached diagnostic messages joined by `'/'` separators.
+ *
+ *  Iterates `messages_` and concatenates each entry with a `'/'` delimiter
+ *  between entries. Returns an empty string when no messages are attached.
+ *
+ *  @return Concatenated message string, or empty string if `messages_` is empty.
+ */
 std::string
 Status::message() const
 {
@@ -77,6 +125,15 @@ Status::message() const
     return result;
 }
 
+/** Returns a composite diagnostic string combining the code and messages.
+ *
+ *  Produces `codeString() + ":" + message()` when the status represents an
+ *  error, or an empty string when OK. The `':'` separator is always present
+ *  even when `message()` returns empty, so callers that only need the code
+ *  portion should call `codeString()` directly.
+ *
+ *  @return Combined diagnostic string, or empty string if `code_ == kOK`.
+ */
 std::string
 Status::toString() const
 {

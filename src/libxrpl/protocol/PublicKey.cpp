@@ -313,6 +313,24 @@ publicKeyType(Slice const& slice)
     return std::nullopt;
 }
 
+/** Verify a secp256k1 ECDSA signature against a pre-computed digest.
+ *
+ *  Validates the DER structure and canonicality of `sig` before invoking
+ *  libsecp256k1. When the signature is merely `canonical` (i.e., `S > G/2`)
+ *  and `mustBeFullyCanonical` is `false`, the S component is normalised to
+ *  its low form via `secp256k1_ecdsa_signature_normalize` before
+ *  verification. This preserves backward compatibility with old-style
+ *  signatures without accepting truly invalid encodings.
+ *
+ *  @param publicKey The secp256k1 public key; calling with any other key
+ *      type calls `logicError` (programming error).
+ *  @param digest The 256-bit digest over which the signature was produced.
+ *  @param sig DER-encoded ECDSA signature.
+ *  @param mustBeFullyCanonical If `true`, reject signatures where
+ *      `S > G/2` (the default). If `false`, accept them after normalisation.
+ *  @return `true` if the signature is valid for the given key and digest,
+ *      `false` for any structural, canonicality, or cryptographic failure.
+ */
 bool
 verifyDigest(
     PublicKey const& publicKey,
@@ -361,6 +379,24 @@ verifyDigest(
                &pubkeyImp) == 1;
 }
 
+/** Verify a signature over a raw message for either supported key type.
+ *
+ *  Dispatches on the key type detected from `publicKey`:
+ *  - **secp256k1**: hashes `m` with SHA-512 Half (yielding a 256-bit
+ *    digest) and delegates to `verifyDigest` with `mustBeFullyCanonical`
+ *    defaulting to `true`.
+ *  - **Ed25519**: checks canonicality of `sig` first, then strips the
+ *    XRPL-specific `0xED` prefix byte from `publicKey` before calling
+ *    the underlying `ed25519_sign_open` library function. The prefix is
+ *    an XRPL encoding artifact; the Ed25519 library is unaware of it.
+ *
+ *  @param publicKey The public key against which to verify.
+ *  @param m The message that was signed.
+ *  @param sig The signature to verify.
+ *  @return `true` if the signature is valid, `false` for any failure
+ *      including unrecognised key type, non-canonical signature, or
+ *      cryptographic mismatch.
+ */
 bool
 verify(PublicKey const& publicKey, Slice const& m, Slice const& sig) noexcept
 {
@@ -375,16 +411,25 @@ verify(PublicKey const& publicKey, Slice const& m, Slice const& sig) noexcept
             if (!ed25519Canonical(sig))
                 return false;
 
-            // We internally prefix Ed25519 keys with a 0xED
-            // byte to distinguish them from secp256k1 keys
-            // so when verifying the signature, we need to
-            // first strip that prefix.
+            // The 0xED prefix byte is an XRPL encoding artifact that
+            // distinguishes Ed25519 keys from secp256k1 keys; strip it
+            // before passing the raw 32-byte key to the library.
             return ed25519_sign_open(m.data(), m.size(), publicKey.data() + 1, sig.data()) == 0;
         }
     }
     return false;
 }
 
+/** Derive the 160-bit node identity from a validator public key.
+ *
+ *  Applies RIPEMD-160(SHA-256(pubkey)) — the same `ripesha_hasher` used
+ *  to derive XRPL account IDs — to produce the 160-bit `NodeID` used in
+ *  the peer-to-peer layer for validator routing and identification.
+ *
+ *  @param pk The validator's public key (secp256k1 or Ed25519).
+ *  @return The 160-bit `NodeID` uniquely identifying the validator on the
+ *      peer-to-peer network.
+ */
 NodeID
 calcNodeID(PublicKey const& pk)
 {

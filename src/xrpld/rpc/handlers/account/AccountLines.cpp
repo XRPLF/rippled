@@ -34,6 +34,22 @@
 
 namespace xrpl {
 
+/** Appends one trust line's JSON representation to a response array.
+ *
+ *  Produces the canonical shape of every element in the `lines` array returned
+ *  by the `account_lines` RPC command. The `balance` field follows XRPL's sign
+ *  convention: positive means the requesting account holds the peer's IOUs;
+ *  negative means the peer holds the requesting account's IOUs.
+ *
+ *  Boolean flag fields (`authorized`, `peer_authorized`, `no_ripple`,
+ *  `no_ripple_peer`, `freeze`, `freeze_peer`, `deep_freeze`, `deep_freeze_peer`)
+ *  are emitted only when `true`. Callers may treat the absence of a key as
+ *  equivalent to `false`. This compactness choice reduces response size
+ *  substantially when most lines are in a neutral state.
+ *
+ *  @param jsonLines  The JSON array to append to; modified in place.
+ *  @param line       A perspective-normalized trust line for the requesting account.
+ */
 void
 addLine(json::Value& jsonLines, RPCTrustLine const& line)
 {
@@ -43,11 +59,6 @@ addLine(json::Value& jsonLines, RPCTrustLine const& line)
     json::Value& jPeer(jsonLines.append(json::ValueType::Object));
 
     jPeer[jss::account] = to_string(line.getAccountIDPeer());
-    // Amount reported is positive if current account holds other
-    // account's IOUs.
-    //
-    // Amount reported is negative if other account holds current
-    // account's IOUs.
     jPeer[jss::balance] = saBalance.getText();
     jPeer[jss::currency] = to_string(saBalance.get<Issue>().currency);
     jPeer[jss::limit] = saLimit.getText();
@@ -72,15 +83,48 @@ addLine(json::Value& jsonLines, RPCTrustLine const& line)
         jPeer[jss::deep_freeze_peer] = true;
 }
 
-// {
-//   account: <account>
-//   ledger_hash : <ledger>
-//   ledger_index : <ledger_index>
-//   limit: integer                 // optional
-//   marker: opaque                 // optional, resume previous query
-//   ignore_default: bool           // do not return lines in default state (on
-//   this account's side)
-// }
+/** Implements the `account_lines` RPC command.
+ *
+ *  Returns the trust lines (IOU credit relationships) associated with an
+ *  account, expressed as a paginated JSON array under the `lines` key. Each
+ *  element is produced by `addLine()` and represents one `ltRIPPLE_STATE`
+ *  ledger entry from the account's owner directory, normalized to the
+ *  requesting account's perspective.
+ *
+ *  **Input fields:**
+ *  - `account` (required, string): The Base58Check-encoded account address.
+ *  - `ledger_hash` / `ledger_index` (optional): Ledger version to query.
+ *  - `peer` (optional, string): If present, only trust lines with this
+ *      counterparty are returned.
+ *  - `limit` (optional, integer): Page size, clamped to
+ *      `[kACCOUNT_LINES.rmin, kACCOUNT_LINES.rmax]` (10–400); default 200.
+ *  - `marker` (optional, string): Opaque pagination cursor returned by a
+ *      previous call; format is `"<hex_key>,<uint64_hint>"`.
+ *  - `ignore_default` (optional, bool): When `true`, trust lines that are in
+ *      the default state on the requesting account's side (i.e., neither
+ *      `lsfLowReserve` nor `lsfHighReserve` is set for that account) are
+ *      omitted. Such lines consume no owner reserve slot and are invisible to
+ *      most balance-sheet analyses.
+ *
+ *  **Marker security:** Before resuming pagination the handler reads the SLE
+ *  at the marker key and calls `RPC::isRelatedToAccount()` to verify that the
+ *  object belongs to the requested account. A marker pointing to another
+ *  account's entry, or to a since-deleted object, returns `rpcINVALID_PARAMS`.
+ *
+ *  **Pagination idiom:** `forEachItemAfter` is called with `limit + 1`. If the
+ *  callback fires exactly `limit + 1` times a next page exists; the marker is
+ *  set at the limit-th item's key and emitted in the response. The double-check
+ *  `count == limit + 1 && marker` guards the edge case where the directory ends
+ *  precisely on the limit boundary.
+ *
+ *  Sets `context.loadType = kFEE_MEDIUM_BURDEN_RPC` unconditionally before
+ *  returning to signal moderate throttling cost to the resource layer.
+ *
+ *  @param context  The RPC dispatch context for this call, including params,
+ *      ledger access, and resource accounting.
+ *  @return A JSON object containing `account`, `lines` array, and optionally
+ *      `limit` and `marker` when more pages remain.
+ */
 json::Value
 doAccountLines(RPC::JsonContext& context)
 {
@@ -124,19 +168,24 @@ doAccountLines(RPC::JsonContext& context)
     if (auto err = readLimitField(limit, RPC::Tuning::kACCOUNT_LINES, context))
         return *err;
 
-    // this flag allows the requester to ask incoming trustlines in default
-    // state be omitted
     bool const ignoreDefault =
         params.isMember(jss::ignore_default) && params[jss::ignore_default].asBool();
 
     json::Value& jsonLines(result[jss::lines] = json::ValueType::Array);
+
+    /** Captures per-request state shared across the `forEachItemAfter` callback.
+     *
+     *  Aggregates collected trust lines and the filter parameters in a single
+     *  struct so the lambda can capture one pointer rather than five separate
+     *  references.
+     */
     struct VisitData
     {
-        std::vector<RPCTrustLine> items;
-        AccountID const& accountID;
-        std::optional<AccountID> const& raPeerAccount;
-        bool ignoreDefault;
-        uint32_t foundCount;
+        std::vector<RPCTrustLine> items; /**< Trust lines accumulated so far. */
+        AccountID const& accountID;      /**< The requesting account. */
+        std::optional<AccountID> const& raPeerAccount; /**< Optional peer filter. */
+        bool ignoreDefault;  /**< When true, skip default-state lines. */
+        uint32_t foundCount; /**< Count of matching lines (unused; kept for future use). */
     };
     VisitData visitData = {
         .items = {},
@@ -152,8 +201,8 @@ doAccountLines(RPC::JsonContext& context)
         if (!params[jss::marker].isString())
             return RPC::expectedFieldError(jss::marker, "string");
 
-        // Marker is composed of a comma separated index and start hint. The
-        // former will be read as hex, and the latter using boost lexical cast.
+        // Format: "<hex_key>,<uint64_hint>" — key is read as hex,
+        // hint via boost::lexical_cast.
         std::stringstream marker(params[jss::marker].asString());
         std::string value;
         if (!std::getline(marker, value, ','))
@@ -174,8 +223,8 @@ doAccountLines(RPC::JsonContext& context)
             return rpcError(RpcInvalidParams);
         }
 
-        // We then must check if the object pointed to by the marker is actually
-        // owned by the account in the request.
+        // Security: reject markers that point to objects belonging to a
+        // different account, preventing cross-account directory traversal.
         auto const sle = ledger->read({ltANY, startAfter});
 
         if (!sle)
@@ -246,9 +295,8 @@ doAccountLines(RPC::JsonContext& context)
         }
     }
 
-    // Both conditions need to be checked because marker is set on the limit-th
-    // item, but if there is no item on the limit + 1 iteration, then there is
-    // no need to return a marker.
+    // Emit a marker only when both: count reached limit+1 (more items exist)
+    // and the marker key was actually recorded (guards the exact-boundary case).
     if (count == limit + 1 && marker)
     {
         result[jss::limit] = limit;

@@ -70,14 +70,7 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
     auto const amount2 = ctx.tx[~sfAmount2];
     auto const ePrice = ctx.tx[~sfEPrice];
     auto const lpTokens = ctx.tx[~sfLPTokenIn];
-    // Valid combinations are:
-    //   LPTokens
-    //   tfWithdrawAll
-    //   Amount
-    //   tfOneAssetWithdrawAll & Amount
-    //   Amount and Amount2
-    //   Amount and LPTokens
-    //   Amount and EPrice
+
     if (std::popcount(flags & tfWithdrawSubTx) != 1)
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: invalid flags.";
@@ -174,6 +167,21 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Normalize the LP token amount to redeem for the current withdrawal request.
+ *
+ *  For `tfWithdrawAll` and `tfOneAssetWithdrawAll`, the LP always redeems their
+ *  entire position regardless of any `sfLPTokenIn` field (those modes forbid the
+ *  field entirely). For all other modes, the caller-supplied `tokensIn` is
+ *  returned as-is. This normalization happens once in both `preclaim` and
+ *  `applyGuts`, keeping downstream helpers flag-agnostic.
+ *
+ *  @param lpTokens  The caller's current LP token balance (used for full-drain modes).
+ *  @param tokensIn  The optional `sfLPTokenIn` from the transaction.
+ *  @param flags     Transaction flags bitmask; checked for `tfWithdrawAll` and
+ *                       `tfOneAssetWithdrawAll`.
+ *  @return The normalized token amount to redeem, or `std::nullopt` if the mode
+ *      does not specify a token count (e.g., `tfSingleAsset`).
+ */
 static std::optional<STAmount>
 tokensWithdraw(
     STAmount const& lpTokens,
@@ -429,8 +437,6 @@ AMMWithdraw::applyGuts(Sandbox& sb)
 TER
 AMMWithdraw::doApply()
 {
-    // This is the ledger view that we work against. Transactions are applied
-    // as we go on processing transactions.
     Sandbox sb(&ctx_.view());
 
     auto const result = applyGuts(sb);
@@ -717,6 +723,20 @@ AMMWithdraw::withdraw(
         amount2WithdrawActual);
 }
 
+/** Apply `fixAMMv1_3` rounding correction to the LP tokens being redeemed.
+ *
+ *  Under `fixAMMv1_3`, `adjustLPTokens` re-rounds `lpTokensWithdraw` against
+ *  `lptAMMBalance` to align with the pool's fixed-point precision. This prevents
+ *  rounding drift from producing zero-valued asset amounts in `equalWithdrawTokens`.
+ *  When `fixAMMv1_3` is disabled or `withdrawAll` is `Yes` (last-LP drain), the
+ *  original token count is returned unchanged.
+ *
+ *  @param rules            Active ledger rules; checked for `fixAMMv1_3`.
+ *  @param lptAMMBalance    Current total LP token supply.
+ *  @param lpTokensWithdraw LP tokens the caller wants to burn.
+ *  @param withdrawAll      Skip rounding when draining the entire position.
+ *  @return The adjusted LP token count to use for ratio calculations.
+ */
 static STAmount
 adjustLPTokensIn(
     Rules const& rules,
@@ -729,7 +749,12 @@ adjustLPTokensIn(
     return adjustLPTokens(lptAMMBalance, lpTokensWithdraw, IsDeposit::No);
 }
 
-/** Proportional withdrawal of pool assets for the amount of LPTokens.
+/** Instance-method wrapper around the public static `equalWithdrawTokens` overload.
+ *
+ *  Forwards to the static overload, supplying `FreezeHandling::ZeroIfFrozen`,
+ *  `AuthHandling::ZeroIfUnauthorized`, `isWithdrawAll(ctx_.tx)`,
+ *  `preFeeBalance_`, and `ctx_.journal` from the instance's `ApplyContext`.
+ *  Discards the per-asset return values, returning only the new LP token balance.
  */
 std::pair<TER, STAmount>
 AMMWithdraw::equalWithdrawTokens(
@@ -793,7 +818,18 @@ AMMWithdraw::deleteAMMAccountIfEmpty(
     return {ter, true};
 }
 
-/** Proportional withdrawal of pool assets for the amount of LPTokens.
+/** Proportional dual-asset withdrawal for a given LP token amount (static public overload).
+ *
+ *  Burns `lpTokensWithdraw` LP tokens and returns both pool assets to `account`
+ *  in the ratio `lpTokensWithdraw / lptAMMBalance`. No trading fee is charged.
+ *  When `lpTokensWithdraw == lptAMMBalance`, short-circuits to `withdraw(...,
+ *  WithdrawAll::Yes, ...)` to avoid rounding dust on the final drain.
+ *  Otherwise, calls `adjustLPTokensIn` (`fixAMMv1_3`) before computing the
+ *  withdrawal fraction; returns `tecAMM_FAILED` (pre-v1_3) or
+ *  `tecAMM_INVALID_TOKENS` (v1_3+) if either asset amount rounds to zero.
+ *
+ *  @note Exceptions are caught and converted to `tecINTERNAL` to guarantee
+ *      deterministic outcomes across all validating nodes.
  */
 std::tuple<TER, STAmount, STAmount, std::optional<STAmount>>
 AMMWithdraw::equalWithdrawTokens(
@@ -840,7 +876,6 @@ AMMWithdraw::equalWithdrawTokens(
             adjustLPTokensIn(view.rules(), lptAMMBalance, lpTokensWithdraw, withdrawAll);
         if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::kZERO)
             return {tecAMM_INVALID_TOKENS, STAmount{}, STAmount{}, std::nullopt};
-        // the adjusted tokens are factored in
         auto const frac = divide(tokensAdj, lptAMMBalance, noIssue());
         auto const amountWithdraw =
             getRoundedAsset(view.rules(), amountBalance, frac, IsDeposit::No);
@@ -920,7 +955,6 @@ AMMWithdraw::equalWithdrawLimit(
     auto tokensAdj = getRoundedLPTokens(view.rules(), lptAMMBalance, frac, IsDeposit::No);
     if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::kZERO)
         return {tecAMM_INVALID_TOKENS, STAmount{}};
-    // factor in the adjusted tokens
     frac = adjustFracByTokens(view.rules(), lptAMMBalance, tokensAdj, frac);
     auto const amount2Withdraw = getRoundedAsset(view.rules(), amount2Balance, frac, IsDeposit::No);
     if (amount2Withdraw <= amount2)
@@ -942,7 +976,6 @@ AMMWithdraw::equalWithdrawLimit(
     tokensAdj = getRoundedLPTokens(view.rules(), lptAMMBalance, frac, IsDeposit::No);
     if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::kZERO)
         return {tecAMM_INVALID_TOKENS, STAmount{}};  // LCOV_EXCL_LINE
-    // factor in the adjusted tokens
     frac = adjustFracByTokens(view.rules(), lptAMMBalance, tokensAdj, frac);
     amountWithdraw = getRoundedAsset(view.rules(), amountBalance, frac, IsDeposit::No);
     if (!view.rules().enabled(fixAMMv1_3))
@@ -998,7 +1031,6 @@ AMMWithdraw::singleWithdraw(
 
         return {tecAMM_INVALID_TOKENS, STAmount{}};
     }
-    // factor in the adjusted tokens
     auto const [tokensAdj, amountWithdrawAdj] =
         adjustAssetOutByTokens(view.rules(), amountBalance, amount, lptAMMBalance, tokens, tfee);
     if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::kZERO)
@@ -1040,7 +1072,6 @@ AMMWithdraw::singleWithdrawTokens(
         adjustLPTokensIn(view.rules(), lptAMMBalance, lpTokensWithdraw, isWithdrawAll(ctx_.tx));
     if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::kZERO)
         return {tecAMM_INVALID_TOKENS, STAmount{}};
-    // the adjusted tokens are factored in
     auto const amountWithdraw = ammAssetOut(amountBalance, lptAMMBalance, tokensAdj, tfee);
     if (amount == beast::kZERO || amountWithdraw >= amount)
     {
@@ -1118,7 +1149,6 @@ AMMWithdraw::singleWithdrawEPrice(
     }
     auto amtNoRoundCb = [&] { return tokensAdj / ePrice; };
     auto amtProdCb = [&] { return tokensAdj / ePrice; };
-    // the adjusted tokens are factored in
     auto const amountWithdraw =
         getRoundedAsset(view.rules(), amtNoRoundCb, amount, amtProdCb, IsDeposit::No);
     if (amount == beast::kZERO || amountWithdraw >= amount)

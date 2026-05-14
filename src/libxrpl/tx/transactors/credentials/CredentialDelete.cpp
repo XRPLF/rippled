@@ -1,3 +1,16 @@
+/** @file
+ *  Implementation of the `CredentialDelete` transactor.
+ *
+ *  Handles removal of on-ledger verifiable credential objects.  Three
+ *  principals are authorized to delete a credential: the subject (holder),
+ *  the issuer (revoker), or any third party once the credential has expired.
+ *  The third-party expiry path enables ledger hygiene — anyone may sweep
+ *  inert objects to reclaim the reserve they hold.
+ *
+ *  @see CredentialDelete.h for the full API contract.
+ *  @see credentials::deleteSLE() in CredentialHelpers.cpp for the low-level
+ *      SLE removal and owner-directory bookkeeping.
+ */
 #include <xrpl/tx/transactors/credentials/CredentialDelete.h>
 
 #include <xrpl/basics/Log.h>
@@ -25,7 +38,6 @@ using namespace credentials;
 std::uint32_t
 CredentialDelete::getFlagsMask(PreflightContext const& ctx)
 {
-    // 0 means "Allow any flags"
     return ctx.rules.enabled(fixInvalidTxFlags) ? tfUniversalMask : 0;
 }
 
@@ -37,13 +49,11 @@ CredentialDelete::preflight(PreflightContext const& ctx)
 
     if (!subject && !issuer)
     {
-        // Neither field is present, the transaction is malformed.
         JLOG(ctx.j.trace()) << "Malformed transaction: "
                                "No Subject or Issuer fields.";
         return temMALFORMED;
     }
 
-    // Make sure that the passed account is valid.
     if ((subject && subject->isZero()) || (issuer && issuer->isZero()))
     {
         JLOG(ctx.j.trace()) << "Malformed transaction: Subject or Issuer "
@@ -102,7 +112,6 @@ CredentialDelete::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
-    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -113,7 +122,6 @@ CredentialDelete::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
-    // No transaction-specific invariants yet (future work).
     return true;
 }
 }  // namespace xrpl

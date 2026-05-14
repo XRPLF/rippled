@@ -1,3 +1,19 @@
+/** @file
+ *  Implementation of the `DelegateSet` transactor.
+ *
+ *  Manages the lifecycle of `Delegate` ledger entries: create (non-empty
+ *  `sfPermissions` + no existing SLE), update (non-empty `sfPermissions` +
+ *  existing SLE), and delete (empty `sfPermissions`). The `Delegate` SLE is
+ *  inserted into both the grantor's and the delegate's owner directories so
+ *  that `AccountDelete` can locate and clean up the entry from either side.
+ *
+ *  `deleteDelegate` is a static method exposed to `AccountDelete`, which calls
+ *  it via the `removeDelegateFromLedger` adapter in `AccountDelete.cpp`.
+ *
+ *  @see DelegateSet.h for the full public interface documentation.
+ *  @see DelegateUtils.cpp for the runtime permission-check helpers that use
+ *      the `Delegate` SLE created here.
+ */
 #include <xrpl/tx/transactors/delegate/DelegateSet.h>
 
 #include <xrpl/basics/Log.h>
@@ -28,7 +44,6 @@ DelegateSet::preflight(PreflightContext const& ctx)
     if (permissions.size() > kPERMISSION_MAX_SIZE)
         return temARRAY_TOO_LARGE;
 
-    // can not authorize self
     if (ctx.tx[sfAccount] == ctx.tx[sfAuthorize])
         return temMALFORMED;
 
@@ -80,10 +95,7 @@ DelegateSet::doApply()
     {
         auto const& permissions = ctx_.tx.getFieldArray(sfPermissions);
         if (permissions.empty())
-        {
-            // if permissions array is empty, delete the ledger object.
             return deleteDelegate(view(), sle, j_);
-        }
 
         sle->setFieldArray(sfPermissions, permissions);
         ctx_.view().update(sle);
@@ -140,7 +152,6 @@ DelegateSet::deleteDelegate(ApplyView& view, std::shared_ptr<SLE> const& sle, be
     auto const delegator = (*sle)[sfAccount];
     auto const delegatee = (*sle)[sfAuthorize];
 
-    // Remove from delegating account's owner directory
     if (!view.dirRemove(keylet::ownerDir(delegator), (*sle)[sfOwnerNode], sle->key(), false))
     {
         // LCOV_EXCL_START
@@ -149,7 +160,6 @@ DelegateSet::deleteDelegate(ApplyView& view, std::shared_ptr<SLE> const& sle, be
         // LCOV_EXCL_STOP
     }
 
-    // Remove from authorized account's owner directory, if present
     if (auto const optPage = (*sle)[~sfDestinationNode])
     {
         if (!view.dirRemove(keylet::ownerDir(delegatee), *optPage, sle->key(), false))

@@ -1,3 +1,12 @@
+/** @file
+ *  Concrete implementation of the outbound HTTP/HTTPS push-subscription
+ *  mechanism. Exposes only `RPCSub` (abstract) and `makeRPCSub()` to callers;
+ *  the concrete class `RPCSubImp` is entirely private to this translation unit.
+ *
+ *  Events are queued in-order and drained by a single `jtCLIENT_SUBSCRIBE`
+ *  job at a time. Failed deliveries are logged and silently dropped; there
+ *  is no retry or back-pressure mechanism.
+ */
 #include <xrpld/rpc/RPCSub.h>
 
 #include <xrpld/rpc/RPCCall.h>
@@ -26,10 +35,40 @@
 
 namespace xrpl {
 
-// Subscription object for JSON-RPC
+/** Concrete implementation of `RPCSub` that delivers events via outbound
+ *  HTTP/HTTPS POST.
+ *
+ *  Entirely hidden from callers; only the `RPCSub` interface and the
+ *  `makeRPCSub()` factory are exposed in the header. The target URL is
+ *  parsed eagerly at construction time — the object either comes out fully
+ *  ready to use or throws before any state is committed.
+ *
+ *  Threading: `send()` may be called from any thread. At most one
+ *  `jtCLIENT_SUBSCRIBE` drain job (`sendThread()`) is active at a time;
+ *  the `sending_` flag enforces this invariant under `lock_`.
+ *
+ *  @note `username_`/`password_` are written under `lock_` but read in
+ *      `sendThread()` without the lock — a minor data race. Credential
+ *      updates are rare, so observable corruption is unlikely in practice.
+ */
 class RPCSubImp : public RPCSub
 {
 public:
+    /** Construct and validate the push-subscription endpoint.
+     *
+     *  Parses `strUrl` immediately, validates the scheme, and resolves
+     *  the default port (80 for HTTP, 443 for HTTPS) if none is specified.
+     *
+     *  @param source      `InfoSub::Source` that owns the URL registry.
+     *  @param ioContext   ASIO I/O context forwarded to `RPCCall::fromNetwork()`.
+     *  @param jobQueue    Job queue on which drain jobs are enqueued.
+     *  @param strUrl      Destination URL; must use `http` or `https` scheme.
+     *  @param strUsername HTTP Basic Auth username for the remote endpoint.
+     *  @param strPassword HTTP Basic Auth password for the remote endpoint.
+     *  @param registry    Service registry for journal and logs access.
+     *  @throws std::runtime_error if the URL cannot be parsed or uses an
+     *      unsupported scheme.
+     */
     RPCSubImp(
         InfoSub::Source& source,
         boost::asio::io_context& ioContext,
@@ -81,6 +120,18 @@ public:
 
     ~RPCSubImp() override = default;
 
+    /** Enqueue an event for delivery and ensure the drain job is running.
+     *
+     *  Pushes `jvObj` onto the back of `deque_` with a monotonically
+     *  increasing sequence number, then submits a `jtCLIENT_SUBSCRIBE` job
+     *  to drain the queue if one is not already active. If a drain job is
+     *  already running, the new item will be picked up by the existing job's
+     *  loop without spawning a second job.
+     *
+     *  @param jvObj      The JSON event payload to deliver.
+     *  @param broadcast  When true, the event is logged at debug level rather
+     *      than info level (i.e., it was broadcast to multiple subscribers).
+     */
     void
     send(json::Value const& jvObj, bool broadcast) override
     {
@@ -101,6 +152,7 @@ public:
         }
     }
 
+    /** @copydoc RPCSub::setUsername */
     void
     setUsername(std::string const& strUsername) override
     {
@@ -109,6 +161,7 @@ public:
         username_ = strUsername;
     }
 
+    /** @copydoc RPCSub::setPassword */
     void
     setPassword(std::string const& strPassword) override
     {
@@ -118,8 +171,23 @@ public:
     }
 
 private:
-    // XXX Could probably create a bunch of send jobs in a single get of the
-    // lock.
+    /** Drain the event queue, delivering each item via `RPCCall::fromNetwork()`.
+     *
+     *  Runs on a `jtCLIENT_SUBSCRIBE` worker thread. Each iteration acquires
+     *  `lock_` only long enough to pop one item (or detect the queue is empty
+     *  and clear `sending_`). The actual HTTP call is made outside the lock so
+     *  that `send()` can continue enqueuing events during a slow round-trip.
+     *
+     *  Each outgoing payload has a monotonically increasing `"seq"` field
+     *  injected so the remote endpoint can detect dropped or reordered events.
+     *  Delivery is fire-and-forget: exceptions from `fromNetwork()` are caught
+     *  and logged; there is no retry.
+     *
+     *  @note `username_` and `password_` are read here without holding `lock_`,
+     *      creating a potential data race with `setUsername()`/`setPassword()`.
+     *      In practice, credential updates are rare and string assignment is
+     *      unlikely to produce observable corruption.
+     */
     void
     sendThread()
     {
@@ -129,7 +197,6 @@ private:
         do
         {
             {
-                // Obtain the lock to manipulate the queue and change sending.
                 std::scoped_lock const sl(lock_);
 
                 if (deque_.empty())
@@ -150,10 +217,8 @@ private:
                 }
             }
 
-            // Send outside of the lock.
             if (bSend)
             {
-                // XXX Might not need this in a try.
                 try
                 {
                     JLOG(j_.info()) << "RPCCall::fromNetwork: " << ip_;
@@ -180,21 +245,22 @@ private:
     }
 
 private:
-    boost::asio::io_context& io_context_;
-    JobQueue& jobQueue_;
+    boost::asio::io_context& io_context_; /**< ASIO context for `RPCCall::fromNetwork()`. */
+    JobQueue& jobQueue_;                  /**< Queue on which drain jobs are submitted. */
 
-    std::string url_;
-    std::string ip_;
-    std::uint16_t port_;
-    bool ssl_{false};
-    std::string username_;
-    std::string password_;
-    std::string path_;
+    std::string url_;         /**< Original URL string (stored for diagnostics). */
+    std::string ip_;          /**< Resolved hostname from the parsed URL. */
+    std::uint16_t port_;      /**< Resolved port; defaults to 80 (HTTP) or 443 (HTTPS). */
+    bool ssl_{false};         /**< True when the target scheme is `https`. */
+    std::string username_;    /**< HTTP Basic Auth username; written under `lock_`. */
+    std::string password_;    /**< HTTP Basic Auth password; written under `lock_`. */
+    std::string path_;        /**< URL path component forwarded to `fromNetwork()`. */
 
-    int seq_;  // Next id to allocate.
+    int seq_;           /**< Sequence counter; incremented for each enqueued event. */
 
-    bool sending_{false};  // Sending thread is active.
+    bool sending_{false}; /**< True while a drain job is active; guards single-worker invariant. */
 
+    /** Pending events: (sequence_number, json_payload) pairs in delivery order. */
     std::deque<std::pair<int, json::Value>> deque_;
 
     beast::Journal const j_;

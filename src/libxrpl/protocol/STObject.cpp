@@ -1,3 +1,14 @@
+/** @file STObject.cpp
+ *  Implementation of STObject — the heterogeneous, field-keyed container that
+ *  underlies every XRPL transaction, ledger entry, and inner object.
+ *
+ *  Fields are stored in `v_` (a `std::vector<detail::STVar>`) either in
+ *  insertion order (free mode, `type_ == nullptr`) or in template order
+ *  (templated mode, `type_` points to an `SOTemplate`).  Templated mode
+ *  provides O(1) field lookup and guarantees every slot is pre-populated with
+ *  a sentinel (`STI_NOTPRESENT`) for optional/default fields.
+ */
+
 #include <xrpl/protocol/STObject.h>
 
 #include <xrpl/basics/Blob.h>
@@ -42,20 +53,42 @@
 
 namespace xrpl {
 
+/** Move constructor.  Transfers field storage and template pointer from
+ *  `other`, leaving it in a valid but empty state.
+ */
 STObject::STObject(STObject&& other)
     : STBase(other.getFName()), v_(std::move(other.v_)), type_(other.type_)
 {
 }
 
+/** Construct a free (schema-less) STObject with the given field name. */
 STObject::STObject(SField const& name) : STBase(name)
 {
 }
 
+/** Construct a templated STObject from a schema and field name.
+ *
+ *  Calls `set(type)` to pre-populate every slot defined by `type`.
+ *
+ *  @param type  The SOTemplate that defines the layout of this object.
+ *  @param name  The SField identifying this object within its parent.
+ */
 STObject::STObject(SOTemplate const& type, SField const& name) : STBase(name)
 {
     set(type);
 }
 
+/** Construct a templated STObject by deserializing from a byte stream.
+ *
+ *  Deserializes fields from `sit` in free mode, then calls `applyTemplate`
+ *  to re-order and validate them against `type`.
+ *
+ *  @param type  The SOTemplate to enforce after deserialization.
+ *  @param sit   The byte stream to read from.
+ *  @param name  The SField identifying this object within its parent.
+ *  @throws FieldErr if a required field is missing or an unexpected field
+ *      is present.
+ */
 STObject::STObject(SOTemplate const& type, SerialIter& sit, SField const& name) : STBase(name)
 {
     v_.reserve(type.size());
@@ -63,6 +96,18 @@ STObject::STObject(SOTemplate const& type, SerialIter& sit, SField const& name) 
     applyTemplate(type);  // May throw
 }
 
+/** Construct an STObject by deserializing from a byte stream with a depth guard.
+ *
+ *  The `depth` parameter prevents stack exhaustion when deserializing
+ *  deeply nested `STObject`/`STArray` structures from untrusted input.
+ *  Recursion beyond depth 10 throws `std::runtime_error`.
+ *
+ *  @param sit    The byte stream to read from.
+ *  @param name   The SField identifying this object within its parent.
+ *  @param depth  Current nesting depth; capped at 10.
+ *  @throws std::runtime_error if `depth > 10` or if malformed data is
+ *      encountered (e.g., duplicate fields, unknown field IDs).
+ */
 STObject::STObject(SerialIter& sit, SField const& name, int depth) noexcept(false) : STBase(name)
 {
     if (depth > 10)
@@ -70,16 +115,29 @@ STObject::STObject(SerialIter& sit, SField const& name, int depth) noexcept(fals
     set(sit, depth);
 }
 
+/** Factory for inner objects that conditionally applies a schema template.
+ *
+ *  Template application was introduced in two amendment phases to preserve
+ *  replay compatibility with historical ledger entries serialized before
+ *  schemas existed:
+ *  - When no `Rules` are available (pre-consensus or unit-test context),
+ *    the template is always applied.
+ *  - `fixInnerObjTemplate` added templates to AMM inner objects
+ *    (`sfAuctionSlot`, `sfVoteEntry`).
+ *  - `fixInnerObjTemplate2` extended templates to all other inner objects.
+ *
+ *  This method reads the ambient transaction rules via
+ *  `getCurrentTransactionRules()`, making it implicitly context-sensitive.
+ *
+ *  @param name  The SField identifying the inner object type.
+ *  @return A new STObject, bound to its SOTemplate when the active rules
+ *      permit it.
+ */
 STObject
 STObject::makeInnerObject(SField const& name)
 {
     STObject obj{name};
 
-    // The if is complicated because inner object templates were added in
-    // two phases:
-    //  1. If there are no available Rules, then always apply the template.
-    //  2. fixInnerObjTemplate added templates to two AMM inner objects.
-    //  3. fixInnerObjTemplate2 added templates to all remaining inner objects.
     std::optional<Rules> const& rules = getCurrentTransactionRules();
     bool const isAMMObj = name == sfAuctionSlot || name == sfVoteEntry;
     if (!rules || (rules->enabled(fixInnerObjTemplate) && isAMMObj) ||
@@ -92,36 +150,47 @@ STObject::makeInnerObject(SField const& name)
     return obj;
 }
 
+/** Copy this object into `buf` using placement-new via `STBase::emplace`. */
 STBase*
 STObject::copy(std::size_t n, void* buf) const
 {
     return emplace(n, buf, *this);
 }
 
+/** Move this object into `buf` using placement-new via `STBase::emplace`. */
 STBase*
 STObject::move(std::size_t n, void* buf)
 {
     return emplace(n, buf, std::move(*this));
 }
 
+/** Returns `STI_OBJECT`, the serialized type identifier for this class. */
 SerializedTypeID
 STObject::getSType() const
 {
     return STI_OBJECT;
 }
 
+/** Returns `true` when the field storage vector is empty.
+ *
+ *  An STObject is considered default (absent) only when it holds no fields
+ *  at all.  A templated object initialized via `set(SOTemplate)` is never
+ *  empty because every slot is pre-populated.
+ */
 bool
 STObject::isDefault() const
 {
     return v_.empty();
 }
 
+/** Serialize all fields (including signing fields) into `s`. */
 void
 STObject::add(Serializer& s) const
 {
     add(s, WhichFields::WithAllFields);  // just inner elements
 }
 
+/** Move-assign from `other`, transferring field storage and template pointer. */
 STObject&
 STObject::operator=(STObject&& other)
 {
@@ -131,6 +200,15 @@ STObject::operator=(STObject&& other)
     return *this;
 }
 
+/** Initialize this object from a template, pre-populating every slot.
+ *
+ *  Clears `v_` and rebuilds it in template order.  `soeREQUIRED` fields
+ *  receive a type-correct default value; all other fields (`soeOPTIONAL`,
+ *  `soeDEFAULT`) receive the `STI_NOTPRESENT` sentinel, which
+ *  `isFieldPresent()` recognizes as absent.
+ *
+ *  @param type  The SOTemplate that defines the layout of this object.
+ */
 void
 STObject::set(SOTemplate const& type)
 {
@@ -151,6 +229,23 @@ STObject::set(SOTemplate const& type)
     }
 }
 
+/** Validate and reorder fields against a schema after free-mode deserialization.
+ *
+ *  Rebuilds `v_` in template order:
+ *  - Each template slot is filled from the existing (insertion-ordered) `v_`,
+ *    or populated with `STI_NOTPRESENT` when the field is absent.
+ *  - A `soeDEFAULT` field whose serialized value equals the type's default
+ *    is rejected — the ledger forbids explicitly encoding default values.
+ *  - A `soeREQUIRED` field that is missing throws `FieldErr`.
+ *  - Any fields left over in `v_` after template matching must be discardable
+ *    (`SField::isDiscardable()`); non-discardable unknown fields throw.
+ *
+ *  The final `v_.swap(v)` atomically replaces the old unordered data.
+ *
+ *  @param type  The SOTemplate to enforce.
+ *  @throws FieldErr on required-missing, explicit-default, or unknown
+ *      non-discardable field.
+ */
 void
 STObject::applyTemplate(SOTemplate const& type)
 {
@@ -189,17 +284,23 @@ STObject::applyTemplate(SOTemplate const& type)
     }
     for (auto const& e : v_)
     {
-        // Anything left over in the object must be discardable
         if (!e->getFName().isDiscardable())
         {
             throwFieldErr(e->getFName().getName(), "found in disallowed location.");
         }
     }
-    // Swap the template matching data in for the old data,
-    // freeing any leftover junk
     v_.swap(v);
 }
 
+/** Apply the schema registered for `sField` in `InnerObjectFormats`, if any.
+ *
+ *  Looks up the global `InnerObjectFormats` singleton for a template keyed by
+ *  `sField`.  When found, delegates to `applyTemplate`.  No-op if the field
+ *  has no registered template (e.g., for inner objects without a known schema).
+ *
+ *  @param sField  The SField whose registered SOTemplate should be applied.
+ *  @throws FieldErr (from `applyTemplate`) if the object does not conform.
+ */
 void
 STObject::applyTemplateFromSField(SField const& sField)
 {
@@ -208,7 +309,30 @@ STObject::applyTemplateFromSField(SField const& sField)
         applyTemplate(*elements);  // May throw
 }
 
-// return true = terminated with end-of-object
+/** Deserialize fields from a byte stream into this object (free mode).
+ *
+ *  Reads `(type, field)` ID pairs from `sit`, looks up each `SField`, and
+ *  constructs a child `STVar` at `depth+1`.  When a child is itself an
+ *  `STObject`, `applyTemplateFromSField()` is called immediately to bind it
+ *  to any known schema.
+ *
+ *  Termination rules:
+ *  - `STI_OBJECT / field==1` — end-of-object marker; consumed and returns
+ *    `true`.
+ *  - `STI_ARRAY / field==1` inside an object — malformed data; throws.
+ *  - End of `sit` without a marker — returns `false` (top-level object).
+ *
+ *  After all fields are read, the method enforces the no-duplicate-field
+ *  invariant using `getSortedFields` + `std::adjacent_find`; duplicate fields
+ *  throw `std::runtime_error("Duplicate field detected")`.
+ *
+ *  @param sit    The byte stream to read from.
+ *  @param depth  Current nesting depth (caller increments before passing).
+ *  @return `true` if the object was terminated by an end-of-object marker,
+ *      `false` if `sit` was exhausted without one.
+ *  @throws std::runtime_error on unknown field ID, embedded end-of-array
+ *      marker, or duplicate field.
+ */
 bool
 STObject::set(SerialIter& sit, int depth)
 {
@@ -216,17 +340,13 @@ STObject::set(SerialIter& sit, int depth)
 
     v_.clear();
 
-    // Consume data in the pipe until we run out or reach the end
     while (!sit.empty())
     {
         int type = 0;
         int field = 0;
 
-        // Get the metadata for the next field
         sit.getFieldID(type, field);
 
-        // The object termination marker has been found and the termination
-        // marker has been consumed. Done deserializing.
         if (type == STI_OBJECT && field == 1)
         {
             reachedEndOfObject = true;
@@ -248,16 +368,12 @@ STObject::set(SerialIter& sit, int depth)
             Throw<std::runtime_error>("Unknown field");
         }
 
-        // Unflatten the field
         v_.emplace_back(sit, fn, depth + 1);
 
-        // If the object type has a known SOTemplate then set it.
         if (auto const obj = dynamic_cast<STObject*>(&(v_.back().get())))
             obj->applyTemplateFromSField(fn);  // May throw
     }
 
-    // We want to ensure that the deserialized object does not contain any
-    // duplicate fields. This is a key invariant:
     auto const sf = getSortedFields(*this, WhichFields::WithAllFields);
 
     auto const dup = std::ranges::adjacent_find(sf, [](STBase const* lhs, STBase const* rhs) {
@@ -270,6 +386,13 @@ STObject::set(SerialIter& sit, int depth)
     return reachedEndOfObject;
 }
 
+/** Returns `true` if this object contains a field equal to `t`.
+ *
+ *  Looks up the field by name and compares via `STBase::operator==`.
+ *
+ *  @param t  The field to search for, identified by its `SField` name.
+ *  @return `true` if a field with the same name and value exists.
+ */
 bool
 STObject::hasMatchingEntry(STBase const& t) const
 {
@@ -281,6 +404,11 @@ STObject::hasMatchingEntry(STBase const& t) const
     return t == *o;
 }
 
+/** Returns a human-readable representation including the field name.
+ *
+ *  Produces `"<name> = { <field1>, <field2>, ... }"`, or `"{ ... }"` when
+ *  the object has no name.  `STI_NOTPRESENT` slots are skipped.
+ */
 std::string
 STObject::getFullText() const
 {
@@ -318,6 +446,9 @@ STObject::getFullText() const
     return ret;
 }
 
+/** Returns a terse `"{ ... }"` representation of all fields (including absent
+ *  sentinel slots).  Primarily used for diagnostic logging.
+ */
 std::string
 STObject::getText() const
 {
@@ -337,6 +468,19 @@ STObject::getText() const
     return ret;
 }
 
+/** Compare two STObjects for structural and value equivalence.
+ *
+ *  Fast path: when both objects share the same `SOTemplate` pointer
+ *  (`type_`), fields are compared positionally in `v_` order, which is
+ *  O(n).  This is sound because the same template guarantees identical slot
+ *  layout.
+ *
+ *  Slow path: when templates differ (or either is a free object), both
+ *  objects are sorted by `fieldCode` and compared element-by-element.
+ *
+ *  @param t  The object to compare against; must also be an `STObject`.
+ *  @return `true` if all present fields match in type and value.
+ */
 bool
 STObject::isEquivalent(STBase const& t) const
 {
@@ -361,6 +505,16 @@ STObject::isEquivalent(STBase const& t) const
     });
 }
 
+/** Compute a domain-separated SHA-512 half-hash over all fields.
+ *
+ *  Prepends `prefix` (a 4-byte `HashPrefix` constant) to the serialization to
+ *  prevent cross-domain hash collisions, then returns the first 256 bits of
+ *  SHA-512.
+ *
+ *  @param prefix  The `HashPrefix` tag identifying the hash domain (e.g.,
+ *      `HashPrefix::transactionID`, `HashPrefix::leafNode`).
+ *  @return The 256-bit digest of `prefix ‖ canonical_serialization`.
+ */
 uint256
 STObject::getHash(HashPrefix prefix) const
 {
@@ -370,6 +524,16 @@ STObject::getHash(HashPrefix prefix) const
     return s.getSHA512Half();
 }
 
+/** Compute a domain-separated hash over signing fields only.
+ *
+ *  Identical to `getHash` but excludes fields where `SField::shouldInclude`
+ *  returns `false` for signing (e.g., `sfTxnSignature`, `sfSigners`).  This
+ *  is the digest that a private key signs and a verifier reconstructs.
+ *
+ *  @param prefix  The `HashPrefix` tag for this signing context (e.g.,
+ *      `HashPrefix::txSign`, `HashPrefix::txMultiSign`).
+ *  @return The 256-bit signing digest.
+ */
 uint256
 STObject::getSigningHash(HashPrefix prefix) const
 {
@@ -379,6 +543,14 @@ STObject::getSigningHash(HashPrefix prefix) const
     return s.getSHA512Half();
 }
 
+/** Return the index of `field` within `v_`, or -1 if not found.
+ *
+ *  In templated mode delegates to `SOTemplate::getIndex()`, which is O(1).
+ *  In free mode performs a linear scan through `v_`.
+ *
+ *  @param field  The SField to locate.
+ *  @return Zero-based index into `v_`, or -1 when absent.
+ */
 int
 STObject::getFieldIndex(SField const& field) const
 {
@@ -395,6 +567,11 @@ STObject::getFieldIndex(SField const& field) const
     return -1;
 }
 
+/** Return a const reference to `field`, throwing if absent.
+ *
+ *  @param field  The SField to retrieve.
+ *  @throws std::runtime_error ("Field not found") if the field is not present.
+ */
 STBase const&
 STObject::peekAtField(SField const& field) const
 {
@@ -406,6 +583,11 @@ STObject::peekAtField(SField const& field) const
     return peekAtIndex(index);
 }
 
+/** Return a mutable reference to `field`, throwing if absent.
+ *
+ *  @param field  The SField to retrieve.
+ *  @throws std::runtime_error ("Field not found") if the field is not present.
+ */
 STBase&
 STObject::getField(SField const& field)
 {
@@ -417,12 +599,24 @@ STObject::getField(SField const& field)
     return getIndex(index);
 }
 
+/** Return the `SField` associated with the slot at `index`.
+ *
+ *  @param index  Zero-based offset into `v_`.
+ */
 SField const&
 STObject::getFieldSType(int index) const
 {
     return v_[index]->getFName();
 }
 
+/** Return a const pointer to `field`, or `nullptr` if absent.
+ *
+ *  Callers that need a non-throwing presence check should prefer this over
+ *  `peekAtField`.
+ *
+ *  @param field  The SField to look up.
+ *  @return Pointer to the field's `STBase`, or `nullptr`.
+ */
 STBase const*
 STObject::peekAtPField(SField const& field) const
 {
@@ -434,6 +628,17 @@ STObject::peekAtPField(SField const& field) const
     return peekAtPIndex(index);
 }
 
+/** Return a mutable pointer to `field`, optionally creating it in free mode.
+ *
+ *  In templated mode the field must already exist; creation is never
+ *  performed.  In free mode, when `createOkay` is `true` and the field is
+ *  absent, a new slot initialized to the default value is appended.
+ *
+ *  @param field      The SField to look up or create.
+ *  @param createOkay When `true`, auto-creates the field in free objects.
+ *  @return Mutable pointer to the field's `STBase`, or `nullptr` if absent
+ *      and not created.
+ */
 STBase*
 STObject::getPField(SField const& field, bool createOkay)
 {
@@ -450,6 +655,14 @@ STObject::getPField(SField const& field, bool createOkay)
     return getPIndex(index);
 }
 
+/** Returns `true` if `field` is present and not the `STI_NOTPRESENT` sentinel.
+ *
+ *  In templated mode, optional and default slots always exist in `v_` but
+ *  carry the sentinel when logically absent.  This method distinguishes the
+ *  two cases correctly.
+ *
+ *  @param field  The SField to test.
+ */
 bool
 STObject::isFieldPresent(SField const& field) const
 {
@@ -461,18 +674,38 @@ STObject::isFieldPresent(SField const& field) const
     return peekAtIndex(index).getSType() != STI_NOTPRESENT;
 }
 
+/** Return a mutable reference to the inner `STObject` at `field`.
+ *
+ *  @param field  Must identify an `STObject`-typed field.
+ *  @throws std::runtime_error if absent or wrong type.
+ */
 STObject&
 STObject::peekFieldObject(SField const& field)
 {
     return peekField<STObject>(field);
 }
 
+/** Return a mutable reference to the inner `STArray` at `field`.
+ *
+ *  @param field  Must identify an `STArray`-typed field.
+ *  @throws std::runtime_error if absent or wrong type.
+ */
 STArray&
 STObject::peekFieldArray(SField const& field)
 {
     return peekField<STArray>(field);
 }
 
+/** Set one or more bits in `sfFlags`, creating the field in free objects.
+ *
+ *  Uses `getPField(sfFlags, createOkay=true)` so that free objects have the
+ *  field created on demand.  Templated objects must already have `sfFlags` in
+ *  their schema.
+ *
+ *  @param f  Bitmask of flags to set.
+ *  @return `true` if the flags were set; `false` if `sfFlags` could not be
+ *      found or created.
+ */
 bool
 STObject::setFlag(std::uint32_t f)
 {
@@ -485,6 +718,14 @@ STObject::setFlag(std::uint32_t f)
     return true;
 }
 
+/** Clear one or more bits in `sfFlags`.
+ *
+ *  Unlike `setFlag`, this method never creates the field — if `sfFlags` is
+ *  absent the call is a no-op.
+ *
+ *  @param f  Bitmask of flags to clear.
+ *  @return `true` if the flags were cleared; `false` if `sfFlags` is absent.
+ */
 bool
 STObject::clearFlag(std::uint32_t f)
 {
@@ -497,12 +738,17 @@ STObject::clearFlag(std::uint32_t f)
     return true;
 }
 
+/** Returns `true` if all bits in `f` are set in `sfFlags`.
+ *
+ *  @param f  Bitmask to test.
+ */
 bool
 STObject::isFlag(std::uint32_t f) const
 {
     return (getFlags() & f) == f;
 }
 
+/** Return the raw value of `sfFlags`, or 0 if the field is absent. */
 std::uint32_t
 STObject::getFlags(void) const
 {
@@ -514,6 +760,19 @@ STObject::getFlags(void) const
     return t->value();
 }
 
+/** Transition a field from the `STI_NOTPRESENT` sentinel to a default-value
+ *  instance, making it logically present.
+ *
+ *  For templated objects the slot already exists; its `STVar` is replaced with
+ *  a default-constructed instance of the appropriate ST type.  For free
+ *  objects the field is appended as a non-present sentinel (the sentinel is
+ *  then replaced on first `set` or `setField*` call).
+ *
+ *  @param field  The SField to make present.
+ *  @return Pointer to the now-present field slot.
+ *  @throws std::runtime_error if the field does not exist in a templated
+ *      object.
+ */
 STBase*
 STObject::makeFieldPresent(SField const& field)
 {
@@ -536,6 +795,14 @@ STObject::makeFieldPresent(SField const& field)
     return getPIndex(index);
 }
 
+/** Transition a present field back to the `STI_NOTPRESENT` sentinel.
+ *
+ *  Only meaningful in templated mode where optional/default slots keep their
+ *  position in `v_`.  If the field is already absent this is a no-op.
+ *
+ *  @param field  The SField to make absent.
+ *  @throws std::runtime_error if `field` is not in the object at all.
+ */
 void
 STObject::makeFieldAbsent(SField const& field)
 {
@@ -551,6 +818,15 @@ STObject::makeFieldAbsent(SField const& field)
     v_[index] = detail::STVar(detail::gNonPresentObject, f.getFName());
 }
 
+/** Physically erase `field` from `v_` by SField.
+ *
+ *  This permanently removes the slot (shifts subsequent indices).  In
+ *  templated mode this invalidates the positional index assumptions; it is
+ *  intended only for free-mode objects or special-case cleanup.
+ *
+ *  @param field  The SField to remove.
+ *  @return `true` if the field was found and removed; `false` if absent.
+ */
 bool
 STObject::delField(SField const& field)
 {
@@ -563,78 +839,131 @@ STObject::delField(SField const& field)
     return true;
 }
 
+/** Physically erase the slot at `index` from `v_`.
+ *
+ *  @param index  Zero-based index into `v_`.
+ */
 void
 STObject::delField(int index)
 {
     v_.erase(v_.begin() + index);
 }
 
+/** Return the `SOEStyle` of `field` as declared in the active template.
+ *
+ *  Returns `SoeInvalid` when the object is in free mode (no template).
+ *
+ *  @param field  The SField to query.
+ */
 SOEStyle
 STObject::getStyle(SField const& field) const
 {
     return (type_ != nullptr) ? type_->style(field) : SoeInvalid;
 }
 
+// --- Typed field getters ---
+// All getters delegate to getFieldByValue<T> (returns by value, throws if the
+// field is absent and not optional) or getFieldByConstRef<T> (returns a const
+// reference to a function-local static empty value when the field is absent,
+// allowing safe access to optional fields without a prior isFieldPresent check).
+
+/** @return Value of `field` as `unsigned char`.
+ *  @throws std::runtime_error if absent or wrong type.
+ */
 unsigned char
 STObject::getFieldU8(SField const& field) const
 {
     return getFieldByValue<STUInt8>(field);
 }
 
+/** @return Value of `field` as `uint16_t`.
+ *  @throws std::runtime_error if absent or wrong type.
+ */
 std::uint16_t
 STObject::getFieldU16(SField const& field) const
 {
     return getFieldByValue<STUInt16>(field);
 }
 
+/** @return Value of `field` as `uint32_t`.
+ *  @throws std::runtime_error if absent or wrong type.
+ */
 std::uint32_t
 STObject::getFieldU32(SField const& field) const
 {
     return getFieldByValue<STUInt32>(field);
 }
 
+/** @return Value of `field` as `uint64_t`.
+ *  @throws std::runtime_error if absent or wrong type.
+ */
 std::uint64_t
 STObject::getFieldU64(SField const& field) const
 {
     return getFieldByValue<STUInt64>(field);
 }
 
+/** @return Value of `field` as `uint128`.
+ *  @throws std::runtime_error if absent or wrong type.
+ */
 uint128
 STObject::getFieldH128(SField const& field) const
 {
     return getFieldByValue<STUInt128>(field);
 }
 
+/** @return Value of `field` as `uint160`.
+ *  @throws std::runtime_error if absent or wrong type.
+ */
 uint160
 STObject::getFieldH160(SField const& field) const
 {
     return getFieldByValue<STUInt160>(field);
 }
 
+/** @return Value of `field` as `uint192`.
+ *  @throws std::runtime_error if absent or wrong type.
+ */
 uint192
 STObject::getFieldH192(SField const& field) const
 {
     return getFieldByValue<STUInt192>(field);
 }
 
+/** @return Value of `field` as `uint256`.
+ *  @throws std::runtime_error if absent or wrong type.
+ */
 uint256
 STObject::getFieldH256(SField const& field) const
 {
     return getFieldByValue<STUInt256>(field);
 }
 
+/** @return Value of `field` as `int32_t`.
+ *  @throws std::runtime_error if absent or wrong type.
+ */
 std::int32_t
 STObject::getFieldI32(SField const& field) const
 {
     return getFieldByValue<STInt32>(field);
 }
 
+/** @return The `AccountID` stored in `field`.
+ *  @throws std::runtime_error if absent or wrong type.
+ */
 AccountID
 STObject::getAccountID(SField const& field) const
 {
     return getFieldByValue<STAccount>(field);
 }
 
+/** Return the variable-length blob in `field` as a new `Blob`.
+ *
+ *  Returns an empty `Blob` when the optional field is absent.
+ *
+ *  @param field  Must be an `STBlob`-typed field.
+ *  @throws std::runtime_error if wrong type.
+ */
 Blob
 STObject::getFieldVL(SField const& field) const
 {
@@ -643,6 +972,13 @@ STObject::getFieldVL(SField const& field) const
     return Blob(b.data(), b.data() + b.size());
 }
 
+/** Return a const reference to the `STAmount` in `field`.
+ *
+ *  Returns a reference to a function-local static empty `STAmount` when the
+ *  optional field is absent, allowing callers to skip a presence check.
+ *
+ *  @param field  Must be an `STAmount`-typed field.
+ */
 STAmount const&
 STObject::getFieldAmount(SField const& field) const
 {
@@ -650,6 +986,12 @@ STObject::getFieldAmount(SField const& field) const
     return getFieldByConstRef<STAmount>(field, kEMPTY);
 }
 
+/** Return a const reference to the `STPathSet` in `field`.
+ *
+ *  Returns an empty path set when the optional field is absent.
+ *
+ *  @param field  Must be an `STPathSet`-typed field.
+ */
 STPathSet const&
 STObject::getFieldPathSet(SField const& field) const
 {
@@ -657,6 +999,12 @@ STObject::getFieldPathSet(SField const& field) const
     return getFieldByConstRef<STPathSet>(field, kEMPTY);
 }
 
+/** Return a const reference to the `STVector256` in `field`.
+ *
+ *  Returns an empty vector when the optional field is absent.
+ *
+ *  @param field  Must be an `STVector256`-typed field.
+ */
 STVector256 const&
 STObject::getFieldV256(SField const& field) const
 {
@@ -664,6 +1012,16 @@ STObject::getFieldV256(SField const& field) const
     return getFieldByConstRef<STVector256>(field, kEMPTY);
 }
 
+/** Return a copy of the inner `STObject` at `field`, with template applied.
+ *
+ *  Unlike the other const-ref getters, this returns by value.  If the field
+ *  is present, `applyTemplateFromSField` is called on the copy so the caller
+ *  receives a template-bound object even when the source was deserialized in
+ *  free mode.  If absent, returns an empty `STObject` constructed with `field`
+ *  as its name.
+ *
+ *  @param field  Must be an `STObject`-typed field.
+ */
 STObject
 STObject::getFieldObject(SField const& field) const
 {
@@ -674,6 +1032,12 @@ STObject::getFieldObject(SField const& field) const
     return ret;
 }
 
+/** Return a const reference to the `STArray` in `field`.
+ *
+ *  Returns an empty array when the optional field is absent.
+ *
+ *  @param field  Must be an `STArray`-typed field.
+ */
 STArray const&
 STObject::getFieldArray(SField const& field) const
 {
@@ -681,6 +1045,12 @@ STObject::getFieldArray(SField const& field) const
     return getFieldByConstRef<STArray>(field, kEMPTY);
 }
 
+/** Return a const reference to the `STCurrency` in `field`.
+ *
+ *  Returns an empty currency when the optional field is absent.
+ *
+ *  @param field  Must be an `STCurrency`-typed field.
+ */
 STCurrency const&
 STObject::getFieldCurrency(SField const& field) const
 {
@@ -688,6 +1058,12 @@ STObject::getFieldCurrency(SField const& field) const
     return getFieldByConstRef<STCurrency>(field, kEMPTY);
 }
 
+/** Return a const reference to the `STNumber` in `field`.
+ *
+ *  Returns an empty `STNumber` when the optional field is absent.
+ *
+ *  @param field  Must be an `STNumber`-typed field.
+ */
 STNumber const&
 STObject::getFieldNumber(SField const& field) const
 {
@@ -695,12 +1071,29 @@ STObject::getFieldNumber(SField const& field) const
     return getFieldByConstRef<STNumber>(field, kEMPTY);
 }
 
+/** Set a field by transferring ownership from a heap-allocated `STBase`.
+ *
+ *  Convenience overload that delegates to `set(STBase&&)`.
+ *
+ *  @param v  The field to set; must not be null.
+ */
 void
 STObject::set(std::unique_ptr<STBase> v)
 {
     set(std::move(*v.get()));
 }
 
+/** Set or replace a field by value.
+ *
+ *  If a slot for `v.getFName()` already exists in `v_`, it is replaced
+ *  in-place.  For free objects, if the field is not present it is appended.
+ *  For templated objects, unknown fields are rejected with
+ *  `std::runtime_error`.
+ *
+ *  @param v  The new field value; its `SField` identity determines the slot.
+ *  @throws std::runtime_error when in templated mode and the field is not
+ *      in the schema.
+ */
 void
 STObject::set(STBase&& v)
 {
@@ -717,120 +1110,156 @@ STObject::set(STBase&& v)
     }
 }
 
+// --- Typed field setters ---
+// Integer/bitstring setters delegate to setFieldUsingSetValue<T>, which calls
+// T::setValue().  Complex-type setters delegate to setFieldUsingAssignment<T>,
+// which uses T::operator=.  All setters make the field present if it currently
+// holds the STI_NOTPRESENT sentinel, and create it in free objects when absent.
+
+/** Set `field` to `v` (unsigned char). */
 void
 STObject::setFieldU8(SField const& field, unsigned char v)
 {
     setFieldUsingSetValue<STUInt8>(field, v);
 }
 
+/** Set `field` to `v` (uint16_t). */
 void
 STObject::setFieldU16(SField const& field, std::uint16_t v)
 {
     setFieldUsingSetValue<STUInt16>(field, v);
 }
 
+/** Set `field` to `v` (uint32_t). */
 void
 STObject::setFieldU32(SField const& field, std::uint32_t v)
 {
     setFieldUsingSetValue<STUInt32>(field, v);
 }
 
+/** Set `field` to `v` (uint64_t). */
 void
 STObject::setFieldU64(SField const& field, std::uint64_t v)
 {
     setFieldUsingSetValue<STUInt64>(field, v);
 }
 
+/** Set `field` to `v` (uint128). */
 void
 STObject::setFieldH128(SField const& field, uint128 const& v)
 {
     setFieldUsingSetValue<STUInt128>(field, v);
 }
 
+/** Set `field` to `v` (uint192). */
 void
 STObject::setFieldH192(SField const& field, uint192 const& v)
 {
     setFieldUsingSetValue<STUInt192>(field, v);
 }
 
+/** Set `field` to `v` (uint256). */
 void
 STObject::setFieldH256(SField const& field, uint256 const& v)
 {
     setFieldUsingSetValue<STUInt256>(field, v);
 }
 
+/** Set `field` to `v` (int32_t). */
 void
 STObject::setFieldI32(SField const& field, std::int32_t v)
 {
     setFieldUsingSetValue<STInt32>(field, v);
 }
 
+/** Set `field` to `v` (STVector256). */
 void
 STObject::setFieldV256(SField const& field, STVector256 const& v)
 {
     setFieldUsingSetValue<STVector256>(field, v);
 }
 
+/** Set `field` to `v` (AccountID). */
 void
 STObject::setAccountID(SField const& field, AccountID const& v)
 {
     setFieldUsingSetValue<STAccount>(field, v);
 }
 
+/** Set `field` to the contents of `v` (variable-length blob from Blob). */
 void
 STObject::setFieldVL(SField const& field, Blob const& v)
 {
     setFieldUsingSetValue<STBlob>(field, Buffer(v.data(), v.size()));
 }
 
+/** Set `field` to the contents of `s` (variable-length blob from Slice).
+ *
+ *  Copies the bytes from `s` into an owned `Buffer`.
+ */
 void
 STObject::setFieldVL(SField const& field, Slice const& s)
 {
     setFieldUsingSetValue<STBlob>(field, Buffer(s.data(), s.size()));
 }
 
+/** Set `field` to `v` (STAmount). */
 void
 STObject::setFieldAmount(SField const& field, STAmount const& v)
 {
     setFieldUsingAssignment(field, v);
 }
 
+/** Set `field` to `v` (STCurrency). */
 void
 STObject::setFieldCurrency(SField const& field, STCurrency const& v)
 {
     setFieldUsingAssignment(field, v);
 }
 
+/** Set `field` to `v` (STIssue). */
 void
 STObject::setFieldIssue(SField const& field, STIssue const& v)
 {
     setFieldUsingAssignment(field, v);
 }
 
+/** Set `field` to `v` (STNumber). */
 void
 STObject::setFieldNumber(SField const& field, STNumber const& v)
 {
     setFieldUsingAssignment(field, v);
 }
 
+/** Set `field` to `v` (STPathSet). */
 void
 STObject::setFieldPathSet(SField const& field, STPathSet const& v)
 {
     setFieldUsingAssignment(field, v);
 }
 
+/** Set `field` to `v` (STArray). */
 void
 STObject::setFieldArray(SField const& field, STArray const& v)
 {
     setFieldUsingAssignment(field, v);
 }
 
+/** Set `field` to `v` (STObject). */
 void
 STObject::setFieldObject(SField const& field, STObject const& v)
 {
     setFieldUsingAssignment(field, v);
 }
 
+/** Serialize this object to a JSON object.
+ *
+ *  Iterates `v_`, skipping `STI_NOTPRESENT` slots, and adds each present
+ *  field as `{ jsonName: field.getJson(options) }`.
+ *
+ *  @param options  Controls display format (e.g., human-readable amounts).
+ *  @return A `json::Value` of object type.
+ */
 json::Value
 STObject::getJson(JsonOptions options) const
 {
@@ -844,17 +1273,28 @@ STObject::getJson(JsonOptions options) const
     return ret;
 }
 
+/** Compare two STObjects for equality, considering only binary fields.
+ *
+ *  Non-binary fields (metadata, computed values whose `SField::isBinary()`
+ *  returns `false`) are excluded from comparison.  The algorithm is O(n²) by
+ *  design: for each binary field in `*this`, it searches all fields in `obj`
+ *  for a match.  The final check ensures the two sets have the same
+ *  cardinality, preventing a subset from comparing equal to a superset.
+ *
+ *  @note For a more efficient alternative when both objects share the same
+ *      template, use `isEquivalent()`.
+ *
+ *  @param obj  The object to compare against.
+ *  @return `true` if all binary fields match in both objects.
+ */
 bool
 STObject::operator==(STObject const& obj) const
 {
-    // This is not particularly efficient, and only compares data elements
-    // with binary representations
     int matches = 0;
     for (auto const& t1 : v_)
     {
         if ((t1->getSType() != STI_NOTPRESENT) && t1->getFName().isBinary())
         {
-            // each present field must have a matching field
             bool match = false;
             for (auto const& t2 : obj.v_)
             {
@@ -884,14 +1324,28 @@ STObject::operator==(STObject const& obj) const
     return fields == matches;
 }
 
+/** Serialize the object's fields into `s` in canonical field-code order.
+ *
+ *  Obtains a `fieldCode`-sorted view of present fields via `getSortedFields`,
+ *  then for each field:
+ *  - writes the field-type/ID header (`addFieldID`),
+ *  - writes the field value (`field->add(s)`),
+ *  - appends an end-of-object or end-of-array termination marker for nested
+ *    `STObject` and `STArray` fields.
+ *
+ *  The sort is mandatory for canonical binary encoding; two logically
+ *  identical objects must produce identical bytes regardless of insertion
+ *  order.
+ *
+ *  @param s            The serializer to append to.
+ *  @param whichFields  `WithAllFields` includes signing fields;
+ *      `OmitSigningFields` excludes them (used for signing hash computation).
+ */
 void
 STObject::add(Serializer& s, WhichFields whichFields) const
 {
-    // Depending on whichFields, signing fields are either serialized or
-    // not.  Then fields are added to the Serializer sorted by fieldCode.
     std::vector<STBase const*> const fields{getSortedFields(*this, whichFields)};
 
-    // insert sorted
     for (STBase const* const field : fields)
     {
         // When we serialize an object inside another object,
@@ -908,13 +1362,27 @@ STObject::add(Serializer& s, WhichFields whichFields) const
     }
 }
 
+/** Build a sorted, filtered view of the fields in `objToSort`.
+ *
+ *  Collects pointers to all present (non-`STI_NOTPRESENT`) fields whose
+ *  `SField::shouldInclude(bool)` returns `true` for the requested
+ *  `whichFields` mode, then sorts them ascending by `SField::fieldCodeMem`
+ *  (which encodes `(SerializedTypeID << 16) | fieldValue`).
+ *
+ *  This ordering is the canonical XRPL binary sort order.  Both
+ *  serialization (`add`) and duplicate detection (`set(SerialIter)`) rely on
+ *  it.
+ *
+ *  @param objToSort   The object whose fields are to be sorted.
+ *  @param whichFields Controls whether signing-only fields are included.
+ *  @return A vector of non-owning pointers in ascending `fieldCode` order.
+ */
 std::vector<STBase const*>
 STObject::getSortedFields(STObject const& objToSort, WhichFields whichFields)
 {
     std::vector<STBase const*> sf;
     sf.reserve(objToSort.getCount());
 
-    // Choose the fields that we need to sort.
     for (detail::STVar const& elem : objToSort.v_)
     {
         STBase const& base = elem.get();
@@ -925,7 +1393,6 @@ STObject::getSortedFields(STObject const& objToSort, WhichFields whichFields)
         }
     }
 
-    // Sort the fields by fieldCode.
     std::ranges::sort(sf, [](STBase const* lhs, STBase const* rhs) {
         return lhs->getFName().fieldCodeMem < rhs->getFName().fieldCodeMem;
     });

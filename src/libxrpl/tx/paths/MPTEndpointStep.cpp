@@ -1,3 +1,14 @@
+/** @file
+ *  Payment-path step for Multi-Party Token (MPT) strand endpoints.
+ *
+ *  Defines `MPTEndpointStep<TDerived>` and its two concrete specialisations,
+ *  `MPTEndpointPaymentStep` and `MPTEndpointOfferCrossingStep`. These handle
+ *  the source or destination edge of a payment strand when the asset in motion
+ *  is an MPT — the MPT counterpart to `XRPEndpointStep` and `DirectStepI`.
+ *  Factory function `makeMptEndpointStep` and the test utility
+ *  `test::mptEndpointStepEqual` are also defined here.
+ */
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
@@ -32,6 +43,24 @@
 
 namespace xrpl {
 
+/** CRTP base for the MPT strand-endpoint step.
+ *
+ *  Represents the first or last hop in a payment strand when the asset being
+ *  transferred is a Multi-Party Token.  One of `src_` or `dst_` must always be
+ *  the MPT issuer; two non-issuer accounts may never appear adjacent in the
+ *  same MPT step.
+ *
+ *  Two concrete specialisations exist in this translation unit:
+ *  `MPTEndpointPaymentStep` for normal payments and
+ *  `MPTEndpointOfferCrossingStep` for DEX offer crossing.  The distinction
+ *  is resolved once at construction time by `makeMptEndpointStep`; all
+ *  hot-path methods dispatch to the derived type through CRTP without virtual
+ *  overhead.
+ *
+ *  @tparam TDerived  Concrete subclass (`MPTEndpointPaymentStep` or
+ *      `MPTEndpointOfferCrossingStep`).  Must provide `maxPaymentFlow`,
+ *      `checkCreateMPT`, `verifyPrevStepDebtDirection`, and `check(ctx, sleSrc)`.
+ */
 template <class TDerived>
 class MPTEndpointStep : public StepImp<MPTAmount, MPTAmount, MPTEndpointStep<TDerived>>
 {
@@ -40,14 +69,26 @@ protected:
     AccountID const dst_;
     MPTIssue const mptIssue_;
 
-    // Charge transfer fees when the prev step redeems
+    /** Pointer to the immediately preceding step; null when this is the first.
+     *  Used to determine whether the previous step is redeeming, which triggers
+     *  the MPT transfer rate when the issuer is the source.
+     */
     Step const* const prevStep_ = nullptr;
     bool const isLast_;
-    // Direct payment between the holders
-    // Used by maxFlow's last step.
+    /** True when this step delivers MPT directly between two holders (neither
+     *  endpoint is the issuer) and there is no book step immediately before it.
+     *  Used in `check()` to apply holder-specific frozen and transfer rules.
+     */
     bool const isDirectBetweenHolders_ = false;
     beast::Journal const j_;
 
+    /** Per-pass result cache shared between `revImp` and `fwdImp`.
+     *
+     *  Written at the end of `revImp` and used by `fwdImp` as an upper bound
+     *  via `setCacheLimiting()`, preventing forward-pass rounding from
+     *  delivering more liquidity than the reverse pass determined was available.
+     *  Reset to zero via `resetCache()` whenever a pass returns dry.
+     */
     struct Cache
     {
         MPTAmount in;
@@ -67,29 +108,77 @@ protected:
 
     std::optional<Cache> cache_;
 
-    // Compute the maximum value that can flow from src->dst at
-    // the best available quality.
-    // return: first element is max amount that can flow,
-    //         second is the debt direction of the source w.r.t. the dst
+    /** Compute the maximum MPT amount that can flow from `src_` to `dst_`.
+     *
+     *  For a holder source, the limit is the holder's current balance.  For an
+     *  issuer source with no prior step, the limit is the issuer's available
+     *  liquidity.  For an issuer source that is the last step, the
+     *  `MaximumAmount` ceiling is returned and the preceding step is trusted to
+     *  constrain the flow; this allows `OutstandingAmount` to temporarily
+     *  overflow within a pass without blocking progress.
+     *
+     *  @param sb  Read-only ledger view.
+     *  @return  `{maxFlow, srcDebtDir}` where `srcDebtDir` is `Redeems` for a
+     *      holder source and `Issues` for an issuer source.
+     */
     [[nodiscard]] std::pair<MPTAmount, DebtDirection>
     maxPaymentFlow(ReadView const& sb) const;
 
-    // Compute srcQOut and dstQIn when the source redeems.
+    /** Compute `{srcQOut, dstQIn}` when the source is redeeming.
+     *
+     *  MPT has no per-trustline quality field, so `dstQIn` is always
+     *  `QUALITY_ONE`. `srcQOut` takes the maximum of `QUALITY_ONE` and the
+     *  previous step's `lineQualityIn`, which mirrors the IOU convention.
+     *
+     *  @param sb  Read-only ledger view.
+     *  @return  `{srcQOut, QUALITY_ONE}`.
+     */
     [[nodiscard]] std::pair<std::uint32_t, std::uint32_t>
     qualitiesSrcRedeems(ReadView const& sb) const;
 
-    // Compute srcQOut and dstQIn when the source issues.
+    /** Compute `{srcQOut, dstQIn}` when the source is issuing.
+     *
+     *  A transfer rate is applied to `srcQOut` only when the previous step is
+     *  redeeming; when it is issuing (always the case during offer crossing),
+     *  `srcQOut` is `QUALITY_ONE`.  `dstQIn` is always `QUALITY_ONE` because
+     *  MPT has no per-trustline quality field.
+     *
+     *  @param sb                    Read-only ledger view.
+     *  @param prevStepDebtDirection Debt direction of the immediately preceding
+     *      step; `Issues` when there is no previous step.
+     *  @return  `{srcQOut, QUALITY_ONE}`.
+     */
     [[nodiscard]] std::pair<std::uint32_t, std::uint32_t>
     qualitiesSrcIssues(ReadView const& sb, DebtDirection prevStepDebtDirection) const;
 
-    // Returns srcQOut, dstQIn
+    /** Dispatch to `qualitiesSrcRedeems` or `qualitiesSrcIssues`.
+     *
+     *  @param sb          Read-only ledger view.
+     *  @param srcDebtDir  Whether the source is redeeming or issuing.
+     *  @param strandDir   Pass direction; used to query the previous step's
+     *      cached debt direction during the forward pass.
+     *  @return  `{srcQOut, dstQIn}`.
+     */
     [[nodiscard]] std::pair<std::uint32_t, std::uint32_t>
     qualities(ReadView const& sb, DebtDirection srcDebtDir, StrandDirection strandDir) const;
 
+    /** Set `cache_` to zero amounts, preserving the given debt direction. */
     void
     resetCache(DebtDirection dir);
 
 private:
+    /** Construct from strand-build context.
+     *
+     *  Pre-computes `isDirectBetweenHolders_` from the strand topology so that
+     *  `check()` and the pass methods do not need to recompute it.  Asserts
+     *  that exactly one of `src` and `dst` is the MPT issuer.
+     *
+     *  @param ctx  Strand-build context providing topology flags, the previous
+     *      step pointer, and the journal.
+     *  @param src  Source account for this step.
+     *  @param dst  Destination account for this step.
+     *  @param mpt  The MPTID identifying the token being transferred.
+     */
     MPTEndpointStep(
         StrandContext const& ctx,
         AccountID const& src,
@@ -112,22 +201,28 @@ private:
     }
 
 public:
+    /** @return The source account for this step. */
     [[nodiscard]] AccountID const&
     src() const
     {
         return src_;
     }
+    /** @return The destination account for this step. */
     [[nodiscard]] AccountID const&
     dst() const
     {
         return dst_;
     }
+    /** @return The MPTID of the token being transferred. */
     [[nodiscard]] MPTID const&
     mptID() const
     {
         return mptIssue_.getMptID();
     }
 
+    /** @return The cached input amount from the most recent pass, or
+     *      `std::nullopt` if no pass has been executed yet.
+     */
     [[nodiscard]] std::optional<EitherAmount>
     cachedIn() const override
     {
@@ -136,6 +231,9 @@ public:
         return EitherAmount(cache_->in);
     }
 
+    /** @return The cached output amount from the most recent pass, or
+     *      `std::nullopt` if no pass has been executed yet.
+     */
     [[nodiscard]] std::optional<EitherAmount>
     cachedOut() const override
     {
@@ -144,27 +242,70 @@ public:
         return EitherAmount(cache_->out);
     }
 
+    /** @return `src_`, identifying this as a direct (non-book) step. */
     [[nodiscard]] std::optional<AccountID>
     directStepSrcAcct() const override
     {
         return src_;
     }
 
+    /** @return `{src_, dst_}` as the two accounts involved in this step. */
     [[nodiscard]] std::optional<std::pair<AccountID, AccountID>>
     directStepAccts() const override
     {
         return std::make_pair(src_, dst_);
     }
 
+    /** Return the debt direction of the source account.
+     *
+     *  During the forward pass, returns the direction cached from `revImp`
+     *  when available.  Otherwise derives it statically: `Issues` when
+     *  `src_` is the issuer, `Redeems` when `src_` is a holder.
+     *
+     *  @param sb   Read-only ledger view.
+     *  @param dir  Pass direction.
+     *  @return  `DebtDirection::Issues` or `DebtDirection::Redeems`.
+     */
     [[nodiscard]] DebtDirection
     debtDirection(ReadView const& sb, StrandDirection dir) const override;
 
+    /** Return the destination quality-in for this step.
+     *
+     *  MPT has no per-trustline quality field, so this always returns
+     *  `QUALITY_ONE`.
+     *
+     *  @param v  Read-only ledger view (unused).
+     *  @return   `QUALITY_ONE`.
+     */
     [[nodiscard]] std::uint32_t
     lineQualityIn(ReadView const& v) const override;
 
+    /** Compute an upper bound on the effective quality for strand sorting.
+     *
+     *  Calls `qualitiesSrcRedeems` or `qualitiesSrcIssues` depending on the
+     *  current debt direction, then builds a `Quality` from the ratio
+     *  `srcQOut / dstQIn` (see in-code comment for parameter order).
+     *
+     *  @param v           Read-only ledger view.
+     *  @param prevStepDir Debt direction of the preceding step.
+     *  @return  `{Quality upper bound, debt direction}`.
+     */
     [[nodiscard]] std::pair<std::optional<Quality>, DebtDirection>
     qualityUpperBound(ReadView const& v, DebtDirection dir) const override;
 
+    /** Execute the reverse pass: determine required input for a desired output.
+     *
+     *  Calls `maxPaymentFlow` and `qualities`, then either caps the flow at
+     *  `maxSrcToDst` (becoming the limiting node) or passes the requested
+     *  `out` through unchanged.  The result is written to `cache_` and the
+     *  transfer is journalled via `directSendNoFee` on the sandbox.
+     *
+     *  @param sb        Payment sandbox (mutable ledger view).
+     *  @param afView    Apply view (unused — placeholder for CRTP interface).
+     *  @param ofrsToRm  Offer-removal set (unused for MPT endpoint steps).
+     *  @param out       Desired output amount.
+     *  @return  `{actualIn, actualOut}`.
+     */
     std::pair<MPTAmount, MPTAmount>
     revImp(
         PaymentSandbox& sb,
@@ -172,6 +313,18 @@ public:
         boost::container::flat_set<uint256>& ofrsToRm,
         MPTAmount const& out);
 
+    /** Execute the forward pass: compute actual output for a given input.
+     *
+     *  Calls `maxPaymentFlow` and `qualities`, applies `setCacheLimiting` to
+     *  prevent rounding from exceeding reverse-pass liquidity, and journals the
+     *  transfer via `directSendNoFee`.
+     *
+     *  @param sb        Payment sandbox (mutable ledger view).
+     *  @param afView    Apply view (unused — placeholder for CRTP interface).
+     *  @param ofrsToRm  Offer-removal set (unused for MPT endpoint steps).
+     *  @param in        Available input amount.
+     *  @return  `{actualIn, actualOut}` taken from `cache_` after limiting.
+     */
     std::pair<MPTAmount, MPTAmount>
     fwdImp(
         PaymentSandbox& sb,
@@ -179,14 +332,53 @@ public:
         boost::container::flat_set<uint256>& ofrsToRm,
         MPTAmount const& in);
 
+    /** Validate that the forward pass is reproducible with the cached input.
+     *
+     *  Saves the current cache, re-executes `fwdImp` with `in`, then checks
+     *  that the new cache values are within `checkNear` of the saved values.
+     *  A `FlowException` during the re-execution is treated as a failure.
+     *  This is the payment engine's guard against strands that behave
+     *  non-deterministically.
+     *
+     *  @param sb     Payment sandbox.
+     *  @param afView Apply view.
+     *  @param in     Input amount used during the forward pass.
+     *  @return  `{valid, cachedOut}`.
+     */
     std::pair<bool, EitherAmount>
     validFwd(PaymentSandbox& sb, ApplyView& afView, EitherAmount const& in) override;
 
-    // Check for error, existing liquidity, and violations of auth/frozen
-    // constraints.
+    /** Perform structural validation common to payments and offer crossing.
+     *
+     *  Checks zero/equal accounts, source-account existence, frozen status,
+     *  path-loop detection via `seenBookOuts` and `seenDirectAssets`, and the
+     *  constraint that MPT may only appear as the first or last step of a
+     *  strand.  On success, delegates to the derived `check(ctx, sleSrc)` for
+     *  context-specific rules.
+     *
+     *  @param ctx  Strand-build context.
+     *  @return  `tesSUCCESS` or an appropriate error code.
+     */
     [[nodiscard]] TER
     check(StrandContext const& ctx) const;
 
+    /** Cap forward-pass results against the reverse-pass cache.
+     *
+     *  If the forward pass computes the same or less input than the cache, the
+     *  cache is updated directly.  A difference of exactly 1 unit is silently
+     *  corrected.  A larger difference within 1% is clamped to the cached
+     *  value.  A difference exceeding 1% is accepted but logged at `warn` level
+     *  so it can be investigated without blocking the transaction.
+     *
+     *  @param fwdIn        Forward-pass input.
+     *  @param fwdSrcToDst  Forward-pass intermediate amount.
+     *  @param fwdOut       Forward-pass output.
+     *  @param srcDebtDir   Debt direction of the source in this pass.
+     *
+     *  @note `cache_` must be populated (set by `revImp`) before this is
+     *      called; the NOLINTBEGIN comment in the implementation documents that
+     *      invariant.
+     */
     void
     setCacheLimiting(
         MPTAmount const& fwdIn,
@@ -194,12 +386,14 @@ public:
         MPTAmount const& fwdOut,
         DebtDirection srcDebtDir);
 
+    /** @return True if both steps have the same `src_`, `dst_`, and `mptIssue_`. */
     friend bool
     operator==(MPTEndpointStep const& lhs, MPTEndpointStep const& rhs)
     {
         return lhs.src_ == rhs.src_ && lhs.dst_ == rhs.dst_ && lhs.mptIssue_ == rhs.mptIssue_;
     }
 
+    /** @return True if the two steps are not equal. */
     friend bool
     operator!=(MPTEndpointStep const& lhs, MPTEndpointStep const& rhs)
     {
@@ -207,6 +401,11 @@ public:
     }
 
 protected:
+    /** Format a human-readable description of this step for logging.
+     *
+     *  @param name  Class name prefix string supplied by the derived type.
+     *  @return  Multi-line string of the form `"<name>:\nSrc: <src>\nDst: <dst>"`.
+     */
     std::string
     logStringImpl(char const* name) const
     {
@@ -238,7 +437,13 @@ private:
 // The rules for handling funds in these two cases are almost, but not
 // quite, the same.
 
-// Payment MPTEndpointStep class (not offer crossing).
+/** Concrete MPT endpoint step for normal (non-offer-crossing) payments.
+ *
+ *  Applies the full MPT authorization, frozen, `canTransfer`, and `canTrade`
+ *  rule set during `check()`.  `checkCreateMPT` is a no-op because the
+ *  destination's `MPToken` object must already exist for a payment; holders
+ *  cannot receive MPT without first holding it.
+ */
 class MPTEndpointPaymentStep : public MPTEndpointStep<MPTEndpointPaymentStep>
 {
 public:
@@ -261,18 +466,32 @@ public:
         return true;
     }
 
-    // Verify the consistency of the step.  These checks are specific to
-    // payments and assume that general checks were already performed.
+    /** Apply payment-specific validation after the shared structural checks.
+     *
+     *  Enforces authorization (`requireAuth`), frozen status, `canTransfer`
+     *  for direct holder-to-holder payments, and `canTrade` for cross-token
+     *  payments routed through the DEX.  Also short-circuits with
+     *  `tecPATH_DRY` when this is the first step and the source holds no
+     *  balance.
+     *
+     *  @param ctx     Strand-build context.
+     *  @param sleSrc  Source account SLE (pre-read by the base `check`).
+     *  @return  `tesSUCCESS` or an appropriate error code.
+     */
     [[nodiscard]] TER
     check(StrandContext const& ctx, std::shared_ptr<const SLE> const& sleSrc) const;
 
+    /** @return Log string prefixed with `"MPTEndpointPaymentStep"`. */
     [[nodiscard]] std::string
     logString() const override
     {
         return logStringImpl("MPTEndpointPaymentStep");
     }
 
-    // Not applicable for payment
+    /** No-op: MPToken creation is not applicable for payments.
+     *
+     *  @return Always `tesSUCCESS`.
+     */
     static TER
     checkCreateMPT(ApplyView&, DebtDirection)
     {
@@ -280,7 +499,17 @@ public:
     }
 };
 
-// Offer crossing MPTEndpointStep class (not a payment).
+/** Concrete MPT endpoint step for DEX offer crossing.
+ *
+ *  Defers all MPT authorization and frozen checks until `checkCreateMPT`,
+ *  so `check()` unconditionally returns `tesSUCCESS`.  This is safe because
+ *  the book step that precedes this step always issues, and the checks are
+ *  performed atomically at crossing time rather than at strand-build time.
+ *
+ *  @note During offer crossing, `BookStep::debtDirection()` always returns
+ *      `Issues`; `verifyPrevStepDebtDirection` asserts this invariant so
+ *      callers are warned if that assumption ever changes.
+ */
 class MPTEndpointOfferCrossingStep : public MPTEndpointStep<MPTEndpointOfferCrossingStep>
 {
 public:
@@ -309,18 +538,34 @@ public:
         return issues(prevStepDir);
     }
 
-    // Verify the consistency of the step.  These checks are specific to
-    // offer crossing and assume that general checks were already performed.
+    /** No-op for offer crossing: authorization checks are deferred to
+     *  `checkCreateMPT` and executed atomically at crossing time.
+     *
+     *  @return Always `tesSUCCESS`.
+     */
     static TER
     check(StrandContext const& ctx, std::shared_ptr<const SLE> const& sleSrc);
 
+    /** @return Log string prefixed with `"MPTEndpointOfferCrossingStep"`. */
     [[nodiscard]] std::string
     logString() const override
     {
         return logStringImpl("MPTEndpointOfferCrossingStep");
     }
 
-    // Can be created in rev or fwd (if limiting step) direction.
+    /** Lazily create the offer owner's `MPToken` object during crossing.
+     *
+     *  Called from both `revImp` and `fwdImp` (when this is the limiting
+     *  step).  If `isLast_` is true (i.e. this step represents TakerPays),
+     *  calls `xrpl::checkCreateMPT` to create the object for `dst_` if it
+     *  does not yet exist.  The reserve check is intentionally waived because
+     *  the offer never goes on the books when it crosses — `CreateOffer::applyGuts()`
+     *  handles reserve separately.
+     *
+     *  @param view        Mutable apply view for ledger object creation.
+     *  @param srcDebtDir  Debt direction passed to `resetCache` on failure.
+     *  @return  `tesSUCCESS`, or the error from `xrpl::checkCreateMPT`.
+     */
     TER
     checkCreateMPT(ApplyView& view, DebtDirection srcDebtDir);
 };
@@ -898,6 +1143,20 @@ MPTEndpointStep<TDerived>::resetCache(xrpl::DebtDirection dir)
 
 //------------------------------------------------------------------------------
 
+/** Factory that constructs the appropriate MPT endpoint step.
+ *
+ *  Dispatches on `ctx.offerCrossing` to instantiate either
+ *  `MPTEndpointOfferCrossingStep` or `MPTEndpointPaymentStep`, immediately
+ *  runs `check()` on the new instance, and returns a null pointer if any
+ *  check fails.
+ *
+ *  @param ctx  Strand-build context (provides `offerCrossing`, topology flags,
+ *      the ledger view, and the journal).
+ *  @param src  Source account.
+ *  @param dst  Destination account.
+ *  @param mpt  MPTID of the token being transferred.
+ *  @return  `{tesSUCCESS, step}` on success, or `{ter, nullptr}` on failure.
+ */
 std::pair<TER, std::unique_ptr<Step>>
 makeMptEndpointStep(
     StrandContext const& ctx,
@@ -926,7 +1185,21 @@ makeMptEndpointStep(
 }
 
 namespace test {
-// Needed for testing
+
+/** Test utility: structurally compare a `Step` to an expected MPT endpoint.
+ *
+ *  Downcasts `step` to `MPTEndpointStep<MPTEndpointPaymentStep>` and checks
+ *  that `src`, `dst`, and `mptid` match.  Returns `false` for offer-crossing
+ *  steps and non-MPT steps, which is sufficient for strand-composition tests
+ *  that always construct payment steps.
+ *
+ *  @param step    Step to inspect.
+ *  @param src     Expected source account.
+ *  @param dst     Expected destination account.
+ *  @param mptid   Expected MPTID.
+ *  @return  True if `step` is a payment MPT endpoint step with the given
+ *      accounts and token.
+ */
 bool
 mptEndpointStepEqual(
     Step const& step,

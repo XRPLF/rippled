@@ -1,3 +1,20 @@
+/** @file
+ *  Strand construction layer of the XRPL payment engine.
+ *
+ *  Bridges the raw `STPathSet` embedded in a transaction to the executable
+ *  `Strand` representation consumed by the inner flow engine (`StrandFlow.h`).
+ *  A `Strand` is a `std::vector<std::unique_ptr<Step>>`, where each `Step`
+ *  encodes one hop: an account-to-account IOU ripple, an order-book crossing,
+ *  or an XRP/MPT endpoint.
+ *
+ *  Public surface: `toStrands` (called by `Flow.cpp`) → `toStrand` per path
+ *  → file-local `toStep` per element pair.  Everything below `toStrands` is
+ *  internal to this translation unit.
+ *
+ *  @see Steps.h   — `Step` interface, `Strand` type alias, and factory declarations.
+ *  @see Flow.cpp  — caller of `toStrands`; drives the multi-strand flow engine.
+ *  @see StrandFlow.h — multi-strand execution engine that consumes the strands built here.
+ */
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
@@ -31,7 +48,24 @@
 
 namespace xrpl {
 
-// Check equal with tolerance
+/** Check whether two `IOUAmount` values are equal within floating-point tolerance.
+ *
+ *  IOU amounts use a mantissa/exponent representation.  Accumulated rounding
+ *  across a multi-hop strand means that the forward-pass result and the cached
+ *  reverse-pass result may differ by a small fraction even when they are
+ *  logically equal.  This function accepts a relative tolerance of 0.1%
+ *  (`ratTol = 0.001`) and requires exponents to differ by at most 1.  When
+ *  `actual.exponent() < -20`, any `expected` value is accepted because
+ *  rounding at extreme scale makes exact equality meaningless.
+ *
+ *  Mantissa alignment: when exponents differ by 1, the mantissa of the
+ *  value with the smaller exponent is divided by 10 before comparison, so
+ *  both mantissas are expressed at the same scale.
+ *
+ *  @param expected  Value computed by the reverse pass.
+ *  @param actual    Value computed by the forward pass.
+ *  @return `true` if the values are within tolerance; `false` otherwise.
+ */
 bool
 checkNear(IOUAmount const& expected, IOUAmount const& actual)
 {
@@ -54,6 +88,12 @@ checkNear(IOUAmount const& expected, IOUAmount const& actual)
     return r <= ratTol;
 };
 
+/** Return true if @p pe is an account-type path element whose account ID is the XRP root.
+ *
+ *  Used by `toStep` to detect the XRP bridge account that separates the
+ *  input side of a strand from the output side, signalling that an
+ *  `XRPEndpointStep` should be created for the destination account.
+ */
 static bool
 isXRPAccount(STPathElement const& pe)
 {
@@ -62,6 +102,40 @@ isXRPAccount(STPathElement const& pe)
     return isXRP(pe.getAccountID());
 };
 
+/** Construct a single `Step` from an adjacent pair of normalised path elements.
+ *
+ *  Dispatches to the appropriate `make_*` factory based on the topology of
+ *  the hop encoded by `(e1, e2)` and the asset flowing into this hop:
+ *
+ *  - **XRP source endpoint** (`ctx.isFirst`, `e1` is an account with an XRP
+ *    currency flag): creates an `XRPEndpointStep` for the sending account.
+ *  - **XRP destination endpoint** (`ctx.isLast`, `e1` is the XRP bridge account,
+ *    `e2` is a regular account): creates an `XRPEndpointStep` for the receiving
+ *    account.
+ *  - **MPT endpoint** (both elements are accounts and `curAsset` is an `MPTIssue`):
+ *    creates an `MPTEndpointStep`.  This handles three sub-cases:
+ *    1. Direct issuer↔holder payment (one step).
+ *    2. Holder-to-holder payment via the issuer (two steps: holder→issuer→holder1).
+ *    3. Cross-token payment where the MPT side appears as the first or last step
+ *       only; if the destination is the issuer the last step is a `BookStep`.
+ *    In all cases `e1`/`e2` are account nodes and `curAsset` is MPT.
+ *  - **IOU direct step** (both elements are accounts and `curAsset` is an `Issue`):
+ *    creates a `DirectStepI` (rippling over a shared trust line).
+ *  - **Book step** (`e2` is an offer node): one of eight typed factories selected
+ *    by the `(curAsset, outAsset)` combination, using the naming convention
+ *    `I`=IOU, `X`=XRP, `M`=MPT.  XRP→XRP is explicitly rejected (`temBAD_PATH`).
+ *
+ *  The offer/account pair `(e1 offer, e2 account)` is dead after normalisation
+ *  and triggers an `UNREACHABLE` if reached.
+ *
+ *  @param ctx       Construction context; carries loop-detection state and flags.
+ *  @param e1        First element of the pair (current node).
+ *  @param e2        Second element of the pair (next node).
+ *  @param curAsset  Asset flowing into this hop, updated by the caller as the
+ *      loop advances through `normPath`.
+ *  @return Pair of (TER, Step).  TER is `tesSUCCESS` on success; `temBAD_PATH`
+ *      for an XRP/XRP book hop or an unreachable offer/account pair.
+ */
 static std::pair<TER, std::unique_ptr<Step>>
 toStep(
     StrandContext const& ctx,
@@ -79,21 +153,6 @@ toStep(
 
     if (ctx.isLast && isXRPAccount(*e1) && e2->isAccount())
         return makeXrpEndpointStep(ctx, e2->getAccountID());
-
-    // MPTEndpointStep is created in following cases:
-    // 1 Direct payment between an issuer and a holder
-    //   e1 is issuer and e2 is holder or vise versa
-    //   There is only one step in this case: holder->issuer or
-    //   issuer->holder
-    // 2 Direct payment between the holders
-    //   e1 is issuer and e2 is holder or vise versa
-    //   There are two steps in this case: holder->issuer->holder1
-    // 3 Cross-token payment with Amount or SendMax or both MPT
-    //   If destination is an issuer then the last step is BookStep,
-    //   otherwise the last step is MPTEndpointStep where e1 is
-    //   the issuer and e2 is the holder.
-    // In all cases MPTEndpointStep is always first or last step,
-    // e1/e2 are always account types, and curAsset is always MPT.
 
     if (e1->isAccount() && e2->isAccount())
     {
@@ -588,7 +647,6 @@ toStrands(
 {
     std::vector<Strand> result;
     result.reserve(1 + paths.size());
-    // Insert the strand into result if it is not already part of the vector
     auto insert = [&](Strand s) {
         bool const hasStrand = std::ranges::find(result, s) != result.end();
 
@@ -686,8 +744,6 @@ toStrands(
 StrandContext::StrandContext(
     ReadView const& view,
     std::vector<std::unique_ptr<Step>> const& strand,
-    // A strand may not include an inner node that
-    // replicates the source or destination.
     AccountID const& strandSrc,
     AccountID const& strandDst,
     Asset const& strandDeliver,

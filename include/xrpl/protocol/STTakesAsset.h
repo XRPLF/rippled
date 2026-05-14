@@ -5,28 +5,48 @@
 
 namespace xrpl {
 
-/** Intermediate class for any STBase-derived class to store an Asset.
+/** Mixin base that lets a serializable field receive an `Asset` at runtime.
  *
- * In the class definition, this class should be specified as a base class
- * _instead_ of STBase.
+ *  Derived classes inherit from `STTakesAsset` _instead of_ `STBase` when
+ *  they store a numeric quantity whose precision depends on the enclosing
+ *  ledger entry's asset type (XRP, IOU, or MPT). The asset identity is
+ *  already present in the containing ledger object and must not be duplicated
+ *  in each field; `STTakesAsset` carries it at runtime without serializing it.
  *
- * Specifically, the Asset is only stored and used at runtime. It should not be
- * serialized to the ledger.
+ *  The only current concrete user is `STNumber`, which overrides
+ *  `associateAsset()` to round its stored `Number` to the asset's canonical
+ *  precision immediately upon association and again during serialization.
  *
- * The derived class decides what to do with the Asset, and when. It will not
- * necessarily be set at any given time. As of this writing, only STNumber uses
- * it to round the stored Number to the Asset's precision both when associated,
- * and when serializing the Number.
+ *  @note `asset_` is intentionally `std::optional`: during deserialization from
+ *      disk no transactor context is available, so no asset can be supplied.
+ *      The value still round-trips correctly because it was already rounded when
+ *      originally written.
+ *  @see STNumber, associateAsset(STLedgerEntry&, Asset const&)
  */
 class STTakesAsset : public STBase
 {
 protected:
+    /** Runtime asset identity used for precision rounding.
+     *
+     *  Absent (`std::nullopt`) on the deserialization path; set by a call to
+     *  `associateAsset()` inside `doApply()` before the SLE is serialized.
+     */
     std::optional<Asset> asset_;
 
 public:
     using STBase::STBase;
     using STBase::operator=;
 
+    /** Record @p a as the asset governing this field's precision.
+     *
+     *  The base implementation stores @p a in `asset_` via `emplace` and
+     *  returns. Derived classes override this method to act on the asset
+     *  immediately — for example, `STNumber` also rounds its stored value to
+     *  the asset's canonical precision.
+     *
+     *  @param a The asset to associate. Must be the same asset used by all
+     *      other `sMD_NeedsAsset`-flagged fields in the enclosing SLE.
+     */
     virtual void
     associateAsset(Asset const& a);
 };
@@ -39,20 +59,26 @@ STTakesAsset::associateAsset(Asset const& a)
 
 class STLedgerEntry;
 
-/** Associate an Asset with all sMD_NeedsAsset fields in a ledger entry.
+/** Associate an asset with every `sMD_NeedsAsset`-flagged field in @p sle.
  *
- * This function iterates over all fields in the given ledger entry. For each
- * field that is set and has the SField::sMD_NeedsAsset metadata flag, it calls
- * `associateAsset` on that field with the given Asset. Such field must be
- * derived from STTakesAsset - if it is not, the conversion will throw.
+ *  Iterates over all fields in @p sle by offset (the only path that yields
+ *  mutable `STBase&` references). For each field that is present and carries
+ *  `SField::kSMD_NEEDS_ASSET`, calls `associateAsset(asset)` on it, triggering
+ *  derived-class rounding logic (e.g., `STNumber` rounds to the asset's
+ *  canonical precision). After rounding, any `soeDEFAULT`-style field whose
+ *  value has become the default (e.g., rounded down to zero) is removed from
+ *  the SLE via `makeFieldAbsent` so that zero defaults are not persisted in the
+ *  ledger.
  *
- * Typically, associateAsset should be called near the end of doApply() of any
- * Transactor classes on the SLEs of any new or modified ledger entries
- * containing STNumber fields, after doing all of the modifications t the SLEs.
+ *  Call this near the end of `doApply()` in any transactor that creates or
+ *  modifies an SLE containing `STNumber` fields, after all other mutations to
+ *  the SLE are complete. Rounding before computations finish may distort
+ *  intermediate values.
  *
- * @param sle The ledger entry whose fields will be updated.
- * @param asset The Asset to associate with the relevant fields.
- *
+ *  @param sle   The ledger entry whose `sMD_NeedsAsset` fields will be updated.
+ *  @param asset The asset that governs precision for all such fields in @p sle.
+ *  @throws std::bad_cast if any field carrying `kSMD_NEEDS_ASSET` is not
+ *      derived from `STTakesAsset` — this indicates a field schema error.
  */
 void
 associateAsset(STLedgerEntry& sle, Asset const& asset);

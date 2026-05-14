@@ -1,3 +1,13 @@
+/** @file
+ *  Single authoritative registry mapping every TER code to its symbolic token
+ *  and human-readable description.
+ *
+ *  This file is a runtime-lookup companion to the compile-time enum
+ *  definitions in TER.h. Its data is consumed by logging, RPC responses, and
+ *  reverse-parsing tools that need to convert between integer codes and their
+ *  string representations.
+ */
+
 #include <xrpl/protocol/TER.h>
 
 #include <boost/range/adaptor/transformed.hpp>
@@ -10,13 +20,30 @@
 
 namespace xrpl {
 
+/** Return the complete map of every known TER code to its token and description.
+ *
+ *  The map is keyed by the underlying integer value of each TER code and maps
+ *  to a pair of C-string literals: the symbolic token (e.g., `"tecNO_DST"`)
+ *  and the English description. Token strings are derived directly from each
+ *  enum identifier via preprocessor stringification (`#code`), so they cannot
+ *  diverge from the actual enum name.
+ *
+ *  Implemented as a Meyers singleton (function-local static): initialized
+ *  exactly once on first call, thread-safe per the C++11 standard, and
+ *  immutable thereafter. Both the map and its string values are `const`.
+ *
+ *  @return A `const` reference to the singleton registry map. The reference
+ *      remains valid for the lifetime of the process.
+ *  @note `temUNCERTAIN` and `temUNKNOWN` are registered here as sentinel
+ *      codes that represent intermediate engine states; they should never be
+ *      returned to callers, but their presence ensures readable output if they
+ *      appear in logs.
+ */
 std::unordered_map<TERUnderlyingType, std::pair<char const* const, char const* const>> const&
 transResults()
 {
     // clang-format off
 
-    // Macros are generally ugly, but they can help make code readable to
-    // humans without affecting the compiler.
 #define MAKE_ERROR(code, desc) { code, { #code, desc } }
 
     static
@@ -226,6 +253,19 @@ transResults()
     return kRESULTS;
 }
 
+/** Look up the token and human-readable description for a TER code.
+ *
+ *  Extracts the underlying integer from `code`, performs a hash-map lookup
+ *  against the registry returned by `transResults()`, and populates the
+ *  out-parameters on success.
+ *
+ *  @param code  The TER result code to look up.
+ *  @param token On success, set to the symbolic token string (e.g.,
+ *      `"tecNO_DST"`). Unchanged on failure.
+ *  @param text  On success, set to the English description string. Unchanged
+ *      on failure.
+ *  @return `true` if `code` is a known registered code; `false` otherwise.
+ */
 bool
 transResultInfo(TER code, std::string& token, std::string& text)
 {
@@ -241,6 +281,12 @@ transResultInfo(TER code, std::string& token, std::string& text)
     return true;
 }
 
+/** Return the symbolic token string for a TER code.
+ *
+ *  @param code The TER result code to look up.
+ *  @return The token string (e.g., `"tecNO_DST"`) for known codes, or `"-"`
+ *      if `code` is not in the registry.
+ */
 std::string
 transToken(TER code)
 {
@@ -250,6 +296,12 @@ transToken(TER code)
     return transResultInfo(code, token, text) ? token : "-";
 }
 
+/** Return the human-readable description for a TER code.
+ *
+ *  @param code The TER result code to look up.
+ *  @return The English description string for known codes, or `"-"` if `code`
+ *      is not in the registry.
+ */
 std::string
 transHuman(TER code)
 {
@@ -259,6 +311,20 @@ transHuman(TER code)
     return transResultInfo(code, token, text) ? text : "-";
 }
 
+/** Convert a symbolic token string to the corresponding TER code.
+ *
+ *  Provides the reverse direction of `transToken()`. The reverse map is built
+ *  lazily as a function-local static on the first call by inverting the
+ *  primary registry from `transResults()` using a Boost range adaptor; the
+ *  two maps are therefore guaranteed to stay in sync.
+ *
+ *  @param token The symbolic token string to look up (e.g., `"tecNO_DST"`).
+ *  @return The corresponding `TER` wrapped in `std::optional`, or
+ *      `std::nullopt` if `token` is not a recognized code name.
+ *  @note The returned `TER` is reconstructed via `TER::fromInt()`, bypassing
+ *      the type-checking constructors, because the integer originates from the
+ *      validated primary registry.
+ */
 std::optional<TER>
 transCode(std::string const& token)
 {

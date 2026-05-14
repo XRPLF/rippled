@@ -36,6 +36,16 @@
 #include <utility>
 #include <variant>
 
+/** @file
+ *  Implements the `account_tx` JSON-RPC handler, which retrieves all
+ *  transactions that affected a specific account over an optional ledger range,
+ *  with cursor-based pagination for large result sets.
+ *
+ *  The implementation is split into five focused functions:
+ *  `parseLedgerArgs`, `getLedgerRange`, `doAccountTxHelp`,
+ *  `populateJsonResponse`, and the public entry point `doAccountTx`.
+ */
+
 namespace xrpl {
 
 using TxnsData = RelationalDatabase::AccountTxs;
@@ -45,13 +55,31 @@ using AccountTxArgs = RelationalDatabase::AccountTxArgs;
 using AccountTxResult = RelationalDatabase::AccountTxResult;
 using LedgerSpecifier = RelationalDatabase::LedgerSpecifier;
 
-// parses args into a ledger specifier, or returns a Json object on error
+/** Parse ledger selection fields from a request into a `LedgerSpecifier`.
+ *
+ *  Translates raw JSON `params` into a `LedgerSpecifier` variant that
+ *  uniformly represents any supported ledger or ledger-range selector.
+ *  Priority order is: `ledger_index_min`/`ledger_index_max` range →
+ *  `ledger_hash` → `ledger_index` → absent (returns `std::nullopt`).
+ *
+ *  At API version 2+, combining a min/max range with a single-ledger
+ *  identifier (`ledger_hash` or `ledger_index`) is an `rpcINVALID_PARAMS`
+ *  error. In API v1, this combination was silently tolerated.
+ *
+ *  Negative values for `ledger_index_min` default to `0` (earliest),
+ *  and negative `ledger_index_max` defaults to `UINT32_MAX` (latest),
+ *  following the long-standing XRPL convention that `-1` means "unbounded".
+ *
+ *  @param context The RPC dispatch context; used for `apiVersion`.
+ *  @param params  The raw JSON request parameters object.
+ *  @return On success, an `optional<LedgerSpecifier>` — empty optional
+ *      when no ledger field was supplied. On error, a `json::Value`
+ *      containing an injected RPC error.
+ */
 std::variant<std::optional<LedgerSpecifier>, json::Value>
 parseLedgerArgs(RPC::Context& context, json::Value const& params)
 {
     json::Value response;
-    // if ledger_index_min or max is specified, then ledger_hash or ledger_index
-    // should not be specified. Error out if it is
     if (context.apiVersion > 1u)
     {
         if ((params.isMember(jss::ledger_index_min) || params.isMember(jss::ledger_index_max)) &&
@@ -129,6 +157,27 @@ parseLedgerArgs(RPC::Context& context, json::Value const& params)
     return std::optional<LedgerSpecifier>{};
 }
 
+/** Resolve an optional `LedgerSpecifier` to a concrete validated ledger range.
+ *
+ *  Queries the node's validated ledger window and intersects it with the
+ *  caller-supplied specifier. When no specifier is given the full validated
+ *  range is returned.
+ *
+ *  Error behaviour differs by API version:
+ *  - If the node has no validated range: v1 returns `rpcLGR_IDXS_INVALID`;
+ *    v2+ returns `rpcNOT_SYNCED`.
+ *  - For a range specifier that extends beyond the validated window: v1
+ *    silently clamps; v2+ returns `rpcLGR_IDX_MALFORMED` to prevent clients
+ *    from unknowingly querying incomplete data.
+ *  - For a single-ledger specifier (hash, sequence, or shortcut) that is
+ *    unvalidated or outside the window: returns `rpcLGR_NOT_VALIDATED`.
+ *
+ *  @param context         The RPC dispatch context; used for `apiVersion`
+ *      and `ledgerMaster`.
+ *  @param ledgerSpecifier The parsed ledger selector, or `std::nullopt` to
+ *      request the full validated range.
+ *  @return Either the resolved `LedgerRange` or an `RPC::Status` error.
+ */
 std::variant<LedgerRange, RPC::Status>
 getLedgerRange(RPC::Context& context, std::optional<LedgerSpecifier> const& ledgerSpecifier)
 {
@@ -138,7 +187,6 @@ getLedgerRange(RPC::Context& context, std::optional<LedgerSpecifier> const& ledg
 
     if (!bValidated)
     {
-        // Don't have a validated ledger range.
         if (context.apiVersion == 1)
             return RpcLgrIdxsInvalid;
         return RpcNotSynced;
@@ -146,7 +194,6 @@ getLedgerRange(RPC::Context& context, std::optional<LedgerSpecifier> const& ledg
 
     std::uint32_t uLedgerMin = uValidatedMin;
     std::uint32_t uLedgerMax = uValidatedMax;
-    // Does request specify a ledger or ledger range?
     if (ledgerSpecifier)
     {
         auto status = std::visit(
@@ -154,9 +201,6 @@ getLedgerRange(RPC::Context& context, std::optional<LedgerSpecifier> const& ledg
                 using T = std::decay_t<decltype(ls)>;
                 if constexpr (std::is_same_v<T, LedgerRange>)
                 {
-                    // if ledger_index_min or ledger_index_max is out of
-                    // valid ledger range, error out. exclude -1 as
-                    // it is a valid input
                     if (context.apiVersion > 1u)
                     {
                         if ((ls.max > uValidatedMax && ls.max != -1) ||
@@ -208,6 +252,29 @@ getLedgerRange(RPC::Context& context, std::optional<LedgerSpecifier> const& ledg
     return LedgerRange{.min = uLedgerMin, .max = uLedgerMax};
 }
 
+/** Execute an `account_tx` database query from parsed arguments.
+ *
+ *  Sets the resource load class to `feeMediumBurdenRPC`, resolves the ledger
+ *  range via `getLedgerRange`, then dispatches to one of four `RelationalDatabase`
+ *  page methods depending on `(binary, forward)`:
+ *
+ *  | binary | forward | Method                    |
+ *  |--------|---------|---------------------------|
+ *  | false  | false   | `newestAccountTxPage()`   |
+ *  | false  | true    | `oldestAccountTxPage()`   |
+ *  | true   | false   | `newestAccountTxPageB()`  |
+ *  | true   | true    | `oldestAccountTxPageB()`  |
+ *
+ *  The `B`-suffixed variants return raw `(tx_blob, meta_blob, ledger_seq)`
+ *  tuples, avoiding object deserialization for binary callers such as indexers.
+ *
+ *  @param context The RPC dispatch context.
+ *  @param args    Parsed request fields: account, optional ledger specifier,
+ *      binary flag, forward flag, limit, and optional pagination marker.
+ *  @return A pair of `AccountTxResult` (filled on success) and an
+ *      `RPC::Status`. On ledger-range error the result is empty and the
+ *      status carries the relevant error code.
+ */
 std::pair<AccountTxResult, RPC::Status>
 doAccountTxHelp(RPC::Context& context, AccountTxArgs const& args)
 {
@@ -218,7 +285,6 @@ doAccountTxHelp(RPC::Context& context, AccountTxArgs const& args)
     auto lgrRange = getLedgerRange(context, args.ledger);
     if (auto stat = std::get_if<RPC::Status>(&lgrRange))
     {
-        // An error occurred getting the requested ledger range
         return {result, *stat};
     }
 
@@ -272,6 +338,39 @@ doAccountTxHelp(RPC::Context& context, AccountTxArgs const& args)
     return {result, RpcSuccess};
 }
 
+/** Serialize an `account_tx` query result into the final JSON response.
+ *
+ *  On error, injects the `RPC::Status` error code into the response and
+ *  returns immediately. On success, serializes each transaction entry and
+ *  applies four enrichment passes in order:
+ *
+ *  1. `RPC::insertDeliverMax()` — adds `DeliverMax` for payment transactions.
+ *  2. `insertDeliveredAmount()` — adds `delivered_amount` to metadata for
+ *     successful payments and check-cash transactions; falls back to the
+ *     transaction `Amount` field, or `"unavailable"` for pre-metadata history.
+ *  3. `RPC::insertNFTSyntheticInJson()` — synthesizes NFT fields from
+ *     metadata added after the original NFT amendments.
+ *  4. `RPC::insertMPTokenIssuanceID()` — injects `mpt_issuance_id` for
+ *     successful `MPTokenIssuanceCreate` transactions.
+ *
+ *  API version differences in JSON output:
+ *  - v1: transaction key is `tx`; metadata key is `meta`.
+ *  - v2+: transaction key is `tx_json` with `JsonOptions::disable_API_prior_V2`;
+ *    `hash`, `ledger_index`, `ledger_hash`, and `close_time_iso` are promoted
+ *    to the top-level entry; metadata key is `meta_blob` for binary results.
+ *
+ *  @note The `UNREACHABLE` macro on the missing-metadata branch documents a
+ *      developer-facing invariant: a valid transaction without metadata
+ *      indicates database corruption and should never occur at runtime.
+ *
+ *  @param res     The result pair from `doAccountTxHelp`.
+ *  @param args    The original parsed request arguments; used for the
+ *      `binary` flag assertion.
+ *  @param context The RPC JSON dispatch context; used for `apiVersion`,
+ *      `ledgerMaster`, and logging.
+ *  @return A fully-formed JSON response object suitable for returning to the
+ *      client.
+ */
 json::Value
 populateJsonResponse(
     std::pair<AccountTxResult, RPC::Status> const& res,
@@ -377,16 +476,38 @@ populateJsonResponse(
     return response;
 }
 
-// {
-//   account: account,
-//   ledger_index_min: ledger_index  // optional, defaults to earliest
-//   ledger_index_max: ledger_index, // optional, defaults to latest
-//   binary: boolean,                // optional, defaults to false
-//   forward: boolean,               // optional, defaults to false
-//   limit: integer,                 // optional
-//   marker: object {ledger: ledger_index, seq: txn_sequence} // optional,
-//   resume previous query
-// }
+/** Handle the `account_tx` RPC command.
+ *
+ *  Returns all transactions that affected the specified account, optionally
+ *  constrained to a ledger range and resumable via a cursor marker.
+ *
+ *  Expected request fields:
+ *  - `account` (string, required) — base-58 account address.
+ *  - `ledger_index_min` / `ledger_index_max` (integer, optional) — inclusive
+ *      ledger range; `-1` means "unbounded" in that direction.
+ *  - `ledger_hash` (string, optional) — single ledger by hash.
+ *  - `ledger_index` (integer or shortcut string, optional) — single ledger.
+ *  - `binary` (boolean, optional, default false) — return raw blobs instead
+ *      of decoded JSON objects.
+ *  - `forward` (boolean, optional, default false) — iterate oldest-first
+ *      rather than newest-first.
+ *  - `limit` (integer, optional) — maximum transactions per page.
+ *  - `marker` (object `{ledger, seq}`, optional) — resume pagination from a
+ *      prior response's marker.
+ *
+ *  Returns `rpcNOT_ENABLED` immediately when the node is not maintaining a
+ *  transaction index (`config().useTxTables()` is false).
+ *
+ *  At API v2+, `binary` and `forward` must be actual JSON booleans (not
+ *  coerced strings); `marker.ledger` and `marker.seq` must be unsigned
+ *  integers, with an explicit error message if either is missing or has the
+ *  wrong type.
+ *
+ *  @param context The RPC JSON dispatch context carrying request params,
+ *      application services, API version, and role.
+ *  @return A JSON response object containing a `transactions` array and
+ *      effective `ledger_index_min`/`ledger_index_max`, or an RPC error.
+ */
 json::Value
 doAccountTx(RPC::JsonContext& context)
 {
@@ -397,10 +518,6 @@ doAccountTx(RPC::JsonContext& context)
     AccountTxArgs args;
     json::Value response;
 
-    // The document[https://xrpl.org/account_tx.html#account_tx] states that
-    // binary and forward params are both boolean values, however, assigning any
-    // string value works. Do not allow this. This check is for api Version 2
-    // onwards only
     if (context.apiVersion > 1u && params.isMember(jss::binary) && !params[jss::binary].isBool())
     {
         return RPC::invalidFieldError(jss::binary);

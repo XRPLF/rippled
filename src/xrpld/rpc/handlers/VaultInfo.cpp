@@ -15,6 +15,30 @@
 
 namespace xrpl {
 
+/** Resolve a vault request to the 256-bit ledger object key for an
+ *  `ltVAULT` entry.
+ *
+ *  Exactly one of the following mutually exclusive forms must be present in
+ *  `params`:
+ *  - `vault_id` only: a hex-encoded 256-bit key used directly.
+ *  - `owner` + `seq` only: a base58-encoded account address and the
+ *    sequence number of the creating transaction; the key is derived via
+ *    `keylet::vault(accountID, seq)`.
+ *
+ *  On failure the error is injected into `jvResult` before returning, so
+ *  the caller only needs to test the returned optional.
+ *
+ *  @param params  The JSON request parameters object.
+ *  @param jvResult The response object into which parse errors are injected.
+ *  @return The resolved vault key, or `std::nullopt` if the parameters are
+ *      invalid or cannot be parsed.
+ *  @note `seq` must be a JSON integer or unsigned integer type in the range
+ *      (0, `Json::Value::maxUInt`]. Strings, floats, booleans, zero, and
+ *      negative values all produce `invalidParams`. The double-comparison
+ *      guards against JSON parsers that may lose integer precision.
+ *  @note Providing all three fields, mixing forms (e.g. `owner` without
+ *      `seq`), or providing none are all rejected with `invalidParams`.
+ */
 static std::optional<uint256>
 parseVault(json::Value const& params, json::Value& jvResult)
 {
@@ -30,7 +54,6 @@ parseVault(json::Value const& params, json::Value& jvResult)
             RPC::injectError(RpcInvalidParams, jvResult);
             return std::nullopt;
         }
-        // else uNodeIndex holds the value we need
     }
     else if (!hasVaultId && hasOwner && hasSeq)
     {
@@ -52,7 +75,6 @@ parseVault(json::Value const& params, json::Value& jvResult)
     }
     else
     {
-        // Invalid combination of fields vault_id/owner/seq
         RPC::injectError(RpcInvalidParams, jvResult);
         return std::nullopt;
     }
@@ -60,6 +82,27 @@ parseVault(json::Value const& params, json::Value& jvResult)
     return uNodeIndex;
 }
 
+/** Retrieve the current state of a vault and its associated share issuance.
+ *
+ *  Resolves the target ledger first; if the ledger reference is invalid the
+ *  handler returns immediately. The vault key is then resolved via
+ *  `parseVault`. Two ledger entries are read in sequence: the `ltVAULT` SLE
+ *  and the `ltMPTOKEN_ISSUANCE` SLE identified by the vault's `sfShareMPTID`
+ *  field. If either is absent the handler returns `"entryNotFound"`.
+ *
+ *  On success the response contains a `vault` object (the serialized vault
+ *  SLE) with the share issuance SLE nested under `vault.shares`.
+ *
+ *  @param context The RPC dispatch context carrying the request parameters,
+ *      application state, and ledger master reference.
+ *  @return A `Json::Value` containing either the vault and share data or an
+ *      error field. Error values: `"lgrNotFound"` (bad ledger reference),
+ *      `"malformedRequest"` (bad vault identifier), `"entryNotFound"` (vault
+ *      or its share issuance does not exist in the resolved ledger).
+ *  @note A missing share issuance for an existing vault would indicate ledger
+ *      inconsistency. Both absences are collapsed into the same
+ *      `"entryNotFound"` response since no useful partial result exists.
+ */
 json::Value
 doVaultInfo(RPC::JsonContext& context)
 {

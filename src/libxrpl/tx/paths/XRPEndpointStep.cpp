@@ -1,3 +1,17 @@
+/** @file
+ *  XRP source/destination endpoint step for the XRPL payment path engine.
+ *
+ *  Every strand begins or ends with an `XRPEndpointStep` when XRP is the
+ *  currency being sent or received.  This file implements that bookend step,
+ *  connecting a real account's XRP balance to the abstract flow graph used by
+ *  `Flow.cpp` and `StrandFlow.h`.  No currency conversion occurs here — the
+ *  step simply debits or credits XRP from/to `acc_` while handing the amount
+ *  to the virtual `xrpAccount()` sentinel.
+ *
+ *  Two concrete subclasses (`XRPEndpointPaymentStep` and
+ *  `XRPEndpointOfferCrossingStep`) share all logic via CRTP, differing only
+ *  in how they compute the spendable XRP balance (`xrpLiquid()`).
+ */
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -32,6 +46,18 @@
 
 namespace xrpl {
 
+/** CRTP base for the XRP-endpoint step (first or last step in a strand).
+ *
+ *  Handles all reverse-pass, forward-pass, validation, and quality logic for
+ *  a step that transfers XRP between a concrete account (`acc_`) and the
+ *  virtual `xrpAccount()` sentinel.  The sole behavioral variation — how much
+ *  XRP the account can spend — is supplied by the derived class via
+ *  `xrpLiquid()`, dispatched at compile time through `static_cast<TDerived>`.
+ *
+ *  @tparam TDerived  Concrete subclass (`XRPEndpointPaymentStep` or
+ *      `XRPEndpointOfferCrossingStep`) that implements `xrpLiquid()` and
+ *      `logString()`.
+ */
 template <class TDerived>
 class XRPEndpointStep : public StepImp<XRPAmount, XRPAmount, XRPEndpointStep<TDerived>>
 {
@@ -40,11 +66,15 @@ private:
     bool const isLast_;
     beast::Journal const j_;
 
-    // Since this step will always be an endpoint in a strand
-    // (either the first or last step) the same cache is used
-    // for cachedIn and cachedOut and only one will ever be used
+    /** Single cache entry shared between `cachedIn` and `cachedOut`.
+     *
+     *  Because XRP transfers are 1:1, input equals output for every execution.
+     *  Since this step is always a strand endpoint, only one direction's cache
+     *  is ever consumed by an adjacent step, so a single optional suffices.
+     */
     std::optional<XRPAmount> cache_;
 
+    /** Wrap `cache_` in an `EitherAmount`, or return nullopt if not yet populated. */
     [[nodiscard]] std::optional<EitherAmount>
     cached() const
     {
@@ -59,12 +89,19 @@ private:
     }
 
 public:
+    /** Return the XRP-holding account associated with this endpoint step. */
     [[nodiscard]] AccountID const&
     acc() const
     {
         return acc_;
     }
 
+    /** Return the (sender, receiver) account pair for this step.
+     *
+     *  One of the two accounts is always `xrpAccount()`, the virtual XRP
+     *  sentinel.  For a first step (XRP sender) the pair is `(acc_, xrpAccount())`;
+     *  for a last step (XRP receiver) it is `(xrpAccount(), acc_)`.
+     */
     [[nodiscard]] std::optional<std::pair<AccountID, AccountID>>
     directStepAccts() const override
     {
@@ -73,27 +110,61 @@ public:
         return std::make_pair(acc_, xrpAccount());
     }
 
+    /** Return the amount cached by the most recent reverse pass, or nullopt. */
     [[nodiscard]] std::optional<EitherAmount>
     cachedIn() const override
     {
         return cached();
     }
 
+    /** Return the amount cached by the most recent reverse pass, or nullopt.
+     *
+     *  @note `cachedIn` and `cachedOut` return the same value because XRP
+     *      transfers are 1:1 and this step is always a strand endpoint.
+     */
     [[nodiscard]] std::optional<EitherAmount>
     cachedOut() const override
     {
         return cached();
     }
 
+    /** Always returns `DebtDirection::Issues`.
+     *
+     *  XRP has no issuer, so this step never redeems toward a counterparty.
+     *  The debt-direction concept is only meaningful for IOU trust-line steps.
+     */
     [[nodiscard]] DebtDirection
     debtDirection(ReadView const& sb, StrandDirection dir) const override
     {
         return DebtDirection::Issues;
     }
 
+    /** Return the quality upper bound for this step.
+     *
+     *  XRP transfers are always 1:1, so the bound is `Quality{STAmount::kU_RATE_ONE}`
+     *  (rate = 1.0) regardless of ledger state or direction.
+     *
+     *  @param v            Ledger read view (unused for XRP).
+     *  @param prevStepDir  Debt direction of the preceding step (unused for XRP).
+     *  @return Pair of (fixed 1:1 quality, `DebtDirection::Issues`).
+     */
     [[nodiscard]] std::pair<std::optional<Quality>, DebtDirection>
     qualityUpperBound(ReadView const& v, DebtDirection prevStepDir) const override;
 
+    /** Reverse pass: compute input required to produce @p out.
+     *
+     *  For a last step (XRP receiver), accepts @p out unconditionally — a
+     *  receiving account can always accept XRP.  For a first step (XRP sender),
+     *  caps the result at `min(xrpLiquid(sb), out)`.  The result is stored in
+     *  `cache_` for use by the forward pass.
+     *
+     *  @param sb        Payment sandbox carrying running ledger state.
+     *  @param afView    Pre-strand ledger state (unused for XRP endpoint steps).
+     *  @param ofrsToRm  Unfunded offer set (unused; XRP steps consume no offers).
+     *  @param out       Desired output amount.
+     *  @return Pair of (actual input, actual output); both are zero if
+     *      `accountSend` fails.
+     */
     std::pair<XRPAmount, XRPAmount>
     revImp(
         PaymentSandbox& sb,
@@ -101,6 +172,19 @@ public:
         boost::container::flat_set<uint256>& ofrsToRm,
         XRPAmount const& out);
 
+    /** Forward pass: commit the transfer given available input @p in.
+     *
+     *  Mirrors `revImp`: last steps accept @p in unconditionally; first steps
+     *  cap at `min(xrpLiquid(sb), in)`.  Requires `cache_` to be populated,
+     *  i.e., `revImp` must have run first.
+     *
+     *  @param sb        Payment sandbox carrying running ledger state.
+     *  @param afView    Pre-strand ledger state (unused for XRP endpoint steps).
+     *  @param ofrsToRm  Unfunded offer set (unused).
+     *  @param in        Available input amount.
+     *  @return Pair of (actual input consumed, actual output produced); both
+     *      are zero if `accountSend` fails.
+     */
     std::pair<XRPAmount, XRPAmount>
     fwdImp(
         PaymentSandbox& sb,
@@ -108,20 +192,66 @@ public:
         boost::container::flat_set<uint256>& ofrsToRm,
         XRPAmount const& in);
 
+    /** Validate that @p in is consistent with the cached reverse-pass result.
+     *
+     *  For a first step (sender), confirms the current spendable balance still
+     *  covers `in`; logs a warning if the balance has shifted since the reverse
+     *  pass.  If the incoming amount diverges from `cache_`, logs a warning but
+     *  still returns `true` — the discrepancy is noted and deferred to `fwdImp`.
+     *
+     *  @param sb     Payment sandbox.
+     *  @param afView Pre-strand ledger state (unused).
+     *  @param in     The input amount to validate.
+     *  @return Pair of (valid flag, @p in).  Returns `{false, zero}` only if
+     *      `cache_` is not populated.
+     */
     std::pair<bool, EitherAmount>
     validFwd(PaymentSandbox& sb, ApplyView& afView, EitherAmount const& in) override;
 
-    // Check for errors and violations of frozen constraints.
+    /** Validate this step at strand construction time.
+     *
+     *  Enforces five invariants in order:
+     *  1. `acc_` is non-zero.
+     *  2. `acc_` maps to a live `AccountRoot` in the ledger.
+     *  3. The step is strictly first or last in the strand (XRP cannot be an
+     *     intermediate currency).
+     *  4. No global or directional freeze blocks the transfer.
+     *  5. `xrpIssue()` has not already appeared on the same side of the strand
+     *     (loop detection via `ctx.seenDirectAssets`).
+     *
+     *  @param ctx  Strand construction context.
+     *  @return `tesSUCCESS` on success, `temBAD_PATH` for a malformed path or
+     *      zero account, `terNO_ACCOUNT` if the account does not exist,
+     *      `tecFROZEN` if a freeze check fails, or `temBAD_PATH_LOOP` if a
+     *      cycle through XRP is detected.
+     */
     [[nodiscard]] TER
     check(StrandContext const& ctx) const;
 
 protected:
+    /** Compute the spendable XRP balance for `acc_`, applying a reserve offset.
+     *
+     *  Delegates to `xrpl::xrpLiquid`, which subtracts the base reserve and
+     *  the per-object owner reserve from the account's total balance.
+     *
+     *  @param sb                Ledger view to read the account balance from.
+     *  @param reserveReduction  Reserve units to subtract before the normal
+     *      reserve calculation.  Pass 0 for payments; pass -1 for offer
+     *      crossing when the buyer does not yet hold the delivered asset
+     *      (see `XRPEndpointOfferCrossingStep`).
+     *  @return Spendable XRP, floored at zero.
+     */
     XRPAmount
     xrpLiquidImpl(ReadView& sb, std::int32_t reserveReduction) const
     {
         return xrpl::xrpLiquid(sb, acc_, reserveReduction, j_);
     }
 
+    /** Build the diagnostic log string for this step.
+     *
+     *  @param name  The concrete class name to embed in the output.
+     *  @return A string of the form `"<name>:\nAcc: <acc_>"`.
+     */
     std::string
     logStringImpl(char const* name) const
     {
@@ -142,6 +272,7 @@ private:
         return !(lhs == rhs);
     }
 
+    /** Return true if @p rhs is an `XRPEndpointStep` with the same account and direction. */
     [[nodiscard]] bool
     equal(Step const& rhs) const override
     {
@@ -157,13 +288,14 @@ private:
 
 //------------------------------------------------------------------------------
 
-// Flow is used in two different circumstances for transferring funds:
-//  o Payments, and
-//  o Offer crossing.
-// The rules for handling funds in these two cases are almost, but not
-// quite, the same.
-
-// Payment XRPEndpointStep class (not offer crossing).
+/** XRP endpoint step for ordinary payments.
+ *
+ *  Computes the spendable balance with no reserve reduction — the full base
+ *  and owner reserves are always deducted before spending.
+ *
+ *  @see XRPEndpointOfferCrossingStep for the offer-crossing variant that may
+ *      allow spending one additional reserve unit.
+ */
 class XRPEndpointPaymentStep : public XRPEndpointStep<XRPEndpointPaymentStep>
 {
 public:
@@ -172,6 +304,7 @@ public:
     {
     }
 
+    /** Return the spendable XRP balance with the standard full reserve applied. */
     XRPAmount
     xrpLiquid(ReadView& sb) const
     {
@@ -186,17 +319,28 @@ public:
     }
 };
 
-// Offer crossing XRPEndpointStep class (not a payment).
+/** XRP endpoint step for offer-crossing operations.
+ *
+ *  During offer crossing the buyer may not yet hold a trust line (or MPT
+ *  holding) for the delivered asset — that object is created *after* XRP is
+ *  debited.  To prevent this sequencing from blocking otherwise valid crosses,
+ *  the step is allowed to spend one additional reserve unit of XRP.
+ *  `reserveReduction_` encodes that offset (-1 when the trust line / MPT does
+ *  not yet exist, 0 otherwise) and is applied via `xrpLiquidImpl`.
+ */
 class XRPEndpointOfferCrossingStep : public XRPEndpointStep<XRPEndpointOfferCrossingStep>
 {
 private:
-    // For historical reasons, offer crossing is allowed to dig further
-    // into the XRP reserve than an ordinary payment.  (I believe it's
-    // because the trust line was created after the XRP was removed.)
-    // Return how much the reserve should be reduced.
-    //
-    // Note that reduced reserve only happens if the trust line or MPT does not
-    // currently exist.
+    /** Determine how many reserve units to deduct before computing liquid XRP.
+     *
+     *  Returns -1 (reduce required reserve by one unit) when this is the first
+     *  step in the strand AND the buyer does not yet hold the strand's delivery
+     *  asset (trust line for IOU, MPToken for MPT).  Returns 0 otherwise.
+     *
+     *  @param ctx  Construction context carrying the strand's delivery asset.
+     *  @param acc  The XRP-spending account to check.
+     *  @return -1 if a reserve reduction applies; 0 otherwise.
+     */
     static std::int32_t
     computeReserveReduction(StrandContext const& ctx, AccountID const& acc)
     {
@@ -224,6 +368,7 @@ public:
     {
     }
 
+    /** Return the spendable XRP balance, applying `reserveReduction_` if set. */
     XRPAmount
     xrpLiquid(ReadView& sb) const
     {
@@ -237,11 +382,17 @@ public:
     }
 
 private:
+    /** Reserve offset applied by `xrpLiquid`; -1 when the delivery asset is new, 0 otherwise. */
     std::int32_t const reserveReduction_;
 };
 
 //------------------------------------------------------------------------------
 
+/** Return true if @p lhs and @p rhs represent the same XRP endpoint step.
+ *
+ *  Two steps are equal iff they reference the same account and occupy the same
+ *  position in the strand (both first, or both last).
+ */
 template <class TDerived>
 inline bool
 operator==(XRPEndpointStep<TDerived> const& lhs, XRPEndpointStep<TDerived> const& rhs)
@@ -377,7 +528,15 @@ XRPEndpointStep<TDerived>::check(StrandContext const& ctx) const
 //------------------------------------------------------------------------------
 
 namespace test {
-// Needed for testing
+/** Return true if @p step is an `XRPEndpointPaymentStep` for @p acc.
+ *
+ *  Downcasts to `XRPEndpointStep<XRPEndpointPaymentStep>` via `dynamic_cast`
+ *  so test code can verify step identity without access to private types.
+ *
+ *  @param step  The step to inspect.
+ *  @param acc   Expected account ID.
+ *  @return True if @p step is an XRP payment endpoint for @p acc.
+ */
 bool
 xrpEndpointStepEqual(Step const& step, AccountID const& acc)
 {
@@ -391,6 +550,17 @@ xrpEndpointStepEqual(Step const& step, AccountID const& acc)
 
 //------------------------------------------------------------------------------
 
+/** Construct an XRP endpoint step for account @p acc, then validate it.
+ *
+ *  Allocates `XRPEndpointOfferCrossingStep` when `ctx.offerCrossing != No`,
+ *  otherwise `XRPEndpointPaymentStep`.  Calls `check()` immediately after
+ *  construction and discards the step on failure.
+ *
+ *  @param ctx  Strand construction context.
+ *  @param acc  The XRP-holding account for this endpoint.
+ *  @return Pair of (TER, step).  On success TER is `tesSUCCESS` and the step
+ *      is non-null; on failure TER carries the error code and the step is null.
+ */
 std::pair<TER, std::unique_ptr<Step>>
 makeXrpEndpointStep(StrandContext const& ctx, AccountID const& acc)
 {

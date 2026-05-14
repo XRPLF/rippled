@@ -8,43 +8,59 @@
 
 namespace xrpl {
 
-/**
-    TrafficCount is used to count ingress and egress wire bytes and number of
-   messages. The general intended usage is as follows:
-        1. Determine the message category by callin TrafficCount::categorize
-        2. Increment the counters for incoming or outgoing traffic by calling
-   TrafficCount::addCount
-        3. Optionally, TrafficCount::addCount can be called at any time to
-   increment additional traffic categories, not captured by
-   TrafficCount::categorize.
-
-   There are two special categories:
-        1. category::total - this category is used to report the total traffic
-   amount. It should be incremented once just after receiving a new message, and
-   once just before sending a message to a peer. Messages whose category is not
-   in TrafficCount::categorize are not included in the total.
-        2. category::unknown - this category is used to report traffic for
-   messages of unknown type.
-*/
+/** Fine-grained per-category accounting of overlay network traffic.
+ *
+ *  Owned by `OverlayImpl`, which exposes it through thin
+ *  `reportInboundTraffic()` / `reportOutboundTraffic()` wrappers.
+ *  Counters are harvested by `collectMetrics()` and pushed to the configured
+ *  `beast::insight` collector (e.g. Graphite/StatsD).
+ *
+ *  Typical usage per message:
+ *  1. Resolve the category once via `categorize()`.
+ *  2. Call `addCount(Category::Total, ...)` for the raw wire size.
+ *  3. Call `addCount(resolvedCategory, ...)` for the specific category.
+ *  4. Optionally call `addCount(subCategory, ...)` for breakdown categories
+ *     such as `TransactionDuplicate` or `ValidationUntrusted`.
+ *
+ *  @note `Category::Unknown` traffic is never rolled into `Category::Total`.
+ *      Both are present in `counts_` from construction and are always safe
+ *      to pass to `addCount()`.
+ *  @note All counter updates are lock-free (`std::atomic`); this class is
+ *      safe to call concurrently from multiple peer strands.
+ */
 class TrafficCount
 {
 public:
     enum class Category : std::size_t;
 
+    /** Atomic byte and message counters for a single traffic category.
+     *
+     *  The four counters use `std::atomic<uint64_t>` so that concurrent peer
+     *  strands can increment them without a mutex.
+     *
+     *  The copy constructor atomically snapshots each counter via `.load()`,
+     *  enabling `getCounts()` callers to take a point-in-time copy for
+     *  reporting without holding any external lock.
+     */
     class TrafficStats
     {
     public:
+        /** Monitoring-friendly display name, set once at construction via
+         *  `toString(cat)` and never mutated afterwards. */
         std::string name;
 
-        std::atomic<std::uint64_t> bytesIn{0};
-        std::atomic<std::uint64_t> bytesOut{0};
-        std::atomic<std::uint64_t> messagesIn{0};
-        std::atomic<std::uint64_t> messagesOut{0};
+        std::atomic<std::uint64_t> bytesIn{0};    /**< Inbound bytes accumulated for this category. */
+        std::atomic<std::uint64_t> bytesOut{0};   /**< Outbound bytes accumulated for this category. */
+        std::atomic<std::uint64_t> messagesIn{0}; /**< Inbound message count for this category. */
+        std::atomic<std::uint64_t> messagesOut{0};/**< Outbound message count for this category. */
 
+        /** Construct and set the display name for @p cat. */
         TrafficStats(TrafficCount::Category cat) : name(TrafficCount::toString(cat))
         {
         }
 
+        /** Snapshot copy: atomically loads each counter so the result
+         *  reflects a consistent point-in-time view. */
         TrafficStats(TrafficStats const& ts)
             : name(ts.name)
             , bytesIn(ts.bytesIn.load())
@@ -54,133 +70,140 @@ public:
         {
         }
 
+        /** Returns `true` if at least one message has been counted in either
+         *  direction; allows monitoring code to skip inactive categories. */
         operator bool() const
         {
             return (messagesIn != 0u) || (messagesOut != 0u);
         }
     };
 
-    // If you add entries to this enum, you need to update the initialization
-    // of the arrays at the bottom of this file which map array numbers to
-    // human-readable, monitoring-tool friendly names.
+    /** Taxonomy of overlay protocol traffic for bandwidth telemetry.
+     *
+     *  Sub-categories (e.g. `TransactionDuplicate`, `ProposalUntrusted`) are
+     *  incremented *in addition to* their parent category so that operators
+     *  can observe both total volume and breakdown without arithmetic.
+     *
+     *  `Total` accumulates raw wire bytes for every recognized message exactly
+     *  once per send/receive.  `Unknown` catches messages that fall through
+     *  all classification logic and is intentionally excluded from `Total`.
+     *
+     *  @note When adding a new enumerator, also add a corresponding entry to
+     *      the `kCATEGORY_MAP` table in `toString()` and the `counts_`
+     *      initializer list.
+     */
     enum class Category : std::size_t {
-        Base,  // basic peer overhead, must be first
+        Base,  /**< Ping and status-change overhead; must be first. */
 
-        Cluster,    // cluster overhead
-        Overlay,    // overlay management
-        Manifests,  // manifest management
+        Cluster,    /**< Cluster peer overhead (mtCLUSTER). */
+        Overlay,    /**< Overlay management messages (mtENDPOINTS). */
+        Manifests,  /**< Validator manifest exchange (mtMANIFESTS). */
 
-        Transaction,  // transaction messages
-        // The following categories breakdown transaction message type
-        TransactionDuplicate,  // duplicate transaction messages
+        Transaction,           /**< Transaction messages (mtTRANSACTION). */
+        TransactionDuplicate,  /**< Transaction already seen; incremented alongside Transaction. */
 
-        Proposal,  // proposal messages
-        // The following categories breakdown proposal message type
-        ProposalUntrusted,  // proposals from untrusted validators
-        ProposalDuplicate,  // proposals seen previously
+        Proposal,           /**< Proposal messages (mtPROPOSE_LEDGER). */
+        ProposalUntrusted,  /**< Proposals from untrusted validators; incremented alongside Proposal. */
+        ProposalDuplicate,  /**< Proposals seen previously; incremented alongside Proposal. */
 
-        Validation,  // validation messages
-        // The following categories breakdown validation message type
-        ValidationUntrusted,  // validations from untrusted validators
-        ValidationDuplicate,  // validations seen previously
+        Validation,           /**< Validation messages (mtVALIDATION). */
+        ValidationUntrusted,  /**< Validations from untrusted validators; incremented alongside Validation. */
+        ValidationDuplicate,  /**< Validations seen previously; incremented alongside Validation. */
 
-        Validatorlist,
+        Validatorlist,  /**< Validator list messages (mtVALIDATOR_LIST, mtVALIDATOR_LIST_COLLECTION). */
 
-        Squelch,
-        SquelchSuppressed,  // egress traffic amount suppressed by squelching
-        SquelchIgnored,     // the traffic amount that came from peers ignoring
-                            // squelch messages
+        Squelch,           /**< Squelch control messages (mtSQUELCH). */
+        SquelchSuppressed, /**< Outbound bytes suppressed by squelching; not a real send. */
+        SquelchIgnored,    /**< Inbound bytes from peers that are ignoring squelch instructions. */
 
-        // TMHaveSet message:
-        GetSet,    // transaction sets we try to get
-        ShareSet,  // transaction sets we get
+        // --- TMHaveSet ---
+        GetSet,    /**< Transaction sets this node is trying to acquire. */
+        ShareSet,  /**< Transaction sets this node is providing to peers. */
 
-        // TMLedgerData: transaction set candidate
-        LdTscGet,
-        LdTscShare,
+        // --- TMLedgerData sub-categories ---
+        LdTscGet,   /**< TMLedgerData: transaction set candidate, get direction. */
+        LdTscShare, /**< TMLedgerData: transaction set candidate, share direction. */
 
-        // TMLedgerData: transaction node
-        LdTxnGet,
-        LdTxnShare,
+        LdTxnGet,   /**< TMLedgerData: transaction tree node, get direction. */
+        LdTxnShare, /**< TMLedgerData: transaction tree node, share direction. */
 
-        // TMLedgerData: account state node
-        LdAsnGet,
-        LdAsnShare,
+        LdAsnGet,   /**< TMLedgerData: account state node, get direction. */
+        LdAsnShare, /**< TMLedgerData: account state node, share direction. */
 
-        // TMLedgerData: generic
-        LdGet,
-        LdShare,
+        LdGet,   /**< TMLedgerData: unrecognized itype, get direction. */
+        LdShare, /**< TMLedgerData: unrecognized itype, share direction. */
 
-        // TMGetLedger: transaction set candidate
-        GlTscShare,
-        GlTscGet,
+        // --- TMGetLedger sub-categories ---
+        GlTscShare, /**< TMGetLedger: transaction set candidate, share direction. */
+        GlTscGet,   /**< TMGetLedger: transaction set candidate, get direction. */
 
-        // TMGetLedger: transaction node
-        GlTxnShare,
-        GlTxnGet,
+        GlTxnShare, /**< TMGetLedger: transaction tree node, share direction. */
+        GlTxnGet,   /**< TMGetLedger: transaction tree node, get direction. */
 
-        // TMGetLedger: account state node
-        GlAsnShare,
-        GlAsnGet,
+        GlAsnShare, /**< TMGetLedger: account state node, share direction. */
+        GlAsnGet,   /**< TMGetLedger: account state node, get direction. */
 
-        // TMGetLedger: generic
-        GlShare,
-        GlGet,
+        GlShare, /**< TMGetLedger: unrecognized itype, share direction. */
+        GlGet,   /**< TMGetLedger: unrecognized itype, get direction. */
 
-        // TMGetObjectByHash:
-        ShareHashLedger,
-        GetHashLedger,
+        // --- TMGetObjectByHash sub-categories ---
+        ShareHashLedger, /**< TMGetObjectByHash: otLEDGER, share direction. */
+        GetHashLedger,   /**< TMGetObjectByHash: otLEDGER, get direction. */
 
-        // TMGetObjectByHash:
-        ShareHashTx,
-        GetHashTx,
+        ShareHashTx, /**< TMGetObjectByHash: otTRANSACTION, share direction. */
+        GetHashTx,   /**< TMGetObjectByHash: otTRANSACTION, get direction. */
 
-        // TMGetObjectByHash: transaction node
-        ShareHashTxnode,
-        GetHashTxnode,
+        ShareHashTxnode, /**< TMGetObjectByHash: otTRANSACTION_NODE, share direction. */
+        GetHashTxnode,   /**< TMGetObjectByHash: otTRANSACTION_NODE, get direction. */
 
-        // TMGetObjectByHash: account state node
-        ShareHashAsnode,
-        GetHashAsnode,
+        ShareHashAsnode, /**< TMGetObjectByHash: otSTATE_NODE, share direction. */
+        GetHashAsnode,   /**< TMGetObjectByHash: otSTATE_NODE, get direction. */
 
-        // TMGetObjectByHash: CAS
-        ShareCasObject,
-        GetCasObject,
+        ShareCasObject, /**< TMGetObjectByHash: otCAS_OBJECT, share direction. */
+        GetCasObject,   /**< TMGetObjectByHash: otCAS_OBJECT, get direction. */
 
-        // TMGetObjectByHash: fetch packs
-        ShareFetchPack,
-        GetFetchPack,
+        ShareFetchPack, /**< TMGetObjectByHash: otFETCH_PACK, share direction. */
+        GetFetchPack,   /**< TMGetObjectByHash: otFETCH_PACK, get direction. */
 
-        // TMGetObjectByHash: transactions
-        GetTransactions,
+        GetTransactions, /**< TMGetObjectByHash: otTRANSACTIONS (always get, direction-independent). */
 
-        // TMGetObjectByHash: generic
-        ShareHash,
-        GetHash,
+        ShareHash, /**< TMGetObjectByHash: unrecognized type, share direction. */
+        GetHash,   /**< TMGetObjectByHash: unrecognized type, get direction. */
 
-        // TMProofPathRequest and TMProofPathResponse
-        ProofPathRequest,
-        ProofPathResponse,
+        ProofPathRequest,  /**< TMProofPathRequest messages. */
+        ProofPathResponse, /**< TMProofPathResponse messages. */
 
-        // TMReplayDeltaRequest and TMReplayDeltaResponse
-        ReplayDeltaRequest,
-        ReplayDeltaResponse,
+        ReplayDeltaRequest,  /**< TMReplayDeltaRequest messages. */
+        ReplayDeltaResponse, /**< TMReplayDeltaResponse messages. */
 
-        // TMHaveTransactions
-        HaveTransactions,
+        HaveTransactions,      /**< TMHaveTransactions hash-announcement messages. */
+        RequestedTransactions, /**< TMTransactions full-transaction responses. */
 
-        // TMTransactions
-        RequestedTransactions,
-
-        // The total p2p bytes sent and received on the wire
-        Total,
-
-        Unknown  // must be last
+        Total,   /**< Aggregate raw wire bytes for every recognized message; never includes Unknown. */
+        Unknown  /**< Catch-all for message types that fall through all classification; must be last. */
     };
 
     TrafficCount() = default;
 
-    /** Given a protocol message, determine which traffic category it belongs to
+    /** Classify a protocol message into the most specific traffic category.
+     *
+     *  Uses a two-stage strategy: an O(1) lookup table handles message types
+     *  whose category is fully determined by the wire type discriminator alone.
+     *  Three `dynamic_cast` branches then handle `TMLedgerData`, `TMGetLedger`,
+     *  and `TMGetObjectByHash`, whose sub-category depends on protobuf fields
+     *  (`requestcookie`, `itype`, `query`) that are invisible to the wire type.
+     *
+     *  @param message  The deserialized protobuf message; used for `dynamic_cast`
+     *      on the three complex types.
+     *  @param type     The wire-level message type discriminator extracted from
+     *      the overlay frame header before deserialization.
+     *  @param inbound  `true` if the message arrived from a remote peer;
+     *      `false` if it is being prepared for outbound transmission.
+     *  @return The most specific matching `Category`, or `Category::Unknown`
+     *      if no branch matches.
+     *  @note Callers should additionally call `addCount(Category::Total, ...)`
+     *      once per message to accumulate raw wire bytes separately from the
+     *      per-category counts.
      */
     static Category
     categorize(
@@ -188,7 +211,17 @@ public:
         protocol::MessageType type,
         bool inbound);
 
-    /** Account for traffic associated with the given category */
+    /** Increment the byte and message counters for a traffic category.
+     *
+     *  Silently returns if @p cat is not present in `counts_` (e.g. a future
+     *  enum value added without a matching initializer).  An `XRPL_ASSERT`
+     *  guards against out-of-range values in debug builds.
+     *
+     *  @param cat      The traffic category to update.
+     *  @param inbound  `true` to increment `bytesIn`/`messagesIn`; `false`
+     *      for `bytesOut`/`messagesOut`.
+     *  @param bytes    Wire byte count to add to the appropriate bytes counter.
+     */
     void
     addCount(Category cat, bool inbound, int bytes)
     {
@@ -197,7 +230,6 @@ public:
 
         auto it = counts_.find(cat);
 
-        // nothing to do, the category does not exist
         if (it == counts_.end())
             return;
 
@@ -213,9 +245,15 @@ public:
         }
     }
 
-    /** An up-to-date copy of all the counters
-
-        @return an object which satisfies the requirements of Container
+    /** Return a const reference to the live counter map.
+     *
+     *  The map is keyed by `Category` and pre-populated at construction with
+     *  every known category including `Total` and `Unknown`.  Because
+     *  `TrafficStats`'s copy constructor performs atomic loads, callers can
+     *  snapshot the entire map by copying individual entries without holding
+     *  an external lock.
+     *
+     *  @return Const reference to the internal `unordered_map<Category, TrafficStats>`.
      */
     [[nodiscard]] auto const&
     getCounts() const
@@ -223,6 +261,17 @@ public:
         return counts_;
     }
 
+    /** Convert a `Category` value to its monitoring-friendly display name.
+     *
+     *  Uses a static local map for O(1) lookup.  `Category::Unknown` and any
+     *  out-of-range value intentionally fall through to return the literal
+     *  string `"unknown"`, so `TrafficStats` objects for unrecognized
+     *  categories still receive a valid display name.
+     *
+     *  @param cat  The category to convert.
+     *  @return A stable ASCII string suitable for use as a metric name (e.g.
+     *      `"ledger_data_Transaction_Set_candidate_get"`), or `"unknown"`.
+     */
     static std::string
     toString(Category cat)
     {
@@ -291,6 +340,13 @@ public:
     }
 
 protected:
+    /** Per-category counter storage, pre-populated at construction.
+     *
+     *  Every `Category` enumerator (including `Total` and `Unknown`) has an
+     *  entry here so that `addCount()` and `getCounts()` callers never need
+     *  to check for missing keys.  Populated entirely by the inline
+     *  initializer list; do not insert or erase entries at runtime.
+     */
     std::unordered_map<Category, TrafficStats> counts_{
         {Category::Base, {Category::Base}},
         {Category::Cluster, {Category::Cluster}},

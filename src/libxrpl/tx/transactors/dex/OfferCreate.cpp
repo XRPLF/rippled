@@ -1,3 +1,15 @@
+/** @file
+ *  Implements the OfferCreate transactor: the XRPL DEX order-placement engine.
+ *
+ *  Execution proceeds through three phases — `preflight` (stateless field
+ *  validation), `preclaim` (read-only ledger checks), and `doApply` (mutable
+ *  state changes). `doApply` delegates to `applyGuts`, which optionally cancels
+ *  a named prior offer, applies tick-size rounding, delegates crossing to the
+ *  payment engine via `flowCross`, evaluates IoC/FoK short-circuits, checks
+ *  the owner reserve, and inserts any residual offer into the order-book
+ *  directory. A dual-sandbox pattern (`sb` / `sbCancel`) ensures stale-offer
+ *  cleanup is committed even when a Fill-or-Kill offer is not filled.
+ */
 #include <xrpl/tx/transactors/dex/OfferCreate.h>
 
 #include <xrpl/basics/Log.h>
@@ -76,12 +88,10 @@ OfferCreate::checkExtraFeatures(PreflightContext const& ctx)
 std::uint32_t
 OfferCreate::getFlagsMask(PreflightContext const& ctx)
 {
-    // The tfOfferCreateMask is built assuming that PermissionedDEX is
-    // enabled
     if (ctx.rules.enabled(featurePermissionedDEX))
         return tfOfferCreateMask;
-    // If PermissionedDEX is not enabled, add tfHybrid to the mask,
-    // indicating it is not allowed.
+    // tfOfferCreateMask was built assuming PermissionedDEX is active; OR in
+    // tfHybrid so preflight0 rejects hybrid offers when the feature is off.
     return tfOfferCreateMask | tfHybrid;
 }
 
@@ -336,12 +346,8 @@ OfferCreate::flowCross(
 {
     try
     {
-        // If the taker is unfunded before we begin crossing there's nothing
-        // to do - just return an error.
-        //
-        // We check this in preclaim, but when selling XRP charged fees can
-        // cause a user's available balance to go to 0 (by causing it to dip
-        // below the reserve) so we check this case again.
+        // Preclaim verified funds, but fee deduction after preclaim can push an
+        // XRP seller's available balance to zero (below reserve), so re-check.
         STAmount const inStartBalance = accountFunds(
             psb,
             account_,
@@ -349,19 +355,18 @@ OfferCreate::flowCross(
             FreezeHandling::ZeroIfFrozen,
             AuthHandling::ZeroIfUnauthorized,
             j_);
-        // Allow unfunded MPT issuer
+        // MPT issuers may place offers even when OutstandingAmount >= MaximumAmount.
         auto const disallowUnfunded =
             !inStartBalance.holds<MPTIssue>() || inStartBalance.getIssuer() != account_;
         if (disallowUnfunded && inStartBalance <= beast::kZERO)
         {
-            // The account balance can't cover even part of the offer.
             JLOG(j_.debug()) << "Not crossing: taker is unfunded.";
             return {tecUNFUNDED_OFFER, takerAmount};
         }
 
-        // If the gateway has a transfer rate, accommodate that.  The
-        // gateway takes its cut without any special consent from the
-        // offer taker.  Set sendMax to allow for the gateway's cut.
+        // Fold the gateway transfer rate into sendMax so the payment engine's
+        // quality threshold comparison is accurate (the gateway takes its cut
+        // without the taker's consent).
         Rate gatewayXferRate{QUALITY_ONE};
         STAmount sendMax = takerAmount.in;
         if (!sendMax.native() && (account_ != sendMax.getIssuer()))
@@ -374,24 +379,20 @@ OfferCreate::flowCross(
             }
         }
 
-        // Payment flow code compares quality after the transfer rate is
-        // included.  Since transfer rate is incorporated compute threshold.
+        // Quality threshold is computed after folding in the transfer rate so
+        // the payment engine uses an apples-to-apples comparison.
         Quality threshold{takerAmount.out, sendMax};
 
-        // If we're creating a passive offer adjust the threshold so we only
-        // cross offers that have a better quality than this one.
+        // Passive offers must not cross offers at the same or worse quality.
         std::uint32_t const txFlags = ctx_.tx.getFlags();
         if ((txFlags & tfPassive) != 0u)
             ++threshold;
 
-        // Don't send more than our balance.
         if (sendMax > inStartBalance)
             sendMax = inStartBalance;
 
-        // Always invoke flow() with the default path.  However if neither
-        // of the takerAmount currencies are XRP then we cross through an
-        // additional path with XRP as the intermediate between two books.
-        // This second path we have to build ourselves.
+        // For IOU-to-IOU offers inject an XRP intermediate path so the two
+        // assets can cross through a shared XRP order book.
         STPathSet paths;
         if (!takerAmount.in.native() && !takerAmount.out.native())
         {
@@ -399,28 +400,23 @@ OfferCreate::flowCross(
             path.emplaceBack(std::nullopt, xrpCurrency(), std::nullopt);
             paths.emplaceBack(std::move(path));
         }
-        // Special handling for the tfSell flag.
+
         STAmount deliver = takerAmount.out;
         auto const& deliverAsset = deliver.asset();
         OfferCrossing offerCrossing = OfferCrossing::Yes;
         if ((txFlags & tfSell) != 0u)
         {
             offerCrossing = OfferCrossing::Sell;
-            // We are selling, so we will accept *more* than the offer
-            // specified.  Since we don't know how much they might offer,
-            // we allow delivery of the largest possible amount.
             deliver.asset().visit(
                 [&](Issue const& issue) {
                     if (issue.native())
                     {
                         deliver = STAmount{STAmount::kMAX_NATIVE};
                     }
-                    // We can't use the maximum possible currency here because
-                    // there might be a gateway transfer rate to account for.
-                    // Since the transfer rate cannot exceed 200%, we use 1/2
-                    // maxValue for our limit.
                     else
                     {
+                        // Cap at half the maximum IOU value to leave room for
+                        // a gateway transfer rate of up to 200%.
                         deliver =
                             STAmount{deliverAsset, STAmount::kMAX_VALUE / 2, STAmount::kMAX_OFFSET};
                     }
@@ -430,7 +426,6 @@ OfferCreate::flowCross(
                 });
         }
 
-        // Call the payment engine's flow() to do the actual work.
         auto const result = flow(
             psb,
             deliver,
@@ -446,7 +441,6 @@ OfferCreate::flowCross(
             domainID,
             j_);
 
-        // If stale offers were found remove them.
         for (auto const& toRemove : result.removableOffers)
         {
             if (auto otr = psb.peek(keylet::offer(toRemove)))
@@ -455,8 +449,7 @@ OfferCreate::flowCross(
                 offerDelete(psbCancel, otr, j_);
         }
 
-        // Determine the size of the final offer after crossing.
-        auto afterCross = takerAmount;  // If !tesSUCCESS offer unchanged
+        auto afterCross = takerAmount;  // unchanged if !tesSUCCESS
         if (isTesSuccess(result.result()))
         {
             STAmount const takerInBalance = accountFunds(
@@ -469,8 +462,8 @@ OfferCreate::flowCross(
 
             if (disallowUnfunded && takerInBalance <= beast::kZERO)
             {
-                // If offer crossing exhausted the account's funds don't
-                // create the offer.
+                // Crossing exhausted the account's funds; don't create a
+                // residual offer.
                 afterCross.in.clear();
                 afterCross.out.clear();
             }
@@ -480,14 +473,9 @@ OfferCreate::flowCross(
 
                 if ((txFlags & tfSell) != 0u)
                 {
-                    // If selling then scale the new out amount based on how
-                    // much we sold during crossing.  This preserves the offer
-                    // Quality,
-
-                    // Reduce the offer that is placed by the crossed amount.
-                    // Note that we must ignore the portion of the
-                    // actualAmountIn that may have been consumed by a
-                    // gateway's transfer rate.
+                    // Strip out the gateway's cut from actualAmountIn before
+                    // computing the residual, so the residual's quality matches
+                    // the original offer's quality.
                     STAmount nonGatewayAmountIn = result.actualAmountIn;
                     if (gatewayXferRate.value != QUALITY_ONE)
                     {
@@ -497,23 +485,17 @@ OfferCreate::flowCross(
 
                     afterCross.in -= nonGatewayAmountIn;
 
-                    // It's possible that the divRound will cause our subtract
-                    // to go slightly negative.  So limit afterCross.in to beast::kZERO.
+                    // divideRound can produce a result one ULP above the
+                    // subtrahend, driving afterCross.in slightly negative.
+                    // Clamp to zero; the difference is sub-ULP.
                     if (afterCross.in < beast::kZERO)
-                    {
-                        // We should verify that the difference *is* small, but
-                        // what is a good threshold to check?
                         afterCross.in.clear();
-                    }
 
                     afterCross.out =
                         divRoundStrict(afterCross.in, rate, takerAmount.out.asset(), false);
                 }
                 else
                 {
-                    // If not selling, we scale the input based on the
-                    // remaining output.  This too preserves the offer
-                    // Quality.
                     afterCross.out -= result.actualAmountOut;
                     XRPL_ASSERT(
                         afterCross.out >= beast::kZERO,
@@ -525,7 +507,6 @@ OfferCreate::flowCross(
             }
         }
 
-        // Return how much of the offer is left.
         return {tesSUCCESS, afterCross};
     }
     catch (std::exception const& e)
@@ -611,27 +592,24 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
     auto const cancelSequence = ctx_.tx[~sfOfferSequence];
 
-    // Note that we use the value from the sequence or ticket as the
-    // offer sequence.  For more explanation see comments in SeqProxy.h.
+    // SeqProxy.h explains why getSeqValue() covers both sequence and ticket.
     auto const offerSequence = ctx_.tx.getSeqValue();
 
-    // This is the original rate of the offer, and is the rate at which
-    // it will be placed, even if crossing offers change the amounts that
-    // end up on the books.
+    // Capture the offer's original quality before crossing; the residual offer
+    // is placed at this rate so its position in the order-book queue reflects
+    // the submitted price, not the partially-filled remainder.
     auto uRate = getRate(saTakerGets, saTakerPays);
 
     auto viewJ = ctx_.registry.get().getJournal("View");
 
     TER result = tesSUCCESS;
 
-    // Process a cancellation request that's passed along with an offer.
     if (cancelSequence)
     {
         auto const sleCancel = sb.peek(keylet::offer(account_, *cancelSequence));
 
-        // It's not an error to not find the offer to cancel: it might have
-        // been consumed or removed. If it is found, however, it's an error
-        // to fail to delete it.
+        // Not finding the named offer is not an error: it may have been
+        // consumed or removed. Finding it but failing to delete it is.
         if (sleCancel)
         {
             JLOG(j_.debug()) << "Create cancels order " << *cancelSequence;
@@ -643,8 +621,6 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
     if (hasExpired(sb, expiration))
     {
-        // If the offer has expired, the transaction has successfully
-        // done nothing, so short circuit from here.
         return {tecEXPIRED, true};
     }
 
@@ -652,19 +628,18 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
     if (isTesSuccess(result))
     {
-        // If a tick size applies, round the offer to the tick size
         auto const& uPaysIssuerID = saTakerPays.getIssuer();
         auto const& uGetsIssuerID = saTakerGets.getIssuer();
 
         std::uint8_t uTickSize = Quality::kMAX_TICK_SIZE;
-        // Not XRP or MPT
+        // sfTickSize is only meaningful for IOU issuers — skip XRP and MPT.
         if (!saTakerPays.integral())
         {
             auto const sle = sb.read(keylet::account(uPaysIssuerID));
             if (sle && sle->isFieldPresent(sfTickSize))
                 uTickSize = std::min(uTickSize, (*sle)[sfTickSize]);
         }
-        // Not XRP or MPT
+        // sfTickSize is only meaningful for IOU issuers — skip XRP and MPT.
         if (!saTakerGets.integral())
         {
             auto const sle = sb.read(keylet::account(uGetsIssuerID));
@@ -675,18 +650,15 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         {
             auto const rate = Quality{saTakerGets, saTakerPays}.round(uTickSize).rate();
 
-            // We round the side that's not exact,
-            // just as if the offer happened to execute
-            // at a slightly better (for the placer) rate
+            // Round the non-exact side so the offer executes at a quality
+            // that is slightly better for the placer (not worse).
             if (bSell)
             {
-                // this is a sell, round taker pays
                 if (!saTakerPays.holds<MPTIssue>())
                     saTakerPays = multiply(saTakerGets, rate, saTakerPays.asset());
             }
             else if (!saTakerGets.holds<MPTIssue>())
             {
-                // this is a buy, round taker gets
                 saTakerGets = divide(saTakerPays, rate, saTakerGets.asset());
             }
             if (!saTakerGets || !saTakerPays)
@@ -698,7 +670,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
             uRate = getRate(saTakerGets, saTakerPays);
         }
 
-        // We reverse pays and gets because during crossing we are taking.
+        // Invert pays/gets: the offer placer acts as a taker during crossing.
         Amounts const takerAmount(saTakerGets, saTakerPays);
 
         JLOG(j_.debug()) << "Attempting cross: " << to_string(takerAmount.in.asset()) << " -> "
@@ -711,9 +683,6 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
             stream << "    out: " << formatAmount(takerAmount.out);
         }
 
-        // The amount of the offer that is unfilled after crossing has been
-        // performed. It may be equal to the original amount (didn't cross),
-        // empty (fully crossed), or something in-between.
         Amounts placeOffer;
         PaymentSandbox psbFlow{&sb};
         PaymentSandbox psbCancelFlow{&sbCancel};
@@ -722,8 +691,6 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         psbFlow.apply(sb);
         psbCancelFlow.apply(sbCancel);
 
-        // We expect the implementation of cross to succeed
-        // or give a tec.
         XRPL_ASSERT(
             isTesSuccess(result) || isTecClaim(result),
             "xrpl::OfferCreate::applyGuts : result is tesSUCCESS or "
@@ -771,9 +738,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
             return {result, true};
         }
 
-        // We now need to adjust the offer to reflect the amount left after
-        // crossing. We reverse in and out here, since during crossing we
-        // were the taker.
+        // Re-invert: crossing used taker orientation (in=Gets, out=Pays).
         saTakerPays = placeOffer.out;
         saTakerGets = placeOffer.in;
     }
@@ -795,24 +760,19 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         stream << "    Gets: " << saTakerGets.getFullText();
     }
 
-    // For 'fill or kill' offers, failure to fully cross means that the
-    // entire operation should be aborted, with only fees paid.
     if (bFillOrKill)
     {
         JLOG(j_.trace()) << "Fill or Kill: offer killed";
         return {tecKILLED, false};
     }
 
-    // For 'immediate or cancel' offers, the amount remaining doesn't get
-    // placed - it gets canceled and the operation succeeds.
     if (bImmediateOrCancel)
     {
         JLOG(j_.trace()) << "Immediate or cancel: offer canceled";
         if (!crossed)
         {
-            // Any ImmediateOrCancel offer that transfers absolutely no funds
-            // returns tecKILLED rather than tesSUCCESS.  Motivation for the
-            // change is here: https://github.com/XRPLF/rippled/issues/4115
+            // An IoC offer that transferred no funds returns tecKILLED, not
+            // tesSUCCESS.  See https://github.com/XRPLF/rippled/issues/4115
             return {tecKILLED, false};
         }
         return {tesSUCCESS, true};
@@ -828,9 +788,9 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
         if (preFeeBalance_ < reserve)
         {
-            // If we are here, the signing account had an insufficient reserve
-            // *prior* to our processing. If something actually crossed, then
-            // we allow this; otherwise, we just claim a fee.
+            // The account was under-reserved even before this transaction ran.
+            // Allow the offer if any crossing occurred (partial work was done);
+            // otherwise charge fee only.
             if (!crossed)
                 result = tecINSUF_RESERVE_OFFER;
 
@@ -843,10 +803,8 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         }
     }
 
-    // We need to place the remainder of the offer into its order book.
     auto const offerIndex = keylet::offer(account_, offerSequence);
 
-    // Add offer to owner's directory.
     auto const ownerNode =
         sb.dirInsert(keylet::ownerDir(account_), offerIndex, describeOwnerDir(account_));
 
@@ -858,7 +816,6 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         // LCOV_EXCL_STOP
     }
 
-    // Update owner count.
     adjustOwnerCount(sb, sleCreator, 1, viewJ);
 
     JLOG(j_.trace()) << "adding to book: " << to_string(saTakerPays.asset()) << " : "
@@ -867,17 +824,12 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
     Book const book{saTakerPays.asset(), saTakerGets.asset(), domainID};
 
-    // Add offer to order book, using the original rate
-    // before any crossing occurred.
-    //
-    // Regular offer - BookDirectory points to open directory
-    //
-    // Domain offer (w/o hybrid) - BookDirectory points to domain
-    // directory
-    //
-    // Hybrid domain offer - BookDirectory points to domain directory,
-    // and AdditionalBooks field stores one entry that points to the open
-    // directory
+    // Use the original pre-crossing rate for book placement so the offer's
+    // queue position reflects the submitted price, not the residual amounts.
+    // Book directory routing by offer type:
+    //   Regular     — open directory only
+    //   Domain      — domain directory only
+    //   Hybrid      — domain directory (primary) + open directory (via sfAdditionalBooks)
     auto dir = keylet::quality(keylet::kBOOK(book), uRate);
     bool const bookExisted = static_cast<bool>(sb.peek(dir));
 
@@ -929,7 +881,6 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     if (domainID)
         sleOffer->setFieldH256(sfDomainID, *domainID);
 
-    // if it's a hybrid offer, set hybrid flag, and create an open dir
     if (bHybrid)
     {
         auto const res =
@@ -951,13 +902,13 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 TER
 OfferCreate::doApply()
 {
-    // This is the ledger view that we work against. Transactions are applied
-    // as we go on processing transactions.
+    // Primary sandbox: accumulates all state changes (trades + new offer).
     Sandbox sb(&ctx_.view());
 
-    // This is a ledger with just the fees paid and any unfunded or expired
-    // offers we encounter removed. It's used when handling Fill-or-Kill offers,
-    // if the order isn't going to be placed, to avoid wasting the work we did.
+    // Cancel sandbox: records only fee payment and removal of stale offers
+    // encountered during crossing. Committed instead of sb when a FillOrKill
+    // offer cannot be fully filled, preserving housekeeping without recording
+    // any trades or placing a residual offer.
     Sandbox sbCancel(&ctx_.view());
 
     auto const result = applyGuts(sb, sbCancel);

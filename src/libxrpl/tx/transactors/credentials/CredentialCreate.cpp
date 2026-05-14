@@ -21,31 +21,30 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
+/** @file
+ *  Implements the `CredentialCreate` transactor, which issues a W3C Verifiable
+ *  Credential on the XRP Ledger.
+ *
+ *  A credential binds a subject account, an issuer account, and an arbitrary
+ *  `sfCredentialType` blob into an `ltCREDENTIAL` SLE that third parties can
+ *  query without contacting the issuer.  Together with `CredentialAccept` and
+ *  `CredentialDelete` this forms the three-transaction lifecycle for on-ledger
+ *  credentials.
+ *
+ *  @see https://www.w3.org/TR/vc-data-model-2.0/
+ */
+
 #include <chrono>
 #include <cstdint>
 #include <memory>
 
 namespace xrpl {
 
-/*
-    Credentials
-    ======
-
-   A verifiable credentials (VC
-   https://en.wikipedia.org/wiki/Verifiable_credentials), as defined by the W3C
-   specification (https://www.w3.org/TR/vc-data-model-2.0/), is a
-   secure and tamper-evident way to represent information about a subject, such
-   as an individual, organization, or even an IoT device. These credentials are
-   issued by a trusted entity and can be verified by third parties without
-   directly involving the issuer at all.
-*/
-
 using namespace credentials;
 
 std::uint32_t
 CredentialCreate::getFlagsMask(PreflightContext const& ctx)
 {
-    // 0 means "Allow any flags"
     return ctx.rules.enabled(fixInvalidTxFlags) ? tfUniversalMask : 0;
 }
 

@@ -1,3 +1,14 @@
+/** @file
+ *  Declares `ApplyViewBase`, the abstract concrete base class shared by all
+ *  buffered mutable ledger views used during transaction application.
+ *
+ *  `ApplyViewBase` lives in `xrpl::detail` to signal that it is internal
+ *  infrastructure; transaction processing code works with `ApplyView` or
+ *  `ApplyViewImpl` references.  The three concrete subclasses —
+ *  `ApplyViewImpl`, `Sandbox`, and `PaymentSandbox` — are the only types
+ *  that need to reach into this layer directly.
+ */
+
 #pragma once
 
 #include <xrpl/ledger/ApplyView.h>
@@ -119,6 +130,12 @@ public:
     [[nodiscard]] std::unique_ptr<SlesType::iter_base>
     slesEnd() const override;
 
+    /** Return an iterator to the first SLE whose key is not less than `key`,
+     *  drawn from the base snapshot only.
+     *
+     *  @param key The lower-bound key for the search.
+     *  @return An iterator into the base SLE map at or after `key`.
+     */
     [[nodiscard]] std::unique_ptr<SlesType::iter_base>
     slesUpperBound(uint256 const& key) const override;
     /** @} */
@@ -131,9 +148,21 @@ public:
     [[nodiscard]] std::unique_ptr<TxsType::iter_base>
     txsEnd() const override;
 
+    /** Test whether a transaction exists in the base snapshot's tx-map.
+     *
+     *  @param key The transaction ID to look up.
+     *  @return `true` if the transaction is present in the base ledger's
+     *      transaction map.
+     */
     [[nodiscard]] bool
     txExists(key_type const& key) const override;
 
+    /** Read a transaction and its metadata from the base snapshot's tx-map.
+     *
+     *  @param key The transaction ID to retrieve.
+     *  @return A pair of `(STTx, STObject metadata)` for the transaction,
+     *      or `{nullptr, nullptr}` if not found.
+     */
     [[nodiscard]] tx_type
     txRead(key_type const& key) const override;
     /** @} */

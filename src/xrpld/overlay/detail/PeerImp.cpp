@@ -1,3 +1,22 @@
+/** @file
+ *  Implements `PeerImp`, the concrete per-connection object for the XRPL P2P
+ *  overlay.
+ *
+ *  Each `PeerImp` instance owns exactly one live TLS-over-TCP session. It
+ *  drives the full connection lifecycle — TLS handshake acceptance, binary
+ *  wire-protocol framing, message dispatch, resource accounting, and
+ *  graceful shutdown — serialising all mutable state through a single
+ *  `boost::asio::strand`.
+ *
+ *  The three major concerns handled here are:
+ *  - **Async I/O**: read/write loops, timer management, shutdown state machine.
+ *  - **Protocol dispatch**: `invokeProtocolMessage` fans out to typed
+ *    `onMessage()` overloads; `onMessageBegin`/`onMessageEnd` bracket each
+ *    dispatch with resource-charge bookkeeping.
+ *  - **Overlay accounting**: peer tracking (converged/diverged/unknown),
+ *    squelch enforcement, TX reduce-relay queue, and PeerFinder slot
+ *    management.
+ */
 #include <xrpld/overlay/detail/PeerImp.h>
 
 #include <xrpld/app/consensus/RCLCxPeerPos.h>
@@ -118,6 +137,27 @@ std::chrono::seconds constexpr kSHUTDOWN_TIMER_INTERVAL{5};
 // TODO: Remove this exclusion once unit tests are added after the hotfix
 // release.
 
+/** Construct an inbound `PeerImp` from an already-completed TLS handshake.
+ *
+ *  Called by `OverlayImpl::onHandoff` after the HTTP upgrade succeeds.  The
+ *  caller has already validated the `publicKey` and negotiated `protocol`; the
+ *  constructor records the negotiated capabilities (LZ4 compression,
+ *  TX reduce-relay, ledger replay) by parsing the `X-Protocol-Ctl` header via
+ *  `peerFeatureEnabled`.  A structured `fingerprint_` (remote IP + public key
+ *  + numeric ID) is computed and prepended to every log line emitted by this
+ *  peer's journals.
+ *
+ *  @param app        Application context owning shared subsystems.
+ *  @param id         Monotonically assigned numeric peer ID.
+ *  @param slot       PeerFinder slot already allocated for this connection.
+ *  @param request    HTTP upgrade request (headers are retained for feature
+ *      negotiation and diagnostic JSON).
+ *  @param publicKey  Verified ephemeral node public key from handshake.
+ *  @param protocol   Negotiated XRPL wire-protocol version.
+ *  @param consumer   Pre-created resource consumer for rate-limiting.
+ *  @param streamPtr  Ownership of the established TLS stream.
+ *  @param overlay    Owning overlay manager.
+ */
 PeerImp::PeerImp(
     Application& app,
     id_t id,
@@ -176,6 +216,16 @@ PeerImp::PeerImp(
                           << " tx reduce-relay enabled " << txReduceRelayEnabled_;
 }
 
+/** Release overlay registrations and PeerFinder slot.
+ *
+ *  Runs the mandatory teardown chain: `deletePeer` → `onPeerDeactivate` →
+ *  `peerFinder().onClosed` → `overlay_.remove`.  Cluster membership is
+ *  snapshotted before the first call because `deletePeer` may remove the peer
+ *  from the cluster registry before we can log.
+ *
+ *  @note The destructor does NOT close the socket; `close()` must have been
+ *      called before this point via the normal shutdown state machine.
+ */
 PeerImp::~PeerImp()
 {
     bool const inCluster{cluster()};
@@ -191,13 +241,33 @@ PeerImp::~PeerImp()
     }
 }
 
-// Helper function to check for valid uint256 values in protobuf buffers
+/** Return true if `pBuffStr` has exactly 32 bytes (the size of a `uint256`).
+ *
+ *  Protobuf represents hash fields as `bytes` (mapped to `std::string` in
+ *  C++).  Callers must validate the field width before casting to `uint256`
+ *  to prevent silent truncation or out-of-bounds reads.  Every raw-byte
+ *  protobuf field that holds a hash is guarded by this check before the
+ *  `uint256{field}` conversion.
+ *
+ *  @param pBuffStr  Raw bytes from a protobuf `bytes` field.
+ *  @return True if the byte length exactly matches `uint256::size()` (32).
+ */
 static bool
 stringIsUInt256Sized(std::string const& pBuffStr)
 {
     return pBuffStr.size() == uint256::size();
 }
 
+/** Begin the post-handshake protocol session on the strand.
+ *
+ *  Parses the optional `Closed-Ledger` and `Previous-Ledger` HTTP headers
+ *  (hex or base64-encoded `uint256` values) to seed `closedLedgerHash_` and
+ *  `previousLedgerHash_` before protocol messages arrive.  Malformed header
+ *  values trigger `fail()` immediately.  After storing the hashes, delegates
+ *  to `doAccept()` (inbound) or `doProtocolStart()` (outbound).
+ *
+ *  @note Always self-posts to the strand; safe to call from any thread.
+ */
 void
 PeerImp::run()
 {
@@ -260,6 +330,11 @@ PeerImp::run()
     // done in doProtocolStart
 }
 
+/** Initiate graceful shutdown of this peer connection.
+ *
+ *  Idempotent: if the socket is already closed the call is a no-op.
+ *  Always self-posts to the strand so it is safe to call from any thread.
+ */
 void
 PeerImp::stop()
 {
@@ -283,6 +358,23 @@ PeerImp::stop()
 
 //------------------------------------------------------------------------------
 
+/** Enqueue a protocol message for delivery to the remote peer.
+ *
+ *  Before enqueuing, checks the squelch table: if the message carries a
+ *  validator key that is currently squelched, the bytes are counted under
+ *  `SquelchSuppressed` and the message is dropped silently.  If a shutdown
+ *  is in progress the method instead nudges `tryAsyncShutdown()`.
+ *
+ *  Outbound traffic (by category and total) is reported to the overlay
+ *  counters.  The send queue is bounded by `kTARGET_SEND_QUEUE`; exceeding
+ *  it increments `largeSendq_` which the periodic timer uses to disconnect
+ *  stalled peers.  Only the first enqueue while the queue is empty starts a
+ *  new `async_write`; subsequent calls simply push to the queue and return,
+ *  relying on `onWriteMessage` to chain the next write.
+ *
+ *  @param m  Message to deliver; must not be null.
+ *  @note Always self-posts to the strand; safe to call from any thread.
+ */
 void
 PeerImp::send(std::shared_ptr<Message> const& m)
 {
@@ -353,6 +445,14 @@ PeerImp::send(std::shared_ptr<Message> const& m)
                 std::placeholders::_2)));
 }
 
+/** Flush the pending TX-hash queue as a single `TMHaveTransactions` message.
+ *
+ *  Used by the TX reduce-relay path: hashes accumulated via `addTxQueue` are
+ *  batched here and sent in one protobuf message, then the queue is cleared.
+ *  A no-op when `txQueue_` is empty.
+ *
+ *  @note Always self-posts to the strand; safe to call from any thread.
+ */
 void
 PeerImp::sendTxQueue()
 {
@@ -373,6 +473,16 @@ PeerImp::sendTxQueue()
     }
 }
 
+/** Add a transaction hash to the outbound TX-hash queue.
+ *
+ *  Part of the TX reduce-relay path: instead of sending the full transaction
+ *  to every peer, the overlay sends hash announcements.  If the queue has
+ *  reached `reduce_relay::kMAX_TX_QUEUE_SIZE`, it is flushed immediately
+ *  before inserting the new hash to stay within the 64 MiB wire limit.
+ *
+ *  @param hash  Transaction ID to announce to this peer.
+ *  @note Always self-posts to the strand; safe to call from any thread.
+ */
 void
 PeerImp::addTxQueue(uint256 const& hash)
 {
@@ -392,6 +502,15 @@ PeerImp::addTxQueue(uint256 const& hash)
     JLOG(pJournal_.trace()) << "addTxQueue " << txQueue_.size();
 }
 
+/** Remove a transaction hash from the outbound TX-hash queue if present.
+ *
+ *  Called when the server learns the peer has already seen a transaction
+ *  (e.g., the peer sent us the full tx, or we observed a duplicate).
+ *  Prevents sending a redundant hash announcement.
+ *
+ *  @param hash  Transaction ID to remove.
+ *  @note Always self-posts to the strand; safe to call from any thread.
+ */
 void
 PeerImp::removeTxQueue(uint256 const& hash)
 {
@@ -405,6 +524,16 @@ PeerImp::removeTxQueue(uint256 const& hash)
     JLOG(pJournal_.trace()) << "removeTxQueue " << removed;
 }
 
+/** Apply a resource charge to this peer and disconnect if the balance is exceeded.
+ *
+ *  Charges are accumulated in the `Resource::Consumer` balance.  When the
+ *  balance crosses the drop threshold, `usage_.disconnect()` logs the reason
+ *  and this method severs the connection via `fail()`.  The method must be
+ *  called on the strand because `fail()` requires strand context.
+ *
+ *  @param fee      Charge level to apply (e.g. `kFEE_INVALID_SIGNATURE`).
+ *  @param context  Human-readable label used in disconnect log messages.
+ */
 void
 PeerImp::charge(Resource::Charge const& fee, std::string const& context)
 {
@@ -419,6 +548,13 @@ PeerImp::charge(Resource::Charge const& fee, std::string const& context)
 
 //------------------------------------------------------------------------------
 
+/** Return true if this peer consented to being listed in crawl results.
+ *
+ *  The peer signals consent by including `Crawl: public` in the HTTP upgrade
+ *  request or response headers.  The comparison is case-insensitive.
+ *
+ *  @return True when the `Crawl` header value equals "public".
+ */
 bool
 PeerImp::crawl() const
 {
@@ -428,12 +564,23 @@ PeerImp::crawl() const
     return boost::iequals(iter->value(), "public");
 }
 
+/** Return true if this peer's public key appears in the cluster registry.
+ *
+ *  @return True when the peer belongs to the operator's trusted cluster.
+ */
 bool
 PeerImp::cluster() const
 {
     return static_cast<bool>(app_.getCluster().member(publicKey_));
 }
 
+/** Return the remote peer's software version string.
+ *
+ *  For inbound connections the version is taken from the `User-Agent` request
+ *  header; for outbound connections from the `Server` response header.
+ *
+ *  @return Version string, or an empty string if the header is absent.
+ */
 std::string
 PeerImp::getVersion() const
 {
@@ -442,6 +589,17 @@ PeerImp::getVersion() const
     return headers_["Server"];
 }
 
+/** Serialize peer diagnostics to a JSON object.
+ *
+ *  Collects identity (public key, address, cluster name, domain), connection
+ *  metadata (protocol version, network ID, uptime, inbound flag), resource
+ *  load balance, current latency estimate, completed-ledger range, tracking
+ *  state, last status change, and rolling I/O byte metrics.  Called by the
+ *  `peers` RPC method and the `/crawl` HTTP endpoint.
+ *
+ *  @note Acquires `recentLock_` briefly to snapshot mutable fields.
+ *  @return JSON object containing all peer diagnostic fields.
+ */
 json::Value
 PeerImp::json()
 {
@@ -556,6 +714,16 @@ PeerImp::json()
     return ret;
 }
 
+/** Return true if this peer supports the requested protocol feature.
+ *
+ *  `ValidatorListPropagation` requires protocol ≥ 2.1;
+ *  `ValidatorList2Propagation` requires ≥ 2.2;
+ *  `LedgerReplay` is controlled by the `ledgerReplayEnabled_` flag negotiated
+ *  at construction from the `X-Protocol-Ctl` header.
+ *
+ *  @param f  The feature to query.
+ *  @return True if the negotiated session supports `f`.
+ */
 bool
 PeerImp::supportsFeature(ProtocolFeature f) const
 {
@@ -573,6 +741,19 @@ PeerImp::supportsFeature(ProtocolFeature f) const
 
 //------------------------------------------------------------------------------
 
+/** Return true if the peer is believed to hold a specific ledger.
+ *
+ *  Two evidence paths: (1) the requested sequence falls within the peer's
+ *  advertised `[minLedger_, maxLedger_]` range **and** the peer is
+ *  `Converged`; or (2) the hash appears in `recentLedgers_` (short history
+ *  populated by `TMStatusChange` and `addLedger`).  Using sequence alone is
+ *  insufficient because a diverged peer's range is unreliable.
+ *
+ *  @param hash  Ledger hash to check.
+ *  @param seq   Ledger sequence (0 to skip sequence-range check).
+ *  @return True if either evidence path confirms ledger availability.
+ *  @note Acquires `recentLock_`.
+ */
 bool
 PeerImp::hasLedger(uint256 const& hash, std::uint32_t seq) const
 {
@@ -587,6 +768,12 @@ PeerImp::hasLedger(uint256 const& hash, std::uint32_t seq) const
     return false;
 }
 
+/** Copy the peer's advertised completed-ledger sequence range.
+ *
+ *  @param minSeq  Out-parameter set to `minLedger_`.
+ *  @param maxSeq  Out-parameter set to `maxLedger_`.
+ *  @note Acquires `recentLock_`.
+ */
 void
 PeerImp::ledgerRange(std::uint32_t& minSeq, std::uint32_t& maxSeq) const
 {
@@ -596,6 +783,12 @@ PeerImp::ledgerRange(std::uint32_t& minSeq, std::uint32_t& maxSeq) const
     maxSeq = maxLedger_;
 }
 
+/** Return true if the peer has announced possession of a transaction set.
+ *
+ *  @param hash  SHAMap root hash of the candidate transaction set.
+ *  @return True if `hash` appears in `recentTxSets_`.
+ *  @note Acquires `recentLock_`.
+ */
 bool
 PeerImp::hasTxSet(uint256 const& hash) const
 {
@@ -603,6 +796,14 @@ PeerImp::hasTxSet(uint256 const& hash) const
     return std::ranges::find(recentTxSets_, hash) != recentTxSets_.end();
 }
 
+/** Advance ledger-hash state when the locally validated ledger changes.
+ *
+ *  Called by the overlay when the local node closes a ledger.  Rotates the
+ *  current `closedLedgerHash_` into `previousLedgerHash_` and zeros the
+ *  current hash so the peer's next `TMStatusChange` can fill it in fresh.
+ *
+ *  @note Acquires `recentLock_`.
+ */
 void
 PeerImp::cycleStatus()
 {
@@ -613,6 +814,17 @@ PeerImp::cycleStatus()
     closedLedgerHash_.zero();
 }
 
+/** Return true if the peer's advertised ledger range fully covers [uMin, uMax].
+ *
+ *  Deliberately returns false for diverged peers even when the sequence range
+ *  matches, because a diverged peer's advertised ledgers may be on a different
+ *  fork.
+ *
+ *  @param uMin  Lower bound of the requested sequence range (inclusive).
+ *  @param uMax  Upper bound of the requested sequence range (inclusive).
+ *  @return True if the peer is not diverged and holds the full range.
+ *  @note Acquires `recentLock_`.
+ */
 bool
 PeerImp::hasRange(std::uint32_t uMin, std::uint32_t uMax)
 {
@@ -622,6 +834,12 @@ PeerImp::hasRange(std::uint32_t uMin, std::uint32_t uMax)
 
 //------------------------------------------------------------------------------
 
+/** Log an I/O error and initiate shutdown.
+ *
+ *  @param name  Label used as a prefix in the warning log line.
+ *  @param ec    Error code whose message is appended to the log line.
+ *  @note Must be called on the strand.
+ */
 void
 PeerImp::fail(std::string const& name, error_code ec)
 {
@@ -635,6 +853,14 @@ PeerImp::fail(std::string const& name, error_code ec)
     shutdown();
 }
 
+/** Log a protocol error reason string and initiate shutdown.
+ *
+ *  Avoids calling `name()` (which locks `nameMutex_`) unless the warning
+ *  severity is actually active.  Always self-posts to the strand; safe to
+ *  call from any thread.
+ *
+ *  @param reason  Human-readable description of the failure (logged at Warning).
+ */
 void
 PeerImp::fail(std::string const& reason)
 {
@@ -660,6 +886,16 @@ PeerImp::fail(std::string const& reason)
     shutdown();
 }
 
+/** Start the SSL graceful-shutdown handshake if no async I/O is in flight.
+ *
+ *  The SSL `async_shutdown` must NOT be called while `readPending_` or
+ *  `writePending_` are set — doing so would invoke async operations on the
+ *  same stream concurrently, which is undefined behaviour.  This method is
+ *  idempotent (guarded by `shutdownStarted_`) and arms the 5-second safety
+ *  timer before launching the SSL handshake.
+ *
+ *  @note Must be called on the strand.
+ */
 void
 PeerImp::tryAsyncShutdown()
 {
@@ -682,6 +918,15 @@ PeerImp::tryAsyncShutdown()
         strand_, std::bind(&PeerImp::onShutdown, shared_from_this(), std::placeholders::_1)));
 }
 
+/** Set the shutdown flag, cancel pending I/O, and attempt SSL close.
+ *
+ *  Idempotent: subsequent calls while `shutdown_` is already set are no-ops.
+ *  Cancels all pending async operations on the lowest TLS layer so that
+ *  `onReadMessage` and `onWriteMessage` receive `operation_aborted` and clear
+ *  their pending flags, allowing `tryAsyncShutdown` to proceed.
+ *
+ *  @note Must be called on the strand.
+ */
 void
 PeerImp::shutdown()
 {
@@ -697,6 +942,21 @@ PeerImp::shutdown()
     tryAsyncShutdown();
 }
 
+/** Handle completion of the SSL `async_shutdown` call.
+ *
+ *  Several error codes are benign and suppressed:
+ *  - `eof` — the remote peer closed cleanly.
+ *  - `operation_aborted` — the 5-second safety timer expired.
+ *  - "application data after close notify" — the peer sent data after
+ *    initiating their own TLS close; harmless.
+ *  - `broken_pipe`/`stream_truncated` — the TCP connection dropped before the
+ *    TLS handshake completed; the peer is already gone.
+ *
+ *  After handling the error the raw socket is unconditionally closed via
+ *  `close()`.
+ *
+ *  @param ec  Completion error code from `stream_.async_shutdown`.
+ */
 void
 PeerImp::onShutdown(error_code ec)
 {
@@ -721,6 +981,15 @@ PeerImp::onShutdown(error_code ec)
     close();
 }
 
+/** Close the underlying TCP socket and record the disconnect.
+ *
+ *  Final step of the shutdown state machine.  Errors from `socket_.close()`
+ *  are intentionally ignored — the socket is already being torn down.
+ *  Inbound disconnects are logged at Debug; outbound at Info (outbound
+ *  connections are under our control, so disconnects are more significant).
+ *
+ *  @note Must be called on the strand.
+ */
 void
 PeerImp::close()
 {
@@ -745,6 +1014,15 @@ PeerImp::close()
 
 //------------------------------------------------------------------------------
 
+/** Arm the async timer to fire after `interval`.
+ *
+ *  Shared by the periodic ping timer (`kPEER_TIMER_INTERVAL`) and the
+ *  shutdown-safety timer (`kSHUTDOWN_TIMER_INTERVAL`).  Any exception from
+ *  `expires_after` (rare; typically EINVAL on an already-closed socket)
+ *  triggers `shutdown()`.
+ *
+ *  @param interval  Duration after which `onTimer` will be invoked on the strand.
+ */
 void
 PeerImp::setTimer(std::chrono::seconds interval)
 {
@@ -765,6 +1043,14 @@ PeerImp::setTimer(std::chrono::seconds interval)
 
 //------------------------------------------------------------------------------
 
+/** Format a log-line prefix from a peer fingerprint.
+ *
+ *  Wraps the fingerprint in square brackets and appends a space so log lines
+ *  from different peers are visually distinguished in aggregated logs.
+ *
+ *  @param fingerprint  Short identifier string (remote IP + pubkey + ID).
+ *  @return Prefix string of the form `"[fingerprint] "`.
+ */
 std::string
 PeerImp::makePrefix(std::string const& fingerprint)
 {
@@ -773,6 +1059,22 @@ PeerImp::makePrefix(std::string const& fingerprint)
     return ss.str();
 }
 
+/** Handle the shared async timer expiry.
+ *
+ *  Serves two roles depending on context:
+ *  1. **Shutdown safety**: if `shutdown_` is set, the SSL teardown has stalled
+ *     past `kSHUTDOWN_TIMER_INTERVAL`; force `close()`.
+ *  2. **Periodic health**: if not shutting down, the timer fires every
+ *     `kPEER_TIMER_INTERVAL` to (a) disconnect peers with chronically large
+ *     send queues, (b) disconnect outbound peers that have stayed non-converged
+ *     beyond `MAX_DIVERGED_TIME` or `MAX_UNKNOWN_TIME`, and (c) send a
+ *     `TMPing` with a random cookie and re-arm the timer.  An unanswered ping
+ *     cookie from the previous interval causes `fail("Ping Timeout")`.
+ *
+ *  @param ec  Completion error code; `operation_aborted` means the timer was
+ *      cancelled and is silently ignored.
+ *  @note Must be called on the strand.
+ */
 void
 PeerImp::onTimer(error_code const& ec)
 {
@@ -845,6 +1147,12 @@ PeerImp::onTimer(error_code const& ec)
     setTimer(kPEER_TIMER_INTERVAL);
 }
 
+/** Cancel the async timer, swallowing any exception.
+ *
+ *  `noexcept` wrapper around `timer_.cancel()`.  Called during both normal
+ *  shutdown and the SSL-shutdown completion to ensure the timer handler does
+ *  not fire after the socket is closed.
+ */
 void
 PeerImp::cancelTimer() noexcept
 {
@@ -859,6 +1167,17 @@ PeerImp::cancelTimer() noexcept
 }
 
 //------------------------------------------------------------------------------
+/** Complete the inbound-peer handshake and write the HTTP 101 response.
+ *
+ *  Re-derives the TLS shared value from the already-established stream (the
+ *  value was previously computed in `OverlayImpl::onHandoff`; a second
+ *  derivation here is the authoritative check).  On success activates this
+ *  peer in the overlay (`overlay_.activate`), writes the HTTP upgrade
+ *  response, then calls `doProtocolStart` on completion.  An in-progress
+ *  shutdown detected before writing causes an early `tryAsyncShutdown`.
+ *
+ *  @note Must be called on the strand.
+ */
 void
 PeerImp::doAccept()
 {
@@ -943,6 +1262,13 @@ PeerImp::doAccept()
             }));
 }
 
+/** Return the cluster-assigned name for this peer, or an empty string.
+ *
+ *  Protected by `nameMutex_` (shared_mutex) so readers do not block each
+ *  other; writers hold a unique lock when updating from `TMCluster` gossip.
+ *
+ *  @return Cluster name if the peer is a known cluster member; otherwise `""`.
+ */
 std::string
 PeerImp::name() const
 {
@@ -950,6 +1276,10 @@ PeerImp::name() const
     return name_;
 }
 
+/** Return the server domain advertised by the peer in its handshake headers.
+ *
+ *  @return Value of the `Server-Domain` HTTP header, or `""` if absent.
+ */
 std::string
 PeerImp::domain() const
 {
@@ -960,6 +1290,17 @@ PeerImp::domain() const
 
 // Protocol logic
 
+/** Start the XRPL binary wire-protocol session.
+ *
+ *  Calls `onReadMessage` once to kick off the continuous read loop, then
+ *  pushes pending state to the peer: for inbound connections that support
+ *  `ValidatorListPropagation`, all currently-known validator lists are sent
+ *  (and immediately suppressed in the hash router so they are not re-sent on
+ *  the next refresh); finally the manifests message is sent and the periodic
+ *  ping timer is armed.
+ *
+ *  @note A shutdown detected before starting is handled by `tryAsyncShutdown`.
+ */
 void
 PeerImp::doProtocolStart()
 {
@@ -1004,7 +1345,24 @@ PeerImp::doProtocolStart()
     setTimer(kPEER_TIMER_INTERVAL);
 }
 
-// Called repeatedly with protocol message data
+/** Async-read completion handler and message dispatch loop.
+ *
+ *  Runs on the strand.  On each invocation, new bytes are committed to
+ *  `readBuffer_` and `invokeProtocolMessage` is called in a loop until the
+ *  buffer is exhausted or a partial header is encountered (`bytesConsumed==0`).
+ *  Each `invokeProtocolMessage` call may itself invoke multiple `onMessage`
+ *  overloads.  After draining the buffer, another `async_read_some` is posted
+ *  and `readPending_` is set to prevent concurrent reads.
+ *
+ *  Shutdown is checked both after the I/O completion (early abort) and after
+ *  the dispatch loop (deferred abort): if `shutdown_` is set, dispatch is
+ *  skipped and `tryAsyncShutdown` is called instead of re-posting a read.
+ *
+ *  @param ec                Error code from `async_read_some`; `eof` triggers
+ *      graceful shutdown, `operation_aborted` defers to `tryAsyncShutdown`.
+ *  @param bytesTransferred  Number of bytes placed in `readBuffer_`.
+ *  @note Must be called on the strand.
+ */
 void
 PeerImp::onReadMessage(error_code ec, std::size_t bytesTransferred)
 {
@@ -1104,6 +1462,17 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytesTransferred)
                 std::placeholders::_2)));
 }
 
+/** Async-write completion handler; chains the next write if the queue is non-empty.
+ *
+ *  Runs on the strand.  Pops the just-sent message from `sendQueue_` and, if
+ *  more messages are waiting, immediately posts another `async_write`.  If
+ *  `shutdown_` is set after clearing `writePending_`, delegates to
+ *  `tryAsyncShutdown` (which may now be able to start SSL teardown).
+ *
+ *  @param ec                Error code from `async_write`.
+ *  @param bytesTransferred  Bytes confirmed sent; passed to `metrics_.sent`.
+ *  @note Must be called on the strand.
+ */
 void
 PeerImp::onWriteMessage(error_code ec, std::size_t bytesTransferred)
 {
@@ -1170,12 +1539,32 @@ PeerImp::onWriteMessage(error_code ec, std::size_t bytesTransferred)
 //
 //------------------------------------------------------------------------------
 
+/** Handle an unrecognised protobuf message type.
+ *
+ *  Currently a no-op; future versions may charge the peer for sending
+ *  unknown message types or log at trace.
+ *
+ *  @param type  Numeric protobuf message type identifier.
+ */
 void
 PeerImp::onMessageUnknown(std::uint16_t type)
 {
     // TODO
 }
 
+/** Set up per-message resource accounting before dispatching to `onMessage`.
+ *
+ *  Creates a load-event for the job queue profiler, resets `fee_` to the
+ *  baseline trivial charge, records inbound byte counts (both total and
+ *  per-category), and, for transaction-related messages when TX metrics are
+ *  enabled, forwards byte counts to the overlay's `TxMetrics` aggregator.
+ *
+ *  @param type              Numeric protobuf message type.
+ *  @param m                 Decoded protobuf message object.
+ *  @param size              Wire byte size (may be compressed).
+ *  @param uncompressedSize  Uncompressed byte size.
+ *  @param isCompressed      Whether the message arrived LZ4-compressed.
+ */
 void
 PeerImp::onMessageBegin(
     std::uint16_t type,
@@ -1216,6 +1605,13 @@ PeerImp::onMessageBegin(
                            << " " << isCompressed;
 }
 
+/** Apply the accumulated resource charge after message dispatch completes.
+ *
+ *  Releases the job-queue load event and applies `fee_` (possibly escalated
+ *  by the handler via `fee_.update()`) through `charge()`.  If the charge
+ *  exceeds the drop threshold, `charge()` calls `fail()` and the connection
+ *  is severed.
+ */
 void
 PeerImp::onMessageEnd(std::uint16_t, std::shared_ptr<::google::protobuf::Message> const&)
 {
@@ -1223,6 +1619,15 @@ PeerImp::onMessageEnd(std::uint16_t, std::shared_ptr<::google::protobuf::Message
     charge(fee_.fee, fee_.context);
 }
 
+/** Handle an incoming `TMManifests` message.
+ *
+ *  Empty lists are immediately rejected as useless data.  Oversized lists
+ *  (>100 entries) are still processed but incur a moderate-burden charge.
+ *  Processing is deferred to a `JtManifest` job so signature verification
+ *  does not block the network strand.
+ *
+ *  @param m  Parsed `TMManifests` protobuf message.
+ */
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMManifests> const& m)
 {
@@ -1242,6 +1647,19 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMManifests> const& m)
     });
 }
 
+/** Handle an incoming `TMPing` message (ping request or pong reply).
+ *
+ *  **Ping request (`ptPING`)**: Immediately echoes the message back as a pong.
+ *  Charges moderate-burden to limit ping flooding.
+ *
+ *  **Pong reply (`ptPONG`)**: Validates the `seq` cookie against `lastPingSeq_`
+ *  — only matching cookies clear the pending-ping state, so peers that spoof
+ *  pong cookies will eventually time out.  On a valid pong, RTT is measured and
+ *  blended into `latency_` with an 8-factor EWMA:
+ *  `latency = (latency * 7 + rtt) / 8`.
+ *
+ *  @param m  Parsed `TMPing` protobuf message.
+ */
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMPing> const& m)
 {
@@ -1283,6 +1701,17 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMPing> const& m)
     }
 }
 
+/** Handle an incoming `TMCluster` gossip message.
+ *
+ *  Only accepted from peers that are themselves cluster members; non-cluster
+ *  senders incur a useless-data charge.  Valid messages update the cluster
+ *  registry with load and status data for each node in the list, import
+ *  resource gossip into the resource manager, then compute the median cluster
+ *  load fee (from nodes active within the past 90 seconds) and push it to
+ *  `FeeTrack`.
+ *
+ *  @param m  Parsed `TMCluster` protobuf message.
+ */
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMCluster> const& m)
 {
@@ -1352,6 +1781,18 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMCluster> const& m)
     app_.getFeeTrack().setClusterFee(clusterFee);
 }
 
+/** Handle an incoming `TMEndpoints` peer-address gossip message.
+ *
+ *  Only processed from converged peers using protocol version 2.  Messages
+ *  with ≥ 1024 entries are rejected as useless data.  Each entry is parsed
+ *  via `IP::Endpoint::fromStringChecked`; malformed entries accumulate a
+ *  per-entry `kFEE_INVALID_DATA` charge but do not abort processing of the
+ *  remaining valid entries.  For zero-hop entries, the socket's remote address
+ *  overrides the advertised IP so peers do not need to know their own public
+ *  IP.  Valid entries are forwarded to `PeerFinder::onEndpoints`.
+ *
+ *  @param m  Parsed `TMEndpoints` protobuf message.
+ */
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMEndpoints> const& m)
 {
@@ -1409,12 +1850,40 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMEndpoints> const& m)
         overlay_.peerFinder().onEndpoints(slot_, endpoints);
 }
 
+/** Handle an incoming `TMTransaction` (unsolicited full transaction).
+ *
+ *  Delegates to `handleTransaction` with `eraseTxQueue=true` (the peer sent a
+ *  full tx so any matching pending hash in our TX queue can be removed) and
+ *  `batch=false` (single transaction, not a batch reply).
+ *
+ *  @param m  Parsed `TMTransaction` protobuf message.
+ */
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMTransaction> const& m)
 {
     handleTransaction(m, true, false);
 }
 
+/** Core transaction receive handler shared by `onMessage(TMTransaction)` and
+ *  `onMessage(TMTransactions)`.
+ *
+ *  Guards: diverged-peer early-return, not-yet-synced check.  After parsing
+ *  the raw transaction, checks `HashRouter::shouldProcess` to suppress
+ *  duplicate processing.  Transactions with `tfInnerBatchTxn` are rejected
+ *  regardless of amendment state (they must not be relayed).  Cluster peers'
+ *  transactions skip local signature validation when the `deferred` flag is
+ *  clear (i.e. the cluster peer already validated locally).  CPU-heavy
+ *  signature verification and submission are posted to the `JtTransaction`
+ *  job queue via a `weak_ptr` capture so the job silently no-ops if the peer
+ *  is torn down before the job runs.
+ *
+ *  @param m             The raw `TMTransaction` message.
+ *  @param eraseTxQueue  If true, remove `txID` from the outbound TX-hash queue
+ *      when a duplicate is detected (the peer already has the tx).
+ *  @param batch         True when called from `onMessage(TMTransactions)`;
+ *      suppresses the pseudo-tx charge that applies to unsolicited singles.
+ *  @note `eraseTxQueue` and `batch` must not both be true.
+ */
 void
 PeerImp::handleTransaction(
     std::shared_ptr<protocol::TMTransaction> const& m,
@@ -1545,6 +2014,17 @@ PeerImp::handleTransaction(
     }
 }
 
+/** Handle an incoming `TMGetLedger` ledger-data request.
+ *
+ *  Validates all request fields before touching any application state:
+ *  ledger info type, ledger type, ledger hash and sequence (bounds-checked
+ *  against the validated ledger), node IDs (deserialized as `SHAMapNodeID`),
+ *  query type, and query depth.  Any validation failure charges `kFEE_INVALID_DATA`
+ *  and returns.  Accepted requests are dispatched to a `JtLedgerReq` job
+ *  calling `processLedgerRequest`.
+ *
+ *  @param m  Parsed `TMGetLedger` protobuf message.
+ */
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
 {
@@ -1655,6 +2135,15 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
     });
 }
 
+/** Handle an incoming `TMProofPathRequest` (ledger-replay proof-path query).
+ *
+ *  Rejected with `kFEE_MALFORMED_REQUEST` if `ledgerReplayEnabled_` is false
+ *  for this session.  Accepted requests are dispatched to a `JtReplayReq` job;
+ *  the job charges `reBAD_REQUEST` or `reNO_REPLY` on error, or sends a
+ *  `TMProofPathResponse` on success.
+ *
+ *  @param m  Parsed `TMProofPathRequest` protobuf message.
+ */
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMProofPathRequest> const& m)
 {
@@ -1690,6 +2179,14 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProofPathRequest> const& m)
     });
 }
 
+/** Handle an incoming `TMProofPathResponse` (ledger-replay proof-path reply).
+ *
+ *  Rejected with `kFEE_MALFORMED_REQUEST` if `ledgerReplayEnabled_` is false.
+ *  Otherwise forwarded to `ledgerReplayMsgHandler_`; an invalid response
+ *  charges `kFEE_INVALID_DATA`.
+ *
+ *  @param m  Parsed `TMProofPathResponse` protobuf message.
+ */
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMProofPathResponse> const& m)
 {
@@ -1705,6 +2202,14 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProofPathResponse> const& m)
     }
 }
 
+/** Handle an incoming `TMReplayDeltaRequest` (ledger-replay delta query).
+ *
+ *  Rejected with `kFEE_MALFORMED_REQUEST` if `ledgerReplayEnabled_` is false.
+ *  Accepted requests are dispatched to a `JtReplayReq` job; the reply is sent
+ *  as a `TMReplayDeltaResponse`.
+ *
+ *  @param m  Parsed `TMReplayDeltaRequest` protobuf message.
+ */
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMReplayDeltaRequest> const& m)
 {
@@ -1740,6 +2245,14 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMReplayDeltaRequest> const& m)
     });
 }
 
+/** Handle an incoming `TMReplayDeltaResponse` (ledger-replay delta reply).
+ *
+ *  Rejected with `kFEE_MALFORMED_REQUEST` if `ledgerReplayEnabled_` is false.
+ *  Otherwise forwarded to `ledgerReplayMsgHandler_`; an invalid response
+ *  charges `kFEE_INVALID_DATA`.
+ *
+ *  @param m  Parsed `TMReplayDeltaResponse` protobuf message.
+ */
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMReplayDeltaResponse> const& m)
 {
@@ -1755,6 +2268,18 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMReplayDeltaResponse> const& m)
     }
 }
 
+/** Handle an incoming `TMLedgerData` ledger-data reply.
+ *
+ *  Validates: ledger hash size, ledger sequence bounds (against current
+ *  validated index), ledger info type, reply error code range, and node
+ *  count (must be in `(0, kHARD_MAX_REPLY_NODES]`).  Messages with a
+ *  `requestcookie` are forwarded to the originating peer and not processed
+ *  locally.  TX-candidate sets (`liTS_CANDIDATE`) are dispatched to
+ *  `InboundTransactions::gotData`; ordinary ledger data goes to
+ *  `InboundLedgers::gotLedgerData`.
+ *
+ *  @param m  Parsed `TMLedgerData` protobuf message.
+ */
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
 {
@@ -1850,6 +2375,18 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
     app_.getInboundLedgers().gotLedgerData(ledgerHash, shared_from_this(), m);
 }
 
+/** Handle an incoming consensus `TMProposeSet` proposal.
+ *
+ *  Performs a rapid sanity-check on the DER signature size (64–72 bytes) and
+ *  public-key type before the more expensive trusted/suppression checks.
+ *  Duplicate proposals (detected via `addSuppressionPeerWithStatus`) update
+ *  the squelch slot counters and are dropped.  Untrusted proposals are dropped
+ *  early when `RELAY_UNTRUSTED_PROPOSALS == -1` or when the peer is diverged.
+ *  Valid proposals are dispatched to a `JtProposalT`/`JtProposalUt` job
+ *  calling `checkPropose` for signature verification and relay.
+ *
+ *  @param m  Parsed `TMProposeSet` protobuf message.
+ */
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
 {
@@ -1955,6 +2492,17 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
         });
 }
 
+/** Handle an incoming `TMStatusChange` peer-state advertisement.
+ *
+ *  Updates `lastStatus_`, `closedLedgerHash_`, `previousLedgerHash_`,
+ *  `minLedger_`, `maxLedger_`, and triggers `checkTracking` against the
+ *  locally validated ledger sequence.  A `neLOST_SYNC` event zeroes the
+ *  ledger hashes.  All ledger-field updates are guarded by `recentLock_`.
+ *  Finally publishes the status change as a JSON event via
+ *  `NetworkOPs::pubPeerStatus`.
+ *
+ *  @param m  Parsed `TMStatusChange` protobuf message.
+ */
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMStatusChange> const& m)
 {
@@ -2128,6 +2676,14 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMStatusChange> const& m)
     });
 }
 
+/** Compare the peer's highest ledger sequence against the validated index.
+ *
+ *  Reads `maxLedger_` (under `recentLock_`) and delegates to the two-argument
+ *  overload.  A zero `maxLedger_` is skipped — the peer has not yet
+ *  advertised any ledger range.
+ *
+ *  @param validationSeq  Sequence of the locally validated ledger.
+ */
 void
 PeerImp::checkTracking(std::uint32_t validationSeq)
 {
@@ -2147,6 +2703,19 @@ PeerImp::checkTracking(std::uint32_t validationSeq)
     }
 }
 
+/** Update the peer's `Tracking` state by comparing two ledger sequences.
+ *
+ *  Uses a two-threshold design for hysteresis:
+ *  - `|seq1 - seq2| < kCONVERGED_LEDGER_LIMIT (24)` → `Converged`.
+ *  - `|seq1 - seq2| > kDIVERGED_LEDGER_LIMIT (128)` → `Diverged`; records
+ *    `trackingTime_` so the timer can disconnect persistently diverged peers.
+ *  Transitions from `Diverged` back to `Converged` are allowed but not from
+ *  `Converged` to `Diverged` without passing through the gap first (the two
+ *  thresholds are far apart).
+ *
+ *  @param seq1  One sequence number (order does not matter; absolute diff is used).
+ *  @param seq2  The other sequence number.
+ */
 void
 PeerImp::checkTracking(std::uint32_t seq1, std::uint32_t seq2)
 {
@@ -2168,6 +2737,15 @@ PeerImp::checkTracking(std::uint32_t seq1, std::uint32_t seq2)
     }
 }
 
+/** Handle an incoming `TMHaveTransactionSet` announcement.
+ *
+ *  When the peer reports `tsHAVE`, the TX-set hash is added to
+ *  `recentTxSets_` (guarded by `recentLock_`) so future `hasTxSet` queries
+ *  can route fetch requests to this peer.  Duplicate announcements for a hash
+ *  already in the cache are charged as useless data.
+ *
+ *  @param m  Parsed `TMHaveTransactionSet` protobuf message.
+ */
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMHaveTransactionSet> const& m)
 {
@@ -2193,6 +2771,27 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMHaveTransactionSet> const& m)
     }
 }
 
+/** Shared handler for `TMValidatorList` and `TMValidatorListCollection`.
+ *
+ *  Deduplicates by `sha512Half(manifest, blobs, version)` using the hash
+ *  router.  Forwards to `ValidatorList::applyListsAndBroadcast`; charges and
+ *  logs are driven by the best (most favourable) and worst (most harmful)
+ *  `ListDisposition` across all blobs:
+ *  - Accepted/Expired/Pending → no charge.
+ *  - SameSequence/KnownSequence → useless-data charge.
+ *  - Stale → invalid-data charge.
+ *  - Untrusted → useless-data charge.
+ *  - Invalid → invalid-signature charge.
+ *  - UnsupportedVersion → invalid-data charge.
+ *  Debug-mode assertions verify that cached sequence numbers are monotonically
+ *  increasing for accepted/expired/pending lists.
+ *
+ *  @param messageType  Human-readable type label for logging ("ValidatorList"
+ *      or "ValidatorListCollection").
+ *  @param manifest     Publisher manifest bytes.
+ *  @param version      UNL list format version.
+ *  @param blobs        Encoded validator list blob payloads.
+ */
 void
 PeerImp::onValidatorListMessage(
     std::string const& messageType,
@@ -2389,6 +2988,14 @@ PeerImp::onValidatorListMessage(
     }
 }
 
+/** Handle an incoming `TMValidatorList` (UNL version 1).
+ *
+ *  Rejected if the peer's protocol version predates `ValidatorListPropagation`
+ *  (≥ 2.1).  Otherwise delegates to `onValidatorListMessage`.  Parse
+ *  exceptions (malformed blobs) charge `kFEE_INVALID_DATA`.
+ *
+ *  @param m  Parsed `TMValidatorList` protobuf message.
+ */
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMValidatorList> const& m)
 {
@@ -2413,6 +3020,14 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidatorList> const& m)
     }
 }
 
+/** Handle an incoming `TMValidatorListCollection` (UNL version ≥ 2).
+ *
+ *  Requires protocol ≥ 2.2 (`ValidatorList2Propagation`) and message version
+ *  ≥ 2.  Rejects older message versions with `kFEE_INVALID_DATA`.  Otherwise
+ *  delegates to `onValidatorListMessage`.
+ *
+ *  @param m  Parsed `TMValidatorListCollection` protobuf message.
+ */
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMValidatorListCollection> const& m)
 {
@@ -2446,6 +3061,17 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidatorListCollection> const& m
     }
 }
 
+/** Handle an incoming `TMValidation` ledger-validation message.
+ *
+ *  Sanity-checks size (≥ 50 bytes), deserialises the `STValidation`, and
+ *  verifies currency (via `isCurrent` against the validation parameters).
+ *  Duplicate validations update squelch counters and are dropped.  Untrusted
+ *  validations are dropped when `RELAY_UNTRUSTED_VALIDATIONS == -1` or when
+ *  local load is high.  Signature verification and acceptance are posted to a
+ *  `JtValidationT`/`JtValidationUt` job calling `checkValidation`.
+ *
+ *  @param m  Parsed `TMValidation` protobuf message.
+ */
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
 {
@@ -2552,6 +3178,24 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
     }
 }
 
+/** Handle an incoming `TMGetObjectByHash` query or reply.
+ *
+ *  **Query path** (`packet.query() == true`):
+ *  - `otFETCH_PACK`: Delegates to `doFetchPack`.
+ *  - `otTRANSACTIONS`: Dispatches to `doTransactions` via `JtRequestedTxn`
+ *    (TX reduce-relay — only accepted when the feature is negotiated).
+ *  - Other types: Iterates `packet.objects()`, fetches each hash from the
+ *    node store, and packs results into a reply, capped at
+ *    `kHARD_MAX_REPLY_NODES`.  Skips fetch if send queue is overloaded
+ *    (`kDROP_SEND_QUEUE`).
+ *
+ *  **Reply path** (`packet.query() == false`):
+ *  Iterates `packet.objects()` grouped by ledger sequence.  For each ledger
+ *  not already held locally, nodes are added to the fetch-pack via
+ *  `LedgerMaster::addFetchPack`; `gotFetchPack` is called at the end.
+ *
+ *  @param m  Parsed `TMGetObjectByHash` protobuf message.
+ */
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
 {
@@ -2704,6 +3348,14 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
     }
 }
 
+/** Handle an incoming `TMHaveTransactions` hash-announcement batch.
+ *
+ *  Part of the TX reduce-relay path.  Only accepted when the feature is
+ *  negotiated (`txReduceRelayEnabled`).  Dispatches to `handleHaveTransactions`
+ *  via a `JtMissingTxn` job so cache lookups do not block the network strand.
+ *
+ *  @param m  Parsed `TMHaveTransactions` protobuf message.
+ */
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMHaveTransactions> const& m)
 {
@@ -2721,6 +3373,19 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMHaveTransactions> const& m)
     });
 }
 
+/** Process a `TMHaveTransactions` batch and request any missing transactions.
+ *
+ *  For each hash in the batch:
+ *  - Validates hash width (32 bytes) — charges `kFEE_MALFORMED_REQUEST` and
+ *    returns immediately on the first invalid entry.
+ *  - If the transaction is not in the local `MasterTransaction` cache, adds it
+ *    to a `TMGetObjectByHash` (type `otTRANSACTIONS`) request.
+ *  - If it is cached, removes the hash from our outbound TX-hash queue
+ *    (`removeTxQueue`) since the peer clearly already has the tx.
+ *  The request (if non-empty) is sent in a single `mtGET_OBJECTS` message.
+ *
+ *  @param m  Parsed `TMHaveTransactions` protobuf message.
+ */
 void
 PeerImp::handleHaveTransactions(std::shared_ptr<protocol::TMHaveTransactions> const& m)
 {
@@ -2767,6 +3432,15 @@ PeerImp::handleHaveTransactions(std::shared_ptr<protocol::TMHaveTransactions> co
         send(std::make_shared<Message>(tmBH, protocol::mtGET_OBJECTS));
 }
 
+/** Handle an incoming `TMTransactions` batch-transaction reply.
+ *
+ *  Only accepted when TX reduce-relay is negotiated.  Each transaction in the
+ *  batch is processed via `handleTransaction` with `eraseTxQueue=false` and
+ *  `batch=true`.  The batch size is also forwarded to the overlay's
+ *  `TxMetrics` aggregator.
+ *
+ *  @param m  Parsed `TMTransactions` protobuf message.
+ */
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMTransactions> const& m)
 {
@@ -2791,6 +3465,23 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMTransactions> const& m)
     }
 }
 
+/** Handle an incoming `TMSquelch` reduce-relay suppression command.
+ *
+ *  A peer asks us to stop forwarding validations for a particular validator
+ *  key for `squelchduration` seconds.  Guards:
+ *  - The message must include a valid `validatorpubkey` (parseable public key).
+ *  - Self-squelch attempts — where the target key matches our own validation
+ *    key — are silently discarded; we never trust a remote peer to suppress
+ *    our own outputs.
+ *  - `squelch=false` removes an existing squelch entry.
+ *  - Out-of-range durations passed to `addSquelch` result in
+ *    `kFEE_INVALID_DATA`.
+ *
+ *  @note This handler self-posts to the strand (unlike most `onMessage`
+ *      overloads) because it is called from `invokeProtocolMessage` which may
+ *      run on any thread when dispatched via the job queue.
+ *  @param m  Parsed `TMSquelch` protobuf message.
+ */
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMSquelch> const& m)
 {
@@ -2837,6 +3528,15 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMSquelch> const& m)
 
 //--------------------------------------------------------------------------
 
+/** Append a ledger hash to the peer's recent-ledgers list if not already present.
+ *
+ *  The `lockedRecentLock` parameter is a zero-cost proof-of-lock token:
+ *  callers must already hold `recentLock_` and pass their `scoped_lock` to
+ *  make the lock requirement visible at the call site.
+ *
+ *  @param hash              Ledger hash to record.
+ *  @param lockedRecentLock  Proof that the caller holds `recentLock_`.
+ */
 void
 PeerImp::addLedger(uint256 const& hash, std::scoped_lock<std::mutex> const& lockedRecentLock)
 {
@@ -2850,6 +3550,17 @@ PeerImp::addLedger(uint256 const& hash, std::scoped_lock<std::mutex> const& lock
     recentLedgers_.push_back(hash);
 }
 
+/** Build and send a fetch-pack response to this peer.
+ *
+ *  Guards against building fetch packs when the local node is loaded, the
+ *  validated ledger is stale (>40s), or there are already >10 pack jobs
+ *  queued.  The actual pack construction is deferred to a `JtPack` job via
+ *  `LedgerMaster::makeFetchPack`.  `UptimeClock::now()` is snapshotted before
+ *  posting so the job can measure elapsed time.
+ *
+ *  @param packet  The `TMGetObjectByHash` request containing the target
+ *      ledger hash.
+ */
 void
 PeerImp::doFetchPack(std::shared_ptr<protocol::TMGetObjectByHash> const& packet)
 {
@@ -2883,6 +3594,17 @@ PeerImp::doFetchPack(std::shared_ptr<protocol::TMGetObjectByHash> const& packet)
     });
 }
 
+/** Respond to a TX reduce-relay transaction-data request.
+ *
+ *  Validates that the request contains at most `kMAX_TX_QUEUE_SIZE` hashes.
+ *  For each hash, looks up the transaction in the `MasterTransaction` cache;
+ *  if not found (e.g. was evicted), charges malformed-request and returns
+ *  early.  Found transactions are serialised into a `TMTransactions` reply
+ *  which is sent as a single `mtTRANSACTIONS` message.
+ *
+ *  @param packet  The `TMGetObjectByHash` request listing the desired
+ *      transaction hashes.
+ */
 void
 PeerImp::doTransactions(std::shared_ptr<protocol::TMGetObjectByHash> const& packet)
 {
@@ -2935,6 +3657,23 @@ PeerImp::doTransactions(std::shared_ptr<protocol::TMGetObjectByHash> const& pack
         send(std::make_shared<Message>(reply, protocol::mtTRANSACTIONS));
 }
 
+/** Validate and submit a received transaction (runs on the job queue).
+ *
+ *  Steps: (1) Reject `tfInnerBatchTxn` regardless of amendment state.
+ *  (2) Reject expired transactions (`sfLastLedgerSequence` < validated index)
+ *  and mark them `BAD` in the hash router.  (3) Pseudo-transactions are
+ *  canonicalized and relayed but not submitted to the transaction engine.
+ *  (4) If `checkSignature`, calls `checkValidity`; failure marks the tx `BAD`
+ *  and charges `kFEE_INVALID_SIGNATURE`.  (5) Otherwise calls `forceValidity`
+ *  (cluster-trusted path).  (6) Constructs a `Transaction` object and submits
+ *  via `NetworkOPs::processTransaction`.
+ *
+ *  @param flags          Hash-router flags populated by `shouldProcess`.
+ *  @param checkSignature True if signature verification should be performed.
+ *  @param stx            Deserialised transaction object.
+ *  @param batch          True when the transaction arrived in a `TMTransactions`
+ *      batch; suppresses the pseudo-tx useless-data charge.
+ */
 void
 PeerImp::checkTransaction(
     HashRouterFlags flags,
@@ -3067,6 +3806,19 @@ PeerImp::checkTransaction(
     }
 }
 
+/** Verify a consensus proposal signature and relay it (runs on the job queue).
+ *
+ *  Cluster peers bypass signature verification (`checkSign`).  For trusted
+ *  proposals, `processTrustedProposal` determines whether to relay.  For
+ *  untrusted proposals, relay is controlled by `RELAY_UNTRUSTED_PROPOSALS`
+ *  or cluster membership.  After relaying, `updateSlotAndSquelch` is called
+ *  with the set of peers that already had the message (returned by `relay`)
+ *  to keep squelch slot counters accurate.
+ *
+ *  @param isTrusted  True if the proposer's key is in the trusted validator set.
+ *  @param packet     Original wire message (used for relay).
+ *  @param peerPos    Reconstructed proposal object carrying the suppression ID.
+ */
 // Called from our JobQueue
 void
 PeerImp::checkPropose(
@@ -3116,6 +3868,18 @@ PeerImp::checkPropose(
     }
 }
 
+/** Verify a validation object's signature and relay it (runs on the job queue).
+ *
+ *  Calls `STValidation::isValid()` (cryptographic check); invalid validations
+ *  charge `kFEE_INVALID_SIGNATURE`.  Valid validations are passed to
+ *  `NetworkOPs::recvValidation`; accepted validations (or those from cluster
+ *  members) are relayed via `overlay_.relay`, and `updateSlotAndSquelch` is
+ *  called with the suppression set to maintain reduce-relay slot counters.
+ *
+ *  @param val     Deserialised and time-checked `STValidation` object.
+ *  @param key     `sha512Half` of the raw validation bytes (suppression key).
+ *  @param packet  Original wire message (passed to `overlay_.relay`).
+ */
 void
 PeerImp::checkValidation(
     std::shared_ptr<STValidation> const& val,
@@ -3155,9 +3919,17 @@ PeerImp::checkValidation(
     }
 }
 
-// Returns the set of peers that can help us get
-// the TX tree with the specified root hash.
-//
+/** Select the highest-scoring peer that holds a TX tree with `rootHash`.
+ *
+ *  Iterates all active peers, filters by `hasTxSet(rootHash)`, excludes
+ *  `skip` (the calling peer — we already know it doesn't have it), and
+ *  returns the peer with the highest `getScore(true)`.
+ *
+ *  @param ov        Overlay manager to iterate peers over.
+ *  @param rootHash  SHAMap root hash of the desired candidate transaction set.
+ *  @param skip      Peer to exclude from selection (typically `this`).
+ *  @return Best candidate peer, or null if none qualify.
+ */
 static std::shared_ptr<PeerImp>
 getPeerWithTree(OverlayImpl& ov, uint256 const& rootHash, PeerImp const* skip)
 {
@@ -3179,9 +3951,19 @@ getPeerWithTree(OverlayImpl& ov, uint256 const& rootHash, PeerImp const* skip)
     return ret;
 }
 
-// Returns a random peer weighted by how likely to
-// have the ledger and how responsive it is.
-//
+/** Select the highest-scoring peer that is believed to hold a specific ledger.
+ *
+ *  Iterates all active peers, filters by `hasLedger(ledgerHash, ledger)`,
+ *  excludes `skip`, and returns the peer with the highest `getScore(true)`.
+ *  Scoring incorporates latency and randomness so load is distributed across
+ *  equally-capable peers.
+ *
+ *  @param ov          Overlay manager to iterate peers over.
+ *  @param ledgerHash  Hash of the desired ledger.
+ *  @param ledger      Sequence number of the desired ledger (0 to skip seq check).
+ *  @param skip        Peer to exclude from selection (typically `this`).
+ *  @return Best candidate peer, or null if none qualify.
+ */
 static std::shared_ptr<PeerImp>
 getPeerWithLedger(
     OverlayImpl& ov,
@@ -3207,6 +3989,16 @@ getPeerWithLedger(
     return ret;
 }
 
+/** Serialise and send the base ledger nodes (header + root hashes).
+ *
+ *  For a `liBASE` request, packs the ledger header and — when available — the
+ *  state-map root node and the transaction-map root node into `ledgerData`,
+ *  then transmits the reply.
+ *
+ *  @param ledger      The ledger whose base data is to be sent.
+ *  @param ledgerData  Pre-populated `TMLedgerData` (hash, seq, type fields
+ *      already set by the caller); nodes are appended here.
+ */
 void
 PeerImp::sendLedgerBase(
     std::shared_ptr<Ledger const> const& ledger,
@@ -3244,6 +4036,18 @@ PeerImp::sendLedgerBase(
     send(message);
 }
 
+/** Resolve the ledger requested by a `TMGetLedger` message.
+ *
+ *  Lookup priority: hash → sequence → `ltCLOSED`.  When a hash-based lookup
+ *  fails and the request has a `querytype` but no `requestcookie`, relays the
+ *  request to the best peer that has the ledger via `getPeerWithLedger` (sets
+ *  `requestcookie` to our own ID so the reply is routed back through us).
+ *  After finding a ledger, validates that the returned sequence matches the
+ *  requested sequence and is not below `getEarliestFetch`.
+ *
+ *  @param m  The `TMGetLedger` request.
+ *  @return   The resolved ledger, or null if not found or relayed.
+ */
 std::shared_ptr<Ledger const>
 PeerImp::getLedger(std::shared_ptr<protocol::TMGetLedger> const& m)
 {
@@ -3328,6 +4132,15 @@ PeerImp::getLedger(std::shared_ptr<protocol::TMGetLedger> const& m)
     return ledger;
 }
 
+/** Resolve the candidate transaction set requested by a `TMGetLedger` message.
+ *
+ *  Looks up the SHAMap by hash in `InboundTransactions`.  On miss, if the
+ *  request has `querytype` and no `requestcookie`, relays to the best peer
+ *  with the TX tree (sets `requestcookie` so the reply routes back through us).
+ *
+ *  @param m  The `TMGetLedger` request; `ledgerhash` must be the TX-set root.
+ *  @return   The SHAMap if available locally; null if not found or relayed.
+ */
 std::shared_ptr<SHAMap const>
 PeerImp::getTxSet(std::shared_ptr<protocol::TMGetLedger> const& m) const
 {
@@ -3360,6 +4173,21 @@ PeerImp::getTxSet(std::shared_ptr<protocol::TMGetLedger> const& m) const
     return shaMap;
 }
 
+/** Fulfil a `TMGetLedger` request (runs on the `JtLedgerReq` job queue).
+ *
+ *  Applies send-queue and local-load backpressure guards for non-TX-candidate
+ *  requests.  Resolves the ledger or TX-set via `getLedger`/`getTxSet`, fills
+ *  the `TMLedgerData` reply with the appropriate SHAMap nodes (up to
+ *  `kSOFT_MAX_REPLY_NODES` per batch, hard-capped at `kHARD_MAX_REPLY_NODES`),
+ *  and transmits.  Query depth defaults to 2 for high-latency peers, 1
+ *  otherwise, unless the request specifies an explicit depth.  For `liBASE`
+ *  requests, delegates to `sendLedgerBase` and returns immediately.
+ *
+ *  Relay responses (identified by a `requestcookie`) skip the resource charge
+ *  applied to direct requests.
+ *
+ *  @param m  The `TMGetLedger` request, already validated by `onMessage`.
+ */
 void
 PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
 {
@@ -3531,6 +4359,22 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
     send(std::make_shared<Message>(ledgerData, protocol::mtLEDGER_DATA));
 }
 
+/** Compute a composite peer score for data-fetch candidate selection.
+ *
+ *  The score combines four components:
+ *  - A random baseline `[0, kSP_RANDOM_MAX=9999]` to break ties and distribute
+ *    load across equally-capable peers.
+ *  - `+kSP_HAVE_ITEM=10000` if `haveItem` is true (peer is known to have the
+ *    requested data).
+ *  - `-latency_ms * kSP_LATENCY=30` per millisecond of measured RTT.
+ *  - `-kSP_NO_LATENCY=8000` penalty if no latency sample is available yet.
+ *
+ *  The caller selects the peer with the highest score.
+ *
+ *  @param haveItem  True when the peer is known to hold the requested item.
+ *  @return A signed integer score; higher is better.
+ *  @note Acquires `recentLock_` briefly to read `latency_`.
+ */
 int
 PeerImp::getScore(bool haveItem) const
 {
@@ -3573,6 +4417,15 @@ PeerImp::getScore(bool haveItem) const
     return score;
 }
 
+/** Return true if this peer's smoothed RTT exceeds `kPEER_HIGH_LATENCY` (300ms).
+ *
+ *  Used by `processLedgerRequest` to select a shallower default query depth
+ *  (1 instead of 2) for low-bandwidth peers so replies stay within the size
+ *  cap.
+ *
+ *  @return True when `latency_ >= kPEER_HIGH_LATENCY`.
+ *  @note Acquires `recentLock_`.
+ */
 bool
 PeerImp::isHighLatency() const
 {
@@ -3580,6 +4433,15 @@ PeerImp::isHighLatency() const
     return latency_ >= kPEER_HIGH_LATENCY;
 }
 
+/** Record bytes transferred for a single message and update rolling averages.
+ *
+ *  Accumulates bytes into a per-second bucket.  At the end of each second,
+ *  the bucket average is appended to `rollingAvg_` (a circular buffer) and
+ *  a new overall average is recomputed.  This gives a smoothed per-second
+ *  throughput figure independent of message arrival rate.
+ *
+ *  @param bytes  Number of bytes in the completed message transfer.
+ */
 void
 PeerImp::Metrics::addMessage(std::uint64_t bytes)
 {
@@ -3604,6 +4466,11 @@ PeerImp::Metrics::addMessage(std::uint64_t bytes)
     }
 }
 
+/** Return the smoothed rolling-average throughput in bytes per second.
+ *
+ *  @return Average bytes/second over the rolling window, protected by a
+ *      shared lock so concurrent RPC readers do not block writers.
+ */
 std::uint64_t
 PeerImp::Metrics::averageBytes() const
 {
@@ -3611,6 +4478,10 @@ PeerImp::Metrics::averageBytes() const
     return rollingAvgBytes_;
 }
 
+/** Return the total number of bytes transferred since connection start.
+ *
+ *  @return Cumulative byte count, protected by a shared lock.
+ */
 std::uint64_t
 PeerImp::Metrics::totalBytes() const
 {

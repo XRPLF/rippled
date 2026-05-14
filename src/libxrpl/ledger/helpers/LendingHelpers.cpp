@@ -1,3 +1,13 @@
+/** @file
+ *  Numerical core of the XRPL lending protocol (XLS-66).
+ *
+ *  Implements every mathematical operation in a loan's life cycle: computing
+ *  amortized periodic payments, splitting each payment into principal,
+ *  interest, and management-fee components, and handling late, full (early-
+ *  closure), and overpayment scenarios. The top-level entry point
+ *  `loanMakePayment()` implements the `make_payment` function from XLS-66
+ *  §3.2.4.4. All equation references below are to Section A-2 of that spec.
+ */
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 
 #include <xrpl/basics/Expected.h>
@@ -28,6 +38,16 @@
 
 namespace xrpl {
 
+/** Verify all amendment prerequisites for the lending protocol are active.
+ *
+ *  Every lending transactor calls this in `checkExtraFeatures()`. Adding a
+ *  new prerequisite here gates all lending transactions atomically.
+ *
+ *  @param rules  Active amendment rules for the current ledger.
+ *  @param tx     The transaction being validated.
+ *  @return `true` if all required amendments are enabled and the transaction
+ *      is consistent with them; `false` if the transaction must be rejected.
+ */
 bool
 checkLendingProtocolDependencies(Rules const& rules, STTx const& tx)
 {
@@ -43,6 +63,15 @@ checkLendingProtocolDependencies(Rules const& rules, STTx const& tx)
     return true;
 }
 
+/** Accumulate payment parts from multiple consecutive payment rounds.
+ *
+ *  Used by `loanMakePayment()` to sum regular payments made in a single
+ *  transaction when the borrower supplies enough funds to cover more than
+ *  one installment. All component fields of `other` must be non-negative.
+ *
+ *  @param other  Payment parts from the next completed payment round.
+ *  @return Reference to `*this` with accumulated totals.
+ */
 LoanPaymentParts&
 LoanPaymentParts::operator+=(LoanPaymentParts const& other)
 {
@@ -67,6 +96,11 @@ LoanPaymentParts::operator+=(LoanPaymentParts const& other)
     return *this;
 }
 
+/** Compare two `LoanPaymentParts` for exact equality across all fields.
+ *
+ *  @param other  The parts to compare against.
+ *  @return `true` if all four fields are equal.
+ */
 bool
 LoanPaymentParts::operator==(LoanPaymentParts const& other) const
 {
@@ -74,10 +108,14 @@ LoanPaymentParts::operator==(LoanPaymentParts const& other) const
         valueChange == other.valueChange && feePaid == other.feePaid;
 }
 
-/* Converts annualized interest rate to per-payment-period rate.
- * The rate is prorated based on the payment interval in seconds.
+/** Convert an annualized interest rate to a per-payment-period rate.
  *
- * Equation (1) from XLS-66 spec, Section A-2 Equation Glossary
+ *  Prorates the annual rate by the fraction `paymentInterval / secondsInYear`.
+ *  Implements Equation (1) from XLS-66, Section A-2 Equation Glossary.
+ *
+ *  @param interestRate     Annual interest rate in tenth-of-a-basis-point units.
+ *  @param paymentInterval  Length of one payment period in seconds.
+ *  @return The per-period rate as a `Number` at full floating-point precision.
  */
 Number
 loanPeriodicRate(TenthBips32 interestRate, std::uint32_t paymentInterval)
@@ -86,9 +124,16 @@ loanPeriodicRate(TenthBips32 interestRate, std::uint32_t paymentInterval)
     return tenthBipsOfValue(Number(paymentInterval), interestRate) / kSECONDS_IN_YEAR;
 }
 
-/* Checks if a value is already rounded to the specified scale.
- * Returns true if rounding down and rounding up produce the same result,
- * indicating no further precision exists beyond the scale.
+/** Check whether a value is already rounded to the given scale.
+ *
+ *  Compares the downward- and upward-rounded forms; equality means no
+ *  sub-scale precision remains. Used as a precondition guard and post-
+ *  condition assertion throughout the payment pipeline.
+ *
+ *  @param asset  Asset whose representable precision constrains rounding.
+ *  @param value  The value to test.
+ *  @param scale  Exponent that defines the target precision.
+ *  @return `true` if `roundDown(value) == roundUp(value)` at `scale`.
  */
 bool
 isRounded(Asset const& asset, Number const& value, std::int32_t scale)
@@ -99,6 +144,12 @@ isRounded(Asset const& asset, Number const& value, std::int32_t scale)
 
 namespace detail {
 
+/** Clamp all delta fields to zero from below.
+ *
+ *  Rounding can occasionally produce tiny negative deltas when the theoretical
+ *  target exceeds the current rounded state by a sub-scale amount. This method
+ *  eliminates those artifacts before the deltas are used as payment amounts.
+ */
 void
 LoanStateDeltas::nonNegative()
 {
@@ -110,17 +161,26 @@ LoanStateDeltas::nonNegative()
         managementFee = kNUM_ZERO;
 }
 
-/* Computes (1 + r)^n - 1 accurately even for near-zero r, where direct
- * subtraction of `power(1 + r, n) - 1` suffers catastrophic cancellation.
+/** Compute `(1 + r)^n - 1` accurately for near-zero `r` via binomial expansion.
  *
- * The binomial expansion gives
- *   (1 + r)^n - 1 = sum_{k=1}^{n} C(n,k) r^k
- *                 = nr + C(n,2) r^2 + ... + r^n
- * which is a sum of positive terms when r >= 0, avoiding cancellation.
- * Each term is computed from the previous via
- *   term_{k+1} = term_k * r * (n - k) / (k + 1)
+ *  Direct subtraction `power(1 + r, n) - 1` suffers catastrophic cancellation
+ *  when `r` is small: the result `~r*n` sits far below the leading `1` in
+ *  `(1+r)^n`, consuming most of Number's 19-digit mantissa. The binomial
+ *  expansion avoids this:
  *
- * The loop terminates early once the next term is below Number precision.
+ *  @code
+ *    (1 + r)^n - 1 = nr + C(n,2) r^2 + ... + r^n
+ *  @endcode
+ *
+ *  Each term is derived from the previous as `term_{k+1} = term_k * r * (n-k) / (k+1)`.
+ *  The loop terminates early once adding the next term leaves the running sum
+ *  unchanged (below Number's precision floor).
+ *
+ *  @param periodicRate      Per-period rate `r`; must be >= 0.
+ *  @param paymentsRemaining Number of periods `n`.
+ *  @return `(1 + r)^n - 1`, or 0 if `r == 0` or `n == 0`.
+ *  @note For `r * n >= 1e-9` the closed-form path in `computePowerMinusOneHybrid`
+ *      is ~30-500x faster and equally accurate; prefer the hybrid for production use.
  */
 Number
 computePowerMinusOne(Number const& periodicRate, std::uint32_t paymentsRemaining)
@@ -149,17 +209,20 @@ computePowerMinusOne(Number const& periodicRate, std::uint32_t paymentsRemaining
     return sum;
 }
 
-/* Hybrid evaluator of (1 + r)^n - 1.
+/** Compute `(1 + r)^n - 1`, selecting the numerically stable path automatically.
  *
- * The closed-form `power(1 + r, n) - 1` loses sig digits to cancellation
- * when `r * n` is small: the result `~r*n` sits well below the `1` that
- * dominates `(1+r)^n`, so most of Number's stored precision is consumed
- * by the leading `1`.
+ *  When `r * n >= 1e-9` the closed-form `power(1 + r, n) - 1` retains enough
+ *  precision and is ~30-500x faster than the binomial expansion. Below that
+ *  threshold cancellation becomes severe — the `~r*n` result sits well below
+ *  the `1` consumed by the leading term of `(1+r)^n` — so the call is
+ *  forwarded to `computePowerMinusOne()`.
  *
- * A threshold of `1e-9` preserves the closed-form path for any rate the
- *  lending code actually sees in practice (fixtures at moderate rates are bit-exact),
- * while routing the pathological near-zero regime through the binomial
- * expansion where cancellation is severe.
+ *  @param periodicRate      Per-period rate `r`; must be >= 0.
+ *  @param paymentsRemaining Number of periods `n`.
+ *  @return `(1 + r)^n - 1`, or 0 if `r == 0` or `n == 0`.
+ *  @note The threshold `1e-9` is chosen so that both paths agree to within
+ *      Number's post-subtraction precision (~10 significant digits) at the
+ *      crossover, verified by `testComputePowerMinusOneHybrid`.
  */
 Number
 computePowerMinusOneHybrid(Number const& periodicRate, std::uint32_t paymentsRemaining)
@@ -184,10 +247,20 @@ computePowerMinusOneHybrid(Number const& periodicRate, std::uint32_t paymentsRem
     return computePowerMinusOne(periodicRate, paymentsRemaining);
 }
 
-/* Computes the payment factor used in standard amortization formulas.
- * This factor converts principal to periodic payment amount.
+/** Compute the standard amortization payment factor `r(1+r)^n / ((1+r)^n - 1)`.
  *
- * Equation (6) from XLS-66 spec, Section A-2 Equation Glossary
+ *  Multiplying this factor by the outstanding principal yields the fixed
+ *  periodic payment. Implements Equation (6) from XLS-66, Section A-2.
+ *
+ *  When `fixCleanup3_2_0` is enabled the denominator `(1+r)^n - 1` is
+ *  evaluated via `computePowerMinusOneHybrid()` to avoid catastrophic
+ *  cancellation at near-zero rates. The pre-amendment path uses the direct
+ *  `power(1+r, n) - 1` form and is preserved for historic replay.
+ *
+ *  @param rules             Active amendment rules (gates the hybrid path).
+ *  @param periodicRate      Per-period rate `r`; must be >= 0.
+ *  @param paymentsRemaining Number of remaining payments `n`.
+ *  @return The payment factor, or `1/n` when `r == 0`, or 0 when `n == 0`.
  */
 Number
 computePaymentFactor(
@@ -219,10 +292,18 @@ computePaymentFactor(
     return (periodicRate * raisedRate) / (raisedRate - 1);
 }
 
-/* Calculates the periodic payment amount using standard amortization formula.
- * For interest-free loans, returns principal divided equally across payments.
+/** Compute the fixed installment amount for a standard amortized loan.
  *
- * Equation (7) from XLS-66 spec, Section A-2 Equation Glossary
+ *  Implements `principal * paymentFactor(r, n)`. For zero-interest loans the
+ *  formula degenerates to equal principal slices (`principal / n`). Implements
+ *  Equation (7) from XLS-66, Section A-2 Equation Glossary.
+ *
+ *  @param rules                Active amendment rules (passed to `computePaymentFactor`).
+ *  @param principalOutstanding Current outstanding principal.
+ *  @param periodicRate         Per-period interest rate.
+ *  @param paymentsRemaining    Number of payments left in the schedule.
+ *  @return The unrounded periodic payment, or 0 if `principalOutstanding == 0`
+ *      or `paymentsRemaining == 0`.
  */
 Number
 loanPeriodicPayment(
@@ -241,10 +322,18 @@ loanPeriodicPayment(
     return principalOutstanding * computePaymentFactor(rules, periodicRate, paymentsRemaining);
 }
 
-/* Reverse-calculates principal from periodic payment amount.
- * Used to determine theoretical principal at any point in the schedule.
+/** Reverse-calculate the outstanding principal implied by a given periodic payment.
  *
- * Equation (10) from XLS-66 spec, Section A-2 Equation Glossary
+ *  The inverse of `loanPeriodicPayment()`: recovers what the principal should be
+ *  at a given point in the amortization schedule, used by `computeTheoreticalLoanState()`
+ *  and the early-closure path. Implements Equation (10) from XLS-66, Section A-2.
+ *
+ *  @param rules             Active amendment rules (passed to `computePaymentFactor`).
+ *  @param periodicPayment   Fixed installment amount.
+ *  @param periodicRate      Per-period interest rate.
+ *  @param paymentsRemaining Number of payments remaining.
+ *  @return Theoretical outstanding principal, or 0 if `paymentsRemaining == 0`, or
+ *      `periodicPayment * paymentsRemaining` when `periodicRate == 0`.
  */
 Number
 loanPrincipalFromPeriodicPayment(
@@ -262,10 +351,17 @@ loanPrincipalFromPeriodicPayment(
     return periodicPayment / computePaymentFactor(rules, periodicRate, paymentsRemaining);
 }
 
-/*
- * Computes the interest and management fee parts from interest amount.
+/** Split a gross interest amount into net interest (vault) and management fee (broker).
  *
- * Equation (33) from XLS-66 spec, Section A-2 Equation Glossary
+ *  Computes `fee = computeManagementFee(interest, managementFeeRate)` and
+ *  returns `(interest - fee, fee)`. Implements Equation (33) from XLS-66,
+ *  Section A-2 Equation Glossary.
+ *
+ *  @param asset            Asset used for rounding the fee.
+ *  @param interest         Gross interest amount to split.
+ *  @param managementFeeRate Broker's share of gross interest in tenth-bips.
+ *  @param loanScale        Exponent for rounding the fee.
+ *  @return Pair `(netInterest, fee)` where `netInterest + fee == interest`.
  */
 std::pair<Number, Number>
 computeInterestAndFeeParts(
@@ -279,10 +375,18 @@ computeInterestAndFeeParts(
     return std::make_pair(interest - fee, fee);
 }
 
-/* Calculates penalty interest accrued on overdue payments.
- * Returns 0 if payment is not late.
+/** Compute penalty interest that has accrued on an overdue payment.
  *
- * Equation (16) from XLS-66 spec, Section A-2 Equation Glossary
+ *  Calculates `principal * loanPeriodicRate(lateInterestRate, secondsOverdue)`.
+ *  Returns 0 if the payment is on time or early, if `principalOutstanding == 0`,
+ *  or if `lateInterestRate == 0`. Implements Equation (16) from XLS-66,
+ *  Section A-2 Equation Glossary.
+ *
+ *  @param principalOutstanding Current outstanding principal.
+ *  @param lateInterestRate     Annualized penalty rate in tenth-of-a-basis-point units.
+ *  @param parentCloseTime      Close time of the parent ledger (the "now" for overdue calc).
+ *  @param nextPaymentDueDate   The timestamp when the payment was originally due.
+ *  @return Unrounded late penalty interest, or 0 if the payment is not overdue.
  */
 Number
 loanLatePaymentInterest(
@@ -312,10 +416,22 @@ loanLatePaymentInterest(
     return principalOutstanding * rate;
 }
 
-/* Calculates interest accrued since the last payment based on time elapsed.
- * Returns 0 if loan is paid ahead of schedule.
+/** Compute interest accrued since the last payment, prorated by elapsed time.
  *
- * Equation (27) from XLS-66 spec, Section A-2 Equation Glossary
+ *  Computes `principal * periodicRate * secondsSinceLastPayment / paymentInterval`,
+ *  where `lastPaymentDate = max(prevPaymentDate, startDate)`. Multiplication
+ *  is performed before division to minimise rounding amplification. Returns 0
+ *  if the loan is paid ahead of schedule (i.e. `now <= lastPaymentDate`).
+ *  Implements Equation (27) from XLS-66, Section A-2 Equation Glossary.
+ *
+ *  @param principalOutstanding Current outstanding principal.
+ *  @param periodicRate         Per-period interest rate.
+ *  @param parentCloseTime      Close time of the parent ledger (current time).
+ *  @param startDate            Unix timestamp when the loan started accruing.
+ *  @param prevPaymentDate      Due date of the most recently completed payment.
+ *  @param paymentInterval      Length of one payment period in seconds.
+ *  @return Unrounded accrued interest, or 0 if `periodicRate == 0`, `paymentInterval == 0`,
+ *      or the loan is ahead of schedule.
  */
 Number
 loanAccruedInterest(
@@ -349,14 +465,30 @@ loanAccruedInterest(
     return principalOutstanding * periodicRate * secondsSinceLastPayment / paymentInterval;
 }
 
-/* Applies a payment to the loan state and returns the breakdown of amounts
- * paid.
+/** Apply a fully-computed payment to the loan state and return the payment breakdown.
  *
- * This is the core function that updates the Loan ledger object fields based on
- * a computed payment.
-
- * The function is templated to work with both direct Number/uint32_t values
- * (for testing/simulation) and ValueProxy types (for actual ledger updates).
+ *  The core commit step: subtracts the `payment` deltas from the three outstanding
+ *  balance proxies and advances the payment schedule (`paymentRemaining`,
+ *  `prevPaymentDate`, `nextDueDate`). For a `PaymentSpecialCase::Final` payment all
+ *  balances are zeroed and `nextDueDate` is cleared, marking the loan as paid off.
+ *  For a `PaymentSpecialCase::Extra` (overpayment) the schedule is not advanced.
+ *
+ *  Templated on proxy types so the same function can run against `ValueProxy<T>`
+ *  objects (which write through to the Loan SLE) or plain value types for unit
+ *  tests and simulation.
+ *
+ *  @tparam NumberProxy         Type exposing `Number` read/write semantics.
+ *  @tparam UInt32Proxy         Type exposing `uint32_t` read/write semantics.
+ *  @tparam UInt32OptionalProxy Type exposing optional-`uint32_t` read/write semantics.
+ *  @param payment                      Fully-computed payment components to apply.
+ *  @param totalValueOutstandingProxy   Proxy for `sfTotalValueOutstanding`.
+ *  @param principalOutstandingProxy    Proxy for `sfPrincipalOutstanding`.
+ *  @param managementFeeOutstandingProxy Proxy for `sfManagementFeeOutstanding`.
+ *  @param paymentRemainingProxy        Proxy for `sfPaymentRemaining`.
+ *  @param prevPaymentDateProxy         Proxy for `sfPreviousPaymentDueDate`.
+ *  @param nextDueDateProxy             Proxy for `sfNextPaymentDueDate`; must be set.
+ *  @param paymentInterval              Payment period length in seconds.
+ *  @return Breakdown of amounts paid, suitable for return from `loanMakePayment()`.
  */
 template <class NumberProxy, class UInt32Proxy, class UInt32OptionalProxy>
 LoanPaymentParts
@@ -471,15 +603,33 @@ doPayment(
         .feePaid = payment.trackedManagementFeeDelta + payment.untrackedManagementFee};
 }
 
-/* Simulates an overpayment to validate it won't break the loan's amortization.
+/** Simulate a principal overpayment and re-amortize the loan in a sandbox.
  *
- * When a borrower pays more than the scheduled amount, the loan needs to be
- * re-amortized with a lower principal. This function performs that calculation
- * in a "sandbox" using temporary variables, allowing the caller to validate
- * the result before committing changes to the actual ledger.
+ *  When a borrower pays more than the scheduled amount the remaining schedule
+ *  must be re-amortized from a lower principal. This function:
+ *  1. Computes the theoretical (unrounded) current state.
+ *  2. Measures accumulated rounding error vs. the actual ledger state.
+ *  3. Reduces the theoretical principal by `overpaymentComponents.trackedPrincipalDelta`.
+ *  4. Calls `computeLoanProperties()` for the new schedule.
+ *  5. Adds the preserved rounding errors back before re-rounding.
+ *  6. Validates the result via `checkLoanGuards()`; rejects silently if invalid.
  *
- * The function preserves accumulated rounding errors across the re-amortization
- * to ensure the loan state remains consistent with its payment history.
+ *  All mutations target local copies — no proxies are written. On success,
+ *  `doOverpayment()` commits the result.
+ *
+ *  @param rules                   Active amendment rules.
+ *  @param asset                   Loan asset for rounding.
+ *  @param loanScale               Exponent for rounding all loan values.
+ *  @param overpaymentComponents   Pre-computed payment components for the overpayment.
+ *  @param roundedOldState         Current rounded loan state from the ledger.
+ *  @param periodicPayment         Current periodic payment amount.
+ *  @param periodicRate            Per-period interest rate.
+ *  @param paymentRemaining        Number of payments still remaining.
+ *  @param managementFeeRate       Broker fee rate in tenth-bips.
+ *  @param j                       Journal for diagnostic logging.
+ *  @return On success, a pair of `LoanPaymentParts` and the new `LoanProperties`.
+ *      Returns `Unexpected(tesSUCCESS)` to signal "silently ignore the overpayment"
+ *      (not an error), or `Unexpected(otherTER)` on a genuine failure.
  */
 Expected<std::pair<LoanPaymentParts, LoanProperties>, TER>
 tryOverpayment(
@@ -654,16 +804,31 @@ tryOverpayment(
         newLoanProperties);
 }
 
-/* Validates and applies an overpayment to the loan state.
+/** Validate and commit a principal overpayment to the loan ledger object.
  *
- * This function acts as a wrapper around tryOverpayment(), performing the
- * re-amortization calculation in a sandbox (using temporary copies of the
- * loan state), then validating the results before committing them to the
- * actual ledger via the proxy objects.
+ *  Wraps `tryOverpayment()` in a two-phase pattern: the sandbox calculation
+ *  runs first against local copies of the loan state. Only after all guard
+ *  conditions pass — including that the principal strictly decreased — are the
+ *  proxy objects updated with the new balances and periodic payment.
  *
- * The two-step process (try in sandbox, then commit) ensures that if the
- * overpayment would leave the loan in an invalid state, we can reject it
- * gracefully without corrupting the ledger data.
+ *  Returns `Unexpected(tesSUCCESS)` when `tryOverpayment` rejects the overpayment
+ *  silently (invalid state, zero principal reduction, etc.), propagating the
+ *  signal up to `loanMakePayment()` which continues without the overpayment step.
+ *
+ *  @tparam NumberProxy                  Type exposing `Number` read/write semantics.
+ *  @param rules                         Active amendment rules.
+ *  @param asset                         Loan asset for rounding.
+ *  @param loanScale                     Exponent for rounding.
+ *  @param overpaymentComponents         Pre-computed overpayment components.
+ *  @param totalValueOutstandingProxy    Proxy for `sfTotalValueOutstanding`.
+ *  @param principalOutstandingProxy     Proxy for `sfPrincipalOutstanding`.
+ *  @param managementFeeOutstandingProxy Proxy for `sfManagementFeeOutstanding`.
+ *  @param periodicPaymentProxy          Proxy for `sfPeriodicPayment`.
+ *  @param periodicRate                  Per-period interest rate.
+ *  @param paymentRemaining              Remaining payment count.
+ *  @param managementFeeRate             Broker fee rate in tenth-bips.
+ *  @param j                             Journal for diagnostic logging.
+ *  @return Payment parts on success; `Unexpected(TER)` on failure or silent skip.
  */
 template <class NumberProxy>
 Expected<LoanPaymentParts, TER>
@@ -773,18 +938,30 @@ doOverpayment(
     return loanPaymentParts;
 }
 
-/* Computes the payment components for a late payment.
+/** Compute payment components for a payment made after the due date.
  *
- * A late payment is made after the grace period has expired and includes:
- * 1. All components of a regular periodic payment
- * 2. Late payment penalty interest (accrued since the due date)
- * 3. Late payment fee charged by the broker
+ *  Extends the regular `periodic` components with two extra untracked amounts:
+ *  - Late penalty interest (`loanLatePaymentInterest()`), which increases the
+ *    loan's total value (`valueChange > 0`).
+ *  - A fixed late payment fee charged by the broker.
  *
- * The late penalty interest increases the loan's total value (the borrower
- * owes more than scheduled), while the regular payment components follow
- * the normal amortization schedule.
+ *  Both are split by `computeInterestAndFeeParts()` before being added.
+ *  Implements Equation (15) from XLS-66, Section A-2 Equation Glossary.
  *
- * Implements equation (15) from XLS-66 spec, Section A-2 Equation Glossary
+ *  @param asset              Loan asset for rounding.
+ *  @param view               Apply view supplying `parentCloseTime` and expiry check.
+ *  @param principalOutstanding Current outstanding principal.
+ *  @param nextDueDate        The payment's scheduled due date.
+ *  @param periodic           Pre-computed regular periodic payment components.
+ *  @param lateInterestRate   Annualized penalty rate in tenth-of-a-basis-point units.
+ *  @param loanScale          Exponent for rounding.
+ *  @param latePaymentFee     Fixed broker fee for a late payment.
+ *  @param amount             Amount the borrower offered; must cover `late.totalDue`.
+ *  @param managementFeeRate  Broker fee rate for splitting the late interest.
+ *  @param j                  Journal for diagnostic logging.
+ *  @return Extended components including late penalty on success;
+ *      `Unexpected(tecTOO_SOON)` if the due date has not yet passed;
+ *      `Unexpected(tecINSUFFICIENT_PAYMENT)` if `amount < late.totalDue`.
  */
 Expected<ExtendedPaymentComponents, TER>
 computeLatePayment(
@@ -861,24 +1038,40 @@ computeLatePayment(
     return late;
 }
 
-/* Computes payment components for paying off a loan early (before final
- * payment).
+/** Compute payment components for early loan closure (before the final scheduled payment).
  *
- * A full payment closes the loan immediately, paying off all outstanding
- * balances plus a prepayment penalty and any accrued interest since the last
- * payment. This is different from the final scheduled payment, which has no
- * prepayment penalty.
+ *  Disallowed when only one payment remains — the final scheduled payment
+ *  should follow the regular path instead. Pays off all remaining balances
+ *  (`trackedValueDelta = principal + interest + fee`) marked `PaymentSpecialCase::Final`,
+ *  plus two untracked charges:
+ *  - Accrued interest since the last payment (`loanAccruedInterest()`), Eq. 27.
+ *  - Prepayment penalty (`closeInterestRate` applied to theoretical principal), Eq. 28.
  *
- * The function calculates:
- * - Accrued interest since last payment (time-based)
- * - Prepayment penalty (percentage of remaining principal)
- * - Close payment fee (fixed fee for early closure)
- * - All remaining principal and outstanding fees
+ *  `untrackedInterest = roundedFullInterest - totalInterestOutstanding`; this
+ *  drives `LoanPaymentParts::valueChange` and can be negative (early payoff saves
+ *  more interest than the penalty costs). Implements Equation (26) from XLS-66,
+ *  Section A-2.
  *
- * The loan's value may increase or decrease depending on whether the prepayment
- * penalty exceeds the scheduled interest that would have been paid.
- *
- * Implements equation (26) from XLS-66 spec, Section A-2 Equation Glossary
+ *  @param asset                   Loan asset for rounding.
+ *  @param view                    Apply view supplying `parentCloseTime` and `rules`.
+ *  @param principalOutstanding    Current outstanding principal.
+ *  @param managementFeeOutstanding Current outstanding management fee.
+ *  @param periodicPayment         Current fixed installment amount.
+ *  @param paymentRemaining        Remaining payment count; must be > 1.
+ *  @param prevPaymentDate         Due date of the most recently completed payment.
+ *  @param startDate               Loan start date (for accrued-interest calculation).
+ *  @param paymentInterval         Payment period length in seconds.
+ *  @param closeInterestRate       Prepayment penalty rate in tenth-bips.
+ *  @param loanScale               Exponent for rounding.
+ *  @param totalInterestOutstanding Total interest still due on the loan.
+ *  @param periodicRate            Per-period interest rate.
+ *  @param closePaymentFee         Fixed broker fee for early closure.
+ *  @param amount                  Amount the borrower offered; must cover `full.totalDue`.
+ *  @param managementFeeRate       Broker fee rate for splitting the full-payment interest.
+ *  @param j                       Journal for diagnostic logging.
+ *  @return Extended components on success;
+ *      `Unexpected(tecKILLED)` if `paymentRemaining <= 1`;
+ *      `Unexpected(tecINSUFFICIENT_PAYMENT)` if `amount < full.totalDue`.
  */
 Expected<ExtendedPaymentComponents, TER>
 computeFullPayment(
@@ -991,29 +1184,44 @@ computeFullPayment(
     return full;
 }
 
+/** Derive the tracked interest portion of this payment.
+ *
+ *  Computed as `trackedValueDelta - trackedPrincipalDelta - trackedManagementFeeDelta`,
+ *  representing the net interest paid to the vault from the scheduled amortization.
+ *  Untracked interest (e.g., late penalty interest) is not included here.
+ *
+ *  @return The tracked interest component as a `Number`.
+ */
 Number
 PaymentComponents::trackedInterestPart() const
 {
     return trackedValueDelta - (trackedPrincipalDelta + trackedManagementFeeDelta);
 }
 
-/* Computes the breakdown of a regular periodic payment into principal,
- * interest, and management fee components.
+/** Compute how a single scheduled payment splits into principal, interest, and fee.
  *
- * This function determines how a single scheduled payment should be split among
- * the three tracked loan components. The calculation accounts for accumulated
- * rounding errors.
+ *  Rather than recomputing from the amortization formula, this function asks
+ *  "what should the loan state be after this payment?" by calling
+ *  `computeTheoreticalLoanState(paymentRemaining - 1)` and taking the delta
+ *  between the current ledger state and that target. This naturally absorbs
+ *  accumulated rounding errors. After computing raw deltas the function applies
+ *  `nonNegative()` and a series of `std::min` caps to ensure no component
+ *  exceeds its available balance or the rounded periodic payment. Excess is
+ *  redistributed by the `addressExcess` lambda (interest first, then fee, then
+ *  principal). Implements `compute_payment_due()` from XLS-66 §3.2.4.4.
  *
- * The algorithm:
- * 1. Calculate what the loan state SHOULD be after this payment (target)
- * 2. Compare current state to target to get deltas
- * 3. Adjust deltas to handle rounding artifacts and edge cases
- * 4. Ensure deltas don't exceed available balances or payment amount
- *
- * Special handling for the final payment: all remaining balances are paid off
- * regardless of the periodic payment amount.
- *
- * Implements the pseudo-code function `compute_payment_due()`.
+ *  @param rules                   Active amendment rules.
+ *  @param asset                   Loan asset for rounding.
+ *  @param scale                   Exponent for rounding.
+ *  @param totalValueOutstanding   Current `sfTotalValueOutstanding`.
+ *  @param principalOutstanding    Current `sfPrincipalOutstanding`.
+ *  @param managementFeeOutstanding Current `sfManagementFeeOutstanding`.
+ *  @param periodicPayment         Current scheduled installment (unrounded).
+ *  @param periodicRate            Per-period interest rate.
+ *  @param paymentRemaining        Number of payments remaining; must be > 0.
+ *  @param managementFeeRate       Broker fee rate in tenth-bips.
+ *  @return `PaymentComponents` with `specialCase = Final` if this is the last
+ *      payment or if `totalValueOutstanding <= roundedPeriodicPayment`.
  */
 PaymentComponents
 computePaymentComponents(
@@ -1211,23 +1419,27 @@ computePaymentComponents(
     };
 }
 
-/* Computes payment components for an overpayment scenario.
+/** Compute payment components for a principal overpayment.
  *
- * An overpayment occurs when a borrower pays more than the scheduled periodic
- * payment amount. The overpayment is treated as extra principal reduction,
- * but incurs a fee and potentially a penalty interest charge.
+ *  An overpayment pays more than the scheduled installment; the surplus reduces
+ *  principal immediately but incurs a fixed fee and a one-time penalty interest
+ *  charge. The decomposition (XLS-66 §3.2.4.2.3, Equations 20-22):
  *
- * The calculation (Section 3.2.4.2.3 from XLS-66 spec):
- * 1. Calculate gross penalty interest on the overpayment amount
- * 2. Split the gross interest into net interest and management fee
- * 3. Calculate the penalty fee
- * 4. Determine the principal portion by subtracting the interest (gross) and
- * management fee from the overpayment amount
+ *  1. `overpaymentFee = round(overpayment * overpaymentFeeRate)` (Eq. 22).
+ *  2. Gross penalty interest on the full overpayment, split into net interest
+ *     and management fee via `computeInterestAndFeeParts()` (Eqs. 20-21).
+ *  3. `trackedPrincipalDelta = overpayment - grossInterest - overpaymentFee`.
  *
- * Unlike regular payments which follow the amortization schedule, overpayments
- * apply to principal, reducing the loan balance and future interest costs.
+ *  The result is tagged `PaymentSpecialCase::Extra` so `doPayment()` knows not
+ *  to advance the payment schedule.
  *
- * Equations (20), (21) and (22) from XLS-66 spec, Section A-2 Equation Glossary
+ *  @param asset                  Loan asset for rounding.
+ *  @param loanScale              Exponent for rounding all components.
+ *  @param overpayment            Amount being overpaid; must be > 0 and already rounded.
+ *  @param overpaymentInterestRate One-time penalty rate applied to the overpayment, in tenth-bips.
+ *  @param overpaymentFeeRate     Fixed broker fee rate on the overpayment, in tenth-bips.
+ *  @param managementFeeRate      Broker's share of the penalty interest, in tenth-bips.
+ *  @return `ExtendedPaymentComponents` with `specialCase = Extra`.
  */
 ExtendedPaymentComponents
 computeOverpaymentComponents(
@@ -1286,6 +1498,17 @@ computeOverpaymentComponents(
 
 }  // namespace detail
 
+/** Compute the component-wise difference between two loan states.
+ *
+ *  Used to measure accumulated rounding error between the current rounded
+ *  ledger state and the theoretical state, and to compute payment deltas during
+ *  re-amortization. The resulting `LoanStateDeltas` does not include a
+ *  `valueOutstanding` delta; callers derive it via `LoanStateDeltas::total()`.
+ *
+ *  @param lhs  The minuend loan state (typically the current rounded state).
+ *  @param rhs  The subtrahend loan state (typically the theoretical target).
+ *  @return Component-wise deltas `lhs - rhs`.
+ */
 detail::LoanStateDeltas
 operator-(LoanState const& lhs, LoanState const& rhs)
 {
@@ -1298,6 +1521,15 @@ operator-(LoanState const& lhs, LoanState const& rhs)
     return result;
 }
 
+/** Subtract `LoanStateDeltas` from a `LoanState`.
+ *
+ *  Used to apply payment deltas to a loan state, producing the post-payment
+ *  state. `valueOutstanding` is adjusted by `rhs.total()`.
+ *
+ *  @param lhs  The base loan state.
+ *  @param rhs  The deltas to subtract.
+ *  @return New `LoanState` with each field reduced by the corresponding delta.
+ */
 LoanState
 operator-(LoanState const& lhs, detail::LoanStateDeltas const& rhs)
 {
@@ -1311,6 +1543,15 @@ operator-(LoanState const& lhs, detail::LoanStateDeltas const& rhs)
     return result;
 }
 
+/** Add `LoanStateDeltas` to a `LoanState`.
+ *
+ *  Used by `tryOverpayment()` to re-apply preserved rounding errors to the
+ *  newly re-amortized theoretical state before rounding to the loan scale.
+ *
+ *  @param lhs  The base loan state.
+ *  @param rhs  The deltas to add.
+ *  @return New `LoanState` with each field increased by the corresponding delta.
+ */
 LoanState
 operator+(LoanState const& lhs, detail::LoanStateDeltas const& rhs)
 {
@@ -1324,6 +1565,30 @@ operator+(LoanState const& lhs, detail::LoanStateDeltas const& rhs)
     return result;
 }
 
+/** Validate that computed loan properties satisfy precision and amortization invariants.
+ *
+ *  Enforces four guards in sequence, each returning `tecPRECISION_LOSS` on violation:
+ *  1. If `expectInterest`, total interest over the loan's life must be a measurable
+ *     positive value; if not, the amortization table is meaningless.
+ *  2. The first-payment's principal share (`properties.firstPaymentPrincipal`) must
+ *     be positive at full precision — if it rounds to zero the principal can never
+ *     be paid down.
+ *  3. The rounded periodic payment must not be zero (prevents division-by-zero in
+ *     downstream calculations).
+ *  4. `floor(totalValue / roundedPayment)` must equal `paymentTotal`, ensuring the
+ *     loan will complete in exactly the specified number of installments.
+ *
+ *  Called from loan creation (`LoanSet`) and after each overpayment re-amortization.
+ *
+ *  @param vaultAsset          Asset used for rounding the periodic payment.
+ *  @param principalRequested  Loan principal, used to compute total interest outstanding.
+ *  @param expectInterest      `true` if the loan has a non-zero interest rate.
+ *  @param paymentTotal        Total number of scheduled payments.
+ *  @param properties          Computed loan properties to validate.
+ *  @param j                   Journal for diagnostic logging.
+ *  @return `tesSUCCESS` if all guards pass; `tecPRECISION_LOSS` or `tecINTERNAL`
+ *      on violation.
+ */
 TER
 checkLoanGuards(
     Asset const& vaultAsset,
@@ -1402,11 +1667,21 @@ checkLoanGuards(
     return tesSUCCESS;
 }
 
-/*
- * This function calculates the full payment interest accrued since the last
- * payment, plus any prepayment penalty.
+/** Compute the total interest charge for an early full payment.
  *
- * Equations (27) and (28) from XLS-66 spec, Section A-2 Equation Glossary
+ *  Sums two components:
+ *  - Accrued interest since the last payment (`loanAccruedInterest()`), Eq. 27.
+ *  - Prepayment penalty (`closeInterestRate` applied to the theoretical principal
+ *    outstanding), Eq. 28. Zero when `closeInterestRate == 0`.
+ *
+ *  @param theoreticalPrincipalOutstanding Unrounded principal derived from the payment schedule.
+ *  @param periodicRate      Per-period interest rate.
+ *  @param parentCloseTime   Close time of the parent ledger.
+ *  @param paymentInterval   Payment period length in seconds.
+ *  @param prevPaymentDate   Due date of the most recently completed payment.
+ *  @param startDate         Loan start date (for accrued-interest calculation).
+ *  @param closeInterestRate Prepayment penalty rate in tenth-of-a-basis-point units.
+ *  @return `accruedInterest + prepaymentPenalty`, both non-negative.
  */
 Number
 computeFullPaymentInterest(
@@ -1444,27 +1719,20 @@ computeFullPaymentInterest(
     return accruedInterest + prepaymentPenalty;
 }
 
-/* Calculates the theoretical loan state at maximum precision for a given point
- * in the amortization schedule.
+/** Compute the theoretically correct loan state at full arithmetic precision.
  *
- * This function computes what the loan's outstanding balances should be based
- * on the periodic payment amount and number of payments remaining,
- * without considering any rounding that may have been applied to the actual
- * Loan object's state. This "theoretical" (unrounded) state is used as a target
- * for computing payment components and validating that the loan's tracked state
- * hasn't drifted too far from the theoretical values.
+ *  Derives what each outstanding balance *should be* purely from the payment
+ *  schedule, without any ledger-rounding effects. Used as a target state in
+ *  `computePaymentComponents()` and `tryOverpayment()` to measure and correct
+ *  accumulated rounding drift. Implements `calculate_true_loan_state` from
+ *  XLS-66 §3.2.4.4. Equations 30-33 from Section A-2.
  *
- * The theoretical state serves several purposes:
- * 1. Computing the expected payment breakdown (principal, interest, fees)
- * 2. Detecting and correcting rounding errors that accumulate over time
- * 3. Validating that overpayments are calculated correctly
- * 4. Ensuring the loan will be fully paid off at the end of its term
- *
- * If paymentRemaining is 0, returns a fully zeroed-out LoanState,
- *       representing a completely paid-off loan.
- *
- * Implements the `calculate_true_loan_state` function from the XLS-66 spec
- * section 3.2.4.4 Transaction Pseudo-code
+ *  @param rules             Active amendment rules (passed to `loanPrincipalFromPeriodicPayment`).
+ *  @param periodicPayment   Fixed installment amount.
+ *  @param periodicRate      Per-period interest rate.
+ *  @param paymentRemaining  Number of payments still remaining after this point.
+ *  @param managementFeeRate Broker fee rate in tenth-bips.
+ *  @return Unrounded `LoanState`, or a fully-zeroed state if `paymentRemaining == 0`.
  */
 LoanState
 computeTheoreticalLoanState(
@@ -1507,25 +1775,18 @@ computeTheoreticalLoanState(
     };
 };
 
-/* Constructs a LoanState from rounded Loan ledger object values.
+/** Build a `LoanState` from the three directly-tracked loan balances.
  *
- * This function creates a LoanState structure from the three tracked values
- * stored in a Loan ledger object. Unlike calculateTheoreticalLoanState(), which
- * computes theoretical unrounded values, this function works with values
- * that have already been rounded to the loan's scale.
+ *  Derives `interestDue = totalValueOutstanding - principalOutstanding - managementFeeOutstanding`
+ *  rather than accepting it as a parameter, ensuring the LoanState invariant
+ *  `interestDue + managementFeeDue == valueOutstanding - principalOutstanding`
+ *  always holds. Use `computeTheoreticalLoanState()` when working at full
+ *  arithmetic precision; use this function when working from rounded ledger values.
  *
- * The key difference from calculateTheoreticalLoanState():
- * - calculateTheoreticalLoanState: Computes theoretical values at full
- * precision
- * - constructRoundedLoanState: Builds state from actual rounded ledger values
- *
- * The interestDue field is derived from the other three values rather than
- * stored directly, since it can be calculated as:
- *   interestDue = totalValueOutstanding - principalOutstanding -
- * managementFeeOutstanding
- *
- * This ensures consistency across the codebase and prevents copy-paste errors
- * when creating LoanState objects from Loan ledger data.
+ *  @param totalValueOutstanding    Total value still owed by the borrower.
+ *  @param principalOutstanding     Principal component still outstanding.
+ *  @param managementFeeOutstanding Management fee component still outstanding.
+ *  @return Consistent `LoanState` with `interestDue` derived from the other fields.
  */
 LoanState
 constructLoanState(
@@ -1542,6 +1803,15 @@ constructLoanState(
         .managementFeeDue = managementFeeOutstanding};
 }
 
+/** Build a `LoanState` directly from a Loan ledger entry's stored fields.
+ *
+ *  Convenience wrapper that reads `sfTotalValueOutstanding`,
+ *  `sfPrincipalOutstanding`, and `sfManagementFeeOutstanding` from the SLE
+ *  and delegates to `constructLoanState()`.
+ *
+ *  @param loan  A const reference to the Loan SLE.
+ *  @return `LoanState` reflecting the current rounded ledger values.
+ */
 LoanState
 constructRoundedLoanState(SLE::const_ref loan)
 {
@@ -1551,11 +1821,17 @@ constructRoundedLoanState(SLE::const_ref loan)
         loan->at(sfManagementFeeOutstanding));
 }
 
-/*
- * This function calculates the fee owed to the broker based on the asset,
- * value, and management fee rate.
+/** Compute the broker's management fee on a given interest amount.
  *
- * Equation (32) from XLS-66 spec, Section A-2 Equation Glossary
+ *  Calculates `roundDown(tenthBipsOfValue(value, managementFeeRate), scale)`.
+ *  Downward rounding ensures the vault never receives less than its share.
+ *  Implements Equation (32) from XLS-66, Section A-2 Equation Glossary.
+ *
+ *  @param asset             Asset used to constrain rounding.
+ *  @param value             Gross interest amount from which the fee is taken.
+ *  @param managementFeeRate Broker's rate in tenth-of-a-basis-point units.
+ *  @param scale             Exponent for rounding the result downward.
+ *  @return Broker fee, rounded down to the loan scale.
  */
 Number
 computeManagementFee(
@@ -1568,13 +1844,21 @@ computeManagementFee(
         asset, tenthBipsOfValue(value, managementFeeRate), scale, Number::RoundingMode::Downward);
 }
 
-/*
- * Given the loan parameters, compute the derived properties of the loan.
+/** Compute all derived loan properties from the raw input parameters.
  *
- * Pulls together several formulas from the XLS-66 spec, which are noted at each
- * step, plus the concepts from 3.2.4.3 Conceptual Loan Value. They are used for
- * to check some of the conditions in 3.2.1.5 Failure Conditions for the LoanSet
- * transaction.
+ *  Convenience overload that converts `interestRate` and `paymentInterval` to a
+ *  periodic rate via `loanPeriodicRate()` and delegates to the `periodicRate`
+ *  overload. See that overload's documentation for full details.
+ *
+ *  @param rules              Active amendment rules.
+ *  @param asset              Loan asset.
+ *  @param principalOutstanding Requested or remaining principal.
+ *  @param interestRate       Annual interest rate in tenth-of-a-basis-point units.
+ *  @param paymentInterval    Length of one payment period in seconds.
+ *  @param paymentsRemaining  Total number of scheduled payments.
+ *  @param managementFeeRate  Broker fee rate in tenth-bips.
+ *  @param minimumScale       Floor on the derived `loanScale`.
+ *  @return `LoanProperties` suitable for use in `checkLoanGuards()`.
  */
 LoanProperties
 computeLoanProperties(
@@ -1599,13 +1883,24 @@ computeLoanProperties(
         minimumScale);
 }
 
-/*
- * Given the loan parameters, compute the derived properties of the loan.
+/** Compute all derived loan properties from a pre-converted periodic rate.
  *
- * Pulls together several formulas from the XLS-66 spec, which are noted at each
- * step, plus the concepts from 3.2.4.3 Conceptual Loan Value. They are used for
- * to check some of the conditions in 3.2.1.5 Failure Conditions for the LoanSet
- * transaction.
+ *  Calculates `periodicPayment`, the rounded total value outstanding, the
+ *  `loanScale` (derived from the `STAmount` exponent of the total value,
+ *  clamped to `minimumScale`), and `firstPaymentPrincipal`. The results are
+ *  intended for `checkLoanGuards()` and populate `LoanProperties` for storage
+ *  in the Loan ledger object. Called at loan creation and after overpayment
+ *  re-amortization. Implements concepts from XLS-66 §3.2.4.3 and equations
+ *  30-33 from Section A-2.
+ *
+ *  @param rules              Active amendment rules.
+ *  @param asset              Loan asset.
+ *  @param principalOutstanding Requested or remaining principal.
+ *  @param periodicRate       Pre-computed per-period interest rate.
+ *  @param paymentsRemaining  Total number of scheduled payments.
+ *  @param managementFeeRate  Broker fee rate in tenth-bips.
+ *  @param minimumScale       Floor on the derived `loanScale`.
+ *  @return `LoanProperties` with all fields computed and ready for validation.
  */
 LoanProperties
 computeLoanProperties(
@@ -1685,11 +1980,33 @@ computeLoanProperties(
     };
 }
 
-/*
- * This is the main function to make a loan payment.
- * This function handles regular, late, full, and overpayments.
- * It is an implementation of the make_payment function from the XLS-66
- * spec. Section 3.2.4.4
+/** Execute a loan payment transaction and return the breakdown of amounts paid.
+ *
+ *  The top-level entry point called by `LoanPay::doApply()`. Reads all relevant
+ *  fields from the Loan SLE via `ValueProxy` objects that write through on
+ *  assignment, then dispatches to the appropriate calculation path based on
+ *  `paymentType`:
+ *
+ *  - **Regular / Overpayment**: loops up to `kLOAN_MAXIMUM_PAYMENTS_PER_TRANSACTION`
+ *    times applying `computePaymentComponents()` + `doPayment()`. If
+ *    `paymentType == Overpayment` and funds remain after all regular payments,
+ *    `computeOverpaymentComponents()` + `doOverpayment()` handle re-amortization.
+ *  - **Late**: calls `computeLatePayment()` then `doPayment()`.
+ *  - **Full**: calls `computeFullPayment()` then `doPayment()`.
+ *
+ *  Any overdue payment not flagged `Late` is rejected with `tecEXPIRED`. Loan
+ *  completion (all proxies zeroed) and schedule advancement are handled inside
+ *  `doPayment()`. Implements `make_payment` from XLS-66 §3.2.4.4.
+ *
+ *  @param asset       Loan asset (for rounding and balance operations).
+ *  @param view        Apply view providing rules, parent close time, and SLE mutation.
+ *  @param loan        Mutable reference to the Loan SLE.
+ *  @param brokerSle   Const reference to the LoanBroker SLE (supplies `sfManagementFeeRate`).
+ *  @param amount      Amount the borrower is paying.
+ *  @param paymentType One of `Regular`, `Late`, `Full`, or `Overpayment`.
+ *  @param j           Journal for diagnostic logging.
+ *  @return `Expected<LoanPaymentParts, TER>` with payment breakdown on success, or
+ *      an error TER (e.g. `tecEXPIRED`, `tecINSUFFICIENT_PAYMENT`, `tecKILLED`).
  */
 Expected<LoanPaymentParts, TER>
 loanMakePayment(
