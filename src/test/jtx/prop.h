@@ -7,20 +7,20 @@
 namespace xrpl::test::jtx {
 
 /** Set a property on a JTx. */
-template <class Prop>
-struct prop
+template <class T>
+struct Prop
 {
-    std::unique_ptr<basic_prop> p_;
+    std::unique_ptr<BasicProp> p;
 
     template <class... Args>
-    prop(Args&&... args) : p_(std::make_unique<prop_type<Prop>>(std::forward<Args>(args)...))
+    Prop(Args&&... args) : p(std::make_unique<PropType<T>>(std::forward<Args>(args)...))
     {
     }
 
     void
     operator()(Env& env, JTx& jt) const
     {
-        jt.set(p_->clone());
+        jt.set(p->clone());
     }
 };
 

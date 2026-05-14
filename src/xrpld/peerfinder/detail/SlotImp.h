@@ -17,105 +17,105 @@ public:
 
     // inbound
     SlotImp(
-        beast::IP::Endpoint const& local_endpoint,
-        beast::IP::Endpoint remote_endpoint,
+        beast::IP::Endpoint const& localEndpoint,
+        beast::IP::Endpoint remoteEndpoint,
         bool fixed,
         clock_type& clock);
 
     // outbound
-    SlotImp(beast::IP::Endpoint remote_endpoint, bool fixed, clock_type& clock);
+    SlotImp(beast::IP::Endpoint remoteEndpoint, bool fixed, clock_type& clock);
 
     bool
     inbound() const override
     {
-        return m_inbound;
+        return inbound_;
     }
 
     bool
     fixed() const override
     {
-        return m_fixed;
+        return fixed_;
     }
 
     bool
     reserved() const override
     {
-        return m_reserved;
+        return reserved_;
     }
 
     State
     state() const override
     {
-        return m_state;
+        return state_;
     }
 
     beast::IP::Endpoint const&
-    remote_endpoint() const override
+    remoteEndpoint() const override
     {
-        return m_remote_endpoint;
+        return remote_endpoint_;
     }
 
     std::optional<beast::IP::Endpoint> const&
-    local_endpoint() const override
+    localEndpoint() const override
     {
-        return m_local_endpoint;
+        return local_endpoint_;
     }
 
     std::optional<PublicKey> const&
-    public_key() const override
+    publicKey() const override
     {
-        return m_public_key;
+        return public_key_;
     }
 
     std::string
     prefix() const
     {
-        return "[" + getFingerprint(remote_endpoint(), public_key()) + "] ";
+        return "[" + getFingerprint(remoteEndpoint(), publicKey()) + "] ";
     }
 
     std::optional<std::uint16_t>
-    listening_port() const override
+    listeningPort() const override
     {
-        std::uint32_t const value = m_listening_port;
-        if (value == unknownPort)
+        std::uint32_t const value = listening_port_;
+        if (value == kUNKNOWN_PORT)
             return std::nullopt;
         return value;
     }
 
     void
-    set_listening_port(std::uint16_t port)
+    setListeningPort(std::uint16_t port)
     {
-        m_listening_port = port;
+        listening_port_ = port;
     }
 
     void
-    local_endpoint(beast::IP::Endpoint const& endpoint)
+    localEndpoint(beast::IP::Endpoint const& endpoint)
     {
-        m_local_endpoint = endpoint;
+        local_endpoint_ = endpoint;
     }
 
     void
-    remote_endpoint(beast::IP::Endpoint const& endpoint)
+    remoteEndpoint(beast::IP::Endpoint const& endpoint)
     {
-        m_remote_endpoint = endpoint;
+        remote_endpoint_ = endpoint;
     }
 
     void
-    public_key(PublicKey const& key)
+    publicKey(PublicKey const& key)
     {
-        m_public_key = key;
+        public_key_ = key;
     }
 
     void
-    reserved(bool reserved_)
+    reserved(bool reserved)
     {
-        m_reserved = reserved_;
+        reserved_ = reserved;
     }
 
     //--------------------------------------------------------------------------
 
     void
-    state(State state_);
+    state(State state);
 
     void
     activate(clock_type::time_point const& now);
@@ -125,10 +125,10 @@ public:
     // The set of all recent addresses that we have seen from this peer.
     // We try to avoid sending a peer the same addresses they gave us.
     //
-    class recent_t
+    class RecentT
     {
     public:
-        explicit recent_t(clock_type& clock);
+        explicit RecentT(clock_type& clock);
 
         /** Called for each valid endpoint received for a slot.
             We also insert messages that we send to the slot to prevent
@@ -146,7 +146,7 @@ public:
         expire();
 
         friend class SlotImp;
-        beast::aged_unordered_map<beast::IP::Endpoint, std::uint32_t> cache;
+        beast::aged_unordered_map<beast::IP::Endpoint, std::uint32_t> cache_;
     } recent;
 
     void
@@ -156,16 +156,16 @@ public:
     }
 
 private:
-    bool const m_inbound;
-    bool const m_fixed;
-    bool m_reserved;
-    State m_state;
-    beast::IP::Endpoint m_remote_endpoint;
-    std::optional<beast::IP::Endpoint> m_local_endpoint;
-    std::optional<PublicKey> m_public_key;
+    bool const inbound_;
+    bool const fixed_;
+    bool reserved_;
+    State state_;
+    beast::IP::Endpoint remote_endpoint_;
+    std::optional<beast::IP::Endpoint> local_endpoint_;
+    std::optional<PublicKey> public_key_;
 
-    static std::int32_t constexpr unknownPort = -1;
-    std::atomic<std::int32_t> m_listening_port;
+    static std::int32_t constexpr kUNKNOWN_PORT = -1;
+    std::atomic<std::int32_t> listening_port_;
 
 public:
     // DEPRECATED public data members

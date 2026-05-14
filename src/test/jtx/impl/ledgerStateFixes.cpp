@@ -6,15 +6,17 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/transactors/system/LedgerStateFix.h>
 
+#include <cstdint>
+
 namespace xrpl::test::jtx::ledgerStateFix {
 
 // Fix NFTokenPage links on owner's account.  acct pays fee.
-Json::Value
+json::Value
 nftPageLinks(jtx::Account const& acct, jtx::Account const& owner)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[sfAccount.jsonName] = acct.human();
-    jv[sfLedgerFixType.jsonName] = LedgerStateFix::nfTokenPageLink;
+    jv[sfLedgerFixType.jsonName] = static_cast<uint16_t>(LedgerStateFix::FixType::NfTokenPageLink);
     jv[sfOwner.jsonName] = owner.human();
     jv[sfTransactionType.jsonName] = jss::LedgerStateFix;
     return jv;

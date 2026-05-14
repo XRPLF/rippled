@@ -7,12 +7,12 @@ namespace xrpl {
 CountedObjects&
 CountedObjects::getInstance() noexcept
 {
-    static CountedObjects instance;
+    static CountedObjects kINSTANCE;
 
-    return instance;
+    return kINSTANCE;
 }
 
-CountedObjects::CountedObjects() noexcept : m_count(0), m_head(nullptr)
+CountedObjects::CountedObjects() noexcept : count_(0), head_(nullptr)
 {
 }
 
@@ -23,9 +23,9 @@ CountedObjects::getCounts(int minimumThreshold) const
 
     // When other operations are concurrent, the count
     // might be temporarily less than the actual count.
-    counts.reserve(m_count.load());
+    counts.reserve(count_.load());
 
-    for (auto* ctr = m_head.load(); ctr != nullptr; ctr = ctr->getNext())
+    for (auto* ctr = head_.load(); ctr != nullptr; ctr = ctr->getNext())
     {
         if (ctr->getCount() >= minimumThreshold)
             counts.emplace_back(ctr->getName(), ctr->getCount());

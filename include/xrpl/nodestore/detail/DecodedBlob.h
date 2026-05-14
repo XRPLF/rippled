@@ -24,7 +24,7 @@ public:
     [[nodiscard]] bool
     wasOk() const noexcept
     {
-        return m_success;
+        return success_;
     }
 
     /** Create a NodeObject from this data. */
@@ -32,12 +32,12 @@ public:
     createObject();
 
 private:
-    bool m_success;
+    bool success_;
 
-    void const* m_key;
-    NodeObjectType m_objectType;
-    unsigned char const* m_objectData;
-    int m_dataBytes;
+    void const* key_;
+    NodeObjectType objectType_;
+    unsigned char const* objectData_;
+    int dataBytes_;
 };
 
 }  // namespace xrpl::NodeStore

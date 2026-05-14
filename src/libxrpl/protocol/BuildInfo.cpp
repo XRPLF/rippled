@@ -22,6 +22,7 @@ namespace {
 //  and follow the format described at http://semver.org/
 //------------------------------------------------------------------------------
 // clang-format off
+// NOLINTNEXTLINE(readability-identifier-naming)
 char const* const versionString = "3.2.0-b0"
     // clang-format on
     ;
@@ -66,31 +67,31 @@ buildVersionString()
 std::string const&
 getVersionString()
 {
-    static std::string const value = [] {
+    static std::string const kVALUE = [] {
         std::string const s = buildVersionString();
 
         beast::SemanticVersion v;
         if (!v.parse(s) || v.print() != s)
-            LogicError(s + ": Bad server version string");
+            logicError(s + ": Bad server version string");
         return s;
     }();
-    return value;
+    return kVALUE;
 }
 
 std::string const&
 getFullVersionString()
 {
-    static std::string const value = systemName() + "-" + getVersionString();
-    return value;
+    static std::string const kVALUE = systemName() + "-" + getVersionString();
+    return kVALUE;
 }
 
-static constexpr std::uint64_t implementationVersionIdentifier = 0x183B'0000'0000'0000LLU;
-static constexpr std::uint64_t implementationVersionIdentifierMask = 0xFFFF'0000'0000'0000LLU;
+static constexpr std::uint64_t kIMPLEMENTATION_VERSION_IDENTIFIER = 0x183B'0000'0000'0000LLU;
+static constexpr std::uint64_t kIMPLEMENTATION_VERSION_IDENTIFIER_MASK = 0xFFFF'0000'0000'0000LLU;
 
 std::uint64_t
 encodeSoftwareVersion(std::string_view versionStr)
 {
-    std::uint64_t c = implementationVersionIdentifier;
+    std::uint64_t c = kIMPLEMENTATION_VERSION_IDENTIFIER;
 
     beast::SemanticVersion v;
 
@@ -154,14 +155,15 @@ encodeSoftwareVersion(std::string_view versionStr)
 std::uint64_t
 getEncodedVersion()
 {
-    static std::uint64_t const cookie = {encodeSoftwareVersion(getVersionString())};
-    return cookie;
+    static std::uint64_t const kCOOKIE = {encodeSoftwareVersion(getVersionString())};
+    return kCOOKIE;
 }
 
 bool
 isXrpldVersion(std::uint64_t version)
 {
-    return (version & implementationVersionIdentifierMask) == implementationVersionIdentifier;
+    return (version & kIMPLEMENTATION_VERSION_IDENTIFIER_MASK) ==
+        kIMPLEMENTATION_VERSION_IDENTIFIER;
 }
 
 bool

@@ -26,7 +26,7 @@ namespace beast::IP {
 
 //------------------------------------------------------------------------------
 
-class IPEndpoint_test : public unit_test::suite
+class IPEndpoint_test : public unit_test::Suite
 {
 public:
     void
@@ -57,14 +57,14 @@ public:
         testcase("AddressV4");
 
         BEAST_EXPECT(AddressV4{}.to_uint() == 0);
-        BEAST_EXPECT(is_unspecified(AddressV4{}));
+        BEAST_EXPECT(isUnspecified(AddressV4{}));
         BEAST_EXPECT(AddressV4{0x01020304}.to_uint() == 0x01020304);
 
         {
             AddressV4::bytes_type const d = {{1, 2, 3, 4}};
             BEAST_EXPECT(AddressV4{d}.to_uint() == 0x01020304);
 
-            unexpected(is_unspecified(AddressV4{d}));
+            unexpected(isUnspecified(AddressV4{d}));
         }
 
         AddressV4 const v1{1};
@@ -161,7 +161,7 @@ public:
         std::uint16_t p,
         std::string const& normal = "")
     {
-        auto const result = Endpoint::from_string_checked(s);
+        auto const result = Endpoint::fromStringChecked(s);
         if (BEAST_EXPECT(result); !result.has_value())
             return;
         if (!BEAST_EXPECT(result->address().is_v4()))
@@ -180,7 +180,7 @@ public:
         std::uint16_t p,
         std::string const& normal = "")
     {
-        auto result = Endpoint::from_string_checked(s);
+        auto result = Endpoint::fromStringChecked(s);
         if (BEAST_EXPECT(result); !result.has_value())
             return;
         if (!BEAST_EXPECT(result->address().is_v6()))
@@ -195,15 +195,15 @@ public:
     void
     failParseEP(std::string s)
     {
-        auto a1 = Endpoint::from_string(s);
-        BEAST_EXPECTS(is_unspecified(a1), s + " parses as " + a1.to_string());
+        auto a1 = Endpoint::fromString(s);
+        BEAST_EXPECTS(isUnspecified(a1), s + " parses as " + a1.toString());
 
-        auto a2 = Endpoint::from_string(s);
-        BEAST_EXPECTS(is_unspecified(a2), s + " parses as " + a2.to_string());
+        auto a2 = Endpoint::fromString(s);
+        BEAST_EXPECTS(isUnspecified(a2), s + " parses as " + a2.toString());
 
         boost::replace_last(s, ":", " ");
-        auto a3 = Endpoint::from_string(s);
-        BEAST_EXPECTS(is_unspecified(a3), s + " parses as " + a3.to_string());
+        auto a3 = Endpoint::fromString(s);
+        BEAST_EXPECTS(isUnspecified(a3), s + " parses as " + a3.toString());
     }
 
     void
@@ -241,94 +241,94 @@ public:
 
         AddressV4::bytes_type d = {{127, 0, 0, 1}};
         ep = Endpoint(AddressV4{d}, 80);
-        BEAST_EXPECT(!is_unspecified(ep));
-        BEAST_EXPECT(!is_public(ep));
-        BEAST_EXPECT(is_private(ep));
-        BEAST_EXPECT(!is_multicast(ep));
-        BEAST_EXPECT(is_loopback(ep));
+        BEAST_EXPECT(!isUnspecified(ep));
+        BEAST_EXPECT(!isPublic(ep));
+        BEAST_EXPECT(isPrivate(ep));
+        BEAST_EXPECT(!isMulticast(ep));
+        BEAST_EXPECT(isLoopback(ep));
         BEAST_EXPECT(to_string(ep) == "127.0.0.1:80");
         // same address as v4 mapped in ipv6
         ep = Endpoint(
             boost::asio::ip::make_address_v6(boost::asio::ip::v4_mapped, AddressV4{d}), 80);
-        BEAST_EXPECT(!is_unspecified(ep));
-        BEAST_EXPECT(!is_public(ep));
-        BEAST_EXPECT(is_private(ep));
-        BEAST_EXPECT(!is_multicast(ep));
-        BEAST_EXPECT(!is_loopback(ep));  // mapped loopback is not a loopback
+        BEAST_EXPECT(!isUnspecified(ep));
+        BEAST_EXPECT(!isPublic(ep));
+        BEAST_EXPECT(isPrivate(ep));
+        BEAST_EXPECT(!isMulticast(ep));
+        BEAST_EXPECT(!isLoopback(ep));  // mapped loopback is not a loopback
         BEAST_EXPECTS(to_string(ep) == "[::ffff:127.0.0.1]:80", to_string(ep));
 
         d = {{10, 0, 0, 1}};
         ep = Endpoint(AddressV4{d});
-        BEAST_EXPECT(get_class(ep.to_v4()) == 'A');
-        BEAST_EXPECT(!is_unspecified(ep));
-        BEAST_EXPECT(!is_public(ep));
-        BEAST_EXPECT(is_private(ep));
-        BEAST_EXPECT(!is_multicast(ep));
-        BEAST_EXPECT(!is_loopback(ep));
+        BEAST_EXPECT(getClass(ep.toV4()) == 'A');
+        BEAST_EXPECT(!isUnspecified(ep));
+        BEAST_EXPECT(!isPublic(ep));
+        BEAST_EXPECT(isPrivate(ep));
+        BEAST_EXPECT(!isMulticast(ep));
+        BEAST_EXPECT(!isLoopback(ep));
         BEAST_EXPECT(to_string(ep) == "10.0.0.1");
         // same address as v4 mapped in ipv6
         ep = Endpoint(boost::asio::ip::make_address_v6(boost::asio::ip::v4_mapped, AddressV4{d}));
         BEAST_EXPECT(
-            get_class(boost::asio::ip::make_address_v4(boost::asio::ip::v4_mapped, ep.to_v6())) ==
+            getClass(boost::asio::ip::make_address_v4(boost::asio::ip::v4_mapped, ep.toV6())) ==
             'A');
-        BEAST_EXPECT(!is_unspecified(ep));
-        BEAST_EXPECT(!is_public(ep));
-        BEAST_EXPECT(is_private(ep));
-        BEAST_EXPECT(!is_multicast(ep));
-        BEAST_EXPECT(!is_loopback(ep));
+        BEAST_EXPECT(!isUnspecified(ep));
+        BEAST_EXPECT(!isPublic(ep));
+        BEAST_EXPECT(isPrivate(ep));
+        BEAST_EXPECT(!isMulticast(ep));
+        BEAST_EXPECT(!isLoopback(ep));
         BEAST_EXPECTS(to_string(ep) == "::ffff:10.0.0.1", to_string(ep));
 
         d = {{166, 78, 151, 147}};
         ep = Endpoint(AddressV4{d});
-        BEAST_EXPECT(!is_unspecified(ep));
-        BEAST_EXPECT(is_public(ep));
-        BEAST_EXPECT(!is_private(ep));
-        BEAST_EXPECT(!is_multicast(ep));
-        BEAST_EXPECT(!is_loopback(ep));
+        BEAST_EXPECT(!isUnspecified(ep));
+        BEAST_EXPECT(isPublic(ep));
+        BEAST_EXPECT(!isPrivate(ep));
+        BEAST_EXPECT(!isMulticast(ep));
+        BEAST_EXPECT(!isLoopback(ep));
         BEAST_EXPECT(to_string(ep) == "166.78.151.147");
         // same address as v4 mapped in ipv6
         ep = Endpoint(boost::asio::ip::make_address_v6(boost::asio::ip::v4_mapped, AddressV4{d}));
-        BEAST_EXPECT(!is_unspecified(ep));
-        BEAST_EXPECT(is_public(ep));
-        BEAST_EXPECT(!is_private(ep));
-        BEAST_EXPECT(!is_multicast(ep));
-        BEAST_EXPECT(!is_loopback(ep));
+        BEAST_EXPECT(!isUnspecified(ep));
+        BEAST_EXPECT(isPublic(ep));
+        BEAST_EXPECT(!isPrivate(ep));
+        BEAST_EXPECT(!isMulticast(ep));
+        BEAST_EXPECT(!isLoopback(ep));
         BEAST_EXPECTS(to_string(ep) == "::ffff:166.78.151.147", to_string(ep));
 
         // a private IPv6
         AddressV6::bytes_type const d2 = {{253, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}};
         ep = Endpoint(AddressV6{d2});
-        BEAST_EXPECT(!is_unspecified(ep));
-        BEAST_EXPECT(!is_public(ep));
-        BEAST_EXPECT(is_private(ep));
-        BEAST_EXPECT(!is_multicast(ep));
-        BEAST_EXPECT(!is_loopback(ep));
+        BEAST_EXPECT(!isUnspecified(ep));
+        BEAST_EXPECT(!isPublic(ep));
+        BEAST_EXPECT(isPrivate(ep));
+        BEAST_EXPECT(!isMulticast(ep));
+        BEAST_EXPECT(!isLoopback(ep));
         BEAST_EXPECTS(to_string(ep) == "fd00::1", to_string(ep));
 
         {
-            ep = Endpoint::from_string("192.0.2.112");
-            BEAST_EXPECT(!is_unspecified(ep));
-            BEAST_EXPECT(ep == Endpoint::from_string("192.0.2.112"));
+            ep = Endpoint::fromString("192.0.2.112");
+            BEAST_EXPECT(!isUnspecified(ep));
+            BEAST_EXPECT(ep == Endpoint::fromString("192.0.2.112"));
 
-            auto const ep1 = Endpoint::from_string("192.0.2.112:2016");
-            BEAST_EXPECT(!is_unspecified(ep1));
+            auto const ep1 = Endpoint::fromString("192.0.2.112:2016");
+            BEAST_EXPECT(!isUnspecified(ep1));
             BEAST_EXPECT(ep.address() == ep1.address());
             BEAST_EXPECT(ep1.port() == 2016);
 
-            auto const ep2 = Endpoint::from_string("192.0.2.112:2016");
-            BEAST_EXPECT(!is_unspecified(ep2));
+            auto const ep2 = Endpoint::fromString("192.0.2.112:2016");
+            BEAST_EXPECT(!isUnspecified(ep2));
             BEAST_EXPECT(ep.address() == ep2.address());
             BEAST_EXPECT(ep2.port() == 2016);
             BEAST_EXPECT(ep1 == ep2);
 
-            auto const ep3 = Endpoint::from_string("192.0.2.112 2016");
-            BEAST_EXPECT(!is_unspecified(ep3));
+            auto const ep3 = Endpoint::fromString("192.0.2.112 2016");
+            BEAST_EXPECT(!isUnspecified(ep3));
             BEAST_EXPECT(ep.address() == ep3.address());
             BEAST_EXPECT(ep3.port() == 2016);
             BEAST_EXPECT(ep2 == ep3);
 
-            auto const ep4 = Endpoint::from_string("192.0.2.112     2016");
-            BEAST_EXPECT(!is_unspecified(ep4));
+            auto const ep4 = Endpoint::fromString("192.0.2.112     2016");
+            BEAST_EXPECT(!isUnspecified(ep4));
             BEAST_EXPECT(ep.address() == ep4.address());
             BEAST_EXPECT(ep4.port() == 2016);
             BEAST_EXPECT(ep3 == ep4);
@@ -339,8 +339,8 @@ public:
         }
 
         {
-            ep = Endpoint::from_string("[::]:2017");
-            BEAST_EXPECT(is_unspecified(ep));
+            ep = Endpoint::fromString("[::]:2017");
+            BEAST_EXPECT(isUnspecified(ep));
             BEAST_EXPECT(ep.port() == 2017);
             BEAST_EXPECT(ep.address() == AddressV6{});
         }
@@ -375,15 +375,15 @@ public:
 
         // test with hashed container
         std::unordered_set<Endpoint> eps;
-        constexpr auto items{100};
-        float max_lf{0};
-        for (auto i = 0; i < items; ++i)
+        constexpr auto kITEMS{100};
+        float maxLf{0};
+        for (auto i = 0; i < kITEMS; ++i)
         {
-            eps.insert(randomEP(xrpl::rand_int(0, 1) == 1));
-            max_lf = std::max(max_lf, eps.load_factor());
+            eps.insert(randomEP(xrpl::randInt(0, 1) == 1));
+            maxLf = std::max(maxLf, eps.load_factor());
         }
-        BEAST_EXPECT(eps.bucket_count() >= items);
-        BEAST_EXPECT(max_lf > 0.90);
+        BEAST_EXPECT(eps.bucket_count() >= kITEMS);
+        BEAST_EXPECT(maxLf > 0.90);
     }
 
     //--------------------------------------------------------------------------

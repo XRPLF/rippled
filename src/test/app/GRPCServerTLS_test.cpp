@@ -353,7 +353,7 @@ makeTestGRPCCall(std::unique_ptr<org::xrpl::rpc::v1::XRPLedgerAPIService::Stub> 
     return status.ok();
 }
 
-class GRPCServerTLS_test : public beast::unit_test::suite, public TemporaryTLSCertificates
+class GRPCServerTLS_test : public beast::unit_test::Suite, public TemporaryTLSCertificates
 {
 public:
     void

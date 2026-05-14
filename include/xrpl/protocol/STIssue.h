@@ -49,7 +49,7 @@ public:
     [[nodiscard]] std::string
     getText() const override;
 
-    [[nodiscard]] Json::Value getJson(JsonOptions) const override;
+    [[nodiscard]] json::Value getJson(JsonOptions) const override;
 
     void
     add(Serializer& s) const override;
@@ -89,7 +89,7 @@ STIssue::STIssue(SField const& name, A const& asset) : STBase{name}, asset_{asse
 }
 
 STIssue
-issueFromJson(SField const& name, Json::Value const& v);
+issueFromJson(SField const& name, json::Value const& v);
 
 template <ValidIssueType TIss>
 bool

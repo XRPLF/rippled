@@ -164,11 +164,11 @@ public:
 
     /** Return the strong count */
     [[nodiscard]] std::size_t
-    use_count() const;
+    useCount() const;
 
     template <class TT, class... Args>
     friend SharedIntrusive<TT>
-    make_SharedIntrusive(Args&&... args);
+    makeSharedIntrusive(Args&&... args);
 
     template <class TT>
     friend class SharedIntrusive;
@@ -364,7 +364,7 @@ public:
      * return 0
      */
     [[nodiscard]] std::size_t
-    use_count() const;
+    useCount() const;
 
     /** Return true if there is a non-zero strong count. */
     [[nodiscard]] bool
@@ -406,8 +406,8 @@ private:
     // pointer. The low bit must be masked to zero when converting back to a
     // pointer. If the low bit is '1', this is a weak pointer.
     std::uintptr_t tp_{0};
-    static constexpr std::uintptr_t tagMask = 1;
-    static constexpr std::uintptr_t ptrMask = ~tagMask;
+    static constexpr std::uintptr_t kTAG_MASK = 1;
+    static constexpr std::uintptr_t kPTR_MASK = ~kTAG_MASK;
 
 private:
     /** Return the raw pointer held by this object.
@@ -415,7 +415,7 @@ private:
     [[nodiscard]] T*
     unsafeGetRawPtr() const;
 
-    enum class RefStrength { strong, weak };
+    enum class RefStrength { Strong, Weak };
     /** Set the raw pointer and tag bit directly.
      */
     void
@@ -442,7 +442,7 @@ private:
 */
 template <class TT, class... Args>
 SharedIntrusive<TT>
-make_SharedIntrusive(Args&&... args)
+makeSharedIntrusive(Args&&... args)
 {
     auto p = new TT(std::forward<Args>(args)...);
 
@@ -469,21 +469,21 @@ using SharedWeakUnionPtr = SharedWeakUnion<T>;
 
 template <class T, class... A>
 SharedPtr<T>
-make_shared(A&&... args)
+makeShared(A&&... args)
 {
-    return make_SharedIntrusive<T>(std::forward<A>(args)...);
+    return makeSharedIntrusive<T>(std::forward<A>(args)...);
 }
 
 template <class T, class TT>
 SharedPtr<T>
-static_pointer_cast(TT const& v)
+staticPointerCast(TT const& v)
 {
     return SharedPtr<T>(StaticCastTagSharedIntrusive{}, v);
 }
 
 template <class T, class TT>
 SharedPtr<T>
-dynamic_pointer_cast(TT const& v)
+dynamicPointerCast(TT const& v)
 {
     return SharedPtr<T>(DynamicCastTagSharedIntrusive{}, v);
 }

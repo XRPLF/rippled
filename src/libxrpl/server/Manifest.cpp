@@ -62,37 +62,37 @@ deserializeManifest(Slice s, beast::Journal journal)
     if (s.empty())
         return std::nullopt;
 
-    static SOTemplate const manifestFormat{
+    static SOTemplate const kMANIFEST_FORMAT{
         // A manifest must include:
         // - the master public key
-        {sfPublicKey, soeREQUIRED},
+        {sfPublicKey, SoeRequired},
 
         // - a signature with that public key
-        {sfMasterSignature, soeREQUIRED},
+        {sfMasterSignature, SoeRequired},
 
         // - a sequence number
-        {sfSequence, soeREQUIRED},
+        {sfSequence, SoeRequired},
 
         // It may, optionally, contain:
         // - a version number which defaults to 0
-        {sfVersion, soeDEFAULT},
+        {sfVersion, SoeDefault},
 
         // - a domain name
-        {sfDomain, soeOPTIONAL},
+        {sfDomain, SoeOptional},
 
         // - an ephemeral signing key that can be changed as necessary
-        {sfSigningPubKey, soeOPTIONAL},
+        {sfSigningPubKey, SoeOptional},
 
         // - a signature using the ephemeral signing key, if it is present
-        {sfSignature, soeOPTIONAL},
+        {sfSignature, SoeOptional},
     };
 
     try
     {
         SerialIter sit{s};
-        STObject st{sit, sfGeneric};
+        STObject st{sit, kSF_GENERIC};
 
-        st.applyTemplate(manifestFormat);
+        st.applyTemplate(kMANIFEST_FORMAT);
 
         // We only understand "version 0" manifests at this time:
         if (st.isFieldPresent(sfVersion) && st.getFieldU16(sfVersion) != 0)
@@ -193,7 +193,7 @@ logMftAct(
 bool
 Manifest::verify() const
 {
-    STObject st(sfGeneric);
+    STObject st(kSF_GENERIC);
     SerialIter sit(serialized.data(), serialized.size());
     st.set(sit);
 
@@ -204,19 +204,19 @@ Manifest::verify() const
 
     // Signing key and signature are not required for
     // master key revocations
-    if (!revoked() && !xrpl::verify(st, HashPrefix::manifest, *signingKey))
+    if (!revoked() && !xrpl::verify(st, HashPrefix::Manifest, *signingKey))
         return false;
 
-    return xrpl::verify(st, HashPrefix::manifest, masterKey, sfMasterSignature);
+    return xrpl::verify(st, HashPrefix::Manifest, masterKey, sfMasterSignature);
 }
 
 uint256
 Manifest::hash() const
 {
-    STObject st(sfGeneric);
+    STObject st(kSF_GENERIC);
     SerialIter sit(serialized.data(), serialized.size());
     st.set(sit);
-    return st.getHash(HashPrefix::manifest);
+    return st.getHash(HashPrefix::Manifest);
 }
 
 bool
@@ -240,7 +240,7 @@ Manifest::revoked(std::uint32_t sequence)
 std::optional<Blob>
 Manifest::getSignature() const
 {
-    STObject st(sfGeneric);
+    STObject st(kSF_GENERIC);
     SerialIter sit(serialized.data(), serialized.size());
     st.set(sit);
     if (!get(st, sfSignature))
@@ -251,7 +251,7 @@ Manifest::getSignature() const
 Blob
 Manifest::getMasterSignature() const
 {
-    STObject st(sfGeneric);
+    STObject st(kSF_GENERIC);
     SerialIter sit(serialized.data(), serialized.size());
     st.set(sit);
     return st.getFieldVL(sfMasterSignature);
@@ -274,15 +274,15 @@ loadValidatorToken(std::vector<std::string> const& blob, beast::Journal journal)
         for (auto const& line : blob)
             tokenStr += boost::algorithm::trim_copy(line);
 
-        tokenStr = base64_decode(tokenStr);
+        tokenStr = base64Decode(tokenStr);
 
-        Json::Reader r;
-        Json::Value token;
+        json::Reader r;
+        json::Value token;
 
         if (r.parse(tokenStr, token))
         {
-            auto const m = token.get("manifest", Json::Value{});
-            auto const k = token.get("validation_secret_key", Json::Value{});
+            auto const m = token.get("manifest", json::Value{});
+            auto const k = token.get("validation_secret_key", json::Value{});
 
             if (m.isString() && k.isString())
             {
@@ -398,14 +398,14 @@ ManifestCache::applyManifest(Manifest m)
             // doesn't have the latest data.
             if (auto stream = j_.debug())
                 logMftAct(stream, "Stale", m.masterKey, m.sequence, iter->second.sequence);
-            return ManifestDisposition::stale;
+            return ManifestDisposition::Stale;
         }
 
         if (checkSignature && !m.verify())
         {
             if (auto stream = j_.warn())
                 logMftAct(stream, "Invalid", m.masterKey, m.sequence);
-            return ManifestDisposition::invalid;
+            return ManifestDisposition::Invalid;
         }
 
         // If the master key associated with a manifest is or might be
@@ -427,7 +427,7 @@ ManifestCache::applyManifest(Manifest m)
             JLOG(j_.warn()) << to_string(m) << ": Master key already used as ephemeral key for "
                             << toBase58(TokenType::NodePublic, x->second);
 
-            return ManifestDisposition::badMasterKey;
+            return ManifestDisposition::BadMasterKey;
         }
 
         if (!revoked)
@@ -438,7 +438,7 @@ ManifestCache::applyManifest(Manifest m)
                                 << ": is not revoked and the manifest has no "
                                    "signing key. Hence, the manifest is "
                                    "invalid";
-                return ManifestDisposition::invalid;
+                return ManifestDisposition::Invalid;
             }
 
             // Sanity check: the ephemeral key of this manifest should not be
@@ -450,7 +450,7 @@ ManifestCache::applyManifest(Manifest m)
                                 << ": Ephemeral key already used as ephemeral key for "
                                 << toBase58(TokenType::NodePublic, x->second);
 
-                return ManifestDisposition::badEphemeralKey;
+                return ManifestDisposition::BadEphemeralKey;
             }
 
             if (auto const x = map_.find(*m.signingKey); x != map_.end())
@@ -458,7 +458,7 @@ ManifestCache::applyManifest(Manifest m)
                 JLOG(j_.warn()) << to_string(m) << ": Ephemeral key used as master key for "
                                 << to_string(x->second);
 
-                return ManifestDisposition::badEphemeralKey;
+                return ManifestDisposition::BadEphemeralKey;
             }
         }
 
@@ -506,7 +506,7 @@ ManifestCache::applyManifest(Manifest m)
         // Something has changed. Keep track of it.
         seq_++;
 
-        return ManifestDisposition::accepted;
+        return ManifestDisposition::Accepted;
     }
 
     // An ephemeral key was revoked and superseded by a new key. This is
@@ -530,7 +530,7 @@ ManifestCache::applyManifest(Manifest m)
     // Something has changed. Keep track of it.
     seq_++;
 
-    return ManifestDisposition::accepted;
+    return ManifestDisposition::Accepted;
 }
 
 void
@@ -551,7 +551,7 @@ ManifestCache::load(
 
     if (!configManifest.empty())
     {
-        auto mo = deserializeManifest(base64_decode(configManifest));
+        auto mo = deserializeManifest(base64Decode(configManifest));
         if (!mo)
         {
             JLOG(j_.error()) << "Malformed validator_token in config";
@@ -563,7 +563,7 @@ ManifestCache::load(
             JLOG(j_.warn()) << "Configured manifest revokes public key";
         }
 
-        if (applyManifest(std::move(*mo)) == ManifestDisposition::invalid)
+        if (applyManifest(std::move(*mo)) == ManifestDisposition::Invalid)
         {
             JLOG(j_.error()) << "Manifest in config was rejected";
             return false;
@@ -583,9 +583,9 @@ ManifestCache::load(
         for (auto const& line : configRevocation)
             revocationStr += boost::algorithm::trim_copy(line);
 
-        auto mo = deserializeManifest(base64_decode(revocationStr));
+        auto mo = deserializeManifest(base64Decode(revocationStr));
 
-        if (!mo || !mo->revoked() || applyManifest(std::move(*mo)) == ManifestDisposition::invalid)
+        if (!mo || !mo->revoked() || applyManifest(std::move(*mo)) == ManifestDisposition::Invalid)
         {
             JLOG(j_.error()) << "Invalid validator key revocation in config";
             return false;

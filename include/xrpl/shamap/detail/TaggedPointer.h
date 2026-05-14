@@ -47,9 +47,9 @@ private:
     */
     std::uintptr_t tp_ = 0;
     /** bit-and with this mask to get the tag bits (lowest two bits) */
-    static constexpr std::uintptr_t tagMask = 3;
+    static constexpr std::uintptr_t kTAG_MASK = 3;
     /** bit-and with this mask to get the pointer bits (mask out the tag) */
-    static constexpr std::uintptr_t ptrMask = ~tagMask;
+    static constexpr std::uintptr_t kPTR_MASK = ~kTAG_MASK;
 
     /** Deallocate memory and run destructors */
     void
