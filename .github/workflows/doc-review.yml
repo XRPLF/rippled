@@ -20,6 +20,7 @@ defaults:
 
 jobs:
   review:
+    if: github.head_ref != 'dangell7/docs'
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write

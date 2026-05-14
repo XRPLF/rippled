@@ -7,6 +7,7 @@ import { readFile } from 'node:fs/promises';
 import { join, relative, resolve } from 'node:path';
 import { query } from '@anthropic-ai/claude-agent-sdk';
 import { MODEL, XRPLD_ROOT } from './config.js';
+import { findPartner } from './pairing.js';
 import { loadSystemPrompt } from './prompt-loader.js';
 
 const CPP_EXTENSIONS: ReadonlySet<string> = new Set(['.h', '.hpp', '.cpp']);
@@ -65,6 +66,11 @@ async function readAiContext(absPath: string): Promise<string | null> {
 
 /**
  * Document a single file by running the documentation agent against it.
+ *
+ * Inject the partner file's path + its `.ai.md` (if any) into the prompt
+ * so the agent can apply the "contract on header, implementation on
+ * source" policy with full visibility into the other half. The agent
+ * Reads the partner only as reference; only the primary file is edited.
  */
 async function documentFile(absPath: string): Promise<void> {
   const relPath = relative(XRPLD_ROOT, absPath);
@@ -75,15 +81,33 @@ async function documentFile(absPath: string): Promise<void> {
   const aiContextBlock =
     aiContext === null
       ? ''
-      : `\n\n## Authoritative AI Context (${relPath}.ai.md)\n\nThe following is high-signal prose describing this file's purpose, design,\nand non-obvious behavior. Treat it as the source of truth for intent and\nbehavior. Your job is to translate this into structured Doxygen \`/** */\`\ncomments on the actual declarations.\n\n---\n\n${aiContext}\n---`;
+      : `\n\n## Primary's Authoritative AI Context (${relPath}.ai.md)\n\nThe following is high-signal prose describing this file's purpose, design,\nand non-obvious behavior. Treat it as the source of truth for intent and\nbehavior. Your job is to translate this into structured Doxygen \`/** */\`\ncomments on the actual declarations.\n\n---\n\n${aiContext}\n---`;
+
+  const absPartner = findPartner(absPath);
+  const relPartner = absPartner === null ? null : relative(XRPLD_ROOT, absPartner);
+  const partnerAiContext = absPartner === null ? null : await readAiContext(absPartner);
+  const partnerBlock =
+    relPartner === null
+      ? ''
+      : `\n\n## Partner File\n\nThis file's partner is **${relPartner}**. Use the Read tool to see its\ncurrent docstrings before deciding what belongs on the primary. A concept\nalready documented on the partner does not need to be duplicated here.\nConversely, an implementation-depth concept currently on the partner that\nbelongs on the source (or vice versa) should be moved.${
+          partnerAiContext === null
+            ? ''
+            : `\n\n### Partner's Authoritative AI Context (${relPartner}.ai.md)\n\n---\n\n${partnerAiContext}\n---`
+        }`;
 
   const userPrompt = `Add Doxygen documentation to: ${relPath}
 
 The file is rooted at ${XRPLD_ROOT}. Use the Read tool to read it, the Edit
 tool to add documentation, and Glob/Grep to find related tests or callers
-when needed.
+when needed.${
+    relPartner === null
+      ? ''
+      : ` Use Read on the partner file (${relPartner}) to see what's already
+documented there.`
+  }
 
-Do not modify any code logic — only add documentation comments.${aiContextBlock}`;
+Do not modify any code logic — only add documentation comments to the
+primary file (${relPath}). Do NOT edit the partner file.${aiContextBlock}${partnerBlock}`;
 
   const result = query({
     prompt: userPrompt,

@@ -32,7 +32,24 @@ Read `docs/DOCUMENTATION_STANDARDS.md` for the full specification. Key rules:
 - Document every public class, struct, function, and enum
 - Document public methods with `@param`, `@return`, `@throw`/`@throws`, `@note`
 - Continuation lines for `@param` descriptions indent 4 spaces from the `*`
-- Document `.cpp` files only where the algorithm or invariant is non-obvious
+- **Documentation layers: contract on the header, implementation on the
+  `.cpp`.** The header's declaration documents the *contract* — what the
+  function promises, parameter meanings, return semantics, exceptions,
+  thread safety. The `.cpp` definition's docstring documents the
+  *implementation* — algorithm, ordering of checks, state transitions,
+  failure modes, invariants the body relies on, and the **why** behind
+  non-obvious choices. These layers are complementary, never duplicative.
+- **Whether a `.cpp` function definition gets its own docstring is
+  decided by the `.ai.md`, not by style.** If the `.ai.md` section for a
+  function describes implementation-specific content (algorithm, ordering,
+  invariants, state transitions, failure modes, *why*), that function
+  **must** have a Doxygen docstring on its `.cpp` definition translating
+  that prose. Target 5–15 lines for substantive implementation. If the
+  `.ai.md` only describes WHAT the function does (the contract), the
+  header doc suffices and the `.cpp` definition does **not** need a
+  per-function docstring — adding one would just duplicate the header.
+  Use the `.ai.md` as the authoritative deciding factor, not your own
+  judgment about what looks documented.
 - `JAVADOC_AUTOBRIEF = YES` — the first sentence is automatically the brief,
   so `@brief` is optional
 
@@ -46,10 +63,24 @@ Read `docs/DOCUMENTATION_STANDARDS.md` for the full specification. Key rules:
   function does — read it.
 - **Cross-reference test files** to find edge cases worth documenting in
   `@note` tags.
-- **Be terse.** Target 2-5 lines for classes, 1-3 for functions, plus tag
-  lines. If you need a multi-paragraph essay, the code probably needs help.
-- **Wrong docs are worse than no docs.** If you're not sure what the code
-  does, say so — don't invent.
+- **Length matches the layer.**
+  - **Header declarations** (the contract): be terse. 2–5 lines for
+    classes, 1–3 lines for free functions and public methods, plus tag
+    lines. The contract should fit on one screen.
+  - **`.cpp` function definitions** (the implementation): be thorough.
+    5–15 lines for non-trivial functions is normal. Capture algorithm,
+    ordering of checks, state transitions, failure modes, and the **why**.
+    The `.ai.md` Authoritative AI Context is your source — translate its
+    prose into Doxygen on the actual definitions; do not summarize it
+    away. A function whose `.ai.md` section is three paragraphs should not
+    end up with a two-line docstring.
+- **When you are not sure what the code does, the `.ai.md` is
+  authoritative.** Use what it says about that function rather than
+  skipping the docstring. Skipping is not a safe default — it leaves the
+  reader worse off than translating the `.ai.md`'s explanation onto the
+  declaration. Inventing facts not in the code, the `.ai.md`, the module
+  skill, or the tests *is* worse than no docs, but that is the only case
+  where "no doc" is the right answer for a non-trivial public entity.
 
 ## Module Context
 
@@ -273,11 +304,18 @@ explaining something the reader cannot derive from the line.
 - Do NOT document entities that don't need it (private members with
   obvious purpose, trivial defaulted constructors, getters whose name is
   self-explanatory).
-- Do NOT read the `.ai.md` file yourself — it is already in your prompt
-  if one exists for this file.
-- If "Authoritative AI Context" is provided in the user prompt, treat it
-  as the source of truth for the file's intent and behavior. Your task
-  is to translate that prose into Doxygen on the actual declarations.
+- Do NOT read the primary's `.ai.md` file yourself — it is already in
+  your prompt as "Primary's Authoritative AI Context."
+- The partner's `.ai.md` (if any) is also already in your prompt as
+  "Partner's Authoritative AI Context." Use it to understand what
+  concepts the project assigns to the partner file, so you don't
+  duplicate them on the primary.
+- The "Primary's Authoritative AI Context" is the source of truth for
+  this file's intent. Your task is to translate that prose into Doxygen
+  on the actual declarations in the primary file, in the layer
+  (header vs. source) where each concept correctly belongs.
+- **Only modify the primary file.** Use Read (not Edit) on the partner
+  file — it is reference context, not an editing target.
 
 When you finish, summarize:
 - How many entities you documented
