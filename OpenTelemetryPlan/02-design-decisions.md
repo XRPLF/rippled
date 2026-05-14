@@ -13,13 +13,13 @@
 
 **Primary Choice**: OpenTelemetry C++ SDK (`opentelemetry-cpp`)
 
-| Component                               | Purpose                | Required    |
-| --------------------------------------- | ---------------------- | ----------- |
-| `opentelemetry-cpp::api`                | Tracing API headers    | Yes         |
-| `opentelemetry-cpp::sdk`                | SDK implementation     | Yes         |
-| `opentelemetry-cpp::ext`                | Extensions (exporters) | Yes         |
-| `opentelemetry-cpp::otlp_grpc_exporter` | OTLP/gRPC export       | Recommended |
-| `opentelemetry-cpp::otlp_http_exporter` | OTLP/HTTP export       | Alternative |
+| Component                               | Purpose                | Required                  |
+| --------------------------------------- | ---------------------- | ------------------------- |
+| `opentelemetry-cpp::api`                | Tracing API headers    | Yes                       |
+| `opentelemetry-cpp::sdk`                | SDK implementation     | Yes                       |
+| `opentelemetry-cpp::ext`                | Extensions (exporters) | Yes                       |
+| `opentelemetry-cpp::otlp_http_exporter` | OTLP/HTTP export       | Yes (shipped in Phase 1b) |
+| `opentelemetry-cpp::otlp_grpc_exporter` | OTLP/gRPC export       | Future (not yet wired up) |
 
 ### 2.1.2 Instrumentation Strategy
 
@@ -51,9 +51,9 @@ flowchart TB
         elastic["Elastic<br/>APM"]
     end
 
-    node1 -->|"OTLP/gRPC<br/>:4317"| collector
-    node2 -->|"OTLP/gRPC<br/>:4317"| collector
-    node3 -->|"OTLP/gRPC<br/>:4317"| collector
+    node1 -->|"OTLP/HTTP<br/>:4318"| collector
+    node2 -->|"OTLP/HTTP<br/>:4318"| collector
+    node3 -->|"OTLP/HTTP<br/>:4318"| collector
 
     collector --> tempo
     collector --> elastic
@@ -65,33 +65,55 @@ flowchart TB
 
 **Reading the diagram:**
 
-- **xrpld Nodes (blue)**: The source of telemetry data. Each xrpld node exports spans via OTLP/gRPC on port 4317.
+- **xrpld Nodes (blue)**: The source of telemetry data. Each xrpld node exports spans via OTLP/HTTP on port 4318 (the only exporter shipped in Phase 1b).
 - **OpenTelemetry Collector (red)**: The central aggregation point that receives spans from all nodes. Can run as a sidecar (per-node) or standalone (shared). Handles batching, filtering, and routing.
 - **Observability Backends (green)**: The storage and visualization destinations. Tempo is the recommended backend for both development and production, and Elastic APM is an alternative. The Collector routes to one or more backends.
-- **Arrows (nodes to collector to backends)**: The data pipeline -- spans flow from nodes to the Collector over gRPC, then the Collector fans out to the configured backends.
+- **Arrows (nodes to collector to backends)**: The data pipeline -- spans flow from nodes to the Collector over HTTP, then the Collector fans out to the configured backends.
 
-### 2.2.1 OTLP/gRPC (Recommended)
-
-```cpp
-// Configuration for OTLP over gRPC
-namespace otlp = opentelemetry::exporter::otlp;
-
-otlp::OtlpGrpcExporterOptions opts;
-opts.endpoint = "localhost:4317";
-opts.useTls = true;
-opts.sslCaCertPath = "/path/to/ca.crt";
-```
-
-### 2.2.2 OTLP/HTTP (Alternative)
+### 2.2.1 OTLP/HTTP (Shipped in Phase 1b)
 
 ```cpp
-// Configuration for OTLP over HTTP
+// Configuration for OTLP over HTTP (the only exporter currently wired up).
 namespace otlp = opentelemetry::exporter::otlp;
 
 otlp::OtlpHttpExporterOptions opts;
 opts.url = "http://localhost:4318/v1/traces";
 opts.content_type = otlp::HttpRequestContentType::kJson;  // or kBinary
 ```
+
+### 2.2.2 OTLP/gRPC (Future Work — Planned Upgrade)
+
+OTLP/gRPC is planned as a future upgrade from the HTTP exporter. The gRPC
+transport offers lower per-span overhead and tighter back-pressure semantics
+than HTTP/JSON, making it attractive for production deployments once the HTTP
+path is validated in earlier phases.
+
+Required to land this upgrade:
+
+1. Add `opentelemetry-cpp::otlp_grpc_exporter` to the Conan recipe (the
+   dependency already exists but is not linked in Phase 1b builds).
+2. Extend `TelemetryConfig.cpp` to parse an `exporter` key (`otlp_http`
+   default, `otlp_grpc` opt-in) and a gRPC endpoint override.
+3. In `Telemetry::start()` branch on the parsed exporter type and construct
+   either `OtlpHttpExporterFactory::Create(httpOpts)` or
+   `OtlpGrpcExporterFactory::Create(grpcOpts)` accordingly.
+4. Update the runbook and dashboards to document the alternate port and TLS
+   settings.
+
+Example Phase 1b+ gRPC configuration (when wired up):
+
+```cpp
+// Configuration for OTLP over gRPC (future work).
+namespace otlp = opentelemetry::exporter::otlp;
+
+otlp::OtlpGrpcExporterOptions opts;
+opts.endpoint = "<otel-collector-host>:4317";
+opts.use_ssl_credentials = true;
+opts.ssl_credentials_cacert_path = "/path/to/ca.crt";
+```
+
+Until that work lands, `OtlpGrpcExporterOptions` is **not** used by any code
+path in Phase 1b through Phase 5.
 
 ---
 
