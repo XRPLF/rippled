@@ -6305,7 +6305,7 @@ class Vault_test : public beast::unit_test::Suite
     // itself succeeds because the effective IOU credit is non-trivial at
     // Number precision even though the STAmount exponent shifted.
     void
-    testBugAssociateAssetRoundingWithdraw()
+    testVaultWithdrawCanonicalizeToZero()
     {
         using namespace test::jtx;
 
@@ -6478,13 +6478,78 @@ class Vault_test : public beast::unit_test::Suite
         }
     }
 
+    // VaultDeposit by issuer with the vault parked at the IOU 16-digit
+    // edge (9.999e15). Issuer mints 2 more USD; the vault trust line
+    // goes 9.999e15 → 10^16, gaining 1 unit instead of 2 (canonicalization).
+    //
+    // Pre-fixCleanup3_2_0: the proactive check is absent; the deposit
+    // applies, then VaultInvariant's "deposit must increase vault
+    // balance" assertion fires at finalize time on the rounded vault
+    // delta of zero, returning tecINVARIANT_FAILED.
+    // Post-amendment: reject deposit that is not representable at Vault scale.
+    void
+    testBugIssuerVaultDepositAtEdge()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features, TER expected) {
+            Env env(*this, features);
+
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+
+            env.fund(XRP(100'000), issuer, owner);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            STAmount const trustLimit{usd.raw(), 2, 16};
+            STAmount const ownerFund{usd.raw(), Number{9'999'999'999'999'999LL}};
+
+            env(trust(owner, trustLimit));
+            env.close();
+            env(pay(issuer, owner, ownerFund));
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = owner, .asset = usd});
+            vaultTx[sfScale] = 0;
+            env(vaultTx);
+            env.close();
+            env(vault.deposit({.depositor = owner, .id = vaultKeylet.key, .amount = ownerFund}));
+            env.close();
+
+            // Vault pseudo-account is now at 9.999e15. Issuer mints 2
+            // more USD. Pre: tecINVARIANT_FAILED at finalize. Post:
+            // tecPRECISION_LOSS proactively. Either way, no value moves.
+            env(vault.deposit({.depositor = issuer, .id = vaultKeylet.key, .amount = usd(2)}),
+                Ter(expected));
+            env.close();
+        };
+
+        {
+            testcase(
+                "bug: VaultDeposit by issuer at IOU edge fires "
+                "tecINVARIANT_FAILED at finalize (pre-fixCleanup3_2_0)");
+            runScenario(testableAmendments() - fixCleanup3_2_0, tecINVARIANT_FAILED);
+        }
+        {
+            testcase(
+                "bug: VaultDeposit by issuer at IOU edge rejects with "
+                "tecPRECISION_LOSS proactively (post-fixCleanup3_2_0)");
+            runScenario(testableAmendments(), tecPRECISION_LOSS);
+        }
+    }
+
     void
     run() override
     {
+        testBugIssuerVaultDepositAtEdge();
         testBugMakeDeltaPosteriorScale();
         testBugMakeDeltaAnteriorScale();
         testVaultDepositCanonicalizeToZero();
-        testBugAssociateAssetRoundingWithdraw();
+        testVaultWithdrawCanonicalizeToZero();
         testSequences();
         testPreflight();
         testCreateFailXRP();
