@@ -110,8 +110,8 @@ PermissionedDomainSet::doApply()
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
 
-        bool const fix313 = view().rules().enabled(fixCleanup3_1_3);
-        auto const seq = fix313 ? ctx_.tx.getSeqValue() : ctx_.tx.getFieldU32(sfSequence);
+        bool const fixEnabled = view().rules().enabled(fixCleanup3_1_3);
+        auto const seq = fixEnabled ? ctx_.tx.getSeqValue() : ctx_.tx.getFieldU32(sfSequence);
         Keylet const pdKeylet = keylet::permissionedDomain(account_, seq);
         auto slePd = std::make_shared<SLE>(pdKeylet);
 
