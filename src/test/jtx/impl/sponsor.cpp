@@ -6,11 +6,11 @@
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/json/to_string.h>
 
 #include <cstdint>
 #include <optional>
@@ -31,9 +31,9 @@ set(jtx::Account const& account,
     if (reserveCount)
         jv[sfReserveCount.jsonName] = *reserveCount;
     if (feeAmount)
-        jv[sfFeeAmount.jsonName] = feeAmount->getJson(JsonOptions::KNone);
+        jv[sfFeeAmount.jsonName] = feeAmount->getJson(JsonOptions::Values::None);
     if (maxFee)
-        jv[sfMaxFee.jsonName] = maxFee->getJson(JsonOptions::KNone);
+        jv[sfMaxFee.jsonName] = maxFee->getJson(JsonOptions::Values::None);
     return jv;
 }
 
@@ -48,9 +48,9 @@ set_fee(
     jv[jss::TransactionType] = jss::SponsorshipSet;
     jv[jss::Account] = account.human();
     jv[sfFlags.jsonName] = flags;
-    jv[sfFeeAmount.jsonName] = feeAmount.getJson(JsonOptions::KNone);
+    jv[sfFeeAmount.jsonName] = feeAmount.getJson(JsonOptions::Values::None);
     if (maxFee)
-        jv[sfMaxFee.jsonName] = maxFee->getJson(JsonOptions::KNone);
+        jv[sfMaxFee.jsonName] = maxFee->getJson(JsonOptions::Values::None);
     return jv;
 }
 
@@ -72,7 +72,7 @@ set_max_fee(jtx::Account const& account, uint32_t flags, STAmount maxFee)
     jv[jss::TransactionType] = jss::SponsorshipSet;
     jv[jss::Account] = account.human();
     jv[sfFlags.jsonName] = flags;
-    jv[sfMaxFee.jsonName] = maxFee.getJson(JsonOptions::KNone);
+    jv[sfMaxFee.jsonName] = maxFee.getJson(JsonOptions::Values::None);
     return jv;
 }
 

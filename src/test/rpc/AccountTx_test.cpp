@@ -916,7 +916,8 @@ class AccountTx_test : public beast::unit_test::Suite
             auto const& tx0(jv[jss::transactions][0u][jss::tx]);
             BEAST_EXPECT(tx0[jss::TransactionType] == txType);
 
-            std::string const txHash{env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString()};
+            std::string const txHash{
+                env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString()};
             BEAST_EXPECT(tx0[jss::hash] == txHash);
         };
 

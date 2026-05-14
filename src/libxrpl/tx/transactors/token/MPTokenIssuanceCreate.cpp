@@ -23,6 +23,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <utility>
 
 namespace xrpl {
 

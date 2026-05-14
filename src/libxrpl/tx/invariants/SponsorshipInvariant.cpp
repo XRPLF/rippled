@@ -13,6 +13,7 @@
 #include <xrpl/tx/transactors/oracle/OracleSet.h>
 
 #include <cstdint>
+#include <memory>
 
 namespace xrpl {
 
