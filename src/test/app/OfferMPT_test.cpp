@@ -2725,6 +2725,50 @@ public:
         using namespace jtx;
         auto const gw1 = Account("gateway1");
 
+        {
+            auto const issuer = Account("issuer");
+            auto const sender = Account("sender");
+            auto const receiver = Account("receiver");
+            auto const seller = Account("seller");
+            auto const buyer = Account("buyer");
+
+            Env env{*this, features};
+            env.fund(XRP(10'000), issuer, sender, receiver, seller, buyer);
+            env.close();
+
+            MPTTester mpt{
+                {.env = env,
+                 .issuer = issuer,
+                 .holders = {sender, receiver, seller, buyer},
+                 .transferFee = 100}};
+            MPT const token = mpt;
+
+            mpt.pay(issuer, sender, 2'000);
+            mpt.pay(issuer, seller, 2'000);
+
+            // A direct holder-to-holder payment of 999 MPT at a 0.1% fee
+            // requires 1000 from the sender and burns one MPT.
+            env(pay(sender, receiver, token(999)), Ter(tecPATH_PARTIAL));
+            env.close();
+            env(pay(sender, receiver, token(999)), Sendmax(token(1'000)));
+            env.close();
+
+            BEAST_EXPECT(mpt.getBalance(sender) == 1'000);
+            BEAST_EXPECT(mpt.getBalance(receiver) == 999);
+            BEAST_EXPECT(mpt.getBalance(issuer) == 3'999);
+
+            // CLOB crossing should apply the same fee quantum.  The offer
+            // owner pays ceil(999 * 1.001) = 1000, not floor(...) = 999.
+            env(offer(seller, XRP(999), token(999)));
+            env.close();
+            env(offer(buyer, token(999), XRP(999)));
+            env.close();
+
+            BEAST_EXPECT(mpt.getBalance(seller) == 1'000);
+            BEAST_EXPECT(mpt.getBalance(buyer) == 999);
+            BEAST_EXPECT(mpt.getBalance(issuer) == 3'998);
+        }
+
         auto test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
 

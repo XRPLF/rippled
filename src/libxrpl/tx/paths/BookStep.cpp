@@ -652,7 +652,15 @@ limitStepIn(
         // under an amendment.
         ofrAmt = offer.limitIn(ofrAmt, inLmt, /* roundUp */ false);
         stpAmt.out = ofrAmt.out;
-        ownerGives = mulRatio(ofrAmt.out, transferRateOut, QUALITY_ONE, /*roundUp*/ false);
+        // Round up for MPT output so the offer owner pays the full
+        // ceil(amount × rate) fee, matching direct Payment semantics.  IOU uses
+        // floating-point arithmetic so the floor/ceil distinction is sub-epsilon
+        // there; preserve the historical false to avoid changing IOU behavior.
+        ownerGives = mulRatio(
+            ofrAmt.out,
+            transferRateOut,
+            QUALITY_ONE,
+            /*roundUp*/ std::is_same_v<TOut, MPTAmount>);
     }
 }
 
@@ -671,7 +679,11 @@ limitStepOut(
     if (limit < stpAmt.out)
     {
         stpAmt.out = limit;
-        ownerGives = mulRatio(stpAmt.out, transferRateOut, QUALITY_ONE, /*roundUp*/ false);
+        ownerGives = mulRatio(
+            stpAmt.out,
+            transferRateOut,
+            QUALITY_ONE,
+            /*roundUp*/ std::is_same_v<TOut, MPTAmount>);
         ofrAmt = offer.limitOut(
             ofrAmt,
             stpAmt.out,
@@ -770,7 +782,11 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
         TAmounts stpAmt{mulRatio(ofrAmt.in, ofrInRate, QUALITY_ONE, /*roundUp*/ true), ofrAmt.out};
 
         // owner pays the transfer fee.
-        auto ownerGives = mulRatio(ofrAmt.out, ofrOutRate, QUALITY_ONE, /*roundUp*/ false);
+        auto ownerGives = mulRatio(
+            ofrAmt.out,
+            ofrOutRate,
+            QUALITY_ONE,
+            /*roundUp*/ std::is_same_v<TOut, MPTAmount>);
 
         auto const funds = offer.isFunded()
             ? ownerGives  // Offer owner is issuer; they have unlimited funds
