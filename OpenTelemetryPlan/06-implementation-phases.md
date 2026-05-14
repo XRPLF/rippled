@@ -207,8 +207,7 @@ Phase 4a (establish-phase gap fill & cross-node correlation) adds:
   in the same round share the same `trace_id` (switchable via
   `consensus_trace_strategy` config: `"deterministic"` or `"attribute"`).
   See [Configuration Reference](./05-configuration-reference.md) for full
-  configuration options. The `consensus_trace_strategy` option will be
-  documented in the configuration reference as part of Phase 4a implementation.
+  configuration options.
 - **Round lifecycle spans**: `consensus.round` with round-to-round span links.
 - **Establish phase**: `consensus.establish`, `consensus.update_positions` (with
   `dispute.resolve` events), `consensus.check` (with threshold tracking).
@@ -586,7 +585,7 @@ Clear, measurable criteria for each phase.
 
 ---
 
-## 6.12 Recommended Implementation Order
+## 6.11 Recommended Implementation Order
 
 Based on ROI analysis, implement in this exact order:
 
