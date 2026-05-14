@@ -490,6 +490,58 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
     }
 
     void
+    testIssuerDedicatedAccountConvert(FeatureBitset features)
+    {
+        testcase("Issuer dedicated account convert");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const issuer("issuer");
+        Account const issuerDedicated("issuerDedicated");
+        Account const bob("bob");
+        MPTTester mptIssuer(env, issuer, {.holders = {issuerDedicated, bob}});
+
+        mptIssuer.create({
+            .ownerCount = 1,
+            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+        });
+
+        for (auto const& holder : {issuerDedicated, bob})
+        {
+            mptIssuer.authorize({.account = holder});
+            mptIssuer.pay(issuer, holder, 100);
+            mptIssuer.generateKeyPair(holder);
+        }
+
+        mptIssuer.generateKeyPair(issuer);
+        mptIssuer.set({.account = issuer, .issuerPubKey = mptIssuer.getPubKey(issuer)});
+
+        auto const expectConvertAccounting = [&](Account const& holder, std::uint64_t amount) {
+            auto const holderBalance = mptIssuer.getBalance(holder);
+            auto const outstandingAmount = mptIssuer.getIssuanceOutstandingBalance();
+            auto const confidentialOutstandingAmount = mptIssuer.getIssuanceConfidentialBalance();
+            auto const signedAmount = static_cast<std::int64_t>(amount);
+
+            mptIssuer.convert({
+                .account = holder,
+                .amt = amount,
+                .holderPubKey = mptIssuer.getPubKey(holder),
+            });
+
+            BEAST_EXPECT(mptIssuer.getBalance(holder) == holderBalance - signedAmount);
+            BEAST_EXPECT(mptIssuer.getIssuanceOutstandingBalance() == outstandingAmount);
+            BEAST_EXPECT(
+                mptIssuer.getIssuanceConfidentialBalance() ==
+                confidentialOutstandingAmount + signedAmount);
+        };
+
+        // An issuer dedicated account is still a separate
+        // non-issuer holder. Its Convert accounting must match an ordinary holder.
+        expectConvertAccounting(issuerDedicated, 30);
+        expectConvertAccounting(bob, 30);
+    }
+
+    void
     testConvertWithAuditor(FeatureBitset features)
     {
         testcase("Convert with auditor");
@@ -1151,6 +1203,8 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
                 .issuerPubKey = mptAlice.getPubKey(alice),
             });
 
+            BEAST_EXPECT(mptAlice.getIssuanceConfidentialBalance() == 0);
+
             // Set auditor key in a separate tx - requires issuer key in tx
             // (preflight enforces auditor key requires issuer key)
             // This fails because issuer key is already set on ledger
@@ -1380,6 +1434,7 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
             Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
+            Account const carol("carol");
             MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             mptAlice.create({
@@ -1394,6 +1449,7 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
 
             mptAlice.generateKeyPair(alice);
             mptAlice.generateKeyPair(bob);
+            mptAlice.generateKeyPair(carol);
 
             mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
 
@@ -1410,6 +1466,26 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
                 .amt = 10,
                 .holderPubKey = mptAlice.getPubKey(bob),
                 .issuerEncryptedAmt = getTrivialCiphertext(),
+                .err = tecBAD_PROOF,
+            });
+
+            std::uint64_t constexpr kAMOUNT = 10;
+            Buffer const blindingFactor = generateBlindingFactor();
+            Buffer const holderCiphertext = mptAlice.encryptAmount(bob, kAMOUNT, blindingFactor);
+
+            // Holder ciphertext is valid for the amount and
+            // blinding factor, but the issuer ciphertext is encrypted under a
+            // different public key than the registered issuer key.
+            Buffer const wrongIssuerCiphertext =
+                mptAlice.encryptAmount(carol, kAMOUNT, blindingFactor);
+
+            mptAlice.convert({
+                .account = bob,
+                .amt = kAMOUNT,
+                .holderPubKey = mptAlice.getPubKey(bob),
+                .holderEncryptedAmt = holderCiphertext,
+                .issuerEncryptedAmt = wrongIssuerCiphertext,
+                .blindingFactor = blindingFactor,
                 .err = tecBAD_PROOF,
             });
         }
@@ -1790,6 +1866,7 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
             Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
+            Account const carol("carol");
             MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             mptAlice.create({
@@ -1814,6 +1891,40 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
                 .holderPubKey = mptAlice.getPubKey(bob),
                 .err = tecBAD_PROOF,
             });
+
+            std::uint64_t constexpr kAMOUNT = 10;
+            Buffer const blindingFactor = generateBlindingFactor();
+            Buffer const holderCiphertext = mptAlice.encryptAmount(bob, kAMOUNT, blindingFactor);
+            Buffer const issuerCiphertext = mptAlice.encryptAmount(alice, kAMOUNT, blindingFactor);
+
+            auto const submitBadProof = [&](uint256 const& contextHash) {
+                auto const proof = mptAlice.getSchnorrProof(bob, contextHash);
+                if (!BEAST_EXPECT(proof.has_value()))
+                    return;
+
+                mptAlice.convert({
+                    .account = bob,
+                    .amt = kAMOUNT,
+                    .proof = strHex(*proof),
+                    .holderPubKey = mptAlice.getPubKey(bob),
+                    .holderEncryptedAmt = holderCiphertext,
+                    .issuerEncryptedAmt = issuerCiphertext,
+                    .blindingFactor = blindingFactor,
+                    .err = tecBAD_PROOF,
+                });
+            };
+
+            // Schnorr key-registration proof is bound to the submitting account.
+            submitBadProof(getConvertContextHash(carol.id(), mptAlice.issuanceID(), env.seq(bob)));
+
+            // Schnorr key-registration proof is bound to the issuance ID.
+            MPTID const wrongIssuanceID{1};
+            BEAST_EXPECT(wrongIssuanceID != mptAlice.issuanceID());
+            submitBadProof(getConvertContextHash(bob.id(), wrongIssuanceID, env.seq(bob)));
+
+            // Schnorr key-registration proof is bound to the transaction sequence.
+            submitBadProof(
+                getConvertContextHash(bob.id(), mptAlice.issuanceID(), env.seq(bob) + 1));
         }
 
         // no holder key on ledger and no key in tx
@@ -10182,6 +10293,7 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
     {
         // ConfidentialMPTConvert
         testConvert(features);
+        testIssuerDedicatedAccountConvert(features);
         testConvertPreflight(features);
         testConvertPreclaim(features);
         testConvertWithAuditor(features);
