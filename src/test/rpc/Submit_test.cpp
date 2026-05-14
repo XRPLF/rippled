@@ -8,22 +8,29 @@
 #include <test/jtx/vault.h>
 
 #include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
 #include <algorithm>
+#include <cstdint>
 #include <string>
 
 namespace xrpl::test {
@@ -192,7 +199,7 @@ public:
             auto found = std::ranges::search(data, from);
             BEAST_EXPECT(!found.empty());
             if (!found.empty())
-                std::copy(to.begin(), to.end(), found.begin());
+                std::ranges::copy(to, found.begin());
             return data;
         };
 
