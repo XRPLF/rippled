@@ -26,8 +26,8 @@ namespace xrpl::NodeStore {
 ManagerImp&
 ManagerImp::instance()
 {
-    static ManagerImp k;
-    return k;
+    static ManagerImp kInst;
+    return kInst;
 }
 
 void

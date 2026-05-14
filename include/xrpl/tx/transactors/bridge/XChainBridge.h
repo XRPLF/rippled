@@ -95,7 +95,7 @@ class XChainClaim : public Transactor
 {
 public:
     // Blocker since we cannot accurately calculate the consequences
-    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Blocker;
 
     explicit XChainClaim(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -133,7 +133,7 @@ public:
 class XChainCommit : public Transactor
 {
 public:
-    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Custom;
 
     static TxConsequences
     makeTxConsequences(PreflightContext const& ctx);
@@ -222,7 +222,7 @@ class XChainAddClaimAttestation : public Transactor
 {
 public:
     // Blocker since we cannot accurately calculate the consequences
-    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Blocker;
 
     explicit XChainAddClaimAttestation(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -256,7 +256,7 @@ class XChainAddAccountCreateAttestation : public Transactor
 {
 public:
     // Blocker since we cannot accurately calculate the consequences
-    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Blocker;
 
     explicit XChainAddAccountCreateAttestation(ApplyContext& ctx) : Transactor(ctx)
     {

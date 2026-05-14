@@ -19,9 +19,9 @@ static constexpr auto kDecayWindowSeconds = 32;
 static constexpr auto kMinimumGossipBalance = 1000;
 
 // The number of seconds until an inactive table item is removed
-std::chrono::seconds constexpr kSecondsUntilExpiration{300};
+static constexpr std::chrono::seconds kSecondsUntilExpiration{300};
 
 // Number of seconds until imported gossip expires
-std::chrono::seconds constexpr kGossipExpirationSeconds{30};
+static constexpr std::chrono::seconds kGossipExpirationSeconds{30};
 
 }  // namespace xrpl::Resource
