@@ -1901,12 +1901,14 @@ class LoanBroker_test : public beast::unit_test::Suite
                 auto const [brokerKeylet, iou] = setup(env);
                 PrettyAmount const subUlpAmt = iou(Number{1, -16});
                 auto const coverBefore = env.le(brokerKeylet)->at(sfCoverAvailable);
+                auto const aliceBalanceBefore = env.balance(alice, iou);
                 env(coverWithdraw(alice, brokerKeylet.key, subUlpAmt), Ter(expected));
                 env.close();
                 if (expected == tesSUCCESS)
                 {
                     if (auto const broker = env.le(brokerKeylet); BEAST_EXPECT(broker))
                         BEAST_EXPECT(broker->at(sfCoverAvailable) == coverBefore);
+                    BEAST_EXPECT(env.balance(alice, iou) == aliceBalanceBefore);
                 }
             }
 
@@ -1931,6 +1933,51 @@ class LoanBroker_test : public beast::unit_test::Suite
 
         runTestCases(all_);
         runTestCases(all_ - fixCleanup3_2_0);
+
+        // MPT amounts are integers; scale is 0; the guard never rejects a
+        // positive integer amount. Verify all three callsites pass with amendment on.
+        {
+            testcase("Cover precision guard: MPT min amount passes");
+            Env env{*this, all_};
+
+            env.fund(XRP(100'000), issuer, alice);
+            env.close();
+
+            MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+            mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
+            env.close();
+
+            PrettyAsset const mptAsset = mptt["MPT"];
+            mptt.authorize({.account = alice});
+            env.close();
+
+            env(pay(issuer, alice, mptAsset(100)));
+            env.close();
+
+            Vault vault{env};
+            auto [createTx, vaultKeylet] = vault.create({.owner = alice, .asset = mptAsset});
+            env(createTx);
+            env.close();
+
+            auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+            env(set(alice, vaultKeylet.key));
+            env.close();
+
+            env(coverDeposit(alice, brokerKeylet.key, mptAsset(10)));
+            env.close();
+
+            env(coverDeposit(alice, brokerKeylet.key, mptAsset(1)), Ter(tesSUCCESS));
+            env.close();
+
+            env(coverWithdraw(alice, brokerKeylet.key, mptAsset(1)), Ter(tesSUCCESS));
+            env.close();
+
+            env(coverClawback(issuer),
+                kLOAN_BROKER_ID(brokerKeylet.key),
+                kAMOUNT(mptAsset(1)),
+                Ter(tesSUCCESS));
+            env.close();
+        }
     }
 
 public:

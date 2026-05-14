@@ -31,7 +31,7 @@ namespace xrpl {
 [[nodiscard]] TER
 canApplyToBrokerCover(
     ReadView const& view,
-    std::shared_ptr<SLE const> const& sleBroker,
+    SLE::const_ref sleBroker,
     Asset const& vaultAsset,
     STAmount const& amount,
     beast::Journal j,

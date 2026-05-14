@@ -5,6 +5,7 @@
 #include <xrpl/protocol/st.h>
 
 #include <string_view>
+
 namespace xrpl {
 
 /**
