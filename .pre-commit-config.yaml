@@ -70,7 +70,11 @@ repos:
     rev: a42085ade523f591dca134379a595e7859986445 # frozen: v9.7.0
     hooks:
       - id: cspell # Spell check changed files
-        exclude: (.config/cspell.config.yaml|^include/xrpl/protocol_autogen/(transactions|ledger_entries)/)
+        exclude: |
+          (?x)^(
+              .config/cspell.config.yaml|
+              include/xrpl/protocol_autogen/(transactions|ledger_entries)/.*
+          )$
       - id: cspell # Spell check the commit message
         name: check commit message spelling
         args:

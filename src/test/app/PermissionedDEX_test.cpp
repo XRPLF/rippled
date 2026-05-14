@@ -1392,10 +1392,10 @@ class PermissionedDEX_test : public beast::unit_test::Suite
     void
     testHybridMalformedOffer(FeatureBitset features)
     {
-        bool const fixS313Enabled = features[fixCleanup3_1_3];
+        bool const fixEnabled = features[fixCleanup3_1_3];
 
         testcase << "Hybrid offer with empty AdditionalBooks"
-                 << (fixS313Enabled ? " (fixCleanup3_1_3 enabled)" : " (fixCleanup3_1_3 disabled)");
+                 << (fixEnabled ? " (fixCleanup3_1_3 enabled)" : " (fixCleanup3_1_3 disabled)");
 
         // offerInDomain has two code paths gated by fixCleanup3_1_3:
         //
@@ -1436,7 +1436,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             return true;
         });
 
-        if (fixS313Enabled)
+        if (fixEnabled)
         {
             // post-fixCleanup3_1_3: offerInDomain rejects the malformed
             // offer (size == 0), so no valid domain offer is found.
