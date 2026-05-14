@@ -64,19 +64,20 @@ All spans instrumented in xrpld, grouped by subsystem:
 
 ### RPC Spans (Phase 2)
 
-| Span Name            | Source File           | Attributes                       | Description                                        |
-| -------------------- | --------------------- | -------------------------------- | -------------------------------------------------- |
-| `rpc.request`        | ServerHandler.cpp:271 | —                                | Top-level HTTP RPC request                         |
-| `rpc.process`        | ServerHandler.cpp:573 | —                                | RPC processing (child of rpc.request)              |
-| `rpc.ws_message`     | ServerHandler.cpp:384 | —                                | WebSocket RPC message                              |
-| `rpc.command.<name>` | RPCHandler.cpp:161    | `command`, `version`, `rpc_role` | Per-command span (e.g., `rpc.command.server_info`) |
+| Span Name            | Source File       | Attributes                       | Description                                           |
+| -------------------- | ----------------- | -------------------------------- | ----------------------------------------------------- |
+| `rpc.http_request`   | ServerHandler.cpp | —                                | Top-level HTTP RPC request                            |
+| `rpc.ws_upgrade`     | ServerHandler.cpp | —                                | WebSocket upgrade handshake                           |
+| `rpc.ws_message`     | ServerHandler.cpp | —                                | WebSocket RPC message                                 |
+| `rpc.process`        | ServerHandler.cpp | —                                | RPC processing (child of rpc.http_request/ws_message) |
+| `rpc.command.<name>` | RPCHandler.cpp    | `command`, `version`, `rpc_role` | Per-command span (e.g., `rpc.command.server_info`)    |
 
 ### Transaction Spans (Phase 3)
 
-| Span Name    | Source File         | Attributes                                                                | Description                           |
-| ------------ | ------------------- | ------------------------------------------------------------------------- | ------------------------------------- |
-| `tx.process` | NetworkOPs.cpp:1227 | `xrpl.tx.hash`, `local`, `path`                                           | Transaction submission and processing |
-| `tx.receive` | PeerImp.cpp:1273    | `xrpl.peer.id`, `xrpl.tx.hash`, `peer_version`, `suppressed`, `tx_status` | Transaction received from peer relay  |
+| Span Name    | Source File    | Attributes                                                                | Description                           |
+| ------------ | -------------- | ------------------------------------------------------------------------- | ------------------------------------- |
+| `tx.process` | NetworkOPs.cpp | `xrpl.tx.hash`, `local`, `path`                                           | Transaction submission and processing |
+| `tx.receive` | PeerImp.cpp    | `xrpl.peer.id`, `xrpl.tx.hash`, `peer_version`, `suppressed`, `tx_status` | Transaction received from peer relay  |
 
 ### Transaction Queue Spans (Phase 3)
 
@@ -295,7 +296,9 @@ Three dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 
 | Span Name                      | Prometheus Metric Filter                     | Grafana Dashboard                             |
 | ------------------------------ | -------------------------------------------- | --------------------------------------------- |
-| `rpc.request`                  | `{span_name="rpc.request"}`                  | -- (available but not paneled)                |
+| `rpc.http_request`             | `{span_name="rpc.http_request"}`             | -- (available but not paneled)                |
+| `rpc.ws_upgrade`               | `{span_name="rpc.ws_upgrade"}`               | -- (available but not paneled)                |
+| `rpc.ws_message`               | `{span_name="rpc.ws_message"}`               | -- (available but not paneled)                |
 | `rpc.process`                  | `{span_name="rpc.process"}`                  | -- (available but not paneled)                |
 | `rpc.command.*`                | `{span_name=~"rpc.command.*"}`               | RPC Performance (all 4 panels)                |
 | `tx.process`                   | `{span_name="tx.process"}`                   | Transaction Overview (3 panels)               |
