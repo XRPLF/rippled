@@ -141,6 +141,32 @@ isCategoryEnabled(Telemetry const& tel, TraceCategory cat)
     return false;  // unreachable, silences compiler warning
 }
 
+namespace {
+
+// Map a TraceCategory to an OTel SpanKind so Tempo's service-graph /
+// RED metrics see the correct direction. RPC spans are emitted at the
+// server entry point (handler dispatch), Peer spans at inbound-message
+// receipt. Transactions / Consensus / Ledger are internal processing
+// and keep the default kInternal.
+otel_trace::SpanKind
+categoryToSpanKind(TraceCategory cat)
+{
+    switch (cat)
+    {
+        case TraceCategory::Rpc:
+            return otel_trace::SpanKind::kServer;
+        case TraceCategory::Peer:
+            return otel_trace::SpanKind::kConsumer;
+        case TraceCategory::Transactions:
+        case TraceCategory::Consensus:
+        case TraceCategory::Ledger:
+            return otel_trace::SpanKind::kInternal;
+    }
+    return otel_trace::SpanKind::kInternal;  // unreachable
+}
+
+}  // namespace
+
 SpanGuard
 SpanGuard::span(TraceCategory cat, std::string_view prefix, std::string_view name)
 {
@@ -148,7 +174,7 @@ SpanGuard::span(TraceCategory cat, std::string_view prefix, std::string_view nam
     if (!tel || !tel->isEnabled() || !isCategoryEnabled(*tel, cat))
         return {};
     auto fullName = std::string(prefix) + "." + std::string(name);
-    return SpanGuard(std::make_unique<Impl>(tel->startSpan(fullName)));
+    return SpanGuard(std::make_unique<Impl>(tel->startSpan(fullName, categoryToSpanKind(cat))));
 }
 
 // ===== Child / linked span creation ========================================
