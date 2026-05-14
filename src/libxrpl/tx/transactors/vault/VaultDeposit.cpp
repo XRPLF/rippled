@@ -146,14 +146,6 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
                                << " rounds to zero at counterparty trust-line scale";
             return tecPRECISION_LOSS;
         }
-
-        // Reject deposits that would canonicalize to a no-op at Vault scale.
-        if (amount.isZeroAtScale(scale(vault->at(sfAssetsTotal) + amount, vaultAsset)))
-        {
-            JLOG(ctx.j.warn()) << "VaultDeposit: amount " << amount.getFullText()
-                               << " rounds to zero at vault scale";
-            return tecPRECISION_LOSS;
-        }
     }
 
     return tesSUCCESS;
@@ -173,9 +165,10 @@ VaultDeposit::doApply()
         if (!view().rules().enabled(fixCleanup3_2_0) || !ctx_.tx[sfAmount].holds<Issue>())
             return ctx_.tx[sfAmount];
 
+        STAmount const amt = ctx_.tx[sfAmount];
         return roundToScale(
-            ctx_.tx[sfAmount],
-            scale(vault->at(sfAssetsTotal), vault->at(sfAsset)),
+            amt,
+            scale(vault->at(sfAssetsTotal) + amt, vault->at(sfAsset)),
             Number::RoundingMode::Downward);
     }();
 
