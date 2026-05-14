@@ -167,22 +167,22 @@ datasources:
             scope: span
             type: dynamic
           - id: consensus-proposers
-            tag: xrpl.consensus.proposers
+            tag: proposers
             operator: "="
             scope: span
             type: dynamic
           - id: consensus-result
-            tag: xrpl.consensus.result
+            tag: consensus_result
             operator: "="
             scope: span
             type: dynamic
           - id: consensus-mode-old
-            tag: xrpl.consensus.mode.old
+            tag: mode_old
             operator: "="
             scope: span
             type: dynamic
           - id: consensus-mode-new
-            tag: xrpl.consensus.mode.new
+            tag: mode_new
             operator: "="
             scope: span
             type: dynamic
@@ -193,27 +193,27 @@ datasources:
             type: static
           # Phase 3/4: Additional transaction and queue filters
           - id: tx-path
-            tag: xrpl.tx.path
+            tag: path
             operator: "="
             scope: span
             type: dynamic
           - id: tx-suppressed
-            tag: xrpl.tx.suppressed
+            tag: suppressed
             operator: "="
             scope: span
             type: dynamic
           - id: peer-version
-            tag: xrpl.peer.version
+            tag: peer_version
             operator: "="
             scope: span
             type: dynamic
           - id: txq-status
-            tag: xrpl.txq.status
+            tag: txq_status
             operator: "="
             scope: span
             type: dynamic
           - id: txq-ter-code
-            tag: xrpl.txq.ter_code
+            tag: ter_code
             operator: "="
             scope: span
             type: dynamic
