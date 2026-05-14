@@ -3,96 +3,120 @@ include(default)
 {% set arch = detect_api.detect_arch() %}
 {% set sanitizers = os.getenv("SANITIZERS") %}
 
-[conf]
-{% if sanitizers %}
-    {% if compiler == "gcc" %}
-        {% if "address" in sanitizers or "thread" in sanitizers or "undefinedbehavior" in sanitizers %}
-            {% set sanitizer_list = [] %}
-            {% set defines = [] %}
-            {% set model_code = "" %}
-            {% set extra_cxxflags = ["-fno-omit-frame-pointer", "-O1", "-Wno-stringop-overflow"] %}
+{% if not sanitizers %}
+{# Sanitizers not configured; no additional settings needed #}
+{% else %}
 
-            {% if "address" in sanitizers %}
-                {% set _ = sanitizer_list.append("address") %}
-                {% if arch == "x86_64" %}
-                    {% set model_code = "-mcmodel=large" %}
-                {% endif %}
-                {% set _ = defines.append("BOOST_USE_ASAN")%}
-                {% set _ = defines.append("BOOST_USE_UCONTEXT")%}
-            {% elif "thread" in sanitizers %}
-                {% set _ = sanitizer_list.append("thread") %}
-                {% if arch == "x86_64" %}
-                    {% set model_code = "-mcmodel=medium" %}
-                {% endif %}
-                {% set _ = extra_cxxflags.append("-Wno-tsan") %}
-                {% set _ = defines.append("BOOST_USE_TSAN")%}
-                {% set _ = defines.append("BOOST_USE_UCONTEXT")%}
-            {% endif %}
+{% if compiler == "msvc" %}
+    {{ "Sanitizers are not supported on Windows/MSVC. Please unset the SANITIZERS environment variable." }}
+{% endif %}
 
-            {% if "undefinedbehavior" in sanitizers %}
-                {% set _ = sanitizer_list.append("undefined") %}
-                {% set _ = sanitizer_list.append("float-divide-by-zero") %}
-            {% endif %}
+{% set known_sanitizers = ["address", "thread", "undefinedbehavior"] %}
+{% set provided_sanitizers = [] %}
+{% for san in sanitizers.split(",") %}
+    {% set san = san.strip() %}
+    {% if san not in known_sanitizers %}
+        {{ "Unknown sanitizer in SANITIZERS: " ~ san }}
+    {% endif %}
+    {% set _ = provided_sanitizers.append(san) %}
+{% endfor %}
 
-            {% set sanitizer_flags = "-fsanitize=" ~ ",".join(sanitizer_list) ~ " " ~ model_code %}
+{% set enable_asan = "address" in provided_sanitizers %}
+{% set enable_tsan = "thread" in provided_sanitizers %}
+{% set enable_ubsan = "undefinedbehavior" in provided_sanitizers %}
 
-            tools.build:cxxflags+=['{{sanitizer_flags}} {{" ".join(extra_cxxflags)}}']
-            tools.build:sharedlinkflags+=['{{sanitizer_flags}}']
-            tools.build:exelinkflags+=['{{sanitizer_flags}}']
-            tools.build:defines+={{defines}}
-        {% endif %}
-    {% elif compiler == "apple-clang" or compiler == "clang" %}
-        {% if "address" in sanitizers or "thread" in sanitizers or "undefinedbehavior" in sanitizers %}
-            {% set sanitizer_list = [] %}
-            {% set defines = [] %}
-            {% set extra_cxxflags = ["-fno-omit-frame-pointer", "-O1"] %}
+{% if enable_asan and enable_tsan %}
+    {{ "AddressSanitizer and ThreadSanitizer are incompatible and cannot be enabled simultaneously." }}
+{% endif %}
 
-            {% if "address" in sanitizers %}
-                {% set _ = sanitizer_list.append("address") %}
-                {% set _ = defines.append("BOOST_USE_ASAN")%}
-                {% set _ = defines.append("BOOST_USE_UCONTEXT")%}
-            {% elif "thread" in sanitizers %}
-                {% set _ = sanitizer_list.append("thread") %}
-                {% set _ = defines.append("BOOST_USE_TSAN")%}
-                {% set _ = defines.append("BOOST_USE_UCONTEXT")%}
-            {% endif %}
+{% set sanitizer_types = [] %}
+{% set defines = [] %}
 
-            {% if "undefinedbehavior" in sanitizers %}
-                {% set _ = sanitizer_list.append("undefined") %}
-                {% set _ = sanitizer_list.append("float-divide-by-zero") %}
-                {% set _ = sanitizer_list.append("unsigned-integer-overflow") %}
-            {% endif %}
+{% if enable_asan %}
+    {% set _ = sanitizer_types.append("address") %}
+    {% set _ = defines.append("BOOST_USE_ASAN") %}
+    {% set _ = defines.append("BOOST_USE_UCONTEXT") %}
+{% elif enable_tsan %}
+    {% set _ = sanitizer_types.append("thread") %}
+    {% set _ = defines.append("BOOST_USE_TSAN") %}
+    {% set _ = defines.append("BOOST_USE_UCONTEXT") %}
+{% endif %}
 
-            {% set sanitizer_flags = "-fsanitize=" ~ ",".join(sanitizer_list) %}
-
-            tools.build:cxxflags+=['{{sanitizer_flags}} {{" ".join(extra_cxxflags)}}']
-            tools.build:sharedlinkflags+=['{{sanitizer_flags}}']
-            tools.build:exelinkflags+=['{{sanitizer_flags}}']
-            tools.build:defines+={{defines}}
-        {% endif %}
+{% if enable_ubsan %}
+    {% set _ = sanitizer_types.append("undefined") %}
+    {% set _ = sanitizer_types.append("float-divide-by-zero") %}
+    {# Clang supports additional UB checks beyond the GCC baseline #}
+    {% if compiler == "clang" or compiler == "apple-clang" %}
+        {% set _ = sanitizer_types.append("unsigned-integer-overflow") %}
     {% endif %}
 {% endif %}
 
+{# Frame pointer required for meaningful stack traces; -O1 for reasonable performance #}
+{% set compile_flags = ["-fno-omit-frame-pointer", "-O1"] %}
+
+{% if compiler == "gcc" %}
+    {# Suppress false positive warnings with GCC #}
+    {% set _ = compile_flags.append("-Wno-stringop-overflow") %}
+
+    {% set relocation_flags = [] %}
+
+    {% if arch == "x86_64" and enable_asan %}
+        {# Large code model prevents relocation errors in instrumented ASAN binaries #}
+        {% set _ = compile_flags.append("-mcmodel=large") %}
+        {% set _ = relocation_flags.append("-mcmodel=large") %}
+    {% elif enable_tsan %}
+        {# GCC doesn't support atomic_thread_fence with TSAN; suppress warnings #}
+        {% set _ = compile_flags.append("-Wno-tsan") %}
+        {% if arch == "x86_64" %}
+            {# Medium code model for TSAN; large is incompatible #}
+            {% set _ = compile_flags.append("-mcmodel=medium") %}
+            {% set _ = relocation_flags.append("-mcmodel=medium") %}
+        {% endif %}
+    {% endif %}
+
+    {% set fsanitize = "-fsanitize=" ~ ",".join(sanitizer_types) %}
+    {% set _ = compile_flags.append(fsanitize) %}
+    {% set _ = relocation_flags.append(fsanitize) %}
+
+    {% set sanitizer_compiler_flags = " ".join(compile_flags) %}
+    {% set sanitizer_linker_flags = " ".join(relocation_flags) %}
+{% elif compiler == "clang" or compiler == "apple-clang" %}
+    {% set fsanitize = "-fsanitize=" ~ ",".join(sanitizer_types) %}
+    {% set _ = compile_flags.append(fsanitize) %}
+
+    {% set sanitizer_compiler_flags = " ".join(compile_flags) %}
+    {% set sanitizer_linker_flags = fsanitize %}
+{% endif %}
+
+[conf]
+tools.build:defines+={{defines}}
+tools.build:cxxflags+=['{{sanitizer_compiler_flags}}']
+tools.build:sharedlinkflags+=['{{sanitizer_linker_flags}}']
+tools.build:exelinkflags+=['{{sanitizer_linker_flags}}']
+
 tools.info.package_id:confs+=["tools.build:cxxflags", "tools.build:exelinkflags", "tools.build:sharedlinkflags", "tools.build:defines"]
 
+# &: means "apply only to the consumer/root package"
+&:tools.cmake.cmaketoolchain:extra_variables={"SANITIZERS": "{{sanitizers}}", "SANITIZERS_COMPILER_FLAGS": "{{sanitizer_compiler_flags}}", "SANITIZERS_LINKER_FLAGS": "{{sanitizer_linker_flags}}"}
+
 [options]
-{% if sanitizers %}
-    {% if "address" in sanitizers %}
-        # Build Boost.Context with ucontext backend (not fcontext) so that
-        # ASAN fiber-switching annotations (__sanitizer_start/finish_switch_fiber)
-        # are compiled into the library. fcontext (assembly) has no ASAN support.
-        # define=BOOST_USE_ASAN=1 is critical: it must be defined when building
-        # Boost.Context itself so the ucontext backend compiles in the ASAN annotations.
-        boost/*:extra_b2_flags=context-impl=ucontext address-sanitizer=on define=BOOST_USE_ASAN=1
-        boost/*:without_context=False
-        # Boost stacktrace fails to build with some sanitizers
-        boost/*:without_stacktrace=True
-    {% elif "thread" in sanitizers %}
-        # Build Boost.Context with ucontext backend for TSAN. fcontext (assembly)
-        # has no TSAN annotations, so without this the BOOST_USE_TSAN/BOOST_USE_UCONTEXT
-        # defines in [conf] would be ineffective.
-        boost/*:extra_b2_flags=context-impl=ucontext thread-sanitizer=on define=BOOST_USE_TSAN=1
-        boost/*:without_context=False
-        boost/*:without_stacktrace=True
-    {% endif %}
+{% if enable_asan %}
+    # Build Boost.Context with ucontext backend (not fcontext) so that
+    # ASAN fiber-switching annotations (__sanitizer_start/finish_switch_fiber)
+    # are compiled into the library. fcontext (assembly) has no ASAN support.
+    # define=BOOST_USE_ASAN=1 is critical: it must be defined when building
+    # Boost.Context itself so the ucontext backend compiles in the ASAN annotations.
+    boost/*:extra_b2_flags=context-impl=ucontext address-sanitizer=on define=BOOST_USE_ASAN=1
+    boost/*:without_context=False
+    # Boost stacktrace fails to build with some sanitizers
+    boost/*:without_stacktrace=True
+{% elif enable_tsan %}
+    # Build Boost.Context with ucontext backend for TSAN. fcontext (assembly)
+    # has no TSAN annotations, so without this the BOOST_USE_TSAN/BOOST_USE_UCONTEXT
+    # defines in [conf] would be ineffective.
+    boost/*:extra_b2_flags=context-impl=ucontext thread-sanitizer=on define=BOOST_USE_TSAN=1
+    boost/*:without_context=False
+    boost/*:without_stacktrace=True
+{% endif %}
+
 {% endif %}

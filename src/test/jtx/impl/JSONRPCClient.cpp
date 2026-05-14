@@ -124,7 +124,7 @@ public:
             }
             if (params)
             {
-                json::Value& ja = jr[jss::params] = json::ArrayValue;
+                json::Value& ja = jr[jss::params] = json::ValueType::Array;
                 ja.append(params);
             }
             req.body() = to_string(jr);

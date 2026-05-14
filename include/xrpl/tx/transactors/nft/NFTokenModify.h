@@ -7,7 +7,7 @@ namespace xrpl {
 class NFTokenModify : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
+    static constexpr auto kCONSEQUENCES_FACTORY = ConsequencesFactoryType::Normal;
 
     explicit NFTokenModify(ApplyContext& ctx) : Transactor(ctx)
     {

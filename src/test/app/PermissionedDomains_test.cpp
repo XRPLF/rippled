@@ -49,14 +49,10 @@ exceptionExpected(Env& env, json::Value const& jv)
 
 class PermissionedDomains_test : public beast::unit_test::Suite
 {
-    FeatureBitset withoutFeature_{testableAmendments() - featurePermissionedDomains};
     FeatureBitset withFeature_{
-        testableAmendments()  //
-        | featurePermissionedDomains | featureCredentials};
-
+        (testableAmendments() | featurePermissionedDomains | featureCredentials) - fixCleanup3_1_3};
     FeatureBitset withFix_{
-        testableAmendments()  //
-        | featurePermissionedDomains | featureCredentials};
+        testableAmendments() | featurePermissionedDomains | featureCredentials | fixCleanup3_1_3};
 
     // Verify that each tx type can execute if the feature is enabled.
     void
@@ -98,7 +94,7 @@ class PermissionedDomains_test : public beast::unit_test::Suite
     {
         testcase("Disabled");
         Account const alice("alice");
-        Env env(*this, withoutFeature_);
+        Env env(*this, testableAmendments() - featurePermissionedDomains);
         env.fund(XRP(1000), alice);
         pdomain::Credentials const credentials{{alice, "first credential"}};
         env(pdomain::setTx(alice, credentials), Ter(temDISABLED));
@@ -298,7 +294,7 @@ class PermissionedDomains_test : public beast::unit_test::Suite
         {
             env(pdomain::setTx(alice[0], credentials1));
             BEAST_EXPECT(env.ownerCount(alice[0]) == 1);
-            auto tx = env.tx()->getJson(JsonOptions::KNone);
+            auto tx = env.tx()->getJson(JsonOptions::Values::None);
             BEAST_EXPECT(tx[jss::TransactionType] == "PermissionedDomainSet");
             BEAST_EXPECT(tx["Account"] == alice[0].human());
             auto objects = pdomain::getObjects(alice[0], env);
@@ -325,7 +321,7 @@ class PermissionedDomains_test : public beast::unit_test::Suite
             // One account can create multiple domains
             BEAST_EXPECT(env.ownerCount(alice[0]) == 2);
 
-            auto tx = env.tx()->getJson(JsonOptions::KNone);
+            auto tx = env.tx()->getJson(JsonOptions::Values::None);
             BEAST_EXPECT(tx[jss::TransactionType] == "PermissionedDomainSet");
             BEAST_EXPECT(tx["Account"] == alice[0].human());
 
@@ -365,7 +361,7 @@ class PermissionedDomains_test : public beast::unit_test::Suite
             BEAST_EXPECT(credentials10.size() == kMAX_PERMISSIONED_DOMAIN_CREDENTIALS_ARRAY_SIZE);
             BEAST_EXPECT(credentials10 != pdomain::sortCredentials(credentials10));
             env(pdomain::setTx(alice[0], credentials10));
-            auto tx = env.tx()->getJson(JsonOptions::KNone);
+            auto tx = env.tx()->getJson(JsonOptions::Values::None);
             domain2 = pdomain::getNewDomain(env.meta());
             auto objects = pdomain::getObjects(alice[0], env);
             auto object = objects[domain2];
@@ -470,7 +466,7 @@ class PermissionedDomains_test : public beast::unit_test::Suite
 
         // Delete domain that belongs to user.
         env(pdomain::deleteTx(alice, domain));
-        auto const tx = env.tx()->getJson(JsonOptions::KNone);
+        auto const tx = env.tx()->getJson(JsonOptions::Values::None);
         BEAST_EXPECT(tx[jss::TransactionType] == "PermissionedDomainDelete");
 
         // Make sure the owner count goes back to 0.
