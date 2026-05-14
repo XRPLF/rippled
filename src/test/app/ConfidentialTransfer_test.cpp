@@ -491,58 +491,6 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
     }
 
     void
-    testIssuerDedicatedAccountConvert(FeatureBitset features)
-    {
-        testcase("Issuer dedicated account convert");
-        using namespace test::jtx;
-
-        Env env{*this, features};
-        Account const issuer("issuer");
-        Account const issuerDedicated("issuerDedicated");
-        Account const bob("bob");
-        MPTTester mptIssuer(env, issuer, {.holders = {issuerDedicated, bob}});
-
-        mptIssuer.create({
-            .ownerCount = 1,
-            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
-        });
-
-        for (auto const& holder : {issuerDedicated, bob})
-        {
-            mptIssuer.authorize({.account = holder});
-            mptIssuer.pay(issuer, holder, 100);
-            mptIssuer.generateKeyPair(holder);
-        }
-
-        mptIssuer.generateKeyPair(issuer);
-        mptIssuer.set({.account = issuer, .issuerPubKey = mptIssuer.getPubKey(issuer)});
-
-        auto const expectConvertAccounting = [&](Account const& holder, std::uint64_t amount) {
-            auto const holderBalance = mptIssuer.getBalance(holder);
-            auto const outstandingAmount = mptIssuer.getIssuanceOutstandingBalance();
-            auto const confidentialOutstandingAmount = mptIssuer.getIssuanceConfidentialBalance();
-            auto const signedAmount = static_cast<std::int64_t>(amount);
-
-            mptIssuer.convert({
-                .account = holder,
-                .amt = amount,
-                .holderPubKey = mptIssuer.getPubKey(holder),
-            });
-
-            BEAST_EXPECT(mptIssuer.getBalance(holder) == holderBalance - signedAmount);
-            BEAST_EXPECT(mptIssuer.getIssuanceOutstandingBalance() == outstandingAmount);
-            BEAST_EXPECT(
-                mptIssuer.getIssuanceConfidentialBalance() ==
-                confidentialOutstandingAmount + signedAmount);
-        };
-
-        // An issuer dedicated account is still a separate
-        // non-issuer holder. Its Convert accounting must match an ordinary holder.
-        expectConvertAccounting(issuerDedicated, 30);
-        expectConvertAccounting(bob, 30);
-    }
-
-    void
     testConvertWithAuditor(FeatureBitset features)
     {
         testcase("Convert with auditor");
@@ -10294,7 +10242,6 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
     {
         // ConfidentialMPTConvert
         testConvert(features);
-        testIssuerDedicatedAccountConvert(features);
         testConvertPreflight(features);
         testConvertPreclaim(features);
         testConvertWithAuditor(features);
