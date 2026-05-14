@@ -28,6 +28,8 @@ isPublic(AddressV6 const& addr)
         return false;
     if (addr.is_multicast())
         return false;
+    if (addr.is_unspecified())
+        return false;
 
     auto const b = addr.to_bytes();
 
