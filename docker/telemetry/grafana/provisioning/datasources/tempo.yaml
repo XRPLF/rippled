@@ -147,22 +147,22 @@ datasources:
             scope: span
             type: dynamic
           - id: consensus-ledger-seq
-            tag: xrpl.consensus.ledger.seq
+            tag: xrpl.ledger.seq
             operator: "="
             scope: span
             type: static
           - id: consensus-close-time-correct
-            tag: xrpl.consensus.close_time_correct
+            tag: close_time_correct
             operator: "="
             scope: span
             type: dynamic
           - id: consensus-state
-            tag: xrpl.consensus.state
+            tag: consensus_state
             operator: "="
             scope: span
             type: dynamic
           - id: consensus-close-resolution
-            tag: xrpl.consensus.close_resolution_ms
+            tag: close_resolution_ms
             operator: "="
             scope: span
             type: dynamic
