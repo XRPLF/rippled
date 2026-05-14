@@ -13,8 +13,6 @@ isPrivate(AddressV4 const& addr)
 bool
 isPublic(AddressV4 const& addr)
 {
-    if (addr.is_loopback())
-        return false;
     if (isPrivate(addr))
         return false;
     if (addr.is_multicast())
