@@ -63,6 +63,14 @@ isVaultPseudoAccountFrozen(
     if (!view.rules().enabled(featureSingleAssetVault))
         return false;
 
+    if (depth >= kMAX_ASSET_CHECK_DEPTH)
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::View::isVaultPseudoAccountFrozen : reached asset check depth");
+        return true;
+        // LCOV_EXCL_STOP
+    }
+
     auto const mptIssuance = view.read(keylet::mptIssuance(mptShare.getMptID()));
     if (mptIssuance == nullptr)
         return false;  // zero MPToken won't block deletion of MPTokenIssuance
@@ -76,14 +84,6 @@ isVaultPseudoAccountFrozen(
     // fall back to the chain lookup below.
     if (mptIssuance->isFieldPresent(sfReferenceHolding))
     {
-        if (depth >= kMAX_ASSET_CHECK_DEPTH)
-        {
-            // LCOV_EXCL_START
-            UNREACHABLE("xrpl::View::isVaultPseudoAccountFrozen : reached asset check depth");
-            return true;
-            // LCOV_EXCL_STOP
-        }
-
         auto const sleHolding =
             view.read(keylet::unchecked(mptIssuance->getFieldH256(sfReferenceHolding)));
         if (!sleHolding)

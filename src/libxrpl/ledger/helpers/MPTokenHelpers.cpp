@@ -512,7 +512,7 @@ assetOfHolding(SLE const& sleShareIssuance, SLE const& sleHolding)
         "unexpected holding type");
     XRPL_ASSERT_PARTS(
         sleShareIssuance.getType() == ltMPTOKEN_ISSUANCE,
-        "xrpl:assetOfHolding",
+        "xrpl::assetOfHolding",
         "not SLE MPTokenIssuance");
 
     if (sleHolding.getType() == ltMPTOKEN)
@@ -554,12 +554,10 @@ canTransfer(
     //
     // The recursive call always passes WaiveMPTCanTransfer::No so that
     // a waived outer caller does not transitively unlock the underlying.
-    if (sleIssuance->isFieldPresent(sfReferenceHolding))
+    if (view.rules().enabled(fixCleanup3_2_0) && sleIssuance->isFieldPresent(sfReferenceHolding))
     {
-        // Defensive depth bound on the inheritance recursion. Reachable
-        // only post-fixCleanup3_2_0 (sfReferenceHolding is never set
-        // pre-amendment) and unreachable in practice (vault-of-vault-
-        // shares is forbidden at VaultCreate).
+        // Defensive depth bound on the inheritance recursion. Unreachable
+        // in practice (vault-of-vault-shares is forbidden at VaultCreate).
         if (depth >= kMAX_ASSET_CHECK_DEPTH)
         {
             // LCOV_EXCL_START
@@ -600,12 +598,12 @@ canTrade(ReadView const& view, Asset const& asset, int depth)
             // Post-fixCleanup3_2_0: vault shares inherit the underlying
             // asset's tradability. A share whose underlying has been
             // removed from trading cannot itself be placed on the DEX.
-            if (sleIssuance->isFieldPresent(sfReferenceHolding))
+            if (view.rules().enabled(fixCleanup3_2_0) &&
+                sleIssuance->isFieldPresent(sfReferenceHolding))
             {
                 // Defensive depth bound on the inheritance recursion.
-                // Reachable only post-fixCleanup3_2_0 and unreachable
-                // in practice (vault-of-vault-shares forbidden at
-                // VaultCreate).
+                // Unreachable in practice (vault-of-vault-shares
+                // forbidden at VaultCreate).
                 if (depth >= kMAX_ASSET_CHECK_DEPTH)
                 {
                     // LCOV_EXCL_START

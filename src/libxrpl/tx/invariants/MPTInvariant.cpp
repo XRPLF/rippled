@@ -39,9 +39,6 @@ ValidMPTIssuance::visitEntry(
     // on the hot path.
     bool const fix320Enabled = isFeatureEnabled(fixCleanup3_2_0);
 
-    if (referenceHoldingMutated_)
-        return;
-
     if (after && after->getType() == ltMPTOKEN_ISSUANCE)
     {
         if (isDelete)
@@ -111,17 +108,18 @@ ValidMPTIssuance::finalize(
     //     must not dangle outside that controlled lifecycle.
     if (rules.enabled(fixCleanup3_2_0))
     {
+        bool fix320Clean = true;
         if (referenceHoldingMutated_)
         {
             JLOG(j.fatal()) << "Invariant failed: sfReferenceHolding was modified "
                                "on an existing MPTokenIssuance";
-            return false;
+            fix320Clean = false;
         }
         if (referenceHoldingSetOnCreate_ && tx.getTxnType() != ttVAULT_CREATE)
         {
             JLOG(j.fatal()) << "Invariant failed: sfReferenceHolding set on a new "
                                "MPTokenIssuance by a non-VaultCreate transaction";
-            return false;
+            fix320Clean = false;
         }
         if (!deletedHoldings_.empty() && tx.getTxnType() != ttVAULT_DELETE)
         {
@@ -150,10 +148,12 @@ ValidMPTIssuance::finalize(
                 {
                     JLOG(j.fatal()) << "Invariant failed: vault pseudo-account holding "
                                        "deleted by a non-VaultDelete transaction";
-                    return false;
+                    fix320Clean = false;
                 }
             }
         }
+        if (!fix320Clean)
+            return false;
     }
 
     if (isTesSuccess(result) || (mptV2Enabled && result == tecINCOMPLETE))
