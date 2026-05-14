@@ -121,7 +121,7 @@ DatabaseRotatingImp::fetchNodeObject(
     bool duplicate)
 {
     auto fetch = [&](std::shared_ptr<Backend> const& backend) {
-        Status status = Status::ok;
+        Status status = Status::Ok;
         std::shared_ptr<NodeObject> nodeObject;
         try
         {
@@ -130,15 +130,15 @@ DatabaseRotatingImp::fetchNodeObject(
         catch (std::exception const& e)
         {
             JLOG(j_.fatal()) << "Exception, " << e.what();
-            Rethrow();
+            rethrow();
         }
 
         switch (status)
         {
-            case Status::ok:
-            case Status::notFound:
+            case Status::Ok:
+            case Status::NotFound:
                 break;
-            case Status::dataCorrupt:
+            case Status::DataCorrupt:
                 JLOG(j_.fatal()) << "Corrupt NodeObject #" << hash;
                 break;
             default:
@@ -184,7 +184,7 @@ DatabaseRotatingImp::fetchNodeObject(
 }
 
 void
-DatabaseRotatingImp::for_each(std::function<void(std::shared_ptr<NodeObject>)> f)
+DatabaseRotatingImp::forEach(std::function<void(std::shared_ptr<NodeObject>)> f)
 {
     auto [writable, archive] = [&] {
         std::scoped_lock const lock(mutex_);
@@ -192,10 +192,10 @@ DatabaseRotatingImp::for_each(std::function<void(std::shared_ptr<NodeObject>)> f
     }();
 
     // Iterate the writable backend
-    writable->for_each(f);
+    writable->forEach(f);
 
     // Iterate the archive backend
-    archive->for_each(f);
+    archive->forEach(f);
 }
 
 }  // namespace xrpl::NodeStore

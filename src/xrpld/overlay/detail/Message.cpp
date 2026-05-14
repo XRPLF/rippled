@@ -31,12 +31,12 @@ Message::Message(
 
     XRPL_ASSERT(messageBytes, "xrpl::Message::Message : non-empty message input");
 
-    buffer_.resize(headerBytes + messageBytes);
+    buffer_.resize(kHEADER_BYTES + messageBytes);
 
     setHeader(buffer_.data(), messageBytes, type, Algorithm::None, 0);
 
     if (messageBytes != 0)
-        message.SerializeToArray(buffer_.data() + headerBytes, messageBytes);
+        message.SerializeToArray(buffer_.data() + kHEADER_BYTES, messageBytes);
 
     XRPL_ASSERT(
         getBufferSize() == totalSize(message),
@@ -58,14 +58,14 @@ Message::messageSize(::google::protobuf::Message const& message)
 std::size_t
 Message::totalSize(::google::protobuf::Message const& message)
 {
-    return messageSize(message) + compression::headerBytes;
+    return messageSize(message) + compression::kHEADER_BYTES;
 }
 
 void
 Message::compress()
 {
     using namespace xrpl::compression;
-    auto const messageBytes = buffer_.size() - headerBytes;
+    auto const messageBytes = buffer_.size() - kHEADER_BYTES;
 
     auto type = getType(buffer_.data());
 
@@ -104,19 +104,19 @@ Message::compress()
 
     if (compressible)
     {
-        auto payload = static_cast<void const*>(buffer_.data() + headerBytes);
+        auto payload = static_cast<void const*>(buffer_.data() + kHEADER_BYTES);
 
         auto compressedSize = xrpl::compression::compress(
             payload,
             messageBytes,
             [&](std::size_t inSize) {  // size of required compressed buffer
-                bufferCompressed_.resize(inSize + headerBytesCompressed);
-                return (bufferCompressed_.data() + headerBytesCompressed);
+                bufferCompressed_.resize(inSize + kHEADER_BYTES_COMPRESSED);
+                return (bufferCompressed_.data() + kHEADER_BYTES_COMPRESSED);
             });
 
-        if (compressedSize < (messageBytes - (headerBytesCompressed - headerBytes)))
+        if (compressedSize < (messageBytes - (kHEADER_BYTES_COMPRESSED - kHEADER_BYTES)))
         {
-            bufferCompressed_.resize(headerBytesCompressed + compressedSize);
+            bufferCompressed_.resize(kHEADER_BYTES_COMPRESSED + compressedSize);
             // NOLINTNEXTLINE(readability-suspicious-call-argument)
             setHeader(bufferCompressed_.data(), compressedSize, type, Algorithm::LZ4, messageBytes);
         }

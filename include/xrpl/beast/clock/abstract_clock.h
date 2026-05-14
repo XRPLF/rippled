@@ -31,7 +31,7 @@ namespace beast {
         http://en.cppreference.com/w/cpp/concept/Clock
 */
 template <class Clock>
-class abstract_clock
+class AbstractClock
 {
 public:
     using rep = typename Clock::rep;
@@ -40,11 +40,11 @@ public:
     using time_point = typename Clock::time_point;
     using clock_type = Clock;
 
-    static bool const is_steady = Clock::is_steady;
+    static bool const is_steady = Clock::is_steady;  // NOLINT(readability-identifier-naming)
 
-    virtual ~abstract_clock() = default;
-    abstract_clock() = default;
-    abstract_clock(abstract_clock const&) = default;
+    virtual ~AbstractClock() = default;
+    AbstractClock() = default;
+    AbstractClock(AbstractClock const&) = default;
 
     /** Returns the current time. */
     [[nodiscard]] virtual time_point
@@ -56,12 +56,12 @@ public:
 namespace detail {
 
 template <class Facade, class Clock>
-struct abstract_clock_wrapper : public abstract_clock<Facade>
+struct AbstractClockWrapper : public AbstractClock<Facade>
 {
-    explicit abstract_clock_wrapper() = default;
+    explicit AbstractClockWrapper() = default;
 
-    using typename abstract_clock<Facade>::duration;
-    using typename abstract_clock<Facade>::time_point;
+    using typename AbstractClock<Facade>::duration;
+    using typename AbstractClock<Facade>::time_point;
 
     [[nodiscard]] time_point
     now() const override
@@ -80,11 +80,11 @@ struct abstract_clock_wrapper : public abstract_clock<Facade>
     @tparam Clock The actual concrete clock to use.
 */
 template <class Facade, class Clock = Facade>
-abstract_clock<Facade>&
-get_abstract_clock()
+AbstractClock<Facade>&
+getAbstractClock()
 {
-    static detail::abstract_clock_wrapper<Facade, Clock> clock;
-    return clock;
+    static detail::AbstractClockWrapper<Facade, Clock> kCLOCK;
+    return kCLOCK;
 }
 
 }  // namespace beast

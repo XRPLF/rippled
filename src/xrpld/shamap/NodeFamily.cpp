@@ -30,13 +30,13 @@ NodeFamily::NodeFamily(Application& app, CollectorManager& cm)
               stopwatch(),
               app.getJournal("NodeFamilyFulLBelowCache"),
               cm.collector(),
-              fullBelowTargetSize,
-              fullBelowExpiration))
+              kFULL_BELOW_TARGET_SIZE,
+              kFULL_BELOW_EXPIRATION))
     , tnCache_(
           std::make_shared<TreeNodeCache>(
               "Node family tree node cache",
-              app.config().getValueFor(SizedItem::treeCacheSize),
-              std::chrono::seconds(app.config().getValueFor(SizedItem::treeCacheAge)),
+              app.config().getValueFor(SizedItem::TreeCacheSize),
+              std::chrono::seconds(app.config().getValueFor(SizedItem::TreeCacheAge)),
               stopwatch(),
               j_))
 {

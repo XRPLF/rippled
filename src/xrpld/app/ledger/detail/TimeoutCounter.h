@@ -21,7 +21,7 @@ namespace xrpl {
 
     1. The entry point is `setTimer`.
 
-    2. After `mTimerInterval`, `queueJob` is called, which schedules a job to
+    2. After `timerInterval_`, `queueJob` is called, which schedules a job to
        call `invokeOnTimer` (or loops back to setTimer if there are too many
        concurrent jobs).
 
@@ -30,7 +30,7 @@ namespace xrpl {
 
     4. `onTimer` is the only "real" virtual method in this class. It is the
        callback for when the timeout expires. Generally, its only responsibility
-       is to set `mFailed = true`. However, if it wants to implement a policy of
+       is to set `failed_ = true`. However, if it wants to implement a policy of
        retries, then it has a chance to just increment a count of expired
        timeouts.
 
@@ -39,11 +39,11 @@ namespace xrpl {
 
    This loop executes concurrently with another asynchronous sequence,
    implemented by the subtype, that is trying to make progress and eventually
-   set `mComplete = true`. While it is making progress but not complete, it
-   should set `mProgress = true`, which is passed to onTimer so it can decide
+   set `complete_ = true`. While it is making progress but not complete, it
+   should set `progress_ = true`, which is passed to onTimer so it can decide
    whether to postpone failure and reset the timeout. However, if it can
    complete all its work in one synchronous step (while it holds the lock), then
-   it can ignore `mProgress`.
+   it can ignore `progress_`.
 */
 class TimeoutCounter
 {
@@ -78,7 +78,7 @@ protected:
         QueueJobParameter&& jobParameter,
         beast::Journal journal);
 
-    /** Schedule a call to queueJob() after mTimerInterval. */
+    /** Schedule a call to queueJob() after timerInterval_. */
     void
     setTimer(ScopedLockType&);
 

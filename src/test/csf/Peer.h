@@ -55,7 +55,7 @@ struct Peer
             return proposal_;
         }
 
-        Json::Value
+        json::Value
         getJson() const
         {
             return proposal_.getJson();
@@ -496,7 +496,12 @@ struct Peer
         return Result(
             TxSet{openTxs},
             Proposal(
-                prevLedger.id(), Proposal::seqJoin, TxSet::calcID(openTxs), closeTime, now(), id));
+                prevLedger.id(),
+                Proposal::kSEQ_JOIN,
+                TxSet::calcID(openTxs),
+                closeTime,
+                now(),
+                id));
     }
 
     void
@@ -506,7 +511,7 @@ struct Peer
         NetClock::duration const& closeResolution,
         ConsensusCloseTimes const& rawCloseTimes,
         ConsensusMode const& mode,
-        Json::Value const& consensusJson)
+        json::Value const& consensusJson)
     {
         onAccept(
             result, prevLedger, closeResolution, rawCloseTimes, mode, consensusJson, validating());
@@ -519,11 +524,11 @@ struct Peer
         NetClock::duration const& closeResolution,
         ConsensusCloseTimes const& rawCloseTimes,
         ConsensusMode const& mode,
-        Json::Value const& consensusJson,
+        json::Value const& consensusJson,
         bool const validating)
     {
         schedule(delays.ledgerAccept, [mode, result, prevLedger, closeResolution, this]() {
-            bool const proposing = mode == ConsensusMode::proposing;
+            bool const proposing = mode == ConsensusMode::Proposing;
             bool const consensusFail = result.state == ConsensusState::MovedOn;
 
             TxSet const acceptedTxs = injectTxs(prevLedger, result.txns);
@@ -591,7 +596,7 @@ struct Peer
 
         if (netLgr != ledgerID)
         {
-            JLOG(j.trace()) << Json::Compact(validations.getJsonTrie());
+            JLOG(j.trace()) << json::Compact(validations.getJsonTrie());
             issue(WrongPrevLedger{.wrong = ledgerID, .right = netLgr});
         }
 
@@ -643,7 +648,7 @@ struct Peer
         v.setSeen(now());
         ValStatus const res = validations.add(v.nodeID(), v);
 
-        if (res == ValStatus::stale)
+        if (res == ValStatus::Stale)
             return false;
 
         // Acquire will try to get from network if not already local

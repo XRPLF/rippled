@@ -17,10 +17,10 @@
 
 namespace xrpl::test {
 
-class Coroutine_test : public beast::unit_test::suite
+class Coroutine_test : public beast::unit_test::Suite
 {
 public:
-    class gate
+    class Gate
     {
     private:
         std::condition_variable cv_;
@@ -32,10 +32,10 @@ public:
         // Returns `true` if signaled.
         template <class Rep, class Period>
         bool
-        wait_for(std::chrono::duration<Rep, Period> const& rel_time)
+        waitFor(std::chrono::duration<Rep, Period> const& relTime)
         {
             std::unique_lock<std::mutex> lk(mutex_);
-            auto b = cv_.wait_for(lk, rel_time, [this] { return signaled_; });
+            auto b = cv_.wait_for(lk, relTime, [this] { return signaled_; });
             signaled_ = false;
             return b;
         }
@@ -50,7 +50,7 @@ public:
     };
 
     void
-    correct_order()
+    correctOrder()
     {
         using namespace std::chrono_literals;
         using namespace jtx;
@@ -62,22 +62,22 @@ public:
             return cfg;
         }));
 
-        gate g1, g2;
+        Gate g1, g2;
         std::shared_ptr<JobQueue::Coro> c;
-        env.app().getJobQueue().postCoro(jtCLIENT, "CoroTest", [&](auto const& cr) {
+        env.app().getJobQueue().postCoro(JtClient, "CoroTest", [&](auto const& cr) {
             c = cr;
             g1.signal();
             c->yield();
             g2.signal();
         });
-        BEAST_EXPECT(g1.wait_for(5s));
+        BEAST_EXPECT(g1.waitFor(5s));
         c->join();
         c->post();
-        BEAST_EXPECT(g2.wait_for(5s));
+        BEAST_EXPECT(g2.waitFor(5s));
     }
 
     void
-    incorrect_order()
+    incorrectOrder()
     {
         using namespace std::chrono_literals;
         using namespace jtx;
@@ -89,17 +89,17 @@ public:
             return cfg;
         }));
 
-        gate g;
-        env.app().getJobQueue().postCoro(jtCLIENT, "CoroTest", [&](auto const& c) {
+        Gate g;
+        env.app().getJobQueue().postCoro(JtClient, "CoroTest", [&](auto const& c) {
             c->post();
             c->yield();
             g.signal();
         });
-        BEAST_EXPECT(g.wait_for(5s));
+        BEAST_EXPECT(g.waitFor(5s));
     }
 
     void
-    thread_specific_storage()
+    threadSpecificStorage()
     {
         using namespace std::chrono_literals;
         using namespace jtx;
@@ -109,25 +109,25 @@ public:
 
         auto& jq = env.app().getJobQueue();
 
-        static int const N = 4;
-        std::array<std::shared_ptr<JobQueue::Coro>, N> a;
+        static int const kN = 4;
+        std::array<std::shared_ptr<JobQueue::Coro>, kN> a;
 
         LocalValue<int> lv(-1);
         BEAST_EXPECT(*lv == -1);
 
-        gate g;
-        jq.addJob(jtCLIENT, "LocalValTest", [&]() {
+        Gate g;
+        jq.addJob(JtClient, "LocalValTest", [&]() {
             this->BEAST_EXPECT(*lv == -1);
             *lv = -2;
             this->BEAST_EXPECT(*lv == -2);
             g.signal();
         });
-        BEAST_EXPECT(g.wait_for(5s));
+        BEAST_EXPECT(g.waitFor(5s));
         BEAST_EXPECT(*lv == -1);
 
-        for (int i = 0; i < N; ++i)
+        for (int i = 0; i < kN; ++i)
         {
-            jq.postCoro(jtCLIENT, "CoroTest", [&, id = i](auto const& c) {
+            jq.postCoro(JtClient, "CoroTest", [&, id = i](auto const& c) {
                 a[id] = c;
                 g.signal();
                 c->yield();
@@ -140,13 +140,13 @@ public:
 
                 this->BEAST_EXPECT(*lv == id);
             });
-            BEAST_EXPECT(g.wait_for(5s));
+            BEAST_EXPECT(g.waitFor(5s));
             a[i]->join();
         }
         for (auto const& c : a)
         {
             c->post();
-            BEAST_EXPECT(g.wait_for(5s));
+            BEAST_EXPECT(g.waitFor(5s));
             c->join();
         }
         for (auto const& c : a)
@@ -155,20 +155,20 @@ public:
             c->join();
         }
 
-        jq.addJob(jtCLIENT, "LocalValTest", [&]() {
+        jq.addJob(JtClient, "LocalValTest", [&]() {
             this->BEAST_EXPECT(*lv == -2);
             g.signal();
         });
-        BEAST_EXPECT(g.wait_for(5s));
+        BEAST_EXPECT(g.waitFor(5s));
         BEAST_EXPECT(*lv == -1);
     }
 
     void
     run() override
     {
-        correct_order();
-        incorrect_order();
-        thread_specific_storage();
+        correctOrder();
+        incorrectOrder();
+        threadSpecificStorage();
     }
 };
 

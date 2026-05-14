@@ -72,7 +72,7 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
                         skip = False
                     if (
                         f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-15"
-                        and build_type == "Debug"
+                        and build_type == "Release"
                         and architecture["platform"] == "linux/amd64"
                     ):
                         skip = False
@@ -90,8 +90,9 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
                     ):
                         cmake_args = f"-DUNIT_TEST_REFERENCE_FEE=1000 {cmake_args}"
                         skip = False
+                elif os["distro_version"] == "trixie":
                     if (
-                        f"{os['compiler_name']}-{os['compiler_version']}" == "clang-20"
+                        f"{os['compiler_name']}-{os['compiler_version']}" == "clang-22"
                         and build_type == "Debug"
                         and architecture["platform"] == "linux/amd64"
                     ):
@@ -188,8 +189,9 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
 
         # We skip all clang 20+ on arm64 due to Boost build error.
         if (
-            f"{os['compiler_name']}-{os['compiler_version']}"
-            in ["clang-20", "clang-21"]
+            os["compiler_name"] == "clang"
+            and os["compiler_version"].isdigit()
+            and int(os["compiler_version"]) >= 20
             and architecture["platform"] == "linux/arm64"
         ):
             continue
@@ -238,13 +240,14 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
         # Add Address and UB sanitizers as separate configurations for specific
         # bookworm distros. Thread sanitizer is currently disabled (see below).
         # GCC-Asan xrpld-embedded tests are failing because of https://github.com/google/sanitizers/issues/856
-        if os[
-            "distro_version"
-        ] == "bookworm" and f"{os['compiler_name']}-{os['compiler_version']}" in [
-            "gcc-15",
-            "clang-20",
-        ]:
-            # Add ASAN configuration.
+        if (
+            os["distro_version"] == "bookworm"
+            and f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-15"
+        ) or (
+            os["distro_version"] == "trixie"
+            and f"{os['compiler_name']}-{os['compiler_version']}" == "clang-22"
+        ):
+            # Add ASAN and UBSAN configurations for both gcc-15 and clang-22
             configurations.append(
                 {
                     "config_name": config_name + "-asan",
@@ -257,7 +260,6 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
                     "sanitizers": "address",
                 }
             )
-            # Add UBSAN configuration.
             configurations.append(
                 {
                     "config_name": config_name + "-ubsan",

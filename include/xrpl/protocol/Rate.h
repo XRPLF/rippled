@@ -72,6 +72,6 @@ transferFeeAsRate(std::uint16_t fee);
 }  // namespace nft
 
 /** A transfer rate signifying a 1:1 exchange */
-extern Rate const parityRate;
+extern Rate const kPARITY_RATE;
 
 }  // namespace xrpl

@@ -22,7 +22,7 @@ public:
     [[nodiscard]] SerializedTypeID
     getSType() const override;
 
-    [[nodiscard]] Json::Value getJson(JsonOptions) const override;
+    [[nodiscard]] json::Value getJson(JsonOptions) const override;
 
     [[nodiscard]] std::string
     getText() const override;

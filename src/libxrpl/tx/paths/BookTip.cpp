@@ -13,19 +13,19 @@
 namespace xrpl {
 
 BookTip::BookTip(ApplyView& view, Book const& book)
-    : view_(view), m_book(getBookBase(book)), m_end(getQualityNext(m_book))
+    : view_(view), book_(getBookBase(book)), end_(getQualityNext(book_))
 {
 }
 
 bool
 BookTip::step(beast::Journal j)
 {
-    if (m_valid)
+    if (valid_)
     {
-        if (m_entry)
+        if (entry_)
         {
-            offerDelete(view_, m_entry, j);
-            m_entry = nullptr;
+            offerDelete(view_, entry_, j);
+            entry_ = nullptr;
         }
     }
 
@@ -34,33 +34,33 @@ BookTip::step(beast::Journal j)
         // See if there's an entry at or worse than current quality. Notice
         // that the quality is encoded only in the index of the first page
         // of a directory.
-        auto const first_page = view_.succ(m_book, m_end);
+        auto const firstPage = view_.succ(book_, end_);
 
-        if (!first_page)
+        if (!firstPage)
             return false;
 
         unsigned int di = 0;
         std::shared_ptr<SLE> dir;
 
-        if (dirFirst(view_, *first_page, dir, di, m_index))
+        if (dirFirst(view_, *firstPage, dir, di, index_))
         {
-            m_dir = dir->key();
-            m_entry = view_.peek(keylet::offer(m_index));
-            m_quality = Quality(getQuality(*first_page));
-            m_valid = true;
+            dir_ = dir->key();
+            entry_ = view_.peek(keylet::offer(index_));
+            quality_ = Quality(getQuality(*firstPage));
+            valid_ = true;
 
             // Next query should start before this directory
-            m_book = *first_page;
+            book_ = *firstPage;
 
             // The quality immediately before the next quality
-            --m_book;
+            --book_;
 
             break;
         }
 
         // There should never be an empty directory but just in case,
         // we handle that case by advancing to the next directory.
-        m_book = *first_page;
+        book_ = *firstPage;
     }
 
     return true;

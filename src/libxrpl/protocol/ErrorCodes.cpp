@@ -30,78 +30,78 @@ namespace detail {
 // status code.
 
 // clang-format off
-constexpr static ErrorInfo unorderedErrorInfos[]{
-    {rpcACT_MALFORMED,          "actMalformed",         "Account malformed."},
-    {rpcACT_NOT_FOUND,          "actNotFound",          "Account not found."},
-    {rpcALREADY_MULTISIG,       "alreadyMultisig",      "Already multisigned."},
-    {rpcALREADY_SINGLE_SIG,     "alreadySingleSig",     "Already single-signed."},
-    {rpcAMENDMENT_BLOCKED,      "amendmentBlocked",     "Amendment blocked, need upgrade.", 503},
-    {rpcEXPIRED_VALIDATOR_LIST, "unlBlocked",           "Validator list expired.", 503},
-    {rpcATX_DEPRECATED,         "deprecated",           "Use the new API or specify a ledger range.", 400},
-    {rpcBAD_KEY_TYPE,           "badKeyType",           "Bad key type.", 400},
-    {rpcBAD_FEATURE,            "badFeature",           "Feature unknown or invalid.", 500},
-    {rpcBAD_ISSUER,             "badIssuer",            "Issuer account malformed.", 400},
-    {rpcBAD_MARKET,             "badMarket",            "No such market.", 404},
-    {rpcBAD_SECRET,             "badSecret",            "Secret does not match account.", 403},
-    {rpcBAD_SEED,               "badSeed",              "Disallowed seed.", 403},
-    {rpcBAD_SYNTAX,             "badSyntax",            "Syntax error.", 400},
-    {rpcCHANNEL_MALFORMED,      "channelMalformed",     "Payment channel is malformed.", 400},
-    {rpcCHANNEL_AMT_MALFORMED,  "channelAmtMalformed",  "Payment channel amount is malformed.", 400},
-    {rpcCOMMAND_MISSING,        "commandMissing",       "Missing command entry.", 400},
-    {rpcDB_DESERIALIZATION,     "dbDeserialization",    "Database deserialization error.", 502},
-    {rpcDST_ACT_MALFORMED,      "dstActMalformed",      "Destination account is malformed.", 400},
-    {rpcDST_ACT_MISSING,        "dstActMissing",        "Destination account not provided.", 400},
-    {rpcDST_ACT_NOT_FOUND,      "dstActNotFound",       "Destination account not found.", 404},
-    {rpcDST_AMT_MALFORMED,      "dstAmtMalformed",      "Destination amount/currency/issuer is malformed.", 400},
-    {rpcDST_AMT_MISSING,        "dstAmtMissing",        "Destination amount/currency/issuer is missing.", 400},
-    {rpcDST_ISR_MALFORMED,      "dstIsrMalformed",      "Destination issuer is malformed.", 400},
-    {rpcEXCESSIVE_LGR_RANGE,    "excessiveLgrRange",    "Ledger range exceeds 1000.", 400},
-    {rpcFORBIDDEN,              "forbidden",            "Bad credentials.", 403},
-    {rpcHIGH_FEE,               "highFee",              "Current transaction fee exceeds your limit.", 402},
-    {rpcINTERNAL,               "internal",             "Internal error.", 500},
-    {rpcINVALID_LGR_RANGE,      "invalidLgrRange",      "Ledger range is invalid.", 400},
-    {rpcINVALID_PARAMS,         "invalidParams",        "Invalid parameters.", 400},
-    {rpcINVALID_HOTWALLET,      "invalidHotWallet",     "Invalid hotwallet.", 400},
-    {rpcISSUE_MALFORMED,        "issueMalformed",       "Issue is malformed.", 400},
-    {rpcJSON_RPC,               "json_rpc",             "JSON-RPC transport error.", 500},
-    {rpcLGR_IDXS_INVALID,       "lgrIdxsInvalid",       "Ledger indexes invalid.", 400},
-    {rpcLGR_IDX_MALFORMED,      "lgrIdxMalformed",      "Ledger index malformed.", 400},
-    {rpcLGR_NOT_FOUND,          "lgrNotFound",          "Ledger not found.", 404},
-    {rpcLGR_NOT_VALIDATED,      "lgrNotValidated",      "Ledger not validated.", 202},
-    {rpcMASTER_DISABLED,        "masterDisabled",       "Master key is disabled.", 403},
-    {rpcNOT_ENABLED,            "notEnabled",           "Not enabled in configuration.", 501},
-    {rpcNOT_IMPL,               "notImpl",              "Not implemented.", 501},
-    {rpcNOT_READY,              "notReady",             "Not ready to handle this request.", 503},
-    {rpcNOT_SUPPORTED,          "notSupported",         "Operation not supported.", 501},
-    {rpcNO_CLOSED,              "noClosed",             "Closed ledger is unavailable.", 503},
-    {rpcNO_CURRENT,             "noCurrent",            "Current ledger is unavailable.", 503},
-    {rpcNOT_SYNCED,             "notSynced",            "Not synced to the network.", 503},
-    {rpcNO_EVENTS,              "noEvents",             "Current transport does not support events.", 405},
-    {rpcNO_NETWORK,             "noNetwork",            "Not synced to the network.", 503},
-    {rpcWRONG_NETWORK,          "wrongNetwork",         "Wrong network.", 503},
-    {rpcNO_PERMISSION,          "noPermission",         "You don't have permission for this command.", 401},
-    {rpcNO_PF_REQUEST,          "noPathRequest",        "No pathfinding request in progress.", 404},
-    {rpcOBJECT_NOT_FOUND,       "objectNotFound",       "The requested object was not found.", 404},
-    {rpcPUBLIC_MALFORMED,       "publicMalformed",      "Public key is malformed.", 400},
-    {rpcSENDMAX_MALFORMED,      "sendMaxMalformed",     "SendMax amount malformed.", 400},
-    {rpcSIGNING_MALFORMED,      "signingMalformed",     "Signing of transaction is malformed.", 400},
-    {rpcSLOW_DOWN,              "slowDown",             "You are placing too much load on the server.", 429},
-    {rpcSRC_ACT_MALFORMED,      "srcActMalformed",      "Source account is malformed.", 400},
-    {rpcSRC_ACT_MISSING,        "srcActMissing",        "Source account not provided.", 400},
-    {rpcSRC_ACT_NOT_FOUND,      "srcActNotFound",       "Source account not found.", 404},
-    {rpcDELEGATE_ACT_NOT_FOUND, "delegateActNotFound",  "Delegate account not found.", 404},
-    {rpcSRC_CUR_MALFORMED,      "srcCurMalformed",      "Source currency is malformed.", 400},
-    {rpcSRC_ISR_MALFORMED,      "srcIsrMalformed",      "Source issuer is malformed.", 400},
-    {rpcSTREAM_MALFORMED,       "malformedStream",      "Stream malformed.", 400},
-    {rpcTOO_BUSY,               "tooBusy",              "The server is too busy to help you now.", 503},
-    {rpcTXN_NOT_FOUND,          "txnNotFound",          "Transaction not found.", 404},
-    {rpcUNKNOWN_COMMAND,        "unknownCmd",           "Unknown method.", 405},
-    {rpcORACLE_MALFORMED,       "oracleMalformed",      "Oracle request is malformed.", 400},
-    {rpcBAD_CREDENTIALS,        "badCredentials",       "Credentials do not exist, are not accepted, or have expired.", 400},
-    {rpcTX_SIGNED,              "transactionSigned",    "Transaction should not be signed.", 400},
-    {rpcDOMAIN_MALFORMED,       "domainMalformed",      "Domain is malformed.", 400},
-    {rpcENTRY_NOT_FOUND,        "entryNotFound",        "Entry not found.", 400},
-    {rpcUNEXPECTED_LEDGER_TYPE, "unexpectedLedgerType", "Unexpected ledger type.", 400},
+constexpr static ErrorInfo kUNORDERED_ERROR_INFOS[]{
+    {RpcActMalformed,          "actMalformed",         "Account malformed."},
+    {RpcActNotFound,          "actNotFound",          "Account not found."},
+    {RpcAlreadyMultisig,       "alreadyMultisig",      "Already multisigned."},
+    {RpcAlreadySingleSig,     "alreadySingleSig",     "Already single-signed."},
+    {RpcAmendmentBlocked,      "amendmentBlocked",     "Amendment blocked, need upgrade.", 503},
+    {RpcExpiredValidatorList, "unlBlocked",           "Validator list expired.", 503},
+    {RpcAtxDeprecated,         "deprecated",           "Use the new API or specify a ledger range.", 400},
+    {RpcBadKeyType,           "badKeyType",           "Bad key type.", 400},
+    {RpcBadFeature,            "badFeature",           "Feature unknown or invalid.", 500},
+    {RpcBadIssuer,             "badIssuer",            "Issuer account malformed.", 400},
+    {RpcBadMarket,             "badMarket",            "No such market.", 404},
+    {RpcBadSecret,             "badSecret",            "Secret does not match account.", 403},
+    {RpcBadSeed,               "badSeed",              "Disallowed seed.", 403},
+    {RpcBadSyntax,             "badSyntax",            "Syntax error.", 400},
+    {RpcChannelMalformed,      "channelMalformed",     "Payment channel is malformed.", 400},
+    {RpcChannelAmtMalformed,  "channelAmtMalformed",  "Payment channel amount is malformed.", 400},
+    {RpcCommandMissing,        "commandMissing",       "Missing command entry.", 400},
+    {RpcDbDeserialization,     "dbDeserialization",    "Database deserialization error.", 502},
+    {RpcDstActMalformed,      "dstActMalformed",      "Destination account is malformed.", 400},
+    {RpcDstActMissing,        "dstActMissing",        "Destination account not provided.", 400},
+    {RpcDstActNotFound,      "dstActNotFound",       "Destination account not found.", 404},
+    {RpcDstAmtMalformed,      "dstAmtMalformed",      "Destination amount/currency/issuer is malformed.", 400},
+    {RpcDstAmtMissing,        "dstAmtMissing",        "Destination amount/currency/issuer is missing.", 400},
+    {RpcDstIsrMalformed,      "dstIsrMalformed",      "Destination issuer is malformed.", 400},
+    {RpcExcessiveLgrRange,    "excessiveLgrRange",    "Ledger range exceeds 1000.", 400},
+    {RpcForbidden,              "forbidden",            "Bad credentials.", 403},
+    {RpcHighFee,               "highFee",              "Current transaction fee exceeds your limit.", 402},
+    {RpcInternal,               "internal",             "Internal error.", 500},
+    {RpcInvalidLgrRange,      "invalidLgrRange",      "Ledger range is invalid.", 400},
+    {RpcInvalidParams,         "invalidParams",        "Invalid parameters.", 400},
+    {RpcInvalidHotwallet,      "invalidHotWallet",     "Invalid hotwallet.", 400},
+    {RpcIssueMalformed,        "issueMalformed",       "Issue is malformed.", 400},
+    {RpcJsonRpc,               "json_rpc",             "JSON-RPC transport error.", 500},
+    {RpcLgrIdxsInvalid,       "lgrIdxsInvalid",       "Ledger indexes invalid.", 400},
+    {RpcLgrIdxMalformed,      "lgrIdxMalformed",      "Ledger index malformed.", 400},
+    {RpcLgrNotFound,          "lgrNotFound",          "Ledger not found.", 404},
+    {RpcLgrNotValidated,      "lgrNotValidated",      "Ledger not validated.", 202},
+    {RpcMasterDisabled,        "masterDisabled",       "Master key is disabled.", 403},
+    {RpcNotEnabled,            "notEnabled",           "Not enabled in configuration.", 501},
+    {RpcNotImpl,               "notImpl",              "Not implemented.", 501},
+    {RpcNotReady,              "notReady",             "Not ready to handle this request.", 503},
+    {RpcNotSupported,          "notSupported",         "Operation not supported.", 501},
+    {RpcNoClosed,              "noClosed",             "Closed ledger is unavailable.", 503},
+    {RpcNoCurrent,             "noCurrent",            "Current ledger is unavailable.", 503},
+    {RpcNotSynced,             "notSynced",            "Not synced to the network.", 503},
+    {RpcNoEvents,              "noEvents",             "Current transport does not support events.", 405},
+    {RpcNoNetwork,             "noNetwork",            "Not synced to the network.", 503},
+    {RpcWrongNetwork,          "wrongNetwork",         "Wrong network.", 503},
+    {RpcNoPermission,          "noPermission",         "You don't have permission for this command.", 401},
+    {RpcNoPfRequest,          "noPathRequest",        "No pathfinding request in progress.", 404},
+    {RpcObjectNotFound,       "objectNotFound",       "The requested object was not found.", 404},
+    {RpcPublicMalformed,       "publicMalformed",      "Public key is malformed.", 400},
+    {RpcSendmaxMalformed,      "sendMaxMalformed",     "SendMax amount malformed.", 400},
+    {RpcSigningMalformed,      "signingMalformed",     "Signing of transaction is malformed.", 400},
+    {RpcSlowDown,              "slowDown",             "You are placing too much load on the server.", 429},
+    {RpcSrcActMalformed,      "srcActMalformed",      "Source account is malformed.", 400},
+    {RpcSrcActMissing,        "srcActMissing",        "Source account not provided.", 400},
+    {RpcSrcActNotFound,      "srcActNotFound",       "Source account not found.", 404},
+    {RpcDelegateActNotFound, "delegateActNotFound",  "Delegate account not found.", 404},
+    {RpcSrcCurMalformed,      "srcCurMalformed",      "Source currency is malformed.", 400},
+    {RpcSrcIsrMalformed,      "srcIsrMalformed",      "Source issuer is malformed.", 400},
+    {RpcStreamMalformed,       "malformedStream",      "Stream malformed.", 400},
+    {RpcTooBusy,               "tooBusy",              "The server is too busy to help you now.", 503},
+    {RpcTxnNotFound,          "txnNotFound",          "Transaction not found.", 404},
+    {RpcUnknownCommand,        "unknownCmd",           "Unknown method.", 405},
+    {RpcOracleMalformed,       "oracleMalformed",      "Oracle request is malformed.", 400},
+    {RpcBadCredentials,        "badCredentials",       "Credentials do not exist, are not accepted, or have expired.", 400},
+    {RpcTxSigned,              "transactionSigned",    "Transaction should not be signed.", 400},
+    {RpcDomainMalformed,       "domainMalformed",      "Domain is malformed.", 400},
+    {RpcEntryNotFound,        "entryNotFound",        "Entry not found.", 400},
+    {RpcUnexpectedLedgerType, "unexpectedLedgerType", "Unexpected ledger type.", 400},
 };
 // clang-format on
 
@@ -115,14 +115,14 @@ sortErrorInfos(ErrorInfo const (&unordered)[N]) -> std::array<ErrorInfo, M>
 
     for (ErrorInfo const& info : unordered)
     {
-        if (info.code <= rpcSUCCESS || info.code > rpcLAST)
+        if (info.code <= RpcSuccess || info.code > RpcLast)
             throw(std::out_of_range("Invalid error_code_i"));
 
         // The first valid code follows rpcSUCCESS immediately.
-        static_assert(rpcSUCCESS == 0, "Unexpected error_code_i layout.");
+        static_assert(RpcSuccess == 0, "Unexpected error_code_i layout.");
         int const index{info.code - 1};
 
-        if (ret[index].code != rpcUNKNOWN)
+        if (ret[index].code != RpcUnknown)
             throw(std::invalid_argument("Duplicate error_code_i in list"));
 
         ret[index] = info;
@@ -134,18 +134,18 @@ sortErrorInfos(ErrorInfo const (&unordered)[N]) -> std::array<ErrorInfo, M>
     // It's okay for there to be missing entries; they will contain the code
     // rpcUNKNOWN.  But other than that all entries should match their index.
     int codeCount{0};
-    int expect{rpcBAD_SYNTAX - 1};
+    int expect{RpcBadSyntax - 1};
     for (ErrorInfo const& info : ret)
     {
         ++expect;
-        if (info.code == rpcUNKNOWN)
+        if (info.code == RpcUnknown)
             continue;
 
         if (info.code != expect)
             throw(std::invalid_argument("Empty error_code_i in list"));
         ++codeCount;
     }
-    if (expect != rpcLAST)
+    if (expect != RpcLast)
         throw(std::invalid_argument("Insufficient list entries"));
     if (codeCount != N)
         throw(std::invalid_argument("Bad handling of unorderedErrorInfos"));
@@ -153,74 +153,74 @@ sortErrorInfos(ErrorInfo const (&unordered)[N]) -> std::array<ErrorInfo, M>
     return ret;
 }
 
-constexpr auto sortedErrorInfos{sortErrorInfos<rpcLAST>(unorderedErrorInfos)};
+constexpr auto kSORTED_ERROR_INFOS{sortErrorInfos<RpcLast>(kUNORDERED_ERROR_INFOS)};
 
-constexpr ErrorInfo unknownError;
+constexpr ErrorInfo kUNKNOWN_ERROR;
 
 }  // namespace detail
 
 //------------------------------------------------------------------------------
 
 void
-inject_error(error_code_i code, Json::Value& json)
+injectError(ErrorCodeI code, json::Value& json)
 {
-    ErrorInfo const& info(get_error_info(code));
+    ErrorInfo const& info(getErrorInfo(code));
     json[jss::error] = info.token;
     json[jss::error_code] = info.code;
     json[jss::error_message] = info.message;
 }
 
 void
-inject_error(error_code_i code, std::string const& message, Json::Value& json)
+injectError(ErrorCodeI code, std::string const& message, json::Value& json)
 {
-    ErrorInfo const& info(get_error_info(code));
+    ErrorInfo const& info(getErrorInfo(code));
     json[jss::error] = info.token;
     json[jss::error_code] = info.code;
     json[jss::error_message] = message;
 }
 
 ErrorInfo const&
-get_error_info(error_code_i code)
+getErrorInfo(ErrorCodeI code)
 {
-    if (code <= rpcSUCCESS || code > rpcLAST)
-        return detail::unknownError;
-    return detail::sortedErrorInfos[code - 1];
+    if (code <= RpcSuccess || code > RpcLast)
+        return detail::kUNKNOWN_ERROR;
+    return detail::kSORTED_ERROR_INFOS[code - 1];
 }
 
-Json::Value
-make_error(error_code_i code)
+json::Value
+makeError(ErrorCodeI code)
 {
-    Json::Value json;
-    inject_error(code, json);
+    json::Value json;
+    injectError(code, json);
     return json;
 }
 
-Json::Value
-make_error(error_code_i code, std::string const& message)
+json::Value
+makeError(ErrorCodeI code, std::string const& message)
 {
-    Json::Value json;
-    inject_error(code, message, json);
+    json::Value json;
+    injectError(code, message, json);
     return json;
 }
 
 bool
-contains_error(Json::Value const& json)
+containsError(json::Value const& json)
 {
     return json.isObject() && json.isMember(jss::error);
 }
 
 int
-error_code_http_status(error_code_i code)
+errorCodeHttpStatus(ErrorCodeI code)
 {
-    return get_error_info(code).http_status;
+    return getErrorInfo(code).http_status;
 }
 
 }  // namespace RPC
 
 std::string
-rpcErrorString(Json::Value const& jv)
+rpcErrorString(json::Value const& jv)
 {
-    XRPL_ASSERT(RPC::contains_error(jv), "xrpl::RPC::rpcErrorString : input contains an error");
+    XRPL_ASSERT(RPC::containsError(jv), "xrpl::RPC::rpcErrorString : input contains an error");
     return jv[jss::error].asString() + jv[jss::error_message].asString();
 }
 

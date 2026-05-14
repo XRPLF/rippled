@@ -58,19 +58,19 @@ public:
     }
 };
 
-CheckpointersCollection checkpointers;
+CheckpointersCollection gCheckpointers;
 
 std::shared_ptr<Checkpointer>
 checkpointerFromId(std::uintptr_t id)
 {
-    return checkpointers.fromId(id);
+    return gCheckpointers.fromId(id);
 }
 
 DatabaseCon::~DatabaseCon()
 {
     if (checkpointer_)
     {
-        checkpointers.erase(checkpointer_->id());
+        gCheckpointers.erase(checkpointer_->id());
 
         std::weak_ptr<Checkpointer> const wk(checkpointer_);
         checkpointer_.reset();
@@ -94,7 +94,7 @@ DatabaseCon::setupCheckpointing(JobQueue* q, ServiceRegistry& registry)
 {
     if (q == nullptr)
         Throw<std::logic_error>("No JobQueue");
-    checkpointer_ = checkpointers.create(session_, *q, registry);
+    checkpointer_ = gCheckpointers.create(session_, *q, registry);
 }
 
 }  // namespace xrpl

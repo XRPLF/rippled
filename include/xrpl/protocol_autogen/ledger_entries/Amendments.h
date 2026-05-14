@@ -46,7 +46,7 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfAmendments (soeOPTIONAL)
+     * @brief Get sfAmendments (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -70,7 +70,7 @@ public:
     }
 
     /**
-     * @brief Get sfMajorities (soeOPTIONAL)
+     * @brief Get sfMajorities (SoeOptional)
      * @note This is an untyped field (unknown).
      * @return The field value, or std::nullopt if not present.
      */
@@ -95,7 +95,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnID (soeOPTIONAL)
+     * @brief Get sfPreviousTxnID (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -119,7 +119,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnLgrSeq (soeOPTIONAL)
+     * @brief Get sfPreviousTxnLgrSeq (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -147,7 +147,7 @@ public:
  * @brief Builder for Amendments ledger entries.
  *
  * Provides a fluent interface for constructing ledger entries with method chaining.
- * Uses Json::Value internally for flexible ledger entry construction.
+ * Uses STObject internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
  */
 class AmendmentsBuilder : public LedgerEntryBuilderBase<AmendmentsBuilder>
@@ -178,7 +178,7 @@ public:
     /** @brief Ledger entry-specific field setters */
 
     /**
-     * @brief Set sfAmendments (soeOPTIONAL)
+     * @brief Set sfAmendments (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AmendmentsBuilder&
@@ -189,7 +189,7 @@ public:
     }
 
     /**
-     * @brief Set sfMajorities (soeOPTIONAL)
+     * @brief Set sfMajorities (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AmendmentsBuilder&
@@ -200,7 +200,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnID (soeOPTIONAL)
+     * @brief Set sfPreviousTxnID (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AmendmentsBuilder&
@@ -211,7 +211,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnLgrSeq (soeOPTIONAL)
+     * @brief Set sfPreviousTxnLgrSeq (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AmendmentsBuilder&

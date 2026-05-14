@@ -42,7 +42,7 @@ OrderBookDBImpl::OrderBookDBImpl(ServiceRegistry& registry, OrderBookDBConfig co
 }
 
 std::unique_ptr<OrderBookDB>
-make_OrderBookDB(ServiceRegistry& registry, OrderBookDBConfig const& config)
+makeOrderBookDb(ServiceRegistry& registry, OrderBookDBConfig const& config)
 {
     return std::make_unique<OrderBookDBImpl>(registry, config);
 }
@@ -83,7 +83,7 @@ OrderBookDBImpl::setup(std::shared_ptr<ReadView const> const& ledger)
             // Shorten job name to fit Linux 15-char thread name limit with "j:" prefix
             // "OB" + seq (max 9 digits) = 11 chars, + "j:" = 13 chars (fits in 15)
             registry_.get().getJobQueue().addJob(
-                jtUPDATE_PF, "OB" + std::to_string(ledger->seq() % 1000000000), [this, ledger]() {
+                JtUpdatePf, "OB" + std::to_string(ledger->seq() % 1000000000), [this, ledger]() {
                     update(ledger);
                 });
         }
@@ -210,7 +210,7 @@ OrderBookDBImpl::update(std::shared_ptr<ReadView const> const& ledger)
     JLOG(j_.debug()) << "Update completed (" << ledger->seq() << "): " << cnt << " books found";
 
     {
-        std::scoped_lock const sl(mLock);
+        std::scoped_lock const sl(lock_);
         allBooks_.swap(allBooks);
         xrpBooks_.swap(xrpBooks);
         domainBooks_.swap(domainBooks);
@@ -225,7 +225,7 @@ OrderBookDBImpl::addOrderBook(Book const& book)
 {
     bool const toXRP = isXRP(book.out);
 
-    std::scoped_lock const sl(mLock);
+    std::scoped_lock const sl(lock_);
 
     if (book.domain)
     {
@@ -253,7 +253,7 @@ OrderBookDBImpl::getBooksByTakerPays(Asset const& asset, std::optional<uint256> 
     std::vector<Book> ret;
 
     {
-        std::scoped_lock const sl(mLock);
+        std::scoped_lock const sl(lock_);
 
         auto getBooks = [&](auto const& container, auto const& key) {
             if (auto it = container.find(key); it != container.end())
@@ -282,7 +282,7 @@ OrderBookDBImpl::getBooksByTakerPays(Asset const& asset, std::optional<uint256> 
 int
 OrderBookDBImpl::getBookSize(Asset const& asset, std::optional<uint256> const& domain)
 {
-    std::scoped_lock const sl(mLock);
+    std::scoped_lock const sl(lock_);
 
     if (!domain)
     {
@@ -301,7 +301,7 @@ OrderBookDBImpl::getBookSize(Asset const& asset, std::optional<uint256> const& d
 bool
 OrderBookDBImpl::isBookToXRP(Asset const& asset, std::optional<Domain> const& domain)
 {
-    std::scoped_lock const sl(mLock);
+    std::scoped_lock const sl(lock_);
     if (domain)
         return xrpDomainBooks_.contains({asset, *domain});
     return xrpBooks_.contains(asset);
@@ -310,14 +310,14 @@ OrderBookDBImpl::isBookToXRP(Asset const& asset, std::optional<Domain> const& do
 BookListeners::pointer
 OrderBookDBImpl::makeBookListeners(Book const& book)
 {
-    std::scoped_lock const sl(mLock);
+    std::scoped_lock const sl(lock_);
     auto ret = getBookListeners(book);
 
     if (!ret)
     {
         ret = std::make_shared<BookListeners>();
 
-        mListeners[book] = ret;
+        listeners_[book] = ret;
         XRPL_ASSERT(
             getBookListeners(book) == ret,
             "xrpl::OrderBookDB::makeBookListeners : result roundtrip "
@@ -331,10 +331,10 @@ BookListeners::pointer
 OrderBookDBImpl::getBookListeners(Book const& book)
 {
     BookListeners::pointer ret;
-    std::scoped_lock const sl(mLock);
+    std::scoped_lock const sl(lock_);
 
-    auto it0 = mListeners.find(book);
-    if (it0 != mListeners.end())
+    auto it0 = listeners_.find(book);
+    if (it0 != listeners_.end())
         ret = it0->second;
 
     return ret;
@@ -348,7 +348,7 @@ OrderBookDBImpl::processTxn(
     AcceptedLedgerTx const& alTx,
     MultiApiJson const& jvObj)
 {
-    std::scoped_lock const sl(mLock);
+    std::scoped_lock const sl(lock_);
 
     // For this particular transaction, maintain the set of unique
     // subscriptions that have already published it.  This prevents sending

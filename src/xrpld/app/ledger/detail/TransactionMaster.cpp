@@ -28,13 +28,13 @@
 namespace xrpl {
 
 TransactionMaster::TransactionMaster(Application& app)
-    : mApp(app)
-    , mCache(
+    : app_(app)
+    , cache_(
           "TransactionCache",
           65536,
           std::chrono::minutes{30},
           stopwatch(),
-          mApp.getJournal("TaggedCache"))
+          app_.getJournal("TaggedCache"))
 {
 }
 
@@ -45,7 +45,7 @@ TransactionMaster::inLedger(
     std::optional<uint32_t> tseq,
     std::optional<uint32_t> netID)
 {
-    auto txn = mCache.fetch(hash);
+    auto txn = cache_.fetch(hash);
 
     if (!txn)
         return false;
@@ -55,20 +55,20 @@ TransactionMaster::inLedger(
 }
 
 std::shared_ptr<Transaction>
-TransactionMaster::fetch_from_cache(uint256 const& txnID)
+TransactionMaster::fetchFromCache(uint256 const& txnID)
 {
-    return mCache.fetch(txnID);
+    return cache_.fetch(txnID);
 }
 
 std::variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
-TransactionMaster::fetch(uint256 const& txnID, error_code_i& ec)
+TransactionMaster::fetch(uint256 const& txnID, ErrorCodeI& ec)
 {
     using TxPair = std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
 
-    if (auto txn = fetch_from_cache(txnID); txn && !txn->isValidated())
+    if (auto txn = fetchFromCache(txnID); txn && !txn->isValidated())
         return std::pair{std::move(txn), nullptr};
 
-    auto v = Transaction::load(txnID, mApp, ec);
+    auto v = Transaction::load(txnID, app_, ec);
 
     if (std::holds_alternative<TxSearched>(v))
         return v;
@@ -76,7 +76,7 @@ TransactionMaster::fetch(uint256 const& txnID, error_code_i& ec)
     auto [txn, txnMeta] = std::get<TxPair>(v);
 
     if (txn)
-        mCache.canonicalize_replace_client(txnID, txn);
+        cache_.canonicalizeReplaceClient(txnID, txn);
 
     return std::pair{std::move(txn), std::move(txnMeta)};
 }
@@ -85,14 +85,14 @@ std::variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, T
 TransactionMaster::fetch(
     uint256 const& txnID,
     ClosedInterval<uint32_t> const& range,
-    error_code_i& ec)
+    ErrorCodeI& ec)
 {
     using TxPair = std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
 
-    if (auto txn = fetch_from_cache(txnID); txn && !txn->isValidated())
+    if (auto txn = fetchFromCache(txnID); txn && !txn->isValidated())
         return std::pair{std::move(txn), nullptr};
 
-    auto v = Transaction::load(txnID, mApp, range, ec);
+    auto v = Transaction::load(txnID, app_, range, ec);
 
     if (std::holds_alternative<TxSearched>(v))
         return v;
@@ -100,7 +100,7 @@ TransactionMaster::fetch(
     auto [txn, txnMeta] = std::get<TxPair>(v);
 
     if (txn)
-        mCache.canonicalize_replace_client(txnID, txn);
+        cache_.canonicalizeReplaceClient(txnID, txn);
 
     return std::pair{std::move(txn), std::move(txnMeta)};
 }
@@ -112,16 +112,16 @@ TransactionMaster::fetch(
     std::uint32_t uCommitLedger)
 {
     std::shared_ptr<STTx const> txn;
-    auto iTx = fetch_from_cache(item->key());
+    auto iTx = fetchFromCache(item->key());
 
     if (!iTx)
     {
-        if (type == SHAMapNodeType::tnTRANSACTION_NM)
+        if (type == SHAMapNodeType::TnTransactionNm)
         {
             SerialIter sit(item->slice());
             txn = std::make_shared<STTx const>(std::ref(sit));
         }
-        else if (type == SHAMapNodeType::tnTRANSACTION_MD)
+        else if (type == SHAMapNodeType::TnTransactionMd)
         {
             auto blob = SerialIter{item->slice()}.getVL();
             txn = std::make_shared<STTx const>(SerialIter{blob.data(), blob.size()});
@@ -142,11 +142,11 @@ void
 TransactionMaster::canonicalize(std::shared_ptr<Transaction>* pTransaction)
 {
     uint256 const tid = (*pTransaction)->getID();
-    if (tid != beast::zero)
+    if (tid != beast::kZERO)
     {
         auto txn = *pTransaction;
         // VFALCO NOTE canonicalize can change the value of txn!
-        mCache.canonicalize_replace_client(tid, txn);
+        cache_.canonicalizeReplaceClient(tid, txn);
         *pTransaction = txn;
     }
 }
@@ -154,13 +154,13 @@ TransactionMaster::canonicalize(std::shared_ptr<Transaction>* pTransaction)
 void
 TransactionMaster::sweep(void)
 {
-    mCache.sweep();
+    cache_.sweep();
 }
 
 TaggedCache<uint256, Transaction>&
 TransactionMaster::getCache()
 {
-    return mCache;
+    return cache_;
 }
 
 }  // namespace xrpl

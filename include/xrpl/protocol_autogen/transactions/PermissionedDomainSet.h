@@ -19,9 +19,9 @@ class PermissionedDomainSetBuilder;
  * @brief Transaction: PermissionedDomainSet
  *
  * Type: ttPERMISSIONED_DOMAIN_SET (62)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: featurePermissionedDomains
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use PermissionedDomainSetBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfDomainID (soeOPTIONAL)
+     * @brief Get sfDomainID (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -73,7 +73,7 @@ public:
         return this->tx_->isFieldPresent(sfDomainID);
     }
     /**
-     * @brief Get sfAcceptedCredentials (soeREQUIRED)
+     * @brief Get sfAcceptedCredentials (SoeRequired)
      * @note This is an untyped field.
      * @return The field value.
      */
@@ -89,7 +89,7 @@ public:
  * @brief Builder for PermissionedDomainSet transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class PermissionedDomainSetBuilder : public TransactionBuilderBase<PermissionedDomainSetBuilder>
@@ -128,7 +128,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfDomainID (soeOPTIONAL)
+     * @brief Set sfDomainID (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     PermissionedDomainSetBuilder&
@@ -139,7 +139,7 @@ public:
     }
 
     /**
-     * @brief Set sfAcceptedCredentials (soeREQUIRED)
+     * @brief Set sfAcceptedCredentials (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     PermissionedDomainSetBuilder&

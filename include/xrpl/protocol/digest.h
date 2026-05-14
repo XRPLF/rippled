@@ -24,14 +24,14 @@ namespace xrpl {
 
     @note This uses the OpenSSL implementation
 */
-struct openssl_ripemd160_hasher
+struct OpensslRipemd160Hasher
 {
 public:
-    static constexpr auto const endian = boost::endian::order::native;
+    static constexpr auto const kENDIAN = boost::endian::order::native;
 
     using result_type = std::array<std::uint8_t, 20>;
 
-    openssl_ripemd160_hasher();
+    OpensslRipemd160Hasher();
 
     void
     operator()(void const* data, std::size_t size) noexcept;
@@ -47,14 +47,14 @@ private:
 
     @note This uses the OpenSSL implementation
 */
-struct openssl_sha512_hasher
+struct OpensslSha512Hasher
 {
 public:
-    static constexpr auto const endian = boost::endian::order::native;
+    static constexpr auto const kENDIAN = boost::endian::order::native;
 
     using result_type = std::array<std::uint8_t, 64>;
 
-    openssl_sha512_hasher();
+    OpensslSha512Hasher();
 
     void
     operator()(void const* data, std::size_t size) noexcept;
@@ -70,14 +70,14 @@ private:
 
     @note This uses the OpenSSL implementation
 */
-struct openssl_sha256_hasher
+struct OpensslSha256Hasher
 {
 public:
-    static constexpr auto const endian = boost::endian::order::native;
+    static constexpr auto const kENDIAN = boost::endian::order::native;
 
     using result_type = std::array<std::uint8_t, 32>;
 
-    openssl_sha256_hasher();
+    OpensslSha256Hasher();
 
     void
     operator()(void const* data, std::size_t size) noexcept;
@@ -91,9 +91,9 @@ private:
 
 //------------------------------------------------------------------------------
 
-using ripemd160_hasher = openssl_ripemd160_hasher;
-using sha256_hasher = openssl_sha256_hasher;
-using sha512_hasher = openssl_sha512_hasher;
+using ripemd160_hasher = OpensslRipemd160Hasher;
+using sha256_hasher = OpensslSha256Hasher;
+using sha512_hasher = OpensslSha512Hasher;
 
 //------------------------------------------------------------------------------
 
@@ -112,13 +112,13 @@ using sha512_hasher = openssl_sha512_hasher;
 
     Meets the requirements of Hasher (in hash_append)
 */
-struct ripesha_hasher
+struct RipeshaHasher
 {
 private:
     sha256_hasher h_;
 
 public:
-    static constexpr auto const endian = boost::endian::order::native;
+    static constexpr auto const kENDIAN = boost::endian::order::native;
 
     using result_type = std::array<std::uint8_t, 20>;
 
@@ -148,17 +148,17 @@ namespace detail {
     SHA-512 digest of the message.
 */
 template <bool Secure>
-struct basic_sha512_half_hasher
+struct BasicSha512HalfHasher
 {
 private:
     sha512_hasher h_;
 
 public:
-    static constexpr auto const endian = boost::endian::order::big;
+    static constexpr auto const kENDIAN = boost::endian::order::big;
 
     using result_type = uint256;
 
-    ~basic_sha512_half_hasher()
+    ~BasicSha512HalfHasher()
     {
         erase(std::integral_constant<bool, Secure>{});
     }
@@ -185,16 +185,16 @@ private:
     void
     erase(std::true_type)
     {
-        secure_erase(&h_, sizeof(h_));
+        secureErase(&h_, sizeof(h_));
     }
 };
 
 }  // namespace detail
 
-using sha512_half_hasher = detail::basic_sha512_half_hasher<false>;
+using sha512_half_hasher = detail::BasicSha512HalfHasher<false>;
 
 // secure version
-using sha512_half_hasher_s = detail::basic_sha512_half_hasher<true>;
+using sha512_half_hasher_s = detail::BasicSha512HalfHasher<true>;
 
 //------------------------------------------------------------------------------
 
@@ -217,7 +217,7 @@ sha512Half(Args const&... args)
 */
 template <class... Args>
 sha512_half_hasher_s::result_type
-sha512Half_s(Args const&... args)
+sha512HalfS(Args const&... args)
 {
     sha512_half_hasher_s h;
     using beast::hash_append;

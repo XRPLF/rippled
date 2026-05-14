@@ -24,7 +24,7 @@ NotTEC
 NFTokenCancelOffer::preflight(PreflightContext const& ctx)
 {
     if (auto const& ids = ctx.tx[sfNFTokenOffers];
-        ids.empty() || (ids.size() > maxTokenOfferCancelCount))
+        ids.empty() || (ids.size() > kMAX_TOKEN_OFFER_CANCEL_COUNT))
         return temMALFORMED;
 
     // In order to prevent unnecessarily overlarge transactions, we
@@ -103,6 +103,7 @@ NFTokenCancelOffer::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -113,6 +114,7 @@ NFTokenCancelOffer::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 
