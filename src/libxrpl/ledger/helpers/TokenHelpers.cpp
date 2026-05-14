@@ -587,12 +587,12 @@ directSendNoFeeIOU(
             && sleRippleState->isFlag(senderNoRippleFlag) !=
                 view.read(keylet::account(uSenderID))->isFlag(lsfDefaultRipple) &&
             !sleRippleState->isFlag(senderFreezeFlag) &&
-            !sleRippleState->getFieldAmount(!bSenderHigh ? sfLowLimit : sfHighLimit)
+            !sleRippleState->getFieldAmount(bSenderHigh ? sfHighLimit : sfLowLimit)
             // Sender trust limit is 0.
-            && (sleRippleState->getFieldU32(!bSenderHigh ? sfLowQualityIn : sfHighQualityIn) == 0u)
+            && (sleRippleState->getFieldU32(bSenderHigh ? sfHighQualityIn : sfLowQualityIn) == 0u)
             // Sender quality in is 0.
             &&
-            (sleRippleState->getFieldU32(!bSenderHigh ? sfLowQualityOut : sfHighQualityOut) == 0u))
+            (sleRippleState->getFieldU32(bSenderHigh ? sfHighQualityOut : sfLowQualityOut) == 0u))
         // Sender quality out is 0.
         {
             // Clear the reserve of the sender, possibly delete the line!
@@ -620,7 +620,7 @@ directSendNoFeeIOU(
                 view,
                 sleRippleState,
                 bSenderHigh ? uReceiverID : uSenderID,
-                !bSenderHigh ? uReceiverID : uSenderID,
+                bSenderHigh ? uSenderID : uReceiverID,
                 j);
         }
 
