@@ -166,22 +166,21 @@ gantt
 
 ### Exit Criteria
 
-- [x] Complete consensus round traces
-- [x] Phase transitions visible
-- [x] Proposals and validations traced
-- [x] No impact on consensus timing
+- [ ] Complete consensus round traces
+- [ ] Phase transitions visible
+- [ ] Proposals and validations traced
+- [ ] No impact on consensus timing
 - [ ] Multi-validator test network validated
 
-### Implementation Status — Phase 4a Complete
+### Implementation Status — Phase 4a Plan
 
-Phase 4a (establish-phase gap fill & cross-node correlation) adds:
+Phase 4a (establish-phase gap fill & cross-node correlation) will add:
 
 - **Deterministic trace ID** derived from `previousLedger.id()` so all validators
   in the same round share the same `trace_id` (switchable via
   `consensus_trace_strategy` config: `"deterministic"` or `"attribute"`).
   See [Configuration Reference](./05-configuration-reference.md) for full
-  configuration options. The `consensus_trace_strategy` option will be
-  documented in the configuration reference as part of Phase 4a implementation.
+  configuration options.
 - **Round lifecycle spans**: `consensus.round` with round-to-round span links.
 - **Establish phase**: `consensus.establish`, `consensus.update_positions` (with
   `dispute.resolve` events), `consensus.check` (with threshold tracking).
@@ -192,7 +191,8 @@ Phase 4a (establish-phase gap fill & cross-node correlation) adds:
   (`startRoundTracing`, `createValidationSpan`, `startEstablishTracing`,
   `updateEstablishTracing`, `endEstablishTracing`).
 
-See [Phase4_taskList.md](./Phase4_taskList.md) for the full spec and implementation notes.
+The `Phase4_taskList.md` spec document is introduced in the Phase 2 PR (#6424)
+and will contain the full task breakdown and implementation notes.
 
 ---
 
@@ -490,7 +490,7 @@ Clear, measurable criteria for each phase.
 
 ---
 
-## 6.12 Recommended Implementation Order
+## 6.11 Recommended Implementation Order
 
 Based on ROI analysis, implement in this exact order:
 
