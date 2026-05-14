@@ -1,3 +1,12 @@
+/** @file
+ *  Implements the `subscribe` RPC/WebSocket command handler.
+ *
+ *  Registers a client connection as a listener on named event streams, account
+ *  filters, or order books. The symmetric counterpart `doUnsubscribe` in
+ *  Unsubscribe.cpp tears down these registrations using identical parameter
+ *  parsing logic.
+ */
+
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/rpc/Context.h>
@@ -26,6 +35,56 @@
 
 namespace xrpl {
 
+/** Register event subscriptions for a WebSocket or HTTP-callback client.
+ *
+ *  Resolves the subscriber identity, then processes up to five independent
+ *  subscription categories from the request:
+ *
+ *  - **streams** — named fan-out queues (`ledger`, `transactions`,
+ *    `transactions_proposed`, `validations`, `manifests`, `server`,
+ *    `book_changes`, `consensus`, `peer_status`).
+ *  - **accounts** — validated transaction notifications for specific accounts.
+ *  - **accounts_proposed** — proposed (pre-validation) transaction notifications.
+ *  - **books** — order book updates, with an optional current-state snapshot.
+ *  - **account_history_tx_stream** — experimental historical + live replay for
+ *    one account (requires `useTxTables()`).
+ *
+ *  Subscriber identity is determined as follows: if the request contains a
+ *  `url` parameter an `RPCSub` HTTP-push object is created (or reused from the
+ *  server registry); otherwise `context.infoSub` — the WebSocket connection's
+ *  `InfoSub` — is used directly. The `url` path requires `Role::ADMIN`.
+ *
+ *  For book subscriptions the handler registers the live listener *before*
+ *  reading the snapshot, eliminating the race where an offer update fires
+ *  between the snapshot read and the subscription registration. Clients may
+ *  therefore observe duplicates between the snapshot and the live stream, but
+ *  will never miss an update.
+ *
+ *  Every validation step returns immediately on failure without partial
+ *  side effects, so the client either gets all requested subscriptions or
+ *  an error with no state changed.
+ *
+ *  @param context  RPC dispatch context carrying the parsed request params,
+ *      the `InfoSub` for the WebSocket connection (if any), the `NetworkOPs`
+ *      reference used for all sub/unsub calls, and the resource consumer.
+ *  @return JSON object with the initial subscription state; includes current
+ *      ledger info for `ledger` stream, offer snapshots under `offers`/
+ *      `bids`/`asks` when `snapshot` is requested, and a `warning` field
+ *      for `account_history_tx_stream`. Returns an `rpcError` object on any
+ *      validation failure.
+ *  @note Callers without an active WebSocket connection (plain HTTP) must
+ *      supply a `url` parameter; without either, `rpcINVALID_PARAMS` is
+ *      returned immediately.
+ *  @note `rt_transactions` is a deprecated alias for `transactions_proposed`;
+ *      `rt_accounts` is a deprecated alias for `accounts_proposed`;
+ *      `both_sides` is a deprecated alias for `both`; `state_now` is a
+ *      deprecated alias for `snapshot`. All aliases remain supported.
+ *  @note The `book_changes` stream has no unsubscribe path; once registered,
+ *      it cannot be removed for the lifetime of the connection.
+ *  @note Book snapshot reads charge `feeMediumBurdenRPC` to the resource
+ *      consumer, as does `account_history_tx_stream` subscription.
+ *  @see doUnsubscribe
+ */
 json::Value
 doSubscribe(RPC::JsonContext& context)
 {
@@ -34,7 +93,6 @@ doSubscribe(RPC::JsonContext& context)
 
     if (!context.infoSub && !context.params.isMember(jss::url))
     {
-        // Must be a JSON-RPC call.
         JLOG(context.j.info()) << "doSubscribe: RPC subscribe requires a url";
         return rpcError(RpcInvalidParams);
     }

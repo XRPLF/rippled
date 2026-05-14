@@ -1,3 +1,11 @@
+/** @file
+ *  Implements `closeChannel`, the shared teardown routine for XRPL payment
+ *  channels.  The four mutations are ordered deliberately: the channel SLE is
+ *  read for `sfAmount`/`sfBalance` in step 3 and must not be erased until
+ *  step 4.  The `tefBAD_LEDGER` and `tefINTERNAL` branches are LCOV-excluded
+ *  because they guard against ledger corruption that cannot arise under correct
+ *  protocol operation.
+ */
 #include <xrpl/ledger/helpers/PaymentChannelHelpers.h>
 
 #include <xrpl/basics/Log.h>
@@ -24,7 +32,6 @@ closeChannel(
     beast::Journal j)
 {
     AccountID const src = (*slep)[sfAccount];
-    // Remove PayChan from owner directory
     {
         auto const page = (*slep)[sfOwnerNode];
         if (!view.dirRemove(keylet::ownerDir(src), page, key, true))
@@ -36,7 +43,6 @@ closeChannel(
         }
     }
 
-    // Remove PayChan from recipient's owner directory, if present.
     if (auto const page = (*slep)[~sfDestinationNode])
     {
         auto const dst = (*slep)[sfDestination];
@@ -49,7 +55,6 @@ closeChannel(
         }
     }
 
-    // Transfer amount back to owner, decrement owner count
     auto const sle = view.peek(keylet::account(src));
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -60,7 +65,6 @@ closeChannel(
     adjustOwnerCount(view, sle, -1, j);
     view.update(sle);
 
-    // Remove PayChan from ledger
     view.erase(slep);
     return tesSUCCESS;
 }

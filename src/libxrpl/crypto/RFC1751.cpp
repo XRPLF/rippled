@@ -1,3 +1,17 @@
+/** @file
+ *  RFC 1751 mnemonic encoding and decoding for 128-bit binary keys.
+ *
+ *  Implements the IETF RFC 1751 scheme that converts raw binary data into
+ *  sequences of pronounceable English words, making cryptographic seeds
+ *  suitable for written transcription or verbal communication. Each 64-bit
+ *  block encodes as 6 words (11 bits each, plus 2 parity bits); a full
+ *  128-bit key therefore produces 12 words.
+ *
+ *  Also provides `getWordFromBlob`, a structurally separate utility that
+ *  reuses the RFC 1751 dictionary to derive a stable single-word label from
+ *  arbitrary binary data via a Jenkins one-at-a-time hash.
+ */
+
 #include <xrpl/crypto/RFC1751.h>
 
 #include <xrpl/beast/utility/instrumentation.h>
@@ -17,10 +31,13 @@
 
 namespace xrpl {
 
-//
-// RFC 1751 code converted to C++/Boost.
-//
-
+/** Fixed 2048-word mnemonic dictionary (2^11 entries).
+ *
+ *  Entries 0–570 are words of three characters or fewer; entries 571–2047
+ *  are exactly four characters. This split lets `wsrch` restrict its binary
+ *  search to half the dictionary based solely on input word length,
+ *  eliminating unnecessary cross-boundary comparisons.
+ */
 char const* RFC1751::dictionary[2048] = {
     "A",    "ABE",  "ACE",  "ACT",  "AD",   "ADA",  "ADD",  "AGO",  "AID",  "AIM",  "AIR",  "ALL",
     "ALP",  "AM",   "AMY",  "AN",   "ANA",  "AND",  "ANN",  "ANT",  "ANY",  "APE",  "APS",  "APT",
@@ -194,8 +211,20 @@ char const* RFC1751::dictionary[2048] = {
     "WORD", "WORE", "WORK", "WORM", "WORN", "WOVE", "WRIT", "WYNN", "YALE", "YANG", "YANK", "YARD",
     "YARN", "YAWL", "YAWN", "YEAH", "YEAR", "YELL", "YOGA", "YOKE"};
 
-/* Extract 'length' bits from the char array 's'
-   starting with bit 'start' */
+/** Extract up to 11 bits from a byte array at an arbitrary bit offset.
+ *
+ *  Assembles up to three adjacent bytes (`cl`, `cc`, `cr`) into a 24-bit
+ *  window, right-shifts to justify the requested bits, and masks to
+ *  `length` bits. Handles cross-byte reads transparently.
+ *
+ *  @param s      Byte array of at least `ceil((start + length) / 8)` bytes;
+ *      for parity use the 9-byte buffer produced by `btoe`.
+ *  @param start  Zero-based bit offset into `s`; must be ≥ 0.
+ *  @param length Number of bits to extract; must satisfy 0 ≤ length ≤ 11
+ *      and start + length ≤ 66.
+ *  @return The extracted bits as an unsigned long, right-justified and
+ *      zero-extended.
+ */
 unsigned long
 RFC1751::extract(char const* s, int start, int length)
 {
@@ -221,12 +250,24 @@ RFC1751::extract(char const* s, int start, int length)
     return x;
 }
 
-// Encode 8 bytes in 'c' as a string of English words.
-// Returns a pointer to a static buffer
+/** Encode an 8-byte binary block as six RFC 1751 English words.
+ *
+ *  Copies `strData` into a 9-byte local buffer, computes a 2-bit parity
+ *  value by summing all 32 bit-pairs across the 64-bit payload, and stores
+ *  it in the high bits of the ninth byte. Then calls `extract` at offsets
+ *  0, 11, 22, 33, 44, 55 to obtain six 11-bit indices and looks up the
+ *  corresponding dictionary words, joining them with single spaces.
+ *
+ *  @param strHuman Output parameter; receives the space-separated six-word
+ *      encoding.
+ *  @param strData  Exactly 8 bytes of binary input.
+ *  @note Encoding is lossless and cannot fail on valid 8-byte input; there
+ *      is no return code.
+ */
 void
 RFC1751::btoe(std::string& strHuman, std::string const& strData)
 {
-    char caBuffer[9]; /* add in room for the parity 2 bits*/
+    char caBuffer[9];  // 8 data bytes + 1 byte for the 2 parity bits
     int p = 0, i = 0;
 
     memcpy(caBuffer, strData.c_str(), 8);
@@ -243,6 +284,21 @@ RFC1751::btoe(std::string& strHuman, std::string const& strData)
         dictionary[extract(caBuffer, 55, 11)];
 }
 
+/** Write up to 11 bits into a byte array at an arbitrary bit offset.
+ *
+ *  Inverse of `extract`: left-shifts `x` to align with the target bit
+ *  position and OR-s the result into up to three bytes of `s`. Using OR
+ *  rather than assignment is deliberate — the output buffer must start
+ *  zero-initialized, and each call safely accumulates its 11-bit chunk
+ *  without disturbing bits written by prior calls.
+ *
+ *  @param s      Zero-initialized output byte array; same 9-byte parity
+ *      buffer used by `btoe`/`etob`.
+ *  @param x      Value to insert; must fit in `length` bits.
+ *  @param start  Zero-based bit offset into `s`; must be ≥ 0.
+ *  @param length Number of bits to insert; must satisfy 0 ≤ length ≤ 11
+ *      and start + length ≤ 66.
+ */
 void
 RFC1751::insert(char* s, int x, int start, int length)
 {
@@ -280,6 +336,15 @@ RFC1751::insert(char* s, int x, int start, int length)
     }
 }
 
+/** Normalize a mnemonic word for dictionary lookup.
+ *
+ *  Uppercases all letters and applies three digit-to-letter substitutions
+ *  that tolerate common handwritten or OCR transcription errors:
+ *  `'1' → 'L'`, `'0' → 'O'`, `'5' → 'S'`. For example, `"0BEY"` decodes
+ *  successfully as `"OBEY"`.
+ *
+ *  @param strWord The word to normalize, modified in place.
+ */
 void
 RFC1751::standard(std::string& strWord)
 {
@@ -304,7 +369,18 @@ RFC1751::standard(std::string& strWord)
     }
 }
 
-// Binary search of dictionary.
+/** Binary search the RFC 1751 dictionary for a word.
+ *
+ *  Searches the half-open range `[iMin, iMax)`. Callers pass `[0, 570)` for
+ *  words of ≤ 3 characters and `[571, 2048)` for four-character words,
+ *  exploiting the dictionary's length-partitioned layout to halve the search
+ *  space.
+ *
+ *  @param strWord The normalized (uppercased) word to find.
+ *  @param iMin    Inclusive lower bound of the search range.
+ *  @param iMax    Exclusive upper bound of the search range.
+ *  @return The index of `strWord` in `dictionary`, or -1 if not found.
+ */
 int
 RFC1751::wsrch(std::string const& strWord, int iMin, int iMax)
 {
@@ -312,33 +388,45 @@ RFC1751::wsrch(std::string const& strWord, int iMin, int iMax)
 
     while (iResult < 0 && iMin != iMax)
     {
-        // Have a range to search.
         int const iMid = iMin + ((iMax - iMin) / 2);
         int const iDir = strWord.compare(dictionary[iMid]);
 
         if (iDir == 0)
         {
-            iResult = iMid;  // Found it.
+            iResult = iMid;
         }
         else if (iDir < 0)
         {
-            iMax = iMid;  // key < middle, middle is new max.
+            iMax = iMid;
         }
         else
         {
-            iMin = iMid + 1;  // key > middle, new min is past the middle.
+            iMin = iMid + 1;
         }
     }
 
     return iResult;
 }
 
-// Convert 6 words to binary.
-//
-// Returns 1 OK - all good words and parity is OK
-//         0 word not in data base
-//        -1 badly formed in put ie > 4 char word
-//        -2 words OK but parity is wrong
+/** Decode six RFC 1751 words into an 8-byte binary block.
+ *
+ *  Validates input exhaustively before writing any output: word count must
+ *  be exactly 6, each word must be 1–4 characters, each must appear in the
+ *  dictionary after normalization via `standard()`, and the reconstructed
+ *  64-bit payload must pass the 2-bit parity check stored at bit position
+ *  64. Distinct return codes let callers surface meaningful error messages.
+ *
+ *  @param strData   Output parameter; receives exactly 8 bytes of decoded
+ *      binary data on success. Unchanged on failure.
+ *  @param vsHuman   Exactly 6 normalized mnemonic words.
+ *  @return 1 if decoding succeeded and parity matched; 0 if a word was not
+ *      found in the dictionary; -1 if input was malformed (wrong word count
+ *      or a word exceeds 4 characters); -2 if words decoded successfully
+ *      but parity did not match (likely a mis-transcribed or reordered
+ *      mnemonic).
+ *  @note The 2-bit parity is a transcription check, not a cryptographic
+ *      integrity guarantee.
+ */
 int
 RFC1751::etob(std::string& strData, std::vector<std::string> vsHuman)
 {
@@ -366,7 +454,6 @@ RFC1751::etob(std::string& strData, std::vector<std::string> vsHuman)
         p += 11;
     }
 
-    /* now check the parity of what we got */
     for (p = 0, i = 0; i < 64; i += 2)
         p += extract(b, i, 2);
 
@@ -378,14 +465,22 @@ RFC1751::etob(std::string& strData, std::vector<std::string> vsHuman)
     return 1;
 }
 
-/** Convert words separated by spaces into a 128 bit key in big-endian format.
-
-    @return
-         1 if succeeded
-         0 if word not in dictionary
-        -1 if badly formed string
-        -2 if words are okay but parity is wrong.
-*/
+/** Decode a 12-word RFC 1751 mnemonic string into a 128-bit binary key.
+ *
+ *  Trims leading/trailing whitespace, splits on whitespace with
+ *  `token_compress_on` (tolerating multiple consecutive spaces), validates
+ *  exactly 12 words, then calls `etob` on each 6-word half. The two 8-byte
+ *  halves are concatenated in order. In `Seed.cpp` the caller reverses the
+ *  16-byte result before wrapping it into a `uint128`, matching the
+ *  big-endian convention described in the RFC.
+ *
+ *  @param strKey    Output parameter; receives 16 bytes of decoded binary
+ *      data on success. Unchanged on failure.
+ *  @param strHuman  Space-separated 12-word mnemonic string.
+ *  @return 1 if decoding succeeded; 0 if a word was not found in the
+ *      dictionary; -1 if input was malformed (not exactly 12 words, or a
+ *      word exceeds 4 characters); -2 if words decoded but parity failed.
+ */
 int
 RFC1751::getKeyFromEnglish(std::string& strKey, std::string const& strHuman)
 {
@@ -414,7 +509,18 @@ RFC1751::getKeyFromEnglish(std::string& strKey, std::string const& strHuman)
     return rc;
 }
 
-/** Convert to human from a 128 bit key in big-endian format
+/** Encode a 128-bit binary key as a 12-word RFC 1751 mnemonic string.
+ *
+ *  Splits `strKey` into two 8-byte halves, encodes each via `btoe`, and
+ *  joins the resulting six-word strings with a single space to produce a
+ *  12-word output. In `Seed.cpp` the caller reverses the 16 bytes before
+ *  passing them here, satisfying the RFC's big-endian convention.
+ *
+ *  @param strHuman  Output parameter; receives the 12-word space-separated
+ *      mnemonic on return.
+ *  @param strKey    Exactly 16 bytes of binary input.
+ *  @note Encoding is always lossless on valid 16-byte input; there is no
+ *      return code.
  */
 void
 RFC1751::getEnglishFromKey(std::string& strHuman, std::string const& strKey)
@@ -427,12 +533,30 @@ RFC1751::getEnglishFromKey(std::string& strHuman, std::string const& strKey)
     strHuman = strFirst + " " + strSecond;
 }
 
+/** Derive a single dictionary word from arbitrary binary data.
+ *
+ *  Runs a Jenkins one-at-a-time hash over all bytes of `blob` and reduces
+ *  the 32-bit result modulo 2048 to select a word from the RFC 1751
+ *  dictionary. The word is stable for a given input but carries no
+ *  cryptographic security — the hash is not collision-resistant and the
+ *  output space is only 2048 values.
+ *
+ *  Primary use: derive a short, memorable pseudonym from a validator node's
+ *  public key for non-admin RPC responses (`shroudedHostId` in
+ *  `NetworkOPs.cpp`), where privacy is desired but uniqueness is not
+ *  guaranteed.
+ *
+ *  @param blob   Pointer to the input data.
+ *  @param bytes  Length of `blob` in bytes.
+ *  @return A single uppercase word (1–4 characters) from the RFC 1751
+ *      dictionary.
+ *  @note Not cryptographically secure; do not use where collision resistance
+ *      or unpredictability is required.
+ */
 std::string
 RFC1751::getWordFromBlob(void const* blob, size_t bytes)
 {
-    // This is a simple implementation of the Jenkins one-at-a-time hash
-    // algorithm:
-    // http://en.wikipedia.org/wiki/Jenkins_hash_function#one-at-a-time
+    // Jenkins one-at-a-time hash: http://en.wikipedia.org/wiki/Jenkins_hash_function#one-at-a-time
     unsigned char const* data = static_cast<unsigned char const*>(blob);
     std::uint32_t hash = 0;
 

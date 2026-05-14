@@ -1,3 +1,11 @@
+/** @file
+ *  Implementation of the `PermissionedDomainSet` transactor.
+ *
+ *  Handles both creation and in-place update of `PermissionedDomain` ledger
+ *  objects.  The presence of `sfDomainID` in the transaction selects the
+ *  update path; its absence triggers creation.  See
+ *  `PermissionedDomainSet.h` for the public interface contract.
+ */
 #include <xrpl/tx/transactors/permissioned_domain/PermissionedDomainSet.h>
 
 #include <xrpl/beast/utility/Zero.h>
@@ -73,7 +81,30 @@ PermissionedDomainSet::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-/** Attempt to create the Permissioned Domain. */
+/** Create or update a `PermissionedDomain` SLE.
+ *
+ *  Canonicalises `sfAcceptedCredentials` via `credentials::makeSorted` before
+ *  writing, ensuring the stored array is in deterministic order regardless of
+ *  the order in which credentials were submitted.
+ *
+ *  **Update path** (`sfDomainID` present): replaces the existing domain SLE's
+ *  `sfAcceptedCredentials` array in-place and calls `view().update()`.  No
+ *  reserve change occurs because the object already exists.
+ *
+ *  **Create path** (`sfDomainID` absent): verifies the account has sufficient
+ *  XRP to cover `accountReserve(ownerCount + 1)`, then allocates a new SLE
+ *  keyed by `keylet::permissionedDomain(account_, sfSequence)`.  Using the
+ *  transaction sequence as the key differentiator gives each domain a globally
+ *  unique, collision-resistant identifier without a separate ID-generation
+ *  step.  The SLE is inserted into the owner directory and the owner count is
+ *  incremented by one.
+ *
+ *  @return `tesSUCCESS` on success; `tecINSUFFICIENT_RESERVE` if the account
+ *      cannot cover the new reserve (create path only); `tecDIR_FULL` if the
+ *      owner directory is full (create path, unreachable in practice —
+ *      LCOV_EXCL); `tefINTERNAL` if the owner SLE or, on the update path, the
+ *      domain SLE is unexpectedly absent (unreachable — LCOV_EXCL).
+ */
 TER
 PermissionedDomainSet::doApply()
 {
@@ -94,7 +125,6 @@ PermissionedDomainSet::doApply()
 
     if (ctx_.tx.isFieldPresent(sfDomainID))
     {
-        // Modify existing permissioned domain.
         auto slePd = view().peek(keylet::permissionedDomain(ctx_.tx.getFieldH256(sfDomainID)));
         if (!slePd)
             return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -103,8 +133,6 @@ PermissionedDomainSet::doApply()
     }
     else
     {
-        // Create new permissioned domain.
-        // Check reserve availability for new object creation
         auto const balance = STAmount((*ownerSle)[sfBalance]).xrp();
         auto const reserve = ctx_.view().fees().accountReserve((*ownerSle)[sfOwnerCount] + 1);
         if (balance < reserve)
@@ -124,7 +152,6 @@ PermissionedDomainSet::doApply()
             return tecDIR_FULL;  // LCOV_EXCL_LINE
 
         slePd->setFieldU64(sfOwnerNode, *page);
-        // If we succeeded, the new entry counts against the creator's reserve.
         adjustOwnerCount(view(), ownerSle, 1, ctx_.journal);
         view().insert(slePd);
     }

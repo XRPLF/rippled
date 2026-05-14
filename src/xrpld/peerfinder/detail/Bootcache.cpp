@@ -1,3 +1,16 @@
+/** @file
+ *  Persistent bootstrap address cache for PeerFinder cold-start.
+ *
+ *  Maintains a ranked list of IP endpoints that survive restarts, allowing the
+ *  node to immediately attempt connections to previously-reachable peers.
+ *  Entries are ranked by valence (a streak counter) so high-reliability
+ *  addresses are tried first. The cache is loaded from and flushed to a
+ *  SQLite-backed `Store`, with writes batched behind a 60-second cooldown to
+ *  avoid excessive I/O during connection storms.
+ *
+ *  @see Bootcache.h, Logic.h, Store.h
+ */
+
 #include <xrpld/peerfinder/detail/Bootcache.h>
 
 #include <xrpld/peerfinder/PeerfinderManager.h>
@@ -74,6 +87,14 @@ Bootcache::clear()
 
 //--------------------------------------------------------------------------
 
+/** Load persisted entries from the Store, replacing any current in-memory state.
+ *
+ *  Clears the cache before loading so the Store is always the authoritative
+ *  source on startup. Duplicate entries returned by the Store are discarded
+ *  with an error log. `prune()` is called after loading to enforce the
+ *  `kBOOTCACHE_SIZE` cap in case the stored set grew beyond the limit while
+ *  the node was offline.
+ */
 void
 Bootcache::load()
 {
@@ -94,6 +115,16 @@ Bootcache::load()
     }
 }
 
+/** Add a dynamically-learned address to the cache with initial valence zero.
+ *
+ *  This path is taken for addresses received via peer gossip. The operation is
+ *  idempotent: if the endpoint is already present the cache is unchanged and
+ *  `false` is returned. On a new insert, `prune()` enforces the size cap and
+ *  `flagForUpdate()` schedules a deferred write-back.
+ *
+ *  @param endpoint The IP endpoint to add.
+ *  @return `true` if the endpoint was inserted; `false` if it already existed.
+ */
 bool
 Bootcache::insert(beast::IP::Endpoint const& endpoint)
 {
@@ -107,6 +138,20 @@ Bootcache::insert(beast::IP::Endpoint const& endpoint)
     return result.second;
 }
 
+/** Add a statically-configured bootstrap address with elevated priority.
+ *
+ *  Static addresses receive `kSTATIC_VALENCE` (32), placing them near the top
+ *  of the sorted iteration order so the node preferentially connects to its
+ *  own trusted seeds. If the address already exists with a lower valence the
+ *  entry is erased and reinserted to enforce the minimum — historical failures
+ *  cannot permanently demote a configured seed.
+ *
+ *  @param endpoint The IP endpoint from the node's static configuration.
+ *  @return `true` if the entry was inserted or upgraded; `false` if it already
+ *      existed at `kSTATIC_VALENCE` or higher.
+ *  @note Bimap values are logically const after insertion, so a valence upgrade
+ *      requires the erase-then-reinsert sequence used here.
+ */
 bool
 Bootcache::insertStatic(beast::IP::Endpoint const& endpoint)
 {
@@ -128,6 +173,20 @@ Bootcache::insertStatic(beast::IP::Endpoint const& endpoint)
     return result.second;
 }
 
+/** Record a successful outbound connection handshake for the given endpoint.
+ *
+ *  Increments the endpoint's valence streak counter. Before incrementing, the
+ *  current valence is clamped to zero so that a failure streak is fully
+ *  cleared before recording the first success — the resulting valence is
+ *  always 1 after the transition from any negative value, not a cumulative
+ *  sum. If the endpoint is not yet in the cache it is inserted with valence 1.
+ *  The bimap's immutability invariant requires an erase-then-reinsert to
+ *  change the valence of an existing entry.
+ *
+ *  @param endpoint The endpoint whose connection handshake just completed.
+ *  @note Valence tracks a streak (consecutive outcomes), not a lifetime score.
+ *      A peer that failed five times then succeeded once gets valence=1, not -4.
+ */
 void
 Bootcache::onSuccess(beast::IP::Endpoint const& endpoint)
 {
@@ -151,6 +210,18 @@ Bootcache::onSuccess(beast::IP::Endpoint const& endpoint)
     flagForUpdate();
 }
 
+/** Record a failed outbound connection attempt for the given endpoint.
+ *
+ *  Decrements the endpoint's valence streak counter. Mirrors the clamping
+ *  logic in `onSuccess`: the current valence is clamped to zero before
+ *  decrementing, so a success streak is fully cleared on the first failure and
+ *  the resulting valence is -1, not the sum of past successes minus one. If
+ *  the endpoint is not yet in the cache it is inserted with valence -1.
+ *
+ *  @param endpoint The endpoint whose connection attempt just failed.
+ *  @note Valence tracks a streak (consecutive outcomes), not a lifetime score.
+ *      A peer that succeeded ten times then failed once gets valence=-1, not 9.
+ */
 void
 Bootcache::onFailure(beast::IP::Endpoint const& endpoint)
 {
@@ -195,20 +266,28 @@ Bootcache::onWrite(beast::PropertyStream::Map& map)
     }
 }
 
-// Checks the cache size and prunes if its over the limit.
+/** Trim the cache to `kBOOTCACHE_SIZE` by removing the lowest-valence entries.
+ *
+ *  Removes `kBOOTCACHE_PRUNE_PERCENT` (10%) of entries from the tail of the
+ *  right-side multiset, which holds entries in ascending `Entry::operator<`
+ *  order — i.e., descending valence — so the tail is always the least
+ *  reliable addresses.
+ *
+ *  @note The loop walks a forward iterator backward from `right.end()` rather
+ *      than using a reverse iterator because Boost bimap does not support
+ *      erasing via reverse iterators cleanly.
+ */
 void
 Bootcache::prune()
 {
     if (size() <= Tuning::kBOOTCACHE_SIZE)
         return;
 
-    // Calculate the amount to remove
     auto count((size() * Tuning::kBOOTCACHE_PRUNE_PERCENT) / 100);
     decltype(count) pruned(0);
 
     // Work backwards because bimap doesn't handle
     // erasing using a reverse iterator very well.
-    //
     for (auto iter(map_.right.end()); count-- > 0 && iter != map_.right.begin(); ++pruned)
     {
         --iter;
@@ -222,7 +301,16 @@ Bootcache::prune()
     JLOG(journal_.debug()) << beast::Leftw(18) << "Bootcache pruned " << pruned << " entries total";
 }
 
-// Updates the Store with the current set of entries if needed.
+/** Serialize the entire cache to the persistent Store, if an update is pending.
+ *
+ *  Snapshots the current bimap into a `vector<Store::Entry>` and calls
+ *  `store_.save()`. Resets `needsUpdate_` and advances `whenUpdate_` by the
+ *  cooldown period (`kBOOTCACHE_COOLDOWN_TIME` = 60 s) so that back-to-back
+ *  mutation bursts result in at most one write per minute.
+ *
+ *  @note Called unconditionally from the destructor to guarantee the final
+ *      in-memory state is always persisted on clean shutdown.
+ */
 void
 Bootcache::update()
 {
@@ -238,12 +326,16 @@ Bootcache::update()
         list.push_back(se);
     }
     store_.save(list);
-    // Reset the flag and cooldown timer
     needsUpdate_ = false;
     whenUpdate_ = clock_.now() + Tuning::kBOOTCACHE_COOLDOWN_TIME;
 }
 
-// Checks the clock and calls update if we are off the cooldown.
+/** Flush to the Store if an update is pending and the cooldown has elapsed.
+ *
+ *  Called from `periodicActivity()` on each maintenance tick. Does nothing if
+ *  no mutation has occurred since the last write, or if the 60-second cooldown
+ *  window has not yet expired.
+ */
 void
 Bootcache::checkUpdate()
 {
@@ -251,7 +343,13 @@ Bootcache::checkUpdate()
         update();
 }
 
-// Called when changes to an entry will affect the Store.
+/** Mark the cache as dirty and attempt a write-back if the cooldown permits.
+ *
+ *  Every mutation that must survive a restart — inserts, static inserts, and
+ *  connection outcome records — calls this method. Sets `needsUpdate_` and
+ *  immediately delegates to `checkUpdate()`, which will flush only if the
+ *  60-second cooldown has expired since the last write.
+ */
 void
 Bootcache::flagForUpdate()
 {

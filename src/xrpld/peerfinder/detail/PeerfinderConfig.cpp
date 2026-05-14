@@ -1,3 +1,14 @@
+/** @file
+ *  Implements `PeerFinder::Config` method bodies.
+ *
+ *  This file bridges the server-level `xrpl::Config` (parsed from
+ *  `rippled.cfg`) and the `PeerFinder::Manager` that enforces the
+ *  connection policy at runtime.  It provides the outbound-peer
+ *  calculation (`calcOutPeers`), the per-IP admission-limit enforcement
+ *  (`applyTuning`), and the factory that produces a fully validated
+ *  `Config` from operator settings (`makeConfig`).
+ */
+
 #include <xrpld/core/Config.h>
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/detail/Tuning.h>
@@ -15,6 +26,16 @@ Config::Config() : outPeers(calcOutPeers())
 {
 }
 
+/** Return `true` if every field of two `Config` objects is identical.
+ *
+ *  Compares all policy fields: `autoConnect`, `peerPrivate`,
+ *  `wantIncoming`, `inPeers`, `maxPeers`, `outPeers`, `features`,
+ *  `ipLimit`, and `listeningPort`.
+ *
+ *  @param lhs Left-hand `Config` operand.
+ *  @param rhs Right-hand `Config` operand.
+ *  @return `true` if all fields compare equal.
+ */
 bool
 operator==(Config const& lhs, Config const& rhs)
 {
@@ -37,17 +58,14 @@ Config::applyTuning()
 {
     if (ipLimit == 0)
     {
-        // Unless a limit is explicitly set, we allow between
-        // 2 and 5 connections from non RFC-1918 "private"
-        // IP addresses.
         ipLimit = 2;
 
         if (inPeers > Tuning::kDEFAULT_MAX_PEERS)
             ipLimit += std::min(5, static_cast<int>(inPeers / Tuning::kDEFAULT_MAX_PEERS));
     }
 
-    // We don't allow a single IP to consume all incoming slots,
-    // unless we only have one incoming slot available.
+    // Clamp so no single IP can monopolise inbound slots; minimum of 1
+    // ensures the node remains connectable even with a single inbound slot.
     ipLimit = std::max(1, std::min(ipLimit, static_cast<int>(inPeers / 2)));
 }
 
@@ -74,7 +92,6 @@ Config::makeConfig(
 
     config.peerPrivate = cfg.PEER_PRIVATE;
 
-    // Servers with peer privacy don't want to allow incoming connections
     config.wantIncoming = (!config.peerPrivate) && (port != 0);
 
     if ((cfg.PEERS_OUT_MAX == 0u) && (cfg.PEERS_IN_MAX == 0u))
@@ -85,13 +102,9 @@ Config::makeConfig(
         config.maxPeers = std::max<std::size_t>(config.maxPeers, Tuning::kMIN_OUT_COUNT);
         config.outPeers = config.calcOutPeers();
 
-        // Calculate the number of outbound peers we want. If we dont want
-        // or can't accept incoming, this will simply be equal to maxPeers.
         if (!config.wantIncoming)
             config.outPeers = config.maxPeers;
 
-        // Calculate the largest number of inbound connections we could
-        // take.
         if (config.maxPeers >= config.outPeers)
         {
             config.inPeers = config.maxPeers - config.outPeers;
@@ -108,21 +121,18 @@ Config::makeConfig(
         config.maxPeers = 0;
     }
 
-    // This will cause servers configured as validators to request that
-    // peers they connect to never report their IP address. We set this
-    // after we set the 'wantIncoming' because we want a "soft" version
-    // of peer privacy unless the operator explicitly asks for it.
+    // Force peerPrivate on validators *after* wantIncoming is set, so a
+    // validator without an explicit [peer_private] stanza still advertises
+    // inbound willingness ("soft" privacy: accepts connections but asks
+    // peers not to gossip its address).
     if (validationPublicKey)
         config.peerPrivate = true;
 
-    // if it's a private peer or we are running as standalone
-    // automatic connections would defeat the purpose.
     config.autoConnect = !cfg.standalone() && !cfg.PEER_PRIVATE;
     config.listeningPort = port;
     config.features = "";
     config.ipLimit = ipLimit;
 
-    // Enforce business rules
     config.applyTuning();
 
     return config;

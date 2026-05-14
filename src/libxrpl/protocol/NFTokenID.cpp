@@ -1,3 +1,19 @@
+/** @file
+ *  Reconstructs NFToken identities from transaction metadata and injects
+ *  them into RPC JSON responses as synthetic fields.
+ *
+ *  Raw transaction metadata records ledger state changes (what
+ *  `NFTokenPage` objects looked like before and after) but does not
+ *  annotate which token was added, traded, or involved in a cancelled
+ *  offer. The functions here bridge that gap so API consumers don't have
+ *  to perform the same inference themselves.
+ *
+ *  These helpers are also consumed directly by Clio (the XRPL History
+ *  API server), which performs the same enrichment independently of
+ *  rippled. That is why the helpers are free functions rather than
+ *  file-scope statics.
+ */
+
 #include <xrpl/protocol/NFTokenID.h>
 
 #include <xrpl/basics/base_uint.h>
@@ -20,6 +36,21 @@
 
 namespace xrpl {
 
+/** Returns true if this transaction could have produced or consumed an NFToken.
+ *
+ *  Guards all downstream extraction logic. A transaction qualifies only when
+ *  it is one of the three NFT transaction types
+ *  (`ttNFTOKEN_MINT`, `ttNFTOKEN_ACCEPT_OFFER`, `ttNFTOKEN_CANCEL_OFFER`)
+ *  and its result code is `tesSUCCESS`. A failed transaction cannot have
+ *  mutated any NFToken page, so metadata diffing would be meaningless.
+ *
+ *  @param serializedTx      The executed transaction; a null pointer yields
+ *      false immediately.
+ *  @param transactionMeta   Metadata from the same transaction, used to
+ *      check the result code.
+ *  @return True only when `serializedTx` is non-null, its type is an NFT
+ *      transaction type, and the result is `tesSUCCESS`.
+ */
 bool
 canHaveNFTokenID(std::shared_ptr<STTx const> const& serializedTx, TxMeta const& transactionMeta)
 {
@@ -37,12 +68,35 @@ canHaveNFTokenID(std::shared_ptr<STTx const> const& serializedTx, TxMeta const& 
     return true;
 }
 
+/** Recovers the ID of the NFToken added by a mint transaction.
+ *
+ *  `ttNFTOKEN_MINT` metadata records the full token arrays of every
+ *  affected `NFTokenPage` in `sfPreviousFields` and `sfFinalFields`, but
+ *  does not mark the newly inserted entry. This function recovers it via
+ *  set-difference: it accumulates all token IDs from previous states into
+ *  `prevIDs` and all token IDs from final states into `finalIDs`, then
+ *  uses `std::mismatch` to locate the first entry present in `finalIDs`
+ *  but absent from `prevIDs`.
+ *
+ *  The invariant `finalIDs.size() == prevIDs.size() + 1` must hold exactly
+ *  (tokens are minted one at a time). If it is violated the function
+ *  returns `std::nullopt` rather than guessing.
+ *
+ *  @note When a mint causes an existing page to split, the linked-list
+ *      rewiring may produce a `sfModifiedNode` for a third page whose
+ *      `sfPreviousFields` contain only pointer updates (`NextPageMin` /
+ *      `PreviousPageMin`) with no `sfNFTokens` array. Such nodes are
+ *      skipped silently; without this guard the size invariant would
+ *      incorrectly fail for legitimate mints.
+ *
+ *  @param transactionMeta  Metadata from a `ttNFTOKEN_MINT` transaction.
+ *  @return The `uint256` ID of the newly minted token, or `std::nullopt`
+ *      if the size invariant is violated or `std::mismatch` unexpectedly
+ *      reaches the end of `finalIDs`.
+ */
 std::optional<uint256>
 getNFTokenIDFromPage(TxMeta const& transactionMeta)
 {
-    // The metadata does not make it obvious which NFT was added.  To figure
-    // that out we gather up all of the previous NFT IDs and all of the final
-    // NFT IDs and compare them to find what changed.
     std::vector<uint256> prevIDs;
     std::vector<uint256> finalIDs;
 
@@ -97,8 +151,6 @@ getNFTokenIDFromPage(TxMeta const& transactionMeta)
     if (finalIDs.size() != prevIDs.size() + 1)
         return std::nullopt;
 
-    // Find the first NFT ID that doesn't match.  We're looking for an
-    // added NFT, so the one we want will be the mismatch in finalIDs.
     auto const diff = std::ranges::mismatch(finalIDs, prevIDs);
 
     // There should always be a difference so the returned finalIDs
@@ -109,6 +161,23 @@ getNFTokenIDFromPage(TxMeta const& transactionMeta)
     return *diff.in1;
 }
 
+/** Collects the NFToken IDs referenced by deleted `NFTokenOffer` objects.
+ *
+ *  Both `ttNFTOKEN_ACCEPT_OFFER` and `ttNFTOKEN_CANCEL_OFFER` delete one
+ *  or more `ltNFTOKEN_OFFER` ledger entries. Each deleted offer's
+ *  `sfFinalFields` carries the `sfNFTokenID` it was created for, so the
+ *  token identity is recoverable without any set-difference arithmetic.
+ *
+ *  The result is sorted and deduplicated because `ttNFTOKEN_CANCEL_OFFER`
+ *  can cancel multiple offers simultaneously, and several offers may
+ *  reference the same NFT.
+ *
+ *  @param transactionMeta  Metadata from a `ttNFTOKEN_ACCEPT_OFFER` or
+ *      `ttNFTOKEN_CANCEL_OFFER` transaction.
+ *  @return Sorted, deduplicated vector of `uint256` NFToken IDs recovered
+ *      from all deleted offer nodes. Empty if no qualifying deletions are
+ *      found.
+ */
 std::vector<uint256>
 getNFTokenIDFromDeletedOffer(TxMeta const& transactionMeta)
 {
@@ -124,14 +193,38 @@ getNFTokenIDFromDeletedOffer(TxMeta const& transactionMeta)
         tokenIDResult.push_back(toAddNFT);
     }
 
-    // Deduplicate the NFT IDs because multiple offers could affect the same NFT
-    // and hence we would get duplicate NFT IDs
     std::ranges::sort(tokenIDResult);
     auto const uniq = std::ranges::unique(tokenIDResult);
     tokenIDResult.erase(uniq.begin(), uniq.end());
     return tokenIDResult;
 }
 
+/** Injects synthetic NFToken ID field(s) into an RPC transaction response.
+ *
+ *  Dispatches to the appropriate extraction helper based on transaction type
+ *  and writes into `response`:
+ *
+ *  - `ttNFTOKEN_MINT` — writes `jss::nftoken_id` (single string) via
+ *    `getNFTokenIDFromPage`.
+ *  - `ttNFTOKEN_ACCEPT_OFFER` — writes `jss::nftoken_id` (single string,
+ *    first element) via `getNFTokenIDFromDeletedOffer`.
+ *  - `ttNFTOKEN_CANCEL_OFFER` — writes `jss::nftoken_ids` (JSON array of
+ *    all deduplicated token IDs) via `getNFTokenIDFromDeletedOffer`.
+ *
+ *  All failure modes are silent: if `canHaveNFTokenID` returns false, or
+ *  if extraction yields no result, the function returns without adding any
+ *  field. No exceptions are thrown.
+ *
+ *  In practice this is called from `insertNFTSyntheticInJson` in
+ *  `NFTSyntheticSerializer.cpp`, which targets `response[jss::meta]`.
+ *
+ *  @param response         The JSON object to enrich; fields are written
+ *      directly into it (caller is responsible for scoping to `jss::meta`).
+ *  @param transaction      The executed transaction. Null is handled
+ *      gracefully via `canHaveNFTokenID`.
+ *  @param transactionMeta  Read-only metadata used for both eligibility
+ *      checking and token ID extraction.
+ */
 void
 insertNFTokenID(
     json::Value& response,
@@ -141,7 +234,6 @@ insertNFTokenID(
     if (!canHaveNFTokenID(transaction, transactionMeta))
         return;
 
-    // We extract the NFTokenID from metadata by comparing affected nodes
     if (auto const type = transaction->getTxnType(); type == ttNFTOKEN_MINT)
     {
         std::optional<uint256> result = getNFTokenIDFromPage(transactionMeta);

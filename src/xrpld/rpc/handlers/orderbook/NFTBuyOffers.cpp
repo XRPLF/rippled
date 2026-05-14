@@ -1,3 +1,12 @@
+/** @file
+ *  Implements the `nft_buy_offers` RPC handler.
+ *
+ *  Validates the `nft_id` field and delegates all ledger traversal,
+ *  pagination, and response construction to `enumerateNFTOffers`.
+ *  The sell-side counterpart (`NFTSellOffers.cpp`) is structurally
+ *  identical, differing only in the keylet passed to that helper.
+ */
+
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/handlers/orderbook/NFTOffersHelpers.h>
 
@@ -9,6 +18,30 @@
 
 namespace xrpl {
 
+/** Return the open buy offers for a given NFToken.
+ *
+ *  Performs two input-validation guards before touching the ledger:
+ *  presence of `nft_id` (returns `missing_field_error` if absent) and
+ *  successful 256-bit hex parse of its value (returns `invalid_field_error`
+ *  if malformed). Both guards ensure `enumerateNFTOffers` always receives
+ *  a structurally valid `uint256`.
+ *
+ *  Ledger resolution, offer-directory existence check, pagination via
+ *  `marker`/`limit`, and per-offer JSON serialization are all handled
+ *  by `enumerateNFTOffers` using `keylet::nftBuys(nftId)` to target the
+ *  buy-side offer directory for this token.
+ *
+ *  @param context  RPC dispatch context carrying `params`, ledger access,
+ *      and load-type tracking. `context.loadType` is set to
+ *      `kFEE_MEDIUM_BURDEN_RPC` by the delegate.
+ *  @return JSON object containing `nft_id`, an `offers` array of
+ *      `ltNFTOKEN_OFFER` entries, and an optional `marker` when the
+ *      result set was truncated at `limit`.
+ *  @note The default page size is 250 offers; the marker is a hex-encoded
+ *      `uint256` referencing the last offer returned, allowing callers to
+ *      resume exactly where the previous page ended.
+ *  @see enumerateNFTOffers, doNFTSellOffers
+ */
 json::Value
 doNFTBuyOffers(RPC::JsonContext& context)
 {

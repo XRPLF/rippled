@@ -1,3 +1,12 @@
+/** @file
+ *  Implementation of the AMMVote transactor — on-chain fee governance for
+ *  AMM liquidity pools.
+ *
+ *  The file-scope `applyVote` static function contains the full slot-management
+ *  and weighted-average fee recalculation logic; the `AMMVote` class methods
+ *  delegate to it after performing amendment gating, stateless preflight
+ *  validation, and ledger-state preclaim checks.
+ */
 #include <xrpl/tx/transactors/dex/AMMVote.h>
 
 #include <xrpl/basics/Log.h>
@@ -79,6 +88,45 @@ AMMVote::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Execute the vote slot update and weighted-average fee recalculation.
+ *
+ *  Iterates the AMM's existing `sfVoteSlots` array, re-evaluating each
+ *  voter's current LP token balance.  Entries where the balance has dropped
+ *  to zero are silently evicted (passive pruning — no separate cleanup
+ *  transaction is needed).  For the submitting `account`, the fee and token
+ *  balance are updated in place when an existing entry is found.
+ *
+ *  When the submitting account is new and all `kVOTE_MAX_SLOTS` (8) slots
+ *  are occupied, eviction of the weakest current voter is attempted.  The
+ *  eviction criterion is: the newcomer must hold **more** LP tokens than the
+ *  minimum-token holder, or equal tokens and a **higher** proposed fee.  Ties
+ *  between existing voters are broken deterministically by (tokens, fee,
+ *  accountID) so every validator reaches the same decision.  If the newcomer
+ *  does not meet the threshold, no slot is written but the transaction still
+ *  succeeds — the fee recalculation over refreshed balances is still applied.
+ *
+ *  After slot maintenance, the new effective trading fee is computed as
+ *  `sum(fee_i * tokens_i) / sum(tokens_i)` using `Number` (arbitrary-precision
+ *  rational arithmetic) and truncated to `std::int64_t`.  Both `sfTradingFee`
+ *  and `sfDiscountedFee` inside `sfAuctionSlot` are updated; when either
+ *  rounds to zero the field is explicitly removed via `makeFieldAbsent` rather
+ *  than stored as zero, because absent and present-but-zero serialize
+ *  differently in XRPL's canonical binary format.
+ *
+ *  @param ctx      Apply context providing the transaction, rules, and journal.
+ *  @param sb       Sandbox view accumulating all ledger mutations; the caller
+ *      commits it only on success.
+ *  @param account  AccountID of the LP submitting the vote.
+ *  @param j        Journal for diagnostic logging.
+ *  @return A `(TER, bool)` pair where the second element is `true` iff the
+ *      caller should flush `sb` to the real ledger view.  Returns
+ *      `{tecINTERNAL, false}` if the AMM SLE cannot be peeked, which
+ *      indicates ledger corruption and is unreachable under normal operation.
+ *  @note The `XRPL_ASSERT` before the fee-write phase enforces that
+ *      `sfAuctionSlot` is present whenever the `fixInnerObjTemplate`
+ *      amendment is active; a missing slot at that point would indicate a
+ *      malformed AMM SLE.
+ */
 static std::pair<TER, bool>
 applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journal j)
 {
@@ -95,13 +143,8 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journ
     STArray updatedVoteSlots;
     Number num{0};
     Number den{0};
-    // Account already has vote entry
     bool foundAccount = false;
 
-    // Iterate over the current vote entries and update each entry
-    // per current total tokens balance and each LP tokens balance.
-    // Find the entry with the least tokens and whether the account
-    // has the vote entry.
     for (auto const& entry : ammSle->getFieldArray(sfVoteSlots))
     {
         auto const entryAccount = entry[sfAccount];
@@ -113,14 +156,12 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journ
         }
         auto feeVal = entry[sfTradingFee];
         STObject newEntry = STObject::makeInnerObject(sfVoteEntry);
-        // The account already has the vote entry.
         if (entryAccount == account)
         {
             lpTokens = lpTokensNew;
             feeVal = feeNew;
             foundAccount = true;
         }
-        // Keep running numerator/denominator to calculate the updated fee.
         num += feeVal * lpTokens;
         den += lpTokens;
         newEntry.setAccountID(sfAccount, entryAccount);
@@ -131,8 +172,6 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journ
             static_cast<std::int64_t>(
                 Number(lpTokens) * kVOTE_WEIGHT_SCALE_FACTOR / lptAMMBalance));
 
-        // Find an entry with the least tokens/fee. Make the order deterministic
-        // if the tokens/fees are equal.
         if (!minTokens ||
             (lpTokens < *minTokens ||
              (lpTokens == *minTokens &&
@@ -146,7 +185,6 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journ
         updatedVoteSlots.pushBack(std::move(newEntry));
     }
 
-    // The account doesn't have the vote entry.
     if (!foundAccount)
     {
         auto update = [&](std::optional<std::uint8_t> const& minPos = std::nullopt) {
@@ -169,27 +207,20 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journ
                 updatedVoteSlots.pushBack(std::move(newEntry));
             }
         };
-        // Add new entry if the number of the vote entries
-        // is less than Max.
         if (updatedVoteSlots.size() < kVOTE_MAX_SLOTS)
         {
             update();
-            // Add the entry if the account has more tokens than
-            // the least token holder or same tokens and higher fee.
         }
         // NOLINTBEGIN(bugprone-unchecked-optional-access) slots full means loop ran, minTokens is
         // set
         else if (lpTokensNew > *minTokens || (lpTokensNew == *minTokens && feeNew > minFee))
         {
             auto const entry = updatedVoteSlots.begin() + minPos;
-            // Remove the least token vote entry.
             num -= Number((*entry)[~sfTradingFee].valueOr(0)) * *minTokens;
             den -= *minTokens;
             update(minPos);
         }
         // NOLINTEND(bugprone-unchecked-optional-access)
-        // All slots are full and the account does not hold more LPTokens.
-        // Update anyway to refresh the slots.
         else
         {
             JLOG(j.debug()) << "AMMVote::applyVote, insufficient tokens to "
@@ -201,7 +232,6 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journ
         !ctx.view().rules().enabled(fixInnerObjTemplate) || ammSle->isFieldPresent(sfAuctionSlot),
         "xrpl::applyVote : has auction slot");
 
-    // Update the vote entries and the trading/discounted fee.
     ammSle->setFieldArray(sfVoteSlots, updatedVoteSlots);
     if (auto const fee = static_cast<std::int64_t>(num / den))
     {
@@ -238,8 +268,6 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journ
 TER
 AMMVote::doApply()
 {
-    // This is the ledger view that we work against. Transactions are applied
-    // as we go on processing transactions.
     Sandbox sb(&ctx_.view());
 
     auto const result = applyVote(ctx_, sb, account_, j_);

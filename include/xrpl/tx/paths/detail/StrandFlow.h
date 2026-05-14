@@ -1,3 +1,19 @@
+/**
+ * @file StrandFlow.h
+ * @brief Core payment flow execution engine: two-pass strand algorithm and
+ *        multi-strand outer search loop.
+ *
+ * This header is the heart of the XRPL payment engine. It provides:
+ *   - `flow<TInAmt, TOutAmt>(PaymentSandbox, Strand, ...)` — executes one
+ *     strand via a reverse-then-forward two-pass algorithm.
+ *   - `flow<TInAmt, TOutAmt>(PaymentSandbox, vector<Strand>, ...)` — the
+ *     outer multi-strand search loop that consumes strands in quality order
+ *     until the requested output is satisfied or all strands are dry.
+ *
+ * Every XRP payment — direct transfer, cross-currency, or offer cross — is
+ * ultimately executed through these functions. Callers are in `Flow.cpp`,
+ * which dispatches to the correct template instantiation via `std::visit`.
+ */
 #pragma once
 
 #include <xrpl/basics/Log.h>
@@ -23,26 +39,46 @@
 
 namespace xrpl {
 
-/** Result of flow() execution of a single Strand. */
+/**
+ * Result of executing a single Strand through the two-pass flow algorithm.
+ *
+ * Bundles the actual amounts consumed/produced, the proposed ledger state
+ * (inside a `PaymentSandbox` that can be merged or discarded), the set of
+ * offers that must be removed regardless of payment outcome, and flags
+ * indicating whether the strand is now exhausted.
+ *
+ * @tparam TInAmt  Input amount type (`XRPAmount`, `IOUAmount`, or `MPTAmount`).
+ * @tparam TOutAmt Output amount type.
+ */
 template <class TInAmt, class TOutAmt>
 struct StrandResult
 {
-    bool success = false;                          ///< Strand succeeded
-    TInAmt in = beast::kZERO;                      ///< Currency amount in
-    TOutAmt out = beast::kZERO;                    ///< Currency amount out
-    std::optional<PaymentSandbox> sandbox;         ///< Resulting Sandbox state
-    boost::container::flat_set<uint256> ofrsToRm;  ///< Offers to remove
-    // Num offers consumed or partially consumed (includes expired and unfunded
-    // offers)
+    bool success = false;                          ///< True if the strand produced non-zero output.
+    TInAmt in = beast::kZERO;                      ///< Actual input consumed by the strand.
+    TOutAmt out = beast::kZERO;                    ///< Actual output produced by the strand.
+    std::optional<PaymentSandbox> sandbox;         ///< Proposed ledger mutations; empty on failure.
+    boost::container::flat_set<uint256> ofrsToRm;  ///< Offers to remove from the ledger (bad/expired), even on failure.
+    /// Number of offers consumed or partially consumed (includes expired and
+    /// unfunded offers). Counts toward `maxOffersToConsider` in the outer loop.
     std::uint32_t ofrsUsed = 0;
-    // strand can be inactive if there is no more liquidity or too many offers
-    // have been consumed
-    bool inactive = false;  ///< Strand should not considered as a further
-                            ///< source of liquidity (dry)
+    /// True when the strand has no remaining liquidity or has consumed too many
+    /// offers. An inactive strand is not returned to the `next_` candidate set
+    /// for future rounds.
+    bool inactive = false;
 
-    /** Strand result constructor */
+    /** Constructs a default (failed/dry) result with no sandbox. */
     StrandResult() = default;
 
+    /**
+     * Constructs a successful strand result.
+     *
+     * @param strand              The strand that was executed (used to count offers).
+     * @param in                  Actual input consumed.
+     * @param out                 Actual output produced.
+     * @param sandbox             Sandbox containing the resulting ledger mutations.
+     * @param ofrsToRemoveMember  Offers to remove regardless of payment success.
+     * @param inactive            True if the strand is now exhausted.
+     */
     StrandResult(
         Strand const& strand,
         TInAmt const& in,
@@ -60,6 +96,14 @@ struct StrandResult
     {
     }
 
+    /**
+     * Constructs a failed (dry) strand result that still carries offers to
+     * remove.  Used when the strand produced no usable liquidity but did
+     * encounter unfunded or expired offers that must be cleaned up.
+     *
+     * @param strand              The strand that was executed.
+     * @param ofrsToRemoveMember  Offers to remove even though the strand failed.
+     */
     StrandResult(Strand const& strand, boost::container::flat_set<uint256> ofrsToRemoveMember)
         : ofrsToRm(std::move(ofrsToRemoveMember)), ofrsUsed(offersUsed(strand))
     {
@@ -67,15 +111,40 @@ struct StrandResult
 };
 
 /**
-   Request `out` amount from a strand
-
-   @param baseView Trust lines and balances
-   @param strand Steps of Accounts to ripple through and offer books to use
-   @param maxIn Max amount of input allowed
-   @param out Amount of output requested from the strand
-   @param j Journal to write log messages to
-   @return Actual amount in and out from the strand, errors, offers to remove,
-           and payment sandbox
+ * Execute a single payment strand and request `out` units of output.
+ *
+ * Implements the classical reverse-then-forward two-pass algorithm:
+ *
+ * **Reverse pass (right-to-left):** Each step is called via `rev()` in
+ * reverse order, threading the requested output backwards to determine how
+ * much input each step needs.  When a step cannot fully satisfy its request
+ * (the *limiting step*), the sandbox is discarded and that step is
+ * re-executed with the capped amount.  If the limiting step is index 0 and
+ * would exceed `maxIn`, the step is re-executed forward with exactly `maxIn`.
+ *
+ * **Forward pass (left-to-right from limiting step):** After the reverse
+ * pass, every step to the right of the limiting step is called via `fwd()`
+ * to propagate the actual amounts and complete the sandbox state.
+ *
+ * A debug-only re-validation (`#ifndef NDEBUG`) re-executes the whole strand
+ * forward via `validFwd()` to catch inconsistencies in step implementations.
+ *
+ * Two early exits apply: an empty strand returns immediately, and a direct
+ * XRP-to-XRP strand (no exchange needed) returns a dry result without any
+ * execution.  Any `FlowException` is caught and converted to a dry result so
+ * a bad offer in one strand does not abort the entire payment.
+ *
+ * @tparam TInAmt  Input amount type (`XRPAmount`, `IOUAmount`, `MPTAmount`).
+ * @tparam TOutAmt Output amount type.
+ * @param baseView  Read-only view of trust lines and balances before this
+ *                  strand executes (the "all funds" baseline).
+ * @param strand    Ordered list of `Step` objects describing the route.
+ * @param maxIn     If present, caps the total input this strand may consume.
+ * @param out       Amount of output requested from the strand.
+ * @param j         Journal for diagnostic log messages.
+ * @return A `StrandResult` containing the actual amounts, the proposed
+ *         ledger mutations in a `PaymentSandbox`, offers to remove, and the
+ *         `inactive` flag indicating whether the strand is now exhausted.
  */
 template <class TInAmt, class TOutAmt>
 StrandResult<TInAmt, TOutAmt>
@@ -106,9 +175,9 @@ flow(
 
         std::size_t limitingStep = strand.size();
         std::optional<PaymentSandbox> sb(&baseView);
-        // The "all funds" view determines if an offer becomes unfunded or is
-        // found unfunded
-        // These are the account balances before the strand executes
+        // afView is the "all funds" snapshot: account balances as they were
+        // before any step in this strand executed. Steps use it to determine
+        // whether an offer is currently funded (vs. the evolving `sb` view).
         std::optional<PaymentSandbox> afView(&baseView);
         EitherAmount limitStepOut;
         {
@@ -124,12 +193,12 @@ flow(
 
                 if (i == 0 && maxIn && *maxIn < get<TInAmt>(r.first))
                 {
-                    // limiting - exceeded maxIn
-                    // Throw out previous results
+                    // Step 0 would exceed maxIn: re-execute forward with
+                    // exactly maxIn rather than in reverse, because step 0
+                    // has no predecessor to supply a revised input.
                     sb.emplace(&baseView);
                     limitingStep = i;
 
-                    // re-execute the limiting step
                     r = strand[i]->fwd(*sb, *afView, ofrsToRm, EitherAmount(*maxIn));
                     limitStepOut = r.second;
 
@@ -140,9 +209,9 @@ flow(
                     }
                     if (get<TInAmt>(r.first) != *maxIn)
                     {
-                        // Something is very wrong
-                        // throwing out the sandbox can only increase liquidity
-                        // yet the limiting is still limiting
+                        // Invariant violation: discarding the old sandbox can
+                        // only increase available liquidity, so re-executing
+                        // with maxIn should always consume exactly maxIn.
                         // LCOV_EXCL_START
                         JLOG(j.fatal())
                             << "Re-executed limiting step failed. r.first: "
@@ -156,13 +225,14 @@ flow(
                 }
                 else if (!strand[i]->equalOut(r.second, stepOut))
                 {
-                    // limiting
-                    // Throw out previous results
+                    // This step is the limiting step: it produced less than
+                    // requested. Discard the partial sandbox (fresh view gives
+                    // the step full liquidity again) and re-execute in reverse
+                    // with the capped amount to record the definitive state.
                     sb.emplace(&baseView);
                     afView.emplace(&baseView);
                     limitingStep = i;
 
-                    // re-execute the limiting step
                     stepOut = r.second;
                     r = strand[i]->rev(*sb, *afView, ofrsToRm, stepOut);
                     limitStepOut = r.second;
@@ -176,9 +246,9 @@ flow(
                     }
                     if (!strand[i]->equalOut(r.second, stepOut))
                     {
-                        // Something is very wrong
-                        // throwing out the sandbox can only increase liquidity
-                        // yet the limiting is still limiting
+                        // Invariant violation: a fresh sandbox can only
+                        // increase liquidity, so the re-executed limiting step
+                        // must be able to deliver at least as much as before.
                         // LCOV_EXCL_START
 #ifndef NDEBUG
                         JLOG(j.fatal())
@@ -195,8 +265,7 @@ flow(
                     }
                 }
 
-                // prev node needs to produce what this node wants to consume
-                stepOut = r.first;
+                stepOut = r.first;  // propagate: predecessor must deliver what this step will consume
             }
         }
 
@@ -214,9 +283,9 @@ flow(
                 }
                 if (!strand[i]->equalIn(r.first, stepIn))
                 {
-                    // The limits should already have been found, so executing a
-                    // strand forward from the limiting step should not find a
-                    // new limit
+                    // Invariant violation: the reverse pass already found the
+                    // global limiting step, so the forward pass must never
+                    // encounter a new limit.
                     // LCOV_EXCL_START
 #ifndef NDEBUG
                     JLOG(j.fatal()) << "Re-executed forward pass failed. r.first: " << r.first
@@ -281,17 +350,37 @@ flow(
 }
 
 /// @cond INTERNAL
+/**
+ * Aggregate result of the multi-strand payment flow loop.
+ *
+ * Accumulates the total input consumed and output produced across all
+ * successful strand rounds, the merged `PaymentSandbox` representing all
+ * proposed ledger changes, offers that must be cleaned up regardless of
+ * payment success, and a `TER` result code.
+ *
+ * @tparam TInAmt  Input amount type.
+ * @tparam TOutAmt Output amount type.
+ */
 template <class TInAmt, class TOutAmt>
 struct FlowResult
 {
-    TInAmt in = beast::kZERO;
-    TOutAmt out = beast::kZERO;
-    std::optional<PaymentSandbox> sandbox;
-    boost::container::flat_set<uint256> removableOffers;
-    TER ter = temUNKNOWN;
+    TInAmt in = beast::kZERO;                             ///< Total input consumed across all rounds.
+    TOutAmt out = beast::kZERO;                           ///< Total output delivered across all rounds.
+    std::optional<PaymentSandbox> sandbox;                ///< Merged sandbox; present only on success.
+    boost::container::flat_set<uint256> removableOffers;  ///< Offers to remove whether or not payment succeeds.
+    TER ter = temUNKNOWN;                                 ///< `tesSUCCESS` or a TEC/TEF error code.
 
+    /** Constructs a default (unknown-error) result. */
     FlowResult() = default;
 
+    /**
+     * Constructs a successful result with all amounts and ledger state.
+     *
+     * @param in       Total input consumed.
+     * @param out      Total output delivered.
+     * @param sandbox  Merged sandbox holding all ledger mutations.
+     * @param ofrsToRm Offers to remove from the ledger.
+     */
     FlowResult(
         TInAmt const& in,
         TOutAmt const& out,
@@ -305,11 +394,27 @@ struct FlowResult
     {
     }
 
+    /**
+     * Constructs a failure result carrying only the offers to remove.
+     * Used when the flow loop exits with no usable liquidity at all.
+     *
+     * @param ter      Error code describing the failure.
+     * @param ofrsToRm Offers to remove even though the payment failed.
+     */
     FlowResult(TER ter, boost::container::flat_set<uint256> ofrsToRm)
         : removableOffers(std::move(ofrsToRm)), ter(ter)
     {
     }
 
+    /**
+     * Constructs a partial-failure result that includes the amounts achieved
+     * before the flow loop stopped (e.g., `tecPATH_PARTIAL`).
+     *
+     * @param ter      Error code (typically `tecPATH_PARTIAL`).
+     * @param in       Input consumed up to the point of failure.
+     * @param out      Output delivered up to the point of failure.
+     * @param ofrsToRm Offers to remove regardless of payment outcome.
+     */
     FlowResult(
         TER ter,
         TInAmt const& in,
@@ -322,6 +427,22 @@ struct FlowResult
 /// @endcond
 
 /// @cond INTERNAL
+/**
+ * Compute an upper bound on the exchange rate (quality) achievable by a strand.
+ *
+ * Calls `qualityUpperBound()` on each step in sequence, composing the
+ * per-step bounds via `composedQuality()` while propagating the `DebtDirection`
+ * (distinguishing redemption from issuance, which affects transfer fees).
+ * Returns `std::nullopt` if any step is provably dry.
+ *
+ * This estimate may be optimistic — unfunded offers at the tip of a book can
+ * make the actual quality lower — but it is a sound heuristic for ranking
+ * candidate strands in `ActiveStrands::activateNext()`.
+ *
+ * @param v       Read-only ledger view.
+ * @param strand  The strand to evaluate.
+ * @return An upper-bound `Quality`, or `std::nullopt` if the strand is dry.
+ */
 inline std::optional<Quality>
 qualityUpperBound(ReadView const& v, Strand const& strand)
 {
@@ -344,13 +465,29 @@ qualityUpperBound(ReadView const& v, Strand const& strand)
 /// @endcond
 
 /// @cond INTERNAL
-/** Limit remaining out only if one strand and limitQuality is included.
- * Targets one path payment with AMM where the average quality is linear
- * and instant quality is quadratic function of output. Calculating quality
- * function for the whole strand enables figuring out required output
- * to produce requested strand's limitQuality. Reducing the output,
- * increases quality of AMM steps, increasing the strand's composite
- * quality as the result.
+/**
+ * Reduce the requested output to the amount that exactly satisfies
+ * `limitQuality` when there is exactly one active strand.
+ *
+ * This optimization applies only to AMM-backed strands where quality is not
+ * constant: for an AMM, the average exchange rate is a quadratic function of
+ * output, so requesting less output yields a better average quality. The
+ * function collects per-step `QualityFunction` objects and combines them into
+ * a strand-level quality function, then solves for the output that achieves
+ * `limitQuality` via `QualityFunction::outFromAvgQ()`.
+ *
+ * A relative-distance guard (`withinRelativeDistance(..., 1e-9)`) absorbs
+ * floating-point rounding and avoids spurious adjustments. If the quality
+ * function is constant (no AMM steps), or if any step does not provide a
+ * quality function, the function returns `remainingOut` unchanged.
+ *
+ * @tparam TOutAmt  Output amount type.
+ * @param v             Ledger view used by step quality-function queries.
+ * @param strand        The single active strand.
+ * @param remainingOut  Current remaining output request; returned unchanged
+ *                      if no adjustment is possible.
+ * @param limitQuality  Minimum acceptable average quality.
+ * @return The adjusted output cap, which is ≤ `remainingOut`.
  */
 template <typename TOutAmt>
 inline TOutAmt
@@ -382,7 +519,8 @@ limitOut(
         }
     }
 
-    // QualityFunction is constant
+    // If every step is a fixed-rate hop the quality function is constant;
+    // no adjustment is possible or necessary.
     if (!qf || qf->isConst())
         return remainingOut;
 
@@ -407,7 +545,9 @@ limitOut(
             return STAmount{remainingOut.asset(), out->mantissa(), out->exponent()};
         }
     }();
-    // A tiny difference could be due to the round off
+    // A computed `out` that is negligibly close to `remainingOut` (within 1e-9
+    // relative) is treated as equal to avoid spurious reductions caused by
+    // floating-point rounding in `outFromAvgQ`.
     if (withinRelativeDistance(out, remainingOut, Number(1, -9)))
         return remainingOut;
     return std::min(out, remainingOut);
@@ -415,22 +555,40 @@ limitOut(
 /// @endcond
 
 /// @cond INTERNAL
-/* Track the non-dry strands
-
-   flow will search the non-dry strands (stored in `cur_`) for the best
-   available liquidity If flow doesn't use all the liquidity of a strand, that
-   strand is added to `next_`. The strands in `next_` are searched after the
-   current best liquidity is used.
+/**
+ * Lazy candidate set for the multi-strand liquidity search loop.
+ *
+ * Tracks which strands are still eligible to provide liquidity across
+ * outer iterations.  Maintains two sets:
+ *   - `cur_`  — strands being evaluated in the *current* round.
+ *   - `next_` — strands to evaluate in the *next* round (strands that still
+ *               had remaining liquidity after the current round, plus any
+ *               strand not yet reached in `cur_`).
+ *
+ * The probe-and-push pattern guarantees that only one strand is consumed per
+ * outer iteration: the loop picks the first strand from `cur_` that yields
+ * usable liquidity (`best`), pushes all remaining unchecked `cur_` strands to
+ * `next_`, and returns `best` to `next_` if the strand is not exhausted.
+ * This ensures high-quality strands that only partially satisfy the remaining
+ * output remain in contention for subsequent rounds.
+ *
+ * @note `activateNext()` uses `std::ranges::stable_sort` intentionally: the
+ *       stability is required for deterministic tie-breaking across different
+ *       C++ standard library implementations, which is critical for consensus.
  */
 class ActiveStrands
 {
 private:
-    // Strands to be explored for liquidity
-    std::vector<Strand const*> cur_;
-    // Strands that may be explored for liquidity on the next iteration
-    std::vector<Strand const*> next_;
+    std::vector<Strand const*> cur_;   ///< Strands under evaluation this round.
+    std::vector<Strand const*> next_;  ///< Candidates for the next round.
 
 public:
+    /**
+     * Initialise from all candidate strands; all are placed in `next_` so
+     * that the first call to `activateNext()` populates `cur_`.
+     *
+     * @param strands  The full set of payment path strands.
+     */
     ActiveStrands(std::vector<Strand> const& strands)
     {
         cur_.reserve(strands.size());
@@ -439,13 +597,21 @@ public:
             next_.push_back(&strand);
     }
 
-    // Start a new iteration in the search for liquidity
-    // Set the current strands to the strands in `next_`
+    /**
+     * Advance to the next round: sort `next_` by quality upper-bound
+     * (best first) and swap it into `cur_`.
+     *
+     * Strands whose `qualityUpperBound` falls below `limitQuality` are pruned
+     * and will never appear in `cur_` again. The sort is a `stable_sort` to
+     * guarantee deterministic ordering when two strands have equal quality
+     * upper bounds — required for consensus across nodes.
+     *
+     * @param v             Read-only ledger view for quality estimation.
+     * @param limitQuality  If present, strands below this threshold are pruned.
+     */
     void
     activateNext(ReadView const& v, std::optional<Quality> const& limitQuality)
     {
-        // add the strands in `next_` to `cur_`, sorted by theoretical quality.
-        // Best quality first.
         cur_.clear();
         if (!next_.empty())
         {
@@ -464,19 +630,17 @@ public:
                     {
                         if (limitQuality && *qual < *limitQuality)
                         {
-                            // If a strand's quality is ever over limitQuality
-                            // it is no longer part of the candidate set. Note
-                            // that when transfer fees are charged, and an
-                            // account goes from redeeming to issuing then
-                            // strand quality _can_ increase; However, this is
-                            // an unusual corner case.
+                            // Prune this strand permanently. Transfer fees can
+                            // cause quality to increase as an account moves from
+                            // redeeming to issuing, but this is rare enough that
+                            // we accept the occasional premature prune.
                             continue;
                         }
                         strandQualities.emplace_back(*qual, strand);
                     }
                 }
-                // must stable sort for deterministic order across different c++
-                // standard library implementations
+                // stable_sort is mandatory: deterministic tie-breaking is a
+                // consensus requirement across different stdlib implementations.
                 std::ranges::stable_sort(
                     strandQualities,
 
@@ -495,6 +659,13 @@ public:
         std::swap(cur_, next_);
     }
 
+    /**
+     * Return the strand at position `i` in the current round's candidate set.
+     *
+     * @param i  Zero-based index into `cur_`.
+     * @return   Pointer to the strand, or `nullptr` if `i` is out of range
+     *           (which should never happen in correct usage).
+     */
     [[nodiscard]] Strand const*
     get(size_t i) const
     {
@@ -508,13 +679,28 @@ public:
         return cur_[i];
     }
 
+    /**
+     * Return a strand to the `next_` candidate set for consideration in the
+     * following round.  Called for the winning `best` strand when it still
+     * has remaining liquidity (i.e., `!f.inactive`).
+     *
+     * @param s  Strand to preserve for the next round.
+     */
     void
     push(Strand const* s)
     {
         next_.push_back(s);
     }
 
-    // Push the strands from index i to the end of cur_ to next_
+    /**
+     * Move all strands from `cur_[i..end)` to `next_`.
+     *
+     * Called after the probe-and-push loop selects a winning strand: all
+     * strands after the winner in `cur_` (which were not yet evaluated this
+     * round) are deferred to `next_` so they remain in contention.
+     *
+     * @param i  Index of the first strand to defer (inclusive).
+     */
     void
     pushRemainingCurToNext(size_t i)
     {
@@ -523,6 +709,7 @@ public:
         next_.insert(next_.end(), std::next(cur_.begin(), i), cur_.end());
     }
 
+    /** Number of strands in the current round's candidate set. */
     [[nodiscard]] auto
     size() const
     {
@@ -532,25 +719,58 @@ public:
 /// @endcond
 
 /**
-   Request `out` amount from a collection of strands
-
-   Attempt to fulfill the payment by using liquidity from the strands in order
-   from least expensive to most expensive
-
-   @param baseView Trust lines and balances
-   @param strands Each strand contains the steps of accounts to ripple through
-                  and offer books to use
-   @param outReq Amount of output requested from the strand
-   @param partialPayment If true allow less than the full payment
-   @param offerCrossing If true offer crossing, not handling a standard payment
-   @param limitQuality If present, the minimum quality for any strand taken
-   @param sendMaxST If present, the maximum STAmount to send
-   @param j Journal to write journal messages to
-   @param ammContext counts iterations with AMM offers
-   @param flowDebugInfo If pointer is non-null, write flow debug info here
-   @return Actual amount in and out from the strands, errors, and payment
-   sandbox
-*/
+ * Execute a multi-strand payment and request `outReq` units of output.
+ *
+ * This is the top-level payment loop.  It iterates over candidate strands in
+ * quality order (best first), consuming one strand per outer iteration until
+ * `outReq` is satisfied, all strands are exhausted, or a safety limit is hit.
+ *
+ * **Safety limits:**
+ *   - `maxTries = 1000` — maximum outer iterations; returns
+ *     `telFAILED_PROCESSING` if exceeded.
+ *   - `maxOffersToConsider = 1500` — maximum cumulative offers consumed across
+ *     all strands; triggers early exit with the best result so far.
+ *
+ * **Precision:** Rather than accumulating a running total (lossy for IOU
+ * arithmetic), each round's amounts are collected into `flat_multiset`
+ * containers (`savedIns`, `savedOuts`) and summed smallest-to-largest via
+ * `std::accumulate` to minimise floating-point drift.
+ *
+ * **Offer cleanup:** Bad offers (`ofrsToRm`) are deleted from the sandbox
+ * immediately after each strand attempt — even failed strands — so they
+ * cannot interfere with subsequent strands. A superset (`ofrsToRmOnFail`)
+ * is returned to callers for cleanup if the payment ultimately fails.
+ *
+ * **FillOrKill semantics (offer crossing):** The final section branches on the
+ * `fixFillOrKill` amendment and the `offerCrossing` mode:
+ *   1. Without `tfSell` (or pre-amendment): if `actualOut < outReq`, kill.
+ *   2. With `tfSell` (or pre-amendment): if `remainingIn != 0`, kill (all of
+ *      `TakerGets` must be spent).
+ *
+ * **AMM integration:** `ammContext.setMultiPath(n > 1)` informs the AMM
+ * whether it is competing with other active strands (affects virtual offer
+ * sizing). `ammContext.clear()` resets the per-strand used flag before each
+ * strand attempt. `ammContext.update()` increments the AMM iteration counter
+ * after each successful round.
+ *
+ * @tparam TInAmt   Input amount type (`XRPAmount`, `IOUAmount`, `MPTAmount`).
+ * @tparam TOutAmt  Output amount type.
+ * @param baseView      Read-only view of trust lines and balances.
+ * @param strands       All candidate payment path strands.
+ * @param outReq        Requested output amount.
+ * @param partialPayment  If true, a partial delivery is acceptable.
+ * @param offerCrossing   Indicates whether this is offer crossing and which
+ *                        mode (`No`, `Sell`, or full `FillOrKill`).
+ * @param limitQuality    If present, only strands meeting this quality
+ *                        threshold are used.
+ * @param sendMaxST       If present, caps the total input consumed.
+ * @param j               Journal for diagnostic log messages.
+ * @param ammContext      Tracks AMM iteration state across rounds.
+ * @param flowDebugInfo   If non-null, receives per-round debug telemetry.
+ * @return A `FlowResult` with the aggregate amounts, merged sandbox, offers to
+ *         clean up, and a `TER` result code (`tesSUCCESS`,
+ *         `tecPATH_PARTIAL`, `tecPATH_DRY`, or `telFAILED_PROCESSING`).
+ */
 template <StepAmount TInAmt, StepAmount TOutAmt>
 FlowResult<TInAmt, TOutAmt>
 flow(
@@ -565,8 +785,7 @@ flow(
     AMMContext& ammContext,
     path::detail::FlowDebugInfo* flowDebugInfo = nullptr)
 {
-    // Used to track the strand that offers the best quality (output/input
-    // ratio)
+    /** Holds the winning strand's result for the current outer iteration. */
     struct BestStrand
     {
         TInAmt in;
@@ -591,26 +810,22 @@ flow(
     std::uint32_t const maxOffersToConsider = 1500;
     std::uint32_t offersConsidered = 0;
 
-    // There is a bug in gcc that incorrectly warns about using uninitialized
-    // values if `remainingIn` is initialized through a copy constructor. We can
-    // get similar warnings for `sendMax` if it is initialized in the most
-    // natural way. Using `make_optional`, allows us to work around this bug.
+    // GCC incorrectly warns about uninitialized values when initialising
+    // std::optional<TInAmt> via a copy constructor. Using make_optional
+    // avoids this false positive without semantic change.
     TInAmt const sendMaxInit = sendMaxST ? toAmount<TInAmt>(*sendMaxST) : TInAmt{beast::kZERO};
     std::optional<TInAmt> const sendMax =
         (sendMaxST && sendMaxInit >= beast::kZERO) ? std::make_optional(sendMaxInit) : std::nullopt;
     std::optional<TInAmt> remainingIn = !!sendMax ? std::make_optional(sendMaxInit) : std::nullopt;
-    // std::optional<TInAmt> remainingIn{sendMax};
 
     TOutAmt remainingOut(outReq);
 
     PaymentSandbox sb(&baseView);
 
-    // non-dry strands
     ActiveStrands activeStrands(strands);
 
-    // Keeping a running sum of the amount in the order they are processed
-    // will not give the best precision. Keep a collection so they may be summed
-    // from smallest to largest
+    // Amounts are accumulated in sorted flat_multiset containers and summed
+    // smallest-to-largest to minimise floating-point precision loss.
     boost::container::flat_multiset<TInAmt> savedIns;
     savedIns.reserve(maxTries);
     boost::container::flat_multiset<TOutAmt> savedOuts;
@@ -623,8 +838,8 @@ flow(
         return std::accumulate(col.begin() + 1, col.end(), *col.begin());
     };
 
-    // These offers only need to be removed if the payment is not
-    // successful
+    // Accumulates all bad offers seen during the flow loop. Returned to the
+    // caller for removal even if the payment ultimately fails.
     boost::container::flat_set<uint256> ofrsToRmOnFail;
 
     while (remainingOut > beast::kZERO && (!remainingIn || *remainingIn > beast::kZERO))
@@ -639,7 +854,8 @@ flow(
 
         ammContext.setMultiPath(activeStrands.size() > 1);
 
-        // Limit only if one strand and limitQuality
+        // Apply AMM quality-function optimisation only when there is a single
+        // active strand and a limitQuality threshold is set.
         auto const limitRemainingOut = [&]() {
             if (activeStrands.size() == 1 && limitQuality)
             {
@@ -662,9 +878,9 @@ flow(
                 // should not happen
                 continue;
             }
-            // Clear AMM liquidity used flag. The flag might still be set if
-            // the previous strand execution failed. It has to be reset
-            // since this strand might not have AMM liquidity.
+            // Reset AMM used-flag before each strand: a failed prior strand
+            // may have left the flag set, which would incorrectly mark the
+            // next (unrelated) strand as having consumed AMM liquidity.
             ammContext.clear();
             if (offerCrossing != OfferCrossing::No && limitQuality)
             {
@@ -674,8 +890,7 @@ flow(
             }
             auto f = flow<TInAmt, TOutAmt>(sb, *strand, remainingIn, limitRemainingOut, j);
 
-            // rm bad offers even if the strand fails
-            setUnion(ofrsToRm, f.ofrsToRm);
+            setUnion(ofrsToRm, f.ofrsToRm);  // collect bad offers even on strand failure
 
             offersConsidered += f.ofrsUsed;
 
@@ -694,9 +909,8 @@ flow(
             JLOG(j.trace()) << "New flow iter (iter, in, out): " << curTry - 1 << " "
                             << to_string(f.in) << " " << to_string(f.out);
 
-            // limitOut() finds output to generate exact requested
-            // limitQuality. But the actual limit quality might be slightly
-            // off due to the round off.
+            // `limitOut()` targets exact limitQuality but actual quality may
+            // differ by ~1e-7 due to rounding; accept values within that band.
             if (limitQuality && q < *limitQuality &&
                 (!adjustedRemOut || !withinRelativeDistance(q, *limitQuality, Number(1, -7))))
             {

@@ -1,3 +1,12 @@
+/** @file
+ *  Admin RPC handler for the `can_delete` command.
+ *
+ *  Lets node operators read or advance the online-deletion floor when the node
+ *  is running in advisory-delete mode (`advisory_delete=1` in `[node_db]`).
+ *  In that mode the `SHAMapStore` background thread will not prune history
+ *  beyond the approved sequence number without an explicit operator command.
+ */
+
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/SHAMapStore.h>
@@ -17,7 +26,37 @@
 
 namespace xrpl {
 
-// can_delete [<ledgerid>|<ledgerhash>|now|always|never]
+/** Query or update the online-deletion floor for an advisory-delete node.
+ *
+ *  If the `can_delete` parameter is absent the current threshold is returned.
+ *  If the parameter is present it is parsed, the threshold is updated via
+ *  `SHAMapStore::setCanDelete`, and the resulting value is echoed back so
+ *  the caller can confirm the new state in a single round-trip.
+ *
+ *  The parameter accepts several representations (all string keywords are
+ *  matched case-insensitively):
+ *  - **unsigned integer** or **all-digit string** — used directly as a ledger
+ *      sequence number; `beast::lexicalCast` throws on overflow.
+ *  - `"never"` — maps to sequence `0`; pauses pruning without disabling the
+ *      advisory-delete feature.
+ *  - `"always"` — maps to `std::numeric_limits<uint32_t>::max()`; authorises
+ *      the store to prune as aggressively as its configuration allows.
+ *  - `"now"` — maps to `SHAMapStore::getLastRotated()`; returns
+ *      `rpcNOT_READY` if no rotation has completed yet (value would be 0).
+ *  - **64-hex-character ledger hash** — resolved to a sequence number via
+ *      `LedgerMaster::getLedgerByHash`; returns `rpcLGR_NOT_FOUND` if the
+ *      ledger is not available locally.
+ *
+ *  @param context  RPC dispatch context carrying params, app, and ledgerMaster.
+ *  @return JSON object with a `can_delete` field holding the active threshold,
+ *      or an RPC error object if advisory delete is not enabled, the node has
+ *      not yet completed its first rotation, the ledger hash is unknown, or
+ *      the parameter value cannot be parsed.
+ *  @note Returns `rpcNOT_ENABLED` immediately when the node was not configured
+ *      with `advisory_delete=1`; the command is a no-op on automatic-delete
+ *      nodes and exposing it there would give operators a false sense of
+ *      control.
+ */
 json::Value
 doCanDelete(RPC::JsonContext& context)
 {

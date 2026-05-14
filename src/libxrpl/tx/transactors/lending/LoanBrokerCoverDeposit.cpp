@@ -1,3 +1,17 @@
+/** @file
+ *  Implementation of `LoanBrokerCoverDeposit`, the transactor that lets a
+ *  `LoanBroker` owner inject collateral into the broker's pseudo-account.
+ *
+ *  Cover is the loss-absorption buffer the lending protocol (XLS-66) requires
+ *  each broker to maintain relative to its outstanding loan debt
+ *  (`sfDebtTotal`). Depositing cover increases `sfCoverAvailable` and the
+ *  pseudo-account's on-ledger asset balance atomically.
+ *
+ *  The three symmetrical cover-management transactors are:
+ *  - `LoanBrokerCoverDeposit`  — increases cover (this file)
+ *  - `LoanBrokerCoverWithdraw` — decreases cover (enforces minimum ratio)
+ *  - `LoanBrokerCoverClawback` — issuer reclaims frozen cover assets
+ */
 #include <xrpl/tx/transactors/lending/LoanBrokerCoverDeposit.h>
 
 #include <xrpl/basics/Log.h>
@@ -74,16 +88,12 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
         return tecWRONG_ASSET;
 
     auto const pseudoAccountID = sleBroker->at(sfAccount);
-    // Cannot transfer a non-transferable Asset
     if (auto const ret = canTransfer(ctx.view, vaultAsset, account, pseudoAccountID))
         return ret;
-    // Cannot transfer a frozen Asset
     if (auto const ret = checkFrozen(ctx.view, account, vaultAsset))
         return ret;
-    // Pseudo-account cannot receive if asset is deep frozen
     if (auto const ret = checkDeepFrozen(ctx.view, pseudoAccountID, vaultAsset))
         return ret;
-    // Cannot transfer unauthorized asset
     if (auto const ret = requireAuth(ctx.view, vaultAsset, account, AuthType::StrongAuth))
         return ret;
 
@@ -120,11 +130,9 @@ LoanBrokerCoverDeposit::doApply()
 
     auto const brokerPseudoID = broker->at(sfAccount);
 
-    // Transfer assets from depositor to pseudo-account.
     if (auto ter = accountSend(view(), account_, brokerPseudoID, amount, j_, WaiveTransferFee::Yes))
         return ter;
 
-    // Increase the LoanBroker's CoverAvailable by Amount
     broker->at(sfCoverAvailable) += amount;
     view().update(broker);
 

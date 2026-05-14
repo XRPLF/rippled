@@ -1,3 +1,23 @@
+/** @file
+ *  Implements `LegacyPathFind`, the RAII admission-control guard for the
+ *  synchronous `ripple_path_find` RPC operation.
+ *
+ *  The constructor applies three sequential checks for non-admin callers:
+ *
+ *  1. **Job-queue pressure** — rejected if `getJobCountGE(JtClient)` exceeds
+ *     `Tuning::kMAX_PATHFIND_JOB_COUNT` (50) or local fee load is elevated.
+ *     These two conditions are ORed so either is sufficient to refuse.
+ *  2. **Concurrent-pathfind ceiling** — enforced via a lock-free CAS loop on
+ *     the static `inProgress` counter. The loop retries on CAS failure
+ *     (caused by a racing increment) rather than over-counting. On success,
+ *     `std::memory_order_release` makes the increment visible to other threads
+ *     that subsequently load `inProgress` with acquire semantics; relaxed
+ *     ordering is used on failure because nothing was changed.
+ *
+ *  The ceiling (`kMAX_PATHFINDS_IN_PROGRESS = 2`) is deliberately low because
+ *  a single path-find can be orders of magnitude more expensive than a typical
+ *  RPC call.
+ */
 #include <xrpld/rpc/detail/LegacyPathFind.h>
 
 #include <xrpld/app/main/Application.h>

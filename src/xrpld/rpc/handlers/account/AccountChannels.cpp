@@ -1,3 +1,12 @@
+/** @file
+ *  Implements the `account_channels` RPC handler.
+ *
+ *  Returns the set of payment channels (`ltPAYCHAN`) for which a given account
+ *  is the source (funding) party. The result is drawn from a read-only
+ *  `ReadView` snapshot of the ledger; no state is modified. Supports
+ *  cursor-based pagination using the shared `"<uint256_hex>,<uint64_hint>"`
+ *  compound-marker format.
+ */
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
@@ -35,6 +44,22 @@
 
 namespace xrpl {
 
+/** Serialize a single payment channel SLE into a JSON object and append it to
+ *  an array.
+ *
+ *  Mandatory fields (`channel_id`, `account`, `destination_account`, `amount`,
+ *  `balance`, `settle_delay`) are always emitted. Optional fields
+ *  (`expiration`, `cancel_after`, `source_tag`, `destination_tag`) are
+ *  included only when present in the SLE.
+ *
+ *  The public key is emitted in both base58 (`public_key`) and hex
+ *  (`public_key_hex`) forms only when `publicKeyType()` confirms that the raw
+ *  bytes in `sfPublicKey` represent a recognized key type, guarding against
+ *  malformed or zero-length field values.
+ *
+ *  @param jsonLines  JSON array to which the new channel object is appended.
+ *  @param line       Resolved SLE of type `ltPAYCHAN` to serialize.
+ */
 void
 addChannel(json::Value& jsonLines, SLE const& line)
 {
@@ -61,13 +86,33 @@ addChannel(json::Value& jsonLines, SLE const& line)
         jDst[jss::destination_tag] = *v;
 }
 
-// {
-//   account: <account>
-//   ledger_hash : <ledger>
-//   ledger_index : <ledger_index>
-//   limit: integer                 // optional
-//   marker: opaque                 // optional, resume previous query
-// }
+/** Handle the `account_channels` RPC command.
+ *
+ *  Returns all payment channels where `account` is the source (funding) party.
+ *  Channels where the queried account is only the destination do not appear
+ *  here; they live in the source account's owner directory.
+ *
+ *  Pagination uses a compound marker of the form `"<uint256_hex>,<uint64_hint>"`.
+ *  The uint256 is the ledger key of the last-seen SLE; the uint64 is a page
+ *  hint that lets `forEachItemAfter` jump directly to the right owner-directory
+ *  page rather than scanning from the beginning. A marker is only included in
+ *  the response when a subsequent item is confirmed to exist, preventing
+ *  empty-page follow-up requests.
+ *
+ *  Before resuming a paginated walk, the SLE pointed to by the supplied marker
+ *  is verified to belong to `account` via `RPC::isRelatedToAccount`. A marker
+ *  pointing into a different account's namespace is rejected with
+ *  `rpcINVALID_PARAMS`.
+ *
+ *  Sets `context.loadType` to `feeMediumBurdenRPC` because owner-directory
+ *  traversal over potentially hundreds of items is moderately expensive.
+ *
+ *  @param context  RPC dispatch context carrying params, ledger access, and
+ *      resource-management hooks.
+ *  @return JSON object containing a `channels` array (each element produced by
+ *      `addChannel`), the echoed `account` field, and an optional `marker` and
+ *      `limit` when more results remain.
+ */
 json::Value
 doAccountChannels(RPC::JsonContext& context)
 {
@@ -112,6 +157,11 @@ doAccountChannels(RPC::JsonContext& context)
         return *err;
 
     json::Value jsonChannels{json::ValueType::Array};
+    /** Closure state threaded through the `forEachItemAfter` callback.
+     *
+     *  Holds the accumulating result set and the filter criteria used to
+     *  accept or skip each SLE visited in the owner directory.
+     */
     struct VisitData
     {
         std::vector<std::shared_ptr<SLE const>> items;
@@ -128,8 +178,6 @@ doAccountChannels(RPC::JsonContext& context)
         if (!params[jss::marker].isString())
             return RPC::expectedFieldError(jss::marker, "string");
 
-        // Marker is composed of a comma separated index and start hint. The
-        // former will be read as hex, and the latter using boost lexical cast.
         std::stringstream marker(params[jss::marker].asString());
         std::string value;
         if (!std::getline(marker, value, ','))
@@ -150,8 +198,6 @@ doAccountChannels(RPC::JsonContext& context)
             return rpcError(RpcInvalidParams);
         }
 
-        // We then must check if the object pointed to by the marker is actually
-        // owned by the account in the request.
         auto const sle = ledger->read({ltANY, startAfter});
 
         if (!sle)
@@ -200,9 +246,6 @@ doAccountChannels(RPC::JsonContext& context)
         return rpcError(RpcInvalidParams);
     }
 
-    // Both conditions need to be checked because marker is set on the limit-th
-    // item, but if there is no item on the limit + 1 iteration, then there is
-    // no need to return a marker.
     if (count == limit + 1 && marker)
     {
         result[jss::limit] = limit;

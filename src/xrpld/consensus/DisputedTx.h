@@ -1,3 +1,12 @@
+/** @file
+ *  Per-transaction dispute tracking for the XRPL consensus protocol.
+ *
+ *  A `DisputedTx` is created for each transaction that appears in one
+ *  validator's proposed set but not another's. It records every peer's
+ *  yes/no vote and drives the local node's vote toward convergence via the
+ *  avalanche-style state machine defined in `ConsensusParms`.
+ */
+
 #pragma once
 
 #include <xrpld/consensus/ConsensusParms.h>
@@ -12,19 +21,26 @@
 
 namespace xrpl {
 
-/** A transaction discovered to be in dispute during consensus.
-
-    During consensus, a @ref DisputedTx is created when a transaction
-    is discovered to be disputed. The object persists only as long as
-    the dispute.
-
-    Undisputed transactions have no corresponding @ref DisputedTx object.
-
-    Refer to @ref Consensus for details on the template type requirements.
-
-    @tparam Tx The type for a transaction
-    @tparam NodeId The type for a node identifier
-*/
+/** Tracks peer votes and drives local vote convergence for a single disputed
+ *  transaction during the establish phase of XRPL consensus.
+ *
+ *  A `DisputedTx` is instantiated by `Consensus::createDisputes()` for every
+ *  transaction that is present in one observed position but absent from
+ *  another. It survives for exactly the duration of the establish phase and
+ *  is destroyed when consensus is reached or the round is abandoned.
+ *  Transactions that are unanimously accepted or rejected have no
+ *  corresponding `DisputedTx` object.
+ *
+ *  Peer votes are stored in a `boost::container::flat_map` (contiguous
+ *  memory, cache-friendly for the typical small-to-medium validator set).
+ *  Separate `yays_` and `nays_` counters allow O(1) percentage computation
+ *  in `updateVote()` without scanning the map on every tick.
+ *
+ *  @tparam Tx The transaction type; must expose a nested `ID` typedef and
+ *      an `id()` accessor.
+ *  @tparam NodeId The node-identifier type used as the map key.
+ *  @see Consensus, ConsensusParms, getNeededWeight
+ */
 
 template <class Tx, class NodeId>
 class DisputedTx
@@ -33,35 +49,75 @@ class DisputedTx
     using Map_t = boost::container::flat_map<NodeId, bool>;
 
 public:
-    /** Constructor
-
-        @param tx The transaction under dispute
-        @param ourVote Our vote on whether tx should be included
-        @param numPeers Anticipated number of peer votes
-        @param j Journal for debugging
-    */
+    /** Construct a dispute record for a single transaction.
+     *
+     *  The internal vote map is pre-reserved to `numPeers` entries to avoid
+     *  rehashing during the burst of `setVote()` calls that immediately follows
+     *  dispute creation.
+     *
+     *  @param tx The transaction under dispute.
+     *  @param ourVote `true` if the local node currently includes this
+     *      transaction in its proposed set.
+     *  @param numPeers Number of currently-connected validators; used to
+     *      size the vote map capacity up-front.
+     *  @param j Journal for debug and informational logging.
+     */
     DisputedTx(Tx tx, bool ourVote, std::size_t numPeers, beast::Journal j)
         : ourVote_(ourVote), tx_(std::move(tx)), j_(j)
     {
         votes_.reserve(numPeers);
     }
 
-    //! The unique id/hash of the disputed transaction.
+    /** The unique identifier (hash) of the disputed transaction. */
     [[nodiscard]] TxID_t const&
     id() const
     {
         return tx_.id();
     }
 
-    //! Our vote on whether the transaction should be included.
+    /** Whether the local node currently votes to include this transaction. */
     [[nodiscard]] bool
     getOurVote() const
     {
         return ourVote_;
     }
 
-    //! Are we and our peers "stalled" where we probably won't change
-    //! our vote?
+    /** Determine whether this dispute has reached a stable, irresolvable state.
+     *
+     *  Called by `Consensus::checkConsensus()` after close-time consensus is
+     *  established but disputed transactions remain. A stall indicates that the
+     *  network is overwhelmingly aligned (≥ `minCONSENSUS_PCT`, i.e. 80%) yet
+     *  further avalanche rounds are unlikely to change the outcome — either
+     *  because the avalanche state machine has reached the terminal `Stuck`
+     *  loop, or because neither peers nor the local vote have moved in
+     *  `avSTALLED_ROUNDS` consecutive rounds.
+     *
+     *  All four conditions must hold simultaneously:
+     *  1. The avalanche state machine is in a terminal loop
+     *     (`nextCutoff.consensusTime <= currentCutoff.consensusTime`).
+     *  2. The current state has been active for at least `avMIN_ROUNDS`.
+     *  3. `peersUnchanged >= avSTALLED_ROUNDS` **or** (when proposing)
+     *     `currentVoteCounter_ >= avSTALLED_ROUNDS`. The *or* rather than
+     *     *and* prevents a malicious peer from resetting the peer counter via
+     *     flip-flopping while the local vote remains stable.
+     *  4. The yes-vote share exceeds `minCONSENSUS_PCT` in either direction.
+     *
+     *  A stall is logged at `error` level because stalling on even one
+     *  transaction is an abnormal event warranting investigation.
+     *
+     *  @param p Consensus parameters (thresholds and round counts).
+     *  @param proposing Whether the local node is actively proposing this round.
+     *  @param peersUnchanged Number of consecutive rounds in which no peer
+     *      changed its vote on any disputed transaction (maintained by the
+     *      caller via `peerUnchangedCounter_`).
+     *  @param j Journal for error-level stall logging.
+     *  @param clog Optional diagnostic log stream; receives the stall message
+     *      when non-null.
+     *  @return `true` if the dispute is stalled and consensus should proceed
+     *      without waiting for further vote changes.
+     *  @note `at()` calls on `avalancheCutoffs` are safe because the map is
+     *      constructed with all four valid `AvalancheState` keys.
+     */
     [[nodiscard]] bool
     stalled(
         ConsensusParms const& p,
@@ -70,50 +126,37 @@ public:
         beast::Journal j,
         std::unique_ptr<std::stringstream> const& clog) const
     {
-        // at() can throw, but the map is built by hand to ensure all valid
-        // values are available.
         auto const& currentCutoff = p.avalancheCutoffs.at(avalancheState_);
         auto const& nextCutoff = p.avalancheCutoffs.at(currentCutoff.next);
 
-        // We're have not reached the final avalanche state, or been there long
-        // enough, so there's room for change. Check the times in case the state
-        // machine is altered to allow states to loop.
+        // Not yet in the terminal stuck loop, or haven't dwelled long enough.
+        // Check the time comparison in case the state machine is ever extended
+        // to allow non-terminal loops.
         if (nextCutoff.consensusTime > currentCutoff.consensusTime ||
             avalancheCounter_ < p.avMIN_ROUNDS)
             return false;
 
-        // We've haven't had this vote for minimum rounds yet. Things could
-        // change.
         if (proposing && currentVoteCounter_ < p.avMIN_ROUNDS)
             return false;
 
-        // If we or any peers have changed a vote in several rounds, then
-        // things could still change. But if _either_ has not changed in that
-        // long, we're unlikely to change our vote any time soon. (This prevents
-        // a malicious peer from flip-flopping a vote to prevent consensus.)
+        // Use OR: a peer that flip-flops cannot reset both counters. As long
+        // as our own vote is stable, the stall guard holds.
         if (peersUnchanged < p.avSTALLED_ROUNDS &&
             (proposing && currentVoteCounter_ < p.avSTALLED_ROUNDS))
             return false;
 
-        // Does this transaction have more than 80% agreement
-
-        // Compute the percentage of nodes voting 'yes' (possibly including us)
         int const support = (yays_ + (proposing && ourVote_ ? 1 : 0)) * 100;
         int const total = nays_ + yays_ + (proposing ? 1 : 0);
         if (total == 0)
         {
-            // There are no votes, so we know nothing
             return false;
         }
         int const weight = support / total;
-        // Returns true if the tx has more than minCONSENSUS_PCT (80) percent
-        // agreement. Either voting for _or_ voting against the tx.
         bool const stalled = weight > p.minCONSENSUS_PCT || weight < (100 - p.minCONSENSUS_PCT);
 
         if (stalled)
         {
-            // stalling is an error condition for even a single
-            // transaction.
+            // Stalling on even a single transaction is an error condition.
             std::stringstream s;
             s << "Transaction " << id() << " is stalled. We have been voting "
               << (getOurVote() ? "YES" : "NO") << " for " << currentVoteCounter_
@@ -126,79 +169,112 @@ public:
         return stalled;
     }
 
-    //! The disputed transaction.
+    /** The full disputed transaction object. */
     [[nodiscard]] Tx const&
     tx() const
     {
         return tx_;
     }
 
-    //! Change our vote
+    /** Override the local node's vote directly.
+     *
+     *  @param o `true` to vote yes (include the transaction).
+     *  @note Prefer `updateVote()` for normal avalanche-driven vote changes;
+     *      use this only when the engine needs to force a position (e.g.
+     *      during wrong-ledger recovery).
+     */
     void
     setOurVote(bool o)
     {
         ourVote_ = o;
     }
 
-    /** Change a peer's vote
-
-        @param peer Identifier of peer.
-        @param votesYes Whether peer votes to include the disputed transaction.
-
-        @return bool Whether the peer changed its vote. (A new vote counts as a
-       change.)
-    */
+    /** Record or update a peer's vote on this transaction.
+     *
+     *  Maintains the `yays_` and `nays_` counters incrementally so
+     *  `updateVote()` can compute percentages in O(1) without scanning the
+     *  full vote map. A brand-new vote counts as a change.
+     *
+     *  @param peer Identifier of the voting peer.
+     *  @param votesYes `true` if the peer votes to include the transaction.
+     *  @return `true` if the peer's vote changed (including a first-time
+     *      vote); `false` if the peer already held this position.
+     */
     [[nodiscard]] bool
     setVote(NodeId const& peer, bool votesYes);
 
-    /** Remove a peer's vote
-
-        @param peer Identifier of peer.
-    */
+    /** Remove a peer's vote, adjusting the `yays_`/`nays_` counters.
+     *
+     *  Called when a peer disconnects, bows out of consensus, or its position
+     *  is superseded by a new proposal. Has no effect if the peer has not
+     *  previously voted.
+     *
+     *  @param peer Identifier of the peer whose vote is to be removed.
+     */
     void
     unVote(NodeId const& peer);
 
-    /** Update our vote given progression of consensus.
-
-        Updates our vote on this disputed transaction based on our peers' votes
-        and how far along consensus has proceeded.
-
-        @param percentTime Percentage progress through consensus, e.g. 50%
-               through or 90%.
-        @param proposing Whether we are proposing to our peers in this round.
-        @param p Consensus parameters controlling thresholds for voting
-        @return Whether our vote changed
-    */
+    /** Update the local node's vote using the avalanche state machine.
+     *
+     *  Called once per consensus tick during the establish phase. Advances the
+     *  avalanche state when the time threshold and minimum-rounds dwell are
+     *  both met, then recomputes the local position.
+     *
+     *  Behaviour differs based on whether the local node is proposing:
+     *  - **Proposing**: counts its own vote alongside peers:
+     *    `weight = (yays_*100 + (ourVote_?100:0)) / (nays_+yays_+1)`;
+     *    flips when `weight > requiredPct` (escalating avalanche threshold).
+     *  - **Not proposing** (observer): simplifies to `newPosition = yays_ > nays_`
+     *    with `weight = -1`. The observer never distorts the weighted vote that
+     *    proposing nodes rely on.
+     *
+     *  `currentVoteCounter_` is incremented on every tick without a flip and
+     *  reset to zero on any flip; this streak feeds both `stalled()` and the
+     *  informational log output.
+     *
+     *  @param percentTime Elapsed consensus time as a percentage of the prior
+     *      round's duration; drives avalanche state transitions.
+     *  @param proposing Whether the local node is actively proposing this round.
+     *  @param p Consensus parameters (avalanche cutoffs, round thresholds).
+     *  @return `true` if the local vote flipped; `false` if the position is
+     *      unchanged.
+     *  @note Short-circuits without avalanche work if `ourVote_` is already
+     *      consistent with unanimous peer agreement (all yes or all no).
+     */
     bool
     updateVote(int percentTime, bool proposing, ConsensusParms const& p);
 
-    //! JSON representation of dispute, used for debugging
+    /** Serialise the dispute state to JSON for diagnostics.
+     *
+     *  Includes `yays`, `nays`, `our_vote`, and a per-peer vote map.
+     *
+     *  @return A JSON object suitable for logging or RPC debug output.
+     */
     [[nodiscard]] json::Value
     getJson() const;
 
 private:
-    int yays_{0};   //< Number of yes votes
-    int nays_{0};   //< Number of no votes
-    bool ourVote_;  //< Our vote (true is yes)
-    Tx tx_;         //< Transaction under dispute
-    Map_t votes_;   //< Map from NodeID to vote
-    //! The number of rounds we've gone without changing our vote
+    int yays_{0};   ///< Peers currently voting yes; updated by setVote/unVote.
+    int nays_{0};   ///< Peers currently voting no; updated by setVote/unVote.
+    bool ourVote_;  ///< Local node's current position (true = include tx).
+    Tx tx_;         ///< The transaction under dispute.
+    Map_t votes_;   ///< Per-peer votes; flat_map for cache locality.
+    /** Consecutive rounds without a local vote flip; reset to 0 on any flip.
+     *  Feeds the stall guard in `stalled()` and info-level log output. */
     std::size_t currentVoteCounter_ = 0;
-    //! Which minimum acceptance percentage phase we are currently in
+    /** Current avalanche phase; advances as `percentTime` crosses thresholds. */
     ConsensusParms::AvalancheState avalancheState_ = ConsensusParms::AvalancheState::Init;
-    //! How long we have been in the current acceptance phase
+    /** Rounds spent in `avalancheState_`; reset to 0 on each state transition. */
     std::size_t avalancheCounter_ = 0;
     beast::Journal const j_;
 };
 
-// Track a peer's yes/no vote on a particular disputed tx_
 template <class Tx, class NodeId>
 bool
 DisputedTx<Tx, NodeId>::setVote(NodeId const& peer, bool votesYes)
 {
     auto const [it, inserted] = votes_.insert(std::make_pair(peer, votesYes));
 
-    // new vote
     if (inserted)
     {
         if (votesYes)
@@ -213,7 +289,6 @@ DisputedTx<Tx, NodeId>::setVote(NodeId const& peer, bool votesYes)
         }
         return true;
     }
-    // changes vote to yes
     if (votesYes && !it->second)
     {
         JLOG(j_.debug()) << "Peer " << peer << " now votes YES on " << tx_.id();
@@ -222,7 +297,6 @@ DisputedTx<Tx, NodeId>::setVote(NodeId const& peer, bool votesYes)
         it->second = true;
         return true;
     }
-    // changes vote to no
     if (!votesYes && it->second)
     {
         JLOG(j_.debug()) << "Peer " << peer << " now votes NO on " << tx_.id();
@@ -234,7 +308,6 @@ DisputedTx<Tx, NodeId>::setVote(NodeId const& peer, bool votesYes)
     return false;
 }
 
-// Remove a peer's vote on this disputed transaction
 template <class Tx, class NodeId>
 void
 DisputedTx<Tx, NodeId>::unVote(NodeId const& peer)
@@ -269,12 +342,6 @@ DisputedTx<Tx, NodeId>::updateVote(int percentTime, bool proposing, ConsensusPar
     bool newPosition = false;
     int weight = 0;
 
-    // When proposing, to prevent avalanche stalls, we increase the needed
-    // weight slightly over time. We also need to ensure that the consensus has
-    // made a minimum number of attempts at each "state" before moving
-    // to the next.
-    // Proposing or not, we need to keep track of which state we've reached so
-    // we can determine if the vote has stalled.
     auto const [requiredPct, newState] =
         getNeededWeight(p, avalancheState_, percentTime, ++avalancheCounter_, p.avMIN_ROUNDS);
     if (newState)
@@ -283,16 +350,15 @@ DisputedTx<Tx, NodeId>::updateVote(int percentTime, bool proposing, ConsensusPar
         avalancheCounter_ = 0;
     }
 
-    if (proposing)  // give ourselves full weight
+    if (proposing)
     {
-        // This is basically the percentage of nodes voting 'yes' (including us)
         weight = (yays_ * 100 + (ourVote_ ? 100 : 0)) / (nays_ + yays_ + 1);
-
         newPosition = weight > requiredPct;
     }
     else
     {
-        // don't let us outweigh a proposing node, just recognize consensus
+        // Observer: follow majority without distorting the weighted vote
+        // that proposing nodes use for threshold calculations.
         weight = -1;
         newPosition = yays_ > nays_;
     }

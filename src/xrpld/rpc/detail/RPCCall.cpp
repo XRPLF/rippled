@@ -1,3 +1,12 @@
+/** @file
+ *  CLI RPC client: argument parsing, HTTP framing, and async dispatch.
+ *
+ *  Exports `RPCCall::fromCommandLine`, `RPCCall::fromNetwork`,
+ *  `rpcCmdToJson`, and `rpcClient`. The primary internal type is
+ *  `RPCParser`, which translates positional CLI arguments into the
+ *  JSON-RPC parameter objects expected by the server-side handler table.
+ *  `RPCCallImp` wraps the two async callbacks passed to `HTTPClient::request`.
+ */
 #include <xrpld/rpc/RPCCall.h>
 
 #include <xrpld/core/Config.h>
@@ -56,13 +65,21 @@ namespace xrpl {
 
 class RPCParser;
 
-//
-// HTTP protocol
-//
-// This ain't Apache.  We're just using HTTP header for the length field
-// and to be compatible with other JSON-RPC implementations.
-//
-
+/** Assemble a minimal HTTP/1.0 POST request string.
+ *
+ *  Produces a raw HTTP/1.0 POST containing the JSON body @p strMsg.
+ *  HTTP/1.0 is used deliberately: it avoids persistent-connection
+ *  negotiation for this fire-and-forget single-request client.
+ *  `Content-Length` is set directly from `strMsg.size()`; headers from
+ *  @p mapRequestHeaders are appended verbatim with no validation.
+ *
+ *  @param strHost Value written to the `Host:` header.
+ *  @param strPath Request path; an empty string is sent as "/".
+ *  @param strMsg JSON body to embed as the POST payload.
+ *  @param mapRequestHeaders Additional headers appended after the standard
+ *      set (e.g., `Authorization`).
+ *  @return A complete HTTP/1.0 request string ready to write to a socket.
+ */
 std::string
 createHTTPPost(
     std::string const& strHost,
@@ -91,12 +108,40 @@ createHTTPPost(
     return s.str();
 }
 
+/** Translates positional CLI arguments into JSON-RPC parameter objects.
+ *
+ *  Instantiated per-call by `rpcCmdToJson`. The `parseCommand` method
+ *  dispatches through a static `constexpr` table of ~60 `Command` entries
+ *  (name → parse function, min/max arity). Arity is checked before dispatch
+ *  so individual `parseXxx` methods can assert their preconditions without
+ *  defensive parameter-count guards.
+ *
+ *  Each `parseXxx` method returns either a populated `Json::Value` object
+ *  ready for transmission, or an `rpcError(...)` value — never throws.
+ */
 class RPCParser
 {
 private:
     unsigned const apiVersion_;
     beast::Journal const j_;
 
+    /** Normalise a ledger identifier string into the correct JSON field.
+     *
+     *  Recognises the three shortcut strings `"current"`, `"closed"`, and
+     *  `"validated"` (written to `ledger_index`); 64-character hex strings
+     *  (written to `ledger_hash`); and numeric sequences parsed as
+     *  `uint32_t` via `beast::lexicalCast` (written to `ledger_index`).
+     *  `beast::lexicalCast` throws on non-integer input for the numeric
+     *  path — callers that catch exceptions should account for this.
+     *
+     *  @param jvRequest The in-progress request object to mutate.
+     *  @param strLedger The raw string from the CLI argument.
+     *  @return Always `true`; the return value exists for compatibility with
+     *      call sites that treat `false` as a parse failure signal.
+     *  @note Callers that have not yet been migrated to this helper carry
+     *      their own inline ledger parsing. The `TODO` comment at the
+     *      declaration marks remaining migration work.
+     */
     // TODO New routine for parsing ledger parameters, other routines should
     // standardize on this.
     static bool
@@ -119,7 +164,16 @@ private:
         return true;
     }
 
-    // Build a object { "currency" : "XYZ", "issuer" : "rXYX" }
+    /** Parse a CLI currency/issuer token into a `{ "currency", "issuer" }` object.
+     *
+     *  Accepts tokens of the form `"XYZ"` or `"XYZ/rIssuer..."`.  The
+     *  currency must be exactly three characters drawn from the ISO charset
+     *  (`xrpl::detail::isoCharSet`); Boost.Regex is used for matching.
+     *
+     *  @param strCurrencyIssuer The raw `currency[/issuer]` string.
+     *  @return A `Json::Object` with `"currency"` (and optionally `"issuer"`),
+     *      or an `RPC::makeParamError` value if the format does not match.
+     */
     static json::Value
     jvParseCurrencyIssuer(std::string const& strCurrencyIssuer)
     {
@@ -153,6 +207,19 @@ private:
             std::string("Invalid currency/issuer '") + strCurrencyIssuer + "'");
     }
 
+    /** Return true if @p strPk is a syntactically valid public key.
+     *
+     *  Accepts both base58-encoded keys (checked via `parseBase58<PublicKey>`)
+     *  and hex-encoded raw key bytes (validated via `publicKeyType`).  The
+     *  default token type covers account public keys; pass
+     *  `TokenType::NodePublic` for validator node keys.
+     *
+     *  @param strPk Candidate public key string.
+     *  @param type  Token type used for base58 decoding; defaults to
+     *      `TokenType::AccountPublic`.
+     *  @return `true` if @p strPk decodes as a valid public key under either
+     *      encoding; `false` otherwise.
+     */
     static bool
     validPublicKey(std::string const& strPk, TokenType type = TokenType::AccountPublic)
     {
@@ -539,6 +606,18 @@ private:
         return rpcError(RpcInvalidParams);
     }
 
+    /** Parse a pre-formed JSON object and inject a `"method"` field.
+     *
+     *  Handles the `json <command> <json>` CLI form, which lets the caller
+     *  pass an arbitrary JSON parameter object directly.  The raw JSON
+     *  string is parsed from `jvParams[1]`; `jvParams[0]` supplies the
+     *  method name.
+     *
+     *  @param jvParams Two-element array: `[method_name, json_string]`.
+     *  @return The parsed JSON object with `"method"` set, or
+     *      `rpcError(RpcInvalidParams)` if the string is not valid JSON or
+     *      does not parse to an object.
+     */
     // json <command> <json>
     json::Value
     parseJson(json::Value const& jvParams)
@@ -562,6 +641,16 @@ private:
         return rpcError(RpcInvalidParams);
     }
 
+    /** Return true if @p jv is a well-formed JSON-RPC 2.0 / ripplerpc 2.0 payload.
+     *
+     *  For objects: requires `jsonrpc == "2.0"`, `ripplerpc == "2.0"`,
+     *  and presence of both `id` and `method`. The `params` field, if
+     *  present, must be null, array, or object.  For arrays: applies the
+     *  same check recursively to every element; an empty array is invalid.
+     *
+     *  @param jv The parsed JSON value to validate.
+     *  @return `true` if @p jv satisfies the ripplerpc 2.0 schema.
+     */
     bool
     isValidJson2(json::Value const& jv)
     {
@@ -590,6 +679,22 @@ private:
         return false;
     }
 
+    /** Parse and validate a ripplerpc 2.0 payload for the `json2` CLI command.
+     *
+     *  Accepts a JSON string that encodes either a single ripplerpc 2.0
+     *  request object or a batch array.  If the payload passes
+     *  `isValidJson2`, the `params` sub-object is flattened to top-level
+     *  fields and the context fields (`jsonrpc`, `ripplerpc`, `id`,
+     *  `method`) are preserved.  On failure, an `rpcError(RpcInvalidParams)`
+     *  is returned with whatever `jsonrpc`, `ripplerpc`, and `id` context
+     *  fields were parseable — enabling the caller to echo them back in
+     *  the error response.
+     *
+     *  @param jvParams Single-element array whose first entry is the raw
+     *      JSON string.
+     *  @return Restructured `Json::Value` ready for dispatch, or an error
+     *      object with partial context fields on parse/validation failure.
+     */
     json::Value
     parseJson2(json::Value const& jvParams)
     {
@@ -1242,16 +1347,35 @@ private:
     }
 
 public:
-    //--------------------------------------------------------------------------
-
+    /** Construct an RPCParser bound to a specific API version and journal.
+     *
+     *  @param apiVersion API version for version-sensitive parsing branches
+     *      (e.g., `account_tx` ledger-range error codes differ between v1
+     *      and v2+).
+     *  @param j Journal for trace/debug output inside parse methods.
+     */
     explicit RPCParser(unsigned apiVersion, beast::Journal j) : apiVersion_(apiVersion), j_(j)
     {
     }
 
-    //--------------------------------------------------------------------------
-
-    // Convert a rpc method and params to a request.
-    // <-- { method: xyz, params: [... ] } or { error: ..., ... }
+    /** Translate a CLI method name and positional parameters into a JSON request.
+     *
+     *  Dispatches through the static `kCOMMANDS` table via linear scan.
+     *  Arity is checked first; if the supplied parameter count falls outside
+     *  `[minParams, maxParams]`, `rpcError(RpcBadSyntax)` is returned before
+     *  any parse function is called.  Unknown commands return
+     *  `rpcError(RpcUnknownCommand)` unless @p allowAnyCommand is true, in
+     *  which case they are passed through via `parseAsIs`.
+     *
+     *  Event-driven commands (`subscribe`, `unsubscribe`, `path_find`) always
+     *  return `rpcError(RpcNoEvents)` — the HTTP path has no push channel.
+     *
+     *  @param strMethod RPC method name (e.g., `"account_info"`).
+     *  @param jvParams  JSON array of positional parameter strings.
+     *  @param allowAnyCommand When `true`, unrecognised commands are forwarded
+     *      as-is rather than rejected with `RpcUnknownCommand`.
+     *  @return A `Json::Object` ready for transmission, or an error object.
+     */
     json::Value
     parseCommand(std::string strMethod, json::Value jvParams, bool allowAnyCommand)
     {
@@ -1261,12 +1385,15 @@ public:
             stream << "Params: " << jvParams;
         }
 
+        /** Dispatch entry mapping a method name to its parse function and arity. */
         struct Command
         {
-            char const* name;
-            parseFuncPtr parse;
-            int minParams;
-            int maxParams;
+            char const* name;       /**< JSON-RPC method name string. */
+            parseFuncPtr parse;     /**< Member function pointer to the parse handler. */
+            int minParams;          /**< Minimum accepted positional parameter count;
+                                     *   -1 means "any" (used by event commands). */
+            int maxParams;          /**< Maximum accepted positional parameter count;
+                                     *   -1 means unbounded. */
         };
 
         static constexpr Command kCOMMANDS[] = {
@@ -1501,7 +1628,6 @@ public:
             }
         }
 
-        // The command could not be found
         if (!allowAnyCommand)
             return rpcError(RpcUnknownCommand);
 
@@ -1511,15 +1637,23 @@ public:
 
 //------------------------------------------------------------------------------
 
-//
 // JSON-RPC protocol.  Bitcoin speaks version 1.0 for maximum compatibility,
 // but uses JSON-RPC 1.1/2.0 standards for parts of the 1.0 standard that were
 // unspecified (HTTP errors and contents of 'error').
 //
 // 1.0 spec: http://json-rpc.org/wiki/specification
 // 1.2 spec: http://groups.google.com/group/json-rpc/web/json-rpc-over-http
-//
 
+/** Serialize a JSON-RPC 1.0 request envelope to a newline-terminated string.
+ *
+ *  Produces `{ "method": strMethod, "params": params, "id": id }\n`.
+ *  The trailing newline follows JSON-RPC 1.0 framing conventions.
+ *
+ *  @param strMethod JSON-RPC method name.
+ *  @param params    Parameter value to embed (typically an array or object).
+ *  @param id        Request identifier echoed back in the response.
+ *  @return Serialized JSON string with a trailing newline.
+ */
 std::string
 jsonrpcRequest(std::string const& strMethod, json::Value const& params, json::Value const& id)
 {
@@ -1531,25 +1665,69 @@ jsonrpcRequest(std::string const& strMethod, json::Value const& params, json::Va
 }
 
 namespace {
-// Special local exception type thrown when request can't be parsed.
+/** Thrown by `RPCCallImp::onResponse` when the server rejects the request.
+ *
+ *  Raised when the response body begins with `"Unable to parse request"` or
+ *  `"invalid_API_version"`. Caught separately from `std::runtime_error` in
+ *  `rpcClient` so it maps to `rpcINVALID_PARAMS` rather than `rpcINTERNAL`.
+ */
 class RequestNotParsable : public std::runtime_error
 {
     using std::runtime_error::runtime_error;  // Inherit constructors
 };
 };  // namespace
 
+/** Static-method namespace for the two async callbacks passed to HTTPClient::request.
+ *
+ *  `onRequest` builds and writes the raw HTTP payload.
+ *  `onResponse` parses the server reply and invokes the user callback.
+ *  Neither method holds state; the struct exists only as an organisational
+ *  namespace — all members are static.
+ */
 struct RPCCallImp
 {
     explicit RPCCallImp() = default;
 
-    // VFALCO NOTE Is this a to-do comment or a doc comment?
-    // Place the async result somewhere useful.
+    /** Write the JSON-RPC result into the caller-supplied output slot.
+     *
+     *  Used as the callback passed to `RPCCall::fromNetwork` by `rpcClient`.
+     *  The output pointer is safe to dereference for the lifetime of the
+     *  synchronous `io_context::run()` call in `rpcClient`.
+     *
+     *  @param jvOutput Pointer to the `Json::Value` that receives the result.
+     *  @param jvInput  The parsed server response passed by `onResponse`.
+     */
     static void
     callRPCHandler(json::Value* jvOutput, json::Value const& jvInput)
     {
         (*jvOutput) = jvInput;
     }
 
+    /** Async response handler: parse the server reply and invoke the callback.
+     *
+     *  Called by `HTTPClient::request` when the full HTTP response has been
+     *  received.  Validates the body, wraps it as `{ "result": <parsed> }`,
+     *  and invokes @p callbackFuncP.  If the body is empty, a generic
+     *  `std::runtime_error` is thrown.  If the body begins with
+     *  `"Unable to parse request"` or `"invalid_API_version"`, a
+     *  `RequestNotParsable` is thrown so `rpcClient` can map it to
+     *  `rpcINVALID_PARAMS`.  Any JSON parse failure also throws
+     *  `std::runtime_error`.
+     *
+     *  @param callbackFuncP User callback; if empty (default-constructed),
+     *      the response body is not examined and the function returns
+     *      immediately.
+     *  @param ecResult  Boost.Asio error code from the transport layer
+     *      (currently unused; errors surface as an empty @p strData).
+     *  @param iStatus   HTTP status code (currently unused).
+     *  @param strData   Raw HTTP response body.
+     *  @param j         Journal for debug logging.
+     *  @return Always `false` (signals to HTTPClient that the connection
+     *      should not be reused).
+     *  @throws std::runtime_error On empty body or JSON parse failure.
+     *  @throws RequestNotParsable When the server reports it could not parse
+     *      the request or the API version was invalid.
+     */
     static bool
     onResponse(
         std::function<void(json::Value const& jvInput)> callbackFuncP,
@@ -1560,10 +1738,6 @@ struct RPCCallImp
     {
         if (callbackFuncP)
         {
-            // Only care about the result, if we care to deliver it
-            // callbackFuncP.
-
-            // Receive reply
             if (strData.empty())
             {
                 Throw<std::runtime_error>(
@@ -1572,7 +1746,6 @@ struct RPCCallImp
                     "process.");
             }
 
-            // Parse reply
             JLOG(j.debug()) << "RPC reply: " << strData << std::endl;
             if (strData.starts_with("Unable to parse request") ||
                 strData.starts_with(jss::invalid_API_version.cStr()))
@@ -1595,7 +1768,20 @@ struct RPCCallImp
         return false;
     }
 
-    // Build the request.
+    /** Async request builder: write the HTTP POST payload into @p sb.
+     *
+     *  Called by `HTTPClient::request` when the connection is ready.
+     *  Combines `jsonrpcRequest` (JSON-RPC envelope) with `createHTTPPost`
+     *  (HTTP framing) and writes the result to the provided streambuf.
+     *
+     *  @param strMethod JSON-RPC method name.
+     *  @param jvParams  JSON-RPC parameters to embed.
+     *  @param headers   Additional HTTP headers (e.g., `Authorization`).
+     *  @param strPath   HTTP request path.
+     *  @param sb        Streambuf that receives the raw HTTP request bytes.
+     *  @param strHost   Value for the `Host:` header.
+     *  @param j         Journal for debug logging.
+     */
     static void
     onRequest(
         std::string const& strMethod,
@@ -1616,7 +1802,12 @@ struct RPCCallImp
 
 //------------------------------------------------------------------------------
 
-// Used internally by rpcClient.
+/** @copydoc ::xrpl::rpcCmdToJson
+ *
+ *  @note `api_version` is injected element-wise into batch arrays so every
+ *      sub-request carries the correct version even when the caller supplies
+ *      a pre-formed batch payload via the `json2` command.
+ */
 json::Value
 rpcCmdToJson(
     std::vector<std::string> const& args,
@@ -1662,6 +1853,13 @@ rpcCmdToJson(
 
 //------------------------------------------------------------------------------
 
+/** @copydoc ::xrpl::rpcClient
+ *
+ *  @note A dedicated `io_context` is created and destroyed per call.
+ *      This is intentional for the one-shot CLI use case: it avoids
+ *      shared state at the cost of a modest setup overhead that is
+ *      immaterial for interactive commands.
+ */
 std::pair<int, json::Value>
 rpcClient(
     std::vector<std::string> const& args,
@@ -1741,7 +1939,7 @@ rpcClient(
                             return jvRequest[jss::method].asString();
                         return jvRequest.isArray() ? "batch" : args[0];
                     }(),
-                    jvParams,                                    // Parsed, execute.
+                    jvParams,
                     static_cast<int>(setup.client.secure) != 0,  // Use SSL
                     config.quiet(),
                     logs,
@@ -1752,22 +1950,16 @@ rpcClient(
             }
             if (jvOutput.isMember("result"))
             {
-                // Had a successful JSON-RPC 2.0 call.
                 jvOutput = jvOutput["result"];
-
-                // jvOutput may report a server side error.
-                // It should report "status".
             }
             else
             {
-                // Transport error.
                 json::Value const jvRpcError = jvOutput;
 
                 jvOutput = rpcError(RpcJsonRpc);
                 jvOutput["result"] = jvRpcError;
             }
 
-            // If had an error, supply invocation in result.
             if (jvOutput.isMember(jss::error))
             {
                 jvOutput["rpc"] = jvRpc;  // How the command was seen as method + params.
@@ -1845,21 +2037,15 @@ fromNetwork(
 {
     auto j = logs.journal("HTTPClient");
 
-    // Connect to localhost
     if (!quiet)
     {
         JLOG(j.info()) << (bSSL ? "Securely connecting to " : "Connecting to ") << strIp << ":"
                        << iPort << std::endl;
     }
 
-    // HTTP basic authentication
     headers["Authorization"] =
         std::string("Basic ") + base64Encode(strUsername + ":" + strPassword);
 
-    // Send request
-
-    // Number of bytes to try to receive if no
-    // Content-Length header received
     constexpr auto kRPC_REPLY_MAX_BYTES = megabytes(256);
 
     using namespace std::chrono_literals;

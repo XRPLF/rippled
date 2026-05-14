@@ -1,3 +1,11 @@
+/** @file
+ *  Implements AccountRoot ledger-object helper functions.
+ *
+ *  Covers freeze-state queries, spendable XRP balance, owner-count
+ *  bookkeeping, transfer fees, destination-tag enforcement, and the
+ *  creation and detection of pseudo-accounts (AMM, Vault, LoanBroker).
+ *  Almost every transaction processor depends on at least one function here.
+ */
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 
 #include <xrpl/basics/Expected.h>
@@ -41,12 +49,20 @@ isGlobalFrozen(ReadView const& view, AccountID const& issuer)
     return false;
 }
 
-// An owner count cannot be negative. If adjustment would cause a negative
-// owner count, clamp the owner count at 0. Similarly for overflow. This
-// adjustment allows the ownerCount to be adjusted up or down in multiple steps.
-// If id != std::nullopt, then do error reporting.
-//
-// Returns adjusted owner count.
+/** Clamp a signed owner-count adjustment to the valid `[0, UINT32_MAX]` range.
+ *
+ *  Uses well-defined unsigned wrap to detect over/underflow: after adding a
+ *  positive @p adjustment, `adjusted < current` means overflow; after adding a
+ *  negative @p adjustment, `adjusted > current` means underflow.  Both are
+ *  clamped and a fatal-level log entry is emitted when @p id is provided.
+ *
+ *  @param current     Current owner count stored in the SLE.
+ *  @param adjustment  Signed delta to apply; may be zero.
+ *  @param id          Account being adjusted; when provided, enables error
+ *      logging.  Pass `std::nullopt` for speculative (reserve-only) calls.
+ *  @param j           Journal used for fatal-level diagnostics.
+ *  @return Clamped owner count after applying @p adjustment.
+ */
 static std::uint32_t
 confineOwnerCount(
     std::uint32_t current,
@@ -83,6 +99,17 @@ confineOwnerCount(
     return adjusted;
 }
 
+/** @copydoc xrpLiquid(ReadView const&, AccountID const&, std::int32_t, beast::Journal)
+ *
+ *  @note Both the balance read and the owner-count read are routed through
+ *      virtual hook methods (`balanceHookIOU`, `ownerCountHook`) on the view.
+ *      In normal transaction processing these are identity functions, but when
+ *      called from inside a `PaymentSandbox` they return conservative values
+ *      that account for credits and owner-count changes made earlier in the
+ *      same payment path — without any branching in this function.
+ *      Pseudo-accounts bypass the reserve calculation entirely because
+ *      protocol-controlled accounts are not subject to reserve requirements.
+ */
 XRPAmount
 xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj, beast::Journal j)
 {
@@ -90,11 +117,10 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
     if (sle == nullptr)
         return beast::kZERO;
 
-    // Return balance minus reserve
     std::uint32_t const ownerCount =
         confineOwnerCount(view.ownerCountHook(id, sle->getFieldU32(sfOwnerCount)), ownerCountAdj);
 
-    // Pseudo-accounts have no reserve requirement
+    // Pseudo-accounts have no reserve requirement; all other accounts clamp at 0.
     auto const reserve =
         isPseudoAccount(sle) ? XRPAmount{0} : view.fees().accountReserve(ownerCount);
 
@@ -124,6 +150,15 @@ transferRate(ReadView const& view, AccountID const& issuer)
     return kPARITY_RATE;
 }
 
+/** @copydoc adjustOwnerCount(ApplyView&, std::shared_ptr<SLE> const&, std::int32_t, beast::Journal)
+ *
+ *  @note `view.adjustOwnerCountHook()` is called before writing the new count
+ *      to the SLE.  `PaymentSandbox` overrides this hook to record the
+ *      high-water-mark owner count so that subsequent `ownerCountHook` reads
+ *      within the same payment use the most conservative (highest) count seen,
+ *      preventing a transient mid-payment count reduction from bypassing
+ *      reserve checks.
+ */
 void
 adjustOwnerCount(
     ApplyView& view,
@@ -142,10 +177,22 @@ adjustOwnerCount(
     view.update(sle);
 }
 
+/** @copydoc pseudoAccountAddress(ReadView const&, uint256 const&)
+ *
+ *  Derives a candidate `AccountID` by hashing
+ *  `(attempt_index, ledger.parentHash, pseudoOwnerKey)` through `sha512Half`
+ *  then `ripesha_hasher`, retrying up to `kMAX_ACCOUNT_ATTEMPTS` times until
+ *  an address with no existing `AccountRoot` is found.  Incorporating
+ *  `parentHash` prevents precomputation of collisions.  Returns `beast::kZERO`
+ *  on exhaustion; `createPseudoAccount` propagates that as `tecDUPLICATE`.
+ *
+ *  @note `kMAX_ACCOUNT_ATTEMPTS` is consensus-critical and must not be changed
+ *      without an amendment, as it determines the pseudo-account address space.
+ */
 AccountID
 pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey)
 {
-    // This number must not be changed without an amendment
+    // Must not be changed without an amendment — alters the address space.
     constexpr std::uint16_t kMAX_ACCOUNT_ATTEMPTS = 256;
     for (std::uint16_t i = 0; i < kMAX_ACCOUNT_ATTEMPTS; ++i)
     {
@@ -159,12 +206,20 @@ pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey)
     return beast::kZERO;
 }
 
-// Pseudo-account designator fields MUST be maintained by including the
-// SField::sMD_PseudoAccount flag in the SField definition. (Don't forget to
-// "| SField::sMD_Default"!) The fields do NOT need to be amendment-gated,
-// since a non-active amendment will not set any field, by definition.
-// Specific properties of a pseudo-account are NOT checked here, that's what
-// InvariantCheck is for.
+/** @copydoc getPseudoAccountFields()
+ *
+ *  Scans the `ltACCOUNT_ROOT` `SOTemplate` from `LedgerFormats::getInstance()`
+ *  at first call and caches the result in a `static` local.  A field qualifies
+ *  if `shouldMeta(SField::kSMD_PSEUDO_ACCOUNT)` returns `true`.
+ *
+ *  @note Fields do NOT need to be amendment-gated here: a non-active amendment
+ *      will never set the field, so the list is always accurate.  Do NOT
+ *      check pseudo-account invariants here — that is `InvariantCheck`'s job.
+ *  @note Every pseudo-account designator `SField` must carry the
+ *      `SField::sMD_PseudoAccount` metadata flag (combined with
+ *      `SField::sMD_Default`) in its definition, or it will be silently
+ *      omitted from this list.
+ */
 [[nodiscard]] std::vector<SField const*> const&
 getPseudoAccountFields()
 {
@@ -191,6 +246,13 @@ getPseudoAccountFields()
     return kPSEUDO_FIELDS;
 }
 
+/** @copydoc isPseudoAccount(std::shared_ptr<SLE const>, std::set<SField const*> const&)
+ *
+ *  @note The null-pointer and `ltACCOUNT_ROOT` type guards are intentionally
+ *      defensive: callers may already guarantee them, but keeping them here
+ *      ensures the semantics of a `true` return value are always unambiguous
+ *      at negligible cost.
+ */
 [[nodiscard]] bool
 isPseudoAccount(
     std::shared_ptr<SLE const> sleAcct,
@@ -198,8 +260,6 @@ isPseudoAccount(
 {
     auto const& fields = getPseudoAccountFields();
 
-    // Intentionally use defensive coding here because it's cheap and makes the
-    // semantics of true return value clean.
     return sleAcct && sleAcct->getType() == ltACCOUNT_ROOT &&
         std::count_if(
             fields.begin(), fields.end(), [&sleAcct, &pseudoFieldFilter](SField const* sf) -> bool {
@@ -208,6 +268,26 @@ isPseudoAccount(
             }) > 0;
 }
 
+/** @copydoc createPseudoAccount(ApplyView&, uint256 const&, SField const&)
+ *
+ *  Asserts (in debug builds) that @p ownerField carries the
+ *  `SField::sMD_PseudoAccount` flag; misuse is caught at development time, not
+ *  at runtime.  The caller is responsible for performing amendment checks
+ *  before invoking this function.
+ *
+ *  The new `AccountRoot` is assembled with:
+ *  - Zero balance and — when `featureSingleAssetVault` or
+ *    `featureLendingProtocol` is enabled — sequence number `0`, making
+ *    pseudo-accounts visually distinguishable and preventing transaction
+ *    submission even if `lsfDisableMaster` were somehow bypassed.
+ *  - `lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth`: no key-based
+ *    transactions; trust-line flows enabled for AMM/vault assets; unsolicited
+ *    incoming payments blocked.
+ *  - The @p ownerField back-link stores @p pseudoOwnerKey in the new SLE.
+ *
+ *  @return The new SLE on success, or `tecDUPLICATE` if no collision-free
+ *      address could be found within the attempt limit.
+ */
 Expected<std::shared_ptr<SLE>, TER>
 createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey, SField const& ownerField)
 {
@@ -224,25 +304,17 @@ createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey, SField const
     if (accountId == beast::kZERO)
         return Unexpected(tecDUPLICATE);
 
-    // Create pseudo-account.
     auto account = std::make_shared<SLE>(keylet::account(accountId));
     account->setAccountID(sfAccount, accountId);
     account->setFieldAmount(sfBalance, STAmount{});
 
-    // Pseudo-accounts can't submit transactions, so set the sequence number
-    // to 0 to make them easier to spot and verify, and add an extra level
-    // of protection.
     std::uint32_t const seqno =                           //
         view.rules().enabled(featureSingleAssetVault) ||  //
             view.rules().enabled(featureLendingProtocol)  //
         ? 0                                               //
         : view.seq();
     account->setFieldU32(sfSequence, seqno);
-    // Ignore reserves requirement, disable the master key, allow default
-    // rippling, and enable deposit authorization to prevent payments into
-    // pseudo-account.
     account->setFieldU32(sfFlags, lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
-    // Link the pseudo-account with its owner object.
     account->setFieldH256(ownerField, pseudoOwnerKey);
 
     view.insert(account);
@@ -250,16 +322,21 @@ createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey, SField const
     return account;
 }
 
+/** @copydoc checkDestinationAndTag(SLE::const_ref, bool)
+ *
+ *  @note Destination tags are opaque to the protocol; their content is
+ *      meaningful only to the receiving account (e.g. exchange user IDs).
+ *      The ledger enforces the presence requirement (`lsfRequireDestTag`) but
+ *      never interprets the tag value itself.
+ */
 [[nodiscard]] TER
 checkDestinationAndTag(SLE::const_ref toSle, bool hasDestinationTag)
 {
     if (toSle == nullptr)
         return tecNO_DST;
 
-    // The tag is basically account-specific information we don't
-    // understand, but we can require someone to fill it in.
     if (toSle->isFlag(lsfRequireDestTag) && !hasDestinationTag)
-        return tecDST_TAG_NEEDED;  // Cannot send without a tag
+        return tecDST_TAG_NEEDED;
 
     return tesSUCCESS;
 }

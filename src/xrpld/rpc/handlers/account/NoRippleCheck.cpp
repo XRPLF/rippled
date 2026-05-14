@@ -1,3 +1,10 @@
+/** @file
+ *  Implements the `noripple_check` RPC handler.
+ *
+ *  Audits an account's No Ripple flag configuration and, on request,
+ *  generates ready-to-submit `AccountSet` and `TrustSet` transaction
+ *  templates that correct each detected misconfiguration.
+ */
 #include <xrpld/app/main/Application.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
@@ -24,6 +31,21 @@
 
 namespace xrpl {
 
+/** Populate common fields for a remediation transaction template.
+ *
+ *  Writes `Sequence`, `Account`, and `Fee` into @p txArray.  The sequence
+ *  number is taken from @p sequence and then incremented so that consecutive
+ *  calls produce monotonically increasing sequence numbers within a single
+ *  response.  The fee is the reference transaction cost scaled to the current
+ *  network load via `scaleFeeLoad`, giving the client a load-calibrated
+ *  estimate rather than a static value.
+ *
+ *  @param context  The RPC call context (provides app handle for fee track).
+ *  @param txArray  The JSON object to populate with the three common fields.
+ *  @param accountID The account that will submit the transaction.
+ *  @param sequence  In/out: current sequence number; incremented after use.
+ *  @param ledger   The ledger whose fee schedule is used.
+ */
 static void
 fillTransaction(
     RPC::JsonContext& context,
@@ -35,19 +57,46 @@ fillTransaction(
     txArray["Sequence"] = json::UInt(sequence++);
     txArray["Account"] = toBase58(accountID);
     auto& fees = ledger.fees();
-    // Convert the reference transaction cost in fee units to drops
-    // scaled to represent the current fee load.
     txArray["Fee"] = scaleFeeLoad(fees.base, context.app.getFeeTrack(), fees, false).jsonClipped();
 }
 
-// {
-//   account: <account>
-//   ledger_hash : <ledger>
-//   ledger_index : <ledger_index>
-//   limit: integer                 // optional, number of problems
-//   role: gateway|user             // account role to assume
-//   transactions: true             // optional, recommend transactions
-// }
+/** Implement the `noripple_check` RPC command.
+ *
+ *  Identifies No Ripple flag misconfigurations on an account's trust lines
+ *  relative to the declared role:
+ *  - **gateway**: `lsfDefaultRipple` must be set on the account; No Ripple
+ *    must be cleared on every trust line so payments can ripple through.
+ *  - **user**: `lsfDefaultRipple` must be clear; No Ripple must be set on
+ *    every trust line to prevent unintended third-party routing.
+ *
+ *  When `transactions` is `true`, the response also contains an ordered
+ *  array of unsigned `AccountSet` and/or `TrustSet` transaction templates
+ *  that, if signed and submitted in order, will resolve every reported
+ *  problem.  Sequence numbers in the templates are contiguous starting from
+ *  the account's current ledger sequence, and fees are load-scaled at
+ *  request time.
+ *
+ *  The `limit` parameter (range 10–400, default 300) caps the number of
+ *  trust lines inspected, not just the number of problems reported.
+ *  Inspection stops after `limit` `ltRIPPLE_STATE` objects are processed,
+ *  regardless of how many problems were found.
+ *
+ *  @param context  RPC call context containing `params`, app handle, and
+ *      API version.
+ *  @return A JSON object with a `problems` array (always present) and an
+ *      optional `transactions` array.  Returns a JSON error object on any
+ *      validation failure, unknown ledger, malformed account string
+ *      (`actMalformed`), or missing account (`actNotFound`).
+ *  @note Starting with API version 2, the `transactions` field is rejected
+ *      unless it is a strict JSON boolean.  Earlier versions silently coerce
+ *      any truthy value via `asBool()`.
+ *  @note When `transactions` is `false`, the handler still allocates a local
+ *      `dummy` Json::Value and routes all `append` calls through it.  This
+ *      avoids per-item branching at the cost of discarded work; the
+ *      `NOLINT(misc-const-correctness)` annotation on `dummy` acknowledges
+ *      that the value is intentionally mutated even though its final state
+ *      is unused.
+ */
 json::Value
 doNoRippleCheck(RPC::JsonContext& context)
 {
@@ -82,10 +131,7 @@ doNoRippleCheck(RPC::JsonContext& context)
     if (params.isMember(jss::transactions))
         transactions = params["transactions"].asBool();
 
-    // The document[https://xrpl.org/noripple_check.html#noripple_check] states
-    // that transactions params is a boolean value, however, assigning any
-    // string value works. Do not allow this. This check is for api Version 2
-    // onwards only
+    // API v2+: reject non-boolean values; v1 silently coerces via asBool().
     if (context.apiVersion > 1u && params.isMember(jss::transactions) &&
         !params[jss::transactions].isBool())
     {

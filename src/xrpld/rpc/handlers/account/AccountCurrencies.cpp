@@ -18,6 +18,40 @@
 
 namespace xrpl {
 
+/** Handle the `account_currencies` RPC command.
+ *
+ *  Enumerates the distinct currencies an account can currently send and
+ *  receive, based on its trust line state in the requested ledger. The
+ *  response contains two flat JSON arrays: `send_currencies` and
+ *  `receive_currencies`. This is a lightweight alternative to
+ *  `account_lines` when callers only need the set of currencies in play,
+ *  not full trust line detail.
+ *
+ *  A currency appears in `receive_currencies` when the account's current
+ *  balance on that trust line is below its own trust limit — i.e. there is
+ *  still capacity to receive more. A currency appears in `send_currencies`
+ *  when the negated balance is below the peer's trust limit — i.e. the peer
+ *  can still accept more of the account's IOU, regardless of whether the
+ *  account currently holds a positive balance. Freeze flags on a trust line
+ *  do not affect which currencies appear in either set.
+ *
+ *  Validation is applied in strict order before any ledger access:
+ *  (1) `account` or its legacy alias `ident` must be present and a string;
+ *  (2) `RPC::lookupLedger` resolves the target ledger snapshot;
+ *  (3) the identifier must be valid Base58 (returns `rpcACT_MALFORMED` if not);
+ *  (4) the account must exist in the ledger (returns `rpcACT_NOT_FOUND` if not).
+ *
+ *  @param context The JSON RPC context, including request params and
+ *      app-level services.
+ *  @return A `Json::Value` object containing `send_currencies` and
+ *      `receive_currencies` arrays on success, or an appropriate RPC error
+ *      object on failure.
+ *  @note `ident` is a legacy alias for `account`; `account` takes priority
+ *      when both are present. The `badCurrency()` sentinel is defensively
+ *      removed from both result sets even though well-formed ledger state
+ *      should never contain it.
+ *  @see RPCTrustLine::getItems, RPC::lookupLedger
+ */
 json::Value
 doAccountCurrencies(RPC::JsonContext& context)
 {
@@ -40,13 +74,11 @@ doAccountCurrencies(RPC::JsonContext& context)
         strIdent = params[jss::ident].asString();
     }
 
-    // Get the current ledger
     std::shared_ptr<ReadView const> ledger;
     auto result = RPC::lookupLedger(ledger, context);
     if (!ledger)
         return result;
 
-    // Get info on account.
     auto id = parseBase58<AccountID>(strIdent);
     if (!id)
     {

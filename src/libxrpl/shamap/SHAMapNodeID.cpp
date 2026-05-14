@@ -13,6 +13,26 @@
 
 namespace xrpl {
 
+/** Return the path-prefix bitmask for a given tree depth.
+ *
+ *  The SHAMap tree consumes one 4-bit nibble of a 256-bit key per level,
+ *  so the meaningful prefix at depth @p depth is exactly the top `4 * depth`
+ *  bits of a `uint256`.  This function returns a precomputed mask with those
+ *  bits set to 1 and all lower bits set to 0, indexed by depth [0, 64].
+ *
+ *  The table is built once at program start inside a function-local `static`:
+ *  - depth 0 (root): all-zero mask — the root carries no path prefix.
+ *  - depth 1: high nibble of byte 0 set (`0xF0______...`).
+ *  - depth 2: full first byte set (`0xFF______...`).
+ *  - Each subsequent pair of depths adds one nibble more.
+ *  - depth 64 (leaf): all 32 bytes fully set.
+ *
+ *  @param depth Tree depth in [0, 64].  Caller is responsible for range
+ *      validity; out-of-range access is undefined behaviour.
+ *  @return Reference to the precomputed mask for @p depth.
+ *  @note Thread-safe: the `static` local is initialised exactly once by the
+ *      C++11 guarantee; no explicit synchronisation is required.
+ */
 static uint256 const&
 depthMask(unsigned int depth)
 {
@@ -40,7 +60,6 @@ depthMask(unsigned int depth)
     return kMASKS.entry[depth];
 }
 
-// canonicalize the hash to a node ID for this depth
 SHAMapNodeID::SHAMapNodeID(unsigned int depth, uint256 const& hash) : id_(hash), depth_(depth)
 {
     XRPL_ASSERT(
@@ -64,15 +83,6 @@ SHAMapNodeID::getChildNodeID(unsigned int m) const
 {
     XRPL_ASSERT(
         m < SHAMap::kBRANCH_FACTOR, "xrpl::SHAMapNodeID::getChildNodeID : valid branch input");
-
-    // A SHAMap has exactly 65 levels, so nodes must not exceed that
-    // depth; if they do, this breaks the invariant of never allowing
-    // the construction of a SHAMapNodeID at an invalid depth. We assert
-    // to catch this in debug builds.
-    //
-    // We throw (but never assert) if the node is at level 64, since
-    // entries at that depth are leaf nodes and have no children and even
-    // constructing a child node from them would break the above invariant.
     XRPL_ASSERT(
         depth_ <= SHAMap::kLEAF_DEPTH, "xrpl::SHAMapNodeID::getChildNodeID : maximum leaf depth");
 

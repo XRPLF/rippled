@@ -29,31 +29,52 @@
 
 namespace xrpl {
 
-// Query:
-// 1) Specify ledger to query.
-// 2) Specify issuer account (cold wallet) in "account" field.
-// 3) Specify accounts that hold gateway assets (such as hot wallets)
-//    using "hotwallet" field which should be either a string (if just
-//    one wallet) or an array of strings (if more than one).
+/** @file
+ *  Implements the `gateway_balances` RPC handler, providing a financial
+ *  snapshot for XRPL token issuers (gateways) operating a cold/hot wallet
+ *  architecture.
+ */
 
-// Response:
-// 1) Array, "obligations", indicating the total obligations of the
-//    gateway in each currency. Obligations to specified hot wallets
-//    are not counted here.
-// 2) Object, "balances", indicating balances in each account
-//    that holds gateway assets. (Those specified in the "hotwallet"
-//    field.)
-// 3) Object of "assets" indicating accounts that owe the gateway.
-//    (Gateways typically do not hold positive balances. This is unusual.)
-
-// gateway_balances [<ledger>] <account> [<hotwallet> [<hotwallet [...
-
+/** Produce a financial snapshot for an XRPL gateway (token issuer).
+ *
+ *  Traverses the cold wallet's owner directory and classifies each trust
+ *  line and escrow into one of five output buckets:
+ *
+ *  - `obligations` — aggregate liabilities per currency to all normal
+ *    (non-hot, non-frozen) customer accounts.
+ *  - `balances` — per-hot-wallet balances for the accounts listed in the
+ *    `hotwallet` request field.
+ *  - `frozen_balances` — per-peer balances on trust lines the gateway has
+ *    frozen.
+ *  - `assets` — per-peer positive balances (the gateway is owed; unusual).
+ *  - `locked` — aggregate IOU/XRP amounts locked in escrow per currency.
+ *    MPT-denominated escrows are excluded.
+ *
+ *  The `hotwallet` parameter accepts a single Base58-encoded account string,
+ *  an array of such strings, or null (treated as an empty set). An invalid
+ *  entry returns `rpcINVALID_HOTWALLET` on API v1 and `rpcINVALID_PARAMS`
+ *  on API v2+. Account existence is only enforced for API v2+; v1 returns an
+ *  empty result for a nonexistent account to preserve backward compatibility.
+ *
+ *  Arithmetic overflow during `obligations` or `locked` accumulation is
+ *  caught and the affected bucket is clamped to `STAmount::cMaxValue /
+ *  cMaxOffset` rather than failing the call — very large sums are
+ *  approximations regardless.
+ *
+ *  @note This handler declares `feeHeavyBurdenRPC` because traversing the
+ *      owner directory is O(n) in the number of trust lines; large gateways
+ *      can have thousands.
+ *
+ *  @param context The RPC dispatch context carrying the request parameters,
+ *      ledger access, role, and API version.
+ *  @return A JSON object with any non-empty combination of `obligations`,
+ *      `balances`, `frozen_balances`, `assets`, and `locked` keys.
+ */
 json::Value
 doGatewayBalances(RPC::JsonContext& context)
 {
     auto& params = context.params;
 
-    // Get the current ledger
     std::shared_ptr<ReadView const> ledger;
     auto result = RPC::lookupLedger(ledger, context);
 
@@ -67,7 +88,6 @@ doGatewayBalances(RPC::JsonContext& context)
         params.isMember(jss::account) ? params[jss::account].asString()
                                       : params[jss::ident].asString());
 
-    // Get info on account.
     auto id = parseBase58<AccountID>(strIdent);
     if (!id)
         return rpcError(RpcActMalformed);
@@ -87,6 +107,8 @@ doGatewayBalances(RPC::JsonContext& context)
 
     if (params.isMember(jss::hotwallet))
     {
+        /** Parses a single hotwallet entry and inserts it into the set.
+         *  Returns false if @p j is not a valid Base58 account string. */
         auto addHotWallet = [&hotWallets](json::Value const& j) {
             if (j.isString())
             {
@@ -120,10 +142,8 @@ doGatewayBalances(RPC::JsonContext& context)
 
         if (!valid)
         {
-            // The documentation states that invalidParams is used when
-            // One or more fields are specified incorrectly.
-            // invalidHotwallet should be used when the account exists, but does
-            // not have currency issued by the account from the request.
+            // v1 used the domain-specific rpcINVALID_HOTWALLET code; v2+
+            // normalised to rpcINVALID_PARAMS for parameter-validation errors.
             if (context.apiVersion < 2u)
             {
                 RPC::injectError(RpcInvalidHotwallet, result);
@@ -142,97 +162,89 @@ doGatewayBalances(RPC::JsonContext& context)
     std::map<AccountID, std::vector<STAmount>> frozenBalances;
     std::map<Currency, STAmount> locked;
 
-    // Traverse the cold wallet's trust lines
-    {
-        forEachItem(*ledger, accountID, [&](std::shared_ptr<SLE const> const& sle) {
-            if (sle->getType() == ltESCROW)
-            {
-                auto const& escrow = sle->getFieldAmount(sfAmount);
-                // Gateway Balance should not include MPTs
-                if (escrow.holds<MPTIssue>())
-                    return;
-
-                auto& bal = locked[escrow.get<Issue>().currency];
-                if (bal == beast::kZERO)
-                {
-                    // This is needed to set the currency code correctly
-                    bal = escrow;
-                }
-                else
-                {
-                    try
-                    {
-                        bal += escrow;
-                    }
-                    catch (std::runtime_error const&)
-                    {
-                        // Presumably the exception was caused by overflow.
-                        // On overflow return the largest valid STAmount.
-                        // Very large sums of STAmount are approximations
-                        // anyway.
-                        bal =
-                            STAmount(bal.get<Issue>(), STAmount::kMAX_VALUE, STAmount::kMAX_OFFSET);
-                    }
-                }
-            }
-
-            auto rs = PathFindTrustLine::makeItem(accountID, sle);
-
-            if (!rs)
+    // Traverse the cold wallet's owner directory, classifying each SLE.
+    forEachItem(*ledger, accountID, [&](std::shared_ptr<SLE const> const& sle) {
+        if (sle->getType() == ltESCROW)
+        {
+            auto const& escrow = sle->getFieldAmount(sfAmount);
+            // MPT escrows are excluded: the locked-funds model predates MPTs.
+            if (escrow.holds<MPTIssue>())
                 return;
 
-            int const balSign = rs->getBalance().signum();
-            if (balSign == 0)
-                return;
-
-            auto const& peer = rs->getAccountIDPeer();
-
-            // Here, a negative balance means the cold wallet owes (normal)
-            // A positive balance means the cold wallet has an asset
-            // (unusual)
-
-            if (hotWallets.contains(peer))
+            auto& bal = locked[escrow.get<Issue>().currency];
+            if (bal == beast::kZERO)
             {
-                // This is a specified hot wallet
-                hotBalances[peer].push_back(-rs->getBalance());
-            }
-            else if (balSign > 0)
-            {
-                // This is a gateway asset
-                assets[peer].push_back(rs->getBalance());
-            }
-            else if (rs->getFreeze())
-            {
-                // An obligation the gateway has frozen
-                frozenBalances[peer].push_back(-rs->getBalance());
+                // Direct assignment on the first entry sets the currency code;
+                // adding to a default-constructed zero would not.
+                bal = escrow;
             }
             else
             {
-                // normal negative balance, obligation to customer
-                auto& bal = sums[rs->getBalance().get<Issue>().currency];
-                if (bal == beast::kZERO)
+                try
                 {
-                    // This is needed to set the currency code correctly
-                    bal = -rs->getBalance();
+                    bal += escrow;
                 }
-                else
+                catch (std::runtime_error const&)
                 {
-                    try
-                    {
-                        bal -= rs->getBalance();
-                    }
-                    catch (std::runtime_error const&)
-                    {
-                        // Presumably the exception was caused by overflow.
-                        // On overflow return the largest valid STAmount.
-                        // Very large sums of STAmount are approximations
-                        // anyway.
-                        bal = STAmount(bal.asset(), STAmount::kMAX_VALUE, STAmount::kMAX_OFFSET);
-                    }
+                    // Overflow: clamp to the maximum representable STAmount.
+                    // Very large sums are approximations regardless.
+                    bal =
+                        STAmount(bal.get<Issue>(), STAmount::kMAX_VALUE, STAmount::kMAX_OFFSET);
                 }
             }
-        });
-    }
+        }
+
+        auto rs = PathFindTrustLine::makeItem(accountID, sle);
+
+        if (!rs)
+            return;
+
+        int const balSign = rs->getBalance().signum();
+        if (balSign == 0)
+            return;
+
+        auto const& peer = rs->getAccountIDPeer();
+
+        // Negative balance: the cold wallet owes the peer (normal issuer
+        // liability). Positive balance: the cold wallet holds an asset
+        // (unusual — peer owes the gateway).
+
+        if (hotWallets.contains(peer))
+        {
+            hotBalances[peer].push_back(-rs->getBalance());
+        }
+        else if (balSign > 0)
+        {
+            assets[peer].push_back(rs->getBalance());
+        }
+        else if (rs->getFreeze())
+        {
+            frozenBalances[peer].push_back(-rs->getBalance());
+        }
+        else
+        {
+            // Aggregate normal liability by currency.
+            auto& bal = sums[rs->getBalance().get<Issue>().currency];
+            if (bal == beast::kZERO)
+            {
+                // Direct assignment on the first entry sets the currency code.
+                bal = -rs->getBalance();
+            }
+            else
+            {
+                try
+                {
+                    bal -= rs->getBalance();
+                }
+                catch (std::runtime_error const&)
+                {
+                    // Overflow: clamp to the maximum representable STAmount.
+                    // Very large sums are approximations regardless.
+                    bal = STAmount(bal.asset(), STAmount::kMAX_VALUE, STAmount::kMAX_OFFSET);
+                }
+            }
+        }
+    });
 
     if (!sums.empty())
     {
@@ -244,6 +256,9 @@ doGatewayBalances(RPC::JsonContext& context)
         result[jss::obligations] = std::move(j);
     }
 
+    /** Serialises a per-account balance map into @p result under key @p name.
+     *  Omits the key entirely when @p array is empty, keeping the response
+     *  compact. Each account entry is an array of {currency, value} objects. */
     auto populateResult = [&result](
                               std::map<AccountID, std::vector<STAmount>> const& array,
                               json::StaticString const& name) {
@@ -270,7 +285,6 @@ doGatewayBalances(RPC::JsonContext& context)
     populateResult(frozenBalances, jss::frozen_balances);
     populateResult(assets, jss::assets);
 
-    // Add total escrow to the result
     if (!locked.empty())
     {
         json::Value j;

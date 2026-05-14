@@ -1,3 +1,12 @@
+/** @file
+ *  Implementation of the `DIDDelete` transactor, which removes a
+ *  Decentralized Identifier (`ltDID`) ledger entry owned by the submitting
+ *  account. See `DIDDelete.h` for the full interface contract.
+ *
+ *  The `deleteSLE(ApplyView&, ...)` overload is intentionally reachable
+ *  from other transactors (notably `AccountDelete`) that need to clean up
+ *  an owned DID without constructing a full transactor context.
+ */
 #include <xrpl/tx/transactors/did/DIDDelete.h>
 
 #include <xrpl/basics/Log.h>
@@ -43,7 +52,6 @@ DIDDelete::deleteSLE(
     AccountID const owner,
     beast::Journal j)
 {
-    // Remove object from owner directory
     if (!view.dirRemove(keylet::ownerDir(owner), (*sle)[sfOwnerNode], sle->key(), true))
     {
         // LCOV_EXCL_START
@@ -59,7 +67,6 @@ DIDDelete::deleteSLE(
     adjustOwnerCount(view, sleOwner, -1, j);
     view.update(sleOwner);
 
-    // Remove object from ledger
     view.erase(sle);
     return tesSUCCESS;
 }

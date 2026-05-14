@@ -20,12 +20,40 @@
 
 namespace xrpl {
 
-// {
-//   public_key: <public_key>
-//   channel_id: 256-bit channel id
-//   drops: 64-bit uint (as string)
-//   signature: signature to verify
-// }
+/** Verify a payment channel claim signature (`channel_verify`).
+ *
+ *  Reconstructs the canonical signing payload for a payment channel
+ *  authorization — `HashPrefix::paymentChannelClaim` (4 bytes) + channel ID
+ *  (256 bits) + amount in drops (64-bit big-endian) — then checks whether
+ *  the supplied signature is valid over that payload under the supplied public
+ *  key. The check is purely mathematical: no ledger state is read and no
+ *  network calls are made.
+ *
+ *  This is the read-only counterpart to `doChannelAuthorize`. It carries no
+ *  role restriction and is safe to expose on public nodes.
+ *
+ *  The `public_key` field accepts two encodings:
+ *  - Base58-encoded `AccountPublic` token (the `rXXX…`-style XRPL format).
+ *  - Raw hex bytes of a secp256k1 or Ed25519 public key. The key type is
+ *    inferred from the byte prefix via `publicKeyType()`; an unrecognised
+ *    prefix yields `rpcPUBLIC_MALFORMED`.
+ *
+ *  The `amount` field must be a decimal-integer string to avoid precision
+ *  loss inherent in JSON numeric literals at XRP drop magnitudes (up to
+ *  10^17).
+ *
+ *  @param context  RPC dispatch context; only `context.params` is read.
+ *  @return A JSON object with a single key `"signature_verified"` set to
+ *      `true` or `false`. An invalid signature is a normal outcome and maps
+ *      to `false`, never to an error code.
+ *
+ *  @note Required fields: `public_key`, `channel_id`, `amount`, `signature`.
+ *      Missing fields produce `missingFieldError`. Malformed channel ID or
+ *      public key produce `rpcCHANNEL_MALFORMED` / `rpcPUBLIC_MALFORMED`;
+ *      malformed amount produces `rpcCHANNEL_AMT_MALFORMED`; empty signature
+ *      bytes produce `rpcINVALID_PARAMS`.
+ *  @see serializePayChanAuthorization, doChannelAuthorize
+ */
 json::Value
 doChannelVerify(RPC::JsonContext& context)
 {

@@ -36,14 +36,40 @@
 
 namespace xrpl {
 
-// During an EscrowFinish, the transaction must specify both
-// a condition and a fulfillment. We track whether that
-// fulfillment matches and validates the condition.
+/** HashRouter flag indicating the crypto-condition fulfillment is invalid.
+ *
+ *  Set in `preflightSigValidated` (and re-set in `doApply` if the cache has
+ *  expired) when `checkCondition` returns false.  When this bit is present on
+ *  a transaction's flags, `doApply` immediately returns
+ *  `tecCRYPTOCONDITION_ERROR` without repeating the cryptographic work.
+ */
 constexpr HashRouterFlags kSF_CF_INVALID = HashRouterFlags::PRIVATE5;
+
+/** HashRouter flag indicating the crypto-condition fulfillment is valid.
+ *
+ *  Set in `preflightSigValidated` (and re-set in `doApply` if the cache has
+ *  expired) when `checkCondition` returns true.  `doApply` reads this bit to
+ *  confirm that the fulfillment was already verified before proceeding with
+ *  the remaining condition checks against the escrow SLE.
+ */
 constexpr HashRouterFlags kSF_CF_VALID = HashRouterFlags::PRIVATE6;
 
 //------------------------------------------------------------------------------
 
+/** Verify that a crypto-condition fulfillment satisfies a condition.
+ *
+ *  Deserializes both the condition (`c`) and the fulfillment (`f`) using the
+ *  `cryptoconditions` library and calls `validate`.  Returns `false` if
+ *  either field fails to deserialize.  This is the single call site for all
+ *  crypto-condition verification in the escrow finish pipeline; its result is
+ *  cached in the `HashRouter` under `kSF_CF_VALID`/`kSF_CF_INVALID` to avoid
+ *  repeating the work across multiple passes of the same transaction.
+ *
+ *  @param f  raw bytes of the PREIMAGE-SHA-256 fulfillment.
+ *  @param c  raw bytes of the condition originally stored in the escrow SLE.
+ *  @return   `true` if the fulfillment validates the condition; `false` if
+ *            either field fails to deserialize or validation fails.
+ */
 static bool
 checkCondition(Slice f, Slice c)
 {
@@ -137,6 +163,23 @@ escrowFinishPreclaimHelper(
     AccountID const& dest,
     STAmount const& amount);
 
+/** IOU specialization: read-only eligibility check for an escrow destination.
+ *
+ *  Verifies that `dest` is permitted to receive the IOU held in escrow:
+ *  - If the issuer equals the destination the check trivially passes (the
+ *    issuer cannot be unauthorized or frozen against itself).
+ *  - Otherwise `requireAuth` is called; if the issuer has `lsfRequireAuth`
+ *    set and `dest` is not authorized on the trust line, the check fails.
+ *  - Then `isDeepFrozen` is consulted; deep-freeze on the trust line blocks
+ *    the finish regardless of authorization.
+ *
+ *  @param ctx     read-only preclaim context.
+ *  @param dest    the escrow destination account.
+ *  @param amount  the escrowed IOU amount (carries the issuer and currency).
+ *  @return        `tesSUCCESS` if the destination may receive the asset;
+ *                 `tecNO_AUTH` if `requireAuth` is set and the trust line is
+ *                 unauthorized; `tecFROZEN` if the trust line is deep-frozen.
+ */
 template <>
 TER
 escrowFinishPreclaimHelper<Issue>(
@@ -145,21 +188,37 @@ escrowFinishPreclaimHelper<Issue>(
     STAmount const& amount)
 {
     AccountID const& issuer = amount.getIssuer();
-    // If the issuer is the same as the account, return tesSUCCESS
     if (issuer == dest)
         return tesSUCCESS;
 
-    // If the issuer has requireAuth set, check if the destination is authorized
     if (auto const ter = requireAuth(ctx.view, amount.get<Issue>(), dest); !isTesSuccess(ter))
         return ter;
 
-    // If the issuer has deep frozen the destination, return tecFROZEN
     if (isDeepFrozen(ctx.view, dest, amount.get<Issue>().currency, amount.getIssuer()))
         return tecFROZEN;
 
     return tesSUCCESS;
 }
 
+/** MPT specialization: read-only eligibility check for an escrow destination.
+ *
+ *  Verifies that `dest` is permitted to receive the MPToken held in escrow:
+ *  - If the issuer equals the destination the check trivially passes.
+ *  - The MPT issuance object must exist on the ledger; a missing issuance
+ *    means the asset was destroyed after the escrow was created.
+ *  - `requireAuth` is called with `AuthType::WeakAuth`, which requires an
+ *    `MPToken` holder entry to exist but does not require the issuer to have
+ *    explicitly authorized it (less strict than IOU `requireAuth`).
+ *  - `isFrozen` checks for an MPT-level lock on the destination's holding.
+ *
+ *  @param ctx     read-only preclaim context.
+ *  @param dest    the escrow destination account.
+ *  @param amount  the escrowed MPT amount (carries the MPT issuance ID).
+ *  @return        `tesSUCCESS` if the destination may receive the asset;
+ *                 `tecOBJECT_NOT_FOUND` if the MPT issuance no longer exists;
+ *                 a `requireAuth` error code if `WeakAuth` fails;
+ *                 `tecLOCKED` if the destination's MPToken holding is frozen.
+ */
 template <>
 TER
 escrowFinishPreclaimHelper<MPTIssue>(
@@ -168,24 +227,19 @@ escrowFinishPreclaimHelper<MPTIssue>(
     STAmount const& amount)
 {
     AccountID const& issuer = amount.getIssuer();
-    // If the issuer is the same as the dest, return tesSUCCESS
     if (issuer == dest)
         return tesSUCCESS;
 
-    // If the mpt does not exist, return tecOBJECT_NOT_FOUND
     auto const issuanceKey = keylet::mptIssuance(amount.get<MPTIssue>().getMptID());
     auto const sleIssuance = ctx.view.read(issuanceKey);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    // If the issuer has requireAuth set, check if the destination is
-    // authorized
     auto const& mptIssue = amount.get<MPTIssue>();
     if (auto const ter = requireAuth(ctx.view, mptIssue, dest, AuthType::WeakAuth);
         !isTesSuccess(ter))
         return ter;
 
-    // If the issuer has frozen the destination, return tecLOCKED
     if (isFrozen(ctx.view, dest, mptIssue))
         return tecLOCKED;
 
@@ -239,8 +293,6 @@ EscrowFinish::doApply()
         return tecNO_TARGET;
     }
 
-    // If a cancel time is present, a finish operation should only succeed prior
-    // to that time.
     auto const now = ctx_.view().header().parentCloseTime;
 
     // Too soon: can't execute before the finish time
@@ -251,7 +303,6 @@ EscrowFinish::doApply()
     if ((*slep)[~sfCancelAfter] && after(now, (*slep)[sfCancelAfter]))
         return tecNO_PERMISSION;
 
-    // Check cryptocondition fulfillment
     {
         auto const id = ctx_.tx.getTransactionID();
         auto flags = ctx_.registry.get().getHashRouter().getFlags(id);
@@ -282,12 +333,9 @@ EscrowFinish::doApply()
             // LCOV_EXCL_STOP
         }
 
-        // If the check failed, then simply return an error
-        // and don't look at anything else.
         if (any(flags & kSF_CF_INVALID))
             return tecCRYPTOCONDITION_ERROR;
 
-        // Check against condition in the ledger entry:
         auto const cond = (*slep)[~sfCondition];
 
         // If a condition wasn't specified during creation,
@@ -316,7 +364,6 @@ EscrowFinish::doApply()
 
     AccountID const account = (*slep)[sfAccount];
 
-    // Remove escrow from owner directory
     {
         auto const page = (*slep)[sfOwnerNode];
         if (!ctx_.view().dirRemove(keylet::ownerDir(account), page, k.key, true))
@@ -341,7 +388,6 @@ EscrowFinish::doApply()
     }
 
     STAmount const amount = slep->getFieldAmount(sfAmount);
-    // Transfer amount to destination
     if (isXRP(amount))
     {
         (*sled)[sfBalance] = (*sled)[sfBalance] + amount;
@@ -389,12 +435,10 @@ EscrowFinish::doApply()
 
     ctx_.view().update(sled);
 
-    // Adjust source owner count
     auto const sle = ctx_.view().peek(keylet::account(account));
     adjustOwnerCount(ctx_.view(), sle, -1, ctx_.journal);
     ctx_.view().update(sle);
 
-    // Remove escrow from ledger
     ctx_.view().erase(slep);
     return tesSUCCESS;
 }

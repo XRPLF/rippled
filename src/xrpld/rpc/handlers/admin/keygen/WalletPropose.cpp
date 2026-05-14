@@ -1,3 +1,10 @@
+/** @file
+ *  Implements the `wallet_propose` admin RPC command.
+ *
+ *  Generates a complete XRPL account identity — seed, key pair, and account
+ *  address — from a caller-supplied or randomly-generated seed. Exposed only
+ *  to admin-role clients; never reachable by untrusted users.
+ */
 #include <xrpld/rpc/handlers/admin/keygen/WalletPropose.h>
 
 #include <xrpld/rpc/Context.h>
@@ -22,12 +29,23 @@
 
 namespace xrpl {
 
+/** Estimate the Shannon entropy of a string in bits.
+ *
+ *  Computes the per-symbol Shannon entropy from character frequencies and
+ *  multiplies by the string length to yield a total bit estimate. The result
+ *  is floored to be conservative — callers use this to gate brute-force
+ *  vulnerability warnings, so over-estimating entropy would suppress a
+ *  legitimate warning.
+ *
+ *  @param input The string whose entropy is estimated.
+ *  @return Estimated entropy in bits, floored to the nearest integer.
+ *  @note This is a statistical estimate, not a cryptographic strength
+ *      measurement. It is only meaningful for human-chosen passphrases;
+ *      a randomly-generated seed will always score well regardless.
+ */
 double
 estimateEntropy(std::string const& input)
 {
-    // First, we calculate the Shannon entropy. This gives
-    // the average number of bits per symbol that we would
-    // need to encode the input.
     std::map<int, double> freq;
 
     for (auto const& c : input)
@@ -42,21 +60,65 @@ estimateEntropy(std::string const& input)
         se += (x)*log2(x);
     }
 
-    // We multiply it by the length, to get an estimate of
-    // the number of bits in the input. We floor because it
-    // is better to be conservative.
+    // Floor because it is better to be conservative when warning about
+    // low-entropy passphrases.
     return std::floor(-se * input.length());
 }
 
-// {
-//  passphrase: <string>
-// }
+/** RPC dispatch entry point for the `wallet_propose` command.
+ *
+ *  Extracts the request parameters from the JSON context and delegates to
+ *  `walletPropose()`. Separating dispatch from logic allows the core
+ *  function to be called directly in tests without a full RPC context.
+ *
+ *  Accepts an optional `passphrase`, `seed`, or `seed_hex` field (mutually
+ *  exclusive); and an optional `key_type` ("secp256k1" or "ed25519").
+ *
+ *  @param context The RPC dispatch context carrying `params`.
+ *  @return A JSON object with key-generation results, or an error object.
+ */
 json::Value
 doWalletPropose(RPC::JsonContext& context)
 {
     return walletPropose(context.params);
 }
 
+/** Generate a complete XRPL account identity from parameters.
+ *
+ *  Resolves a seed via a priority-ordered chain: XrplLib-encoded Ed25519 seed
+ *  detection (in `passphrase` or `seed` fields) → `getSeedFromRPC()` for
+ *  explicit `passphrase` / `seed` / `seed_hex` → `randomSeed()` as the
+ *  fallback. Key type defaults to `secp256k1` for historical compatibility
+ *  when none is specified.
+ *
+ *  On success, returns a JSON object with seven fields:
+ *  - `master_seed`     — base58-encoded seed (canonical backup format)
+ *  - `master_seed_hex` — raw hex of the seed bytes
+ *  - `master_key`      — RFC 1751 mnemonic encoding
+ *  - `account_id`      — base58check account address
+ *  - `public_key`      — base58-encoded public key with AccountPublic prefix
+ *  - `public_key_hex`  — raw hex public key
+ *  - `key_type`        — resolved algorithm name ("secp256k1" or "ed25519")
+ *
+ *  A `warning` field is appended when a user-supplied passphrase is detected
+ *  that is not itself an encoding of the seed: a strong warning when entropy
+ *  is below 80 bits, and a softer advisory otherwise (any brain-wallet
+ *  derivation is weaker than a random seed). The warning is suppressed when
+ *  the passphrase matches the seed's own 1751, base58, or hex encoding, and
+ *  when a XrplLib-encoded seed is detected.
+ *
+ *  @param params JSON object containing optional fields: `key_type`,
+ *      `passphrase`, `seed`, `seed_hex`. The three seed-input fields are
+ *      mutually exclusive; supplying more than one yields an error from
+ *      `getSeedFromRPC()`.
+ *  @return A JSON result object on success, or a JSON error object on failure.
+ *  @note Supplying a XrplLib-encoded Ed25519 seed together with
+ *      `key_type: "secp256k1"` returns `rpcBAD_SEED` rather than silently
+ *      deriving the wrong key. XrplLib seeds are unambiguously Ed25519.
+ *  @see walletPropose() is called directly by `KeyGeneration_test.cpp` to
+ *      validate known constant vectors for both key types and both warning
+ *      tiers.
+ */
 json::Value
 walletPropose(json::Value const& params)
 {
@@ -77,9 +139,10 @@ walletPropose(json::Value const& params)
             return rpcError(RpcInvalidParams);
     }
 
-    // XrplLib encodes seed used to generate an Ed25519 wallet in a
-    // non-standard way. While we never encode seeds that way, we try
-    // to detect such keys to avoid user confusion.
+    // XrplLib encodes seeds for Ed25519 wallets with a non-standard base58
+    // prefix (0xE1 0x4B), producing an 18-byte form rippled never emits.
+    // Detect it in passphrase/seed fields first so we can enforce the
+    // Ed25519-only constraint and avoid confusing users who migrate keys.
     {
         if (params.isMember(jss::passphrase))
         {
@@ -140,17 +203,20 @@ walletPropose(json::Value const& params)
     obj[jss::key_type] = to_string(*keyType);
     obj[jss::public_key_hex] = strHex(publicKey);
 
-    // If a passphrase was specified, and it was hashed and used as a seed
-    // run a quick entropy check and add an appropriate warning, because
-    // "brain wallets" can be easily attacked.
+    // Warn about brain-wallet weakness when a user passphrase was used.
+    // Skip if the passphrase is just an alternate encoding of the seed
+    // itself — the user is passing a valid seed as a string, not inventing
+    // a memorable phrase, so entropy is already adequate.
     if (!libSeed && params.isMember(jss::passphrase))
     {
         auto const passphrase = params[jss::passphrase].asString();
 
         if (passphrase != seed1751 && passphrase != seedBase58 && passphrase != seedHex)
         {
-            // 80 bits of entropy isn't bad, but it's better to
-            // err on the side of caution and be conservative.
+            // 80 bits is the threshold: below it the passphrase is
+            // acutely vulnerable to brute-force; at or above it we still
+            // warn because any deterministic derivation is weaker than a
+            // truly random seed.
             if (estimateEntropy(passphrase) < 80.0)
             {
                 obj[jss::warning] =

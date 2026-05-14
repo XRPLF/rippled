@@ -1,3 +1,13 @@
+/** @file
+ *  Implements ValidPermissionedDEX, the invariant checker for the
+ *  Permissioned DEX amendment.
+ *
+ *  Enforces domain isolation for successful ttPAYMENT and ttOFFER_CREATE
+ *  transactions: every ltDIR_NODE and ltOFFER touched must carry the same
+ *  sfDomainID as the transaction, no regular offers may be affected, the
+ *  referenced ltPERMISSIONED_DOMAIN must exist, and all hybrid offers must be
+ *  structurally well-formed (exactly one sfAdditionalBooks entry).
+ */
 #include <xrpl/tx/invariants/PermissionedDEXInvariant.h>
 
 #include <xrpl/basics/Log.h>
@@ -88,8 +98,6 @@ ValidPermissionedDEX::finalize(
         return false;
     }
 
-    // for both payment and offercreate, there shouldn't be another domain
-    // that's different from the domain specified
     for (auto const& d : domains_)
     {
         if (d != domain)

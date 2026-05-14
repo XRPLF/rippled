@@ -1,3 +1,10 @@
+/** @file
+ *  Implements the `amm_info` RPC handler, which returns the current state of an
+ *  Automated Market Maker (AMM) pool: reserve balances, trading fee, vote slots,
+ *  and auction slot. The AMM may be addressed either by its `amm_account` or by
+ *  the `asset`+`asset2` pair that identifies the pool.
+ */
+
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
@@ -35,6 +42,18 @@
 
 namespace xrpl {
 
+/** Parse an AMM asset from a JSON value, translating parse errors into an RPC error code.
+ *
+ *  `assetFromJson` throws `std::runtime_error` on malformed input. This wrapper
+ *  catches that exception and returns `Unexpected(RpcIssueMalformed)` instead,
+ *  keeping raw exceptions out of the RPC dispatch layer.
+ *
+ *  @param v  JSON value containing the asset specification (currency/issuer object or
+ *      `"XRP"` string).
+ *  @param j  Journal used to log the parse error message at debug level.
+ *  @return The parsed `Asset` on success, or `Unexpected(RpcIssueMalformed)` if
+ *      the input is malformed.
+ */
 Expected<Asset, ErrorCodeI>
 getAsset(json::Value const& v, beast::Journal j)
 {
@@ -49,10 +68,20 @@ getAsset(json::Value const& v, beast::Journal j)
     return Unexpected(RpcIssueMalformed);
 }
 
+/** Format a NetClock time point as an ISO 8601 UTC string.
+ *
+ *  NetClock counts seconds since the Ripple epoch (2000-01-01 00:00:00 UTC),
+ *  while `std::chrono::system_clock` uses the Unix epoch (1970-01-01 00:00:00 UTC).
+ *  This function bridges the gap by adding `kEPOCH_OFFSET` (946,684,800 s) before
+ *  formatting with the Howard Hinnant `date` library. Used exclusively to present
+ *  the auction slot's `sfExpiration` field in a universally readable format.
+ *
+ *  @param tp  NetClock time point to convert.
+ *  @return ISO 8601 string in the form `"YYYY-MM-DDTHH:MM:SS+0000"`.
+ */
 std::string
 toIso8601(NetClock::time_point tp)
 {
-    // 2000-01-01 00:00:00 UTC is 946684800s from 1970-01-01 00:00:00 UTC
     using namespace std::chrono;
     return date::format(
         "%Y-%Om-%dT%H:%M:%OS%z",
@@ -60,6 +89,23 @@ toIso8601(NetClock::time_point tp)
             system_clock::time_point{tp.time_since_epoch() + kEPOCH_OFFSET}));
 }
 
+/** Return information about an AMM pool.
+ *
+ *  Resolves the AMM via `amm_account` (direct keylet by ID) or `asset`+`asset2`
+ *  (derives the AMM via `keylet::amm`). Both paths converge to the same AMM SLE.
+ *  When only `amm_account` is supplied, the assets are back-filled from the SLE's
+ *  `sfAsset`/`sfAsset2` fields.
+ *
+ *  Pool balances are always fetched with `FreezeHandling::IgnoreFreeze`: an AMM
+ *  cannot suspend operation because an issuer froze a trust line. Freeze status is
+ *  reported separately via `asset_frozen`/`asset2_frozen` for non-XRP assets.
+ *
+ *  @param context  RPC dispatch context carrying request parameters, ledger master,
+ *      API version, and journal.
+ *  @return JSON object containing an `amm` sub-object with pool balances, LP token
+ *      supply (or the requesting account's LP balance when `account` is given),
+ *      trading fee, vote slots, and auction slot; plus ledger identification fields.
+ */
 json::Value
 doAMMInfo(RPC::JsonContext& context)
 {
@@ -71,6 +117,7 @@ doAMMInfo(RPC::JsonContext& context)
     if (!ledger)
         return result;
 
+    /** Validated inputs extracted from the RPC request parameters. */
     struct ValuesFromContextParams
     {
         std::optional<AccountID> accountID;
@@ -79,18 +126,38 @@ doAMMInfo(RPC::JsonContext& context)
         std::shared_ptr<SLE const> amm;
     };
 
+    /** Extract and validate AMM lookup parameters from the RPC request.
+     *
+     *  Callers must supply exactly one of: the `asset`+`asset2` pair, or
+     *  `amm_account`. Supplying both or neither is `RpcInvalidParams`.
+     *
+     *  The validity check is evaluated at two different points depending on API
+     *  version to preserve backward-compatible error sequencing:
+     *  - For `apiVersion < 3` the check fires before individual fields are parsed,
+     *    so a conflicting combination short-circuits immediately.
+     *  - For `apiVersion >= 3` the check fires after parsing each field, allowing
+     *    field-level errors (e.g., malformed asset) to take priority.
+     *
+     *  @return Populated `ValuesFromContextParams` on success, or
+     *      `Unexpected(error_code)` with the appropriate RPC error.
+     */
     auto getValuesFromContextParams = [&]() -> Expected<ValuesFromContextParams, ErrorCodeI> {
         std::optional<AccountID> accountID;
         std::optional<Asset> asset1;
         std::optional<Asset> asset2;
         std::optional<uint256> ammID;
 
+        /** Returns true when the combination of asset/amm_account parameters is
+         *  invalid: either only one of `asset`/`asset2` is present, or both
+         *  `asset` and `amm_account` are present (or both absent).
+         */
         constexpr auto kINVALID = [](json::Value const& params) -> bool {
             return (params.isMember(jss::asset) != params.isMember(jss::asset2)) ||
                 (params.isMember(jss::asset) == params.isMember(jss::amm_account));
         };
 
-        // NOTE, identical check for apVersion >= 3 below
+        // NOTE, identical check for apiVersion >= 3 below; placement differs
+        // intentionally — see getValuesFromContextParams docstring above.
         if (context.apiVersion < 3 && kINVALID(params))
             return Unexpected(RpcInvalidParams);
 
@@ -138,7 +205,8 @@ doAMMInfo(RPC::JsonContext& context)
                 return Unexpected(RpcActMalformed);
         }
 
-        // NOTE, identical check for apVersion < 3 above
+        // NOTE, identical check for apiVersion < 3 above; placement differs
+        // intentionally — see getValuesFromContextParams docstring above.
         if (context.apiVersion >= 3 && kINVALID(params))
             return Unexpected(RpcInvalidParams);
 
@@ -176,7 +244,8 @@ doAMMInfo(RPC::JsonContext& context)
 
     auto const ammAccountID = amm->getAccountID(sfAccount);
 
-    // provide funds if frozen, specify asset_frozen flag
+    // IgnoreFreeze: an AMM cannot suspend operations due to a frozen trust
+    // line; freeze status is reported separately via asset_frozen/asset2_frozen.
     auto const [asset1Balance, asset2Balance] = ammPoolHolds(
         *ledger,
         ammAccountID,

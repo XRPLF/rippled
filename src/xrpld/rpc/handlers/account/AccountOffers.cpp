@@ -32,6 +32,31 @@
 
 namespace xrpl {
 
+/**
+ * @file AccountOffers.cpp
+ * @brief Implements the `account_offers` JSON-RPC handler.
+ *
+ * Exports two symbols: `appendOfferJson` (serialization helper) and
+ * `doAccountOffers` (handler entry point). Follows the same paginated
+ * owner-directory-walk pattern used by `AccountChannels`, `AccountLines`,
+ * and `AccountObjects`.
+ */
+
+/** Serialize a single `ltOFFER` ledger entry into the output JSON array.
+ *
+ *  The exchange rate (`quality`) is recovered cheaply from the last 64 bits
+ *  of `sfBookDirectory` — the hash key of the order-book directory node the
+ *  offer belongs to. `getQuality()` extracts those bits and
+ *  `amountFromQuality()` reconstructs an `STAmount` whose decimal string is
+ *  units of `TakerPays` per unit of `TakerGets`. This avoids a division at
+ *  read time; the quality is already materialized in the directory hash.
+ *
+ *  `sfExpiration` is only emitted when present, keeping the response lean for
+ *  non-expiring offers.
+ *
+ *  @param offer   Ledger entry of type `ltOFFER` to serialize.
+ *  @param offers  JSON array to which the new offer object is appended.
+ */
 void
 appendOfferJson(std::shared_ptr<SLE const> const& offer, json::Value& offers)
 {
@@ -46,13 +71,31 @@ appendOfferJson(std::shared_ptr<SLE const> const& offer, json::Value& offers)
         obj[jss::expiration] = offer->getFieldU32(sfExpiration);
 };
 
-// {
-//   account: <account>
-//   ledger_hash : <ledger>
-//   ledger_index : <ledger_index>
-//   limit: integer                 // optional
-//   marker: opaque                 // optional, resume previous query
-// }
+/** Handler for the `account_offers` RPC command.
+ *
+ *  Returns the list of open DEX offers currently owned by a given account,
+ *  paginated via a marker. Validation runs in strict order before any ledger
+ *  iteration: field presence and type, ledger resolution, Base58 account
+ *  parse, account existence, limit clamping (range [10, 400], default 200),
+ *  and — when a marker is supplied — ownership verification that the marker
+ *  object belongs to the requested account. This last check prevents a caller
+ *  from crafting a marker that skips into another account's directory region.
+ *
+ *  Iteration uses `forEachItemAfter` with a `limit + 1` cap. The extra item
+ *  is consumed but not returned; its sole purpose is to confirm that a next
+ *  page exists. The marker is only emitted when both conditions hold: the
+ *  marker was set at the limit-th item *and* a limit+1-th item was actually
+ *  reached. An account's owner directory can contain mixed object types; only
+ *  `ltOFFER` entries are serialized, but all types count toward the limit.
+ *
+ *  Resource cost is `feeMediumBurdenRPC` — directory walks involving ledger
+ *  I/O are proportionally more expensive than simple point lookups.
+ *
+ *  @param context  RPC dispatch context carrying params, app, and loadType.
+ *  @return JSON result with an `offers` array and, when more pages exist,
+ *      `limit` and `marker` fields for the next page. Returns an RPC error
+ *      JSON object on any validation failure.
+ */
 json::Value
 doAccountOffers(RPC::JsonContext& context)
 {
@@ -76,7 +119,6 @@ doAccountOffers(RPC::JsonContext& context)
     }
     auto const accountID{id.value()};
 
-    // Get info on account.
     result[jss::account] = toBase58(accountID);
 
     if (!ledger->exists(keylet::account(accountID)))
@@ -96,8 +138,6 @@ doAccountOffers(RPC::JsonContext& context)
         if (!params[jss::marker].isString())
             return RPC::expectedFieldError(jss::marker, "string");
 
-        // Marker is composed of a comma separated index and start hint. The
-        // former will be read as hex, and the latter using boost lexical cast.
         std::stringstream marker(params[jss::marker].asString());
         std::string value;
         if (!std::getline(marker, value, ','))
@@ -118,8 +158,6 @@ doAccountOffers(RPC::JsonContext& context)
             return RPC::invalidFieldError(jss::marker);
         }
 
-        // We then must check if the object pointed to by the marker is actually
-        // owned by the account in the request.
         auto const sle = ledger->read({ltANY, startAfter});
 
         if (!sle)
@@ -165,9 +203,6 @@ doAccountOffers(RPC::JsonContext& context)
         return rpcError(RpcInvalidParams);
     }
 
-    // Both conditions need to be checked because marker is set on the limit-th
-    // item, but if there is no item on the limit + 1 iteration, then there is
-    // no need to return a marker.
     if (count == limit + 1 && marker)
     {
         result[jss::limit] = limit;

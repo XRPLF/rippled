@@ -1,3 +1,20 @@
+/** @file
+ *  Recursive-descent JSON parser implementation for the XRP Ledger.
+ *
+ *  Implements `Json::Reader`, the sole JSON deserialization component in
+ *  libxrpl. Every inbound JSON document — RPC requests, configuration files,
+ *  and test fixtures — passes through this parser. The implementation follows
+ *  a classic lexer + recursive-descent design: `readToken()` classifies source
+ *  bytes into `TokenType` values, and `readValue()` / `readObject()` /
+ *  `readArray()` drive the lexer and populate a `Json::Value` tree.
+ *
+ *  Two deliberate deviations from the JSON specification are worth noting:
+ *  - The document root must be an object or array (RFC 4627 semantics).
+ *  - Duplicate object keys are rejected outright rather than shadowed.
+ *
+ *  Both constraints are intentional hardening for a network-facing service.
+ */
+
 #include <xrpl/json/json_reader.h>
 
 #include <xrpl/basics/contract.h>
@@ -13,9 +30,18 @@
 #include <string>
 
 namespace json {
-// Implementation of class Reader
-// ////////////////////////////////
 
+/** Encode a Unicode scalar value as a UTF-8 byte sequence.
+ *
+ *  Covers all four byte-length cases defined by RFC 3629:
+ *  U+0000–U+007F (1 byte), U+0080–U+07FF (2 bytes),
+ *  U+0800–U+FFFF (3 bytes), and U+10000–U+10FFFF (4 bytes).
+ *  Values above U+10FFFF produce an empty string.
+ *
+ *  @param cp Unicode code point to encode.
+ *  @return UTF-8 encoded string of 1–4 bytes, or an empty string if
+ *      `cp` exceeds U+10FFFF.
+ */
 static std::string
 codePointToUTF8(unsigned int cp)
 {
@@ -53,9 +79,18 @@ codePointToUTF8(unsigned int cp)
     return result;
 }
 
-// Class Reader
-// //////////////////////////////////////////////////////////////////
+// --- Reader implementation ---
 
+/** Parse a UTF-8 JSON document from a `std::string`.
+ *
+ *  Copies `document` into `document_` so the source lifetime is managed
+ *  internally, then delegates to the `char const*` overload.
+ *
+ *  @param document UTF-8 encoded JSON text to parse.
+ *  @param root     Output value; populated on success, state unspecified
+ *      on failure.
+ *  @return `true` if the document was parsed without errors.
+ */
 bool
 Reader::parse(std::string const& document, Value& root)
 {
@@ -65,21 +100,40 @@ Reader::parse(std::string const& document, Value& root)
     return parse(begin, end, root);
 }
 
+/** Parse a JSON document read from an input stream.
+ *
+ *  Slurps the entire stream into a `std::string` via `std::getline` and
+ *  delegates to the string overload. The whole document is buffered before
+ *  any token is processed — streaming is not supported.
+ *
+ *  @param sin  Input stream positioned at the start of the JSON text.
+ *  @param root Output value; populated on success.
+ *  @return `true` if the document was parsed without errors.
+ */
 bool
 Reader::parse(std::istream& sin, Value& root)
 {
-    // std::istream_iterator<char> begin(sin);
-    // std::istream_iterator<char> end;
-    // Those would allow streamed input from a file, if parse() were a
-    // template function.
-
-    // Since std::string is reference-counted, this at least does not
-    // create an extra copy.
     std::string doc;
     std::getline(sin, doc, (char)EOF);
     return parse(doc, root);
 }
 
+/** Parse a JSON document from a raw byte range.
+ *
+ *  This is the core parse entry point; both other overloads delegate here.
+ *  Initialises parser state, pushes `root` onto `nodes_`, then calls
+ *  `readValue(0)`. After parsing, enforces the RFC 4627 constraint that the
+ *  document root must be an object or array — bare scalars are rejected even
+ *  if lexically valid JSON.
+ *
+ *  @param beginDoc Pointer to the first byte of the JSON document.
+ *  @param endDoc   One-past-the-end pointer.
+ *  @param root     Output value; populated on success.
+ *  @return `true` if the document was parsed without errors and the root
+ *      value is an object or array.
+ *  @note Errors are accumulated in `errors_` rather than reported immediately;
+ *      call `getFormattedErrorMessages()` after a `false` return.
+ */
 bool
 Reader::parse(char const* beginDoc, char const* endDoc, Value& root)
 {
@@ -100,8 +154,6 @@ Reader::parse(char const* beginDoc, char const* endDoc, Value& root)
 
     if (!root.isNull() && !root.isArray() && !root.isObject())
     {
-        // Set error location to start of doc, ideally should be first token
-        // found in doc
         token.type = TokenType::Error;
         token.start = beginDoc;
         token.end = endDoc;
@@ -112,6 +164,16 @@ Reader::parse(char const* beginDoc, char const* endDoc, Value& root)
     return successful;
 }
 
+/** Dispatch the next JSON value into the current node.
+ *
+ *  Reads one token via `skipCommentTokens()`, then branches on its type to
+ *  populate `currentValue()`. Recursion through `readObject()` and
+ *  `readArray()` is bounded by `kNEST_LIMIT` (25 levels), preventing stack
+ *  exhaustion from adversarially deep documents.
+ *
+ *  @param depth Current nesting depth (0 at the document root).
+ *  @return `true` if the value was read successfully.
+ */
 bool
 Reader::readValue(unsigned depth)
 {
@@ -162,6 +224,13 @@ Reader::readValue(unsigned depth)
     return successful;
 }
 
+/** Advance `token` past any comment tokens to the next meaningful token.
+ *
+ *  Both C-style (`/* ... *\/`) and C++-style (`// ...`) comments are treated
+ *  as transparent to the parser.
+ *
+ *  @param token Receives the first non-comment token found.
+ */
 void
 Reader::skipCommentTokens(Token& token)
 {
@@ -171,6 +240,14 @@ Reader::skipCommentTokens(Token& token)
     } while (token.type == TokenType::Comment);
 }
 
+/** Read the next token and verify it matches the expected type.
+ *
+ *  @param type    The required `TokenType`.
+ *  @param token   Receives the token that was read.
+ *  @param message Error message recorded if the token type does not match.
+ *  @return `true` if the token type matched; `false` (with an error recorded)
+ *      otherwise.
+ */
 bool
 Reader::expectToken(TokenType type, Token& token, char const* message)
 {
@@ -182,6 +259,18 @@ Reader::expectToken(TokenType type, Token& token, char const* message)
     return true;
 }
 
+/** Lexer: classify the next token and advance `current_`.
+ *
+ *  Skips leading whitespace, records `token.start`, consumes one or more
+ *  bytes, and sets `token.type` and `token.end`. Single-character punctuation
+ *  is classified directly; multi-character tokens (`true`, `false`, `null`,
+ *  strings, numbers, comments) are dispatched to specialised helpers.
+ *
+ *  @param token Receives the classified token with start/end pointers into
+ *      the source buffer.
+ *  @return Always `true`; a failed classification sets `token.type` to
+ *      `TokenType::Error` rather than returning `false`.
+ */
 bool
 Reader::readToken(Token& token)
 {
@@ -271,6 +360,7 @@ Reader::readToken(Token& token)
     return true;
 }
 
+/** Advance `current_` past any ASCII whitespace (space, tab, CR, LF). */
 void
 Reader::skipSpaces()
 {
@@ -289,6 +379,15 @@ Reader::skipSpaces()
     }
 }
 
+/** Attempt to match `patternLength` bytes at `current_` against `pattern`.
+ *
+ *  Used after the first character of a keyword (`t`, `f`, `n`) has already
+ *  been consumed by `readToken()`. Advances `current_` only on a full match.
+ *
+ *  @param pattern       Pointer to the remaining expected bytes.
+ *  @param patternLength Number of bytes to compare.
+ *  @return `true` if all bytes matched and `current_` was advanced.
+ */
 bool
 Reader::match(Location pattern, int patternLength)
 {
@@ -307,6 +406,13 @@ Reader::match(Location pattern, int patternLength)
     return true;
 }
 
+/** Dispatch a comment after the opening `/` has been consumed.
+ *
+ *  Peeks at the next character: `*` routes to `readCStyleComment()`,
+ *  `/` routes to `readCppStyleComment()`, anything else is an error.
+ *
+ *  @return `true` if a valid comment was consumed.
+ */
 bool
 Reader::readComment()
 {
@@ -321,6 +427,10 @@ Reader::readComment()
     return false;
 }
 
+/** Consume a C-style block comment after `/*` has been consumed.
+ *
+ *  @return `true` if the closing `*\/` was found before end of input.
+ */
 bool
 Reader::readCStyleComment()
 {
@@ -335,6 +445,13 @@ Reader::readCStyleComment()
     return getNextChar() == '/';
 }
 
+/** Consume a C++-style line comment after `//` has been consumed.
+ *
+ *  Advances `current_` to the end of the line (CR or LF) or end of input.
+ *  Always returns `true` — a missing newline (end of input) is not an error.
+ *
+ *  @return Always `true`.
+ */
 bool
 Reader::readCppStyleComment()
 {
@@ -349,6 +466,16 @@ Reader::readCppStyleComment()
     return true;
 }
 
+/** Consume a number token and classify it as integer or double.
+ *
+ *  Assumes the first digit (or `-`) has already been consumed by `readToken()`.
+ *  Scans the remaining digits; if any of `.`, `e`, `E`, `+`, or `-` is
+ *  encountered the token is classified as `TokenType::Double`, otherwise
+ *  `TokenType::Integer`. Actual conversion is deferred to `decodeNumber()`
+ *  or `decodeDouble()`.
+ *
+ *  @return `TokenType::Integer` or `TokenType::Double`.
+ */
 Reader::TokenType
 Reader::readNumber()
 {
@@ -380,6 +507,13 @@ Reader::readNumber()
     return type;
 }
 
+/** Advance `current_` past a quoted string, consuming the closing `"`.
+ *
+ *  Only validates structure (balanced quotes, escape prefix handling).
+ *  Actual escape decoding is performed later by `decodeString()`.
+ *
+ *  @return `true` if the closing `"` was found before end of input.
+ */
 bool
 Reader::readString()
 {
@@ -402,6 +536,18 @@ Reader::readString()
     return c == '"';
 }
 
+/** Parse a JSON object body after `{` has been consumed.
+ *
+ *  Iterates over key-value pairs, decoding each string key and recursing
+ *  into `readValue()` for each value. Duplicate keys are rejected — unlike
+ *  the JSON specification, which permits them with implementation-defined
+ *  winner semantics. This is intentional: in transaction parsing a silent
+ *  duplicate (e.g. a second `"Amount"` field) could shadow the first.
+ *
+ *  @param tokenStart Token for the opening `{`; used for error reporting.
+ *  @param depth      Current nesting depth, passed through to `readValue()`.
+ *  @return `true` if the object was well-formed and closed with `}`.
+ */
 bool
 Reader::readObject(Token& tokenStart, unsigned depth)
 {
@@ -438,7 +584,6 @@ Reader::readObject(Token& tokenStart, unsigned depth)
                 "Missing ':' after object member name", colon, TokenType::ObjectEnd);
         }
 
-        // Reject duplicate names
         if (currentValue().isMember(name))
             return addError("Key '" + name + "' appears twice.", tokenName);
 
@@ -472,6 +617,17 @@ Reader::readObject(Token& tokenStart, unsigned depth)
     return addErrorAndRecover("Missing '}' or object member name", tokenName, TokenType::ObjectEnd);
 }
 
+/** Parse a JSON array body after `[` has been consumed.
+ *
+ *  Iterates over elements, assigning each to a sequentially-indexed child of
+ *  `currentValue()` and recursing into `readValue()`. An empty array (`[]`)
+ *  is detected by peeking at the next non-whitespace character before entering
+ *  the loop, avoiding an unnecessary `readValue()` call on `]`.
+ *
+ *  @param tokenStart Token for the opening `[`; used for error reporting.
+ *  @param depth      Current nesting depth, passed through to `readValue()`.
+ *  @return `true` if the array was well-formed and closed with `]`.
+ */
 bool
 Reader::readArray(Token& tokenStart, unsigned depth)
 {
@@ -522,6 +678,18 @@ Reader::readArray(Token& tokenStart, unsigned depth)
     return true;
 }
 
+/** Decode an integer token and assign it to `currentValue()`.
+ *
+ *  Uses a `std::int64_t` accumulator (wider than `Value::maxUInt`) to detect
+ *  overflow before committing to a `Value::Int` or `Value::UInt`. When the
+ *  magnitude fits in `Value::kMAX_INT`, the result is stored as a signed
+ *  `Value::Int` to reduce surprises in downstream comparisons; larger
+ *  non-negative values use `Value::UInt`.
+ *
+ *  @param token Token with `start`/`end` pointing into the source buffer.
+ *  @return `true` on success; `false` (with an error recorded) if the token
+ *      is not a valid integer or exceeds the representable range.
+ */
 bool
 Reader::decodeNumber(Token& token)
 {
@@ -537,8 +705,6 @@ Reader::decodeNumber(Token& token)
             "'" + std::string(token.start, token.end) + "' is not a valid number.", token);
     }
 
-    // The existing Json integers are 32-bit so using a 64-bit value here avoids
-    // overflows in the conversion code below.
     std::int64_t value = 0;
 
     static_assert(
@@ -558,7 +724,6 @@ Reader::decodeNumber(Token& token)
         value = (value * 10) + (c - '0');
     }
 
-    // More tokens left -> input is larger than largest possible return value
     if (current != token.end)
     {
         return addError(
@@ -587,7 +752,6 @@ Reader::decodeNumber(Token& token)
                 token);
         }
 
-        // If it's representable as a signed integer, construct it as one.
         if (value <= Value::kMAX_INT)
         {
             currentValue() = static_cast<Value::Int>(value);
@@ -601,6 +765,18 @@ Reader::decodeNumber(Token& token)
     return true;
 }
 
+/** Decode a floating-point token and assign it to `currentValue()`.
+ *
+ *  Uses `sscanf` rather than `std::stod` to work around a crash on some OS X
+ *  versions when a string-constant format argument is used with certain
+ *  compiler flags. The format string is stored in a `char[]` array rather
+ *  than passed as a literal to avoid the issue. Tokens up to 32 characters
+ *  use a stack buffer; longer tokens fall back to a `std::string`.
+ *
+ *  @param token Token with `start`/`end` pointing into the source buffer.
+ *  @return `true` on success; `false` if `sscanf` does not consume exactly
+ *      one value.
+ */
 bool
 Reader::decodeDouble(Token& token)
 {
@@ -608,16 +784,10 @@ Reader::decodeDouble(Token& token)
     int const bufferSize = 32;
     int count = 0;
     int const length = int(token.end - token.start);
-    // Sanity check to avoid buffer overflow exploits.
     if (length < 0)
     {
         return addError("Unable to parse token length", token);
     }
-    // Avoid using a string constant for the format control string given to
-    // sscanf, as this can cause hard to debug crashes on OS X. See here for
-    // more info:
-    //
-    // http://developer.apple.com/library/mac/#DOCUMENTATION/DeveloperTools/gcc-4.0.1/gcc/Incompatibilities.html
     char format[] = "%lf";
     if (length <= bufferSize)
     {
@@ -637,6 +807,15 @@ Reader::decodeDouble(Token& token)
     return true;
 }
 
+/** Decode a string token into `currentValue()`.
+ *
+ *  Convenience wrapper that calls the two-argument overload and assigns the
+ *  result into the current output node.
+ *
+ *  @param token String token with `start`/`end` including the surrounding
+ *      quotes.
+ *  @return `true` on success.
+ */
 bool
 Reader::decodeString(Token& token)
 {
@@ -649,6 +828,17 @@ Reader::decodeString(Token& token)
     return true;
 }
 
+/** Decode a string token into `decoded`, processing all escape sequences.
+ *
+ *  Handles the standard JSON escape sequences (`\"`, `\\`, `\/`, `\b`, `\f`,
+ *  `\n`, `\r`, `\t`) and `\uXXXX` Unicode escapes via
+ *  `decodeUnicodeCodePoint()`, which handles UTF-16 surrogate pairs and
+ *  encodes the result as UTF-8.
+ *
+ *  @param token   String token with `start`/`end` including surrounding quotes.
+ *  @param decoded Accumulator for the decoded output; not cleared on entry.
+ *  @return `true` on success; `false` if an invalid escape sequence is found.
+ */
 bool
 Reader::decodeString(Token& token, std::string& decoded)
 {
@@ -728,6 +918,22 @@ Reader::decodeString(Token& token, std::string& decoded)
     return true;
 }
 
+/** Decode a `\uXXXX` escape and, if necessary, a following surrogate pair.
+ *
+ *  Calls `decodeUnicodeEscapeSequence()` for the first four hex digits. If
+ *  the result is a UTF-16 high surrogate (U+D800–U+DBFF), a second
+ *  `\uXXXX` sequence must immediately follow; the pair is combined into a
+ *  supplementary-plane scalar using:
+ *    `0x10000 + ((high & 0x3FF) << 10) + (low & 0x3FF)`.
+ *
+ *  @param token   Enclosing string token, used for error location.
+ *  @param current In/out: pointer into the source buffer, positioned after
+ *      the `u` of the first escape; advanced past all consumed characters.
+ *  @param end     End of the string token's content region.
+ *  @param unicode Output: decoded Unicode scalar value.
+ *  @return `true` on success; `false` if the escape is malformed or an
+ *      expected low surrogate is missing.
+ */
 bool
 Reader::decodeUnicodeCodePoint(Token& token, Location& current, Location end, unsigned int& unicode)
 {
@@ -736,7 +942,6 @@ Reader::decodeUnicodeCodePoint(Token& token, Location& current, Location end, un
 
     if (unicode >= 0xD800 && unicode <= 0xDBFF)
     {
-        // surrogate pairs
         if (end - current < 6)
         {
             return addError(
@@ -756,7 +961,7 @@ Reader::decodeUnicodeCodePoint(Token& token, Location& current, Location end, un
                 current);
         }
 
-        current += 2;  // skip two characters checked above
+        current += 2;
 
         if (!decodeUnicodeEscapeSequence(token, current, end, surrogatePair))
             return false;
@@ -767,6 +972,16 @@ Reader::decodeUnicodeCodePoint(Token& token, Location& current, Location end, un
     return true;
 }
 
+/** Decode exactly four hex digits from a `\uXXXX` escape sequence.
+ *
+ *  @param token   Enclosing string token, used for error location.
+ *  @param current In/out: pointer into source positioned at the first hex
+ *      digit; advanced by four on success.
+ *  @param end     End of the content region.
+ *  @param unicode Output: the decoded 16-bit value (0–0xFFFF).
+ *  @return `true` on success; `false` if fewer than four characters remain
+ *      or any character is not a valid hex digit.
+ */
 bool
 Reader::decodeUnicodeEscapeSequence(
     Token& token,
@@ -812,6 +1027,16 @@ Reader::decodeUnicodeEscapeSequence(
     return true;
 }
 
+/** Record a parse error and return `false`.
+ *
+ *  Appends an `ErrorInfo` to `errors_`. Always returns `false` so callers
+ *  can write `return addError(...)` as a one-liner.
+ *
+ *  @param message Human-readable description of the error.
+ *  @param token   Token at which the error occurred.
+ *  @param extra   Optional secondary source location for additional context.
+ *  @return Always `false`.
+ */
 bool
 Reader::addError(std::string const& message, Token& token, Location extra)
 {
@@ -823,6 +1048,18 @@ Reader::addError(std::string const& message, Token& token, Location extra)
     return false;
 }
 
+/** Skip tokens until `skipUntilToken` or end of stream is found.
+ *
+ *  Called after a structural error (missing colon, bad value, etc.) to allow
+ *  the parser to continue and report additional errors from the same document.
+ *  Any secondary errors produced during the skip are discarded so they do not
+ *  pollute the error list with noise from recovery.
+ *
+ *  @param skipUntilToken The terminator to seek (`TokenType::ObjectEnd` or
+ *      `TokenType::ArrayEnd`).
+ *  @return Always `false` (the error that triggered recovery was already
+ *      recorded by the caller).
+ */
 bool
 Reader::recoverFromError(TokenType skipUntilToken)
 {
@@ -842,6 +1079,15 @@ Reader::recoverFromError(TokenType skipUntilToken)
     return false;
 }
 
+/** Record an error and attempt to recover by skipping to `skipUntilToken`.
+ *
+ *  Convenience composition of `addError()` and `recoverFromError()`.
+ *
+ *  @param message        Error message to record.
+ *  @param token          Token at which the error occurred.
+ *  @param skipUntilToken Terminator to seek during recovery.
+ *  @return Always `false`.
+ */
 bool
 Reader::addErrorAndRecover(std::string const& message, Token& token, TokenType skipUntilToken)
 {
@@ -849,12 +1095,22 @@ Reader::addErrorAndRecover(std::string const& message, Token& token, TokenType s
     return recoverFromError(skipUntilToken);
 }
 
+/** Return a reference to the top-of-stack output node.
+ *
+ *  The caller is responsible for ensuring `nodes_` is non-empty.
+ *
+ *  @return Reference to the `Value` currently being populated.
+ */
 Value&
 Reader::currentValue()
 {
     return *(nodes_.top());
 }
 
+/** Return the byte at `current_` and advance it, or return 0 at end of input.
+ *
+ *  @return The consumed byte, or `0` if `current_ == end_`.
+ */
 Reader::Char
 Reader::getNextChar()
 {
@@ -864,6 +1120,16 @@ Reader::getNextChar()
     return *current_++;
 }
 
+/** Compute the 1-based line and column numbers for a source location.
+ *
+ *  Walks the source buffer from `begin_` to `location`, counting CR, LF, and
+ *  CR+LF line endings. This is O(n) per call, acceptable because it is only
+ *  invoked when formatting error messages.
+ *
+ *  @param location Pointer into the source buffer to locate.
+ *  @param line     Output: 1-based line number.
+ *  @param column   Output: 1-based column number.
+ */
 void
 Reader::getLocationLineAndColumn(Location location, int& line, int& column) const
 {
@@ -890,11 +1156,15 @@ Reader::getLocationLineAndColumn(Location location, int& line, int& column) cons
         }
     }
 
-    // column & line start at 1
     column = int(location - lastLineStart) + 1;
     ++line;
 }
 
+/** Format a source location as a human-readable string.
+ *
+ *  @param location Pointer into the source buffer.
+ *  @return A string of the form `"Line N, Column M"` (1-based).
+ */
 std::string
 Reader::getLocationLineAndColumn(Location location) const
 {
@@ -921,6 +1191,19 @@ Reader::getFormattedErrorMessages() const
     return formattedMessage;
 }
 
+/** Extract a JSON value from an input stream, throwing on parse failure.
+ *
+ *  Unlike `Reader::parse()`, which returns `false` on error, this overload
+ *  throws `std::runtime_error` (via `xrpl::Throw<>`) with the formatted error
+ *  messages. Use this on code paths where parse failure is truly exceptional
+ *  and propagation via return value would be burdensome.
+ *
+ *  @param sin  Input stream positioned at the start of a JSON document.
+ *  @param root Output value populated on success.
+ *  @return `sin` (to support chaining).
+ *  @throws std::runtime_error if the stream does not contain valid JSON.
+ *  @see Reader::parse(std::istream&, Value&)
+ */
 std::istream&
 operator>>(std::istream& sin, Value& root)
 {

@@ -1,3 +1,19 @@
+/** @file
+ *  TLS context factory for the XRP Ledger node.
+ *
+ *  Provides two flavors of `boost::asio::ssl::context`: an anonymous variant
+ *  used for peer overlay connections (where application-layer node identity
+ *  makes certificate-based authentication redundant) and an authenticated
+ *  variant used for operator-configured RPC/WebSocket endpoints.  Both share
+ *  a common `getContext()` base that enforces TLS 1.2+, DH parameters, and a
+ *  hardened AEAD-only cipher list.
+ *
+ *  @note The TSAN suppression file (`sanitizers/suppressions/tsan.supp`)
+ *      contains an explicit entry for this file, acknowledging a benign
+ *      initialization race on the `static` locals inside `initAnonymous()`.
+ *      The race is benign: all competing initializations produce identical
+ *      results and the statics are idempotent once set.
+ */
 #include <xrpl/basics/make_SSLContext.h>
 
 #include <xrpl/basics/contract.h>
@@ -43,9 +59,9 @@ namespace openssl::detail {
     - There should not be any truly secure information (e.g. seeds or private
       keys) that gets relayed to the server anyways over these RPCs.
 
-      @note If you increase the number of bits you need to generate new
-            default DH parameters and update defaultDH  accordingly.
- * */
+    @note If you increase the number of bits you need to generate new
+        default DH parameters and update `kDEFAULT_DH` accordingly.
+ */
 int gDefaultRsaKeyBits = 2048;
 
 /** The default DH parameters.
@@ -86,6 +102,29 @@ static constexpr char const kDEFAULT_DH[] =
  */
 std::string const kDEFAULT_CIPHER_LIST = "TLSv1.2:!CBC:!DSS:!PSK:!eNULL:!aNULL";
 
+/** Install a process-lifetime ephemeral certificate into an SSL context.
+ *
+ *  Generates a 2048-bit RSA key pair and a self-signed X.509v3 certificate
+ *  exactly once per process (via `static` locals), then installs both into
+ *  @p context.  Subsequent calls reuse the same key and certificate.
+ *
+ *  The certificate carries no meaningful identity; it exists only to satisfy
+ *  the TLS handshake.  Notable details of the generated certificate:
+ *  - `notBefore` is set 25 hours before the current time (midnight-rounded)
+ *    to prevent observers from inferring the server's start time.
+ *  - Serial number is a fresh 128-bit random value on each process start.
+ *  - Extensions: `CA:FALSE`, `keyUsage=digitalSignature`,
+ *    `extendedKeyUsage=serverAuth,clientAuth`.
+ *
+ *  @param context The SSL context to configure.
+ *  @note All OpenSSL allocation failures call `logicError()`, which is
+ *      non-recoverable.  A server that cannot build its TLS context at
+ *      startup has no viable recovery path.
+ *  @note `RSA_up_ref()` is called before `EVP_PKEY_assign_RSA()` because
+ *      `EVP_PKEY_assign_RSA` takes ownership of the key; the extra reference
+ *      prevents the shared `kDEFAULT_RSA` static from being freed when the
+ *      `EVP_PKEY` is eventually released.
+ */
 static void
 initAnonymous(boost::asio::ssl::context& context)
 {
@@ -114,8 +153,6 @@ initAnonymous(boost::asio::ssl::context& context)
         if (!pkey)
             logicError("EVP_PKEY_new failed");
 
-        // We need to up the reference count of here, since we are retaining a
-        // copy of the key for (potential) reuse.
         if (RSA_up_ref(kDEFAULT_RSA) != 1)
             logicError("EVP_PKEY_assign_RSA: incrementing reference count failed");
 
@@ -131,13 +168,9 @@ initAnonymous(boost::asio::ssl::context& context)
         if (x509 == nullptr)
             logicError("X509_new failed");
 
-        // According to the standards (X.509 et al), the value should be one
-        // less than the actually certificate version we want. Since we want
-        // version 3, we must use a 2.
+        // X.509 encodes version as (desired_version - 1); pass 2 for v3.
         X509_set_version(x509, 2);
 
-        // To avoid leaking information about the precise time that the
-        // server started up, we adjust the validity period:
         char buf[16] = {0};
 
         auto const ts = std::time(nullptr) - (25 * 60 * 60);
@@ -149,10 +182,8 @@ initAnonymous(boost::asio::ssl::context& context)
         if (ASN1_TIME_set_string_X509(X509_get_notBefore(x509), buf) != 1)
             logicError("Unable to set certificate validity date");
 
-        // And make it valid for two years
         X509_gmtime_adj(X509_get_notAfter(x509), 2 * 365 * 24 * 60 * 60);
 
-        // Set a serial number
         if (auto b = BN_new(); b != nullptr)
         {
             if (BN_rand(b, 128, BN_RAND_TOP_ANY, BN_RAND_BOTTOM_ANY))
@@ -169,7 +200,6 @@ initAnonymous(boost::asio::ssl::context& context)
             BN_clear_free(b);
         }
 
-        // Some certificate details
         {
             X509V3_CTX ctx;
 
@@ -204,7 +234,6 @@ initAnonymous(boost::asio::ssl::context& context)
             }
         }
 
-        // And a private key
         X509_set_pubkey(x509, kDEFAULT_EPHEMERAL_PRIVATE_KEY);
 
         if (!X509_sign(x509, kDEFAULT_EPHEMERAL_PRIVATE_KEY, EVP_sha256()))
@@ -222,6 +251,31 @@ initAnonymous(boost::asio::ssl::context& context)
         logicError("SSL_CTX_use_PrivateKey failed");
 }
 
+/** Load operator-supplied certificate and key material into an SSL context.
+ *
+ *  Handles three optional file paths.  Each path is skipped if empty.
+ *  When @p chainFile is provided, it is read in a PEM loop: the first
+ *  certificate block becomes the leaf certificate (unless @p certFile was
+ *  already loaded, in which case it is added directly to the chain); all
+ *  subsequent blocks are appended as intermediate CA certificates via
+ *  `SSL_CTX_add_extra_chain_cert`.  This supports the common deployment
+ *  pattern of a single file containing the server cert followed by the
+ *  CA chain.
+ *
+ *  After loading all material, `SSL_CTX_check_private_key` verifies that
+ *  the private key matches the leaf certificate's public key, catching
+ *  misconfiguration before the server accepts any connections.
+ *
+ *  @param context   The SSL context to configure.
+ *  @param keyFile   Path to the PEM-encoded private key file.
+ *  @param certFile  Path to the PEM-encoded leaf certificate file.
+ *  @param chainFile Path to a PEM file containing one or more certificates
+ *      forming the CA chain (and optionally the leaf if @p certFile is
+ *      empty).
+ *  @note All failures call `logicError()`, which is non-recoverable.
+ *  @note The chain file is opened with `fopen` (known technical debt;
+ *      see `// VFALCO Replace fopen() with RAII` in the source).
+ */
 static void
 initAuthenticated(
     boost::asio::ssl::context& context,
@@ -318,6 +372,31 @@ initAuthenticated(
     }
 }
 
+/** Create a hardened TLS context with protocol and cipher constraints.
+ *
+ *  Constructs a `boost::asio::ssl::context` using the `sslv23` method
+ *  identifier — a Boost.Asio naming artifact that means "negotiate the best
+ *  mutually supported version" — then immediately disables SSLv2, SSLv3,
+ *  TLS 1.0, TLS 1.1, and compression, leaving only TLS 1.2+.  Disabling
+ *  compression mitigates CRIME-class attacks.
+ *
+ *  The cipher list defaults to `kDEFAULT_CIPHER_LIST` if @p cipherList is
+ *  empty.  The `!CBC` exclusion in the default list strips all block-cipher
+ *  suites, leaving only AEAD constructions (GCM in practice), which sidestep
+ *  the BEAST and POODLE attack families.
+ *
+ *  Hardcoded 2048-bit DH parameters (`kDEFAULT_DH`) are loaded
+ *  unconditionally.  TLS 1.2 renegotiation is disabled via
+ *  `SSL_OP_NO_RENEGOTIATION` as a belt-and-suspenders mitigation for
+ *  CVE-2021-3499 on OpenSSL versions prior to 1.1.1k.
+ *
+ *  @param cipherList OpenSSL cipher list string; pass an empty string to use
+ *      `kDEFAULT_CIPHER_LIST`.
+ *  @return A fully configured `ssl::context` ready for anonymous or
+ *      authenticated certificate installation.
+ *  @note Callers must install certificate material (via `initAnonymous()` or
+ *      `initAuthenticated()`) before the context can be used for a handshake.
+ */
 std::shared_ptr<boost::asio::ssl::context>
 getContext(std::string cipherList)
 {
@@ -337,10 +416,7 @@ getContext(std::string cipherList)
 
     c->use_tmp_dh({std::addressof(detail::kDEFAULT_DH), sizeof(kDEFAULT_DH)});
 
-    // Disable all renegotiation support in TLS v1.2. This can help prevent
-    // exploitation of the bug described in CVE-2021-3499 (for details see
-    // https://www.openssl.org/news/secadv/20210325.txt) when linking
-    // against OpenSSL versions prior to 1.1.1k.
+    // Belt-and-suspenders mitigation for CVE-2021-3499 (OpenSSL < 1.1.1k).
     SSL_CTX_set_options(c->native_handle(), SSL_OP_NO_RENEGOTIATION);
 
     return c;
@@ -349,17 +425,53 @@ getContext(std::string cipherList)
 }  // namespace openssl::detail
 
 //------------------------------------------------------------------------------
+
+/** Create a TLS context for anonymous peer overlay connections.
+ *
+ *  Builds a hardened TLS 1.2+ context, installs a process-lifetime
+ *  self-signed ephemeral certificate (generated once via `initAnonymous()`),
+ *  and sets `verify_none` — peer identity is established at the application
+ *  layer via cryptographic node identities, so certificate validation is not
+ *  required at the TLS layer.
+ *
+ *  Used by `OverlayImpl` for all peer-to-peer connections.
+ *
+ *  @param cipherList OpenSSL cipher list string; pass an empty string to use
+ *      the default AEAD-only TLS 1.2 cipher list.
+ *  @return A configured `ssl::context` ready for overlay use.
+ *  @note The ephemeral certificate and RSA key are shared across all contexts
+ *      created by this function within the same process lifetime.
+ */
 std::shared_ptr<boost::asio::ssl::context>
 makeSslContext(std::string const& cipherList)
 {
     auto context = openssl::detail::getContext(cipherList);
     openssl::detail::initAnonymous(*context);
-    // VFALCO NOTE, It seems the WebSocket context never has
-    // set_verify_mode called, for either setting of WEBSOCKET_SECURE
     context->set_verify_mode(boost::asio::ssl::verify_none);
     return context;
 }
 
+/** Create a TLS context for authenticated RPC/WebSocket endpoints.
+ *
+ *  Builds a hardened TLS 1.2+ context and loads operator-supplied certificate
+ *  and key material from disk via `initAuthenticated()`.  Unlike
+ *  `makeSslContext()`, this path does not set `verify_none` and does not
+ *  install an ephemeral certificate — callers are expected to present a real
+ *  certificate chain trusted by connecting clients (browsers, tooling, etc.).
+ *
+ *  Used by `ServerHandler` for HTTP/WebSocket-facing RPC ports configured
+ *  with `ssl_key`, `ssl_cert`, and/or `ssl_chain` in the config file.
+ *
+ *  @param keyFile    Path to the PEM-encoded private key file; may be empty.
+ *  @param certFile   Path to the PEM-encoded leaf certificate; may be empty.
+ *  @param chainFile  Path to a PEM file containing the CA chain (and
+ *      optionally the leaf certificate); may be empty.
+ *  @param cipherList OpenSSL cipher list string; pass an empty string to use
+ *      the default AEAD-only TLS 1.2 cipher list.
+ *  @return A configured `ssl::context` ready for authenticated use.
+ *  @note If the loaded private key does not match the certificate,
+ *      `logicError()` is called (non-recoverable).
+ */
 std::shared_ptr<boost::asio::ssl::context>
 makeSslContextAuthed(
     std::string const& keyFile,

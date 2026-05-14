@@ -1,3 +1,20 @@
+/** @file
+ *  Implementation of `TrafficCount::categorize()` — the single entry point
+ *  that maps every overlay protocol message to one of the fine-grained
+ *  `TrafficCount::Category` values used for bandwidth telemetry.
+ *
+ *  Classification uses two stages:
+ *  1. An O(1) lookup in `kTYPE_LOOKUP` for message types whose category is
+ *     fully determined by the wire type discriminator alone.
+ *  2. Three `dynamic_cast` branches for `TMLedgerData`, `TMGetLedger`, and
+ *     `TMGetObjectByHash`, whose category depends on protobuf fields
+ *     (`requestcookie`, `itype`, `query`) that are invisible to the wire
+ *     type alone.
+ *
+ *  This file is invoked on every inbound message (via `PeerImp`) and once
+ *  per outbound `Message` at construction time. Keep this path allocation-free
+ *  and branch-minimal.
+ */
 #include <xrpld/overlay/detail/TrafficCount.h>
 
 #include <google/protobuf/message.h>
@@ -8,6 +25,19 @@
 
 namespace xrpl {
 
+/** O(1) lookup table mapping wire message types to traffic categories.
+ *
+ *  Covers all types whose category is fully determined by the protobuf type
+ *  discriminator alone — i.e. no field inspection is required.  Initialized
+ *  once at program startup; never mutated at runtime.
+ *
+ *  Types omitted here require deeper protobuf inspection and are handled by
+ *  the `dynamic_cast` branches in `categorize()`:
+ *  - `mtHAVE_SET`      — direction-split: `GetSet` vs `ShareSet`
+ *  - `mtLEDGER_DATA`   — split by `itype()` and `has_requestcookie()`
+ *  - `mtGET_LEDGER`    — split by `itype()` and `has_requestcookie()`
+ *  - `mtGET_OBJECTS`   — split by `type()` and `query()`
+ */
 std::unordered_map<protocol::MessageType, TrafficCount::Category> const kTYPE_LOOKUP = {
     {protocol::mtPING, TrafficCount::Category::Base},
     {protocol::mtSTATUS_CHANGE, TrafficCount::Category::Base},
@@ -27,6 +57,43 @@ std::unordered_map<protocol::MessageType, TrafficCount::Category> const kTYPE_LO
     {protocol::mtSQUELCH, TrafficCount::Category::Squelch},
 };
 
+/** Classify a protocol message into the most specific traffic category.
+ *
+ *  Uses a two-stage strategy:
+ *  1. `kTYPE_LOOKUP` handles types whose category is determined by the wire
+ *     type discriminator alone (O(1), no allocation).
+ *  2. `dynamic_cast` branches inspect protobuf fields for the three complex
+ *     types: `TMLedgerData`, `TMGetLedger`, and `TMGetObjectByHash`.
+ *
+ *  **`TMLedgerData` (`requestcookie` semantics):**
+ *  An inbound `TMLedgerData` *without* a `requestcookie` is data the local
+ *  node actively fetched → `*_get`.  A `requestcookie` present means the
+ *  response was originally requested by a third peer and forwarded through
+ *  this node → `*_share`, even though it arrived inbound.
+ *
+ *  **`TMGetLedger` (reverse `requestcookie` semantics):**
+ *  An inbound `TMGetLedger` means a peer is asking for data the local node
+ *  holds → `*_share`.  An outbound request *without* a cookie is the local
+ *  node actively fetching → `*_get`.  A cookie on an outbound message again
+ *  signals a forwarded request → `*_share`.
+ *
+ *  **`TMGetObjectByHash` (`query()` flag):**
+ *  `msg->query() == true` marks a request; `false` marks a response.
+ *  The expression `msg->query() == inbound` is `true` when the message is a
+ *  request flowing in the expected direction (inbound query = peer requesting
+ *  from us = share operation), resolving to `*_share`; otherwise `*_get`.
+ *  `otTRANSACTIONS` is always `GetTransactions` regardless of direction.
+ *
+ *  @param message  The deserialized protobuf message object; used for
+ *      `dynamic_cast` on the three complex types.
+ *  @param type     The wire-level message type discriminator extracted from
+ *      the 6- or 10-byte overlay header before deserialization.
+ *  @param inbound  `true` if the message arrived from a remote peer;
+ *      `false` if it is being prepared for outbound transmission.
+ *  @return The most specific matching `Category`, or `Category::Unknown` if
+ *      no branch matches.  The `Unknown` category is always present in
+ *      `counts_`, so callers need not special-case it.
+ */
 TrafficCount::Category
 TrafficCount::categorize(
     ::google::protobuf::Message const& message,

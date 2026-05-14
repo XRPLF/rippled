@@ -1,3 +1,15 @@
+/** @file
+ *  Defines `STObject`, the heterogeneous field container that underlies every
+ *  XRPL transaction, ledger entry, and inner object.
+ *
+ *  `STObject` supports two operating modes: *free mode* (no schema, insertion
+ *  order preserved) and *template mode* (schema enforced via `SOTemplate`,
+ *  O(1) field lookup).  Both `STTx` and `STLedgerEntry` are `final` subclasses.
+ *
+ *  The proxy system (`ValueProxy`, `OptionalProxy`) provides type-safe,
+ *  compile-time-checked field access via `operator[]` and `at()`, replacing
+ *  the older `getFieldU32()`/`setFieldU32()` family for new code.
+ */
 #pragma once
 
 #include <xrpl/basics/CountedObject.h>
@@ -27,15 +39,39 @@ namespace xrpl {
 
 class STArray;
 
+/** Throw a `std::runtime_error` indicating a missing field.
+ *
+ *  Used by the legacy typed-accessor family (`getFieldByValue`,
+ *  `getFieldByConstRef`, `setFieldUsingSetValue`) when `peekAtPField` returns
+ *  null.  Not intended for direct use by callers outside `STObject`.
+ *
+ *  @param field  The field that could not be found.
+ *  @throws std::runtime_error always.
+ */
 inline void
 throwFieldNotFound(SField const& field)
 {
     Throw<std::runtime_error>("Field not found: " + field.getName());
 }
 
+/** Heterogeneous, field-keyed container for XRPL protocol objects.
+ *
+ *  Stores an ordered sequence of `STBase`-derived fields, keyed by `SField`.
+ *  Operates in one of two modes:
+ *  - *Free mode* (`isFree() == true`): no schema; fields are stored in
+ *    insertion order and any field may be added.
+ *  - *Template mode* (`isFree() == false`): an `SOTemplate` constrains
+ *    which fields are present, enforces `soeREQUIRED`/`soeOPTIONAL`/
+ *    `soeDEFAULT` semantics, and enables O(1) field lookup.
+ *
+ *  `STTx` and `STLedgerEntry` are the primary `final` subclasses.
+ *  Field access is available via the modern proxy API (`operator[]`, `at()`)
+ *  or the legacy typed-accessor family (`getFieldU32()`, etc.).
+ *
+ *  @note `operator==` compares only wire-representable (`isBinary()`) fields.
+ */
 class STObject : public STBase, public CountedObject<STObject>
 {
-    // Proxy value for a STBase derived class
     template <class T>
     class Proxy;
     template <class T>
@@ -43,6 +79,7 @@ class STObject : public STBase, public CountedObject<STObject>
     template <class T>
     class OptionalProxy;
 
+    /** Functor used by `boost::transform_iterator` to project `STVar→STBase`. */
     struct Transform
     {
         explicit Transform() = default;
@@ -60,11 +97,22 @@ class STObject : public STBase, public CountedObject<STObject>
     SOTemplate const* type_{};
 
 public:
+    /** Forward iterator over the fields of this object as `STBase const&`. */
     using iterator = boost::transform_iterator<Transform, STObject::list_type::const_iterator>;
 
     ~STObject() override = default;
     STObject(STObject const&) = default;
 
+    /** Construct a templated `STObject` from a schema, field name, and
+     *  an initializer callable.
+     *
+     *  Delegates to `STObject(type, name)` then calls `f(*this)`, allowing
+     *  fields to be populated inline at construction time.
+     *
+     *  @param type  The SOTemplate that defines the object's layout.
+     *  @param name  The SField identifying this object within its parent.
+     *  @param f     Callable `void(STObject&)` invoked after template init.
+     */
     template <typename F>
     STObject(SOTemplate const& type, SField const& name, F&& f) : STObject(type, name)
     {
@@ -73,128 +121,328 @@ public:
 
     STObject&
     operator=(STObject const&) = default;
+    /** Move-construct, transferring field storage and template pointer. */
     STObject(STObject&&);
+    /** Move-assign, transferring field storage and template pointer. */
     STObject&
     operator=(STObject&& other);
 
+    /** Construct a templated `STObject` pre-populated from a schema.
+     *
+     *  Every slot in `type` is initialized: `soeREQUIRED` fields receive their
+     *  type-default value; `soeOPTIONAL` and `soeDEFAULT` fields receive the
+     *  `STI_NOTPRESENT` sentinel.
+     *
+     *  @param type  The SOTemplate that defines the object's layout.
+     *  @param name  The SField identifying this object within its parent.
+     */
     STObject(SOTemplate const& type, SField const& name);
+
+    /** Construct a templated `STObject` by deserializing from a byte stream.
+     *
+     *  Reads fields in free mode from `sit`, then calls `applyTemplate(type)`
+     *  to reorder and validate them against the schema.
+     *
+     *  @param type  The SOTemplate to enforce after deserialization.
+     *  @param sit   The byte stream to deserialize from.
+     *  @param name  The SField identifying this object within its parent.
+     *  @throws FieldErr if a required field is missing or an unknown
+     *      non-discardable field is present.
+     */
     STObject(SOTemplate const& type, SerialIter& sit, SField const& name);
+
+    /** Construct a free-mode `STObject` by deserializing from a byte stream.
+     *
+     *  The `depth` parameter guards against stack exhaustion when parsing
+     *  deeply nested structures from untrusted input; nesting beyond 10
+     *  throws `std::runtime_error`.
+     *
+     *  @param sit    The byte stream to deserialize from.
+     *  @param name   The SField identifying this object within its parent.
+     *  @param depth  Current nesting depth (default 0); capped at 10.
+     *  @throws std::runtime_error if depth exceeds 10 or data is malformed.
+     */
     STObject(SerialIter& sit, SField const& name, int depth = 0);
+
+    /** Construct from an rvalue `SerialIter`; delegates to the lvalue overload. */
     STObject(SerialIter&& sit, SField const& name);
+
+    /** Construct a free-mode (schema-less) `STObject` with the given field name. */
     explicit STObject(SField const& name);
 
+    /** Create a free-mode inner object, conditionally binding a schema template.
+     *
+     *  Checks the ambient `getCurrentTransactionRules()` to determine whether
+     *  the `fixInnerObjTemplate` or `fixInnerObjTemplate2` amendments are
+     *  active, and applies the corresponding `SOTemplate` from
+     *  `InnerObjectFormats` when they are.  This amendment-gated behaviour
+     *  preserves replay compatibility with historical ledger data serialized
+     *  before schemas existed.
+     *
+     *  @param name  The SField identifying the type of inner object to create.
+     *  @return A new `STObject`, bound to its schema when the active rules permit.
+     */
     static STObject
     makeInnerObject(SField const& name);
 
+    /** Return an iterator to the first field in this object. */
     [[nodiscard]] iterator
     begin() const;
 
+    /** Return a past-the-end iterator for this object's fields. */
     [[nodiscard]] iterator
     end() const;
 
+    /** Return `true` when this object contains no fields. */
     [[nodiscard]] bool
     empty() const;
 
+    /** Reserve storage for at least `n` fields in the underlying vector. */
     void
     reserve(std::size_t n);
 
+    /** Validate and reorder fields against a schema after free-mode deserialization.
+     *
+     *  Rebuilds the internal storage in template order.  `soeREQUIRED` fields
+     *  that are missing throw; `soeDEFAULT` fields whose serialized value equals
+     *  the type's zero value are rejected (explicit defaults are forbidden);
+     *  unknown non-discardable fields throw.
+     *
+     *  @param type  The SOTemplate to enforce.
+     *  @throws FieldErr on required-field missing, explicit default value, or
+     *      unknown non-discardable field.
+     */
     void
     applyTemplate(SOTemplate const& type);
 
+    /** Look up and apply the schema registered for `sField` in `InnerObjectFormats`.
+     *
+     *  No-op when no template is registered for the given field.
+     *
+     *  @param sField  The SField whose registered SOTemplate should be applied.
+     *  @throws FieldErr (from `applyTemplate`) if the object does not conform.
+     */
     void
     applyTemplateFromSField(SField const&);
 
+    /** Return `true` when no schema template is associated with this object. */
     [[nodiscard]] bool
     isFree() const;
 
+    /** Initialize this object from a template, pre-populating every slot.
+     *
+     *  Clears existing fields and rebuilds in template order.  `soeREQUIRED`
+     *  fields receive their type-default value; all other fields receive the
+     *  `STI_NOTPRESENT` sentinel.
+     *
+     *  @param type  The SOTemplate that defines the layout of this object.
+     */
     void
     set(SOTemplate const&);
 
+    /** Deserialize fields from a byte stream into this object (free mode).
+     *
+     *  Reads `(type, field)` ID pairs from `u`, constructs each child `STVar`
+     *  at `depth+1`, and calls `applyTemplateFromSField()` on nested
+     *  `STObject` children.  Stops at an inner-object terminator byte.
+     *
+     *  @param u      The byte stream to read from.
+     *  @param depth  Current nesting depth; guards against deeply nested input.
+     *  @return `true` if an inner-object terminator was consumed; `false`
+     *      at top-level end-of-stream.
+     *  @throws std::runtime_error on malformed data or duplicate fields.
+     */
     bool
     set(SerialIter& u, int depth = 0);
 
+    /** Return `STI_OBJECT`. */
     [[nodiscard]] SerializedTypeID
     getSType() const override;
 
+    /** Return `true` when the objects have the same wire-representable fields.
+     *
+     *  Only fields where `SField::isBinary()` is true participate in the
+     *  comparison.  Non-binary (JSON-only) fields are ignored.
+     *
+     *  @param t  The other serialized type to compare against.
+     */
     [[nodiscard]] bool
     isEquivalent(STBase const& t) const override;
 
+    /** Return `true` when this object holds no fields (empty storage). */
     [[nodiscard]] bool
     isDefault() const override;
 
+    /** Serialize all fields (including signing fields) into `s`. */
     void
     add(Serializer& s) const override;
 
+    /** Return a human-readable, field-by-field description of this object. */
     [[nodiscard]] std::string
     getFullText() const override;
 
+    /** Return a brief textual description of this object. */
     [[nodiscard]] std::string
     getText() const override;
 
     // TODO(tom): options should be an enum.
+    /** Convert this object to a JSON value.
+     *
+     *  @param options  Controls formatting options (e.g., binary vs. human-readable).
+     */
     [[nodiscard]] json::Value getJson(JsonOptions = JsonOptions::Values::None) const override;
 
+    /** Serialize signing-eligible fields only into `s`.
+     *
+     *  Excludes fields whose `SField::shouldInclude(false)` returns `false`
+     *  (e.g., `sfTxnSignature`, `sfSigners`).  Used to produce the payload
+     *  that is hashed and signed or verified.
+     *
+     *  @param s  The serializer to append to.
+     */
     void
     addWithoutSigningFields(Serializer& s) const;
 
+    /** Return a `Serializer` containing all fields (including signing fields).
+     *
+     *  @note Produces a full copy of the serialized form; prefer
+     *      `add(Serializer&)` when appending to an existing buffer.
+     */
     [[nodiscard]] Serializer
     getSerializer() const;
 
+    /** Append a new field directly to the internal storage vector.
+     *
+     *  Used during deserialization and by the proxy system when adding new
+     *  fields to a free-mode object.  Arguments are forwarded to
+     *  `detail::STVar`'s constructor.
+     *
+     *  @return The zero-based index of the newly added field.
+     */
     template <class... Args>
     std::size_t
     emplaceBack(Args&&... args);
 
+    /** Return the number of fields currently stored in this object. */
     [[nodiscard]] int
     getCount() const;
 
+    /** Set a flag bit in `sfFlags`, creating the field if absent.
+     *
+     *  @param flag  The flag bit(s) to set (OR-ed into existing flags).
+     *  @return `true` if the flags field was changed.
+     */
     bool
     setFlag(std::uint32_t);
+
+    /** Clear a flag bit in `sfFlags`.
+     *
+     *  @param flag  The flag bit(s) to clear.
+     *  @return `true` if the flags field was changed.
+     */
     bool
     clearFlag(std::uint32_t);
+
+    /** Return `true` when all bits in `flag` are set in `sfFlags`. */
     [[nodiscard]] bool
     isFlag(std::uint32_t) const;
 
+    /** Return the value of `sfFlags`, or 0 if the field is absent. */
     [[nodiscard]] std::uint32_t
     getFlags() const;
 
+    /** Compute a domain-separated hash of all fields (including signing fields).
+     *
+     *  Prepends `prefix` before serializing all fields, then returns the
+     *  `sha512Half` of the result.
+     *
+     *  @param prefix  The `HashPrefix` discriminator for this hash domain.
+     *  @return The 256-bit hash.
+     */
     [[nodiscard]] uint256
     getHash(HashPrefix prefix) const;
 
+    /** Compute a domain-separated hash of signing-eligible fields only.
+     *
+     *  Equivalent to `getHash` but uses `addWithoutSigningFields` to exclude
+     *  signature-carrying fields.  Used by single-sig and multi-sig verification.
+     *
+     *  @param prefix  The `HashPrefix` discriminator for this hash domain.
+     *  @return The 256-bit hash.
+     */
     [[nodiscard]] uint256
     getSigningHash(HashPrefix prefix) const;
 
+    /** Return the field at `offset` by const reference; no bounds check. */
     [[nodiscard]] STBase const&
     peekAtIndex(int offset) const;
 
+    /** Return the field at `offset` by mutable reference; no bounds check. */
     STBase&
     getIndex(int offset);
 
+    /** Return a const pointer to the field at `offset`; no bounds check. */
     [[nodiscard]] STBase const*
     peekAtPIndex(int offset) const;
 
+    /** Return a mutable pointer to the field at `offset`; no bounds check. */
     STBase*
     getPIndex(int offset);
 
+    /** Return the storage index of `field`, or -1 if not present. */
     [[nodiscard]] int
     getFieldIndex(SField const& field) const;
 
+    /** Return the `SField` descriptor for the field at storage index `index`. */
     [[nodiscard]] SField const&
     getFieldSType(int index) const;
 
+    /** Return the field identified by `field` by const reference.
+     *
+     *  @throws std::runtime_error if the field is not present.
+     */
     [[nodiscard]] STBase const&
     peekAtField(SField const& field) const;
 
+    /** Return the field identified by `field` by mutable reference.
+     *
+     *  @throws std::runtime_error if the field is not present.
+     */
     STBase&
     getField(SField const& field);
 
+    /** Return a const pointer to the field identified by `field`, or `nullptr`.
+     *
+     *  Does not create the field.  Returns `nullptr` for absent optional fields
+     *  in free mode; returns a pointer to the `STI_NOTPRESENT` sentinel in
+     *  template mode.
+     */
     [[nodiscard]] STBase const*
     peekAtPField(SField const& field) const;
 
+    /** Core field-lookup primitive, optionally creating the field.
+     *
+     *  In template mode with `createOkay == false`, returns the stored slot
+     *  pointer (which may be an `STI_NOTPRESENT` sentinel).  With
+     *  `createOkay == true`, promotes `STI_NOTPRESENT` sentinels and
+     *  appends missing free-mode fields.  Returns `nullptr` only when the
+     *  field is absent in free mode and `createOkay` is false.
+     *
+     *  @param field       The field to locate.
+     *  @param createOkay  When `true`, create the field if absent.
+     *  @return Pointer to the stored `STBase`, or `nullptr`.
+     */
     STBase*
     getPField(SField const& field, bool createOkay = false);
 
-    // these throw if the field type doesn't match, or return default values
-    // if the field is optional but not present
+    /** @name Legacy typed field accessors
+     *
+     *  These methods return field values by their native C++ type.  They throw
+     *  `std::runtime_error` if the field type does not match the expected type,
+     *  and return a default-constructed value when an optional field is absent.
+     *  Prefer the proxy API (`operator[]`, `at()`) for new code.
+     *  @{
+     */
     [[nodiscard]] unsigned char
     getFieldU8(SField const& field) const;
     [[nodiscard]] std::uint16_t
@@ -205,7 +453,6 @@ public:
     getFieldU64(SField const& field) const;
     [[nodiscard]] uint128
     getFieldH128(SField const& field) const;
-
     [[nodiscard]] uint160
     getFieldH160(SField const& field) const;
     [[nodiscard]] uint192
@@ -216,7 +463,6 @@ public:
     getFieldI32(SField const& field) const;
     [[nodiscard]] AccountID
     getAccountID(SField const& field) const;
-
     [[nodiscard]] Blob
     getFieldVL(SField const& field) const;
     [[nodiscard]] STAmount const&
@@ -225,7 +471,12 @@ public:
     getFieldPathSet(SField const& field) const;
     [[nodiscard]] STVector256 const&
     getFieldV256(SField const& field) const;
-    // If not found, returns an object constructed with the given field
+    /** Return the nested `STObject` for `field` by value.
+     *
+     *  If the field is absent, returns a default-constructed `STObject`
+     *  initialized with `field` as its name.  Modifications to the returned
+     *  copy do not propagate back; use `peekFieldObject()` for in-place access.
+     */
     [[nodiscard]] STObject
     getFieldObject(SField const& field) const;
     [[nodiscard]] STArray const&
@@ -234,6 +485,7 @@ public:
     getFieldCurrency(SField const& field) const;
     [[nodiscard]] STNumber const&
     getFieldNumber(SField const& field) const;
+    /** @} */
 
     /** Get the value of a field.
         @param A TypedField built from an SField value representing the desired
@@ -329,15 +581,31 @@ public:
     OptionalProxy<T>
     at(OptionaledField<T> const& of);
 
-    /** Set a field.
-        if the field already exists, it is replaced.
-    */
+    /** Replace or insert a field from a heap-allocated `STBase`.
+     *
+     *  If a field with the same `SField` already exists, it is replaced.
+     *
+     *  @param v  The field to store; ownership is transferred.
+     */
     void
     set(std::unique_ptr<STBase> v);
 
+    /** Replace or insert a field by move.
+     *
+     *  If a field with the same `SField` already exists, it is replaced.
+     *
+     *  @param v  The field to move into this object.
+     */
     void
     set(STBase&& v);
 
+    /** @name Legacy typed field mutators
+     *
+     *  Set a named field to the given value.  Throws `std::runtime_error` if
+     *  the stored field has a different type than the value being set.
+     *  Prefer the proxy API (`operator[]`, `at()`) for new code.
+     *  @{
+     */
     void
     setFieldU8(SField const& field, unsigned char);
     void
@@ -358,10 +626,8 @@ public:
     setFieldVL(SField const& field, Blob const&);
     void
     setFieldVL(SField const& field, Slice const&);
-
     void
     setAccountID(SField const& field, AccountID const&);
-
     void
     setFieldAmount(SField const& field, STAmount const&);
     void
@@ -379,40 +645,122 @@ public:
     void
     setFieldObject(SField const& field, STObject const& v);
 
+    /** Set a 160-bit hash field from any `BaseUInt<160, Tag>` value.
+     *
+     *  @tparam Tag  The phantom tag type of the `BaseUInt` specialization.
+     *  @param field  The field to set.
+     *  @param v      The 160-bit value to store.
+     *  @throws std::runtime_error if the stored field has a different type.
+     */
     template <class Tag>
     void
     setFieldH160(SField const& field, BaseUInt<160, Tag> const& v);
+    /** @} */
 
+    /** Return a mutable reference to the nested `STObject` for `field`.
+     *
+     *  Unlike `getFieldObject()`, the returned reference is into internal
+     *  storage; mutations propagate back to this object.
+     *
+     *  @throws std::runtime_error if the field is absent or has the wrong type.
+     */
     STObject&
     peekFieldObject(SField const& field);
+
+    /** Return a mutable reference to the nested `STArray` for `field`.
+     *
+     *  The returned reference is into internal storage; mutations propagate
+     *  back to this object.
+     *
+     *  @throws std::runtime_error if the field is absent or has the wrong type.
+     */
     STArray&
     peekFieldArray(SField const& field);
 
+    /** Return `true` when `field` is present and not an `STI_NOTPRESENT` sentinel. */
     [[nodiscard]] bool
     isFieldPresent(SField const& field) const;
+
+    /** Promote an `STI_NOTPRESENT` sentinel field to a live default value.
+     *
+     *  In template mode, converts an optional/default slot from the sentinel
+     *  state to a type-correct default value, making the field "present".
+     *  In free mode, appends a new default-constructed field.
+     *
+     *  @param field  The field to make present.
+     *  @return Pointer to the now-live field, or `nullptr` if not found.
+     */
     STBase*
     makeFieldPresent(SField const& field);
+
+    /** Demote a live optional field back to the `STI_NOTPRESENT` sentinel.
+     *
+     *  In template mode, replaces the field's value with the sentinel.
+     *  In free mode, removes the field entry entirely.
+     *  Only valid for `soeOPTIONAL` fields; called by the proxy system
+     *  when assigning a `soeDEFAULT` field its zero value.
+     *
+     *  @param field  The field to make absent.
+     */
     void
     makeFieldAbsent(SField const& field);
+
+    /** Remove the field identified by `field` unconditionally.
+     *
+     *  @param field  The field to remove.
+     *  @return `true` if the field was found and removed.
+     */
     bool
     delField(SField const& field);
+
+    /** Remove the field at storage index `index` unconditionally. */
     void
     delField(int index);
 
+    /** Return the `SOEStyle` (`soeREQUIRED`, `soeOPTIONAL`, `soeDEFAULT`)
+     *  for `field` according to the associated template.
+     *
+     *  @param field  The field to query.
+     *  @return The style, or `SoeInvalid` if the object is in free mode.
+     */
     [[nodiscard]] SOEStyle
     getStyle(SField const& field) const;
 
+    /** Return `true` when any stored field compares equal to `entry`.
+     *
+     *  Used to test membership in collections such as `STArray`.
+     */
     [[nodiscard]] bool
     hasMatchingEntry(STBase const&) const;
 
+    /** Compare two `STObject` instances for equality.
+     *
+     *  Only wire-representable (`isBinary()`) fields participate.
+     *  This comparison is O(n²) by design.
+     *
+     *  @note For fast same-template comparison, use `isEquivalent()` which
+     *      short-circuits when both objects share the same `mType` pointer.
+     */
     bool
     operator==(STObject const& o) const;
     bool
     operator!=(STObject const& o) const;
 
+    /** Exception thrown by the proxy and `at()` accessors on field errors.
+     *
+     *  Raised when a required field is absent, a template constraint is
+     *  violated, or an invalid field access is attempted on a free-mode object.
+     */
     class FieldErr;
 
 private:
+    /** Selects which fields are included during serialization.
+     *
+     *  The underlying `bool` values alias directly to `SField::shouldInclude(bool)`
+     *  so they can be passed without translation:
+     *  - `OmitSigningFields` (false) — exclude fields not intended for signing.
+     *  - `WithAllFields` (true) — include every field.
+     */
     enum class WhichFields : bool {
         // These values are carefully chosen to do the right thing if passed
         // to SField::shouldInclude (bool)
@@ -474,15 +822,34 @@ private:
 
 //------------------------------------------------------------------------------
 
+/** Common base for `ValueProxy<T>` and `OptionalProxy<T>`.
+ *
+ *  Stores a back-pointer to the owning `STObject`, the `SOEStyle` of the
+ *  field, and a typed descriptor pointer.  Provides the read path
+ *  (`value()`, `operator*`, `operator->`) and the write primitive `assign()`.
+ *
+ *  `assign()` enforces `soeDEFAULT` canonicalization: assigning the zero
+ *  value calls `makeFieldAbsent` rather than storing an explicit default,
+ *  preserving canonical wire format.
+ *
+ *  @tparam T  The concrete `STBase`-derived type carrying the field's value.
+ */
 template <class T>
 class STObject::Proxy
 {
 public:
     using value_type = typename T::value_type;
 
+    /** Return the field's current value.
+     *
+     *  For `soeDEFAULT` fields that are absent, returns a default-constructed
+     *  `value_type`.  Throws `FieldErr` for absent `soeOPTIONAL` or required
+     *  fields, and when called on a free-mode object with no template.
+     */
     [[nodiscard]] value_type
     value() const;
 
+    /** Dereference operator; equivalent to `value()`. */
     value_type
     operator*() const;
 
@@ -500,36 +867,65 @@ protected:
 
     Proxy(STObject* st, TypedField<T> const* f);
 
+    /** Locate the field via `dynamic_cast`; returns `nullptr` when absent. */
     [[nodiscard]] T const*
     find() const;
 
+    /** Write `u` into the field, applying `soeDEFAULT` canonicalization. */
     template <class U>
     void
     assign(U&& u);
 };
 
-// Constraint += and -= ValueProxy operators
-// to value types that support arithmetic operations
+/** Satisfied by scalar arithmetic types, `Number`, and `STAmount`.
+ *
+ *  Used to gate `ValueProxy::operator+=` and `operator-=` so they are only
+ *  available for field types that support arithmetic operations.
+ */
 template <typename U>
 concept IsArithmeticNumber =
     std::is_arithmetic_v<U> || std::is_same_v<U, Number> || std::is_same_v<U, STAmount>;
+
+/** Satisfied by phantom-typed `unit::ValueUnit<Unit, Value>` wrappers
+ *  whose `Value` satisfies `IsArithmeticNumber`.
+ */
 template <
     typename U,
     typename Value = typename U::value_type,
     typename Unit = typename U::unit_type>
 concept IsArithmeticValueUnit = std::is_same_v<U, unit::ValueUnit<Unit, Value>> &&
     IsArithmeticNumber<Value> && std::is_class_v<Unit>;
+
+/** Satisfied by ST wrapper types (e.g., `STAmount`) that are not
+ *  `ValueUnit` but whose `value_type` satisfies `IsArithmeticNumber`.
+ */
 template <typename U, typename Value = typename U::value_type>
 concept IsArithmeticST = !IsArithmeticValueUnit<U> && IsArithmeticNumber<Value>;
+
+/** Union of `IsArithmeticNumber`, `IsArithmeticST`, and `IsArithmeticValueUnit`. */
 template <typename U>
 concept IsArithmetic = IsArithmeticNumber<U> || IsArithmeticST<U> || IsArithmeticValueUnit<U>;
 
+/** Satisfied when `T + U` compiles and the result is assignable back to `T`. */
 template <class T, class U>
 concept Addable = requires(T t, U u) { t = t + u; };
+
+/** Satisfied when `T`'s `value_type` is arithmetic and supports addition with `U`. */
 template <typename T, typename U>
 concept IsArithmeticCompatible =
     IsArithmetic<typename T::value_type> && Addable<typename T::value_type, U>;
 
+/** Mutable proxy for a non-optional (`soeREQUIRED` or `soeDEFAULT`) field.
+ *
+ *  Returned by the mutable overloads of `STObject::operator[]` and
+ *  `STObject::at()`.  Supports assignment, arithmetic `+=`/`-=` for
+ *  compatible value types, and implicit conversion to `value_type` for
+ *  transparent read-through.
+ *
+ *  Copy-constructible but not copy-assignable; constructed only by `STObject`.
+ *
+ *  @tparam T  The concrete `STBase`-derived type carrying the field's value.
+ */
 template <class T>
 class STObject::ValueProxy : public Proxy<T>
 {
@@ -541,22 +937,24 @@ public:
     ValueProxy&
     operator=(ValueProxy const&) = delete;
 
+    /** Assign `u` to the field, delegating to `Proxy::assign()`. */
     template <class U>
     std::enable_if_t<std::is_assignable_v<T, U>, ValueProxy&>
     operator=(U&& u);
 
-    // Convenience operators for value types supporting
-    // arithmetic operations
+    /** Add `u` to the current field value and write back. */
     template <IsArithmetic U>
         requires IsArithmeticCompatible<T, U>
     ValueProxy&
     operator+=(U const& u);
 
+    /** Subtract `u` from the current field value and write back. */
     template <IsArithmetic U>
         requires IsArithmeticCompatible<T, U>
     ValueProxy&
     operator-=(U const& u);
 
+    /** Implicit conversion to `value_type` for transparent read-through. */
     operator value_type() const;
 
     template <typename U>
@@ -572,6 +970,22 @@ private:
     ValueProxy(STObject* st, TypedField<T> const* f);
 };
 
+/** Mutable proxy for an optional (`soeOPTIONAL`) field.
+ *
+ *  Returned by the mutable overloads of `STObject::operator[]` and
+ *  `STObject::at()` when called with an `OptionaledField<T>`.  Supports
+ *  assignment from a value, `std::optional`, or `std::nullopt` (to remove
+ *  the field).  Implicit conversion to `optional_type` enables use in
+ *  standard optional contexts.
+ *
+ *  Assigning `std::nullopt` to a `soeREQUIRED` or `soeDEFAULT` field throws
+ *  `FieldErr`; required fields cannot be removed and default-value fields are
+ *  semantically always present.
+ *
+ *  Copy-constructible but not copy-assignable; constructed only by `STObject`.
+ *
+ *  @tparam T  The concrete `STBase`-derived type carrying the field's value.
+ */
 template <class T>
 class STObject::OptionalProxy : public Proxy<T>
 {
@@ -593,6 +1007,7 @@ public:
     explicit
     operator bool() const noexcept;
 
+    /** Implicit conversion to `std::optional<value_type>`. */
     operator optional_type() const;
 
     /** Explicit conversion to std::optional */
@@ -665,17 +1080,26 @@ public:
         return !(lhs == rhs);
     }
 
-    // Emulate std::optional::value_or
+    /** Return the field's value if present, otherwise `val`. */
     [[nodiscard]] value_type
     valueOr(value_type val) const;
 
+    /** Remove the field (make it absent).
+     *
+     *  @throws FieldErr if the field is `soeREQUIRED` or `soeDEFAULT`.
+     */
     OptionalProxy&
     operator=(std::nullopt_t const&);
+
+    /** Assign from an rvalue `std::optional`; removes the field if `nullopt`. */
     OptionalProxy&
     operator=(optional_type&& v);  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+
+    /** Assign from a const `std::optional`; removes the field if `nullopt`. */
     OptionalProxy&
     operator=(optional_type const& v);
 
+    /** Assign a value directly to the field. */
     template <class U>
     std::enable_if_t<std::is_assignable_v<T, U>, OptionalProxy&>
     operator=(U&& u);
@@ -685,12 +1109,15 @@ private:
 
     OptionalProxy(STObject* st, TypedField<T> const* f);
 
+    /** Return `true` when the field is present (not the `STI_NOTPRESENT` sentinel). */
     [[nodiscard]] bool
     engaged() const noexcept;
 
+    /** Remove the field, enforcing `soeREQUIRED`/`soeDEFAULT` constraints. */
     void
     disengage();
 
+    /** Return the current value as `optional_type`, or `nullopt` if absent. */
     [[nodiscard]] optional_type
     optionalValue() const;
 };

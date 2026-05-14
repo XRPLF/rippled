@@ -1,3 +1,12 @@
+/** @file
+ *  Implements the process-wide cryptographically secure PRNG.
+ *
+ *  Every security-sensitive operation in xrpld — key generation, seed
+ *  creation, nonce production — flows through the `CsprngEngine` singleton
+ *  returned by `cryptoPrng()`.  The implementation wraps OpenSSL's
+ *  `RAND_bytes` / `RAND_add` / `RAND_poll` family and keeps all callers
+ *  insulated from OpenSSL API differences across versions.
+ */
 #include <xrpl/crypto/csprng.h>
 
 #include <xrpl/basics/contract.h>
@@ -15,14 +24,14 @@ namespace xrpl {
 
 CsprngEngine::CsprngEngine()
 {
-    // This is not strictly necessary
+    // Eagerly poll for OS entropy so that any platform-level seeding failure
+    // surfaces at startup rather than silently at the first key generation.
     if (RAND_poll() != 1)
         Throw<std::runtime_error>("CSPRNG: Initial polling failed");
 }
 
 CsprngEngine::~CsprngEngine()
 {
-    // This cleanup function is not needed in newer versions of OpenSSL
 #if (OPENSSL_VERSION_NUMBER < 0x10100000L)
     RAND_cleanup();
 #endif
@@ -34,9 +43,6 @@ CsprngEngine::mixEntropy(void* buffer, std::size_t count)
     std::array<std::random_device::result_type, 128> entropy{};
 
     {
-        // On every platform we support, std::random_device
-        // is non-deterministic and should provide some good
-        // quality entropy.
         std::random_device rd;
 
         for (auto& e : entropy)
@@ -45,8 +51,9 @@ CsprngEngine::mixEntropy(void* buffer, std::size_t count)
 
     std::scoped_lock const lock(mutex_);
 
-    // We add data to the pool, but we conservatively assume that
-    // it contributes no actual entropy.
+    // Entropy estimate is 0 for both RAND_add calls: we deliberately decline
+    // to credit OpenSSL's seeding threshold, avoiding premature satisfaction
+    // of the threshold if std::random_device falls back to a software PRNG.
     RAND_add(entropy.data(), entropy.size() * sizeof(std::random_device::result_type), 0);
 
     if (buffer != nullptr && count != 0)
@@ -56,9 +63,9 @@ CsprngEngine::mixEntropy(void* buffer, std::size_t count)
 void
 CsprngEngine::operator()(void* ptr, std::size_t count)
 {
-    // RAND_bytes is thread-safe on OpenSSL 1.1.0 and later when compiled
-    // with thread support, so we don't need to grab a mutex.
-    // https://mta.openssl.org/pipermail/openssl-users/2020-November/013146.html
+    // RAND_bytes is internally thread-safe on OpenSSL ≥ 1.1.0 built with
+    // thread support; the external mutex is only needed on older builds.
+    // See: https://mta.openssl.org/pipermail/openssl-users/2020-November/013146.html
 #if (OPENSSL_VERSION_NUMBER < 0x10100000L) || !defined(OPENSSL_THREADS)
     std::scoped_lock lock(mutex_);
 #endif

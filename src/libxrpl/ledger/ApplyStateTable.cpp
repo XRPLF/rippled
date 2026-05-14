@@ -1,3 +1,18 @@
+/** @file
+ *  Implementation of `ApplyStateTable`, the per-transaction write-staging
+ *  buffer used by all `ApplyView`/`ApplyViewImpl` instances.
+ *
+ *  Algorithm notes relevant to this file but not visible from the header:
+ *  - The full `apply(OpenView&...)` overload drives `TxMeta` construction.
+ *    Metadata field selection is controlled entirely by `SField` metadata
+ *    flags (`kSMD_CHANGE_ORIG`, `kSMD_ALWAYS`, `kSMD_DELETE_FINAL`,
+ *    `kSMD_CHANGE_NEW`, `kSMD_CREATE`) baked into the XRPL protocol schema.
+ *  - Threading-only modifications accumulate in a local `Mods` scratch map
+ *    and are flushed via `rawReplace` after the main loop, keeping them
+ *    separate from the transaction's own write-intent entries.
+ *  - `succ()` merges two sorted key spaces (base ledger + `items_`) in
+ *    O(log n) to present a consistent ordered view to directory walkers.
+ */
 #include <xrpl/ledger/detail/ApplyStateTable.h>
 
 #include <xrpl/basics/Log.h>
@@ -118,7 +133,6 @@ ApplyStateTable::apply(
     bool isDryRun,
     beast::Journal j)
 {
-    // Build metadata and insert
     auto const sTx = std::make_shared<Serializer>();
     tx.add(*sTx);
     std::shared_ptr<Serializer> sMeta;
@@ -167,8 +181,6 @@ ApplyStateTable::apply(
                 STObject prevs(sfPreviousFields);
                 for (auto const& obj : *origNode)
                 {
-                    // go through the original node for
-                    // modified  fields saved on modification
                     if (obj.getFName().shouldMeta(SField::kSMD_CHANGE_ORIG) &&
                         !curNode->hasMatchingEntry(obj))
                         prevs.emplaceBack(obj);
@@ -180,7 +192,6 @@ ApplyStateTable::apply(
                 STObject finals(sfFinalFields);
                 for (auto const& obj : *curNode)
                 {
-                    // go through the final node for final fields
                     if (obj.getFName().shouldMeta(SField::kSMD_ALWAYS | SField::kSMD_DELETE_FINAL))
                         finals.emplaceBack(obj);
                 }
@@ -196,15 +207,11 @@ ApplyStateTable::apply(
                     "modification");
 
                 if (curNode->isThreadedType(to.rules()))
-                {  // thread transaction to node
-                   // item modified
                     threadItem(meta, curNode);
-                }
 
                 STObject prevs(sfPreviousFields);
                 for (auto const& obj : *origNode)
                 {
-                    // search the original node for values saved on modify
                     if (obj.getFName().shouldMeta(SField::kSMD_CHANGE_ORIG) &&
                         !curNode->hasMatchingEntry(obj))
                         prevs.emplaceBack(obj);
@@ -216,7 +223,6 @@ ApplyStateTable::apply(
                 STObject finals(sfFinalFields);
                 for (auto const& obj : *curNode)
                 {
-                    // search the final node for values saved always
                     if (obj.getFName().shouldMeta(SField::kSMD_ALWAYS | SField::kSMD_CHANGE_NEW))
                         finals.emplaceBack(obj);
                 }
@@ -224,7 +230,7 @@ ApplyStateTable::apply(
                 if (!finals.empty())
                     meta.getAffectedNode(item.first).emplaceBack(std::move(finals));
             }
-            else if (type == &sfCreatedNode)  // if created, thread to owner(s)
+            else if (type == &sfCreatedNode)
             {
                 XRPL_ASSERT(
                     curNode && !origNode,
@@ -232,13 +238,12 @@ ApplyStateTable::apply(
                     "creation");
                 threadOwners(to, meta, curNode, newMod, j);
 
-                if (curNode->isThreadedType(to.rules()))  // always thread to self
+                if (curNode->isThreadedType(to.rules()))
                     threadItem(meta, curNode);
 
                 STObject news(sfNewFields);
                 for (auto const& obj : *curNode)
                 {
-                    // save non-default values
                     if (!obj.isDefault() &&
                         obj.getFName().shouldMeta(SField::kSMD_CREATE | SField::kSMD_ALWAYS))
                         news.emplaceBack(obj);
@@ -259,7 +264,6 @@ ApplyStateTable::apply(
 
         if (!isDryRun)
         {
-            // add any new modified nodes to the modification set
             for (auto const& mod : newMod)
                 to.rawReplace(mod.second);
         }
@@ -312,8 +316,6 @@ ApplyStateTable::succ(
 {
     std::optional<key_type> next = key;
     items_t::const_iterator iter;
-    // Find base successor that is
-    // not also deleted in our list
     do
     {
         next = base.succ(*next, last);
@@ -321,19 +323,15 @@ ApplyStateTable::succ(
             break;
         iter = items_.find(*next);
     } while (iter != items_.end() && iter->second.first == Action::Erase);
-    // Find non-deleted successor in our list
     for (iter = items_.upper_bound(key); iter != items_.end(); ++iter)
     {
         if (iter->second.first != Action::Erase)
         {
-            // Found both, return the lower key
             if (!next || next > iter->first)
                 next = iter->first;
             break;
         }
     }
-    // Nothing in our list, return
-    // what we got from the parent.
     if (last && next >= last)
         return std::nullopt;
     return next;
@@ -534,7 +532,6 @@ ApplyStateTable::destroyXRP(XRPAmount const& fee)
 
 //------------------------------------------------------------------------------
 
-// Insert this transaction to the SLE's threading list
 void
 ApplyStateTable::threadItem(TxMeta& meta, std::shared_ptr<SLE> const& sle)
 {
@@ -586,9 +583,6 @@ ApplyStateTable::getForMod(ReadView const& base, key_type const& key, Mods& mods
             auto const& item = iter->second;
             if (item.first == Action::Erase)
             {
-                // The Destination of an Escrow or a PayChannel may have been
-                // deleted.  In that case the account we're threading to will
-                // not be found and it is appropriate to return a nullptr.
                 JLOG(j.warn()) << "Trying to thread to deleted node";
                 return nullptr;
             }
@@ -602,9 +596,6 @@ ApplyStateTable::getForMod(ReadView const& base, key_type const& key, Mods& mods
     auto c = base.read(keylet::unchecked(key));
     if (!c)
     {
-        // The Destination of an Escrow or a PayChannel may have been
-        // deleted.  In that case the account we're threading to will
-        // not be found and it is appropriate to return a nullptr.
         JLOG(j.warn()) << "ApplyStateTable::getForMod: key not found";
         return nullptr;
     }
@@ -624,13 +615,9 @@ ApplyStateTable::threadTx(
     auto const sle = getForMod(base, keylet::account(to).key, mods, j);
     if (!sle)
     {
-        // The Destination of an Escrow or PayChannel may have been deleted.
-        // In that case the account we are threading to will not be found.
-        // So this logging is just a warning.
         JLOG(j.warn()) << "Threading to non-existent account: " << toBase58(to);
         return;
     }
-    // threadItem only applied to AccountRoot
     XRPL_ASSERT(
         sle->isThreadedType(base.rules()), "xrpl::ApplyStateTable::threadTx : SLE is threaded");
     threadItem(meta, sle);
@@ -648,7 +635,6 @@ ApplyStateTable::threadOwners(
     switch (ledgerType)
     {
         case ltACCOUNT_ROOT: {
-            // Nothing to do
             break;
         }
         case ltRIPPLE_STATE: {
@@ -657,11 +643,9 @@ ApplyStateTable::threadOwners(
             break;
         }
         default: {
-            // If sfAccount is present, thread to that account
             if (auto const optSleAcct{(*sle)[~sfAccount]})
                 threadTx(base, meta, *optSleAcct, mods, j);
 
-            // If sfDestination is present, thread to that account
             if (auto const optSleDest{(*sle)[~sfDestination]})
                 threadTx(base, meta, *optSleDest, mods, j);
         }

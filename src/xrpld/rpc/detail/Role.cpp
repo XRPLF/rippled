@@ -1,3 +1,14 @@
+/** @file
+ *  RPC access-control and role assignment.
+ *
+ *  Implements the privilege classification pipeline that runs at the entry
+ *  point of every inbound HTTP and WebSocket RPC connection. Callers obtain
+ *  a `Role` via `requestRole()` and a `Resource::Consumer` via
+ *  `requestInboundEndpoint()`; together these two values gate command access
+ *  and install throttling before any handler dispatch occurs.
+ *
+ *  @see Role.h for the public interface and the `Role` enum.
+ */
 #include <xrpld/rpc/Role.h>
 
 #include <xrpl/beast/net/IPAddress.h>
@@ -24,6 +35,26 @@
 
 namespace xrpl {
 
+/** Return true if admin credentials are not configured or the request
+ *  supplies the correct ones.
+ *
+ *  Credentials are optional: if neither `port.admin_user` nor
+ *  `port.admin_password` is set, the function returns true for any caller
+ *  that already passed the IP gate. When either field is set, the caller
+ *  must supply matching string values in `params["admin_user"]` and
+ *  `params["admin_password"]`. The `isString()` guard prevents a
+ *  non-string JSON value from bypassing the comparison via type coercion.
+ *
+ *  @pre `port.admin_nets_v4` or `port.admin_nets_v6` must be non-empty;
+ *      this function is only meaningful after `ipAllowed()` has confirmed
+ *      the remote address is on an admin network.
+ *  @param port    Port configuration carrying `admin_user` and
+ *      `admin_password` credential expectations.
+ *  @param params  JSON-RPC request body; `admin_user` and `admin_password`
+ *      fields are read as strings if present.
+ *  @return `true` if no credentials are required or if both credentials
+ *      match the port configuration exactly.
+ */
 bool
 passwordUnrequiredOrSentCorrect(Port const& port, json::Value const& params)
 {
@@ -44,14 +75,11 @@ ipAllowed(
     std::vector<boost::asio::ip::network_v4> const& nets4,
     std::vector<boost::asio::ip::network_v6> const& nets6)
 {
-    // To test whether the remoteIP is part of one of the configured
-    // subnets, first convert it to a subnet definition. For ipv4,
-    // this means appending /32. For ipv6, /128. Then based on protocol
-    // check for whether the resulting network is either a subnet of or
-    // equal to each configured subnet, based on boost::asio's reasoning.
-    // For example, 10.1.2.3 is a subnet of 10.1.2.0/24, but 10.1.2.0 is
-    // not. However, 10.1.2.0 is equal to the network portion of 10.1.2.0/24.
-
+    // Promote the remote address to a host-prefix network (/32 or /128)
+    // and test is_subnet_of || == against each configured block.
+    // The dual check is needed because Boost's is_subnet_of treats two
+    // identical /32s as equal-but-not-a-subnet; the || handles that edge
+    // case when the admin network is itself configured as a single host.
     std::string addrString = remoteIp.to_string();
     if (remoteIp.is_v4())
     {
@@ -77,6 +105,20 @@ ipAllowed(
     return false;
 }
 
+/** Return true if the remote address and request credentials together
+ *  satisfy the port's admin requirements.
+ *
+ *  Both conditions must hold: the remote IP must be within an
+ *  `admin_nets` CIDR block, and the credentials (if configured) must be
+ *  correct. Either check failing alone is sufficient to deny admin access.
+ *
+ *  @param port      Port configuration with `admin_nets_*` and optional
+ *      credential expectations.
+ *  @param params    JSON-RPC request body passed through to
+ *      `passwordUnrequiredOrSentCorrect()`.
+ *  @param remoteIp  Physical address of the connecting client.
+ *  @return `true` only when both the IP and credential checks pass.
+ */
 bool
 isAdmin(Port const& port, json::Value const& params, beast::IP::Address const& remoteIp)
 {
@@ -108,8 +150,15 @@ requestRole(
     return Role::GUEST;
 }
 
-/**
- * ADMIN and IDENTIFIED roles shall have unlimited resources.
+/** Return true if the role is entitled to bypass resource throttling.
+ *
+ *  `ADMIN` and `IDENTIFIED` connections are unlimited. `PROXY`, `GUEST`,
+ *  and `USER` are subject to standard rate limiting regardless of traffic
+ *  volume. `FORBID` is always false (it never reaches this check in
+ *  practice because the connection is rejected before resource allocation).
+ *
+ *  @param role The privilege level assigned by `requestRole()`.
+ *  @return `true` if `role` is `ADMIN` or `IDENTIFIED`.
  */
 bool
 isUnlimited(Role const& role)
@@ -117,6 +166,19 @@ isUnlimited(Role const& role)
     return role == Role::ADMIN || role == Role::IDENTIFIED;
 }
 
+/** Convenience overload that resolves the role before testing unlimited status.
+ *
+ *  Equivalent to `isUnlimited(requestRole(required, port, params, remoteIp, user))`.
+ *  Useful when a caller needs only the boolean and has no other use for the
+ *  intermediate `Role` value.
+ *
+ *  @param required  Minimum role required; forwarded to `requestRole()`.
+ *  @param port      Port configuration; forwarded to `requestRole()`.
+ *  @param params    Request parameters; forwarded to `requestRole()`.
+ *  @param remoteIp  Physical remote endpoint; forwarded to `requestRole()`.
+ *  @param user      Forwarded user identity; forwarded to `requestRole()`.
+ *  @return `true` if the resolved role is `ADMIN` or `IDENTIFIED`.
+ */
 bool
 isUnlimited(
     Role const& required,
@@ -142,39 +204,49 @@ requestInboundEndpoint(
     return manager.newInboundEndpoint(remoteAddress, role == Role::PROXY, forwardedFor);
 }
 
+/** Extract a bare IP address string from a single forwarded-header field value.
+ *
+ *  Applies the following normalisation steps in order:
+ *  1. Trim leading/trailing ASCII spaces and CRLF.
+ *  2. Strip balanced outer double-quotes (RFC 7239 allows quoted-string);
+ *     unbalanced quotes yield an empty result.
+ *  3. Unwrap IPv6 literals enclosed in square brackets (`[::1]` → `::1`);
+ *     an unclosed bracket yields an empty result.
+ *  4. Detect IPv6 by scanning for a colon after optional leading hex digits;
+ *     if found, return as-is (IPv6 addresses cannot have an appended port
+ *     outside of brackets).
+ *  5. Strip an appended port number from IPv4 addresses (`1.2.3.4:8080`
+ *     → `1.2.3.4`).
+ *
+ *  Returns an empty `string_view` for any malformed or empty input; this
+ *  never throws so a bad header cannot interrupt the role-assignment path.
+ *
+ *  @param field  A single field value extracted from a `for=` token or an
+ *      `X-Forwarded-For` entry — already trimmed of any delimiter suffix.
+ *  @return A `string_view` into `field` (no copy) containing only the bare
+ *      IP address, or an empty `string_view` on parse failure.
+ */
 static std::string_view
 extractIpAddrFromField(std::string_view field)
 {
-    // Lambda to trim leading and trailing spaces on the field.
     auto trim = [](std::string_view str) -> std::string_view {
         std::string_view ret = str;
 
-        // Only do the work if there's at least one leading space.
         if (!ret.empty() && ret.front() == ' ')
         {
             std::size_t const firstNonSpace = ret.find_first_not_of(' ');
             if (firstNonSpace == std::string_view::npos)
-            {
-                // We know there's at least one leading space.  So if we got
-                // npos, then it must be all spaces.  Return empty string_view.
                 return {};
-            }
 
             ret = ret.substr(firstNonSpace);
         }
-        // Trim trailing spaces.
         if (!ret.empty())
         {
-            // Only do the work if there's at least one trailing space.
             if (unsigned char const c = ret.back(); c == ' ' || c == '\r' || c == '\n')
             {
                 std::size_t const lastNonSpace = ret.find_last_not_of(" \r\n");
                 if (lastNonSpace == std::string_view::npos)
-                {
-                    // We know there's at least one leading space.  So if we
-                    // got npos, then it must be all spaces.
                     return {};
-                }
 
                 ret = ret.substr(0, lastNonSpace + 1);
             }
@@ -186,7 +258,6 @@ extractIpAddrFromField(std::string_view field)
     if (ret.empty())
         return {};
 
-    // If there are surrounding quotes, strip them.
     if (ret.front() == '"')
     {
         ret.remove_prefix(1);
@@ -194,53 +265,39 @@ extractIpAddrFromField(std::string_view field)
             return {};  // Unbalanced double quotes.
 
         ret.remove_suffix(1);
-
-        // Strip leading and trailing spaces that were inside the quotes.
         ret = trim(ret);
     }
     if (ret.empty())
         return {};
 
-    // If we have an IPv6 or IPv6 (dual) address wrapped in square brackets,
-    // then we need to remove the square brackets.
     if (ret.front() == '[')
     {
-        // Remove leading '['.
         ret.remove_prefix(1);
 
-        // We may have an IPv6 address in square brackets.  Scan up to the
-        // closing square bracket.
         auto const closeBracket = std::ranges::find_if_not(ret, [](unsigned char c) {
             return std::isxdigit(c) || c == ':' || c == '.' || c == ' ';
         });
 
-        // If the string does not close with a ']', then it's not valid IPv6
-        // or IPv6 (dual).
         if (closeBracket == ret.end() || (*closeBracket) != ']')
             return {};
 
-        // Remove trailing ']'
         ret = ret.substr(0, closeBracket - ret.begin());
         ret = trim(ret);
     }
     if (ret.empty())
         return {};
 
-    // If this is an IPv6 address (after unwrapping from square brackets),
-    // then there cannot be an appended port.  In that case we're done.
+    // Detect IPv6: skip leading hex digits; if the next char is a colon the
+    // address is IPv6 and cannot have a port appended outside of brackets.
     {
-        // Skip any leading hex digits.
         auto const colon = std::ranges::find_if_not(
             ret, [](unsigned char c) { return std::isxdigit(c) || c == ' '; });
 
-        // If the string starts with optional hex digits followed by a colon
-        // it's an IVv6 address.  We're done.
         if (colon == ret.end() || (*colon) == ':')
             return ret;
     }
 
-    // If there's a port appended to the IP address, strip that by
-    // terminating at the colon.
+    // IPv4 with appended port — strip at the colon.
     if (std::size_t const colon = ret.find(':'); colon != std::string_view::npos)
         ret = ret.substr(0, colon);
 
@@ -250,15 +307,16 @@ extractIpAddrFromField(std::string_view field)
 std::string_view
 forwardedFor(http_request_type const& request)
 {
-    // Look for the Forwarded field in the request.
+    // RFC 7239 `Forwarded` takes priority over the legacy `X-Forwarded-For`.
     if (auto it = request.find(boost::beast::http::field::forwarded); it != request.end())
     {
         auto asciiToLower = [](char c) -> char {
             return ((static_cast<unsigned>(c) - 65U) < 26) ? c + 'a' - 'A' : c;
         };
 
-        // Look for the first (case insensitive) "for=" at a directive
-        // boundary (start of value, or preceded by , ; or OWS).
+        // Case-insensitive search for the first "for=" token at a directive
+        // boundary (start of value, or preceded by , ; or OWS). The boundary
+        // check prevents false matches inside addresses or earlier directives.
         static constexpr std::string_view kFOR_STR{"for="};
         auto const atFieldBoundary = [begin = it->value().begin()](auto p) {
             return p == begin || p[-1] == ';' || p[-1] == ',' || p[-1] == ' ' || p[-1] == '\t';
@@ -284,7 +342,8 @@ forwardedFor(http_request_type const& request)
 
         std::advance(found, kFOR_STR.size());
 
-        // We found a "for=".  Scan for the end of the IP address.
+        // Delimit to the first "," or ";" so multi-hop entries don't bleed
+        // into the address field; fall back to end-of-header if none found.
         auto const end = it->value().end();
         std::size_t const pos = [&found, &end]() {
             std::size_t const pos =
@@ -298,10 +357,10 @@ forwardedFor(http_request_type const& request)
         return extractIpAddrFromField({found, pos});
     }
 
-    // Look for the X-Forwarded-For field in the request.
+    // Legacy `X-Forwarded-For`: take only the first comma-delimited entry,
+    // which by convention is the originating client address.
     if (auto it = request.find("X-Forwarded-For"); it != request.end())
     {
-        // The first X-Forwarded-For entry may be terminated by a comma.
         std::size_t found = it->value().find(',');
         if (found == boost::string_view::npos)
             found = it->value().length();

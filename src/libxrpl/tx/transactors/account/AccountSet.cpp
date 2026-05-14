@@ -1,3 +1,13 @@
+/** @file
+ *  Implements the AccountSet transactor — the primary mechanism for
+ *  configuring account root entries on the XRP Ledger.
+ *
+ *  Flag changes are accepted through two parallel encodings for historical
+ *  compatibility: the legacy transaction `Flags` bitfield (`tfRequireAuth`,
+ *  `tfDisallowXRP`, etc.) and the modern `sfSetFlag`/`sfClearFlag` fields
+ *  (`asfRequireAuth`, `asfDisallowXRP`, etc.). Both paths are validated in
+ *  `preflight` and applied in `doApply`.
+ */
 #include <xrpl/tx/transactors/account/AccountSet.h>
 
 #include <xrpl/basics/Blob.h>
@@ -34,8 +44,6 @@ namespace xrpl {
 TxConsequences
 AccountSet::makeTxConsequences(PreflightContext const& ctx)
 {
-    // The AccountSet may be a blocker, but only if it sets or clears
-    // specific account flags.
     auto getTxConsequencesCategory = [](STTx const& tx) {
         if (std::uint32_t const uTxFlags = tx.getFlags();
             uTxFlags & (tfRequireAuth | tfOptionalAuth))
@@ -165,7 +173,6 @@ AccountSet::preflight(PreflightContext const& ctx)
         return telBAD_DOMAIN;
     }
 
-    // Configure authorized minting account:
     if (uSetFlag == asfAuthorizedNFTokenMinter && !tx.isFieldPresent(sfNFTokenMinter))
         return temMALFORMED;
 
@@ -178,8 +185,6 @@ AccountSet::preflight(PreflightContext const& ctx)
 NotTEC
 AccountSet::checkPermission(ReadView const& view, STTx const& tx)
 {
-    // AccountSet is prohibited to be granted on a transaction level,
-    // but some granular permissions are allowed.
     auto const delegate = tx[~sfDelegate];
     if (!delegate)
         return tesSUCCESS;
@@ -196,10 +201,8 @@ AccountSet::checkPermission(ReadView const& view, STTx const& tx)
     auto const uSetFlag = tx.getFieldU32(sfSetFlag);
     auto const uClearFlag = tx.getFieldU32(sfClearFlag);
     auto const uTxFlags = tx.getFlags();
-    // We don't support any flag based granular permission under
-    // AccountSet transaction. If any delegated account is trying to
-    // update the flag on behalf of another account, it is not
-    // authorized.
+    // Behavioral flag changes (SetFlag, ClearFlag, or legacy Flags bits) are
+    // never delegable — there is no granular permission pathway for them.
     if (uSetFlag != 0 || uClearFlag != 0 || ((uTxFlags & tfUniversalMask) != 0u))
         return terNO_DELEGATE_PERMISSION;
 
@@ -275,7 +278,6 @@ AccountSet::preclaim(PreclaimContext const& ctx)
         }
         else if (uSetFlag == asfNoFreeze)
         {
-            // Cannot set NoFreeze if clawback is enabled
             if ((uFlagsIn & lsfAllowTrustLineClawback) != 0u)
             {
                 JLOG(ctx.j.trace()) << "Can't set NoFreeze if clawback is enabled";
@@ -313,6 +315,9 @@ AccountSet::doApply()
     bool const bSetDisallowXRP{((uTxFlags & tfDisallowXRP) != 0u) || (uSetFlag == asfDisallowXRP)};
     bool const bClearDisallowXRP{((uTxFlags & tfAllowXRP) != 0u) || (uClearFlag == asfDisallowXRP)};
 
+    // True only when the transaction was signed with the account's own master
+    // private key (the signing pubkey derives to exactly account_). Required
+    // for irreversible operations: DisableMaster and NoFreeze.
     bool const sigWithMaster{[&tx, &acct = account_]() {
         auto const spk = tx.getSigningPubKey();
 
@@ -384,7 +389,6 @@ AccountSet::doApply()
 
         if ((!sle->isFieldPresent(sfRegularKey)) && (!view().peek(keylet::signers(account_))))
         {
-            // Account has no regular key or multi-signer signer list.
             return tecNO_ALTERNATIVE_KEY;
         }
 
@@ -427,16 +431,15 @@ AccountSet::doApply()
         uFlagsOut |= lsfNoFreeze;
     }
 
-    // Anyone may set global freeze
     if (uSetFlag == asfGlobalFreeze)
     {
         JLOG(j_.trace()) << "Set GlobalFreeze flag";
         uFlagsOut |= lsfGlobalFreeze;
     }
 
-    // If you have set NoFreeze, you may not clear GlobalFreeze
-    // This prevents those who have set NoFreeze from using
-    // GlobalFreeze strategically.
+    // If lsfNoFreeze is active, clearing GlobalFreeze is prohibited.
+    // Allowing it would let issuers use GlobalFreeze as a strategic
+    // temporary lever after having committed to never-freeze.
     if ((uSetFlag != asfGlobalFreeze) && (uClearFlag == asfGlobalFreeze) &&
         ((uFlagsOut & lsfNoFreeze) == 0))
     {
@@ -586,7 +589,6 @@ AccountSet::doApply()
         }
     }
 
-    // Configure authorized minting account:
     if (uSetFlag == asfAuthorizedNFTokenMinter)
         sle->setAccountID(sfNFTokenMinter, ctx_.tx[sfNFTokenMinter]);
 
@@ -629,7 +631,6 @@ AccountSet::doApply()
         uFlagsOut &= ~lsfDisallowIncomingTrustline;
     }
 
-    // Set or clear flags for disallowing escrow
     if (ctx_.view().rules().enabled(featureTokenEscrow))
     {
         if (uSetFlag == asfAllowTrustLineLocking)
@@ -642,7 +643,6 @@ AccountSet::doApply()
         }
     }
 
-    // Set flag for clawback
     if (ctx_.view().rules().enabled(featureClawback) && uSetFlag == asfAllowTrustLineClawback)
     {
         JLOG(j_.trace()) << "set allow clawback";

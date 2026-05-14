@@ -1,3 +1,20 @@
+/** @file
+ *  Monolithic implementation of all eight cross-chain bridge transaction types.
+ *
+ *  Provides `preflight`, `preclaim`, and `doApply` for:
+ *  `XChainCreateBridge`, `BridgeModify`, `XChainClaim`, `XChainCommit`,
+ *  `XChainCreateClaimID`, `XChainAddClaimAttestation`,
+ *  `XChainAddAccountCreateAttestation`, and `XChainCreateAccountCommit`.
+ *
+ *  The bridge protocol connects a *locking chain* and an *issuing chain*
+ *  without an exchange rate: assets locked on one side are represented 1-to-1
+ *  as wrapped tokens on the other.  A quorum of witness servers attests to
+ *  cross-chain events; `claimHelper` and `onNewAttestations` implement the
+ *  shared quorum mechanics; `finalizeClaimHelper` handles atomic fund transfer
+ *  and reward distribution via a nested `PaymentSandbox`.
+ *
+ *  See `docs/bridge/spec.md` for the full protocol specification.
+ */
 #include <xrpl/tx/transactors/bridge/XChainBridge.h>
 
 #include <xrpl/basics/Expected.h>
@@ -105,10 +122,26 @@ namespace xrpl {
 
 namespace {
 
-// Check that the public key is allowed to sign for the given account. If the
-// account does not exist on the ledger, then the public key must be the master
-// key for the given account if it existed. Otherwise the key must be an enabled
-// master key or a regular key for the existing account.
+/** Verify that a public key is authorised to sign on behalf of a signer account.
+ *
+ *  Three cases are handled: if the account does not exist on the ledger the
+ *  public key must derive to `attestationSignerAccount` (i.e. it must be the
+ *  account's hypothetical master key); if the account exists and the key
+ *  derives to that account ID, the master key must not be disabled; if the key
+ *  does not derive to the account ID, it must match the account's
+ *  `sfRegularKey`.
+ *
+ *  Called both during `preclaim` and again inside `onNewAttestations` as a
+ *  defensive guard against future refactoring removing the `preclaim` check.
+ *
+ *  @param view           Read-only ledger view used to check account state.
+ *  @param signersList    Map of authorised signer account IDs to their weights.
+ *  @param attestationSignerAccount  The account ID claimed by the attestation.
+ *  @param pk             Public key that was used to sign the attestation.
+ *  @param j              Journal for diagnostic logging.
+ *  @return `tesSUCCESS` if the key is valid for the account, or
+ *      `tecNO_PERMISSION` / `tecXCHAIN_BAD_PUBLIC_KEY_ACCOUNT_PAIR` on failure.
+ */
 TER
 checkAttestationPublicKey(
     ReadView const& view,
@@ -173,18 +206,35 @@ checkAttestationPublicKey(
     return tesSUCCESS;
 }
 
-// If there is a quorum of attestations for the given parameters, then
-// return the reward accounts, otherwise return TER for the error.
-// Also removes attestations that are no longer part of the signers list.
-//
-// Note: the dst parameter is what the attestations are attesting to, which
-// is not always used (it is used when automatically triggering a transfer
-// from an `addAttestation` transaction, it is not used in a `claim`
-// transaction). If the `checkDst` parameter is `check`, the attestations
-// must attest to this destination, if it is `ignore` then the `dst` of the
-// attestations are not checked (as for a `claim` transaction)
-
+/** Whether the destination field in attestations must be matched.
+ *
+ *  Used to distinguish automatic settlement triggered by `addAttestation`
+ *  (`Check` — destination must match the attested value) from an explicit
+ *  `XChainClaim` transaction (`Ignore` — any quorum for the amount suffices).
+ */
 enum class CheckDst { Check, Ignore };
+
+/** Check whether attestations reach quorum for the given match fields.
+ *
+ *  Stale attestations (signer key disabled, regular key rotated, or signer
+ *  removed from the signer list) are stripped before counting weight.  If the
+ *  accumulated weight meets or exceeds `quorum`, the reward accounts for the
+ *  qualifying attestations are returned.
+ *
+ *  @param attestations  Mutable attestation collection; stale entries are
+ *      erased in-place.
+ *  @param view          Read-only ledger view for key-validity checks.
+ *  @param toMatch       Fields that each attestation must match (amount, chain,
+ *      and optionally destination).
+ *  @param checkDst      Whether the destination field must agree with
+ *      `toMatch.dst`.  Use `Check` for automatic settlement, `Ignore` for
+ *      explicit claims.
+ *  @param quorum        Minimum total weight required.
+ *  @param signersList   Map from signer account ID to weight.
+ *  @param j             Journal for diagnostic logging.
+ *  @return Reward account list on quorum success, or `tecXCHAIN_CLAIM_NO_QUORUM`
+ *      wrapped in `Unexpected` if quorum is not reached.
+ */
 template <class TAttestation>
 Expected<std::vector<AccountID>, TER>
 claimHelper(
@@ -236,45 +286,45 @@ claimHelper(
     return Unexpected(tecXCHAIN_CLAIM_NO_QUORUM);
 }
 
-/**
- Handle a new attestation event.
-
- Attempt to add the given attestation and reconcile with the current
- signer's list. Attestations that are not part of the current signer's
- list will be removed.
-
- @param claimAtt New attestation to add. It will be added if it is not
- already part of the collection, or attests to a larger value.
-
- @param quorum Min weight required for a quorum
-
- @param signersList Map from signer's account id (derived from public keys)
- to the weight of that key.
-
- @return optional reward accounts. If after handling the new attestation
- there is a quorum for the amount specified on the new attestation, then
- return the reward accounts for that amount, otherwise return a nullopt.
- Note that if the signer's list changes and there have been `commit`
- transactions of different amounts then there may be a different subset that
- has reached quorum. However, to "trigger" that subset would require adding
- (or re-adding) an attestation that supports that subset.
-
- The reason for using a nullopt instead of an empty vector when a quorum is
- not reached is to allow for an interface where a quorum is reached but no
- rewards are distributed.
-
- @note This function is not called `add` because it does more than just
-       add the new attestation (in fact, it may not add the attestation at
-       all). Instead, it handles the event of a new attestation.
- */
+/** Result of handling a new attestation event via `onNewAttestations`. */
 struct OnNewAttestationResult
 {
+    /** Reward accounts if quorum was reached for the newly submitted
+     *  attestation's parameters; `std::nullopt` otherwise.
+     *
+     *  A `nullopt` here means no quorum (or no reward distribution needed),
+     *  whereas an empty vector means quorum was reached but no reward is owed.
+     */
     std::optional<std::vector<AccountID>> rewardAccounts;
-    // `changed` is true if the attestation collection changed in any way
-    // (added/removed/changed)
+
+    /** True if the attestation collection changed in any way
+     *  (entry added, replaced, or removed) during this call. */
     bool changed{false};
 };
 
+/** Handle one or more new attestation events.
+ *
+ *  Adds or replaces each incoming attestation in the collection after
+ *  re-validating the public key (defensive redundancy with the preclaim check).
+ *  Attestations whose key is no longer valid are silently skipped.  After all
+ *  updates, `claimHelper` is called with `CheckDst::Check` to determine whether
+ *  the newly submitted attestations push the collection over quorum.
+ *
+ *  @note Called `onNewAttestations` rather than `add` because it orchestrates
+ *      key validation, collection updates, and a quorum check — the attestation
+ *      may not be added at all if its key is invalid.
+ *
+ *  @param attestations  Mutable attestation collection to update.
+ *  @param view          Read-only ledger view for key-validity checks.
+ *  @param attBegin      Pointer to the first incoming attestation.
+ *  @param attEnd        One-past-the-end pointer for the incoming attestations.
+ *  @param quorum        Minimum total weight required.
+ *  @param signersList   Map from signer account ID to weight.
+ *  @param j             Journal for diagnostic logging.
+ *  @return `OnNewAttestationResult` with optional reward accounts (set only if
+ *      quorum is now reached for the submitted attestation's parameters) and a
+ *      flag indicating whether the collection changed.
+ */
 template <class TAttestation>
 [[nodiscard]] OnNewAttestationResult
 onNewAttestations(
@@ -334,9 +384,24 @@ onNewAttestations(
     return {std::move(r.value()), changed};
 };
 
-// Check if there is a quorum of attestations for the given amount and
-// chain. If so return the reward accounts, if not return the tec code (most
-// likely tecXCHAIN_CLAIM_NO_QUORUM)
+/** Check quorum for an explicit `XChainClaim` transaction.
+ *
+ *  Delegates to `claimHelper` with `CheckDst::Ignore` — the destination
+ *  recorded in each attestation is not checked because the claimant has
+ *  explicitly chosen where to direct the funds.
+ *
+ *  @param attestations       Mutable attestation collection; stale entries are
+ *      purged by `claimHelper`.
+ *  @param view               Read-only ledger view.
+ *  @param sendingAmount      Amount that was committed on the source chain.
+ *  @param wasLockingChainSend  `true` if the commit occurred on the locking
+ *      chain.
+ *  @param quorum             Minimum weight required.
+ *  @param signersList        Map from signer account ID to weight.
+ *  @param j                  Journal for diagnostic logging.
+ *  @return Reward account list on success, or `tecXCHAIN_CLAIM_NO_QUORUM`
+ *      wrapped in `Unexpected`.
+ */
 Expected<std::vector<AccountID>, TER>
 onClaim(
     XChainClaimAttestations& attestations,
@@ -352,17 +417,31 @@ onClaim(
     return claimHelper(attestations, view, toMatch, CheckDst::Ignore, quorum, signersList, j);
 }
 
+/** Whether `transferHelper` may create the destination account on the fly. */
 enum class CanCreateDstPolicy { No, Yes };
 
+/** Deposit-auth bypass policy for `transferHelper`.
+ *
+ *  `DstCanBypass` allows the destination account to bypass its own
+ *  `lsfDepositAuth` flag when it is also the claim owner — i.e. the account is
+ *  effectively sending funds to itself via an `XChainClaim`.
+ */
 enum class DepositAuthPolicy { Normal, DstCanBypass };
 
-// Allow the fee to dip into the reserve. To support this, information about the
-// submitting account needs to be fed to the transfer helper.
+/** Account balance snapshot enabling fee-dipping in `transferHelper`.
+ *
+ *  Commit transactions are permitted to spend into the owner reserve to cover
+ *  fees.  Passing this struct causes `transferHelper` to use `preFeeBalance`
+ *  (the balance before the fee was deducted) when checking whether the source
+ *  can afford the transfer, provided `account` and `postFeeBalance` match the
+ *  current ledger state.  Other transactors should not seat this optional.
+ */
 struct TransferHelperSubmittingAccountInfo
 {
-    AccountID account;
-    STAmount preFeeBalance;
-    STAmount postFeeBalance;
+    AccountID account;       ///< The submitting account's ID.
+    STAmount preFeeBalance;  ///< Balance before the transaction fee was charged.
+    STAmount postFeeBalance; ///< Current balance (after fee); used as a guard to
+                             ///<   ensure the snapshot is still valid.
 };
 
 /** Transfer funds from the src account to the dst account
@@ -506,29 +585,41 @@ transferHelper(
     return tecXCHAIN_PAYMENT_FAILED;
 }
 
-/**  Action to take when the transfer from the door account to the dst fails
-
-     @note This is useful to prevent a failed "create account" transaction from
-           blocking subsequent "create account" transactions.
-*/
+/** Action to take on the claim ID when the door-to-destination transfer fails.
+ *
+ *  Regular claims use `KeepClaim` so the sender can retry; account-creation
+ *  claims use `RemoveClaim` to unblock subsequent ordered creates — the witness
+ *  servers attested truthfully even if the destination was unacceptable.
+ */
 enum class OnTransferFail {
-    /** Remove the claim even if the transfer fails */
+    /** Remove the claim ID even if the transfer fails. */
     RemoveClaim,
-    /**  Keep the claim if the transfer fails */
+    /** Preserve the claim ID so the transfer can be retried later. */
     KeepClaim
 };
 
+/** Three-phase result from `finalizeClaimHelper`.
+ *
+ *  Each phase may independently succeed or fail; callers inspect individual
+ *  fields to decide whether the attestation list change should still be
+ *  committed.  Use `ter()` for the priority-ordered overall code, or
+ *  `isTesSuccess()` for a simple pass/fail check.
+ */
 struct FinalizeClaimHelperResult
 {
-    /// TER for transfering the payment funds
+    /** TER for transferring the main payment from the door to the destination.
+     *  `std::nullopt` if this phase was not attempted. */
     std::optional<TER> mainFundsTer;
-    // TER for transfering the reward funds
+
+    /** TER for distributing witness-server rewards from the reward pool.
+     *  `std::nullopt` if no reward accounts were present. */
     std::optional<TER> rewardTer;
-    // TER for removing the sle (if is sle is to be removed)
+
+    /** TER for erasing the claim ID SLE from the ledger.
+     *  `std::nullopt` if SLE removal was not attempted. */
     std::optional<TER> rmSleTer;
 
-    // Helper to check for overall success. If there wasn't overall success the
-    // individual ters can be used to decide what needs to be done.
+    /** Returns `true` only when every attempted phase succeeded. */
     [[nodiscard]] bool
     isTesSuccess() const
     {
@@ -537,14 +628,21 @@ struct FinalizeClaimHelperResult
             (!rmSleTer || xrpl::isTesSuccess(*rmSleTer));
     }
 
+    /** Priority-ordered TER for the overall operation.
+     *
+     *  `tecINTERNAL` and `tef*` codes from any phase take precedence over
+     *  ordinary `tec*` failures.  Among ordinary failures the phases are
+     *  checked in order: `mainFundsTer`, `rewardTer`, `rmSleTer`.
+     *
+     *  @return `tesSUCCESS` if all attempted phases succeeded, otherwise the
+     *      highest-priority non-success code.
+     */
     [[nodiscard]] TER
     ter() const
     {
         if (isTesSuccess())
             return tesSUCCESS;
 
-        // if any phase return a tecINTERNAL or a tef, prefer returning those
-        // codes
         if (mainFundsTer && (isTefFailure(*mainFundsTer) || *mainFundsTer == tecINTERNAL))
             return *mainFundsTer;
         if (rewardTer && (isTefFailure(*rewardTer) || *rewardTer == tecINTERNAL))
@@ -552,8 +650,6 @@ struct FinalizeClaimHelperResult
         if (rmSleTer && (isTefFailure(*rmSleTer) || *rmSleTer == tecINTERNAL))
             return *rmSleTer;
 
-        // Only after the tecINTERNAL and tef are checked, return the first
-        // non-success error code.
         if (mainFundsTer && !xrpl::isTesSuccess(*mainFundsTer))
             return *mainFundsTer;
         if (rewardTer && !xrpl::isTesSuccess(*rewardTer))
@@ -736,15 +832,16 @@ finalizeClaimHelper(
     return result;
 }
 
-/** Get signers list corresponding to the account that owns the bridge
-
-    @param view View to read the signer's list from.
-    @param sleBridge Sle of the bridge.
-    @param j Log
-
-    @return map of the signer's list (AccountIDs and weights), the quorum, and
-            error code
-*/
+/** Retrieve the signer list and quorum for the door account that owns a bridge.
+ *
+ *  @param view      Read-only ledger view.
+ *  @param sleBridge SLE of the bridge whose door account is queried.
+ *  @param j         Journal for diagnostic logging.
+ *  @return A tuple of `(signersList, quorum, ter)` where `signersList` maps
+ *      each signer's account ID to its weight, `quorum` is the minimum
+ *      required weight (initialised to `UINT32_MAX` on error), and `ter` is
+ *      `tesSUCCESS`, `tecXCHAIN_NO_SIGNERS_LIST`, or `tecINTERNAL`.
+ */
 std::tuple<std::unordered_map<AccountID, std::uint32_t>, std::uint32_t, TER>
 getSignersListAndQuorum(ReadView const& view, SLE const& sleBridge, beast::Journal j)
 {
@@ -781,6 +878,20 @@ getSignersListAndQuorum(ReadView const& view, SLE const& sleBridge, beast::Journ
     return {std::move(r), q, tesSUCCESS};
 };
 
+/** Resolve a bridge SLE from a `bridgeSpec` by trying the locking-chain
+ *  keylet first, then the issuing-chain keylet.
+ *
+ *  A bridge SLE exists on exactly one of the two chains (the chain whose door
+ *  account is the submitting account).  This helper abstracts over that
+ *  ambiguity for both read-only and mutable callers via a generic `getter`
+ *  callable.
+ *
+ *  @tparam R       SLE type (`SLE` for mutable, `SLE const` for read-only).
+ *  @tparam F       Callable `(STXChainBridge, ChainType) -> shared_ptr<R>`.
+ *  @param getter   Concrete read or peek function.
+ *  @param bridgeSpec  Bridge specification to look up.
+ *  @return The matching SLE, or `nullptr` if not found on either chain.
+ */
 template <class R, class F>
 std::shared_ptr<R>
 readOrpeekBridge(F&& getter, STXChainBridge const& bridgeSpec)
@@ -798,6 +909,12 @@ readOrpeekBridge(F&& getter, STXChainBridge const& bridgeSpec)
     return tryGet(STXChainBridge::ChainType::Issuing);
 }
 
+/** Peek (mutable access) at the bridge SLE for `bridgeSpec` in an apply view.
+ *
+ *  @param v           Mutable apply view.
+ *  @param bridgeSpec  Bridge to look up.
+ *  @return Mutable SLE pointer, or `nullptr` if not found.
+ */
 std::shared_ptr<SLE>
 peekBridge(ApplyView& v, STXChainBridge const& bridgeSpec)
 {
@@ -808,6 +925,12 @@ peekBridge(ApplyView& v, STXChainBridge const& bridgeSpec)
         bridgeSpec);
 }
 
+/** Read (const access) the bridge SLE for `bridgeSpec` from a read view.
+ *
+ *  @param v           Read-only view.
+ *  @param bridgeSpec  Bridge to look up.
+ *  @return Const SLE pointer, or `nullptr` if not found.
+ */
 std::shared_ptr<SLE const>
 readBridge(ReadView const& v, STXChainBridge const& bridgeSpec)
 {
@@ -818,8 +941,28 @@ readBridge(ReadView const& v, STXChainBridge const& bridgeSpec)
         bridgeSpec);
 }
 
-// Precondition: all the claims in the range are consistent. They must sign for
-// the same event (amount, sending account, claim id, etc).
+/** Apply a batch of regular cross-chain claim attestations to the ledger.
+ *
+ *  Updates the claim ID's attestation array and, if quorum is reached and the
+ *  attestations include a destination, automatically settles the transfer via
+ *  `finalizeClaimHelper`.  All mutations are buffered in a `PaymentSandbox`
+ *  and applied atomically at the end.
+ *
+ *  @pre All attestations in `[attBegin, attEnd)` are consistent — they attest
+ *      to the same event (amount, sending account, claim ID, etc.).
+ *
+ *  @param view         Mutable apply view.
+ *  @param rawView      Raw view for final sandbox commit.
+ *  @param attBegin     Iterator to the first incoming attestation.
+ *  @param attEnd       One-past-the-end iterator.
+ *  @param bridgeSpec   Bridge specification.
+ *  @param srcChain     Chain where the commit event occurred.
+ *  @param signersList  Map from signer account ID to weight.
+ *  @param quorum       Minimum weight required for settlement.
+ *  @param j            Journal for diagnostic logging.
+ *  @return `tesSUCCESS`, or an error code if the claim ID is missing, the
+ *      sending account mismatches, or a fatal internal error occurs.
+ */
 template <class TIter>
 TER
 applyClaimAttestations(
@@ -856,7 +999,6 @@ applyClaimAttestations(
         if (!sleClaimID)
             return Unexpected(tecXCHAIN_NO_CLAIM_ID);
 
-        // Add claims that are part of the signer's list to the "claims" vector
         std::vector<Attestations::AttestationClaim> atts;
         atts.reserve(std::distance(attBegin, attEnd));
         for (auto att = attBegin; att != attEnd; ++att)
@@ -943,6 +1085,35 @@ applyClaimAttestations(
     return tesSUCCESS;
 }
 
+/** Apply account-creation attestations and, when quorum is reached, create the
+ *  destination account on the issuing chain.
+ *
+ *  Account-creation transfers must happen in strict order (enforced by
+ *  `sfXChainAccountCreateCount` / `sfXChainAccountClaimCount`).  When
+ *  `createCount + 1 == attBegin->createCount`, the claim is processed
+ *  immediately and `sfXChainAccountClaimCount` is advanced.  If the transfer
+ *  fails, the claim ID is removed anyway (`OnTransferFail::RemoveClaim`) and
+ *  the counter is advanced to prevent one stalled create from blocking all
+ *  subsequent ones.
+ *
+ *  The inner lambda scopes SLE lifetimes to prevent overlap with
+ *  `finalizeClaimHelper`'s child sandbox.
+ *
+ *  @param view         Mutable apply view.
+ *  @param rawView      Raw view for final sandbox commit.
+ *  @param attBegin     Iterator to the first incoming attestation.
+ *  @param attEnd       One-past-the-end iterator.
+ *  @param doorAccount  Door account ID (owns the bridge and created claim IDs).
+ *  @param doorK        Keylet for the door account SLE.
+ *  @param bridgeSpec   Bridge specification.
+ *  @param bridgeK      Keylet for the bridge SLE.
+ *  @param srcChain     Chain where the `XChainCreateAccountCommit` occurred.
+ *  @param signersList  Map from signer account ID to weight.
+ *  @param quorum       Minimum weight required for settlement.
+ *  @param j            Journal for diagnostic logging.
+ *  @return `tesSUCCESS`, or an error code if ordering, reserve, or internal
+ *      checks fail.
+ */
 template <class TIter>
 TER
 applyCreateAccountAttestations(
@@ -1027,7 +1198,6 @@ applyCreateAccountAttestations(
             if (!sleDoor)
                 return Unexpected(tecINTERNAL);
 
-            // Check reserve
             auto const balance = (*sleDoor)[sfBalance];
             auto const reserve = psb.fees().accountReserve((*sleDoor)[sfOwnerCount] + 1);
 
@@ -1126,7 +1296,6 @@ applyCreateAccountAttestations(
         (*createdSleClaimID)[sfXChainAccountCreateCount] = attBegin->createCount;
         createdSleClaimID->setFieldArray(sfXChainCreateAccountAttestations, curAtts.toSTArray());
 
-        // Add to owner directory of the door account
         auto const page = psb.dirInsert(
             keylet::ownerDir(doorAccount), claimIDKeylet, describeOwnerDir(doorAccount));
         if (!page)
@@ -1148,6 +1317,19 @@ applyCreateAccountAttestations(
     return tesSUCCESS;
 }
 
+/** Deserialise a transaction into an `AttestationClaim` or
+ *  `AttestationCreateAccount` object.
+ *
+ *  The transaction's `sfAccount` field is temporarily overwritten with the
+ *  `sfOtherChainSource` value before construction, satisfying the attestation
+ *  type's field layout expectations.
+ *
+ *  @tparam TAttestation  Must be `AttestationClaim` or
+ *      `AttestationCreateAccount`.
+ *  @param tx  Transaction to deserialise.
+ *  @return The constructed attestation, or `std::nullopt` if construction
+ *      throws (e.g. a required field is missing or malformed).
+ */
 template <class TAttestation>
 std::optional<TAttestation>
 toClaim(STTx const& tx)
@@ -1168,6 +1350,17 @@ toClaim(STTx const& tx)
     }
 }
 
+/** Shared `preflight` implementation for both attestation transaction types.
+ *
+ *  Validates: public key is a recognised key type; the transaction can be
+ *  deserialised into `TAttestation`; the attestation signature is valid for
+ *  the bridge; amounts are structurally valid and positive; the sending amount
+ *  matches the bridge's source-chain issue.
+ *
+ *  @tparam TAttestation  `AttestationClaim` or `AttestationCreateAccount`.
+ *  @param ctx  Preflight context (no ledger access).
+ *  @return `tesSUCCESS` or a `tem*` code.
+ */
 template <class TAttestation>
 NotTEC
 attestationPreflight(PreflightContext const& ctx)
@@ -1194,6 +1387,17 @@ attestationPreflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Shared `preclaim` implementation for both attestation transaction types.
+ *
+ *  Verifies the bridge exists and that the attestation's public key is
+ *  authorised to sign on behalf of `sfAttestationSignerAccount` in the
+ *  bridge door's signer list.
+ *
+ *  @tparam TAttestation  `AttestationClaim` or `AttestationCreateAccount`.
+ *  @param ctx  Preclaim context (read-only ledger access).
+ *  @return `tesSUCCESS`, `tecNO_ENTRY`, `tecXCHAIN_NO_SIGNERS_LIST`,
+ *      `tecXCHAIN_BAD_PUBLIC_KEY_ACCOUNT_PAIR`, or `tecINTERNAL`.
+ */
 template <class TAttestation>
 TER
 attestationPreclaim(PreclaimContext const& ctx)
@@ -1222,6 +1426,18 @@ attestationPreclaim(PreclaimContext const& ctx)
     return checkAttestationPublicKey(ctx.view, signersList, attestationSignerAccount, pk, ctx.j);
 }
 
+/** Shared `doApply` implementation for both attestation transaction types.
+ *
+ *  Determines which chain is the source, fetches the signer list and quorum,
+ *  and dispatches to `applyClaimAttestations` (for `AttestationClaim`) or
+ *  `applyCreateAccountAttestations` (for `AttestationCreateAccount`) via
+ *  `if constexpr`.  SLE lifetimes are scoped via a lambda to prevent overlap
+ *  with `finalizeClaimHelper`'s child `PaymentSandbox`.
+ *
+ *  @tparam TAttestation  `AttestationClaim` or `AttestationCreateAccount`.
+ *  @param ctx  Apply context (mutable ledger access).
+ *  @return `tesSUCCESS`, or a `tec`/`tef` error code.
+ */
 template <class TAttestation>
 TER
 attestationDoApply(ApplyContext& ctx)
@@ -1327,6 +1543,19 @@ attestationDoApply(ApplyContext& ctx)
 }  // namespace
 //------------------------------------------------------------------------------
 
+/** Stateless validation for `XChainCreateBridge`.
+ *
+ *  Enforces: distinct door accounts (replay prevention); submitting account
+ *  is one of the two door accounts; both sides are the same asset class (both
+ *  XRP or both IOU); `sfSignatureReward` is non-negative XRP; optional
+ *  `sfMinAccountCreateAmount` is positive XRP and only present on XRP bridges;
+ *  for XRP bridges the issuing door must be the genesis root account; for IOU
+ *  bridges the issuing door must be the currency issuer; the locking door must
+ *  not be its own asset issuer.
+ *
+ *  @param ctx  Preflight context.
+ *  @return `tesSUCCESS` or a `tem*` code.
+ */
 NotTEC
 XChainCreateBridge::preflight(PreflightContext const& ctx)
 {
@@ -1366,9 +1595,6 @@ XChainCreateBridge::preflight(PreflightContext const& ctx)
 
     if (isXRP(bridgeSpec.issuingChainIssue()))
     {
-        // Issuing account must be the root account for XRP (which presumably
-        // owns all the XRP). This is done so the issuing account can't "run
-        // out" of wrapped tokens.
         static auto const kROOT_ACCOUNT = calcAccountID(
             generateKeyPair(KeyType::Secp256k1, generateSeed("masterpassphrase")).first);
         if (bridgeSpec.issuingChainDoor() != kROOT_ACCOUNT)
@@ -1378,8 +1604,6 @@ XChainCreateBridge::preflight(PreflightContext const& ctx)
     }
     else
     {
-        // Issuing account must be the issuer for non-XRP. This is done so the
-        // issuing account can't "run out" of wrapped tokens.
         if (bridgeSpec.issuingChainDoor() != bridgeSpec.issuingChainIssue().account)
         {
             return temXCHAIN_BRIDGE_BAD_ISSUES;
@@ -1396,6 +1620,16 @@ XChainCreateBridge::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Read-only preclaim checks for `XChainCreateBridge`.
+ *
+ *  Verifies: no duplicate bridge exists on either chain; IOU issuer exists and
+ *  has not enabled clawback (which would allow stealing backed assets); the
+ *  submitting account has sufficient reserve for one new owned object.
+ *
+ *  @param ctx  Preclaim context (read-only ledger).
+ *  @return `tesSUCCESS`, `tecDUPLICATE`, `tecNO_ISSUER`, `tecNO_PERMISSION`,
+ *      `terNO_ACCOUNT`, or `tecINSUFFICIENT_RESERVE`.
+ */
 TER
 XChainCreateBridge::preclaim(PreclaimContext const& ctx)
 {
@@ -1430,7 +1664,6 @@ XChainCreateBridge::preclaim(PreclaimContext const& ctx)
     }
 
     {
-        // Check reserve
         auto const sleAcc = ctx.view.read(keylet::account(account));
         if (!sleAcc)
             return terNO_ACCOUNT;
@@ -1445,6 +1678,14 @@ XChainCreateBridge::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Create the bridge SLE and register it in the door account's owner directory.
+ *
+ *  Initialises `sfXChainClaimID`, `sfXChainAccountCreateCount`, and
+ *  `sfXChainAccountClaimCount` to zero.  Increments the door account's owner
+ *  count by one.
+ *
+ *  @return `tesSUCCESS` or `tecINTERNAL` / `tecDIR_FULL` on ledger corruption.
+ */
 TER
 XChainCreateBridge::doApply()
 {
@@ -1472,7 +1713,6 @@ XChainCreateBridge::doApply()
     (*sleBridge)[sfXChainAccountCreateCount] = 0;
     (*sleBridge)[sfXChainAccountClaimCount] = 0;
 
-    // Add to owner directory
     {
         auto const page = ctx_.view().dirInsert(
             keylet::ownerDir(account), bridgeKeylet, describeOwnerDir(account));
@@ -1491,12 +1731,26 @@ XChainCreateBridge::doApply()
 
 //------------------------------------------------------------------------------
 
+/** Returns the valid flag mask for `BridgeModify` transactions.
+ *
+ *  @return `tfXChainModifyBridgeMask`.
+ */
 std::uint32_t
 BridgeModify::getFlagsMask(PreflightContext const& ctx)
 {
     return tfXChainModifyBridgeMask;
 }
 
+/** Stateless validation for `BridgeModify`.
+ *
+ *  Requires at least one of `sfSignatureReward`, `sfMinAccountCreateAmount`,
+ *  or `tfClearAccountCreateAmount` to be present (must change something).
+ *  Rejects conflicting `sfMinAccountCreateAmount` + `tfClearAccountCreateAmount`
+ *  in the same transaction.  Validates reward and min-create amounts.
+ *
+ *  @param ctx  Preflight context.
+ *  @return `tesSUCCESS` or a `tem*` code.
+ */
 NotTEC
 BridgeModify::preflight(PreflightContext const& ctx)
 {
@@ -1538,6 +1792,11 @@ BridgeModify::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Verify the bridge exists for `BridgeModify`.
+ *
+ *  @param ctx  Preclaim context.
+ *  @return `tesSUCCESS` or `tecNO_ENTRY`.
+ */
 TER
 BridgeModify::preclaim(PreclaimContext const& ctx)
 {
@@ -1555,6 +1814,13 @@ BridgeModify::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Update `sfSignatureReward` and/or `sfMinAccountCreateAmount` on the bridge.
+ *
+ *  `tfClearAccountCreateAmount` removes `sfMinAccountCreateAmount` entirely,
+ *  disabling the account-creation pathway.
+ *
+ *  @return `tesSUCCESS` or `tecINTERNAL` on ledger corruption.
+ */
 TER
 BridgeModify::doApply()
 {
@@ -1592,6 +1858,13 @@ BridgeModify::doApply()
 
 //------------------------------------------------------------------------------
 
+/** Stateless validation for `XChainClaim`.
+ *
+ *  Verifies `sfAmount` is positive and matches one of the bridge's two issues.
+ *
+ *  @param ctx  Preflight context.
+ *  @return `tesSUCCESS` or `temBAD_AMOUNT`.
+ */
 NotTEC
 XChainClaim::preflight(PreflightContext const& ctx)
 {
@@ -1608,6 +1881,17 @@ XChainClaim::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Read-only preclaim checks for `XChainClaim`.
+ *
+ *  Verifies: bridge exists; destination account exists; the claim ID is owned
+ *  by the submitting account; the amount's asset matches the destination chain's
+ *  issue.  Quorum is not checked here — it is deferred to `doApply`.
+ *
+ *  @param ctx  Preclaim context.
+ *  @return `tesSUCCESS`, `tecNO_ENTRY`, `tecNO_DST`, `tecXCHAIN_NO_CLAIM_ID`,
+ *      `tecXCHAIN_BAD_CLAIM_ID`, `tecXCHAIN_BAD_TRANSFER_ISSUE`, or
+ *      `tecINTERNAL`.
+ */
 TER
 XChainClaim::preclaim(PreclaimContext const& ctx)
 {
@@ -1645,8 +1929,6 @@ XChainClaim::preclaim(PreclaimContext const& ctx)
     }
 
     {
-        // Check that the amount specified matches the expected issue
-
         if (isLockingChain)
         {
             if (bridgeSpec.lockingChainIssue() != thisChainAmount.asset())
@@ -1682,8 +1964,6 @@ XChainClaim::preclaim(PreclaimContext const& ctx)
 
     auto const sleClaimID = ctx.view.read(keylet::xChainClaimID(bridgeSpec, claimID));
     {
-        // Check that the sequence number is owned by the sender of this
-        // transaction
         if (!sleClaimID)
         {
             return tecXCHAIN_NO_CLAIM_ID;
@@ -1700,6 +1980,16 @@ XChainClaim::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Settle a cross-chain transfer using an accumulated quorum of attestations.
+ *
+ *  Verifies quorum via `onClaim` (destination-agnostic), then calls
+ *  `finalizeClaimHelper` with `OnTransferFail::KeepClaim` and
+ *  `DepositAuthPolicy::DstCanBypass` — the claim owner may send funds to
+ *  themselves even if their destination has `lsfDepositAuth` set.
+ *
+ *  @return `tesSUCCESS`, `tecXCHAIN_CLAIM_NO_QUORUM`, or other error codes
+ *      from `finalizeClaimHelper`.
+ */
 TER
 XChainClaim::doApply()
 {
@@ -1819,6 +2109,15 @@ XChainClaim::doApply()
 
 //------------------------------------------------------------------------------
 
+/** Compute transaction-queue consequences for `XChainCommit`.
+ *
+ *  Reports the XRP `sfAmount` as the maximum spend so the transaction queue
+ *  can reserve that balance.  Non-XRP amounts report zero (IOU transfers do
+ *  not consume XRP from the sender's balance).
+ *
+ *  @param ctx  Preflight context.
+ *  @return `TxConsequences` with `maxSpend` set to the XRP amount, or zero.
+ */
 TxConsequences
 XChainCommit::makeTxConsequences(PreflightContext const& ctx)
 {
@@ -1832,6 +2131,14 @@ XChainCommit::makeTxConsequences(PreflightContext const& ctx)
     return TxConsequences{ctx.tx, maxSpend};
 }
 
+/** Stateless validation for `XChainCommit`.
+ *
+ *  Checks `sfAmount` is positive, legally representable, and its asset matches
+ *  one of the bridge's two issues.
+ *
+ *  @param ctx  Preflight context.
+ *  @return `tesSUCCESS`, `temBAD_AMOUNT`, or `temBAD_ISSUER`.
+ */
 NotTEC
 XChainCommit::preflight(PreflightContext const& ctx)
 {
@@ -1848,6 +2155,15 @@ XChainCommit::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Read-only preclaim for `XChainCommit`.
+ *
+ *  Verifies: bridge exists; door account is not the submitter (self-commit
+ *  disallowed); amount's asset matches the submitting chain's issue.
+ *
+ *  @param ctx  Preclaim context.
+ *  @return `tesSUCCESS`, `tecNO_ENTRY`, `tecXCHAIN_SELF_COMMIT`,
+ *      `tecXCHAIN_BAD_TRANSFER_ISSUE`, or `tecINTERNAL`.
+ */
 TER
 XChainCommit::preclaim(PreclaimContext const& ctx)
 {
@@ -1899,6 +2215,14 @@ XChainCommit::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Transfer `sfAmount` from the submitter into the bridge door account.
+ *
+ *  Uses `transferHelper` with a `TransferHelperSubmittingAccountInfo` so the
+ *  submitter may dip into their owner reserve to cover the transaction fee —
+ *  deliberately supported to allow near-empty accounts to commit assets.
+ *
+ *  @return `tesSUCCESS` or an error code from `transferHelper`.
+ */
 TER
 XChainCommit::doApply()
 {
@@ -1946,6 +2270,13 @@ XChainCommit::doApply()
 
 //------------------------------------------------------------------------------
 
+/** Stateless validation for `XChainCreateClaimID`.
+ *
+ *  Verifies `sfSignatureReward` is non-negative, legally representable XRP.
+ *
+ *  @param ctx  Preflight context.
+ *  @return `tesSUCCESS` or `temXCHAIN_BRIDGE_BAD_REWARD_AMOUNT`.
+ */
 NotTEC
 XChainCreateClaimID::preflight(PreflightContext const& ctx)
 {
@@ -1957,6 +2288,16 @@ XChainCreateClaimID::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Read-only preclaim for `XChainCreateClaimID`.
+ *
+ *  Verifies: bridge exists; `sfSignatureReward` exactly matches the bridge's
+ *  current reward (prevents reward mismatch races); submitter has sufficient
+ *  reserve for one new owned object.
+ *
+ *  @param ctx  Preclaim context.
+ *  @return `tesSUCCESS`, `tecNO_ENTRY`, `tecXCHAIN_REWARD_MISMATCH`,
+ *      `terNO_ACCOUNT`, or `tecINSUFFICIENT_RESERVE`.
+ */
 TER
 XChainCreateClaimID::preclaim(PreclaimContext const& ctx)
 {
@@ -1969,7 +2310,6 @@ XChainCreateClaimID::preclaim(PreclaimContext const& ctx)
         return tecNO_ENTRY;
     }
 
-    // Check that the reward matches
     auto const reward = ctx.tx[sfSignatureReward];
 
     if (reward != (*sleBridge)[sfSignatureReward])
@@ -1978,7 +2318,6 @@ XChainCreateClaimID::preclaim(PreclaimContext const& ctx)
     }
 
     {
-        // Check reserve
         auto const sleAcc = ctx.view.read(keylet::account(account));
         if (!sleAcc)
             return terNO_ACCOUNT;
@@ -1993,6 +2332,16 @@ XChainCreateClaimID::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Allocate a new claim ID SLE for a pending cross-chain transfer.
+ *
+ *  Increments the bridge's `sfXChainClaimID` counter monotonically, creates
+ *  the `XChainOwnedClaimID` SLE with an empty attestation array, and inserts
+ *  it into the submitter's owner directory.  The caller must have acquired the
+ *  claim ID before committing on the source chain — ordering is enforced by
+ *  the sequence number invariant.
+ *
+ *  @return `tesSUCCESS` or `tecINTERNAL` / `tecDIR_FULL` on ledger corruption.
+ */
 TER
 XChainCreateClaimID::doApply()
 {
@@ -2034,7 +2383,6 @@ XChainCreateClaimID::doApply()
     (*sleClaimID)[sfSignatureReward] = reward;
     sleClaimID->setFieldArray(sfXChainClaimAttestations, STArray{sfXChainClaimAttestations});
 
-    // Add to owner directory
     {
         auto const page = ctx_.view().dirInsert(
             keylet::ownerDir(account), claimIDKeylet, describeOwnerDir(account));
@@ -2054,18 +2402,26 @@ XChainCreateClaimID::doApply()
 
 //------------------------------------------------------------------------------
 
+/** Delegates to `attestationPreflight<AttestationClaim>`. */
 NotTEC
 XChainAddClaimAttestation::preflight(PreflightContext const& ctx)
 {
     return attestationPreflight<Attestations::AttestationClaim>(ctx);
 }
 
+/** Delegates to `attestationPreclaim<AttestationClaim>`. */
 TER
 XChainAddClaimAttestation::preclaim(PreclaimContext const& ctx)
 {
     return attestationPreclaim<Attestations::AttestationClaim>(ctx);
 }
 
+/** Delegates to `attestationDoApply<AttestationClaim>`.
+ *
+ *  Adds the witness attestation to the claim ID's attestation array and
+ *  auto-settles if the new attestation pushes the collection over quorum and
+ *  a destination is present.
+ */
 TER
 XChainAddClaimAttestation::doApply()
 {
@@ -2074,18 +2430,26 @@ XChainAddClaimAttestation::doApply()
 
 //------------------------------------------------------------------------------
 
+/** Delegates to `attestationPreflight<AttestationCreateAccount>`. */
 NotTEC
 XChainAddAccountCreateAttestation::preflight(PreflightContext const& ctx)
 {
     return attestationPreflight<Attestations::AttestationCreateAccount>(ctx);
 }
 
+/** Delegates to `attestationPreclaim<AttestationCreateAccount>`. */
 TER
 XChainAddAccountCreateAttestation::preclaim(PreclaimContext const& ctx)
 {
     return attestationPreclaim<Attestations::AttestationCreateAccount>(ctx);
 }
 
+/** Delegates to `attestationDoApply<AttestationCreateAccount>`.
+ *
+ *  Adds the witness attestation and, when quorum is reached and the strict
+ *  ordering invariant is satisfied (`claimCount + 1 == createCount`), creates
+ *  the destination account on the issuing chain.
+ */
 TER
 XChainAddAccountCreateAttestation::doApply()
 {
@@ -2094,6 +2458,15 @@ XChainAddAccountCreateAttestation::doApply()
 
 //------------------------------------------------------------------------------
 
+/** Stateless validation for `XChainCreateAccountCommit`.
+ *
+ *  Both `sfAmount` and `sfSignatureReward` must be positive, native XRP, and
+ *  share the same asset type.  This transaction is only valid on XRP bridges
+ *  because account creation requires XRP.
+ *
+ *  @param ctx  Preflight context.
+ *  @return `tesSUCCESS` or `temBAD_AMOUNT`.
+ */
 NotTEC
 XChainCreateAccountCommit::preflight(PreflightContext const& ctx)
 {
@@ -2112,6 +2485,19 @@ XChainCreateAccountCommit::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Read-only preclaim for `XChainCreateAccountCommit`.
+ *
+ *  Verifies: bridge exists; reward matches the bridge's configured reward;
+ *  `sfMinAccountCreateAmount` is present on the bridge (account-creation
+ *  pathway is enabled) and `sfAmount` meets the minimum; door is not the
+ *  submitter; destination chain's asset is XRP (required for account creation).
+ *
+ *  @param ctx  Preclaim context.
+ *  @return `tesSUCCESS`, `tecNO_ENTRY`, `tecXCHAIN_REWARD_MISMATCH`,
+ *      `tecXCHAIN_CREATE_ACCOUNT_DISABLED`, `tecXCHAIN_INSUFF_CREATE_AMOUNT`,
+ *      `tecXCHAIN_BAD_TRANSFER_ISSUE`, `tecXCHAIN_SELF_COMMIT`,
+ *      `tecXCHAIN_CREATE_ACCOUNT_NONXRP_ISSUE`, or `tecINTERNAL`.
+ */
 TER
 XChainCreateAccountCommit::preclaim(PreclaimContext const& ctx)
 {
@@ -2175,6 +2561,16 @@ XChainCreateAccountCommit::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Transfer `sfAmount + sfSignatureReward` from the submitter to the door
+ *  account and increment `sfXChainAccountCreateCount` on the bridge.
+ *
+ *  Like `XChainCommit`, supports fee-dipping via
+ *  `TransferHelperSubmittingAccountInfo`.  The reward is embedded in the
+ *  transfer rather than held separately; witness servers claim it through
+ *  `finalizeClaimHelper` when the account-create attestations reach quorum.
+ *
+ *  @return `tesSUCCESS` or an error code from `transferHelper`.
+ */
 TER
 XChainCreateAccountCommit::doApply()
 {

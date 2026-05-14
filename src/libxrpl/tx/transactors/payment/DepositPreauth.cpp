@@ -1,3 +1,19 @@
+/** @file
+ *  Implementation of the `DepositPreauth` transactor.
+ *
+ *  Manages `DepositPreauth` ledger entries, which form the allow-list that
+ *  permits specific accounts or credential-bearing parties to send payments
+ *  to an account that has enabled `lsfDepositAuth`. A single transaction
+ *  performs exactly one of four mutually exclusive operations selected by
+ *  whichever of `sfAuthorize`, `sfUnauthorize`, `sfAuthorizeCredentials`, or
+ *  `sfUnauthorizeCredentials` is present.
+ *
+ *  The credential-based operations are gated on `featureCredentials` and use
+ *  a canonically sorted representation of the credential set for both the
+ *  keylet derivation and ledger storage, ensuring order-independent lookups.
+ *
+ *  @see DepositPreauth.h for the class declaration and full interface docs.
+ */
 #include <xrpl/tx/transactors/payment/DepositPreauth.h>
 
 #include <xrpl/basics/Log.h>
@@ -98,7 +114,6 @@ DepositPreauth::preclaim(PreclaimContext const& ctx)
 {
     AccountID const account(ctx.tx[sfAccount]);
 
-    // Determine which operation we're performing: authorizing or unauthorizing.
     if (ctx.tx.isFieldPresent(sfAuthorize))
     {
         // Verify that the Authorize account is present in the ledger.

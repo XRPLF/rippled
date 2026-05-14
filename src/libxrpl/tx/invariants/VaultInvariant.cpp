@@ -1,3 +1,23 @@
+/** @file
+ *  Post-transaction invariant checker for the SingleAssetVault feature.
+ *
+ *  Implements `ValidVault`, the 24th checker in the `InvariantChecks` tuple.
+ *  It runs after every successful or fee-claiming transaction and verifies
+ *  that the web of vault-related ledger objects (`ltVAULT`, the share
+ *  `ltMPTOKEN_ISSUANCE`, per-depositor `ltMPTOKEN` entries, and the vault
+ *  pseudo-account `ltACCOUNT_ROOT`) remains mutually consistent.
+ *
+ *  The checker follows the standard two-phase invariant pattern:
+ *  - `visitEntry` accumulates balance deltas per ledger entry key into the
+ *    `deltas_` map, and snapshots vault/MPT state into `beforeVault_` etc.
+ *  - `finalize` evaluates per-transaction invariants against those snapshots.
+ *
+ *  Every fatal invariant failure is guarded by
+ *  `XRPL_ASSERT(enforce, ...)` where `enforce = featureSingleAssetVault`
+ *  is active. In debug/test builds the assert fires regardless of amendment
+ *  state, surfacing violations early. In production the transaction is
+ *  rejected (`!enforce == false`) only once the amendment is live.
+ */
 #include <xrpl/tx/invariants/VaultInvariant.h>
 
 #include <xrpl/basics/Log.h>
@@ -30,6 +50,15 @@
 
 namespace xrpl {
 
+/** Construct a `Vault` snapshot from a live `ltVAULT` ledger entry.
+ *
+ *  Captures every field that invariant checks compare across before/after
+ *  states: asset type, pseudo-account, owner, share MPT ID, and all numeric
+ *  balance fields.
+ *
+ *  @param from  A ledger entry whose type must be `ltVAULT`.
+ *  @return      A fully-populated `Vault` value object.
+ */
 ValidVault::Vault
 ValidVault::Vault::make(SLE const& from)
 {
@@ -48,6 +77,15 @@ ValidVault::Vault::make(SLE const& from)
     return self;
 }
 
+/** Construct a `Shares` snapshot from a live `ltMPTOKEN_ISSUANCE` entry.
+ *
+ *  Captures the fully-qualified `MPTIssue` identity, current outstanding
+ *  amount, and effective maximum (defaulting to `kMAX_MP_TOKEN_AMOUNT` when
+ *  `sfMaximumAmount` is absent) so `finalize` can check ceiling constraints.
+ *
+ *  @param from  A ledger entry whose type must be `ltMPTOKEN_ISSUANCE`.
+ *  @return      A fully-populated `Shares` value object.
+ */
 ValidVault::Shares
 ValidVault::Shares::make(SLE const& from)
 {
@@ -62,6 +100,33 @@ ValidVault::Shares::make(SLE const& from)
     return self;
 }
 
+/** Phase-1 entry visitor: accumulate per-key balance deltas.
+ *
+ *  Called once per modified ledger entry during transaction processing.
+ *  For each entry whose type is relevant to vault accounting
+ *  (`ltVAULT`, `ltMPTOKEN_ISSUANCE`, `ltMPTOKEN`, `ltACCOUNT_ROOT`,
+ *  `ltRIPPLE_STATE`), this method:
+ *  - Snapshots `ltVAULT` state into `beforeVault_` / `afterVault_`.
+ *  - Snapshots `ltMPTOKEN_ISSUANCE` state into `beforeMPTs_` / `afterMPTs_`
+ *    (vault-share issuances are identified later in `finalize`).
+ *  - Computes a signed balance delta `(balanceBefore - balanceAfter) * sign`
+ *    and stores it in `deltas_` keyed by ledger-entry key.
+ *
+ *  Sign convention: positive delta means assets/shares *flowed into* the
+ *  relevant account.  For entries whose balance increase represents more
+ *  assets held (account roots, trust lines, MPTokens) the sign is `-1`
+ *  (balance decreased ⇒ assets left the account ⇒ delta is positive for the
+ *  vault direction).  For `ltMPTOKEN_ISSUANCE` the outstanding amount grows
+ *  as shares are minted, so sign is `+1`.
+ *
+ *  A delta entry is recorded even when the net balance change is zero (e.g.,
+ *  a fee exactly offsets an incoming transfer), to avoid accidentally
+ *  treating a coincidental zero as "no activity".
+ *
+ *  @param isDelete  `true` when `before` is being deleted (no surviving SLE).
+ *  @param before    Pre-transaction SLE, or `nullptr` for newly created entries.
+ *  @param after     Post-transaction SLE; always non-null.
+ */
 void
 ValidVault::visitEntry(
     bool isDelete,
@@ -186,6 +251,41 @@ ValidVault::visitEntry(
     }
 }
 
+/** Phase-2 invariant evaluation: verify vault consistency after transaction.
+ *
+ *  Called once after all `visitEntry` calls complete.  Returns `true` if
+ *  all relevant invariants pass (or the transaction is not vault-related),
+ *  `false` if a violation is detected.
+ *
+ *  Short-circuits immediately on non-`tesSUCCESS` results — failed
+ *  transactions are allowed to leave vault state unchanged, and any vault
+ *  mutations on a failed transaction are caught by other invariants.
+ *
+ *  Enforcement is gated on `featureSingleAssetVault`: when the amendment is
+ *  inactive, violations are logged and asserted (crashing debug builds) but
+ *  the function returns `true` so consensus is not broken before the feature
+ *  goes live.
+ *
+ *  Invariant checks performed (all non-delete operations):
+ *  - Exactly one vault is created or modified per transaction.
+ *  - Immutable fields (`sfAsset`, `sfAccount`, `sfShareMPTID`) do not change.
+ *  - `assetsAvailable` ≤ `assetsTotal` ≥ 0; `assetsMaximum` ≥ 0.
+ *  - `lossUnrealized` ≤ `assetsTotal − assetsAvailable`.
+ *  - `lossUnrealized` only changes for loan transactions (`ttLOAN_MANAGE`,
+ *    `ttLOAN_PAY`).
+ *  - Per-transaction asset and share conservation (see `ttVAULT_DEPOSIT`,
+ *    `ttVAULT_WITHDRAW`, `ttVAULT_CLAWBACK` case blocks).
+ *  - Deletion leaves zero assets, zero shares, and co-deletes the issuance.
+ *  - Creation produces an empty vault whose pseudo-account back-links
+ *    correctly via `sfVaultID`.
+ *
+ *  @param tx    The applied transaction.
+ *  @param ret   Final TER result of the transaction.
+ *  @param fee   Transaction fee in drops (used to compensate XRP deltas).
+ *  @param view  Current ledger view (for read-only fallback lookups).
+ *  @param j     Journal for fatal-level invariant-failure diagnostics.
+ *  @return      `true` if invariants pass or are not applicable, `false` on violation.
+ */
 bool
 ValidVault::finalize(
     STTx const& tx,
@@ -1049,6 +1149,19 @@ ValidVault::finalize(
     return true;
 }
 
+/** Construct a `DeltaInfo` representing the change from `before` to `after`.
+ *
+ *  The `scale` field is set to the coarser (larger) of the two values'
+ *  asset-specific scales so that subsequent rounding via `roundToAsset` uses
+ *  a precision no finer than either operand.
+ *
+ *  @param before  Pre-transaction numeric value.
+ *  @param after   Post-transaction numeric value.
+ *  @param asset   Asset type, used to determine the appropriate scale for
+ *      each value via `xrpl::scale()`.
+ *  @return  `DeltaInfo` where `delta = after - before` and `scale` is
+ *      the maximum of the two operand scales.
+ */
 [[nodiscard]] ValidVault::DeltaInfo
 ValidVault::DeltaInfo::makeDelta(Number const& before, Number const& after, Asset const& asset)
 {
@@ -1057,6 +1170,20 @@ ValidVault::DeltaInfo::makeDelta(Number const& before, Number const& after, Asse
         .scale = std::max(xrpl::scale(after, asset), xrpl::scale(before, asset))};
 }
 
+/** Return the coarsest (largest) scale across a set of `DeltaInfo` values.
+ *
+ *  Invariant comparisons mix values that may have been computed at different
+ *  precisions (e.g., XRP drops vs. IOU mantissa-exponent pairs).  Rounding
+ *  all operands to the coarsest scale ensures comparisons do not spuriously
+ *  fail due to sub-precision differences.
+ *
+ *  @param numbers  Collection of `DeltaInfo` values, each carrying an
+ *      optional scale.  An absent scale indicates the value has not yet been
+ *      assigned a precision context.
+ *  @return  The maximum `scale` value found, or 0 if `numbers` is empty.
+ *      Falls back to `STAmount::kMAX_OFFSET` if the winning entry's scale is
+ *      `std::nullopt` (which should not occur in well-formed inputs).
+ */
 [[nodiscard]] std::int32_t
 ValidVault::computeCoarsestScale(std::vector<DeltaInfo> const& numbers)
 {

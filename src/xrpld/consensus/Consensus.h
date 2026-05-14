@@ -1,3 +1,14 @@
+/** @file
+ *  XRPL consensus algorithm — complete state machine and decision logic.
+ *
+ *  Defines the `Consensus<Adaptor>` class template that drives a single node
+ *  through the open → establish → accepted phase cycle each round, plus two
+ *  free-standing policy functions (`shouldCloseLedger`, `checkConsensus`) and
+ *  the threshold helper `participantsNeeded`.  Because the class is fully
+ *  templated it is header-only; all implementation lives in this file.
+ *
+ *  Thread safety: none.  The caller must serialize all public method calls.
+ */
 #pragma once
 
 #include <xrpld/consensus/ConsensusParms.h>
@@ -21,8 +32,17 @@ namespace xrpl {
 
 /** Determines whether the current ledger should close at this time.
 
-    This function should be called when a ledger is open and there is no close
-    in progress, or when a transaction is received and no close is in progress.
+    Should be called on each timer tick while the ledger is open.  The
+    decision is based on peer activity, elapsed time, and the network's
+    idle interval.  Priority order:
+    1. Force-close immediately if any timing value is outside sane bounds
+       (negative, or longer than 10 minutes).
+    2. Close if more than half of the previous round's proposers have
+       already closed this ledger.
+    3. If there are no transactions and the idle interval has not yet
+       elapsed, keep the ledger open.
+    4. Never close before `parms.ledgerMIN_CLOSE` has elapsed since open.
+    5. Rate-limit: do not close faster than half the previous round time.
 
     @param anyTransactions indicates whether any transactions have been received
     @param prevProposers proposers in the last closing
@@ -37,6 +57,7 @@ namespace xrpl {
     @param parms        Consensus constant parameters
     @param j            journal for logging
     @param clog         log object to which to append
+    @return `true` if the ledger should close now, `false` to keep it open.
 */
 bool
 shouldCloseLedger(
@@ -54,6 +75,20 @@ shouldCloseLedger(
 
 /** Determine whether the network reached consensus and whether we joined.
 
+    Evaluates vote counts and timing to classify the current state of
+    convergence.  The function is free-standing (not a method) so it can be
+    tested independently of the `Consensus` object.
+
+    Possible outcomes in priority order:
+    - `ConsensusState::No`      — not enough time or agreement yet.
+    - `ConsensusState::Expired` — round time exceeded the abandon threshold;
+                                   the node should leave consensus.
+    - `ConsensusState::MovedOn` — ≥80% of previous proposers already validated
+                                   a later ledger without us.
+    - `ConsensusState::Yes`     — sufficient agreement reached (normally ≥80%
+                                   when counting self if proposing; bypassed
+                                   entirely when `stalled` is `true`).
+
     @param prevProposers proposers in the last closing (not including us)
     @param currentProposers proposers in this closing so far (not including us)
     @param currentAgree proposers who agree with us
@@ -70,6 +105,7 @@ shouldCloseLedger(
     @param proposing        whether we should count ourselves
     @param j                journal for logging
     @param clog             log object to which to append
+    @return a `ConsensusState` value classifying the current convergence state.
 */
 ConsensusState
 checkConsensus(
@@ -285,22 +321,30 @@ class Consensus
 
     using Result = ConsensusResult<Adaptor>;
 
-    // Helper class to ensure adaptor is notified whenever the ConsensusMode
-    // changes
+    /** Wraps `ConsensusMode` so that every transition notifies the adaptor.
+     *
+     *  Every call to `set()` invokes `adaptor_.onModeChange(before, after)`
+     *  before updating the stored value, making silent mode changes
+     *  structurally impossible.
+     */
     class MonitoredMode
     {
         ConsensusMode mode_;
 
     public:
+        /** Construct with an initial mode; does not call `onModeChange`. */
         MonitoredMode(ConsensusMode m) : mode_{m}
         {
         }
+
+        /** Return the current consensus mode. */
         [[nodiscard]] ConsensusMode
         get() const
         {
             return mode_;
         }
 
+        /** Transition to @p mode, notifying @p a via `onModeChange`. */
         void
         set(ConsensusMode mode, Adaptor& a)
         {
@@ -310,7 +354,11 @@ class Consensus
     };
 
 public:
-    //! Clock type for measuring time within the consensus code
+    /** Steady-clock abstraction used to sample consensus progress.
+     *
+     *  The indirection through `AbstractClock` allows unit tests to inject a
+     *  deterministic manual clock without changing production code paths.
+     */
     using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
 
     Consensus(Consensus&&) noexcept = default;
@@ -408,6 +456,13 @@ public:
         return prevLedgerID_;
     }
 
+    /** Return the current consensus phase.
+     *
+     *  Transitions: `open → establish → accepted`.  The machine returns to
+     *  `open` at the start of each new round via `startRound()`.
+     *
+     *  @return the current `ConsensusPhase` value.
+     */
     [[nodiscard]] ConsensusPhase
     phase() const
     {
@@ -425,6 +480,19 @@ public:
     getJson(bool full) const;
 
 private:
+    /** Initialize internal state for a new consensus round.
+     *
+     *  Called by both `startRound()` (normal entry) and `handleWrongLedger()`
+     *  (ledger-switch recovery).  Resets all per-round state, computes the
+     *  next close-time resolution, and replays buffered peer proposals.
+     *
+     *  @param now          current network-adjusted time
+     *  @param prevLedgerID ID of the ledger this round builds on
+     *  @param prevLedger   the ledger this round builds on
+     *  @param mode         starting consensus mode (e.g. `Proposing`,
+     *                      `SwitchedLedger`)
+     *  @param clog         optional diagnostic log
+     */
     void
     startRoundInternal(
         NetClock::time_point const& now,
@@ -433,48 +501,82 @@ private:
         ConsensusMode mode,
         std::unique_ptr<std::stringstream> const& clog);
 
-    // Change our view of the previous ledger
+    /** Recover from discovering we are on the wrong previous ledger.
+     *
+     *  Broadcasts a bow-out proposal, drops to `observing` mode, clears all
+     *  peer state, and replays buffered proposals for `lgrId`.  If the correct
+     *  ledger is already available locally, calls `startRoundInternal()` in
+     *  `SwitchedLedger` mode; otherwise enters `WrongLedger` mode and waits.
+     *
+     *  @param lgrId  the ledger ID the network considers correct
+     *  @param clog   optional diagnostic log
+     */
     void
     handleWrongLedger(
         typename Ledger_t::ID const& lgrId,
         std::unique_ptr<std::stringstream> const& clog);
 
-    /** Check if our previous ledger matches the network's.
-
-        If the previous ledger differs, we are no longer in sync with
-        the network and need to bow out/switch modes.
-    */
+    /** Verify that our working ledger matches the network's preferred ledger.
+     *
+     *  Queries `adaptor_.getPrevLedger()` on every timer tick.  If the
+     *  returned ID diverges from `prevLedgerID_`, calls
+     *  `handleWrongLedger()` to initiate recovery.  Also fires when the
+     *  locally-held ledger object does not match the expected ID (e.g. the
+     *  object arrived after the ID was already known).
+     *
+     *  @param clog  optional diagnostic log
+     */
     void
     checkLedger(std::unique_ptr<std::stringstream> const& clog);
 
-    /** If we radically changed our consensus context for some reason,
-        we need to replay recent proposals so that they're not lost.
-    */
+    /** Replay buffered peer proposals for the current `prevLedgerID_`.
+     *
+     *  Called after a ledger switch so that proposals received while the node
+     *  was on the wrong ledger are not discarded.  Iterates
+     *  `recentPeerPositions_` (capped at 10 per peer) and feeds any proposal
+     *  whose `prevLedger()` matches `prevLedgerID_` back through
+     *  `peerProposalInternal()`.  Accepted proposals are re-shared with peers.
+     */
     void
     playbackProposals();
 
-    /** Handle a replayed or a new peer proposal.
+    /** Process a peer proposal, whether newly received or replayed.
+     *
+     *  Shared implementation for `peerProposal()` (live path) and
+     *  `playbackProposals()` (replay path).  Short-circuits if the phase is
+     *  `accepted` or the proposal's `prevLedger()` does not match our own.
+     *  Handles bow-outs by removing the peer from disputes and `deadNodes_`.
+     *
+     *  @param now          current network-adjusted time
+     *  @param newProposal  the peer's position to process
+     *  @return `true` if the proposal was accepted and should be relayed.
      */
     bool
     peerProposalInternal(NetClock::time_point const& now, PeerPosition_t const& newProposal);
 
-    /** Handle pre-close phase.
-
-        In the pre-close phase, the ledger is open as we wait for new
-        transactions.  After enough time has elapsed, we will close the ledger,
-        switch to the establish phase and start the consensus process.
-    */
+    /** Drive the open phase on each timer tick.
+     *
+     *  Computes the time since the previous close (using the ledger's recorded
+     *  close time when it was agreed upon, falling back to the internally
+     *  tracked `prevCloseTime_` otherwise) and calls `shouldCloseLedger()`.
+     *  Transitions to `establish` by calling `closeLedger()` when ready.
+     *
+     *  @param clog  optional diagnostic log
+     */
     void
     phaseOpen(std::unique_ptr<std::stringstream> const& clog);
 
-    /** Handle establish phase.
-
-        In the establish phase, the ledger has closed and we work with peers
-        to reach consensus. Update our position only on the timer, and in this
-        phase.
-
-        If we have consensus, move to the accepted phase.
-    */
+    /** Drive the establish phase on each timer tick.
+     *
+     *  After the ledger closes, each tick calls `updateOurPositions()`,
+     *  then checks `shouldPause()` and `haveConsensus()`.  The minimum guard
+     *  `parms.ledgerMIN_CONSENSUS` is enforced before any position updates
+     *  begin, giving every node a chance to cast an initial vote.  Transitions
+     *  to `accepted` by setting `phase_` and calling `adaptor_.onAccept()`
+     *  once both transaction-set and close-time consensus are reached.
+     *
+     *  @param clog  optional diagnostic log
+     */
     void
     phaseEstablish(std::unique_ptr<std::stringstream> const& clog);
 
@@ -498,110 +600,215 @@ private:
      *  80%, the 2nd phase would be 90%. Once the final phase is reached,
      *  if consensus still fails to occur, the cycle is begun again at phase 1.
      *
-     * @return Whether to pause to wait for lagging proposers.
+     * @param clog  optional diagnostic log
+     * @return `true` if consensus should pause to wait for lagging validators.
      */
     [[nodiscard]] bool
     shouldPause(std::unique_ptr<std::stringstream> const& clog) const;
 
-    // Close the open ledger and establish initial position.
+    /** Freeze the open ledger and establish this node's initial position.
+     *
+     *  Transitions phase to `establish`, calls `adaptor_.onClose()` to produce
+     *  the initial `ConsensusResult`, broadcasts the resulting transaction set,
+     *  and (when proposing) sends the initial position to peers.  Also creates
+     *  disputes against any peer positions already received.
+     *
+     *  @pre `result_` must be empty (asserted internally).
+     *  @param clog  optional diagnostic log
+     */
     void
     closeLedger(std::unique_ptr<std::stringstream> const& clog);
 
-    // Adjust our positions to try to agree with other validators.
+    /** Adjust our transaction set and close-time position to converge with peers.
+     *
+     *  Called each establish-phase tick after `ledgerMIN_CONSENSUS` elapses.
+     *  Steps:
+     *  1. Prune stale peer proposals (older than `parms.proposeFRESHNESS`).
+     *  2. Run avalanche voting on each `DisputedTx` via `updateVote()`;
+     *     rebuild the `MutableTxSet` if any vote flipped.
+     *  3. Determine close-time consensus using the current avalanche weight.
+     *  4. If our position changed (tx set or close time), re-share the new
+     *     set and re-propose.
+     *
+     *  @param clog  optional diagnostic log
+     */
     void
     updateOurPositions(std::unique_ptr<std::stringstream> const& clog);
 
+    /** Evaluate whether the round has converged and, if so, complete it.
+     *
+     *  Counts peers that agree and disagree with our current position, detects
+     *  the `stalled` condition (close-time agreement reached but no peer vote
+     *  has changed in `avSTALLED_ROUNDS` ticks), then calls `checkConsensus()`
+     *  to classify the state.  On `Expired`, calls `leaveConsensus()`.
+     *
+     *  @param clog  optional diagnostic log
+     *  @return `true` if consensus has been reached (`Yes`, `MovedOn`, or
+     *          `Expired`); `false` to continue the establish phase.
+     */
     bool
     haveConsensus(std::unique_ptr<std::stringstream> const& clog);
 
-    // Create disputes between our position and the provided one.
+    /** Create `DisputedTx` objects for every transaction that differs between
+     *  our current position and @p o.
+     *
+     *  Uses `result_->compares` as a work-avoidance set: if @p o has already
+     *  been compared this round, the call is a no-op.  Each new `DisputedTx`
+     *  is immediately populated with all current peer votes and shared with
+     *  peers via `adaptor_.share()`.
+     *
+     *  @param o     the peer's transaction set to compare against ours
+     *  @param clog  optional diagnostic log
+     */
     void
     createDisputes(TxSet_t const& o, std::unique_ptr<std::stringstream> const& clog = {});
 
-    // Update our disputes given that this node has adopted a new position.
-    // Will call createDisputes as needed.
+    /** Register one peer's vote across all existing disputes.
+     *
+     *  Calls `createDisputes()` first if @p other has not been seen before,
+     *  then iterates all disputes and calls `setVote()` for @p node.  Any
+     *  vote change resets `peerUnchangedCounter_` to zero, which feeds the
+     *  stall-detection logic in `haveConsensus()`.
+     *
+     *  @param node   the peer whose position changed
+     *  @param other  the peer's new transaction set
+     */
     void
     updateDisputes(NodeID_t const& node, TxSet_t const& other);
 
-    // Revoke our outstanding proposal, if any, and cease proposing
-    // until this round ends.
+    /** Broadcast a bow-out and drop to `observing` mode.
+     *
+     *  If the current mode is `Proposing` and we have an active position,
+     *  calls `result_->position.bowOut()` and proposes the updated (bow-out)
+     *  position so peers remove us from their vote counts.  Then transitions
+     *  mode to `Observing`.  Idempotent if already observing.
+     *
+     *  @param clog  optional diagnostic log
+     */
     void
     leaveConsensus(std::unique_ptr<std::stringstream> const& clog);
 
-    // The rounded or effective close time estimate from a proposer
+    /** Round @p raw to the current close-time resolution.
+     *
+     *  Delegates to `roundCloseTime(raw, closeResolution_)`.  All peer and
+     *  self close-time votes must be rounded before comparison so that minor
+     *  clock differences do not prevent agreement.
+     *
+     *  @param raw  unrounded close-time estimate
+     *  @return     the estimate rounded to `closeResolution_`
+     */
     [[nodiscard]] NetClock::time_point
     asCloseTime(NetClock::time_point raw) const;
 
 private:
     Adaptor& adaptor_;
 
+    /** Current phase of the state machine (open → establish → accepted). */
     ConsensusPhase phase_{ConsensusPhase::Accepted};
+
+    /** Current operating mode, wrapped to fire `onModeChange` on transitions. */
     MonitoredMode mode_{ConsensusMode::Observing};
+
+    /** `true` until the first call to `startRound()` completes.
+     *
+     *  On the very first round, `prevCloseTime_` is seeded from the genesis
+     *  ledger's close time rather than the previous round's self-estimate.
+     */
     bool firstRound_ = true;
+
+    /** `true` once enough peers agree on a close time this establish phase. */
     bool haveCloseTimeConsensus_ = false;
 
+    /** Steady clock used to measure round durations. */
     clock_type const& clock_;
 
-    // How long the consensus convergence has taken, expressed as
-    // a percentage of the time that we expected it to take.
+    /** Round duration so far expressed as a percentage of `prevRoundTime_`.
+     *
+     *  Used as the time axis for the avalanche state machine.  A value of 100
+     *  means this round has taken exactly as long as the previous one.
+     */
     int convergePercent_{0};
 
-    // How long has this round been open
+    /** Elapsed time since the ledger was opened (steady-clock domain). */
     ConsensusTimer openTime_;
 
+    /** Granularity at which close times are rounded for this round. */
     NetClock::duration closeResolution_ = kLEDGER_DEFAULT_TIME_RESOLUTION;
 
+    /** Current avalanche state for close-time voting (separate from tx voting). */
     ConsensusParms::AvalancheState closeTimeAvalancheState_ = ConsensusParms::AvalancheState::Init;
 
-    // Time it took for the last consensus round to converge
+    /** How long the previous round took to converge.
+     *
+     *  Feeds the `convergePercent_` calculation and the `shouldCloseLedger`
+     *  rate-limit check.
+     */
     std::chrono::milliseconds prevRoundTime_{};
 
-    //-------------------------------------------------------------------------
-    // Network time measurements of consensus progress
+    // --- Network-time measurements of consensus progress ---
 
-    // The current network adjusted time.  This is the network time the
-    // ledger would close if it closed now
+    /** Most recent network-adjusted time supplied to the state machine. */
     NetClock::time_point now_;
+
+    /** Our internally tracked estimate of when the previous ledger closed.
+     *
+     *  Used as the close-time reference when the ledger's own recorded close
+     *  time is not trustworthy (mode is `WrongLedger`, or peers did not agree
+     *  on close time).
+     */
     NetClock::time_point prevCloseTime_;
 
-    //-------------------------------------------------------------------------
-    // Non-peer (self) consensus data
+    // --- Self (non-peer) consensus data ---
 
-    // Last validated ledger ID provided to consensus
+    /** ID of the ledger this consensus round is building on. */
     typename Ledger_t::ID prevLedgerID_;
-    // Last validated ledger seen by consensus
+
+    /** The ledger this consensus round is building on. */
     Ledger_t previousLedger_;
 
-    // Transaction Sets, indexed by hash of transaction tree
+    /** Transaction sets acquired from the network this round, keyed by ID. */
     hash_map<typename TxSet_t::ID, TxSet_t const> acquired_;
 
+    /** Current round's result (position + disputes).  Empty between rounds. */
     std::optional<Result> result_;
+
+    /** Raw (unrounded) close-time votes from peers and self for this round. */
     ConsensusCloseTimes rawCloseTimes_;
 
-    // The number of calls to phaseEstablish where none of our peers
-    // have changed any votes on disputed transactions.
+    /** Number of consecutive establish-phase ticks with no peer vote change.
+     *
+     *  Reset to zero by `updateDisputes()` / `createDisputes()` whenever any
+     *  `DisputedTx::setVote()` call returns `true`.  Feeds the stall-detection
+     *  predicate in `haveConsensus()`.
+     */
     std::size_t peerUnchangedCounter_ = 0;
 
-    // The total number of times we have called phaseEstablish
+    /** Total number of times `phaseEstablish()` has been called this round.
+     *
+     *  Guards against declaring `Expired` before each avalanche level has had
+     *  at least `avMIN_ROUNDS` ticks.
+     */
     std::size_t establishCounter_ = 0;
 
-    //-------------------------------------------------------------------------
-    // Peer related consensus data
+    // --- Peer-related consensus data ---
 
-    // Peer proposed positions for the current round
+    /** Active peer positions for the current round, keyed by node ID. */
     hash_map<NodeID_t, PeerPosition_t> currPeerPositions_;
 
-    // Recently received peer positions, available when transitioning between
-    // ledgers or rounds
+    /** Ring buffer of recent proposals per peer (capped at 10 per peer).
+     *
+     *  Stored regardless of which ledger they reference so that
+     *  `playbackProposals()` can replay them after a ledger switch.
+     */
     hash_map<NodeID_t, std::deque<PeerPosition_t>> recentPeerPositions_;
 
-    // The number of proposers who participated in the last consensus round
+    /** Number of proposers that participated in the previous consensus round. */
     std::size_t prevProposers_ = 0;
 
-    // nodes that have bowed out of this consensus process
+    /** Peers that have bowed out of this round; permanently excluded. */
     hash_set<NodeID_t> deadNodes_;
 
-    // Journal for debugging
+    /** Journal used for debug and informational logging. */
     beast::Journal const j_;
 };
 
@@ -1021,7 +1228,6 @@ Consensus<Adaptor>::getJson(bool full) const
     return ret;
 }
 
-// Handle a change in the prior ledger during a consensus round
 template <class Adaptor>
 void
 Consensus<Adaptor>::handleWrongLedger(

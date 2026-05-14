@@ -1,3 +1,15 @@
+/** @file AMMDeposit.cpp
+ *  Implementation of the AMMDeposit transactor (XLS-30d).
+ *
+ *  Allows liquidity providers to deposit one or both assets into an AMM pool
+ *  and receive LP tokens representing their proportional ownership. Six deposit
+ *  modes are supported, each selected by a single flag bit from `tfDepositSubTx`.
+ *  See the class-level documentation in `AMMDeposit.h` for the mode table and
+ *  the high-level invariants that govern all paths.
+ *
+ *  @note This file implements the mathematical core of each deposit mode.
+ *      Equations are numbered to match the XLS-30d specification.
+ */
 #include <xrpl/tx/transactors/dex/AMMDeposit.h>
 
 #include <xrpl/basics/Log.h>
@@ -224,11 +236,8 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    // Check account has sufficient funds.
-    // Return tesSUCCESS if it does,  error otherwise.
-    // Have to check again in deposit() because
-    // amounts might be derived based on tokens or
-    // limits.
+    // Balance check is re-run inside deposit() for modes where amounts are
+    // derived from pool math rather than stated in the transaction directly.
     auto balance = [&](auto const& deposit) -> TER {
         if (isXRP(deposit))
         {
@@ -347,7 +356,6 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
             return ter;
     }
 
-    // Equal deposit lp tokens
     if (auto const lpTokens = ctx.tx[~sfLPTokenOut];
         lpTokens && lpTokens->asset() != lptAMMBalance.asset())
     {
@@ -360,7 +368,6 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     if (ammLPHolds(ctx.view, *ammSle, accountID, ctx.j) == beast::kZERO)
     {
         STAmount const xrpBalance = xrpLiquid(ctx.view, accountID, 1, ctx.j);
-        // Insufficient reserve
         if (xrpBalance <= beast::kZERO)
         {
             JLOG(ctx.j.debug()) << "AMM Instance: insufficient reserves";
@@ -485,8 +492,6 @@ AMMDeposit::applyGuts(Sandbox& sb)
 TER
 AMMDeposit::doApply()
 {
-    // This is the ledger view that we work against. Transactions are applied
-    // as we go on processing transactions.
     Sandbox sb(&ctx_.view());
 
     auto const result = applyGuts(sb);
@@ -510,8 +515,6 @@ AMMDeposit::deposit(
     std::optional<STAmount> const& lpTokensDepositMin,
     std::uint16_t tfee)
 {
-    // Check account has sufficient funds.
-    // Return true if it does, false otherwise.
     auto checkBalance = [&](auto const& depositAmount) -> TER {
         if (depositAmount <= beast::kZERO)
             return temBAD_AMOUNT;
@@ -564,7 +567,6 @@ AMMDeposit::deposit(
         return {tecAMM_FAILED, STAmount{}};
     }
 
-    // Deposit amountDeposit
     if (auto const ter = checkBalance(amountDepositActual))
     {
         JLOG(ctx_.journal.debug()) << "AMM Deposit: account has insufficient "
@@ -581,7 +583,6 @@ AMMDeposit::deposit(
         return {res, STAmount{}};
     }
 
-    // Deposit amount2Deposit
     if (amount2DepositActual)
     {
         if (auto const ter = checkBalance(*amount2DepositActual))
@@ -602,7 +603,6 @@ AMMDeposit::deposit(
         }
     }
 
-    // Deposit LP tokens
     res = accountSend(view, ammAccount, account_, lpTokensDepositActual, ctx_.journal);
     if (!isTesSuccess(res))
     {
@@ -613,6 +613,21 @@ AMMDeposit::deposit(
     return {tesSUCCESS, lptAMMBalance + lpTokensDepositActual};
 }
 
+/** Apply `fixAMMv1_3` rounding to a prospective LP token output amount.
+ *
+ *  Without the fix, deposit-mode helpers used their raw computed token value
+ *  directly, which could produce a non-zero token count that rounds to zero
+ *  after the integer precision step in `adjustAmountsByLPTokens`. The fix
+ *  pre-rounds via `adjustLPTokens` so callers can detect the collapse early
+ *  and return `tecAMM_INVALID_TOKENS` instead of silently failing with
+ *  `tecAMM_FAILED`.
+ *
+ *  @param rules           Current ledger rules (checked for `fixAMMv1_3`).
+ *  @param lptAMMBalance   Current total LP token supply (used for rounding context).
+ *  @param lpTokensDeposit Computed LP token output before adjustment.
+ *  @return The adjusted token amount; equals `lpTokensDeposit` unchanged if
+ *          `fixAMMv1_3` is not active.
+ */
 static STAmount
 adjustLPTokensOut(
     Rules const& rules,
@@ -624,8 +639,20 @@ adjustLPTokensOut(
     return adjustLPTokens(lptAMMBalance, lpTokensDeposit, IsDeposit::Yes);
 }
 
-/** Proportional deposit of pools assets in exchange for the specified
- * amount of LPTokens.
+/** `tfLPToken` deposit: proportional two-asset deposit for a targeted LP token amount.
+ *
+ *  Computes the required deposit of each asset as:
+ *  @code
+ *    amountDeposit  = amountBalance  * (tokensAdj / lptAMMBalance)
+ *    amount2Deposit = amount2Balance * (tokensAdj / lptAMMBalance)
+ *  @endcode
+ *  where `tokensAdj` is `lpTokensDeposit` after `adjustLPTokensOut` pre-rounding.
+ *  The optional `depositMin` / `deposit2Min` fields from the transaction act as
+ *  minimum thresholds, checked inside `deposit()`. No trading fee is charged
+ *  because the deposit is perfectly proportional to the pool's current composition.
+ *
+ *  @note Under `fixAMMv1_3`, if `tokensAdj` rounds to zero the function returns
+ *      `tecAMM_INVALID_TOKENS` immediately, before calling `deposit()`.
  */
 std::pair<TER, STAmount>
 AMMDeposit::equalDepositTokens(
@@ -672,33 +699,26 @@ AMMDeposit::equalDepositTokens(
     }
 }
 
-/** Proportional deposit of pool assets with the constraints on the maximum
- * amount of each asset that the trader is willing to deposit.
- *      a = (t/T) * A (1)
- *      b = (t/T) * B (2)
- *     where
- *      A,B: current pool composition
- *      T: current balance of outstanding LPTokens
- *      a: balance of asset A being added
- *      b: balance of asset B being added
- *      t: balance of LPTokens issued to LP after a successful transaction
- * Use equation 1 to compute the amount of t, given the amount in Asset1In.
- *     Let this be Z
- * Use equation 2 to compute the amount of asset2, given  t~Z. Let
- *     the computed amount of asset2 be X.
- * If X <= amount in Asset2In:
- *   The amount of asset1 to be deposited is the one specified in Asset1In
- *   The amount of asset2 to be deposited is X
- *   The amount of LPTokens to be issued is Z
- * If X > amount in Asset2In:
- *   Use equation 2 to compute , given the amount in Asset2In. Let this be W
- *   Use equation 1 to compute the amount of asset1, given t~W from above.
- *     Let the computed amount of asset1 be Y
- *   If Y <= amount in Asset1In:
- *     The amount of asset1 to be deposited is Y
- *     The amount of asset2 to be deposited is the one specified in Asset2In
- *     The amount of LPTokens to be issued is W
- * else, failed transaction
+/** `tfTwoAsset` deposit: proportional two-asset deposit bounded by per-asset maximums.
+ *
+ *  Uses the proportional deposit equations:
+ *  @code
+ *    a = (t/T) * A        (1)
+ *    b = (t/T) * B        (2)
+ *  @endcode
+ *  where A, B are pool reserves, T is current LP supply, and t is LP tokens issued.
+ *
+ *  Algorithm:
+ *  1. Derive t from equation (1) using `amount` (asset1 max) → Z.
+ *  2. Derive required asset2 from equation (2) using Z → X.
+ *  3. If X ≤ `amount2`: deposit (`amount`, X, Z).
+ *  4. Otherwise re-derive t from equation (2) using `amount2` → W,
+ *     then asset1 from equation (1) using W → Y.
+ *  5. If Y ≤ `amount`: deposit (Y, `amount2`, W).
+ *  6. If neither direction satisfies both bounds simultaneously: `tecAMM_FAILED`.
+ *
+ *  Under `fixAMMv1_3`, a zero token result at step 1 or 4 returns
+ *  `tecAMM_INVALID_TOKENS` instead of `tecAMM_FAILED`.
  */
 std::pair<TER, STAmount>
 AMMDeposit::equalDepositLimit(
@@ -773,13 +793,20 @@ AMMDeposit::equalDepositLimit(
     return {tecAMM_FAILED, STAmount{}};
 }
 
-/** Single asset deposit of the amount of asset specified by Asset1In.
- *       t = T * (b / B - x) / (1 + x) (3)
- *      where
- *         f1 = (1 - 0.5 * tfee) / (1 - tfee)
- *         x = sqrt(f1**2 + b / (B * (1 - tfee)) - f1
- * Use equation 3 @see singleDeposit to compute amount of LPTokens to be issued,
- * given the amount in Asset1In.
+/** `tfSingleAsset` deposit: single-asset deposit for a specified asset amount.
+ *
+ *  Computes LP tokens issued via the single-deposit formula (XLS-30 eq. 3):
+ *  @code
+ *    t = T * (b/B - x) / (1 + x)
+ *  @endcode
+ *  where `x = sqrt(f1² + b / (B * (1-fee))) - f1` and
+ *  `f1 = (1 - 0.5*fee) / (1 - fee)`. The trading fee is charged because
+ *  depositing a single asset is equivalent to an implicit swap of half the
+ *  input for the other asset, followed by a proportional deposit.
+ *
+ *  After computing tokens via `lpTokensOut`, `adjustLPTokensOut` is applied
+ *  for `fixAMMv1_3` pre-rounding, and `adjustAssetInByTokens` back-derives the
+ *  exact asset input consistent with the rounded token count.
  */
 std::pair<TER, STAmount>
 AMMDeposit::singleDeposit(
@@ -821,12 +848,17 @@ AMMDeposit::singleDeposit(
         tfee);
 }
 
-/** Single asset asset1 is deposited to obtain some share of
- * the AMM instance's pools represented by amount of LPTokens.
- * Use equation 4 to compute the amount of asset1 to be deposited,
- * given t represented by amount of LPTokens. Equation 4 solves
- * equation 3 @see singleDeposit for b. Fail if b exceeds specified
- * Max amount to deposit.
+/** `tfOneAssetLPToken` deposit: single-asset deposit targeting a specific LP token output.
+ *
+ *  Inverts the single-deposit formula (XLS-30 eq. 4, solving eq. 3 for `b`) to
+ *  derive the required asset1 input given the desired `lpTokensDeposit`. If the
+ *  computed asset1 input exceeds the caller's stated maximum (`amount`), the
+ *  transaction fails with `tecAMM_FAILED`. The same trading fee rationale as
+ *  `singleDeposit` applies.
+ *
+ *  `adjustLPTokensOut` is applied before the inverse calculation so that
+ *  `tokensAdj` represents the same integer-rounded value that would actually be
+ *  issued, keeping asset input and token output mutually consistent.
  */
 std::pair<TER, STAmount>
 AMMDeposit::singleDepositTokens(
@@ -859,30 +891,27 @@ AMMDeposit::singleDepositTokens(
         tfee);
 }
 
-/** Single asset deposit with two constraints.
- * a. Amount of asset1 if specified (not 0) in Asset1In specifies the maximum
- *     amount of asset1 that the trader is willing to deposit.
- * b. The effective-price of the LPToken traded out does not exceed
- *     the specified EPrice.
- *       The effective price (EP) of a trade is defined as the ratio
- *       of the tokens the trader sold or swapped in (Token B) and
- *       the token they got in return or swapped out (Token A).
- *       EP(B/A) = b/a (III)
- * Use equation 3 @see singleDeposit to compute the amount of LPTokens out,
- *   given the amount of Asset1In. Let this be X.
- * Use equation III to compute the effective-price of the trade given
- *   Asset1In amount as the asset in and the LPTokens amount X as asset out.
- *   Let this be Y.
- * If Y <= amount in EPrice:
- *  The amount of asset1 to be deposited is given by amount in Asset1In
- *  The amount of LPTokens to be issued is X
- * If (Y>EPrice) OR (amount in Asset1In does not exist):
- *   Use equations 3 @see singleDeposit & III and the given EPrice to compute
- *     the following two variables:
- *       The amount of asset1 in. Let this be Q
- *       The amount of LPTokens out. Let this be W
- *   The amount of asset1 to be deposited is Q
- *   The amount of LPTokens to be issued is W
+/** `tfLimitLPToken` deposit: single-asset deposit with an effective-price ceiling.
+ *
+ *  Enforces the constraint that the effective price EP = asset1_in / LP_out must
+ *  not exceed `ePrice`. Two-pass algorithm:
+ *
+ *  **Pass 1** (only when `amount != 0`): compute LP tokens from `amount` via
+ *  `lpTokensOut` (eq. 3). If EP = `amount / tokens` ≤ `ePrice`, deposit that.
+ *
+ *  **Pass 2** (when pass 1 is skipped or EP exceeds `ePrice`): solve for the
+ *  exact asset1 and LP token quantities at EP = `ePrice` using `solveQuadraticEq`.
+ *  The derivation substituting the effective-price constraint back into eq. 3
+ *  reduces to a quadratic in R = b / (f1 * B):
+ *  @code
+ *    a1*R² + b1*R + c1 = 0
+ *    a1 = c²,  b1 = (c*f2)² + 2c − d²,  c1 = 2c*f2² + 1 − 2d*f2
+ *    c = f1*B / (ePrice*T),  d = f1 + c*f2 − c
+ *    f1 = 1 − fee,  f2 = (1 − fee/2) / f1
+ *  @endcode
+ *  The positive root gives asset1 in = R * f1 * B; LP tokens out = asset1 / ePrice.
+ *  Both values are rounded via `getRoundedAsset` / `getRoundedLPTokens` before
+ *  a final `adjustAssetInByTokens` step ensures internal consistency.
  */
 std::pair<TER, STAmount>
 AMMDeposit::singleDepositEPrice(
@@ -984,6 +1013,19 @@ AMMDeposit::singleDepositEPrice(
         tfee);
 }
 
+/** `tfTwoAssetIfEmpty` deposit: bootstrap a zero-balance AMM pool.
+ *
+ *  Computes the initial LP token supply as `sqrt(amount * amount2)` via
+ *  `ammLPTokens` and seeds the pool by calling `deposit()` with both `amount`
+ *  values serving as both the deposit quantities and the notional "pool balance"
+ *  (since the pool is empty, there is no prior balance to ratio against). After
+ *  `applyGuts` commits the result, `initializeFeeAuctionVote` uses `tfee` to
+ *  record the bootstrapping LP's initial auction-slot and voting position.
+ *
+ *  @note `preclaim` enforces that this mode is only reachable when
+ *      `lptAMMBalance == 0`. Any concurrent deposit that races to populate the
+ *      pool first will cause this transaction to fail with `tecAMM_NOT_EMPTY`.
+ */
 std::pair<TER, STAmount>
 AMMDeposit::equalDepositInEmptyState(
     Sandbox& view,

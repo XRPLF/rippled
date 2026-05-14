@@ -1,3 +1,9 @@
+/** @file
+ *  Implementations of `checkTxPermission` and `loadGranularPermission` —
+ *  the two runtime enforcement helpers for the XRPL delegate permission
+ *  system.  Public API and full behavioral contracts are documented in
+ *  `xrpl/ledger/helpers/DelegateHelpers.h`.
+ */
 #include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/SField.h>
@@ -18,6 +24,9 @@ checkTxPermission(std::shared_ptr<SLE const> const& delegate, STTx const& tx)
         return terNO_DELEGATE_PERMISSION;
 
     auto const permissionArray = delegate->getFieldArray(sfPermissions);
+    // Transaction-level permissions are stored as TxType + 1.  The +1 shift
+    // avoids a stored zero (ttPAYMENT == 0), keeping coarse permission values
+    // in [1, 65535] and away from the granular range (> UINT16_MAX).
     auto const txPermission = tx.getTxnType() + 1;
 
     for (auto const& permission : permissionArray)
@@ -43,6 +52,10 @@ loadGranularPermission(
     for (auto const& permission : permissionArray)
     {
         auto const permissionValue = permission[sfPermissionValue];
+        // The static_cast is safe: the ledger validator rejects any
+        // sfPermissionValue that does not correspond to a registered
+        // GranularPermissionType entry, so values reaching this point are
+        // already trusted to be in-range.
         auto const granularValue = static_cast<GranularPermissionType>(permissionValue);
         auto const& type = Permission::getInstance().getGranularTxType(granularValue);
         if (type && *type == txType)

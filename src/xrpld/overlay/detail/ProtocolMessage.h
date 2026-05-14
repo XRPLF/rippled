@@ -1,3 +1,15 @@
+/** @file
+ *  Wire-protocol message decoding for the XRPL overlay P2P network.
+ *
+ *  Owns the entire pipeline from raw Boost.Asio buffer sequences (as received
+ *  from a peer TCP connection) to typed protobuf message objects dispatched
+ *  to a handler. No other layer touches on-wire bytes for protocol messages.
+ *
+ *  The three public entry points for callers are:
+ *  - `invokeProtocolMessage()` — the hot-path read-loop entry point used by `PeerImp`.
+ *  - `protocolMessageName()` — integer type code to human-readable string (logging).
+ *  - `protocolMessageType()` — message object to type constant (outbound header construction).
+ */
 #pragma once
 
 #include <xrpld/overlay/Compression.h>
@@ -17,25 +29,51 @@
 
 namespace xrpl {
 
+/** Returns the wire message-type constant for a `TMGetLedger` message object.
+ *
+ *  Used by outbound code that needs to construct a wire header from an
+ *  existing protobuf message object rather than a bare numeric constant.
+ *
+ *  @param Unused `TMGetLedger` instance (overload-resolution tag).
+ *  @return `protocol::mtGET_LEDGER`
+ */
 inline protocol::MessageType
 protocolMessageType(protocol::TMGetLedger const&)
 {
     return protocol::mtGET_LEDGER;
 }
 
+/** Returns the wire message-type constant for a `TMReplayDeltaRequest` message object.
+ *
+ *  @param Unused `TMReplayDeltaRequest` instance (overload-resolution tag).
+ *  @return `protocol::mtREPLAY_DELTA_REQ`
+ */
 inline protocol::MessageType
 protocolMessageType(protocol::TMReplayDeltaRequest const&)
 {
     return protocol::mtREPLAY_DELTA_REQ;
 }
 
+/** Returns the wire message-type constant for a `TMProofPathRequest` message object.
+ *
+ *  @param Unused `TMProofPathRequest` instance (overload-resolution tag).
+ *  @return `protocol::mtPROOF_PATH_REQ`
+ */
 inline protocol::MessageType
 protocolMessageType(protocol::TMProofPathRequest const&)
 {
     return protocol::mtPROOF_PATH_REQ;
 }
 
-/** Returns the name of a protocol message given its type. */
+/** Maps a numeric protocol message type to a human-readable name for logging.
+ *
+ *  Covers all known `protocol::MessageType` values. Returns `"unknown"` for
+ *  any type not present in the switch, enabling forward-compatible logging
+ *  when new message types are added to the protocol.
+ *
+ *  @param type Integer message-type constant (e.g. `protocol::mtPING`).
+ *  @return Lowercase string name, or `"unknown"` if the type is unrecognised.
+ */
 template <class = void>
 std::string
 protocolMessageName(int type)
@@ -92,33 +130,57 @@ protocolMessageName(int type)
 
 namespace detail {
 
+/** Decoded fields from an XRPL overlay wire-format message header.
+ *
+ *  Populated by `parseMessageHeader()` and consumed by `parseMessageContent()`
+ *  and `invoke()`. Keeping the fields pre-computed avoids re-parsing the header
+ *  bytes during the content-decode phase.
+ *
+ *  Two header layouts are supported:
+ *  - **Uncompressed** (6 bytes): top 6 bits of byte 0 are zero; 26-bit payload
+ *    size follows, then 2-byte message type.
+ *  - **Compressed** (10 bytes): high bit of byte 0 is set; top nibble encodes
+ *    the algorithm (bits 2–3 must be zero); 26-bit wire payload size; 2-byte
+ *    message type; 4-byte uncompressed size.
+ */
 struct MessageHeader
 {
-    /** The size of the message on the wire.
-
-        @note This is the sum of sizes of the header and the payload.
-    */
+    /** Total bytes on the wire for this message (header + payload). */
     std::uint32_t total_wire_size = 0;
 
-    /** The size of the header associated with this message. */
+    /** Size of the header in bytes: 6 for uncompressed, 10 for compressed. */
     std::uint32_t header_size = 0;
 
-    /** The size of the payload on the wire. */
+    /** Size of the payload as it appears on the wire (compressed or raw). */
     std::uint32_t payload_wire_size = 0;
 
-    /** Uncompressed message size if the message is compressed. */
+    /** Size of the payload after decompression.
+     *
+     *  Equal to `payload_wire_size` for uncompressed messages.
+     *  Used to pre-allocate the decompression target buffer.
+     */
     std::uint32_t uncompressed_size = 0;
 
-    /** The type of the message. */
+    /** Protobuf message type constant (e.g. `protocol::mtPING`). */
     std::uint16_t message_type = 0;
 
-    /** Indicates which compression algorithm the payload is compressed with.
-     * Currently only lz4 is supported. If None then the message is not
-     * compressed.
+    /** Compression algorithm used for the payload.
+     *
+     *  `Algorithm::None` indicates an uncompressed message.
+     *  Currently only `Algorithm::LZ4` is supported for compressed messages.
      */
     compression::Algorithm algorithm = compression::Algorithm::None;
 };
 
+/** Returns a byte iterator pointing to the first byte of a buffer sequence.
+ *
+ *  Fixes the value type to `uint8_t` so callers avoid verbose template
+ *  instantiations throughout `parseMessageHeader`.
+ *
+ *  @tparam BufferSequence A `ConstBufferSequence` meeting Boost.Asio requirements.
+ *  @param bufs The buffer sequence to iterate.
+ *  @return A `buffers_iterator` positioned at the first byte.
+ */
 template <typename BufferSequence>
 auto
 buffersBegin(BufferSequence const& bufs)
@@ -126,6 +188,15 @@ buffersBegin(BufferSequence const& bufs)
     return boost::asio::buffers_iterator<BufferSequence, std::uint8_t>::begin(bufs);
 }
 
+/** Returns a byte iterator pointing past the last byte of a buffer sequence.
+ *
+ *  Companion to `buffersBegin()`; fixes the value type to `uint8_t` for
+ *  consistent instantiation across `parseMessageHeader`.
+ *
+ *  @tparam BufferSequence A `ConstBufferSequence` meeting Boost.Asio requirements.
+ *  @param bufs The buffer sequence to iterate.
+ *  @return A `buffers_iterator` positioned one past the last byte.
+ */
 template <typename BufferSequence>
 auto
 buffersEnd(BufferSequence const& bufs)
@@ -133,14 +204,27 @@ buffersEnd(BufferSequence const& bufs)
     return boost::asio::buffers_iterator<BufferSequence, std::uint8_t>::end(bufs);
 }
 
-/** Parse a message header
- * @return a seated optional if the message header was successfully
- *         parsed. An unseated optional otherwise, in which case
- *         @param ec contains more information:
- *         - set to `errc::success` if not enough bytes were present
- *         - set to `errc::no_message` if a valid header was not present
- *         @bufs - sequence of input buffers, can't be empty
- *         @size input data size
+/** Parse an XRPL overlay message header from a buffer sequence.
+ *
+ *  Walks the first bytes of `bufs` and populates a `MessageHeader` with all
+ *  pre-computed decode fields. Three distinct outcomes are possible:
+ *
+ *  - **Seated optional, `ec` clear**: header parsed successfully.
+ *  - **Null optional, `ec == errc::success`**: not enough bytes yet — caller
+ *    should wait for more data and retry.
+ *  - **Null optional, `ec == errc::no_message`**: the format-guard bits did not
+ *    match either the uncompressed (top 6 bits zero) or compressed (high bit set)
+ *    layout — the stream is malformed and the connection should be dropped.
+ *  - **Null optional, `ec == errc::protocol_error`**: compressed-format bits 2–3
+ *    were set, or the algorithm nibble is not `LZ4` — invalid compression framing.
+ *
+ *  @tparam BufferSequence A `ConstBufferSequence` meeting Boost.Asio requirements.
+ *  @param ec Set to an error code when the optional is null (see above); cleared
+ *      on success.
+ *  @param bufs Non-empty buffer sequence containing the received bytes.
+ *  @param size Total number of valid bytes available in `bufs`.
+ *  @return A `MessageHeader` on success, or `std::nullopt` with `ec` set.
+ *  @note `bufs` must not be empty; this is asserted internally.
  */
 template <class BufferSequence>
 std::optional<MessageHeader>
@@ -152,16 +236,10 @@ parseMessageHeader(boost::system::error_code& ec, BufferSequence const& bufs, st
     auto iter = buffersBegin(bufs);
     XRPL_ASSERT(iter != buffersEnd(bufs), "xrpl::detail::parseMessageHeader : non-empty buffer");
 
-    // Check valid header compressed message:
-    // - 4 bits are the compression algorithm, 1st bit is always set to 1
-    // - 2 bits are always set to 0
-    // - 26 bits are the payload size
-    // - 32 bits are the uncompressed data size
     if (*iter & 0x80)
     {
         hdr.header_size = kHEADER_BYTES_COMPRESSED;
 
-        // not enough bytes to parse the header
         if (size < hdr.header_size)
         {
             ec = make_error_code(boost::system::errc::success);
@@ -199,9 +277,6 @@ parseMessageHeader(boost::system::error_code& ec, BufferSequence const& bufs, st
         return hdr;
     }
 
-    // Check valid header uncompressed message:
-    // - 6 bits are set to 0
-    // - 26 bits are the payload size
     if ((*iter & 0xFC) == 0)
     {
         hdr.header_size = kHEADER_BYTES;
@@ -230,6 +305,25 @@ parseMessageHeader(boost::system::error_code& ec, BufferSequence const& bufs, st
     return std::nullopt;
 }
 
+/** Deserialize a protobuf message from the payload portion of a buffer sequence.
+ *
+ *  Uses a `ZeroCopyInputStream` adapter to skip the header bytes and feed the
+ *  remaining bytes directly to protobuf, avoiding an intermediate copy for
+ *  uncompressed messages even when the data spans multiple non-contiguous
+ *  Asio buffer segments.
+ *
+ *  For compressed messages (`header.algorithm != None`) a contiguous
+ *  `std::vector<uint8_t>` of `header.uncompressed_size` bytes is allocated,
+ *  LZ4-decompressed into it, and then parsed via `ParseFromArray`. The extra
+ *  allocation is unavoidable because LZ4 requires a contiguous output region.
+ *
+ *  @tparam T A `google::protobuf::Message` subclass; enforced by `enable_if`.
+ *  @tparam Buffers A `ConstBufferSequence` meeting Boost.Asio requirements.
+ *  @param header Pre-parsed header describing sizes and compression state.
+ *  @param buffers Buffer sequence beginning at the start of the wire message.
+ *  @return A `shared_ptr<T>` on success, or an empty `shared_ptr` if
+ *      decompression or protobuf parsing fails.
+ */
 template <
     class T,
     class Buffers,
@@ -265,6 +359,24 @@ parseMessageContent(MessageHeader const& header, Buffers const& buffers)
     return m;
 }
 
+/** Parse and dispatch a single typed protobuf message to a handler.
+ *
+ *  Calls `parseMessageContent<T>()`, then invokes the three handler hooks in
+ *  order: `onMessageBegin()` (wire/uncompressed sizes and compression flag for
+ *  traffic accounting), `onMessage()` (typed processing), and `onMessageEnd()`
+ *  (post-message hook). Separating begin/end allows the handler to bracket
+ *  dispatch with timing or resource-charge logic.
+ *
+ *  @tparam T A `google::protobuf::Message` subclass; enforced by `enable_if`.
+ *  @tparam Buffers A `ConstBufferSequence` meeting Boost.Asio requirements.
+ *  @tparam Handler Duck-typed handler; concrete implementation is `PeerImp`.
+ *  @param header Pre-parsed header with size and compression metadata.
+ *  @param buffers Buffer sequence for the full wire message.
+ *  @param handler Handler whose `onMessage(shared_ptr<T>)` overload is called.
+ *  @return `true` on success; `false` if `parseMessageContent` fails (parse
+ *      error or decompression failure), causing `invokeProtocolMessage` to
+ *      return `errc::bad_message`.
+ */
 template <
     class T,
     class Buffers,
@@ -292,18 +404,40 @@ invoke(MessageHeader const& header, Buffers const& buffers, Handler& handler)
 
 }  // namespace detail
 
-/** Calls the handler for up to one protocol message in the passed buffers.
-
-    If there is insufficient data to produce a complete protocol
-    message, zero is returned for the number of bytes consumed.
-
-    @param buffers The buffer that contains the data we've received
-    @param handler The handler that will be used to process the message
-    @param hint If possible, a hint as to the amount of data to read next. The
-                returned value MAY be zero, which means "no hint"
-
-    @return The number of bytes consumed, or the error code if any.
-*/
+/** Decode and dispatch up to one protocol message from a buffer sequence.
+ *
+ *  This is the single function called from `PeerImp`'s async read loop. It
+ *  runs the full three-stage pipeline: parse header → validate → dispatch.
+ *
+ *  **Validation gates (in order):**
+ *  1. Header parse: returns early with the `error_code` set by
+ *     `parseMessageHeader()` if the header is incomplete or malformed.
+ *  2. Size limit: both `payload_wire_size` and `uncompressed_size` must not
+ *     exceed `kMAXIMUM_MESSAGE_SIZE` (64 MiB); guards against memory exhaustion.
+ *  3. Compression check: if `handler.compressionEnabled()` is false and a
+ *     compressed header was received, returns `protocol_error` — prevents a
+ *     peer from forcing CPU work without negotiation.
+ *  4. Incomplete payload: if `total_wire_size > size`, sets `hint` to the
+ *     exact byte shortfall and returns zero consumed bytes (not an error).
+ *
+ *  **Dispatch:** an exhaustive switch on `message_type` calls
+ *  `detail::invoke<TM…>()` for each known protobuf type. Unknown types invoke
+ *  `handler.onMessageUnknown()` and succeed, enabling forward-compatible
+ *  protocol evolution without hard failures.
+ *
+ *  @tparam Buffers A `ConstBufferSequence` meeting Boost.Asio requirements.
+ *  @tparam Handler Duck-typed handler; concrete implementation is `PeerImp`.
+ *      Must provide `compressionEnabled()`, `onMessageBegin()`, `onMessage()`
+ *      overloads, `onMessageEnd()`, and `onMessageUnknown()`.
+ *  @param buffers Buffer sequence containing received bytes.
+ *  @param handler Handler that processes each decoded message.
+ *  @param hint Output: if the message is incomplete, set to the number of
+ *      additional bytes needed, reducing subsequent `async_read` syscall
+ *      overhead. Zero means "no hint".
+ *  @return `{bytes_consumed, error_code}`. Zero bytes consumed with a clear
+ *      error code means the message is incomplete — retry after reading more
+ *      data. A non-zero error code means the peer should be disconnected.
+ */
 template <class Buffers, class Handler>
 std::pair<std::size_t, boost::system::error_code>
 invokeProtocolMessage(Buffers const& buffers, Handler& handler, std::size_t& hint)
@@ -317,18 +451,9 @@ invokeProtocolMessage(Buffers const& buffers, Handler& handler, std::size_t& hin
 
     auto header = detail::parseMessageHeader(result.second, buffers, size);
 
-    // If we can't parse the header then it may be that we don't have enough
-    // bytes yet, or because the message was cut off (if error_code is success).
-    // Otherwise we failed to match the header's marker (error_code is set to
-    // no_message) or the compression algorithm is invalid (error_code is
-    // protocol_error) and signal an error.
     if (!header)
         return result;
 
-    // We implement a maximum size for protocol messages. Sending a message
-    // whose size exceeds this may result in the connection being dropped. A
-    // larger message size may be supported in the future or negotiated as
-    // part of a protocol upgrade.
     if (header->payload_wire_size > kMAXIMUM_MESSAGE_SIZE ||
         header->uncompressed_size > kMAXIMUM_MESSAGE_SIZE)
     {
@@ -336,15 +461,12 @@ invokeProtocolMessage(Buffers const& buffers, Handler& handler, std::size_t& hin
         return result;
     }
 
-    // We requested uncompressed messages from the peer but received compressed.
     if (!handler.compressionEnabled() && header->algorithm != compression::Algorithm::None)
     {
         result.second = make_error_code(boost::system::errc::protocol_error);
         return result;
     }
 
-    // We don't have the whole message yet. This isn't an error but we have
-    // nothing to do.
     if (header->total_wire_size > size)
     {
         hint = header->total_wire_size - size;

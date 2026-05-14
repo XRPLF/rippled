@@ -1,3 +1,10 @@
+/** @file
+ *  Implementation of the AMMBid transactor: auction slot bidding for AMM pools.
+ *
+ *  The file-local `applyBid` free function contains the full pricing and slot
+ *  mutation logic. The public `AMMBid` methods are thin wrappers that delegate
+ *  to it inside a `Sandbox` for atomic rollback on failure.
+ */
 #include <xrpl/tx/transactors/dex/AMMBid.h>
 
 #include <xrpl/basics/Expected.h>
@@ -176,6 +183,38 @@ AMMBid::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Apply an AMMBid transaction against a mutable sandbox view.
+ *
+ *  Computes the minimum slot price (`lptAMMBalance × tradingFee / 25`),
+ *  determines the current auction time slot (0–19, each ~72 minutes), and
+ *  branches on whether the slot is unowned/expired or held by an active owner:
+ *
+ *  - **Unowned/expired** — bidder pays `max(minSlotPrice, sfBidMin)`, capped
+ *    by `sfBidMax`.  The full payment is burned as LP tokens.
+ *  - **Occupied (intervals 0–18)** — bidder pays the decay-adjusted market
+ *    price `X × 1.05 × (1 − x^60) + minSlotPrice`, where `X` is the price the
+ *    current holder paid and `x = (timeSlot + 1) / 20`.  The previous holder
+ *    is refunded `(1 − x) × X` LP tokens; the remainder is burned.
+ *  - **Tailing (interval 19)** — treated as unowned; holder receives no refund
+ *    and pays only minimum price, making rational behavior to let the slot
+ *    expire.
+ *
+ *  Slot mutation and token burn are performed by the `updateSlot` lambda.
+ *  `sfBidMin`/`sfBidMax` clamping is applied by `getPayPrice`.
+ *
+ *  Under `fixInnerObjTemplate`, `sfAuctionSlot` must already be present on the
+ *  AMM ledger entry (eager initialization at AMM creation); if it is absent the
+ *  function returns `tecINTERNAL`.  Before the amendment, the field is lazily
+ *  created via `makeFieldPresent`.
+ *
+ *  @param ctx      Apply context providing the transaction, view, and journal.
+ *  @param sb       Mutable sandbox view; committed by the caller only on success.
+ *  @param account  Submitting account (the prospective new slot holder).
+ *  @param j        Journal for diagnostic logging (unused; ctx.journal is used
+ *      directly inside the function for consistency with other AMM helpers).
+ *  @return A pair of `{TER, bool}` where the bool is true only on
+ *      `tesSUCCESS` and signals the caller to commit the sandbox.
+ */
 static std::pair<TER, bool>
 applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journal j)
 {
@@ -200,25 +239,43 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
     auto& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
     auto const current =
         duration_cast<seconds>(ctx.view().header().parentCloseTime.time_since_epoch()).count();
-    // Auction slot discounted fee
     auto const discountedFee = (*ammSle)[sfTradingFee] / kAUCTION_SLOT_DISCOUNTED_FEE_FRACTION;
     auto const tradingFee = getFee((*ammSle)[sfTradingFee]);
-    // Min price
     auto const minSlotPrice = lptAMMBalance * tradingFee / kAUCTION_SLOT_MIN_FEE_FRACTION;
 
     std::uint32_t constexpr kTAILING_SLOT = kAUCTION_SLOT_TIME_INTERVALS - 1;
 
-    // If seated then it is the current slot-holder time slot, otherwise
-    // the auction slot is not owned. Slot range is in {0-19}
+    // Slot range is {0-19}; absent means the auction slot is unowned/expired.
     auto const timeSlot = ammAuctionTimeSlot(current, auctionSlot);
 
-    // Account must exist and the slot not expired.
+    /** Returns true when @p account owns an active, non-tailing slot.
+     *
+     *  Interval 19 (the tailing slot) is excluded: at that stage the holder
+     *  pays only the minimum price and receives no refund, so the code falls
+     *  through to the unowned path rather than computing a decay price for them.
+     */
     auto validOwner = [&](AccountID const& account) {
-        // Valid range is 0-19 but the tailing slot pays MinSlotPrice
-        // and doesn't refund so the check is < instead of <= to optimize.
         return timeSlot && *timeSlot < kTAILING_SLOT && sb.read(keylet::account(account));
     };
 
+    /** Overwrite the `sfAuctionSlot` object and burn the bid's net cost.
+     *
+     *  Sets the new owner, expiration (`now + 86400 s`), discounted fee,
+     *  slot price record, and auth accounts.  If @p fee is zero the
+     *  `sfDiscountedFee` field is removed (zero-fee pools need no discount
+     *  entry).  The net burn amount @p burn is adjusted for IOU 16-digit
+     *  precision via `adjustLPTokens` before calling `redeemIOU` to destroy
+     *  the tokens; `sfLPTokenBalance` on the AMM SLE is decremented to match.
+     *
+     *  @param fee       New discounted fee to record (`sfTradingFee / 10`).
+     *  @param minPrice  Purchase price to record in `sfPrice` (LP tokens).
+     *  @param burn      Net LP tokens to burn (pay price minus any refund).
+     *  @return `tesSUCCESS` or a `tec*` code if the token burn fails.
+     *
+     *  @note The LCOV_EXCL_START guard around `saBurn >= lptAMMBalance` is
+     *      mathematically unreachable given valid preclaim inputs; it exists as
+     *      a regression sentinel for future numerical changes.
+     */
     auto updateSlot = [&](std::uint32_t fee, Number const& minPrice, Number const& burn) -> TER {
         auctionSlot.setAccountID(sfAccount, account);
         auctionSlot.setFieldU32(sfExpiration, current + kTOTAL_TIME_SLOT_SECS);
@@ -239,7 +296,6 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
         {
             auctionSlot.makeFieldAbsent(sfAuthAccounts);
         }
-        // Burn the remaining bid amount
         auto const saBurn =
             adjustLPTokens(lptAMMBalance, toSTAmount(lptAMMBalance.asset(), burn), IsDeposit::No);
         if (saBurn >= lptAMMBalance)
@@ -267,9 +323,26 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
     auto const bidMin = ctx.tx[~sfBidMin];
     auto const bidMax = ctx.tx[~sfBidMax];
 
+    /** Clamp @p computedPrice to the caller-supplied `[sfBidMin, sfBidMax]` range.
+     *
+     *  Decision table:
+     *  | sfBidMin | sfBidMax | computedPrice ≤ bidMax? | Result |
+     *  |----------|----------|------------------------|--------|
+     *  | present  | present  | yes  | `max(computedPrice, bidMin)` |
+     *  | present  | present  | no   | `tecAMM_FAILED` |
+     *  | present  | absent   | —    | `max(computedPrice, bidMin)` |
+     *  | absent   | present  | yes  | `computedPrice` |
+     *  | absent   | present  | no   | `tecAMM_FAILED` |
+     *  | absent   | absent   | —    | `computedPrice` |
+     *
+     *  Returns `tecAMM_INVALID_TOKENS` when the resulting pay price would
+     *  exceed the caller's current LP token holdings.
+     *
+     *  @param computedPrice  Market price derived from the slot state.
+     *  @return The actual pay price, or an error TER wrapped in `Unexpected`.
+     */
     auto getPayPrice = [&](Number const& computedPrice) -> Expected<Number, TER> {
         auto const payPrice = [&]() -> std::optional<Number> {
-            // Both min/max bid price are defined
             if (bidMin && bidMax)
             {
                 if (computedPrice <= *bidMax)
@@ -278,7 +351,6 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
                                           << *bidMin << " " << *bidMax;
                 return std::nullopt;
             }
-            // Bidder pays max(bidPrice, computedPrice)
             if (bidMin)
             {
                 return std::max(computedPrice, Number(*bidMin));
@@ -305,7 +377,7 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
         return *payPrice;
     };
 
-    // No one owns the slot or expired slot.
+    // Unowned or expired slot: bidder pays minimum price; full amount is burned.
     if (auto const acct = auctionSlot[~sfAccount]; !acct || !validOwner(*acct))
     {
         auto const payPrice = getPayPrice(minSlotPrice);
@@ -318,18 +390,18 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
     }
     else
     {
-        // Price the slot was purchased at.
         STAmount const pricePurchased = auctionSlot[sfPrice];
         XRPL_ASSERT(timeSlot, "xrpl::applyBid : timeSlot is set");
         // NOLINTBEGIN(bugprone-unchecked-optional-access)
         auto const fractionUsed = (Number(*timeSlot) + 1) / kAUCTION_SLOT_TIME_INTERVALS;
         auto const fractionRemaining = Number(1) - fractionUsed;
         auto const computedPrice = [&]() -> Number {
-            auto const p105 = Number(105, -2);
-            // First interval slot price
+            auto const p105 = Number(105, -2);  // 1.05 premium prevents zero-cost squatting
             if (*timeSlot == 0)
+                // Interval 0: decay term (1 - x^60) would be ~0.95, omitted for simplicity;
+                // full 5% premium applied directly.
                 return pricePurchased * p105 + minSlotPrice;
-            // Other intervals slot price
+            // Intervals 1–18: decay makes outbidding cheaper the further into the slot.
             return pricePurchased * p105 * (1 - power(fractionUsed, 60)) + minSlotPrice;
         }();
         // NOLINTEND(bugprone-unchecked-optional-access)
@@ -339,8 +411,7 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
         if (!payPrice)
             return {payPrice.error(), false};
 
-        // Refund the previous owner. If the time slot is 0 then
-        // the owner is refunded 95% of the amount.
+        // Refund the outgoing holder their unused slot fraction; burn the rest.
         auto const refund = fractionRemaining * pricePurchased;
         if (refund > *payPrice)
         {
@@ -367,8 +438,6 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
 TER
 AMMBid::doApply()
 {
-    // This is the ledger view that we work against. Transactions are applied
-    // as we go on processing transactions.
     Sandbox sb(&ctx_.view());
 
     auto const result = applyBid(ctx_, sb, account_, j_);

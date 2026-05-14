@@ -1,3 +1,19 @@
+/** @file
+ *  Implements `ApplyViewImpl`, the concrete per-transaction ledger-mutation
+ *  view handed to every `Transactor` during the apply phase.
+ *
+ *  This file is intentionally minimal. All buffering logic lives in
+ *  `ApplyStateTable` (see `detail/ApplyStateTable.h`); `ApplyViewImpl`
+ *  contributes only the `deliver_` field (payment-delivery annotation for
+ *  `TxMeta`) and the `apply()` commit boundary, which drains the buffer into
+ *  a live `OpenView` and returns the generated `TxMeta`. After `apply()`
+ *  returns the object must be destroyed — the buffer is drained and reuse
+ *  would double-apply mutations or corrupt metadata.
+ *
+ *  @see ApplyViewImpl
+ *  @see detail::ApplyStateTable
+ *  @see detail::ApplyViewBase
+ */
 #include <xrpl/ledger/ApplyViewImpl.h>
 
 #include <xrpl/basics/base_uint.h>

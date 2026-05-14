@@ -1,3 +1,25 @@
+/** @file
+ *  Implements `AMMLiquidity`, the adapter between an on-ledger Automated
+ *  Market Maker pool and the XRPL payment engine's `BookStep` traversal
+ *  layer.
+ *
+ *  `AMMLiquidity` produces `AMMOffer<TIn,TOut>` objects — synthetic offers
+ *  sized from live pool state — so that `BookStep` can treat AMM liquidity
+ *  identically to CLOB offers during payment path execution.
+ *
+ *  Two offer-generation strategies are used:
+ *  - **Single-path**: `changeSpotPriceQuality` computes the exact
+ *    constant-product swap that moves the AMM's spot price to the competing
+ *    CLOB offer's quality.  If no CLOB is present, `maxOffer` is returned
+ *    instead and `BookStep` trims it to actual limits.
+ *  - **Multi-path**: `generateFibSeqOffer` emits exponentially growing
+ *    synthetic offers keyed to `AMMContext::curIters()`, preventing any
+ *    single path from consuming the entire quality differential.
+ *
+ *  All offer computation is wrapped in exception handlers so a problematic
+ *  pool cannot abort an in-flight payment; it simply stops contributing
+ *  liquidity for that path.
+ */
 #include <xrpl/tx/paths/AMMLiquidity.h>
 
 #include <xrpl/basics/Log.h>
@@ -53,7 +75,8 @@ AMMLiquidity<TIn, TOut>::fetchBalances(ReadView const& view) const
 {
     auto const amountIn = ammAccountHolds(view, ammAccountID_, assetIn_);
     auto const amountOut = ammAccountHolds(view, ammAccountID_, assetOut_);
-    // This should not happen.
+    // Negative balances indicate ledger corruption; the AMM invariant
+    // checker ensures pool balances are always non-negative.
     if (amountIn < beast::kZERO || amountOut < beast::kZERO)
         Throw<std::runtime_error>("AMMLiquidity: invalid balances");
 
@@ -100,6 +123,19 @@ AMMLiquidity<TIn, TOut>::generateFibSeqOffer(TAmounts<TIn, TOut> const& balances
 }
 
 namespace {
+
+/** Return the protocol ceiling value for a given amount type.
+ *
+ *  Used by the pre-`fixAMMOverflowOffer` path of `maxOffer` to construct an
+ *  unbounded input amount.  The ceiling is type-specific: native XRP uses
+ *  `STAmount::kMAX_NATIVE`; IOU and STAmount use half of `kMAX_VALUE` at
+ *  `kMAX_OFFSET`; MPT uses `kMAX_MP_TOKEN_AMOUNT`.
+ *
+ *  @tparam T One of `XRPAmount`, `IOUAmount`, `STAmount`, or `MPTAmount`.
+ *  @return The maximum representable value for the type.
+ *  @note Half of `kMAX_VALUE` is used for IOU/STAmount to leave headroom for
+ *      intermediate arithmetic without overflowing into the sign bit.
+ */
 template <typename T>
 constexpr T
 maxAmount()
@@ -122,6 +158,16 @@ maxAmount()
     }
 }
 
+/** Compute 99% of a pool's output balance, rounded down to asset precision.
+ *
+ *  Used by the post-`fixAMMOverflowOffer` path of `maxOffer` to produce a
+ *  bounded takerGets amount.  Rounding down ensures the result stays strictly
+ *  below `out` so the caller's `>= balances.out` guard cannot trigger.
+ *
+ *  @param out  Current output-side pool balance.
+ *  @param asset The asset type, used to select rounding precision.
+ *  @return 99% of `out`, rounded down.
+ */
 template <typename T>
 T
 maxOut(T const& out, Asset const& asset)
@@ -129,6 +175,7 @@ maxOut(T const& out, Asset const& asset)
     Number const res = out * Number{99, -2};
     return toAmount<T>(asset, res, Number::RoundingMode::Downward);
 }
+
 }  // namespace
 
 template <typename TIn, typename TOut>
@@ -156,7 +203,8 @@ std::optional<AMMOffer<TIn, TOut>>
 AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> const& clobQuality)
     const
 {
-    // Can't generate more offers if multi-path.
+    // AMM offers are not counted by BookStep's own offer counter, so the
+    // iteration budget is enforced here instead to prevent unbounded loop.
     if (ammContext_.maxItersReached())
         return std::nullopt;
 

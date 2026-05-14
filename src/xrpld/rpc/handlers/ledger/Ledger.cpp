@@ -1,3 +1,14 @@
+/** @file
+ *  Implements the `ledger` RPC command for both the JSON-RPC path
+ *  (`LedgerHandler`) and the gRPC path (`doLedgerGrpc`).
+ *
+ *  `LedgerHandler` uses the two-phase check()/writeResult() pattern:
+ *  `check()` resolves the ledger and validates parameters; `writeResult()`
+ *  serializes the result. The gRPC handler additionally supports incremental
+ *  state-object diffs and DEX best-offer neighbor tracking, primarily for use
+ *  by the Clio indexing service.
+ */
+
 #include <xrpld/rpc/handlers/ledger/Ledger.h>
 
 #include <xrpld/app/ledger/LedgerToJson.h>
@@ -39,6 +50,31 @@ LedgerHandler::LedgerHandler(JsonContext& context) : context_(context)
 {
 }
 
+/** Validate request parameters, resolve the target ledger, and set options.
+ *
+ *  Parses all boolean flags (`full`, `transactions`, `accounts`, `expand`,
+ *  `binary`, `owner_funds`, `queue`) and OR-combines them into `options_`.
+ *  If none of `ledger`, `ledger_hash`, or `ledger_index` are present in the
+ *  request, the method returns `Status::kOK` immediately without populating
+ *  `ledger_`, which causes `writeResult()` to emit the dual closed+open
+ *  response instead.
+ *
+ *  When a ledger identifier is supplied, `lookupLedger` resolves and stores
+ *  `ledger_` and seeds `result_` with preliminary metadata.
+ *
+ *  @return `Status::kOK` on success; `rpcNO_PERMISSION` if `full` or
+ *      `accounts` is requested by a non-admin caller; `rpcTOO_BUSY` if the
+ *      node is under high local load and a full/accounts dump is requested;
+ *      `rpcINVALID_PARAMS` if any boolean flag is not actually a boolean, or
+ *      if `queue` is requested against a non-open ledger.
+ *
+ *  @note Dumping the entire account state trie (`full` or `accounts`) is
+ *      restricted to admin/unlimited roles and further throttled by local
+ *      load. Binary mode charges `feeMediumBurdenRPC`; JSON mode charges
+ *      `feeHeavyBurdenRPC`. The `queue` flag is only meaningful on the open
+ *      ledger; requesting it against a closed or historical ledger returns
+ *      `rpcINVALID_PARAMS`.
+ */
 Status
 LedgerHandler::check()
 {
@@ -97,8 +133,6 @@ LedgerHandler::check()
 
     if (*full || *accounts)
     {
-        // Until some sane way to get full ledgers has been implemented,
-        // disallow retrieving all state nodes.
         if (!isUnlimited(context_.role))
             return RpcNoPermission;
 
@@ -114,8 +148,6 @@ LedgerHandler::check()
     {
         if (!ledger_ || !ledger_->open())
         {
-            // It doesn't make sense to request the queue
-            // with a non-existent or closed/validated ledger.
             return RpcInvalidParams;
         }
 
@@ -125,6 +157,20 @@ LedgerHandler::check()
     return Status::kOK;
 }
 
+/** Serialize the ledger response into the JSON output value.
+ *
+ *  If `ledger_` was populated by `check()`, merges the metadata already
+ *  accumulated in `result_` and calls `addJson` with the resolved ledger,
+ *  context, `options_` bitmask, and any queued transactions. If `ledger_` is
+ *  not set (no identifier was supplied), emits both the current closed and
+ *  current open ledger as sibling fields `closed` and `open`, giving callers
+ *  a consistent snapshot of the validator frontier.
+ *
+ *  Appends a structured `warnings` array entry (`warnRPC_FIELDS_DEPRECATED`)
+ *  when the deprecated `type` filter field is present in the request.
+ *
+ *  @param value  Output JSON object that receives the ledger description.
+ */
 void
 LedgerHandler::writeResult(json::Value& value)
 {
@@ -164,6 +210,36 @@ LedgerHandler::writeResult(json::Value& value)
 
 }  // namespace RPC
 
+/** @see GRPCHandlers.h for the public contract of this function.
+ *
+ *  Implementation notes:
+ *
+ *  **Transaction iteration** is wrapped in a try-catch: if any transaction
+ *  fails to deserialize mid-iteration the handler logs the anomaly and breaks
+ *  out of the loop, returning whatever transactions were processed. This
+ *  partial-failure tolerance is intentional — a single corrupt entry should
+ *  not abort the entire response.
+ *
+ *  **State-object diff** (`get_objects`) requires both the target ledger and
+ *  its parent to be `dynamic_pointer_cast`-able to `Ledger const`, because
+ *  `stateMap()` is only exposed on the concrete `Ledger` class, not on the
+ *  `ReadView` interface. A plain `ReadView` (e.g., an open ledger) returns
+ *  `NOT_FOUND`. The diff is produced via `SHAMap::compare` and classified
+ *  into CREATED, MODIFIED, and DELETED entries.
+ *
+ *  **DEX book-successor tracking** (`get_object_neighbors`): for any
+ *  `ltDIR_NODE` entry without an `sfOwner` field (i.e., an order-book quality
+ *  directory node, not an account owner directory), the handler uses
+ *  `keylet::quality` and `getQualityNext` to locate the first remaining
+ *  quality tier in the book. Created nodes update the best-offer pointer;
+ *  deleted nodes trigger a search for the new first node in the desired
+ *  state map. This allows Clio to maintain DEX best-offer positions across
+ *  ledger transitions without a full trie scan.
+ *
+ *  @note The performance log at the end divides duration by object and
+ *      transaction counts without guarding against zero-count division — a
+ *      minor robustness gap in the observability path.
+ */
 std::pair<org::xrpl::rpc::v1::GetLedgerResponse, grpc::Status>
 doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
 {

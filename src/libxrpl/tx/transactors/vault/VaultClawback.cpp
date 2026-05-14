@@ -33,6 +33,7 @@
 #include <utility>
 
 namespace xrpl {
+
 NotTEC
 VaultClawback::preflight(PreflightContext const& ctx)
 {
@@ -60,6 +61,27 @@ VaultClawback::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Resolve the effective clawback target when `sfAmount` is absent from the
+ *  transaction.
+ *
+ *  A zero (absent) `sfAmount` is intentionally underspecified: the correct
+ *  default depends on the submitter's role. When the submitter is the vault
+ *  owner, the implicit target is shares (`sfShareMPTID`), activating the
+ *  share-burn cleanup path. For any other submitter (the asset issuer), the
+ *  implicit target is the vault's underlying asset, activating asset-clawback
+ *  mode.
+ *
+ *  Callers must guard against the dual-role ambiguity (owner == issuer) before
+ *  invoking this function. `preclaim` rejects that case with `tecWRONG_ASSET`,
+ *  so this helper is never called with an ambiguous zero-amount.
+ *
+ *  @param vault         Vault SLE from which the share MPT ID and owner are read.
+ *  @param maybeAmount   The optional `sfAmount` field value from the transaction.
+ *  @param account       The submitting account (used to distinguish owner from issuer).
+ *  @return The resolved `STAmount`: the explicit amount verbatim if present,
+ *      a zero-value share amount for the vault owner, or a zero-value
+ *      vault-asset amount for the asset issuer.
+ */
 [[nodiscard]] STAmount
 clawbackAmount(
     std::shared_ptr<SLE const> const& vault,
@@ -76,6 +98,33 @@ clawbackAmount(
     return STAmount{vault->at(sfAsset)};
 }
 
+/** Verify authorization and resolve the operating mode against ledger state.
+ *
+ *  Execution ordering:
+ *  1. Load the vault SLE and the share MPT issuance (missing issuance is
+ *     treated as ledger corruption → `tefINTERNAL`).
+ *  2. Guard the owner == issuer ambiguity: if `sfAmount` is absent and the
+ *     vault asset's issuer is also the vault owner, it is impossible to infer
+ *     whether the caller intends share-burn or asset-clawback, so `preclaim`
+ *     returns `tecWRONG_ASSET` rather than silently picking one path. The
+ *     caller must supply an explicit `sfAmount` to disambiguate.
+ *  3. Call `clawbackAmount()` to resolve the effective amount.
+ *  4. Branch on the resolved amount's asset type:
+ *     - **Share (`sfShareMPTID`)**: only the vault owner may burn shares;
+ *       the vault must have outstanding shares and zero `sfAssetsTotal` /
+ *       `sfAssetsAvailable`; a non-zero explicit amount must equal the
+ *       holder's entire balance (partial burns are rejected with
+ *       `tecLIMIT_EXCEEDED`).
+ *     - **Vault asset**: must be non-XRP; submitter must be the asset issuer
+ *       and must differ from the holder; clawback flags must be set
+ *       (`lsfMPTCanClawback` for MPT, `lsfAllowTrustLineClawback` without
+ *       `lsfNoFreeze` for IOU).
+ *     - Anything else: `tecWRONG_ASSET`.
+ *
+ *  @param ctx  Preclaim context providing read-only ledger access.
+ *  @return `tesSUCCESS` on authorization success, or a failure `TER`
+ *      documented on the header declaration.
+ */
 TER
 VaultClawback::preclaim(PreclaimContext const& ctx)
 {
@@ -99,7 +148,6 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
 
     Asset const share = MPTIssue{mptIssuanceID};
 
-    // Ambiguous case: If Issuer is Owner they must specify the asset
     if (!maybeAmount && !vaultAsset.native() && vaultAsset.getIssuer() == vault->at(sfOwner))
     {
         JLOG(ctx.j.debug()) << "VaultClawback: must specify amount when issuer is owner.";
@@ -114,7 +162,6 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
     // so here we just enforce checks.
     if (amount.asset() == share)
     {
-        // Only the Vault Owner may clawback shares
         if (account != vault->at(sfOwner))
         {
             JLOG(ctx.j.debug()) << "VaultClawback: only vault owner can clawback shares.";
@@ -125,7 +172,6 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
         auto const assetsAvailable = vault->at(sfAssetsAvailable);
         auto const sharesTotal = sleShareIssuance->at(sfOutstandingAmount);
 
-        // Owner can clawback funds when the vault has shares but no assets
         if (sharesTotal == 0 || (assetsTotal != 0 || assetsAvailable != 0))
         {
             JLOG(ctx.j.debug()) << "VaultClawback: vault owner can clawback shares only"
@@ -133,7 +179,6 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
             return tecNO_PERMISSION;
         }
 
-        // If amount is non-zero, the VaultOwner must burn all shares
         if (amount != beast::kZERO)
         {
             Number const& sharesHeld = accountHolds(
@@ -144,7 +189,6 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
                 AuthHandling::IgnoreAuth,
                 ctx.j);
 
-            // The VaultOwner must burn all shares
             if (amount != sharesHeld)
             {
                 JLOG(ctx.j.debug()) << "VaultClawback: vault owner must clawback all "
@@ -156,24 +200,20 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
         return tesSUCCESS;
     }
 
-    // The asset that is being clawed back is the vault asset
     if (amount.asset() == vaultAsset)
     {
-        // XRP cannot be clawed back
         if (vaultAsset.native())
         {
             JLOG(ctx.j.debug()) << "VaultClawback: cannot clawback XRP.";
             return tecNO_PERMISSION;
         }
 
-        // Only the Asset Issuer may clawback the asset
         if (account != vaultAsset.getIssuer())
         {
             JLOG(ctx.j.debug()) << "VaultClawback: only asset issuer can clawback asset.";
             return tecNO_PERMISSION;
         }
 
-        // The issuer cannot clawback from itself
         if (account == holder)
         {
             JLOG(ctx.j.debug()) << "VaultClawback: issuer cannot be the holder.";
@@ -219,10 +259,49 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
             });
     }
 
-    // Invalid asset
     return tecWRONG_ASSET;
 }
 
+/** Compute the (assetsRecovered, sharesDestroyed) pair for asset-clawback mode.
+ *
+ *  Algorithm overview:
+ *  - **Zero amount ("all")**: read the holder's full share balance via
+ *    `accountHolds`, then convert shares → assets once via
+ *    `sharesToAssetsWithdraw` to obtain the asset quantity.
+ *  - **Non-zero amount**: perform a double-pass — assets → shares via
+ *    `assetsToSharesWithdraw`, then shares → assets via
+ *    `sharesToAssetsWithdraw`. The round-trip is necessary because MPT shares
+ *    are integer-valued, so converting assets → shares truncates; converting
+ *    back yields the true net asset quantity recoverable for those shares.
+ *
+ *  After either path, `assetsRecovered` is clamped to `sfAssetsAvailable`.
+ *  This cap exists because outstanding loans may have deployed some vault
+ *  assets externally, making `sfAssetsAvailable < sfAssetsTotal`. When
+ *  clamping is applied, shares are recomputed with `TruncateShares::Yes`
+ *  — deliberate truncation ensures that the re-derived asset amount from the
+ *  truncated share count cannot overshoot the cap. The result is then verified
+ *  a second time; any breach after truncation is treated as an arithmetic bug
+ *  (`tecINTERNAL`).
+ *
+ *  **`fixCleanup3_1_3` branching (ledger replay compatibility)**: before this
+ *  amendment, a zero-amount clawback returned early without clamping to
+ *  `sfAssetsAvailable`, which allowed recovering more assets than the vault
+ *  had liquid (bypassing outstanding loans). The pre-fix code path is retained
+ *  verbatim under the amendment gate so that historical ledgers replay
+ *  identically on old rules.
+ *
+ *  Arithmetic overflow from the `Number` subsystem (common with large `sfScale`
+ *  values) is caught and returned as `tecPATH_DRY`.
+ *
+ *  @param vault             Mutable vault SLE; used for exchange-rate, cap, and
+ *      scale reads.
+ *  @param sleShareIssuance  Read-only share MPT issuance SLE.
+ *  @param holder            Account whose shares are being destroyed.
+ *  @param clawbackAmount    Resolved asset amount to recover; zero means all.
+ *  @return `{assetsRecovered, sharesDestroyed}` on success, or `Unexpected`:
+ *      `tecPATH_DRY` on arithmetic overflow, `tecINTERNAL` on asset-mismatch
+ *      guard or conversion helper failure.
+ */
 Expected<std::pair<STAmount, STAmount>, TER>
 VaultClawback::assetsToClawback(
     std::shared_ptr<SLE> const& vault,
@@ -232,7 +311,6 @@ VaultClawback::assetsToClawback(
 {
     if (clawbackAmount.asset() != vault->at(sfAsset))
     {
-        // preclaim should have blocked this , now it's an internal error
         // LCOV_EXCL_START
         JLOG(j_.error()) << "VaultClawback: asset mismatch in clawback.";
         return Unexpected(tecINTERNAL);
@@ -292,9 +370,6 @@ VaultClawback::assetsToClawback(
         if (assetsRecovered > *assetsAvailable)
         {
             assetsRecovered = *assetsAvailable;
-            // Note, it is important to truncate the number of shares,
-            // otherwise the corresponding assets might breach the
-            // AssetsAvailable
             {
                 auto const maybeShares = assetsToSharesWithdraw(
                     vault, sleShareIssuance, assetsRecovered, TruncateShares::Yes);
@@ -333,6 +408,46 @@ VaultClawback::assetsToClawback(
     return std::make_pair(assetsRecovered, sharesDestroyed);
 }
 
+/** Execute vault clawback mutations in a strictly ordered sequence.
+ *
+ *  Entry invariant: asserts `sfLossUnrealized ≤ sfAssetsTotal −
+ *  sfAssetsAvailable`, a structural guarantee of the vault's accounting model.
+ *  A violation here indicates out-of-band mutation of vault fields and is
+ *  surfaced as a debug-build assertion failure.
+ *
+ *  Mutation sequence:
+ *  1. **Mode dispatch** — if the submitter is the vault owner and the resolved
+ *     amount targets shares, set `sharesDestroyed` to the holder's full share
+ *     balance (share-burn mode, `assetsRecovered` stays zero). Otherwise,
+ *     delegate to `assetsToClawback()` to compute both quantities.
+ *  2. **Zero-shares guard** — if `sharesDestroyed` is zero after conversion,
+ *     return `tecPRECISION_LOSS`; no mutations have occurred yet.
+ *  3. **Vault accounting update** — decrement `sfAssetsTotal` and
+ *     `sfAssetsAvailable` on the vault SLE, then call `view().update(vault)`
+ *     to stage the change before any `accountSend` calls.
+ *  4. **Share transfer** — move `sharesDestroyed` shares from the holder to
+ *     the vault pseudo-account, waiving the transfer fee.
+ *  5. **MPToken cleanup** — attempt to remove the holder's now-empty MPToken
+ *     entry via `removeEmptyHolding()`. The vault pseudo-account never sets
+ *     `lsfMPTAuthorized`, so authorization flags are ignored. If the holder
+ *     is the vault owner, this step is skipped entirely: the owner's MPToken
+ *     anchors the share issuance and must not be deleted.
+ *     `tecHAS_OBLIGATIONS` (holder still has a balance) is tolerated silently;
+ *     any other error is fatal.
+ *  6. **Asset transfer** (skipped when `assetsRecovered == 0`) — move the
+ *     recovered assets from the vault pseudo-account to the submitting issuer,
+ *     waiving the transfer fee. Then `accountHolds` is called on the vault
+ *     pseudo-account as a belt-and-suspenders check: a negative result would
+ *     indicate an arithmetic bug producing an invalid ledger state.
+ *  7. **`associateAsset`** — re-rounds all `STNumber` fields on the vault SLE
+ *     against the vault asset's precision. Per `STTakesAsset` contract, this
+ *     must be the very last operation after all mutations are complete.
+ *
+ *  @return `tesSUCCESS` on success, `tecPRECISION_LOSS` if the share/asset
+ *      conversion produced zero shares, forwarded `TER` from `assetsToClawback`
+ *      or `accountSend` on failure, `tefINTERNAL` on ledger-corruption
+ *      conditions.
+ */
 TER
 VaultClawback::doApply()
 {
@@ -367,13 +482,12 @@ VaultClawback::doApply()
     STAmount sharesDestroyed = {share};
     STAmount assetsRecovered = {vault->at(sfAsset)};
 
-    // The Owner is burning shares
     if (account_ == vault->at(sfOwner) && amount.asset() == share)
     {
         sharesDestroyed = accountHolds(
             view(), holder, share, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth, j_);
     }
-    else  // The Issuer is clawbacking vault assets
+    else
     {
         XRPL_ASSERT(amount.asset() == vaultAsset, "xrpl::VaultClawback::doApply : matching asset");
 
@@ -393,7 +507,6 @@ VaultClawback::doApply()
     view().update(vault);
 
     auto const& vaultAccount = vault->at(sfAccount);
-    // Transfer shares from holder to vault.
     if (auto const ter =
             accountSend(view(), holder, vaultAccount, sharesDestroyed, j_, WaiveTransferFee::Yes);
         !isTesSuccess(ter))
@@ -423,18 +536,15 @@ VaultClawback::doApply()
             return ter;
             // LCOV_EXCL_STOP
         }
-        // else quietly ignore, holder balance is not zero
     }
 
     if (assetsRecovered > beast::kZERO)
     {
-        // Transfer assets from vault to issuer.
         if (auto const ter = accountSend(
                 view(), vaultAccount, account_, assetsRecovered, j_, WaiveTransferFee::Yes);
             !isTesSuccess(ter))
             return ter;
 
-        // Sanity check
         if (accountHolds(
                 view(),
                 vaultAccount,

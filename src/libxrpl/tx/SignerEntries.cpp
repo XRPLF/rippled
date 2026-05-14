@@ -1,3 +1,10 @@
+/** @file
+ *  Implementation of `SignerEntries::deserialize()` — the single extraction
+ *  point for multi-signer co-signer lists from both transaction and ledger
+ *  data.  All business-logic validation (duplicate detection, quorum
+ *  reachability, self-reference prohibition) is intentionally left to callers
+ *  (`SignerListSet`, `XChainBridge`, `Transactor::checkMultiSign()`).
+ */
 #include <xrpl/tx/SignerEntries.h>
 
 #include <xrpl/basics/Expected.h>
@@ -33,14 +40,12 @@ SignerEntries::deserialize(STObject const& obj, beast::Journal journal, std::str
     STArray const& sEntries(obj.getFieldArray(sfSignerEntries));
     for (STObject const& sEntry : sEntries)
     {
-        // Validate the SignerEntry.
         if (sEntry.getFName() != sfSignerEntry)
         {
             JLOG(journal.trace()) << "Malformed " << annotation << ": Expected SignerEntry.";
             return Unexpected(temMALFORMED);
         }
 
-        // Extract SignerEntry fields.
         AccountID const account = sEntry.getAccountID(sfAccount);
         std::uint16_t const weight = sEntry.getFieldU16(sfSignerWeight);
         std::optional<uint256> const tag = sEntry.at(~sfWalletLocator);

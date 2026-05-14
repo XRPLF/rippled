@@ -1,3 +1,21 @@
+/** @file
+ *  Implements the three-function enrichment pipeline that injects
+ *  `mpt_issuance_id` into RPC JSON responses for successful
+ *  `MPTokenIssuanceCreate` transactions.
+ *
+ *  The pipeline mirrors the structure of `DeliveredAmount.cpp`:
+ *  `canHaveMPTokenIssuanceID` gates eligibility, `getIDFromCreatedIssuance`
+ *  extracts the identifier from transaction metadata, and
+ *  `insertMPTokenIssuanceID` composes both and writes the response field.
+ *
+ *  @note `getIDFromCreatedIssuance` performs a dual check on each metadata
+ *      node: `sfLedgerEntryType == ltMPTOKEN_ISSUANCE` confirms the object
+ *      type, and `getFName() == sfCreatedNode` confirms the operation.  Both
+ *      checks are required because modified (`sfModifiedNode`) or deleted
+ *      (`sfDeletedNode`) entries of the same type must be skipped — only a
+ *      `CreatedNode` carries `sfNewFields` with the authoritative `sfSequence`
+ *      and `sfIssuer` values needed to reconstruct the `MPTID`.
+ */
 #include <xrpld/rpc/MPTokenIssuanceID.h>
 
 #include <xrpl/basics/base_uint.h>
@@ -30,7 +48,6 @@ canHaveMPTokenIssuanceID(
     if (tt != ttMPTOKEN_ISSUANCE_CREATE)
         return false;
 
-    // if the transaction failed nothing could have been delivered.
     if (!isTesSuccess(transactionMeta.getResultTER()))
         return false;
 

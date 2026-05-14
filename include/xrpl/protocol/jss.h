@@ -1,25 +1,79 @@
+/** @file
+ *  Centralized registry of every JSON key name used in the XRPL rippled
+ *  implementation.
+ *
+ *  Rather than scattering string literals across hundreds of translation
+ *  units, this header declares each key exactly once as a
+ *  `constexpr json::StaticString` inside `xrpl::jss`.  Any code that
+ *  builds or inspects a `json::Value` — RPC handlers, ledger serializers,
+ *  transaction processors, network-operation code — includes this header
+ *  and writes `jss::account_data` instead of the raw string literal
+ *  `"account_data"`.
+ *
+ *  ## Naming conventions
+ *
+ *  - **PascalCase** names (`Account`, `Amount`, `TransactionType`, …) are
+ *    canonical transaction and ledger-entry field names defined by the XRPL
+ *    wire protocol.  Their casing is part of the protocol specification.
+ *  - **snake_case** names (`account_data`, `ledger_index`, …) belong to the
+ *    RPC API layer — the JSON objects exchanged over HTTP or WebSocket.
+ *
+ *  ## Trailing comment legend
+ *
+ *  Each declaration carries a compact trailing comment:
+ *  - `in:`    — an RPC handler reads this field from its input `json::Value`
+ *  - `out:`   — an RPC handler writes this field into its response
+ *  - `field:` — a protocol-level field of a transaction or ledger entry
+ *  - `RPC:`   — part of the RPC request/response envelope
+ *  - `error:` — part of the standard error-response shape
+ *
+ *  ## ODR safety
+ *
+ *  Every declaration uses `constexpr`, giving each variable internal
+ *  linkage in C++17 and later.  Including this header from many `.cpp`
+ *  files does not violate the One Definition Rule.
+ *
+ *  ## Transaction and ledger-entry names
+ *
+ *  The tail of the file uses X-macros to derive `jss::Payment`,
+ *  `jss::EscrowCreate`, `jss::Offer`, and every other transaction or
+ *  ledger-entry type name directly from the canonical macro tables in
+ *  `detail/transactions.macro` and `detail/ledger_entries.macro`.
+ *  Adding a new type to those tables automatically registers its name
+ *  here — the registry stays in sync by construction.
+ */
 #pragma once
 
 #include <xrpl/json/json_value.h>
 
+/** Centralized registry of every JSON key name used in the XRPL rippled
+ *  implementation.
+ *
+ *  Each identifier is a `constexpr json::StaticString` wrapping a
+ *  string literal from the binary's read-only data segment.  Indexing a
+ *  `json::Value` with a `StaticString` stores only the pointer — no heap
+ *  allocation — because the library knows the pointed-to string has static
+ *  lifetime.  This makes the efficient path the default for all named
+ *  fields.
+ *
+ *  @see jss.h for the full list of constants and their trailing comments.
+ */
 namespace xrpl::jss {
 
 // NOLINTBEGIN(readability-identifier-naming)
-// JSON static strings
 
+/** Declares a `constexpr json::StaticString` whose identifier and string
+ *  value are identical.
+ *
+ *  The `#x` stringification ensures the C++ name and the JSON key can never
+ *  silently diverge: renaming the identifier is a compile error at every
+ *  usage site.  The macro is `#undef`-ed at the end of the namespace block
+ *  so it does not leak into surrounding translation-unit scope.
+ *
+ *  @param x An unquoted C++ identifier that becomes both the variable name
+ *      and the underlying JSON key string.
+ */
 #define JSS(x) constexpr ::json::StaticString x(#x)
-
-/* These "StaticString" field names are used instead of string literals to
-   optimize the performance of accessing properties of json::Value objects.
-
-   Most strings have a trailing comment. Here is the legend:
-
-   in: Read by the given RPC handler from its `json::Value` parameter.
-   out: Assigned by the given RPC handler in the `json::Value` it returns.
-   field: A field of at least one type of transaction.
-   RPC: Common properties of RPC requests and responses.
-   error: Common properties of RPC error responses.
-*/
 
 JSS(AL_size);                     // out: GetCounts
 JSS(AL_hit_rate);                 // out: GetCounts
@@ -678,6 +732,12 @@ JSS(warnings);                    // out: server_info, server_state
 JSS(workers);                     //
 JSS(write_load);                  // out: GetCounts
 
+// --- X-macro expansion: transaction and ledger-entry type names ---
+// Redefines TRANSACTION and LEDGER_ENTRY momentarily to emit a JSS()
+// declaration for each type name registered in the canonical macro tables.
+// Adding a new entry to transactions.macro or ledger_entries.macro
+// automatically registers its name here — no manual update required.
+
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
@@ -693,6 +753,10 @@ JSS(write_load);                  // out: GetCounts
 #pragma push_macro("LEDGER_ENTRY_DUPLICATE")
 #undef LEDGER_ENTRY_DUPLICATE
 
+// LEDGER_ENTRY emits both the internal name and the rpcName alias.
+// LEDGER_ENTRY_DUPLICATE emits only the rpcName to avoid re-declaring
+// the identifier when a single type has two registered names (e.g.,
+// DepositPreauth appears as both a transaction type and a ledger entry).
 #define LEDGER_ENTRY(tag, value, name, rpcName, ...) \
     JSS(name);                                       \
     JSS(rpcName);

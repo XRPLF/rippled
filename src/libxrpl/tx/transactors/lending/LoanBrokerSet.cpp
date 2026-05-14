@@ -1,3 +1,9 @@
+/** @file
+ *  Implements `LoanBrokerSet`, the upsert transactor for `LoanBroker` ledger
+ *  objects (XLS-66). A single transaction type handles both creation (when
+ *  `sfLoanBrokerID` is absent) and configuration updates (when present).
+ *  See `LoanBrokerSet.h` for the full interface and behavioral contract.
+ */
 #include <xrpl/tx/transactors/lending/LoanBrokerSet.h>
 
 #include <xrpl/basics/Log.h>
@@ -51,8 +57,6 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
 
     if (tx.isFieldPresent(sfLoanBrokerID))
     {
-        // Fixed fields can not be specified if we're modifying an existing
-        // LoanBroker Object
         if (tx.isFieldPresent(sfManagementFeeRate) || tx.isFieldPresent(sfCoverRateMinimum) ||
             tx.isFieldPresent(sfCoverRateLiquidation))
             return temINVALID;
@@ -70,7 +74,6 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
     {
         auto const minimumZero = tx[~sfCoverRateMinimum].value_or(0) == 0;
         auto const liquidationZero = tx[~sfCoverRateLiquidation].value_or(0) == 0;
-        // Both must be zero or non-zero.
         if (minimumZero != liquidationZero)
         {
             return temINVALID;
@@ -112,8 +115,6 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
 
     if (auto const brokerID = tx[~sfLoanBrokerID])
     {
-        // Updating an existing Broker
-
         auto const sleBroker = ctx.view.read(keylet::loanbroker(*brokerID));
         if (!sleBroker)
         {
@@ -133,7 +134,6 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
 
         if (auto const debtMax = tx[~sfDebtMaximum])
         {
-            // Can't reduce the debt maximum below the current total debt
             auto const currentDebtTotal = sleBroker->at(sfDebtTotal);
             if (*debtMax != 0 && *debtMax < currentDebtTotal)
             {
@@ -177,7 +177,6 @@ LoanBrokerSet::doApply()
 
     if (auto const brokerID = tx[~sfLoanBrokerID])
     {
-        // Modify an existing LoanBroker
         auto broker = view.peek(keylet::loanbroker(*brokerID));
         if (!broker)
         {
@@ -205,7 +204,6 @@ LoanBrokerSet::doApply()
     }
     else
     {
-        // Create a new LoanBroker pointing back to the given Vault
         auto const vaultID = tx[sfVaultID];
         auto const sleVault = view.read(keylet::vault(vaultID));
         if (!sleVault)
@@ -252,7 +250,6 @@ LoanBrokerSet::doApply()
         if (auto ter = addEmptyHolding(view, pseudoId, preFeeBalance_, sleVault->at(sfAsset), j_))
             return ter;
 
-        // Initialize data fields:
         broker->at(sfSequence) = sequence;
         broker->at(sfVaultID) = vaultID;
         broker->at(sfOwner) = account_;

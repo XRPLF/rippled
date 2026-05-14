@@ -32,6 +32,17 @@
 
 */
 
+/** @file
+ *  RFC 4648 Base64 codec for the XRPL ledger library.
+ *
+ *  Derived from René Nyffenegger's public-domain implementation (2004–2008).
+ *  Two API layers are provided: the inner `xrpl::base64` namespace exposes
+ *  buffer-oriented primitives that avoid heap allocation, while the outer
+ *  `xrpl` namespace exposes `base64Encode` / `base64Decode` which manage
+ *  `std::string` memory automatically.  All functions are fully re-entrant;
+ *  all mutable state is function-local and the lookup tables are `constexpr`.
+ */
+
 #include <xrpl/basics/base64.h>
 
 #include <cstddef>
@@ -44,6 +55,11 @@ namespace xrpl {
 
 namespace base64 {
 
+/** Return a pointer to the 64-character Base64 alphabet (A–Z, a–z, 0–9, +, /).
+ *
+ *  The array is stored as a function-local `static constexpr` and its
+ *  lifetime is that of the program, so the returned pointer is always valid.
+ */
 inline char const*
 getAlphabet()
 {
@@ -52,6 +68,13 @@ getAlphabet()
     return &kTAB[0];
 }
 
+/** Return a pointer to the 256-entry inverse-alphabet lookup table.
+ *
+ *  For each byte value `b`, `getInverse()[b]` is the 6-bit Base64 value of
+ *  the character (0–63), or -1 if `b` is not a valid Base64 character.
+ *  Using a flat 256-element array makes validation and value extraction a
+ *  single array index — O(1) with no per-character branching.
+ */
 inline signed char const*
 getInverse()
 {
@@ -76,30 +99,44 @@ getInverse()
     return &kTAB[0];
 }
 
-/// Returns max chars needed to encode a base64 string
+/** Compute the exact number of Base64 characters produced by encoding `n` bytes.
+ *
+ *  The result is `4 * ⌈n / 3⌉`, always a multiple of four due to `=` padding.
+ *
+ *  @param n Number of raw input bytes.
+ *  @return Exact output size in characters (no null terminator included).
+ */
 std::size_t constexpr encodedSize(std::size_t n)
 {
     return 4 * ((n + 2) / 3);
 }
 
-/// Returns max bytes needed to decode a base64 string
+/** Compute an upper-bound buffer size sufficient to hold the decoded output of `n` Base64 characters.
+ *
+ *  Returns `(n / 4) * 3 + 2`, which is deliberately conservative: the `+2`
+ *  guarantees the caller's pre-allocated buffer is always large enough
+ *  regardless of `=` padding or a partial trailing group.  The actual number
+ *  of bytes written is returned by `decode()`, not by this function.
+ *
+ *  @param n Number of Base64 input characters.
+ *  @return Upper-bound byte count for the decoded output buffer.
+ */
 std::size_t constexpr decodedSize(std::size_t n)
 {
     return ((n / 4) * 3) + 2;
 }
 
-/** Encode a series of octets as a padded, base64 string.
-
-    The resulting string will not be null terminated.
-
-    @par Requires
-
-    The memory pointed to by `out` points to valid memory
-    of at least `encoded_size(len)` bytes.
-
-    @return The number of characters written to `out`. This
-    will exclude any null termination.
-*/
+/** Encode raw bytes as a padded Base64 string into a caller-supplied buffer.
+ *
+ *  Processes input three bytes at a time, emitting four Base64 characters per
+ *  group.  A one- or two-byte tail is handled with `=` padding so the output
+ *  length is always a multiple of four.  The output is not null-terminated.
+ *
+ *  @param dest Destination buffer; must be at least `encodedSize(len)` bytes.
+ *  @param src  Source buffer containing the raw bytes to encode.
+ *  @param len  Number of bytes to read from `src`.
+ *  @return Number of Base64 characters written to `dest` (no null terminator).
+ */
 std::size_t
 encode(void* dest, void const* src, std::size_t len)
 {
@@ -140,17 +177,27 @@ encode(void* dest, void const* src, std::size_t len)
     return out - static_cast<char*>(dest);
 }
 
-/** Decode a padded base64 string into a series of octets.
-
-    @par Requires
-
-    The memory pointed to by `out` points to valid memory
-    of at least `decoded_size(len)` bytes.
-
-    @return The number of octets written to `out`, and
-    the number of characters read from the input string,
-    expressed as a pair.
-*/
+/** Decode a Base64 string into raw bytes in a caller-supplied buffer.
+ *
+ *  Reads four Base64 characters at a time and reconstructs three output bytes
+ *  per group.  Decoding stops at the first `=` padding character, the first
+ *  character that maps to -1 in the inverse table (i.e. not in the Base64
+ *  alphabet), or when `len` input characters have been consumed — whichever
+ *  comes first.  Any partial group of 1–3 valid characters accumulated before
+ *  stopping produces `i - 1` additional output bytes.
+ *
+ *  @note There is no error return: invalid input silently terminates decoding.
+ *      For example, `decode("not_base64!!")` yields the same output as
+ *      `decode("not")` because `_` is not a valid Base64 character.  Callers
+ *      that need to detect partial decodes must compare the returned byte count
+ *      against the expected output size themselves.
+ *
+ *  @param dest Destination buffer; must be at least `decodedSize(len)` bytes.
+ *  @param src  Pointer to the Base64-encoded input characters.
+ *  @param len  Maximum number of input characters to consume.
+ *  @return A pair `{bytesWritten, charsConsumed}`: the number of raw bytes
+ *      written to `dest` and the number of input characters read from `src`.
+ */
 std::pair<std::size_t, std::size_t>
 decode(void* dest, char const* src, std::size_t len)
 {
@@ -196,6 +243,17 @@ decode(void* dest, char const* src, std::size_t len)
 
 }  // namespace base64
 
+/** Encode raw bytes as a Base64 string.
+ *
+ *  Pre-allocates the output string to the exact encoded size, fills it via
+ *  the buffer-oriented `base64::encode`, then returns it without any extra
+ *  copy or reallocation.
+ *
+ *  @param data Pointer to the raw bytes to encode.
+ *  @param len  Number of bytes to encode.
+ *  @return Base64-encoded string with `=` padding; length is always a
+ *      multiple of four.
+ */
 std::string
 base64Encode(std::uint8_t const* data, std::size_t len)
 {
@@ -205,6 +263,18 @@ base64Encode(std::uint8_t const* data, std::size_t len)
     return dest;
 }
 
+/** Decode a Base64 string, returning the raw bytes.
+ *
+ *  Pre-allocates to the conservative upper-bound size from
+ *  `base64::decodedSize`, invokes `base64::decode`, then shrinks the string
+ *  to the actual byte count before returning.  Decoding stops silently at
+ *  the first invalid or padding character; no exception is thrown and no
+ *  error status is returned.
+ *
+ *  @param data Base64-encoded input; need not be null-terminated.
+ *  @return Decoded byte string.  If `data` contains invalid Base64 characters,
+ *      only the bytes decoded before the first invalid character are included.
+ */
 std::string
 base64Decode(std::string_view data)
 {

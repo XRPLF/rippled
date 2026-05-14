@@ -1,3 +1,13 @@
+/** @file
+ *  Invariant checker implementations for Multi-Purpose Tokens (MPT).
+ *
+ *  Provides `ValidMPTIssuance` and `ValidMPTPayment`, which together form
+ *  the post-apply safety net for all MPT-related ledger state changes.
+ *  Both classes follow the standard two-phase checker contract — `visitEntry()`
+ *  accumulates per-SLE data, `finalize()` renders a pass/fail verdict — and are
+ *  registered in the `InvariantChecks` tuple in `InvariantCheck.h`.
+ */
+
 #include <xrpl/tx/invariants/MPTInvariant.h>
 
 #include <xrpl/basics/Log.h>
@@ -24,6 +34,19 @@
 
 namespace xrpl {
 
+/** Accumulate MPT object counts from a single modified ledger entry.
+ *
+ *  Called once per SLE that the transaction touched.  Updates the four
+ *  creation/deletion counters and sets `mptCreatedByIssuer_` when a new
+ *  `ltMPTOKEN` entry belongs to the issuance's own issuer account —
+ *  a condition that is always a protocol violation.
+ *
+ *  @param isDelete `true` when the entry is being removed from the ledger.
+ *  @param before   Snapshot of the SLE before the transaction; null if the
+ *      entry did not exist prior to this transaction.
+ *  @param after    Snapshot of the SLE after the transaction; null when
+ *      `isDelete` is `true` and the entry has been erased.
+ */
 void
 ValidMPTIssuance::visitEntry(
     bool isDelete,
@@ -58,6 +81,41 @@ ValidMPTIssuance::visitEntry(
     }
 }
 
+/** Verify that the transaction's MPT object lifecycle changes were authorized.
+ *
+ *  Dispatches on the transaction's privilege mask (see `InvariantCheckPrivilege.h`)
+ *  rather than its type, keeping the logic independent of the growing set of
+ *  MPT-capable transaction types.  The hierarchy is:
+ *
+ *  - **`CreateMptIssuance`**: exactly one `ltMPTOKEN_ISSUANCE` created, none deleted.
+ *  - **`DestroyMptIssuance`**: exactly one deleted, none created.
+ *  - **`MustAuthorizeMpt | MayAuthorizeMpt`**: no issuance changes; `ltMPTOKEN`
+ *      changes bounded by authorization semantics.  `ttAMM_WITHDRAW` and
+ *      `ttAMM_CLAWBACK` get a wider allowance (≤1 created, ≤2 deleted) to
+ *      cover both token sides of an AMM pool dissolution.
+ *  - **`MayCreateMpt`**: no issuances and no deletions; auto-creation of
+ *      `ltMPTOKEN` entries allowed for non-issuers (up to 2 for `ttAMM_CREATE`,
+ *      up to 1 for `ttCHECK_CASH`).
+ *  - **`MayDeleteMpt`**: only deletions (≤2 for `ttAMM_DELETE`), no creations.
+ *  - **No privilege**: all counters must be zero on a successful result.
+ *
+ *  The `mptCreatedByIssuer_` check uses the `assert(enforce)` soft-rollout
+ *  pattern: the fatal log fires unconditionally; the hard `false` return and
+ *  the `XRPL_ASSERT_PARTS` fire only when `featureSingleAssetVault` or
+ *  `featureLendingProtocol` is active, preserving backward compatibility for
+ *  older amendment environments while still catching mistakes in dev builds.
+ *
+ *  @note With `featureMPTokensV2` enabled, `tecINCOMPLETE` results are also
+ *      subject to full invariant checking (partial progress is still valid
+ *      ledger state).
+ *
+ *  @param tx     The transaction that was applied.
+ *  @param result The `TER` returned by `doApply()` (or the post-reset result).
+ *  @param fee    The fee deducted (unused by this checker).
+ *  @param view   Read-only view of the post-apply ledger state.
+ *  @param j      Journal for fatal-level diagnostics on violation.
+ *  @return `true` if all MPT lifecycle constraints are satisfied.
+ */
 bool
 ValidMPTIssuance::finalize(
     STTx const& tx,
@@ -76,8 +134,6 @@ ValidMPTIssuance::finalize(
         if (mptCreatedByIssuer_)
         {
             JLOG(j.fatal()) << "Invariant failed: MPToken created for the MPT issuer";
-            // The comment above starting with "assert(enforce)" explains this
-            // assert.
             XRPL_ASSERT_PARTS(
                 enforceCreatedByIssuer, "xrpl::ValidMPTIssuance::finalize", "no issuer MPToken");
             if (enforceCreatedByIssuer)
@@ -279,6 +335,30 @@ ValidMPTIssuance::finalize(
         mptokensDeleted_ == 0;
 }
 
+/** Accumulate outstanding-amount snapshots and holder-balance deltas for a
+ *  single modified ledger entry.
+ *
+ *  Two SLE types are relevant:
+ *  - **`ltMPTOKEN_ISSUANCE`**: records the `sfOutstandingAmount` for the
+ *      `Order::Before` and `Order::After` slots of the corresponding `MPTData`
+ *      entry.  Also performs an `sfMaximumAmount`-bounded overflow check on the
+ *      post-apply value to catch issuances where outstanding exceeds the cap.
+ *  - **`ltMPTOKEN`**: accumulates the signed net delta (`mptAmount`) across all
+ *      holder entries.  The contribution of each token is
+ *      `sfMPTAmount + sfLockedAmount`; locked amounts remain part of the
+ *      outstanding supply.  Before-entries are subtracted, after-entries added.
+ *
+ *  If any individual value exceeds `kMAX_MP_TOKEN_AMOUNT`, or if
+ *  `mptAmt + lockedAmt` would overflow 64-bit arithmetic, `overflow_` is set
+ *  and all further processing for this transaction is skipped.
+ *
+ *  @note The `isDelete` parameter is unnamed/unused because deletion is already
+ *      signalled by `after == nullptr`; presence of `before` is sufficient to
+ *      handle the Before contribution.
+ *
+ *  @param before Snapshot of the SLE before the transaction; null for inserts.
+ *  @param after  Snapshot of the SLE after the transaction; null for deletes.
+ */
 void
 ValidMPTPayment::visitEntry(
     bool,
@@ -344,6 +424,39 @@ ValidMPTPayment::visitEntry(
     }
 }
 
+/** Verify the `OutstandingAmount` conservation invariant for all touched MPTs.
+ *
+ *  For each MPT ID recorded during `visitEntry()`, checks:
+ *
+ *  ```
+ *  OutstandingAmount[After] == OutstandingAmount[Before] + Σ(MPTAmount[After] − MPTAmount[Before])
+ *  ```
+ *
+ *  where the sum includes `sfLockedAmount` in each holder's contribution, since
+ *  locked amounts remain part of the outstanding supply.
+ *
+ *  Two layers of overflow protection are applied:
+ *  1. If `overflow_` was set during `visitEntry()` (individual value exceeded
+ *     `kMAX_MP_TOKEN_AMOUNT`), the check fails immediately.
+ *  2. The signed delta arithmetic is checked for wrap-around before the final
+ *     equality comparison, because the accumulated `mptAmount` can be large
+ *     enough to overflow a 64-bit signed integer.
+ *
+ *  Enforcement is amendment-gated: the invariant hard-fails (returns `false`)
+ *  only when `featureMPTokensV2` is active.  Before activation, a violation
+ *  logs at fatal severity but returns `true` — preserving backward compatibility
+ *  while surfacing problems to operators.
+ *
+ *  @note Unlike `ValidMPTIssuance::finalize()`, this method is non-`const`
+ *      because the `data_` hash-map accumulator can in principle be lazily
+ *      mutated; `finalize()` is the single point where all data is final.
+ *
+ *  @param tx     The transaction that was applied (unused by this checker).
+ *  @param result The `TER` result; only `tesSUCCESS` triggers the check.
+ *  @param view   Read-only view used to query active amendment rules.
+ *  @param j      Journal for fatal-level diagnostics on violation.
+ *  @return `true` if outstanding-amount conservation holds for all touched MPTs.
+ */
 bool
 ValidMPTPayment::finalize(
     STTx const& tx,

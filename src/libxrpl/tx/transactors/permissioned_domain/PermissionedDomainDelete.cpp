@@ -1,3 +1,12 @@
+/** @file
+ *  Implements the `PermissionedDomainDelete` transactor, which removes a
+ *  permissioned domain SLE from the XRPL ledger and recovers the owner
+ *  reserve locked at creation.
+ *
+ *  The three-phase pipeline is: `preflight` (structural check on `sfDomainID`)
+ *  → `preclaim` (existence + ownership, read-only) → `doApply` (directory
+ *  removal, owner-count decrement, SLE erasure).
+ */
 #include <xrpl/tx/transactors/permissioned_domain/PermissionedDomainDelete.h>
 
 #include <xrpl/basics/Log.h>
@@ -16,6 +25,16 @@
 
 namespace xrpl {
 
+/** Reject structurally invalid transactions before consulting ledger state.
+ *
+ *  A zero-valued `sfDomainID` is analogous to a null pointer — it cannot
+ *  reference any real domain object. All ledger-state checks (existence,
+ *  ownership) are deferred to `preclaim` so that they can influence
+ *  fee-claiming behaviour.
+ *
+ *  @param ctx  The preflight context containing the raw transaction.
+ *  @return `temMALFORMED` if `sfDomainID` is zero; `tesSUCCESS` otherwise.
+ */
 NotTEC
 PermissionedDomainDelete::preflight(PreflightContext const& ctx)
 {
@@ -26,6 +45,19 @@ PermissionedDomainDelete::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Verify domain existence and submitter ownership against live ledger state.
+ *
+ *  Resolves `sfDomainID` to a `PermissionedDomain` SLE via
+ *  `keylet::permissionedDomain`. Only the account that created the domain
+ *  (`sfOwner`) may delete it — there is no admin override or co-ownership
+ *  model. Placing these checks here (rather than in `doApply`) ensures that
+ *  an unauthorized or nonexistent-domain attempt still charges the fee.
+ *
+ *  @param ctx  The preclaim context with read-only ledger view.
+ *  @return `tecNO_ENTRY` if the domain SLE does not exist in the current
+ *      ledger; `tecNO_PERMISSION` if the submitter is not the domain owner;
+ *      `tesSUCCESS` otherwise.
+ */
 TER
 PermissionedDomainDelete::preclaim(PreclaimContext const& ctx)
 {
@@ -44,7 +76,22 @@ PermissionedDomainDelete::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-/** Attempt to delete the Permissioned Domain. */
+/** Remove the permissioned domain object and release the owner reserve.
+ *
+ *  Performs three mutations in strict order:
+ *  1. `view().dirRemove()` — removes the SLE's back-reference from the
+ *     account's owner directory using the page index stored in `sfOwnerNode`.
+ *     Passing `true` also cleans up the directory page if it becomes empty.
+ *     Failure is unreachable for a well-formed ledger and is marked
+ *     `LCOV_EXCL`; it returns `tefBAD_LEDGER` if somehow triggered.
+ *  2. `adjustOwnerCount(..., -1, j)` — decrements `sfOwnerCount`, recovering
+ *     the base reserve that was locked when the domain was created.
+ *  3. `view().erase(slePd)` — removes the `PermissionedDomain` SLE from the
+ *     ledger view. This is the final, irreversible step.
+ *
+ *  @return `tefBAD_LEDGER` on owner-directory corruption (unreachable under
+ *      normal operation); `tesSUCCESS` otherwise.
+ */
 TER
 PermissionedDomainDelete::doApply()
 {
@@ -73,6 +120,10 @@ PermissionedDomainDelete::doApply()
     return tesSUCCESS;
 }
 
+/** Per-entry invariant visitor — no domain-deletion-specific checks yet.
+ *
+ *  @note This is a placeholder for future per-entry invariant enforcement.
+ */
 void
 PermissionedDomainDelete::visitInvariantEntry(
     bool,
@@ -82,6 +133,12 @@ PermissionedDomainDelete::visitInvariantEntry(
     // No transaction-specific invariants yet (future work).
 }
 
+/** Post-transaction invariant finalization — always passes.
+ *
+ *  @note This is a placeholder for future transaction-level invariant checks;
+ *      no domain-deletion-specific invariants are enforced yet.
+ *  @return `true` unconditionally.
+ */
 bool
 PermissionedDomainDelete::finalizeInvariants(
     STTx const&,

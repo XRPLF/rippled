@@ -43,6 +43,32 @@
 #include <string>
 #include <vector>
 
+/** @file
+ *  Core Payment Path Discovery Engine.
+ *
+ *  Implements a three-phase pipeline for finding, ranking, and selecting
+ *  multi-hop payment routes across the XRP Ledger:
+ *
+ *  1. **findPaths()** — graph traversal that enumerates candidate paths up to
+ *     a configurable `searchLevel`. The payment request is categorized
+ *     (XRP→XRP, XRP→non-XRP, non-XRP→XRP, same-currency, cross-currency) and
+ *     each category's path shapes are defined in the static `gPathTable`.
+ *
+ *  2. **computePathRanks()** — runs `RippleCalc::rippleCalculate` against a
+ *     read-only `PaymentSandbox` for each candidate path to measure actual
+ *     liquidity. Paths with trivial liquidity are dropped; survivors are sorted
+ *     by quality, then liquidity, then length.
+ *
+ *  3. **getBestPaths()** — fills up to `maxPaths` slots in quality order.
+ *     The last slot must have enough liquidity to cover the remaining amount.
+ *     If no single path covers the full amount, a `fullLiquidityPath` fallback
+ *     is also returned.
+ *
+ *  A `searchLevel` of zero skips all searching. Extra paths may be injected
+ *  via `getBestPaths()` to preserve paths from previous invocations when the
+ *  search depth changes across calls.
+ */
+
 namespace xrpl {
 static std::ostream&
 operator<<(std::ostream& os, Pathfinder::NodeType t)
@@ -56,54 +82,50 @@ operator<<(std::ostream& os, Pathfinder::PaymentType t)
 }
 }  // namespace xrpl
 
-/*
-
-Core Pathfinding Engine
-
-The pathfinding request is identified by category, XRP to XRP, XRP to
-non-XRP, non-XRP to XRP, same currency non-XRP to non-XRP, cross-currency
-non-XRP to non-XRP.  For each category, there is a table of paths that the
-pathfinder searches for.  Complete paths are collected.
-
-Each complete path is then rated and sorted. Paths with no or trivial
-liquidity are dropped.  Otherwise, paths are sorted based on quality,
-liquidity, and path length.
-
-Path slots are filled in quality (ratio of out to in) order, with the
-exception that the last path must have enough liquidity to complete the
-payment (assuming no liquidity overlap).  In addition, if no selected path
-is capable of providing enough liquidity to complete the payment by itself,
-an extra "covering" path is returned.
-
-The selected paths are then tested to determine if they can complete the
-payment and, if so, at what cost.  If they fail and a covering path was
-found, the test is repeated with the covering path.  If this succeeds, the
-final paths and the estimated cost are returned.
-
-The engine permits the search depth to be selected and the paths table
-includes the depth at which each path type is found.  A search depth of zero
-causes no searching to be done.  Extra paths can also be injected, and this
-should be used to preserve previously-found paths across invocations for the
-same path request (particularly if the search depth may change).
-
-*/
-
 namespace xrpl {
 
 namespace {
 
-// This is an arbitrary cutoff, and it might cause us to miss other
-// good paths with this arbitrary cut off.
+/** Hard upper bound on the number of complete paths collected during traversal.
+ *
+ *  Prevents combinatorial explosion on well-connected ledger states. Paths
+ *  found beyond this limit are silently discarded; the best routes are
+ *  typically found well within the limit at normal search levels.
+ */
 constexpr std::size_t kPATHFINDER_MAX_COMPLETE_PATHS = 1000;
 
+/** A candidate intermediate account for extending a payment path.
+ *
+ *  Candidates are scored so that accounts closer to the destination are
+ *  explored first.  `kHIGH_PRIORITY` is added when the candidate is the
+ *  effective destination or leads directly to it.
+ */
 struct AccountCandidate
 {
     int priority;
     AccountID account;
 
+    /** Priority bonus awarded to candidates that connect directly to the
+     *  effective destination account.
+     */
     static int const kHIGH_PRIORITY = 10000;
 };
 
+/** Strict-weak ordering for `AccountCandidate` used when sorting path
+ *  extension candidates.
+ *
+ *  Sort order (most significant first):
+ *  1. `priority` descending — higher-priority accounts are tried first.
+ *  2. `account` descending — deterministic tiebreak on account ID.
+ *  3. `(priority ^ seq)` ascending — XOR with the ledger sequence number
+ *     provides a pseudo-random final tiebreak that varies across ledgers,
+ *     preventing systematic starvation of any particular route.
+ *
+ *  @param seq    Current ledger sequence number, used as the pseudo-random seed.
+ *  @param first  Left-hand candidate.
+ *  @param second Right-hand candidate.
+ *  @return `true` if `first` should sort before `second`.
+ */
 bool
 compareAccountCandidate(
     std::uint32_t seq,
@@ -125,25 +147,54 @@ compareAccountCandidate(
 
 using AccountCandidates = std::vector<AccountCandidate>;
 
+/** A single path shape entry in the static path table, paired with its
+ *  search-level cost.
+ *
+ *  Paths whose `searchLevel` exceeds the caller-requested search depth are
+ *  skipped, so cheaper (lower-level) path shapes are always tried first.
+ */
 struct CostedPath
 {
-    int searchLevel;
-    Pathfinder::PathType type;
+    int searchLevel;       ///< Minimum search depth at which this path is tried (0–10).
+    Pathfinder::PathType type;  ///< Sequence of `NodeType` values encoding the route shape.
 };
 
+/** All costed paths for one `PaymentType`. */
 using CostedPathList = std::vector<CostedPath>;
 
+/** The global static path table: maps each `PaymentType` to its ordered list
+ *  of route shapes and their associated search-level costs.
+ */
 using PathTable = std::map<Pathfinder::PaymentType, CostedPathList>;
 
+/** Compact representation of a path used when building `gPathTable`.
+ *
+ *  `path` is a short string of node-type characters (`s`, `a`, `b`, `x`,
+ *  `f`, `d`) that `makePath()` decodes into a `PathType`.
+ */
 struct PathCost
 {
-    int cost;
-    char const* path;
+    int cost;            ///< Search-level cost (0–10).
+    char const* path;    ///< Encoded path string; decoded by `makePath()`.
 };
 using PathCostList = std::vector<PathCost>;
 
+/** Global path-shape table, populated once by `Pathfinder::initPathTable()`.
+ *
+ *  Keyed by `PaymentType`; each value is a list of `CostedPath` entries in
+ *  ascending search-level order.  Must not be accessed before
+ *  `initPathTable()` is called at startup.
+ */
 PathTable gPathTable;
 
+/** Render a `PathType` as a compact string for logging.
+ *
+ *  Each `NodeType` maps to a single character: `s` Source, `a` Accounts,
+ *  `b` Books, `x` XrpBook, `f` DestBook, `d` Destination.
+ *
+ *  @param type  The path type to render.
+ *  @return      Human-readable string, e.g. `"sfad"`.
+ */
 std::string
 pathTypeToString(Pathfinder::PathType const& type)
 {
@@ -177,14 +228,34 @@ pathTypeToString(Pathfinder::PathType const& type)
     return ret;
 }
 
-// Return the smallest amount of useful liquidity for a given amount, and the
-// total number of paths we have to evaluate.
+/** Compute the minimum delivery amount that makes a path worth retaining.
+ *
+ *  A path that cannot deliver at least `amount / (maxPaths + 2)` is
+ *  considered to have trivial liquidity and is dropped during ranking.
+ *  The `+2` provides a small buffer above an even split across all paths.
+ *
+ *  @param amount    The total destination amount requested.
+ *  @param maxPaths  Maximum number of paths that will be selected.
+ *  @return          The per-path minimum useful delivery amount.
+ */
 STAmount
 smallestUsefulAmount(STAmount const& amount, int maxPaths)
 {
     return divide(amount, STAmount(maxPaths + 2), amount.asset());
 }
 
+/** Construct a unit-one `STAmount` representing the source asset.
+ *
+ *  Used to build `srcAmount_` during `Pathfinder` construction.
+ *  For IOU assets the issuer is resolved as: explicit `srcIssuer` if
+ *  provided, XRP account for XRP currency, or `srcAccount` otherwise.
+ *  For MPT assets the issuer is implicit in the `MPTID`.
+ *
+ *  @param pathAsset   The source asset (IOU currency or MPT ID).
+ *  @param srcIssuer   Optional explicit issuer override.
+ *  @param srcAccount  The source account ID.
+ *  @return            An `STAmount` of value 1 in the appropriate asset.
+ */
 STAmount
 amountFromPathAsset(
     PathAsset const& pathAsset,
@@ -199,6 +270,15 @@ amountFromPathAsset(
         [](MPTID const& mpt) { return STAmount(mpt, 1u, 0, true); });
 }
 
+/** Convert a `PathAsset` and issuer account into a fully-qualified `Asset`.
+ *
+ *  For IOU currencies the issuer is the supplied `account`; for MPT the
+ *  issuer is embedded in the `MPTID`.
+ *
+ *  @param pathAsset  The asset variant (currency or MPT ID).
+ *  @param account    Issuer account, used only for IOU currencies.
+ *  @return           The corresponding `Asset`.
+ */
 Asset
 assetFromPathAsset(PathAsset const& pathAsset, AccountID const& account)
 {
@@ -209,6 +289,28 @@ assetFromPathAsset(PathAsset const& pathAsset, AccountID const& account)
 
 }  // namespace
 
+/** Construct a `Pathfinder` and initialise all path-search state.
+ *
+ *  `effectiveDst_` is the gateway account when `saDstAmount` carries a
+ *  non-XRP issuer that differs from `uDstAccount`; otherwise it equals
+ *  `uDstAccount`.  `srcAmount_` is synthesised as a unit-one amount in the
+ *  source asset so that `RippleCalc` probes start from a consistent base.
+ *  `convert_all_` is `true` when `saDstAmount` is the ledger maximum,
+ *  signalling a "send as much as possible" payment.
+ *
+ *  @param cache         Memoized trust-line and MPT view of the current ledger.
+ *  @param uSrcAccount   Account sending the payment.
+ *  @param uDstAccount   Ultimate destination account.
+ *  @param uSrcPathAsset Source asset (IOU currency or MPT ID).
+ *  @param uSrcIssuer    Optional explicit issuer for the source asset.
+ *  @param saDstAmount   Amount to deliver; determines `PaymentType` and
+ *      `convert_all_`.
+ *  @param srcAmount     Optional explicit source amount (currently unused
+ *      in path ranking but stored for future use).
+ *  @param domain        Optional domain filter restricting which order books
+ *      and trust lines are considered.
+ *  @param app           Application context (job queue, order-book DB, etc.).
+ */
 Pathfinder::Pathfinder(
     std::shared_ptr<AssetCache> const& cache,
     AccountID const& uSrcAccount,
@@ -238,13 +340,32 @@ Pathfinder::Pathfinder(
         "xrpl::Pathfinder::Pathfinder : valid inputs");
 }
 
+/** Enumerate candidate complete payment paths up to the given search depth.
+ *
+ *  Validates preconditions (non-zero destination, accounts exist, new-account
+ *  funding rules), classifies the payment into one of the five `PaymentType`
+ *  categories, then iterates over all entries in `gPathTable[paymentType]`
+ *  whose `searchLevel` does not exceed `searchLevel`, calling
+ *  `addPathsForType()` for each.  Stops early once
+ *  `kPATHFINDER_MAX_COMPLETE_PATHS` complete paths have accumulated.
+ *
+ *  Returns `true` when the caller should proceed to `computePathRanks()`.
+ *  Returns `false` when the search is definitively hopeless (zero destination
+ *  amount, source equals destination with the same asset, missing ledger, etc.)
+ *  In those cases `ledger_` is reset to release its reference.
+ *
+ *  @param searchLevel       Maximum cost tier to explore (0 = no search).
+ *  @param continueCallback  Optional cooperative-cancellation probe; returning
+ *      `false` aborts the search and causes this function to return `false`.
+ *  @return `true` if path-finding should continue to ranking; `false` if the
+ *      request is unsatisfiable or was cancelled.
+ */
 bool
 Pathfinder::findPaths(int searchLevel, std::function<bool(void)> const& continueCallback)
 {
     JLOG(j_.trace()) << "findPaths start";
     if (dstAmount_ == beast::kZERO)
     {
-        // No need to send zero money.
         JLOG(j_.debug()) << "Destination amount was zero.";
         ledger_.reset();
         return false;
@@ -256,7 +377,6 @@ Pathfinder::findPaths(int searchLevel, std::function<bool(void)> const& continue
     if (srcAccount_ == dstAccount_ && dstAccount_ == effectiveDst_ &&
         srcPathAsset_ == dstAmount_.asset())
     {
-        // No need to send to same account with same currency.
         JLOG(j_.debug()) << "Tried to send to same issuer";
         ledger_.reset();
         return false;
@@ -264,7 +384,8 @@ Pathfinder::findPaths(int searchLevel, std::function<bool(void)> const& continue
 
     if (srcAccount_ == effectiveDst_ && srcPathAsset_ == dstAmount_.asset())
     {
-        // Default path might work, but any path would loop
+        // Default path might work, but any explicit path would loop back to
+        // the source; let the caller try the default path only.
         return true;
     }
 
@@ -322,41 +443,33 @@ Pathfinder::findPaths(int searchLevel, std::function<bool(void)> const& continue
         }
     }
 
-    // Now compute the payment type from the types of the source and destination
-    // currencies.
     PaymentType paymentType = PaymentType::XrpToXrp;
     if (bSrcXrp && bDstXrp)
     {
-        // XRP -> XRP
         JLOG(j_.debug()) << "XRP to XRP payment";
         paymentType = PaymentType::XrpToXrp;
     }
     else if (bSrcXrp)
     {
-        // XRP -> non-XRP
         JLOG(j_.debug()) << "XRP to non-XRP payment";
         paymentType = PaymentType::XrpToNonXrp;
     }
     else if (bDstXrp)
     {
-        // non-XRP -> XRP
         JLOG(j_.debug()) << "non-XRP to XRP payment";
         paymentType = PaymentType::NonXrpToXrp;
     }
     else if (srcPathAsset_ == dstAmount_.asset())
     {
-        // non-XRP -> non-XRP - Same currency
         JLOG(j_.debug()) << "non-XRP to non-XRP - same currency";
         paymentType = PaymentType::NonXrpToSame;
     }
     else
     {
-        // non-XRP to non-XRP - Different currency
         JLOG(j_.debug()) << "non-XRP to non-XRP - cross currency";
         paymentType = PaymentType::NonXrpToNonXrp;
     }
 
-    // Now iterate over all paths for that paymentType.
     for (auto const& costedPath : gPathTable[paymentType])
     {
         if (continueCallback && !continueCallback())
@@ -379,6 +492,28 @@ Pathfinder::findPaths(int searchLevel, std::function<bool(void)> const& continue
     return true;
 }
 
+/** Probe the actual liquidity available along a single path.
+ *
+ *  Runs `RippleCalc::rippleCalculate` against a read-only `PaymentSandbox`
+ *  (so no ledger state is mutated).  A two-pass strategy is used:
+ *
+ *  - **Pass 1**: check whether the path can deliver at least `minDstAmount`.
+ *    If not, the path is dropped and the function returns the error TER.
+ *  - **Pass 2** (skipped for `convert_all_` payments): attempt to deliver
+ *    the remainder of `dstAmount_` beyond what pass 1 delivered, accumulating
+ *    any additional liquidity into `amountOut`.
+ *
+ *  For `convert_all_` payments, `partialPaymentAllowed` is set during
+ *  pass 1 so that `RippleCalc` delivers as much as it can.
+ *
+ *  @param path          The candidate path to probe.
+ *  @param minDstAmount  Minimum delivery for the path to be retained.
+ *  @param amountOut     Receives total liquidity delivered by this path.
+ *  @param qualityOut    Receives the initial exchange rate (out/in ratio as a
+ *      64-bit fixed-point quality).
+ *  @return `tesSUCCESS` if the path meets the minimum; otherwise the TER from
+ *      the first `RippleCalc` call, or `tefEXCEPTION` on unexpected exceptions.
+ */
 TER
 Pathfinder::getPathLiquidity(
     STPath const& path,            // IN:  The path to check.
@@ -397,7 +532,6 @@ Pathfinder::getPathLiquidity(
 
     try
     {
-        // Compute a path that provides at least the minimum liquidity.
         if (convert_all_)
             rcInput.partialPaymentAllowed = true;
 
@@ -411,7 +545,6 @@ Pathfinder::getPathLiquidity(
             domain_,
             app_,
             &rcInput);
-        // If we can't get even the minimum liquidity requested, we're done.
         if (!isTesSuccess(rc.result()))
             return rc.result();
 
@@ -420,7 +553,6 @@ Pathfinder::getPathLiquidity(
 
         if (!convert_all_)
         {
-            // Now try to compute the remaining liquidity.
             rcInput.partialPaymentAllowed = true;
             rc = path::RippleCalc::rippleCalculate(
                 sandbox,
@@ -433,7 +565,6 @@ Pathfinder::getPathLiquidity(
                 app_,
                 &rcInput);
 
-            // If we found further liquidity, add it into the result.
             if (rc.result() == tesSUCCESS)
                 amountOut += rc.actualAmountOut;
         }
@@ -448,12 +579,29 @@ Pathfinder::getPathLiquidity(
     }
 }
 
+/** Rank all discovered paths by quality and liquidity.
+ *
+ *  Before ranking the discovered paths, probes the *default path* (an empty
+ *  `STPathSet`) via `RippleCalc` and subtracts however much the default path
+ *  can deliver from `remainingAmount_`.  This means the explicitly discovered
+ *  paths only need to cover the residual, which is the typical case where a
+ *  direct trust-line already handles part of the payment.
+ *
+ *  Delegates to `rankPaths()` which calls `getPathLiquidity()` for each
+ *  complete path and sorts survivors by quality → liquidity → length.
+ *
+ *  Must be called after `findPaths()` returns `true` and before
+ *  `getBestPaths()`.
+ *
+ *  @param maxPaths          Maximum number of paths that will ultimately be
+ *      selected; used to compute the per-path minimum useful amount.
+ *  @param continueCallback  Optional cooperative-cancellation probe.
+ */
 void
 Pathfinder::computePathRanks(int maxPaths, std::function<bool(void)> const& continueCallback)
 {
     remainingAmount_ = convertAmount(dstAmount_, convert_all_);
 
-    // Must subtract liquidity in default path from remaining amount.
     try
     {
         PaymentSandbox sandbox(&*ledger_, TapNone);
@@ -489,6 +637,15 @@ Pathfinder::computePathRanks(int maxPaths, std::function<bool(void)> const& cont
     rankPaths(maxPaths, completePaths_, pathRanks_, continueCallback);
 }
 
+/** Return `true` if `path` is considered a "default path".
+ *
+ *  A default path consists of exactly one hop (a single path element) and
+ *  represents a direct trust-line transfer without intermediaries.
+ *
+ *  @note This test is a known approximation — see the FIXME comment below.
+ *      Default paths can in theory contain more than one account element;
+ *      this heuristic may incorrectly classify some multi-element paths.
+ */
 static bool
 isDefaultPath(STPath const& path)
 {
@@ -508,6 +665,16 @@ isDefaultPath(STPath const& path)
     return path.size() == 1;
 }
 
+/** Strip the leading issuer-account node from a path.
+ *
+ *  When the source issuer is not the sender, discovered paths begin with the
+ *  issuer's account node.  The payment engine already implies this node from
+ *  the transaction metadata, so it must be removed before returning the path
+ *  to callers.
+ *
+ *  @param path  A path whose first element is the implicit source issuer.
+ *  @return      The same path with the first element removed.
+ */
 static STPath
 removeIssuer(STPath const& path)
 {
@@ -521,8 +688,24 @@ removeIssuer(STPath const& path)
     return ret;
 }
 
-// For each useful path in the input path set,
-// create a ranking entry in the output vector of path ranks
+/** Evaluate each path in `paths` and build a sorted `rankedPaths` vector.
+ *
+ *  For each non-empty path, calls `getPathLiquidity()` to probe actual
+ *  deliverable liquidity.  Paths that cannot deliver the minimum useful amount
+ *  are dropped.  Survivors are sorted ascending by:
+ *  1. Quality (exchange rate — lower cost is better); ignored for
+ *     `convert_all_` payments where quality is irrelevant.
+ *  2. Liquidity descending (more is better).
+ *  3. Path length ascending (shorter is better).
+ *  4. Index descending as a final tie-breaker.
+ *
+ *  @param maxPaths          Used to compute the per-path minimum amount via
+ *      `smallestUsefulAmount()` (or `largestAmount()` for `convert_all_`).
+ *  @param paths             Input candidate paths (typically `completePaths_`
+ *      or `extraPaths`).
+ *  @param rankedPaths       Output: cleared and filled with ranked survivors.
+ *  @param continueCallback  Optional cooperative-cancellation probe.
+ */
 void
 Pathfinder::rankPaths(
     int maxPaths,
@@ -573,30 +756,52 @@ Pathfinder::rankPaths(
         }
     }
 
-    // Sort paths by:
-    //    cost of path (when considering quality)
-    //    width of path
-    //    length of path
-    // A better PathRank is lower, best are sorted to the beginning.
     std::ranges::sort(
         rankedPaths, [&](Pathfinder::PathRank const& a, Pathfinder::PathRank const& b) {
-            // 1) Higher quality (lower cost) is better
             if (!convert_all_ && a.quality != b.quality)
                 return a.quality < b.quality;
 
-            // 2) More liquidity (higher volume) is better
             if (a.liquidity != b.liquidity)
                 return a.liquidity > b.liquidity;
 
-            // 3) Shorter paths are better
             if (a.length != b.length)
                 return a.length < b.length;
 
-            // 4) Tie breaker
             return a.index > b.index;
         });
 }
 
+/** Select up to `maxPaths` best paths and an optional full-liquidity fallback.
+ *
+ *  Merges `pathRanks_` (ranked discovered paths) and `extraPathRanks` (ranked
+ *  client-injected `extraPaths`) in a single linear pass, picking the
+ *  better-ranked path at each step.  When both iterators are at the same
+ *  quality *and* liquidity, both paths are consumed so neither is silently
+ *  dropped.
+ *
+ *  Selection rules:
+ *  - Up to `maxPaths - 1` slots are filled in quality order regardless of
+ *    individual liquidity.
+ *  - The last slot is only filled if the path's liquidity covers `remaining`
+ *    (ensuring the full payment can succeed assuming no liquidity overlap).
+ *  - After slots are full, the function continues scanning for a
+ *    `fullLiquidityPath`: a single path whose liquidity ≥ `dstAmount_` that
+ *    can be returned as a covering fallback.
+ *
+ *  When `srcIssuer` is not the sender, only paths whose first node is
+ *  `srcIssuer` are eligible; the issuer node is stripped via `removeIssuer()`
+ *  before adding to the result.
+ *
+ *  @param maxPaths           Maximum number of paths to return.
+ *  @param fullLiquidityPath  Output: set to a single path that alone can cover
+ *      `dstAmount_`, if one exists; left empty otherwise.
+ *  @param extraPaths         Previously found paths to merge with discovered
+ *      paths (typically preserved across `path_find` subscription updates).
+ *  @param srcIssuer          Issuer of the source asset; if not the sender,
+ *      filters and strips the leading issuer node.
+ *  @param continueCallback   Optional cooperative-cancellation probe.
+ *  @return                   The selected best paths (may be empty).
+ */
 STPathSet
 Pathfinder::getBestPaths(
     int maxPaths,
@@ -620,9 +825,6 @@ Pathfinder::getBestPaths(
 
     STPathSet bestPaths;
 
-    // The best PathRanks are now at the start.  Pull off enough of them to
-    // fill bestPaths, then look through the rest for the best individual
-    // path that can satisfy the entire liquidity - if one exists.
     STAmount remaining = remainingAmount_;
 
     auto pathsIterator = pathRanks_.begin();
@@ -661,7 +863,7 @@ Pathfinder::getBestPaths(
         }
         else
         {
-            // Risk is high they have identical liquidity
+            // Identical quality and liquidity — consume both so neither is dropped.
             useExtraPath = true;
             usePath = true;
         }
@@ -702,7 +904,6 @@ Pathfinder::getBestPaths(
         }
 
         if (iPathsLeft > 1 || (iPathsLeft > 0 && pathRank.liquidity >= remaining))
-        // last path must fill
         {
             --iPathsLeft;
             remaining -= pathRank.liquidity;
@@ -710,7 +911,6 @@ Pathfinder::getBestPaths(
         }
         else if (iPathsLeft == 0 && pathRank.liquidity >= dstAmount_ && fullLiquidityPath.empty())
         {
-            // We found an extra path that can move the whole amount.
             fullLiquidityPath = (startsWithIssuer ? removeIssuer(path) : path);
             JLOG(j_.debug()) << "Found extra full path: "
                              << fullLiquidityPath.getJson(JsonOptions::Values::None);
@@ -735,6 +935,17 @@ Pathfinder::getBestPaths(
     return bestPaths;
 }
 
+/** Return `true` if `asset` is the same asset as the source and issued by the
+ *  source (or its explicit issuer).
+ *
+ *  Used during order-book traversal to prevent cycles back to the origin.
+ *  An asset matches the origin when both the asset type/currency *and* the
+ *  issuer match: XRP always matches as issuer; otherwise the issuer must be
+ *  `srcIssuer_` (if set) or `srcAccount_`.
+ *
+ *  @param asset  The candidate order-book output asset to test.
+ *  @return `true` if adding a hop to this asset would loop back to the source.
+ */
 bool
 Pathfinder::issueMatchesOrigin(Asset const& asset)
 {
@@ -745,6 +956,32 @@ Pathfinder::issueMatchesOrigin(Asset const& asset)
     return matchingAsset && matchingAccount;
 }
 
+/** Count the number of viable outgoing paths from `account` for `pathAsset`.
+ *
+ *  The result is memoized in `pathsOutCountMap_` (keyed by the fully-qualified
+ *  `Asset`) to avoid repeated ledger reads for the same account/asset pair
+ *  during a single path-find run.
+ *
+ *  Counts order-book entries that accept `pathAsset`, then adds contributions
+ *  from trust lines (IOU) or MPT holdings:
+ *  - Each non-frozen, non-noRipple trust line with positive available balance
+ *    contributes +1; a line directly to `dstAccount` when `isDstAsset` is
+ *    `true` contributes +10,000 (`kHIGH_PRIORITY`).
+ *  - Equivalent rules apply for MPT holders.
+ *
+ *  A globally-frozen account or issuer returns 0.
+ *
+ *  @param pathAsset         The asset currency/ID being routed.
+ *  @param account           The account at the current path endpoint.
+ *  @param direction         Whether to check outgoing or incoming lines
+ *      (callers pass `Incoming` when `isNoRippleOut` is set).
+ *  @param isDstAsset        `true` when `pathAsset` equals the destination asset,
+ *      enabling the destination-priority bonus.
+ *  @param dstAccount        Effective destination account for the bonus check.
+ *  @param continueCallback  Optional cooperative-cancellation probe (unused
+ *      internally but accepted for API consistency).
+ *  @return                  Estimated count of viable outgoing paths (≥ 0).
+ */
 int
 Pathfinder::getPathsOut(
     PathAsset const& pathAsset,
@@ -803,7 +1040,7 @@ Pathfinder::getPathsOut(
                         }
                         else if (isDstAsset && dstAccount == rspEntry.getAccountIDPeer())
                         {
-                            count += 10000;  // count a path to the destination extra
+                            count += 10000;  // destination peer earns high-priority bonus
                         }
                         else if (rspEntry.getNoRipplePeer())
                         {
@@ -853,6 +1090,18 @@ Pathfinder::getPathsOut(
     return count;
 }
 
+/** Extend every path in `currentPaths` by one hop and collect results.
+ *
+ *  A thin fan-out wrapper: calls `addLink()` for each path in `currentPaths`,
+ *  directing extension according to `addFlags`.  New partial paths land in
+ *  `incompletePaths`; newly completed paths are added directly to
+ *  `completePaths_`.
+ *
+ *  @param currentPaths      The set of partial paths to extend.
+ *  @param incompletePaths   Accumulator for newly extended partial paths.
+ *  @param addFlags          Bitmask controlling hop type (accounts, books, etc.).
+ *  @param continueCallback  Optional cooperative-cancellation probe.
+ */
 void
 Pathfinder::addLinks(
     STPathSet const& currentPaths,  // The paths to build from
@@ -869,25 +1118,44 @@ Pathfinder::addLinks(
     }
 }
 
+/** Recursively build and memoize all partial paths for a given `PathType`.
+ *
+ *  Implements the recursive memoization pattern that avoids re-expanding
+ *  shared path prefixes.  Given a `PathType` such as
+ *  `{Source, Accounts, Books, Destination}`, it:
+ *  1. Returns the cached result immediately if `paths_[pathType]` already
+ *     exists.
+ *  2. Strips the last `NodeType` to form `parentPathType` and recurses to
+ *     obtain all partial paths for the parent (already memoized if shared
+ *     with another table entry).
+ *  3. Calls `addLinks()` on the parent paths to extend by the last node type,
+ *     placing new complete paths into `completePaths_` and new partial paths
+ *     into `paths_[pathType]`.
+ *
+ *  The base case (empty `PathType`) returns an empty `STPathSet`.  The
+ *  `Source` node type seeds the traversal with a single empty `STPath`.
+ *
+ *  @param pathType          The full path type sequence to expand.
+ *  @param continueCallback  Optional cooperative-cancellation probe; returns
+ *      the empty-type entry if cancelled.
+ *  @return                  Reference to the (now populated) partial-path set
+ *      for `pathType` in `paths_`.
+ */
 STPathSet&
 Pathfinder::addPathsForType(
     PathType const& pathType,
     std::function<bool(void)> const& continueCallback)
 {
     JLOG(j_.debug()) << "addPathsForType " << CollectionAndDelimiter(pathType, ", ");
-    // See if the set of paths for this type already exists.
     auto it = paths_.find(pathType);
     if (it != paths_.end())
         return it->second;
 
-    // Otherwise, if the type has no nodes, return the empty path.
     if (pathType.empty())
         return paths_[pathType];
     if (continueCallback && !continueCallback())
         return paths_[{}];
 
-    // Otherwise, get the paths for the parent PathType by calling
-    // addPathsForType recursively.
     PathType parentPathType = pathType;
     parentPathType.pop_back();
 
@@ -899,12 +1167,10 @@ Pathfinder::addPathsForType(
 
     int const initialSize = completePaths_.size();
 
-    // Add the last NodeType to the lists.
     auto nodeType = pathType.back();
     switch (nodeType)
     {
         case NodeType::Source:
-            // Source must always be at the start, so pathsOut has to be empty.
             XRPL_ASSERT(pathsOut.empty(), "xrpl::Pathfinder::addPathsForType : empty paths");
             pathsOut.pushBack(STPath());
             break;
@@ -942,6 +1208,18 @@ Pathfinder::addPathsForType(
     return pathsOut;
 }
 
+/** Return `true` if `toAccount` has set the noRipple flag on the trust line
+ *  from `fromAccount` in `currency`.
+ *
+ *  Reads the `RippleState` SLE for the `(toAccount, fromAccount, currency)`
+ *  triple and checks the high or low noRipple flag depending on which account
+ *  holds the higher account ID.
+ *
+ *  @param fromAccount  The account that would be rippling *into* `toAccount`.
+ *  @param toAccount    The account whose noRipple flag is being tested.
+ *  @param currency     The shared currency of the trust line.
+ *  @return `true` if noRipple is set on the incoming side of `toAccount`.
+ */
 bool
 Pathfinder::isNoRipple(
     AccountID const& fromAccount,
@@ -955,29 +1233,47 @@ Pathfinder::isNoRipple(
     return sleRipple && ((sleRipple->getFieldU32(sfFlags) & flag) != 0u);
 }
 
-// Does this path end on an account-to-account link whose last account has
-// set "no ripple" on the link?
+/** Return `true` if the last account node in `currentPath` has noRipple set
+ *  on its outgoing trust-line direction.
+ *
+ *  A path that ends with a noRipple-out hop cannot be extended by another
+ *  account node whose incoming side also has noRipple; the caller must query
+ *  `AssetCache::getRippleLines()` with `LineDirection::Incoming` to respect
+ *  this constraint.
+ *
+ *  Returns `false` for empty paths or paths whose last element is not an
+ *  account node.
+ *
+ *  @param currentPath  The partial path being extended.
+ *  @return `true` if noRipple is set on the last outgoing account link.
+ */
 bool
 Pathfinder::isNoRippleOut(STPath const& currentPath)
 {
-    // Must have at least one link.
     if (currentPath.empty())
         return false;
 
-    // Last link must be an account.
     STPathElement const& endElement = currentPath.back();
     if ((endElement.getNodeType() & STPathElement::TypeAccount) == 0u)
         return false;
 
-    // If there's only one item in the path, return true if that item specifies
-    // no ripple on the output. A path with no ripple on its output can't be
-    // followed by a link with no ripple on its input.
+    // For a single-element path the "from" account is the payment source.
     auto const& fromAccount =
         (currentPath.size() == 1) ? srcAccount_ : (currentPath.end() - 2)->getAccountID();
     auto const& toAccount = endElement.getAccountID();
     return endElement.hasCurrency() && isNoRipple(fromAccount, toAccount, endElement.getCurrency());
 }
 
+/** Append `path` to `pathSet` only if an equal path is not already present.
+ *
+ *  Prevents duplicate complete paths from accumulating in `completePaths_`.
+ *
+ *  @note This performs a linear scan, making the overall operation O(n) per
+ *      insertion and O(n²) when called repeatedly — see TODO below.
+ *
+ *  @param pathSet  The set to append to.
+ *  @param path     The candidate path to add.
+ */
 void
 addUniquePath(STPathSet& pathSet, STPath const& path)
 {
@@ -991,6 +1287,43 @@ addUniquePath(STPathSet& pathSet, STPath const& path)
     pathSet.pushBack(path);
 }
 
+/** Extend `currentPath` by one hop and collect the results.
+ *
+ *  This is the core graph-expansion step.  Depending on `addFlags` it either
+ *  adds account hops (`kAF_ADD_ACCOUNTS`) or order-book hops (`kAF_ADD_BOOKS`):
+ *
+ *  **Account hops** (`kAF_ADD_ACCOUNTS`):
+ *  - When the current endpoint holds XRP and the destination is XRP, the
+ *    current path is complete.
+ *  - Otherwise, enumerates trust-line peers (IOU) or MPT issuers (MPT) from
+ *    `AssetCache`.  Peers are scored via `getPathsOut()` and collected as
+ *    `AccountCandidates`.  The destination always gets `kHIGH_PRIORITY`.
+ *  - Candidates are sorted by `compareAccountCandidate()` and trimmed: at most
+ *    10 candidates from non-source accounts, 50 from the source account itself.
+ *    When `kAF_AC_LAST` is set only the effective destination is considered.
+ *  - noRipple awareness: if `isNoRippleOut()` is true, `AssetCache` is queried
+ *    with `LineDirection::Incoming` to respect the noRipple constraint.
+ *
+ *  **Order-book hops** (`kAF_ADD_BOOKS`):
+ *  - `kAF_OB_XRP`: adds a single XRP-out book hop if one exists from the
+ *    current asset.
+ *  - Otherwise, all books where TakerPays matches the current asset are
+ *    enumerated.  For each, a book element is added; if the book output
+ *    currency is XRP and the destination is XRP, the path completes; if the
+ *    book output issuer is the effective destination, the path also completes.
+ *    `kAF_OB_LAST` restricts books to those whose output matches
+ *    the destination asset.
+ *  - Consecutive `book → account → book` patterns are compacted: when the
+ *    last two elements are an offer followed by an account, the account is
+ *    replaced by the new book element to avoid redundant round-trips.
+ *
+ *  @param currentPath      The partial path to extend; empty means start from
+ *      `source_`.
+ *  @param incompletePaths  Accumulator for newly produced partial paths.
+ *  @param addFlags         Bitmask: `kAF_ADD_ACCOUNTS`, `kAF_ADD_BOOKS`,
+ *      `kAF_OB_XRP`, `kAF_OB_LAST`, `kAF_AC_LAST`.
+ *  @param continueCallback Optional cooperative-cancellation probe.
+ */
 void
 Pathfinder::addLink(
     STPath const& currentPath,   // The path to build from
@@ -1015,11 +1348,10 @@ Pathfinder::addLink(
 
     if ((addFlags & kAF_ADD_ACCOUNTS) != 0u)
     {
-        // add accounts
         if (bOnXRP)
         {
             if (dstAmount_.native() && !currentPath.empty())
-            {  // non-default path to XRP destination
+            {
                 JLOG(j_.trace()) << "complete path found ax: "
                                  << currentPath.getJson(JsonOptions::Values::None);
                 addUniquePath(completePaths_, currentPath);
@@ -1027,7 +1359,6 @@ Pathfinder::addLink(
         }
         else
         {
-            // search for accounts to add
             auto const sleEnd = ledger_->read(keylet::account(uEndAccount));
 
             if (sleEnd)
@@ -1109,18 +1440,14 @@ Pathfinder::addLink(
 
                         if (correctAsset && !currentPath.hasSeen(acct, uEndPathAsset, acct))
                         {
-                            // path is for correct currency and has not been
-                            // seen
                             if (checkAsset())
                             {
-                                // Can't leave on this path
+                                // trust line / MPT holding is unusable (frozen, no balance, etc.)
                             }
                             else if (bToDestination)
                             {
-                                // destination is always worth trying
                                 if (uEndPathAsset == dstAmount_.asset())
                                 {
-                                    // this is a complete path
                                     if (!currentPath.empty())
                                     {
                                         JLOG(j_.trace())
@@ -1131,17 +1458,15 @@ Pathfinder::addLink(
                                 }
                                 else if (!bDestOnly)
                                 {
-                                    // this is a high-priority candidate
                                     candidates.push_back({AccountCandidate::kHIGH_PRIORITY, acct});
                                 }
                             }
                             else if (acct == srcAccount_)
                             {
-                                // going back to the source is bad
+                                // routing back to source would create a cycle
                             }
                             else
                             {
-                                // save this candidate
                                 int const out = getPathsOut(
                                     uEndPathAsset,
                                     acct,
@@ -1183,7 +1508,7 @@ Pathfinder::addLink(
                             std::placeholders::_2));
 
                     int count = candidates.size();
-                    // allow more paths from source
+                    // Fan-out cap: more candidates allowed from the source itself.
                     if ((count > 10) && (uEndAccount != srcAccount_))
                     {
                         count = 10;
@@ -1198,7 +1523,6 @@ Pathfinder::addLink(
                     {
                         if (continueCallback && !continueCallback())
                             return;
-                        // Add accounts to incompletePaths
                         STPathElement const pathElement(
                             STPathElement::TypeAccount, it->account, uEndPathAsset, it->account);
                         incompletePaths.assembleAdd(currentPath, pathElement);
@@ -1214,10 +1538,8 @@ Pathfinder::addLink(
     }
     if ((addFlags & kAF_ADD_BOOKS) != 0u)
     {
-        // add order books
         if ((addFlags & kAF_OB_XRP) != 0u)
         {
-            // to XRP only
             if (!bOnXRP &&
                 app_.getOrderBookDB().isBookToXRP(
                     assetFromPathAsset(uEndPathAsset, uEndIssuer), domain_))
@@ -1245,16 +1567,12 @@ Pathfinder::addLink(
                     STPath newPath(currentPath);
 
                     if (isXRP(book.out))
-                    {  // to XRP
-
-                        // add the order book itself
+                    {
                         newPath.emplaceBack(
                             STPathElement::TypeCurrency, xrpAccount(), xrpCurrency(), xrpAccount());
 
                         if (isXRP(dstAmount_.asset()))
                         {
-                            // destination is XRP, add account and path is
-                            // complete
                             JLOG(j_.trace()) << "complete path found bx: "
                                              << currentPath.getJson(JsonOptions::Values::None);
                             addUniquePath(completePaths_, newPath);
@@ -1269,12 +1587,11 @@ Pathfinder::addLink(
                     {
                         auto const assetType = book.out.holds<Issue>() ? STPathElement::TypeCurrency
                                                                        : STPathElement::TypeMpt;
-                        // Don't want the book if we've already seen the issuer
-                        // book -> account -> book
+                        // Compact book → account → book: replace the intermediate
+                        // account node with this book element to avoid redundant hops.
                         if ((newPath.size() >= 2) && (newPath.back().isAccount()) &&
                             (newPath[newPath.size() - 2].isOffer()))
                         {
-                            // replace the redundant account with the order book
                             newPath[newPath.size() - 1] = STPathElement(
                                 assetType | STPathElement::TypeIssuer,
                                 xrpAccount(),
@@ -1283,7 +1600,6 @@ Pathfinder::addLink(
                         }
                         else
                         {
-                            // add the order book
                             newPath.emplaceBack(
                                 assetType | STPathElement::TypeIssuer,
                                 xrpAccount(),
@@ -1294,20 +1610,19 @@ Pathfinder::addLink(
                         if (hasEffectiveDestination && book.out.getIssuer() == dstAccount_ &&
                             equalTokens(book.out, dstAmount_.asset()))
                         {
-                            // We skipped a required issuer
+                            // Must route through the gateway (effectiveDst_), not directly
+                            // to dstAccount_; skip this path branch.
                         }
                         else if (
                             book.out.getIssuer() == effectiveDst_ &&
                             equalTokens(book.out, dstAmount_.asset()))
-                        {  // with the destination account, this path is
-                           // complete
+                        {
                             JLOG(j_.trace()) << "complete path found ba: "
                                              << currentPath.getJson(JsonOptions::Values::None);
                             addUniquePath(completePaths_, newPath);
                         }
                         else
                         {
-                            // add issuer's account, path still incomplete
                             incompletePaths.assembleAdd(
                                 newPath,
                                 STPathElement(
@@ -1325,6 +1640,22 @@ Pathfinder::addLink(
 
 namespace {
 
+/** Decode a compact path-shape string into a `PathType` vector.
+ *
+ *  Each character maps to a `NodeType`:
+ *  - `'s'` → `Source`
+ *  - `'a'` → `Accounts`
+ *  - `'b'` → `Books`
+ *  - `'x'` → `XrpBook`
+ *  - `'f'` → `DestBook`
+ *  - `'d'` → `Destination`
+ *
+ *  Parsing stops at the NUL terminator.  Unrecognised characters are silently
+ *  ignored (handled by the `switch` default fall-through).
+ *
+ *  @param string  NUL-terminated path-shape string, e.g. `"sfad"`.
+ *  @return        The corresponding `PathType` vector.
+ */
 Pathfinder::PathType
 makePath(char const* string)
 {
@@ -1367,6 +1698,15 @@ makePath(char const* string)
     }
 }
 
+/** Decode a `PathCostList` and append the resulting `CostedPath` entries to
+ *  `gPathTable[type]`.
+ *
+ *  Called once per `PaymentType` during `Pathfinder::initPathTable()`.
+ *  Asserts that the table entry is initially empty to catch double-init bugs.
+ *
+ *  @param type   The payment category to populate.
+ *  @param costs  Ordered list of `{cost, path-string}` entries.
+ */
 void
 fillPaths(Pathfinder::PaymentType type, PathCostList const& costs)
 {
@@ -1378,18 +1718,26 @@ fillPaths(Pathfinder::PaymentType type, PathCostList const& costs)
 
 }  // namespace
 
-// Costs:
-// 0 = minimum to make some payments possible
-// 1 = include trivial paths to make common cases work
-// 4 = normal fast search level
-// 7 = normal slow search level
-// 10 = most aggressive
-
+/** Populate `gPathTable` with all known payment-route shapes.
+ *
+ *  Must be called once at startup before any `Pathfinder` is constructed.
+ *  Clears and refills the global table; calling it again is safe (used in
+ *  tests).
+ *
+ *  Search-level cost semantics:
+ *  - **0** — minimum set needed to make some payments possible.
+ *  - **1** — trivial paths covering the most common cases.
+ *  - **4** — normal fast search.
+ *  - **7** — normal slow search.
+ *  - **10** — most aggressive; exhaustive exploration.
+ *
+ *  @note Do not add rules that reproduce the implicit default path (a direct
+ *      trust-line transfer without intermediate hops); such paths are handled
+ *      separately by `computePathRanks()`.
+ */
 void
 Pathfinder::initPathTable()
 {
-    // CAUTION: Do not include rules that build default paths
-
     gPathTable.clear();
     fillPaths(PaymentType::XrpToXrp, {});
     /* cspell: disable */

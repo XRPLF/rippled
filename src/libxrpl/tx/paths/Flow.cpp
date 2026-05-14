@@ -1,3 +1,14 @@
+/** @file
+ *  Public entry point for the XRP Ledger payment flow engine.
+ *
+ *  Bridges the high-level transaction processor (runtime `STAmount` and
+ *  `Asset` values) into the fully type-parameterised inner loop in
+ *  `StrandFlow.h`. Resolves source/destination asset types at runtime, builds
+ *  execution strands via `toStrands()`, initialises the AMM context, then
+ *  dispatches to the appropriately instantiated `flow<TIn, TOut>` template via
+ *  `std::visit`. All iterative liquidity-seeking and sandbox management live
+ *  in `StrandFlow.h`; this file is intentionally thin.
+ */
 #include <xrpl/tx/paths/Flow.h>
 
 #include <xrpl/basics/base_uint.h>
@@ -20,6 +31,24 @@
 
 namespace xrpl {
 
+/** Translate a typed `FlowResult` into the public `RippleCalc::Output` type.
+ *
+ *  On success (`isTesSuccess(f.ter)`), the speculative `PaymentSandbox` inside
+ *  the result is applied to `sb`, making all ledger mutations visible to the
+ *  caller's transaction scope. On failure the sandbox is simply abandoned —
+ *  those mutations evaporate — but `removableOffers` is still propagated so
+ *  that expired or unfunded offers discovered during a failed payment attempt
+ *  can still be cleaned from the ledger. The typed amounts `f.in` and `f.out`
+ *  are materialised back to `STAmount` regardless of success or failure.
+ *
+ *  @tparam FlowResult A `FlowResult<TIn, TOut>` specialisation from
+ *      `StrandFlow.h`.
+ *  @param sb The caller's `PaymentSandbox`; mutated only on success.
+ *  @param srcAsset Asset used to convert `f.in` back to `STAmount`.
+ *  @param dstAsset Asset used to convert `f.out` back to `STAmount`.
+ *  @param f The typed result from the inner `flow<TIn, TOut>` template.
+ *  @return A `RippleCalc::Output` with amounts, TER, and removable offers.
+ */
 template <class FlowResult>
 static auto
 finishFlow(PaymentSandbox& sb, Asset const& srcAsset, Asset const& dstAsset, FlowResult&& f)

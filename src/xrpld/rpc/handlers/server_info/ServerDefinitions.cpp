@@ -1,3 +1,13 @@
+/** @file
+ *  Implements the `server_definitions` RPC handler, which exposes the
+ *  complete XRPL protocol schema as a static JSON payload.
+ *
+ *  The payload is assembled once at startup (Meyers singleton), hashed via
+ *  SHA-512-half for cache validation, and then served read-only for the
+ *  lifetime of the process.  Clients that already hold a matching hash
+ *  receive only the hash in the response, avoiding re-transfer of the
+ *  large definitions object on every call.
+ */
 #include <xrpld/rpc/handlers/server_info/ServerDefinitions.h>
 
 #include <xrpld/rpc/Context.h>
@@ -29,25 +39,75 @@ namespace xrpl {
 
 namespace detail {
 
+/** Immutable protocol schema snapshot used by the `server_definitions` RPC endpoint.
+ *
+ *  Built exactly once at first use (Meyers singleton via `getDefinitions()`).
+ *  Populates nine top-level JSON sections — TYPES, LEDGER_ENTRY_TYPES,
+ *  TRANSACTION_TYPES, FIELDS, TRANSACTION_RESULTS, TRANSACTION_FORMATS,
+ *  LEDGER_ENTRY_FORMATS, TRANSACTION_FLAGS, LEDGER_ENTRY_FLAGS, and
+ *  ACCOUNT_SET_FLAGS — then computes a SHA-512-half fingerprint of the
+ *  serialized payload for client-side cache invalidation.
+ *
+ *  @note Thread-safe after construction; all public methods are read-only.
+ */
 class ServerDefinitions
 {
 private:
+    /** Convert a raw `STI_`-stripped type name to the client-facing naming convention.
+     *
+     *  Applies the following rules in order:
+     *  - Names containing `UINT` with a fixed bit-width (128, 160, 192, 256, 384, 512)
+     *      become `Hash<N>` (e.g., `UINT256` → `Hash256`), reflecting that these
+     *      fixed-width types are used as cryptographic digests, not arithmetic integers.
+     *  - Other `UINT` names become `UInt<N>` (e.g., `UINT32` → `UInt32`).
+     *  - A fixed lookup table handles special cases: `VL` → `Blob`,
+     *      `ACCOUNT` → `AccountID`, `OBJECT` → `STObject`, `ARRAY` → `STArray`, etc.
+     *  - All remaining names are converted from SCREAMING_SNAKE_CASE to CamelCase.
+     *
+     *  @param inp Raw type name with the `STI_` prefix already removed.
+     *  @return Client-facing type name string.
+     */
     static std::string
-    // translate e.g. STI_LEDGERENTRY to LedgerEntry
     translate(std::string const& inp);
 
+    /** SHA-512-half fingerprint of the serialized definitions payload. */
     uint256 defsHash_;
+
+    /** The complete protocol schema as a JSON object. */
     json::Value defs_;
 
 public:
+    /** Construct and populate the full protocol schema.
+     *
+     *  Iterates `SField::getKnownCodeToField()`, `LedgerFormats`, `TxFormats`,
+     *  `transResults()`, `getAllTxFlags()`, `getAllLedgerFlags()`, and
+     *  `getAsfFlagMap()` to build all nine sections.  After all sections are
+     *  assembled, serializes the object via `Json::FastWriter` and stores the
+     *  SHA-512-half of the result in both `defsHash_` and `defs_[jss::hash]`.
+     */
     ServerDefinitions();
 
+    /** Return true if @p hash matches the current definitions fingerprint.
+     *
+     *  Used by `doServerDefinitions` to implement the bandwidth-saving
+     *  short-circuit: when the caller already holds an up-to-date copy,
+     *  only the hash is returned rather than the full payload.
+     *
+     *  @param hash The `uint256` hash supplied by the caller.
+     *  @return `true` if @p hash equals `defsHash_`; `false` otherwise.
+     */
     [[nodiscard]] bool
     hashMatches(uint256 hash) const
     {
         return defsHash_ == hash;
     }
 
+    /** Return a const reference to the complete definitions JSON object.
+     *
+     *  The returned reference is valid for the lifetime of the process.
+     *
+     *  @return The fully populated protocol schema, including the `hash` field.
+     */
     [[nodiscard]] json::Value const&
     get() const
     {
@@ -64,7 +124,7 @@ ServerDefinitions::translate(std::string const& inp)
         return out;
     };
 
-    // TODO: use string::contains with C++23
+    // TODO: use string::contains with C++23 once the minimum language version is raised.
     auto contains = [&](std::string_view s) -> bool { return inp.find(s) != std::string::npos; };
 
     if (contains("UINT"))
@@ -124,7 +184,9 @@ ServerDefinitions::translate(std::string const& inp)
 
 ServerDefinitions::ServerDefinitions() : defs_{json::ValueType::Object}
 {
-    // populate SerializedTypeID names and values
+    // --- TYPES ---
+    // Map client-facing type names to their SerializedTypeID integer codes.
+    // typeMap is retained for reverse lookup when setting each field's `type` string below.
     defs_[jss::TYPES] = json::ValueType::Object;
 
     defs_[jss::TYPES]["Done"] = -1;
@@ -136,7 +198,8 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ValueType::Object}
         typeMap[typeValue] = typeName;
     }
 
-    // populate LedgerEntryType names and values
+    // --- LEDGER_ENTRY_TYPES ---
+    // Seed with sentinel Invalid = -1; then append all registered ledger entry names.
     defs_[jss::LEDGER_ENTRY_TYPES] = json::ValueType::Object;
     defs_[jss::LEDGER_ENTRY_TYPES][jss::Invalid] = -1;
 
@@ -145,7 +208,9 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ValueType::Object}
         defs_[jss::LEDGER_ENTRY_TYPES][f.getName()] = f.getType();
     }
 
-    // populate SField serialization data
+    // --- FIELDS ---
+    // Six entries are hard-coded before the registry loop because they either have no
+    // canonical SField entry or require explicit control over their serialization attributes.
     defs_[jss::FIELDS] = json::ValueType::Array;
 
     uint32_t i = 0;
@@ -189,6 +254,8 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ValueType::Object}
         defs_[jss::FIELDS][i++] = a;
     }
 
+    // taker_gets_funded / taker_pays_funded: synthetic DEX fields (nth 258/259) that exist
+    // in the offer-crossing path but are not persisted or signed.
     {
         json::Value a = json::ValueType::Array;
         a[0U] = "taker_gets_funded";
@@ -215,7 +282,8 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ValueType::Object}
         defs_[jss::FIELDS][i++] = a;
     }
 
-    // copy into a sorted map to ensure deterministic output order (sorted by fieldCode)
+    // Sort by fieldCode for deterministic output; the unordered source map gives no ordering
+    // guarantee across platforms.
     static std::map<int, SField const*> const kSORTED_FIELDS(
         xrpl::SField::getKnownCodeToField().begin(), xrpl::SField::getKnownCodeToField().end());
 
@@ -230,21 +298,21 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ValueType::Object}
 
         innerObj[jss::nth] = field->fieldValue;
 
-        // whether the field is variable-length encoded this means that the length is included
-        // before the content
+        // VL-encoded types encode their byte length as a prefix in the wire format.
+        // Only three types qualify: Blob (7), AccountID (8), Vector256 (19).
         innerObj[jss::isVLEncoded] =
             (type == STI_VL || type == STI_ACCOUNT || type == STI_VECTOR256);
         static_assert(
             STI_VL == 7U && STI_ACCOUNT == 8U && STI_VECTOR256 == 19U,
             "STI_VL, STI_ACCOUNT, STI_VECTOR256 must be 7, 8, 19 respectively");
 
-        // whether the field is included in serialization
+        // Container pseudo-types (type >= 10000: STI_TRANSACTION, STI_LEDGERENTRY,
+        // STI_VALIDATION, STI_METADATA) and the computed fields `hash` and `index`
+        // are not stored in serialized objects.
         innerObj[jss::isSerialized] =
             (type < 10000 && field->fieldName != "hash" &&
-             field->fieldName !=
-                 "index");  // hash, index, TRANSACTION, LEDGER_ENTRY, VALIDATION, METADATA
+             field->fieldName != "index");
 
-        // whether the field is included in serialization when signing
         innerObj[jss::isSigningField] = field->shouldInclude(false);
 
         innerObj[jss::type] = typeMap[type];
@@ -256,7 +324,8 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ValueType::Object}
         defs_[jss::FIELDS][i++] = innerArray;
     }
 
-    // populate TER code names and values
+    // --- TRANSACTION_RESULTS ---
+    // Maps every TER code name (e.g., "tesSUCCESS", "tecDIR_FULL") to its integer value.
     defs_[jss::TRANSACTION_RESULTS] = json::ValueType::Object;
 
     for (auto const& [code, terInfo] : transResults())
@@ -264,7 +333,8 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ValueType::Object}
         defs_[jss::TRANSACTION_RESULTS][terInfo.first] = code;
     }
 
-    // populate TxType names and values
+    // --- TRANSACTION_TYPES ---
+    // Seed with sentinel Invalid = -1; then append all registered transaction type names.
     defs_[jss::TRANSACTION_TYPES] = json::ValueType::Object;
     defs_[jss::TRANSACTION_TYPES][jss::Invalid] = -1;
     for (auto const& f : TxFormats::getInstance())
@@ -272,7 +342,10 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ValueType::Object}
         defs_[jss::TRANSACTION_TYPES][f.getName()] = f.getType();
     }
 
-    // populate TxFormats
+    // --- TRANSACTION_FORMATS ---
+    // Two-level schema: "common" lists fields shared by every transaction type; each
+    // type-specific key lists only the fields not already in "common".  The txCommonFields
+    // set drives the skip check in the per-type loop.
     defs_[jss::TRANSACTION_FORMATS] = json::ValueType::Object;
 
     defs_[jss::TRANSACTION_FORMATS][jss::common] = json::ValueType::Array;
@@ -302,7 +375,8 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ValueType::Object}
         defs_[jss::TRANSACTION_FORMATS][format.getName()] = templateArray;
     }
 
-    // populate LedgerFormats
+    // --- LEDGER_ENTRY_FORMATS ---
+    // Same two-level common/per-type pattern as TRANSACTION_FORMATS.
     defs_[jss::LEDGER_ENTRY_FORMATS] = json::ValueType::Object;
     defs_[jss::LEDGER_ENTRY_FORMATS][jss::common] = json::ValueType::Array;
     auto ledgerCommonFields = std::set<std::string>();
@@ -330,6 +404,9 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ValueType::Object}
         defs_[jss::LEDGER_ENTRY_FORMATS][format.getName()] = templateArray;
     }
 
+    // --- TRANSACTION_FLAGS / LEDGER_ENTRY_FLAGS ---
+    // Both sourced from X-macro-driven Meyers singletons; keyed by type name
+    // with a "universal" entry for globally applicable flags.
     defs_[jss::TRANSACTION_FLAGS] = json::ValueType::Object;
     for (auto const& [name, value] : getAllTxFlags())
     {
@@ -352,13 +429,15 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ValueType::Object}
         defs_[jss::LEDGER_ENTRY_FLAGS][name] = ledgerObj;
     }
 
+    // --- ACCOUNT_SET_FLAGS ---
     defs_[jss::ACCOUNT_SET_FLAGS] = json::ValueType::Object;
     for (auto const& [name, value] : getAsfFlagMap())
     {
         defs_[jss::ACCOUNT_SET_FLAGS][name] = value;
     }
 
-    // generate hash
+    // Fingerprint the complete payload before embedding the hash field.
+    // The hash covers all nine sections but not the hash field itself.
     {
         std::string const out = json::FastWriter().write(defs_);
         defsHash_ = xrpl::sha512Half(xrpl::Slice{out.data(), out.size()});
@@ -366,6 +445,12 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ValueType::Object}
     }
 }
 
+/** Return the process-lifetime singleton `ServerDefinitions` instance.
+ *
+ *  Constructed on first call via C++11 thread-safe static initialization.
+ *
+ *  @return Const reference to the singleton; valid for the lifetime of the process.
+ */
 ServerDefinitions const&
 getDefinitions()
 {
@@ -375,12 +460,37 @@ getDefinitions()
 
 }  // namespace detail
 
+/** Return the complete protocol schema JSON built by the `server_definitions` singleton.
+ *
+ *  Provides direct access to the definitions payload for non-RPC contexts
+ *  (e.g., the `--definitions` CLI flag in `Main.cpp`).  The returned reference
+ *  is valid for the lifetime of the process.
+ *
+ *  @return Const reference to the fully populated definitions JSON object,
+ *      including the `hash` field.
+ *  @see doServerDefinitions
+ */
 json::Value const&
 getServerDefinitionsJson()
 {
     return detail::getDefinitions().get();
 }
 
+/** Handle the `server_definitions` RPC request.
+ *
+ *  Returns the complete XRPL protocol schema assembled at startup.  If the
+ *  caller supplies a `hash` parameter matching the current definitions
+ *  fingerprint, only `{"hash": "..."}` is returned to save bandwidth.  A
+ *  hash mismatch (or no hash) causes the full payload to be returned so the
+ *  client can update its cached copy.
+ *
+ *  @param context RPC dispatch context; `context.params` may contain an
+ *      optional `hash` string field (64 hex characters).
+ *  @return The full definitions JSON object on a cache miss, or a
+ *      single-key `{"hash": "..."}` object on a cache hit.  Returns an
+ *      `invalidFieldError` response if `hash` is present but not a valid
+ *      64-hex-character `uint256`.
+ */
 json::Value
 doServerDefinitions(RPC::JsonContext& context)
 {

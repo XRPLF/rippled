@@ -1,3 +1,15 @@
+/** @file
+ *  Shared enumeration logic for the `nft_buy_offers` and `nft_sell_offers`
+ *  RPC handlers.
+ *
+ *  Both commands traverse an NFToken offer directory and serialize results
+ *  with identical pagination semantics; they differ only in the `Keylet`
+ *  used to locate that directory (buy-side vs. sell-side). Rather than
+ *  duplicate this logic, the two handlers are implemented as thin wrappers
+ *  around `enumerateNFTOffers` and `appendNftOfferJson`, which are defined
+ *  here as `inline` free functions.
+ */
+
 #pragma once
 
 #include <xrpld/rpc/Context.h>
@@ -16,6 +28,18 @@
 
 namespace xrpl {
 
+/** Serialize a single NFToken offer SLE into a JSON accumulator array.
+ *
+ *  Always emits `nft_offer_index`, `flags`, `owner`, and `amount`.
+ *  The optional fields `destination` and `expiration` are emitted only
+ *  when present in the SLE, correctly reflecting their optional status
+ *  in the on-ledger format.
+ *
+ *  @param app   The running Application instance (passed for context
+ *      consistency with other JSON helpers; not used directly here).
+ *  @param offer An SLE of type `ltNFTOKEN_OFFER` to serialize.
+ *  @param offers The JSON array to which the new offer object is appended.
+ */
 inline void
 appendNftOfferJson(
     Application const& app,
@@ -37,13 +61,39 @@ appendNftOfferJson(
     offer->getFieldAmount(sfAmount).setJson(obj[jss::amount]);
 }
 
-// {
-//   nft_id: <token hash>
-//   ledger_hash : <ledger>
-//   ledger_index : <ledger_index>
-//   limit: integer                 // optional
-//   marker: opaque                 // optional, resume previous query
-// }
+/** Walk an NFToken offer directory and return a paginated JSON response.
+ *
+ *  Resolves the ledger, checks that `directory` exists, then iterates
+ *  `ltNFTOKEN_OFFER` entries using `forEachItemAfter`. Results are bounded
+ *  by `RPC::Tuning::kNFT_OFFERS` (min 50, default 250, max 500).
+ *
+ *  **Fresh queries (no `marker`):** fetches up to `limit + 1` items. If
+ *  exactly `limit + 1` items are returned, the last item becomes the next
+ *  `marker` and is excluded from the serialized `offers` array.
+ *
+ *  **Resume queries (with `marker`):** the marker is parsed as a hex
+ *  `uint256` ledger key. The corresponding SLE is read and its
+ *  `sfNFTokenID` is validated against `nftId` — mismatches return
+ *  `rpcINVALID_PARAMS`, preventing cross-token marker reuse. The
+ *  `sfNFTokenOfferNode` field is used as `startHint` so `forEachItemAfter`
+ *  jumps directly to the correct directory page. The marker offer itself
+ *  is prepended to the result before fetching the next `limit` items.
+ *
+ *  If `forEachItemAfter` returns `false` (corrupted or inconsistent
+ *  directory), `rpcINVALID_PARAMS` is returned.
+ *
+ *  Sets `context.loadType` to `kFEE_MEDIUM_BURDEN_RPC` on success.
+ *
+ *  @param context    RPC dispatch context; `context.params` is read for
+ *      `ledger_hash`, `ledger_index`, `limit`, and `marker`.
+ *  @param nftId      The 256-bit token ID whose offers are enumerated.
+ *  @param directory  Keylet of the offer directory to traverse — either
+ *      `keylet::nftBuys(nftId)` or `keylet::nftSells(nftId)`.
+ *  @return A JSON object containing `nft_id`, an `offers` array of
+ *      serialized `ltNFTOKEN_OFFER` entries, and an optional `limit` and
+ *      hex-encoded `marker` when the result set was truncated.
+ *  @see appendNftOfferJson, doNFTBuyOffers, doNFTSellOffers
+ */
 inline json::Value
 enumerateNFTOffers(RPC::JsonContext& context, uint256 const& nftId, Keylet const& directory)
 {
@@ -71,8 +121,6 @@ enumerateNFTOffers(RPC::JsonContext& context, uint256 const& nftId, Keylet const
 
     if (context.params.isMember(jss::marker))
     {
-        // We have a start point. Use limit - 1 from the result and use the
-        // very last one for the resume.
         json::Value const& marker(context.params[jss::marker]);
 
         if (!marker.isString())
@@ -92,7 +140,6 @@ enumerateNFTOffers(RPC::JsonContext& context, uint256 const& nftId, Keylet const
     }
     else
     {
-        // We have no start point, limit should be one higher than requested.
         offers.reserve(++reserve);
     }
 

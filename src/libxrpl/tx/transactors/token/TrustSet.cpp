@@ -32,6 +32,37 @@
 
 namespace {
 
+/** Apply normal-freeze and deep-freeze flag changes to a trust-line flag word.
+ *
+ *  This helper is the single authoritative place that translates the four
+ *  transaction flags (`tfSetFreeze`, `tfClearFreeze`, `tfSetDeepFreeze`,
+ *  `tfClearDeepFreeze`) into mutations of the per-side `lsfLow*`/`lsfHigh*`
+ *  flag bits stored in the `RippleState` SLE.  It is called identically from
+ *  both `preclaim` (to simulate the post-transaction flag state for invariant
+ *  validation) and `doApply` (to compute the value actually written to the
+ *  ledger).  Sharing a single implementation guarantees the two phases always
+ *  agree on the resulting flag state, preventing silent divergence bugs.
+ *
+ *  Semantics:
+ *  - Set-freeze wins over clear-freeze when both are present (the pair is
+ *    treated as a no-op).  `bNoFreeze` additionally suppresses setting.
+ *  - Deep-freeze follows the same mutual-exclusion rule independently of
+ *    normal freeze, but `preclaim` enforces the invariant that deep-freeze
+ *    requires normal freeze to be set.
+ *
+ *  @param uFlags          Current flag word from the `RippleState` SLE (or
+ *                         zero when the line does not yet exist).
+ *  @param bHigh           `true` if the transacting account is the high side
+ *                         of the trust line (account ID > counterparty ID).
+ *                         Selects `lsfHigh*` vs `lsfLow*` flag constants.
+ *  @param bNoFreeze       `true` if the transacting account has `lsfNoFreeze`
+ *                         set, permanently waiving freeze authority.
+ *  @param bSetFreeze      `true` if `tfSetFreeze` is present in the tx flags.
+ *  @param bClearFreeze    `true` if `tfClearFreeze` is present in the tx flags.
+ *  @param bSetDeepFreeze  `true` if `tfSetDeepFreeze` is present in the tx flags.
+ *  @param bClearDeepFreeze `true` if `tfClearDeepFreeze` is present in the tx flags.
+ *  @return                Updated flag word with freeze bits adjusted.
+ */
 uint32_t
 computeFreezeFlags(
     uint32_t uFlags,
@@ -144,9 +175,6 @@ TrustSet::checkPermission(ReadView const& view, STTx const& tx)
 
     std::uint32_t const txFlags = tx.getFlags();
 
-    // Currently we only support TrustlineAuthorize, TrustlineFreeze and
-    // TrustlineUnfreeze granular permission. Setting other flags returns
-    // error.
     if ((txFlags & tfTrustSetPermissionMask) != 0u)
         return terNO_DELEGATE_PERMISSION;
 
@@ -188,6 +216,40 @@ TrustSet::checkPermission(ReadView const& view, STTx const& tx)
     return tesSUCCESS;
 }
 
+/** Read-only ledger checks for `TrustSet`.
+ *
+ *  Implementation notes for each check (in execution order):
+ *
+ *  **`tfSetfAuth` guard**: the flag is meaningful only when the issuer account
+ *  has `lsfRequireAuth` enabled; attempting it otherwise returns
+ *  `tefNO_AUTH_REQUIRED` (no fee charged).
+ *
+ *  **`lsfDisallowIncomingTrustline` softening**: the original `featureDisallowIncoming`
+ *  implementation blocked ALL trust-set operations when the destination had
+ *  opted out, including modifications to lines that already existed.  The
+ *  `fixDisallowIncomingV1` amendment corrects this by allowing the transaction
+ *  to proceed when a line already exists between the two parties — only new
+ *  line creation is gated by the opt-out preference.
+ *
+ *  **Pseudo-account allow-listing**: trust lines to pseudo-accounts are
+ *  generally prohibited.  The block is not amendment-gated because the
+ *  pseudo-account discriminator fields (`sfAMMID`, `sfVaultID`,
+ *  `sfLoanBrokerID`) are only populated when the corresponding amendment is
+ *  active, so the guard is implicitly gated.  Three narrow exceptions apply:
+ *  - AMM pseudo-accounts: a new trust line is allowed only when the currency
+ *    matches the pool's LP token and the AMM holds non-zero liquidity
+ *    (`lpTokenBalance > 0`); modifying an existing line is always permitted.
+ *  - Vault and loan-broker pseudo-accounts: only modification of an existing
+ *    line passes; new line creation returns `tecNO_PERMISSION`.
+ *  - Any other pseudo-account type returns `tecPSEUDO_ACCOUNT`.
+ *
+ *  **Deep-freeze invariant simulation**: when `featureDeepFreeze` is active,
+ *  `computeFreezeFlags()` is called with the current flag word (zero if the
+ *  line does not yet exist) to predict the post-transaction flag state.  The
+ *  invariant `deepFrozen → frozen` is then checked on that simulated state.
+ *  Rejecting the violation here — before any writes — is cheaper and keeps
+ *  `doApply` free of conditional rollback logic.
+ */
 TER
 TrustSet::preclaim(PreclaimContext const& ctx)
 {
@@ -247,8 +309,6 @@ TrustSet::preclaim(PreclaimContext const& ctx)
     // field populated, unless the appropriate amendment was already enabled.
     if (sleDst && isPseudoAccount(sleDst))
     {
-        // If destination is AMM and the trustline doesn't exist then only allow
-        // TrustSet if the asset is AMM LP token and AMM is not in empty state.
         if (sleDst->isFieldPresent(sfAMMID))
         {
             if (ctx.view.exists(keylet::line(id, uDstAccountID, currency)))
@@ -284,7 +344,6 @@ TrustSet::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    // Checking all freeze/deep freeze flag invariants.
     if (ctx.view.rules().enabled(featureDeepFreeze))
     {
         bool const bNoFreeze = sle->isFlag(lsfNoFreeze);
@@ -307,19 +366,16 @@ TrustSet::preclaim(PreclaimContext const& ctx)
         }
 
         bool const bHigh = id > uDstAccountID;
-        // Fetching current state of trust line
         auto const sleRippleState = ctx.view.read(keylet::line(id, uDstAccountID, currency));
         std::uint32_t uFlags = sleRippleState ? sleRippleState->getFieldU32(sfFlags) : 0u;
-        // Computing expected trust line state
         uFlags = computeFreezeFlags(
             uFlags, bHigh, bNoFreeze, bSetFreeze, bClearFreeze, bSetDeepFreeze, bClearDeepFreeze);
 
         auto const frozen = uFlags & (bHigh ? lsfHighFreeze : lsfLowFreeze);
         auto const deepFrozen = uFlags & (bHigh ? lsfHighDeepFreeze : lsfLowDeepFreeze);
 
-        // Trying to set deep freeze on not already frozen trust line must
-        // fail. This also checks that clearing normal freeze while deep
-        // frozen must not work
+        // Enforce: deepFrozen → frozen.  Covers both "set deep without
+        // normal freeze" and "clear normal freeze while deep-frozen".
         if ((deepFrozen != 0u) && (frozen == 0u))
         {
             return tecNO_PERMISSION;
@@ -329,6 +385,52 @@ TrustSet::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+/** Apply the `TrustSet` transaction to the mutable ledger view.
+ *
+ *  **`bHigh` convention**: a `RippleState` SLE stores both sides of a trust
+ *  relationship in one shared entry.  Per-side fields come in symmetric pairs
+ *  (`sfLowLimit`/`sfHighLimit`, `sfLowQualityIn`/`sfHighQualityIn`,
+ *  `lsfLowFreeze`/`lsfHighFreeze`, etc.).  `bHigh = (account_ > uDstAccountID)`
+ *  selects the correct field of each pair throughout the function without
+ *  duplicating logic.  Two concurrent `TrustSet` transactions by each party
+ *  both write to the same SLE but modify disjoint fields.
+ *
+ *  **Reserve exemption for onboarding**: the incremental reserve for creating a
+ *  new trust line is waived entirely when the submitter owns fewer than two
+ *  objects (`uOwnerCount < 2`).  Without this exemption a gateway funding a
+ *  brand-new user would need to deposit not just the base account reserve but
+ *  also the trust-line reserve — surplus XRP the user could pocket without ever
+ *  using the gateway.  The exemption caps the minimum viable onboarding cost at
+ *  the account reserve alone.
+ *
+ *  **Quality normalization**: a quality value of exactly `QUALITY_ONE`
+ *  (1 000 000 000) is the canonical "no adjustment" value and is stored as zero
+ *  (field made absent via `makeFieldAbsent`).  `uQualityOut` is normalized to
+ *  zero immediately after reading from the transaction; `uQualityIn` and the
+ *  values read back from the existing line are normalized before the reserve
+ *  decision is made.  This prevents callers from writing an explicit
+ *  `QUALITY_ONE` and wasting 4 bytes of ledger storage per side.
+ *
+ *  **Reserve recomputation**: after updating all fields, the need for a reserve
+ *  on each side is derived from scratch by testing whether any per-side state
+ *  deviates from defaults (non-zero quality, non-zero limit, freeze flag, positive
+ *  balance, or a `noRipple` preference that disagrees with the account's
+ *  `lsfDefaultRipple`).  If the computed need differs from `lsfLowReserve`/
+ *  `lsfHighReserve`, `adjustOwnerCount` is called with ±1 to keep the owner
+ *  count accurate.
+ *
+ *  **Auto-deletion (`bDefault`)**: when both sides reach fully default state
+ *  (`bLowReserveClear && bHighReserveClear`) or the currency is the
+ *  `badCurrency()` sentinel, `trustDelete` removes the `RippleState` SLE from
+ *  the ledger and both accounts' owner directories, preventing stale
+ *  zero-balance objects from accumulating.
+ *
+ *  **Delegation to `RippleStateHelpers`**: `trustCreate` and `trustDelete`
+ *  handle the low-level SLE construction, directory insertion/removal, and
+ *  initial `adjustOwnerCount` for the creating account.  This keeps mutation
+ *  logic centralised and reusable by other transactors that implicitly create
+ *  trust lines (e.g., `issueIOU`).
+ */
 TER
 TrustSet::doApply()
 {
@@ -341,7 +443,6 @@ TrustSet::doApply()
     Currency const currency(saLimitAmount.get<Issue>().currency);
     AccountID const uDstAccountID(saLimitAmount.getIssuer());
 
-    // true, if current is high account.
     bool const bHigh = account_ > uDstAccountID;
 
     auto const sle = view().peek(keylet::account(account_));
@@ -349,24 +450,6 @@ TrustSet::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     std::uint32_t const uOwnerCount = sle->getFieldU32(sfOwnerCount);
-
-    // The reserve that is required to create the line. Note
-    // that although the reserve increases with every item
-    // an account owns, in the case of trust lines we only
-    // *enforce* a reserve if the user owns more than two
-    // items.
-    //
-    // We do this because being able to exchange currencies,
-    // which needs trust lines, is a powerful XRPL feature.
-    // So we want to make it easy for a gateway to fund the
-    // accounts of its users without fear of being tricked.
-    //
-    // Without this logic, a gateway that wanted to have a
-    // new user use its services, would have to give that
-    // user enough XRP to cover not only the account reserve
-    // but the incremental reserve for the trust line as
-    // well. A person with no intention of using the gateway
-    // could use the extra XRP for their own purposes.
 
     XRPAmount const reserveCreate(
         (uOwnerCount < 2) ? XRPAmount(beast::kZERO)
@@ -441,15 +524,11 @@ TrustSet::doApply()
 
         if (!bQualityIn)
         {
-            // Not setting. Just get it.
-
             uLowQualityIn = sleRippleState->getFieldU32(sfLowQualityIn);
             uHighQualityIn = sleRippleState->getFieldU32(sfHighQualityIn);
         }
         else if (uQualityIn != 0u)
         {
-            // Setting.
-
             sleRippleState->setFieldU32(!bHigh ? sfLowQualityIn : sfHighQualityIn, uQualityIn);
 
             uLowQualityIn = !bHigh ? uQualityIn : sleRippleState->getFieldU32(sfLowQualityIn);
@@ -457,8 +536,6 @@ TrustSet::doApply()
         }
         else
         {
-            // Clearing.
-
             sleRippleState->makeFieldAbsent(!bHigh ? sfLowQualityIn : sfHighQualityIn);
 
             uLowQualityIn = !bHigh ? 0 : sleRippleState->getFieldU32(sfLowQualityIn);
@@ -477,15 +554,11 @@ TrustSet::doApply()
 
         if (!bQualityOut)
         {
-            // Not setting. Just get it.
-
             uLowQualityOut = sleRippleState->getFieldU32(sfLowQualityOut);
             uHighQualityOut = sleRippleState->getFieldU32(sfHighQualityOut);
         }
         else if (uQualityOut != 0u)
         {
-            // Setting.
-
             sleRippleState->setFieldU32(!bHigh ? sfLowQualityOut : sfHighQualityOut, uQualityOut);
 
             uLowQualityOut = !bHigh ? uQualityOut : sleRippleState->getFieldU32(sfLowQualityOut);
@@ -493,8 +566,6 @@ TrustSet::doApply()
         }
         else
         {
-            // Clearing.
-
             sleRippleState->makeFieldAbsent(!bHigh ? sfLowQualityOut : sfHighQualityOut);
 
             uLowQualityOut = !bHigh ? 0 : sleRippleState->getFieldU32(sfLowQualityOut);
@@ -565,7 +636,6 @@ TrustSet::doApply()
 
         if (bLowReserveSet && !bLowReserved)
         {
-            // Set reserve for low account.
             adjustOwnerCount(view(), sleLowAccount, 1, viewJ);
             uFlagsOut |= lsfLowReserve;
 
@@ -575,14 +645,12 @@ TrustSet::doApply()
 
         if (bLowReserveClear && bLowReserved)
         {
-            // Clear reserve for low account.
             adjustOwnerCount(view(), sleLowAccount, -1, viewJ);
             uFlagsOut &= ~lsfLowReserve;
         }
 
         if (bHighReserveSet && !bHighReserved)
         {
-            // Set reserve for high account.
             adjustOwnerCount(view(), sleHighAccount, 1, viewJ);
             uFlagsOut |= lsfHighReserve;
 
@@ -592,7 +660,6 @@ TrustSet::doApply()
 
         if (bHighReserveClear && bHighReserved)
         {
-            // Clear reserve for high account.
             adjustOwnerCount(view(), sleHighAccount, -1, viewJ);
             uFlagsOut &= ~lsfHighReserve;
         }
@@ -602,8 +669,6 @@ TrustSet::doApply()
 
         if (bDefault || badCurrency() == currency)
         {
-            // Delete.
-
             terResult = trustDelete(view(), sleRippleState, uLowAccountID, uHighAccountID, viewJ);
         }
         // Reserve is not scaled by load.
@@ -623,7 +688,6 @@ TrustSet::doApply()
             JLOG(j_.trace()) << "Modify ripple line";
         }
     }
-    // Line does not exist.
     else if (
         !saLimitAmount &&                         // Setting default limit.
         (!bQualityIn || (uQualityIn == 0u)) &&    // Not setting quality in or
@@ -647,14 +711,12 @@ TrustSet::doApply()
     }
     else
     {
-        // Zero balance in currency.
         STAmount const saBalance(Issue{currency, noAccount()});
 
         auto const k = keylet::line(account_, uDstAccountID, currency);
 
         JLOG(j_.trace()) << "doTrustSet: Creating ripple line: " << to_string(k.key);
 
-        // Create a new ripple line.
         terResult = trustCreate(
             view(),
             bHigh,
