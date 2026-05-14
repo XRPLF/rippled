@@ -1829,6 +1829,110 @@ class LoanBroker_test : public beast::unit_test::Suite
         testRIPD4274MPT();
     }
 
+    // Exercises canApplyToBrokerCover (fixCleanup3_2_0): a deposit, withdraw,
+    // or clawback whose amount rounds to zero at sfCoverAvailable's precision
+    // scale must be rejected with tecPRECISION_LOSS once the amendment is on,
+    // and must silently succeed without changing sfCoverAvailable when off.
+    void
+    testCoverPrecisionGuard()
+    {
+        using namespace jtx;
+        using namespace loanBroker;
+
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};
+
+        // sfCoverAvailable = 10 IOU → STAmount exponent = -14.
+        // Anything < 5e-15 rounds to zero at that scale.
+        // 1e-16 is the representative sub-ULP probe amount.
+
+        // Shared setup: funds accounts, creates a vault + broker with 10 IOU
+        // cover, and returns {brokerKeylet, iou}.
+        auto const setup = [&](Env& env) -> std::pair<Keylet, PrettyAsset> {
+            Vault vault{env};
+
+            env.fund(XRP(100'000), issuer, alice);
+            env.close();
+            env(fset(issuer, asfAllowTrustLineClawback));
+            env.close();
+
+            PrettyAsset const iou = issuer["IOU"];
+            env(trust(alice, iou(1'000'000)));
+            env.close();
+            env(pay(issuer, alice, iou(1'000)));
+            env.close();
+
+            auto [createTx, vaultKeylet] = vault.create({.owner = alice, .asset = iou});
+            env(createTx);
+            env.close();
+
+            auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+            env(set(alice, vaultKeylet.key));
+            env.close();
+
+            env(coverDeposit(alice, brokerKeylet.key, iou(10)));
+            env.close();
+
+            return {brokerKeylet, iou};
+        };
+
+        auto runTestCases = [&](FeatureBitset features) {
+            TER const expected =
+                features[fixCleanup3_2_0] ? TER{tecPRECISION_LOSS} : TER{tesSUCCESS};
+
+            {
+                testcase("Cover precision guard: Deposit");
+                Env env{*this, features};
+                auto const [brokerKeylet, iou] = setup(env);
+                PrettyAmount const subUlpAmt = iou(Number{1, -16});
+                auto const coverBefore = env.le(brokerKeylet)->at(sfCoverAvailable);
+                env(coverDeposit(alice, brokerKeylet.key, subUlpAmt), Ter(expected));
+                env.close();
+                if (expected == tesSUCCESS)
+                {
+                    if (auto const broker = env.le(brokerKeylet); BEAST_EXPECT(broker))
+                        BEAST_EXPECT(broker->at(sfCoverAvailable) == coverBefore);
+                }
+            }
+
+            {
+                testcase("Cover precision guard: Withdraw");
+                Env env{*this, features};
+                auto const [brokerKeylet, iou] = setup(env);
+                PrettyAmount const subUlpAmt = iou(Number{1, -16});
+                auto const coverBefore = env.le(brokerKeylet)->at(sfCoverAvailable);
+                env(coverWithdraw(alice, brokerKeylet.key, subUlpAmt), Ter(expected));
+                env.close();
+                if (expected == tesSUCCESS)
+                {
+                    if (auto const broker = env.le(brokerKeylet); BEAST_EXPECT(broker))
+                        BEAST_EXPECT(broker->at(sfCoverAvailable) == coverBefore);
+                }
+            }
+
+            {
+                testcase("Cover precision guard: Clawback");
+                Env env{*this, features};
+                auto const [brokerKeylet, iou] = setup(env);
+                PrettyAmount const subUlpAmt = iou(Number{1, -16});
+                auto const coverBefore = env.le(brokerKeylet)->at(sfCoverAvailable);
+                env(coverClawback(issuer),
+                    kLOAN_BROKER_ID(brokerKeylet.key),
+                    kAMOUNT(subUlpAmt),
+                    Ter(expected));
+                env.close();
+                if (expected == tesSUCCESS)
+                {
+                    if (auto const broker = env.le(brokerKeylet); BEAST_EXPECT(broker))
+                        BEAST_EXPECT(broker->at(sfCoverAvailable) == coverBefore);
+                }
+            }
+        };
+
+        runTestCases(all_);
+        runTestCases(all_ - fixCleanup3_2_0);
+    }
+
 public:
     void
     run() override
@@ -1849,6 +1953,7 @@ public:
         testAmB06VaultFreezeCheckMissing();
 
         testRIPD4274();
+        testCoverPrecisionGuard();
 
         // TODO: Write clawback failure tests with an issuer / MPT that doesn't
         // have the right flags set.
