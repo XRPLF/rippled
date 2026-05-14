@@ -30,9 +30,9 @@ namespace xrpl::RPC {
 inline std::optional<std::string>
 encodeCTID(uint32_t ledgerSeq, uint32_t txnIndex, uint32_t networkID) noexcept
 {
-    constexpr uint32_t kMaxLedgerSeq = 0x0FFF'FFFF;
-    constexpr uint32_t kMaxTxnIndex = 0xFFFF;
-    constexpr uint32_t kMaxNetworkId = 0xFFFF;
+    static constexpr uint32_t kMaxLedgerSeq = 0x0FFF'FFFF;
+    static constexpr uint32_t kMaxTxnIndex = 0xFFFF;
+    static constexpr uint32_t kMaxNetworkId = 0xFFFF;
 
     if (ledgerSeq > kMaxLedgerSeq || txnIndex > kMaxTxnIndex || networkID > kMaxNetworkId)
         return std::nullopt;
@@ -94,8 +94,8 @@ decodeCTID(T const ctid) noexcept
     }
 
     // Validate CTID prefix.
-    constexpr uint64_t kCtidPrefixMask = 0xF000'0000'0000'0000ULL;
-    constexpr uint64_t kCtidPrefix = 0xC000'0000'0000'0000ULL;
+    static constexpr uint64_t kCtidPrefixMask = 0xF000'0000'0000'0000ULL;
+    static constexpr uint64_t kCtidPrefix = 0xC000'0000'0000'0000ULL;
     if ((ctidValue & kCtidPrefixMask) != kCtidPrefix)
         return std::nullopt;
 

@@ -157,7 +157,7 @@ b5810ToB58Be(std::uint64_t input)
 {
     [[maybe_unused]] static constexpr std::uint64_t kB5810 = 430804206899405824;  // 58^10;
     XRPL_ASSERT(input < kB5810, "xrpl::b58_fast::detail::b5810ToB58Be : valid input");
-    constexpr std::size_t kResultSize = 10;
+    static constexpr std::size_t kResultSize = 10;
     std::array<std::uint8_t, kResultSize> result{};
     int i = 0;
     while (input > 0)

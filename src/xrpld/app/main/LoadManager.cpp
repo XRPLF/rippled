@@ -111,9 +111,9 @@ LoadManager::run()
         using namespace std::chrono;
         auto const timeSpentStalled = duration_cast<seconds>(steady_clock::now() - lastHeartbeat);
 
-        constexpr auto kReportingIntervalSeconds = 10s;
-        constexpr auto kStallFatalLogMessageTimeLimit = 90s;
-        constexpr auto kStallLogicErrorTimeLimit = 600s;
+        static constexpr auto kReportingIntervalSeconds = 10s;
+        static constexpr auto kStallFatalLogMessageTimeLimit = 90s;
+        static constexpr auto kStallLogicErrorTimeLimit = 600s;
 
         if (armed && (timeSpentStalled >= kReportingIntervalSeconds))
         {

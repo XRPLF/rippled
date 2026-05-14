@@ -275,7 +275,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     //
     // We look at the account's Sequence rather than the transaction's
     // Sequence in preparation for Tickets.
-    constexpr std::uint32_t kSeqDelta{255};
+    static constexpr std::uint32_t kSeqDelta{255};
     if ((*sleAccount)[sfSequence] + kSeqDelta > ctx.view.seq())
         return tecTOO_SOON;
 

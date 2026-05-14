@@ -628,9 +628,9 @@ public:
                 };
 
             auto aliceLines = getNextLine(env, alice, std::nullopt);
-            constexpr std::size_t kExpectedIterations = 16;
-            constexpr std::size_t kExpectedLines = 2;
-            constexpr std::size_t kExpectedNfTs = 1;
+            static constexpr std::size_t kExpectedIterations = 16;
+            static constexpr std::size_t kExpectedLines = 2;
+            static constexpr std::size_t kExpectedNfTs = 1;
             std::size_t foundLines = 0;
 
             auto hasMarker = [](auto const& aliceLines) {

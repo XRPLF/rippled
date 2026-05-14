@@ -226,7 +226,7 @@ Number::Guard::bringIntoRange(
     }
     if (exponent < kMinExponent)
     {
-        constexpr Number kZero = Number{};
+        static constexpr Number kZero = Number{};
 
         negative = kZero.negative_;
         mantissa = kZero.mantissa_;
@@ -367,13 +367,13 @@ doNormalize(
     MantissaRange::rep const& minMantissa,
     MantissaRange::rep const& maxMantissa)
 {
-    constexpr auto kMinExponent = Number::kMinExponent;
-    constexpr auto kMaxExponent = Number::kMaxExponent;
-    constexpr auto kMaxRep = Number::kMaxRep;
+    static constexpr auto kMinExponent = Number::kMinExponent;
+    static constexpr auto kMaxExponent = Number::kMaxExponent;
+    static constexpr auto kMaxRep = Number::kMaxRep;
 
     using Guard = Number::Guard;
 
-    constexpr Number kZero = Number{};
+    static constexpr Number kZero = Number{};
     if (mantissa == 0)
     {
         mantissa = kZero.mantissa_;
@@ -506,7 +506,7 @@ Number::shiftExponent(int exponentDelta) const
 Number&
 Number::operator+=(Number const& y)
 {
-    constexpr Number kZero = Number{};
+    static constexpr Number kZero = Number{};
     if (y == kZero)
         return *this;
     if (*this == kZero)
@@ -633,7 +633,7 @@ divu10(uint128_t& u)
 Number&
 Number::operator*=(Number const& y)
 {
-    constexpr Number kZero = Number{};
+    static constexpr Number kZero = Number{};
     if (*this == kZero)
         return *this;
     if (y == kZero)
@@ -696,7 +696,7 @@ Number::operator*=(Number const& y)
 Number&
 Number::operator/=(Number const& y)
 {
-    constexpr Number kZero = Number{};
+    static constexpr Number kZero = Number{};
     if (y == kZero)
         throw std::overflow_error("Number: divide by 0");
     if (*this == kZero)
@@ -839,7 +839,7 @@ std::string
 to_string(Number const& amount)
 {
     // keep full internal accuracy, but make more human friendly if possible
-    constexpr Number kZero = Number{};
+    static constexpr Number kZero = Number{};
     if (amount == kZero)
         return "0";
 
@@ -959,7 +959,7 @@ power(Number const& f, unsigned n)
 Number
 root(Number f, unsigned d)
 {
-    constexpr Number kZero = Number{};
+    static constexpr Number kZero = Number{};
     auto const one = Number::one();
 
     if (f == one || d == 1)
@@ -1031,7 +1031,7 @@ root(Number f, unsigned d)
 Number
 root2(Number f)
 {
-    constexpr Number kZero = Number{};
+    static constexpr Number kZero = Number{};
     auto const one = Number::one();
 
     if (f == one)
@@ -1078,7 +1078,7 @@ root2(Number f)
 Number
 power(Number const& f, unsigned n, unsigned d)
 {
-    constexpr Number kZero = Number{};
+    static constexpr Number kZero = Number{};
     auto const one = Number::one();
 
     if (f == one)

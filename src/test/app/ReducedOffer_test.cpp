@@ -641,7 +641,7 @@ public:
                 return badRate;
             };
 
-            constexpr int kLoopCount = 100;
+            static constexpr int kLoopCount = 100;
             unsigned int blockedCount = 0;
             {
                 STAmount increaseGets = usd(0);

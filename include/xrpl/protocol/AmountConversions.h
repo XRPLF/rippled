@@ -167,7 +167,7 @@ toAmount(Asset const& asset, Number const& n, Number::RoundingMode mode = Number
     }
     else
     {
-        constexpr bool kAlwaysFalse = !std::is_same_v<T, T>;
+        static constexpr bool kAlwaysFalse = !std::is_same_v<T, T>;
         static_assert(kAlwaysFalse, "Unsupported type for toAmount");
     }
 }
@@ -200,7 +200,7 @@ toMaxAmount(Asset const& asset)
     }
     else
     {
-        constexpr bool kAlwaysFalse = !std::is_same_v<T, T>;
+        static constexpr bool kAlwaysFalse = !std::is_same_v<T, T>;
         static_assert(kAlwaysFalse, "Unsupported type for toMaxAmount");
     }
 }
@@ -233,7 +233,7 @@ getAsset(T const& amt)
     }
     else
     {
-        constexpr bool kAlwaysFalse = !std::is_same_v<T, T>;
+        static constexpr bool kAlwaysFalse = !std::is_same_v<T, T>;
         static_assert(kAlwaysFalse, "Unsupported type for getIssue");
     }
 }

@@ -545,7 +545,7 @@ private:
                     else
                     {
                         int refresh = 5;
-                        constexpr char const* kRefreshPrefix = "/validators2/refresh/";
+                        static constexpr char const* kRefreshPrefix = "/validators2/refresh/";
                         if (boost::starts_with(path, kRefreshPrefix))
                         {
                             refresh = boost::lexical_cast<unsigned int>(
@@ -569,7 +569,7 @@ private:
                     else
                     {
                         int refresh = 5;
-                        constexpr char const* kRefreshPrefix = "/validators/refresh/";
+                        static constexpr char const* kRefreshPrefix = "/validators/refresh/";
                         if (boost::starts_with(path, kRefreshPrefix))
                         {
                             refresh = boost::lexical_cast<unsigned int>(

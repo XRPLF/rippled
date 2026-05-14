@@ -3338,7 +3338,7 @@ private:
         // Attach signers to alice.
         env(signers(alice, 2, {{becky, 1}, {bogie, 1}}), Sig(alie));
         env.close();
-        constexpr int kSignerListOwners{2};
+        static constexpr int kSignerListOwners{2};
         env.require(Owners(alice, kSignerListOwners + 0));
 
         Msig const ms{becky, bogie};

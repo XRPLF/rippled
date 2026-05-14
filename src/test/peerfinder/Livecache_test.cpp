@@ -129,7 +129,7 @@ public:
     testHistogram()
     {
         testcase("Histogram");
-        constexpr auto kNumEps = 40;
+        static constexpr auto kNumEps = 40;
         Livecache<> c(clock_, journal_);
         for (auto i = 0; i < kNumEps; ++i)
             add(beast::IP::randomEP(true), c, xrpl::randInt<std::uint32_t>());

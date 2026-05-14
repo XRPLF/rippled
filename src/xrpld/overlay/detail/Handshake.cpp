@@ -135,7 +135,7 @@ makeFeaturesResponseHeader(
 static std::optional<BaseUInt<512>>
 hashLastMessage(SSL const* ssl, size_t (*get)(const SSL*, void*, size_t))
 {
-    constexpr std::size_t kSslMinimumFinishedLength = 12;
+    static constexpr std::size_t kSslMinimumFinishedLength = 12;
 
     unsigned char buf[1024];
     size_t const len = get(ssl, buf, sizeof(buf));

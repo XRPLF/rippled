@@ -172,7 +172,7 @@ class PermissionedDomains_test : public beast::unit_test::Suite
         env(txJsonMutable, Ter(temMALFORMED));
 
         // Make too long CredentialType.
-        constexpr std::string_view kLongCredentialType =
+        static constexpr std::string_view kLongCredentialType =
             "Cred0123456789012345678901234567890123456789012345678901234567890";
         static_assert(kLongCredentialType.size() == kMaxCredentialTypeLength + 1);
         txJsonMutable["AcceptedCredentials"][2u] = credentialOrig;
@@ -309,7 +309,7 @@ class PermissionedDomains_test : public beast::unit_test::Suite
 
         // Make longest possible CredentialType.
         {
-            constexpr std::string_view kLongCredentialType =
+            static constexpr std::string_view kLongCredentialType =
                 "Cred0123456789012345678901234567890123456789012345678901234567"
                 "89";
             static_assert(kLongCredentialType.size() == kMaxCredentialTypeLength);
@@ -402,7 +402,7 @@ class PermissionedDomains_test : public beast::unit_test::Suite
 
         // Try to delete the account with domains.
         auto const acctDelFee(drops(env.current()->fees().increment));
-        constexpr std::size_t kDeleteDelta = 255;
+        static constexpr std::size_t kDeleteDelta = 255;
         {
             // Close enough ledgers to make it potentially deletable if empty.
             std::size_t const ownerSeq = env.seq(alice[0]);

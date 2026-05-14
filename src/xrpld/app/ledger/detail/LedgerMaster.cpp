@@ -1047,8 +1047,8 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
             // and (3) the calculation won't cause divide-by-zero.
             if (higherVersionCount > 0 && xrpldCount > 0)
             {
-                constexpr std::size_t kReportingPercent = 90;
-                constexpr std::size_t kCutoffPercent = 60;
+                static constexpr std::size_t kReportingPercent = 90;
+                static constexpr std::size_t kCutoffPercent = 60;
                 auto const unlSize{app_.getValidators().getQuorumKeys().second.size()};
                 needPrint = unlSize > 0 &&
                     calculatePercent(vals.size(), unlSize) >= kReportingPercent &&

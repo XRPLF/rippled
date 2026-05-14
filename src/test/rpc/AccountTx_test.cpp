@@ -759,7 +759,7 @@ class AccountTx_test : public beast::unit_test::Suite
             BEAST_EXPECT(result[jss::result][jss::transactions].isArray());
 
             // The first two transactions listed in sanity haven't happened yet.
-            constexpr unsigned int kBeckyDeletedOffset = 2;
+            static constexpr unsigned int kBeckyDeletedOffset = 2;
             BEAST_EXPECT(
                 std::size(kSanity) ==
                 result[jss::result][jss::transactions].size() + kBeckyDeletedOffset);

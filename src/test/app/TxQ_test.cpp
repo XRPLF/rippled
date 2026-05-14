@@ -276,7 +276,7 @@ public:
 
         //////////////////////////////////////////////////////////////
 
-        constexpr auto kLargeFeeMultiplier = 700;
+        static constexpr auto kLargeFeeMultiplier = 700;
         auto const largeFee = baseFee * kLargeFeeMultiplier;
 
         // Stuff the ledger and queue so we can verify that
@@ -742,7 +742,7 @@ public:
         // Queue an item with a sufficient LastLedgerSeq.
         env(noop(alice), LastLedgerSeq(8), queued);
 
-        constexpr auto kLargeFeeMultiplier = 700;
+        static constexpr auto kLargeFeeMultiplier = 700;
         auto const largeFee = baseFee * kLargeFeeMultiplier;
 
         // Queue items with higher fees to force the previous
@@ -790,7 +790,7 @@ public:
         // clang-format on
         BEAST_EXPECT(env.seq(alice) == 3);
 
-        constexpr auto kAnotherLargeFeeMultiplier = 800;
+        static constexpr auto kAnotherLargeFeeMultiplier = 800;
         auto const anotherLargeFee = baseFee * kAnotherLargeFeeMultiplier;
         // Keep alice's transaction waiting.
         // clang-format off
@@ -867,7 +867,7 @@ public:
         fillQueue(env, alice);
         checkMetrics(*this, env, 0, 6, 4, 3);
 
-        constexpr auto kAliceFeeMultiplier = 3;
+        static constexpr auto kAliceFeeMultiplier = 3;
         auto feeAlice = baseFee * kAliceFeeMultiplier;
         auto seqAlice = env.seq(alice);
         for (int i = 0; i < 4; ++i)
@@ -1026,7 +1026,7 @@ public:
         // Close an empty ledger to shrink queue from the flag-ledger
         // size to 2*3=6, independent of amendment count.
         env.close();
-        constexpr std::size_t kInitQueueMax = 6;
+        static constexpr std::size_t kInitQueueMax = 6;
         checkMetrics(*this, env, 0, kInitQueueMax, 0, 3);
 
         // Create several accounts while the fee is cheap so they all apply.
@@ -4061,7 +4061,7 @@ public:
         Account const ellie("ellie");
         Account const fiona("fiona");
 
-        constexpr int kLedgersInQueue = 30;
+        static constexpr int kLedgersInQueue = 30;
         auto cfg = makeConfig(
             {{"minimum_txn_in_ledger_standalone", "1"},
              {"ledgers_in_queue", std::to_string(kLedgersInQueue)},

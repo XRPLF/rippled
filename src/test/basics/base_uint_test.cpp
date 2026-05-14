@@ -335,7 +335,7 @@ struct base_uint_test : beast::unit_test::Suite
                 {
                 }
             };
-            constexpr StrBaseUInt kTestCases[] = {
+            static constexpr StrBaseUInt kTestCases[] = {
                 "000000000000000000000000",
                 "000000000000000000000001",
                 "fedcba9876543210ABCDEF91",

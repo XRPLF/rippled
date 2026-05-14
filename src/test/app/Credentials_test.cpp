@@ -461,7 +461,7 @@ struct Credentials_test : public beast::unit_test::Suite
                 testcase(
                     "Credentials fail, credentialType length > "
                     "maxCredentialTypeLength.");
-                constexpr std::string_view kLongCredType =
+                static constexpr std::string_view kLongCredType =
                     "abcdefghijklmnopqrstuvwxyz01234567890qwertyuiop[]"
                     "asdfghjkl;'zxcvbnm8237tr28weufwldebvfv8734t07p";
                 static_assert(kLongCredType.size() > kMaxCredentialTypeLength);
@@ -471,7 +471,7 @@ struct Credentials_test : public beast::unit_test::Suite
 
             {
                 testcase("Credentials fail, URI length > 256.");
-                constexpr std::string_view kLongUri =
+                static constexpr std::string_view kLongUri =
                     "abcdefghijklmnopqrstuvwxyz01234567890qwertyuiop[]"
                     "asdfghjkl;'zxcvbnm8237tr28weufwldebvfv8734t07p   "
                     "9hfup;wDJFBVSD8f72  "

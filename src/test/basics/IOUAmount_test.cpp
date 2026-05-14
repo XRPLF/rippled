@@ -179,12 +179,12 @@ public:
         testcase("mulRatio");
 
         /* The range for the mantissa when normalized */
-        constexpr std::int64_t kMinMantissa = 1000000000000000ull;
-        constexpr std::int64_t kMaxMantissa = 9999999999999999ull;
+        static constexpr std::int64_t kMinMantissa = 1000000000000000ull;
+        static constexpr std::int64_t kMaxMantissa = 9999999999999999ull;
         // log(2,maxMantissa) ~ 53.15
         /* The range for the exponent when normalized */
-        constexpr int kMinExponent = -96;
-        constexpr int kMaxExponent = 80;
+        static constexpr int kMinExponent = -96;
+        static constexpr int kMaxExponent = 80;
         constexpr auto kMaxUInt = std::numeric_limits<std::uint32_t>::max();
 
         {

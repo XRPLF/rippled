@@ -4264,7 +4264,7 @@ protected:
 
         env.fund(XRP(1'000), issuer, lender);
 
-        constexpr std::int64_t kIssuerBalance = 10'000'000;
+        static constexpr std::int64_t kIssuerBalance = 10'000'000;
         MPTTester const asset(
             {.env = env, .issuer = issuer, .holders = {lender}, .pay = kIssuerBalance});
 
@@ -4853,7 +4853,7 @@ protected:
                 stateAfter.paymentRemaining == stateBefore.paymentRemaining - expectedChange);
         };
 
-        constexpr std::int64_t kMaxFeeIncrements =
+        static constexpr std::int64_t kMaxFeeIncrements =
             kLoanMaximumPaymentsPerTransaction / kLoanPaymentsPerFeeIncrement;
 
         TER const failWithoutFix = feeCapped ? (TER)tesSUCCESS : (TER)telINSUF_FEE_P;
@@ -5384,7 +5384,7 @@ protected:
                 err);
         });
 
-        constexpr std::uint32_t kLoanSequence = 1;
+        static constexpr std::uint32_t kLoanSequence = 1;
         auto const loanKeylet = keylet::loan(brokerInfo.brokerID, kLoanSequence);
 
         // Can't loan pay if the borrower is not authorized

@@ -461,7 +461,7 @@ public:
         // Alice creates 1001 offers.  This is one greater than the number of
         // directory entries an AccountDelete will remove.
         std::uint32_t const offerSeq0{env.seq(alice)};
-        constexpr int kOfferCount{1001};
+        static constexpr int kOfferCount{1001};
         for (int i{0}; i < kOfferCount; ++i)
         {
             env(offer(alice, gw[currency](1), XRP(1)));

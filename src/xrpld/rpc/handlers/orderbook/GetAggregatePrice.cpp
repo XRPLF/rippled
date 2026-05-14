@@ -52,7 +52,7 @@ iteratePriceData(
     std::function<bool(STObject const&)> const& f)
 {
     using Meta = std::shared_ptr<STObject const>;
-    constexpr std::uint8_t kMaxHistory = 3;
+    static constexpr std::uint8_t kMaxHistory = 3;
     bool isNew = false;
     std::uint8_t history = 0;
 
@@ -152,7 +152,7 @@ doGetAggregatePrice(RPC::JsonContext& context)
     json::Value result;
     auto const& params(context.params);
 
-    constexpr std::uint16_t kMaxOracles = 200;
+    static constexpr std::uint16_t kMaxOracles = 200;
     if (!params.isMember(jss::oracles))
         return RPC::missingFieldError(jss::oracles);
     if (!params[jss::oracles].isArray() || params[jss::oracles].size() == 0 ||

@@ -179,7 +179,7 @@ public:
         BEAST_EXPECT(result[jss::ledger][jss::transaction_hash] == kZeroHASH);
 
         result = env.rpc("ledger_request", "2")[jss::result];
-        constexpr char const* kHash2 =
+        static constexpr char const* kHash2 =
             "CCC3B3E88CCAC17F1BE6B4A648A55999411F19E3FE55EB721960EB0DF28EDDA5";
         BEAST_EXPECT(result[jss::ledger][jss::ledger_index] == "2");
         BEAST_EXPECT(result[jss::ledger][jss::total_coins] == "100000000000000000");
@@ -192,7 +192,7 @@ public:
         BEAST_EXPECT(result[jss::ledger][jss::transaction_hash] == kZeroHASH);
 
         result = env.rpc("ledger_request", "3")[jss::result];
-        constexpr char const* kHash3 =
+        static constexpr char const* kHash3 =
             "9FFD8AE09190D5002FE4252A1B29EABCF40DABBCE3B42619C6BD0BE381D51103";
         BEAST_EXPECT(result[jss::ledger][jss::ledger_index] == "3");
         BEAST_EXPECT(result[jss::ledger][jss::total_coins] == "99999999999999980");
@@ -207,7 +207,7 @@ public:
             "CBD7F0948EBFA2241DE4EA627939A0FFEE6B80A90FE09C42C825DA546E9B73FF");
 
         result = env.rpc("ledger_request", "4")[jss::result];
-        constexpr char const* kHash4 =
+        static constexpr char const* kHash4 =
             "7C9B614445517B8C6477E0AB10A35FFC1A23A34FEA41A91ECBDE884CC097C6E1";
         BEAST_EXPECT(result[jss::ledger][jss::ledger_index] == "4");
         BEAST_EXPECT(result[jss::ledger][jss::total_coins] == "99999999999999960");
@@ -222,7 +222,7 @@ public:
             "9BBDDBF926100DFFF364E16268F544B19F5B9BC6ECCBBC104F98D13FA9F3BC35");
 
         result = env.rpc("ledger_request", "5")[jss::result];
-        constexpr char const* kHash5 =
+        static constexpr char const* kHash5 =
             "98885D02145CCE4AD2605F1809F17188DB2053B14ED399CAC985DD8E03DCA8C0";
         BEAST_EXPECT(result[jss::ledger][jss::ledger_index] == "5");
         BEAST_EXPECT(result[jss::ledger][jss::total_coins] == "99999999999999940");

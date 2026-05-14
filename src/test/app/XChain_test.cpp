@@ -1483,7 +1483,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
 
             std::uint32_t const quorum7 = 7;
             std::vector<Signer> const signers = [] {
-                constexpr int kNumSigners = 4;
+                static constexpr int kNumSigners = 4;
                 std::uint32_t const weights[] = {1, 2, 4, 4};
 
                 std::vector<Signer> result;
@@ -1541,7 +1541,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
 
             std::uint32_t const quorum7 = 7;
             std::vector<Signer> const signers = [] {
-                constexpr int kNumSigners = 4;
+                static constexpr int kNumSigners = 4;
                 std::uint32_t const weights[] = {1, 2, 4, 4};
 
                 std::vector<Signer> result;
@@ -1600,7 +1600,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
 
             std::uint32_t const quorum7 = 7;
             std::vector<Signer> const signers = [] {
-                constexpr int kNumSigners = 4;
+                static constexpr int kNumSigners = 4;
                 std::uint32_t const weights[] = {1, 2, 4, 4};
 
                 std::vector<Signer> result;
@@ -1659,7 +1659,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
 
             std::uint32_t const quorum7 = 7;
             std::vector<Signer> const signers = [] {
-                constexpr int kNumSigners = 4;
+                static constexpr int kNumSigners = 4;
                 std::uint32_t const weights[] = {1, 2, 4, 4};
 
                 std::vector<Signer> result;
@@ -4431,7 +4431,7 @@ public:
         Account doorXRPLocking("doorXRPLocking"), doorUSDLocking("doorUSDLocking"),
             doorUSDIssuing("doorUSDIssuing");
 
-        constexpr size_t kNumAcct = 10;
+        static constexpr size_t kNumAcct = 10;
         auto a = [&doorXRPLocking, &doorUSDLocking, &doorUSDIssuing]() {
             using namespace std::literals;
             std::vector<Account> result;
@@ -4483,7 +4483,7 @@ public:
         st->b.init(Account::kMaster);
 
         // also create some unfunded accounts
-        constexpr size_t kNumUa = 20;
+        static constexpr size_t kNumUa = 20;
         auto ua = []() {
             using namespace std::literals;
             std::vector<Account> result;

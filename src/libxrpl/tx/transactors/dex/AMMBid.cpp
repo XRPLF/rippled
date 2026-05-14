@@ -206,7 +206,7 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
     // Min price
     auto const minSlotPrice = lptAMMBalance * tradingFee / kAuctionSlotMinFeeFraction;
 
-    constexpr std::uint32_t kTailingSlot = kAuctionSlotTimeIntervals - 1;
+    static constexpr std::uint32_t kTailingSlot = kAuctionSlotTimeIntervals - 1;
 
     // If seated then it is the current slot-holder time slot, otherwise
     // the auction slot is not owned. Slot range is in {0-19}

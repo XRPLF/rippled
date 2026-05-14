@@ -146,7 +146,7 @@ AccountID
 pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey)
 {
     // This number must not be changed without an amendment
-    constexpr std::uint16_t kMaxAccountAttempts = 256;
+    static constexpr std::uint16_t kMaxAccountAttempts = 256;
     for (std::uint16_t i = 0; i < kMaxAccountAttempts; ++i)
     {
         RipeshaHasher rsh;

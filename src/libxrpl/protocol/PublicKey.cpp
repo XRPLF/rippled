@@ -88,7 +88,7 @@ sliceToHex(Slice const& slice)
     }
     for (int i = 0; i < slice.size(); ++i)
     {
-        constexpr char kHex[] = "0123456789ABCDEF";
+        static constexpr char kHex[] = "0123456789ABCDEF";
         s += kHex[((slice[i] & 0xf0) >> 4)];
         s += kHex[((slice[i] & 0x0f) >> 0)];
     }

@@ -603,8 +603,8 @@ private:
         BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgPublisherKeys));
 
         std::map<std::size_t, std::vector<Validator>> const lists = []() {
-            constexpr auto kListSize = 20;
-            constexpr auto kNumLists = 9;
+            static constexpr auto kListSize = 20;
+            static constexpr auto kNumLists = 9;
             std::map<std::size_t, std::vector<Validator>> lists;
             // 1-based to correspond with the individually named blobs below.
             for (auto i = 1; i <= kNumLists; ++i)
@@ -949,7 +949,7 @@ private:
         BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgPublisherKeys));
 
         std::vector<Validator> const list = []() {
-            constexpr auto kListSize = 20;
+            static constexpr auto kListSize = 20;
             std::vector<Validator> list;
             list.reserve(kListSize);
             while (list.size() < kListSize)
@@ -2548,7 +2548,7 @@ private:
         jtx::Env env(*this);
         auto& app = env.app();
 
-        constexpr std::size_t kMaxKeys = 20;
+        static constexpr std::size_t kMaxKeys = 20;
         hash_set<NodeID> activeValidators;
         std::vector<Validator> valKeys;
         while (valKeys.size() != kMaxKeys)

@@ -149,7 +149,8 @@ STVar::constructST(SerializedTypeID id, int depth, Args&&... args)
         }
         else
         {
-            constexpr bool kAlwaysFalse = !std::is_same_v<std::tuple<Args...>, std::tuple<Args...>>;
+            static constexpr bool kAlwaysFalse =
+                !std::is_same_v<std::tuple<Args...>, std::tuple<Args...>>;
             static_assert(kAlwaysFalse, "Invalid STVar constructor arguments");
         }
     };

@@ -222,7 +222,7 @@ public:
             testcase("build/tear unbacked");
         }
         {
-            constexpr std::array keys{
+            static constexpr std::array keys{
                 uint256(
                     "b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
                     "5a772c6ca8"),
@@ -248,7 +248,7 @@ public:
                     "292891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
                     "5a772c6ca8")};
 
-            constexpr std::array kHashes{
+            static constexpr std::array kHashes{
                 uint256(
                     "B7387CFEA0465759ADC718E8C42B52D2309D179B326E239EB5075C"
                     "64B6281F7F"),
@@ -305,7 +305,7 @@ public:
         }
 
         {
-            constexpr std::array keys{
+            static constexpr std::array keys{
                 uint256(
                     "f22891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
                     "5a772c6ca8"),

@@ -77,7 +77,7 @@ doTxHelp(RPC::Context& context, TxArgs args)
 
     if (args.ledgerRange)
     {
-        constexpr uint16_t kMaxRange = 1000;
+        static constexpr uint16_t kMaxRange = 1000;
 
         if (args.ledgerRange->second < args.ledgerRange->first)
             return {result, RpcInvalidLgrRange};
@@ -205,7 +205,7 @@ populateJsonResponse(
         auto const& sttx = result.txn->getSTransaction();
         if (context.apiVersion > 1)
         {
-            constexpr auto kOptionsJson =
+            static constexpr auto kOptionsJson =
                 static_cast<JsonOptions::underlying_t>(JsonOptions::Values::IncludeDate) |
                 static_cast<JsonOptions::underlying_t>(JsonOptions::Values::DisableApiPriorV2);
             if (args.binary)

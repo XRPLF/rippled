@@ -384,7 +384,7 @@ XChainBridgeObjects::XChainBridgeObjects()
     , jvub(bridge(mcuDoor, xrpIssue(), Account::kMaster, xrpIssue()))
     , features(testableAmendments() | FeatureBitset{featureXChainBridge})
     , signers([] {
-        constexpr int kNumSigners = kUtXchainDefaultNumSigners;
+        static constexpr int kNumSigners = kUtXchainDefaultNumSigners;
         std::vector<Signer> result;
         result.reserve(kNumSigners);
         for (int i = 0; i < kNumSigners; ++i)
@@ -397,7 +397,7 @@ XChainBridgeObjects::XChainBridgeObjects()
         return result;
     }())
     , alt_signers([] {
-        constexpr int kNumSigners = kUtXchainDefaultNumSigners;
+        static constexpr int kNumSigners = kUtXchainDefaultNumSigners;
         std::vector<Signer> result;
         result.reserve(kNumSigners);
         for (int i = 0; i < kNumSigners; ++i)

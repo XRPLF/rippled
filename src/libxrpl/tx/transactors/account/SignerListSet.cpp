@@ -318,7 +318,7 @@ SignerListSet::replaceSignerList()
     // Compute new reserve.  Verify the account has funds to meet the reserve.
     std::uint32_t const oldOwnerCount{(*sle)[sfOwnerCount]};
 
-    constexpr int kAddedOwnerCount = 1;
+    static constexpr int kAddedOwnerCount = 1;
     std::uint32_t const flags{lsfOneOwnerCount};
 
     XRPAmount const newReserve{view().fees().accountReserve(oldOwnerCount + kAddedOwnerCount)};

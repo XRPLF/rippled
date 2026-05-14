@@ -136,7 +136,7 @@ forApiVersions(Fn const& fn, Args&&... args)
         fn(std::integral_constant<unsigned int, MaxVer>{}, std::forward<Args>(args)...);
     }
 {
-    constexpr auto kSize = MaxVer + 1 - MinVer;
+    static constexpr auto kSize = MaxVer + 1 - MinVer;
     [&]<std::size_t... Offset>(std::index_sequence<Offset...>) {
         // NOLINTBEGIN(bugprone-use-after-move)
         (((void)fn(

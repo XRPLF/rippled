@@ -3321,7 +3321,7 @@ class MPToken_test : public beast::unit_test::Suite
         Account const alice("alice");
         Account const bob("bob");
 
-        constexpr std::uint64_t kMaxAmt = 150;
+        static constexpr std::uint64_t kMaxAmt = 150;
         Env env{*this, features};
 
         MPTTester mptTester(env, issuer, {.holders = {alice, bob}});

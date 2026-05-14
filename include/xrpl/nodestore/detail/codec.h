@@ -256,7 +256,7 @@ nodeobjectCompress(void const* in, std::size_t inSize, BufferFactory&& bf)
 
     std::array<std::uint8_t, varint_traits<std::size_t>::kMax> vi{};
 
-    constexpr std::size_t kCodecType = 1;
+    static constexpr std::size_t kCodecType = 1;
     auto const vn = writeVarint(vi.data(), kCodecType);
     std::pair<void const*, std::size_t> result;
     switch (kCodecType)

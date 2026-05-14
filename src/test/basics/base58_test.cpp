@@ -166,7 +166,7 @@ class base58_test : public beast::unit_test::Suite
 
         using namespace boost::multiprecision;
 
-        constexpr std::size_t kIters = 100000;
+        static constexpr std::size_t kIters = 100000;
         auto eng = randEngine();
         std::uniform_int_distribution<std::uint64_t> dist;
         std::uniform_int_distribution<std::uint64_t> dist1(1);
@@ -415,7 +415,7 @@ class base58_test : public beast::unit_test::Suite
         }
 
         // test with random data
-        constexpr std::size_t kIters = 100000;
+        static constexpr std::size_t kIters = 100000;
         for (int i = 0; i < kIters; ++i)
         {
             std::array<std::uint8_t, 128> b256DataBuf{};

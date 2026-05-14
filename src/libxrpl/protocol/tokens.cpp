@@ -610,7 +610,7 @@ encodeBase58Token(
     std::span<std::uint8_t const> input,
     std::span<std::uint8_t> out)
 {
-    constexpr std::size_t kTmpBufSize = 128;
+    static constexpr std::size_t kTmpBufSize = 128;
     std::array<std::uint8_t, kTmpBufSize> buf{};
     if (input.size() > kTmpBufSize - 5)
     {

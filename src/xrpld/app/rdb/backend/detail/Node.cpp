@@ -696,8 +696,8 @@ transactionsSQL(
     bool count,
     beast::Journal j)
 {
-    constexpr std::uint32_t kNonbinaryPageLength = 200;
-    constexpr std::uint32_t kBinaryPageLength = 500;
+    static constexpr std::uint32_t kNonbinaryPageLength = 200;
+    static constexpr std::uint32_t kBinaryPageLength = 500;
 
     std::uint32_t numberOfResults = 0;
 

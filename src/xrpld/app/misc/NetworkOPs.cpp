@@ -2895,7 +2895,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
                 std::abs(closeOffset.count()) >= 60)
                 l[jss::close_time_offset] = static_cast<std::uint32_t>(closeOffset.count());
 
-            constexpr std::chrono::seconds kHighAgeThreshold{1000000};
+            static constexpr std::chrono::seconds kHighAgeThreshold{1000000};
             if (ledgerMaster_.haveValidated())
             {
                 auto const age = ledgerMaster_.getValidatedLedgerAge();

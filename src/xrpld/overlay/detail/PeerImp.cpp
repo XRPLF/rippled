@@ -1468,7 +1468,7 @@ PeerImp::handleTransaction(
         // LCOV_EXCL_STOP
 
         HashRouterFlags flags = HashRouterFlags::UNDEFINED;
-        constexpr std::chrono::seconds kTxInterval = 10s;
+        static constexpr std::chrono::seconds kTxInterval = 10s;
 
         if (!app_.getHashRouter().shouldProcess(txID, id_, flags, kTxInterval))
         {

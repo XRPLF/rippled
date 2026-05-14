@@ -539,8 +539,8 @@ public:
             }
             return result;
         };
-        constexpr int kLoopIters = 2 * 1024;
-        constexpr int kNumThreads = 16;
+        static constexpr int kLoopIters = 2 * 1024;
+        static constexpr int kNumThreads = 16;
         std::vector<SharedIntrusive<TIBase>> toClone;
         Barrier loopStartSyncPoint{kNumThreads};
         Barrier postCreateToCloneSyncPoint{kNumThreads};
@@ -664,9 +664,9 @@ public:
                 result.emplace_back(SharedIntrusive<TIBase>(toClone));
             return result;
         };
-        constexpr int kLoopIters = 2 * 1024;
-        constexpr int kFlipPointersLoopIters = 256;
-        constexpr int kNumThreads = 16;
+        static constexpr int kLoopIters = 2 * 1024;
+        static constexpr int kFlipPointersLoopIters = 256;
+        static constexpr int kNumThreads = 16;
         std::vector<SharedIntrusive<TIBase>> toClone;
         Barrier loopStartSyncPoint{kNumThreads};
         Barrier postCreateToCloneSyncPoint{kNumThreads};
@@ -795,9 +795,9 @@ public:
             }
         };
 
-        constexpr int kLoopIters = 2 * 1024;
-        constexpr int kLockWeakLoopIters = 256;
-        constexpr int kNumThreads = 16;
+        static constexpr int kLoopIters = 2 * 1024;
+        static constexpr int kLockWeakLoopIters = 256;
+        static constexpr int kNumThreads = 16;
         std::vector<SharedIntrusive<TIBase>> toLock;
         Barrier loopStartSyncPoint{kNumThreads};
         Barrier postCreateToLockSyncPoint{kNumThreads};

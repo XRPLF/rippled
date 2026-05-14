@@ -172,7 +172,7 @@ private:
         };
         std::vector<Publisher> servers;
 
-        constexpr auto kListSize = 20;
+        static constexpr auto kListSize = 20;
         std::vector<std::string> cfgPublishers;
 
         for (auto const& cfg : paths)

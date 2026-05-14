@@ -527,7 +527,7 @@ public:
         auto writableBackend = makeBackendRotating(env, scheduler, writableDb);
         auto archiveBackend = makeBackendRotating(env, scheduler, archiveDb);
 
-        constexpr int kReadThreads = 4;
+        static constexpr int kReadThreads = 4;
         auto nscfg = env.app().config().section(ConfigSection::nodeDatabase());
         auto dbr = std::make_unique<NodeStore::DatabaseRotatingImp>(
             scheduler,

@@ -112,7 +112,7 @@ TestSink::writeAlways(beast::Severity level, std::string const& text)
         }
     }();
 
-    constexpr auto kReset = "\033[0m";
+    static constexpr auto kReset = "\033[0m";
 
     if (supportsColor)
     {

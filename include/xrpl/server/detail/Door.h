@@ -403,9 +403,9 @@ Door<Handler>::queryFdStats() const
         return std::nullopt;
     s.limit = static_cast<std::uint64_t>(rl.rlim_cur);
 #if BOOST_OS_LINUX
-    constexpr char const* kFdDir = "/proc/self/fd";
+    static constexpr char const* kFdDir = "/proc/self/fd";
 #else
-    constexpr char const* kFdDir = "/dev/fd";
+    static constexpr char const* kFdDir = "/dev/fd";
 #endif
     if (DIR* d = ::opendir(kFdDir))
     {

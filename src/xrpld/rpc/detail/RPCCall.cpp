@@ -1863,7 +1863,7 @@ fromNetwork(
     constexpr auto kRpcReplyMaxBytes = megabytes(256);
 
     using namespace std::chrono_literals;
-    constexpr auto kRpcWebhookTimeout = 30s;
+    static constexpr auto kRpcWebhookTimeout = 30s;
 
     HTTPClient::request(
         bSSL,

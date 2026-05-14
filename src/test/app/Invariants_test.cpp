@@ -1332,7 +1332,7 @@ class Invariants_test : public beast::unit_test::Suite
 
         testcase << "PermissionedDomain 2";
 
-        constexpr auto kTooBig = kMaxPermissionedDomainCredentialsArraySize + 1;
+        static constexpr auto kTooBig = kMaxPermissionedDomainCredentialsArraySize + 1;
         doInvariantCheck(
             Env(*this, features),
             {{"permissioned domain bad credentials size " + std::to_string(kTooBig)}},
@@ -2526,7 +2526,7 @@ class Invariants_test : public beast::unit_test::Suite
             return true;
         };
 
-        constexpr auto kArgs = [](AccountID id, int adjustment, auto fn) -> Adjustments {
+        static constexpr auto kArgs = [](AccountID id, int adjustment, auto fn) -> Adjustments {
             Adjustments sample = {
                 .assetsTotal = adjustment,
                 .assetsAvailable = adjustment,

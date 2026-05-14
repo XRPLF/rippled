@@ -1201,7 +1201,7 @@ void
 InboundLedger::runData()
 {
     // Maximum number of peers to request data from
-    constexpr std::size_t kMaxUsefulPeers = 6;
+    static constexpr std::size_t kMaxUsefulPeers = 6;
 
     decltype(receivedData_) data;
 

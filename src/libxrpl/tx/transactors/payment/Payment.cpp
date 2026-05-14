@@ -102,7 +102,7 @@ Payment::getFlagsMask(PreflightContext const& ctx)
     bool const isDstMPT = dstAmount.holds<MPTIssue>();
     bool const mpTokensV2 = ctx.rules.enabled(featureMPTokensV2);
 
-    constexpr std::uint32_t kTfMptPaymentMaskV1 = ~(tfUniversal | tfPartialPayment);
+    static constexpr std::uint32_t kTfMptPaymentMaskV1 = ~(tfUniversal | tfPartialPayment);
     std::uint32_t const paymentMask =
         (isDstMPT && !mpTokensV2) ? kTfMptPaymentMaskV1 : tfPaymentMask;
 

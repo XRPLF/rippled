@@ -126,7 +126,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
 
         // Mint 100 sequential NFTs.  Tweak the taxon so zero is always stored.
         // That's what makes them sequential.
-        constexpr std::size_t kNftCount = 100;
+        static constexpr std::size_t kNftCount = 100;
         std::vector<uint256> nftIDs;
         nftIDs.reserve(kNftCount);
         for (int i = 0; i < kNftCount; ++i)

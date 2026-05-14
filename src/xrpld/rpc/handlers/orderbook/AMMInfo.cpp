@@ -85,7 +85,7 @@ doAMMInfo(RPC::JsonContext& context)
         std::optional<Asset> asset2;
         std::optional<uint256> ammID;
 
-        constexpr auto kInvalid = [](json::Value const& params) -> bool {
+        static constexpr auto kInvalid = [](json::Value const& params) -> bool {
             return (params.isMember(jss::asset) != params.isMember(jss::asset2)) ||
                 (params.isMember(jss::asset) == params.isMember(jss::amm_account));
         };

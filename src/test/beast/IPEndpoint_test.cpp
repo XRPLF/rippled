@@ -375,7 +375,7 @@ public:
 
         // test with hashed container
         std::unordered_set<Endpoint> eps;
-        constexpr auto kItems{100};
+        static constexpr auto kItems{100};
         float maxLf{0};
         for (auto i = 0; i < kItems; ++i)
         {

@@ -4280,17 +4280,17 @@ class Vault_test : public beast::unit_test::Suite
                                json::Value const& issuance = json::ValueType::Null) {
             BEAST_EXPECT(vault.isObject());
 
-            constexpr auto kCheckString =
+            static constexpr auto kCheckString =
                 [](auto& node, SField const& field, std::string v) -> bool {
                 return node.isMember(field.fieldName) && node[field.fieldName].isString() &&
                     node[field.fieldName] == v;
             };
-            constexpr auto kCheckObject =
+            static constexpr auto kCheckObject =
                 [](auto& node, SField const& field, json::Value v) -> bool {
                 return node.isMember(field.fieldName) && node[field.fieldName].isObject() &&
                     node[field.fieldName] == v;
             };
-            constexpr auto kCheckInt = [](auto& node, SField const& field, int v) -> bool {
+            static constexpr auto kCheckInt = [](auto& node, SField const& field, int v) -> bool {
                 return node.isMember(field.fieldName) &&
                     ((node[field.fieldName].isInt() && node[field.fieldName] == json::Int(v)) ||
                      (node[field.fieldName].isUInt() && node[field.fieldName] == json::UInt(v)));

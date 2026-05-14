@@ -584,7 +584,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
             accountRootIndex = jrr[jss::index].asString();
         }
         {
-            constexpr char kAliceAcctRootBinary[]{
+            static constexpr char kAliceAcctRootBinary[]{
                 "1100612200800000240000000425000000032D00000000559CE54C3B934E4"
                 "73A995B477E92EC229F99CED5B62BF4D2ACE4DC42719103AE2F6240000002"
                 "540BE4008114AE123A8556F3CF91154711376AFB0F894F832B3D"};
@@ -2868,7 +2868,7 @@ class LedgerEntry_XChain_test : public beast::unit_test::Suite,
 
         // send less than quorum of attestations (otherwise funds are
         // immediately transferred and no "claim" object is created)
-        constexpr size_t kNumAttest = 3;
+        static constexpr size_t kNumAttest = 3;
         auto attestations = createAccountAttestations(
             scAttester,
             jvb,

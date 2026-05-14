@@ -208,34 +208,34 @@ class Feature_test : public beast::unit_test::Suite
         BEAST_EXPECT(jrr[jss::error_message] == "Feature unknown or invalid.");
 
         // Test feature name size checks
-        constexpr auto kOK63Name = [] {
+        static constexpr auto kOK63Name = [] {
             return "123456789012345678901234567890123456789012345678901234567890123";
         };
         static_assert(validFeatureNameSize(kOK63Name));
 
-        constexpr auto kBaD64Name = [] {
+        static constexpr auto kBaD64Name = [] {
             return "1234567890123456789012345678901234567890123456789012345678901234";
         };
         static_assert(!validFeatureNameSize(kBaD64Name));
 
-        constexpr auto kOK31Name = [] { return "1234567890123456789012345678901"; };
+        static constexpr auto kOK31Name = [] { return "1234567890123456789012345678901"; };
         static_assert(validFeatureNameSize(kOK31Name));
 
-        constexpr auto kBaD32Name = [] { return "12345678901234567890123456789012"; };
+        static constexpr auto kBaD32Name = [] { return "12345678901234567890123456789012"; };
         static_assert(!validFeatureNameSize(kBaD32Name));
 
-        constexpr auto kOK33Name = [] { return "123456789012345678901234567890123"; };
+        static constexpr auto kOK33Name = [] { return "123456789012345678901234567890123"; };
         static_assert(validFeatureNameSize(kOK33Name));
 
         // Test feature character set checks
-        constexpr auto kOkName = [] { return "AMM_123"; };
+        static constexpr auto kOkName = [] { return "AMM_123"; };
         static_assert(validFeatureName(kOkName));
 
         // First character is Greek Capital Alpha, visually confusable with ASCII 'A'
-        constexpr auto kBadName = [] { return "ΑMM_123"; };
+        static constexpr auto kBadName = [] { return "ΑMM_123"; };
         static_assert(!validFeatureName(kBadName));
 
-        constexpr auto kBadEmoji = [] { return "🔥"; };
+        static constexpr auto kBadEmoji = [] { return "🔥"; };
         static_assert(!validFeatureName(kBadEmoji));
     }
 
@@ -474,7 +474,7 @@ class Feature_test : public beast::unit_test::Suite
 
         using namespace test::jtx;
         Env env{*this, FeatureBitset{featurePriceOracle}};
-        constexpr char const* kFeatureName = "fixAMMOverflowOffer";
+        static constexpr char const* kFeatureName = "fixAMMOverflowOffer";
 
         auto jrr = env.rpc("feature", kFeatureName)[jss::result];
         if (!BEAST_EXPECTS(jrr[jss::status] == jss::success, "status"))

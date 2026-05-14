@@ -290,7 +290,7 @@ class TheoreticalQuality_test : public beast::unit_test::Suite
         auto compareClose = [](Quality const& q1, Quality const& q2) {
             // relative diff is fabs(a-b)/min(a,b)
             // can't get access to internal value. Use the rate
-            constexpr double kTolerance = 0.0000001;
+            static constexpr double kTolerance = 0.0000001;
             return relativeDistance(q1, q2) <= kTolerance;
         };
 
@@ -339,7 +339,7 @@ public:
 
         auto const currency = toCurrency("USD");
 
-        constexpr std::size_t const kNumAccounts = 4;
+        static constexpr std::size_t const kNumAccounts = 4;
 
         // There are three relevant trust lines: `alice->bob`, `bob->carol`, and
         // `carol->dan`. There are four accounts. If we count the number of
@@ -355,7 +355,7 @@ public:
         // randomly sample the test space.
         int const numTestIterations = reqNumIterations.value_or(250);
 
-        constexpr std::uint32_t kPaymentAmount = 1;
+        static constexpr std::uint32_t kPaymentAmount = 1;
 
         // Class to randomly set account transfer rates, qualities, and other
         // params.
@@ -422,7 +422,7 @@ public:
 
         int const numTestIterations = reqNumIterations.value_or(100);
 
-        constexpr std::uint32_t kPaymentAmount = 1;
+        static constexpr std::uint32_t kPaymentAmount = 1;
 
         Currency const eurCurrency = toCurrency("EUR");
         Currency const usdCurrency = toCurrency("USD");
@@ -444,7 +444,7 @@ public:
             auto const oscar = Account("oscar" + iterAsStr);  // offer owner
             auto const usdb = bob["USD"];
             auto const eurc = carol["EUR"];
-            constexpr std::size_t const kNumAccounts = 5;
+            static constexpr std::size_t const kNumAccounts = 5;
             std::array<Account, kNumAccounts> const accounts{{alice, bob, carol, dan, oscar}};
 
             // sendmax should be in USDB and delivered amount should be in EURC

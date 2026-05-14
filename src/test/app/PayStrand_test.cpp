@@ -308,7 +308,7 @@ struct ExistingElementPool
         currencyNames.clear();
         currencyNames.reserve(numCur);
 
-        constexpr size_t kBufSize = 32;
+        static constexpr size_t kBufSize = 32;
         char buf[kBufSize];
 
         for (size_t id = 0; id < numAct; ++id)

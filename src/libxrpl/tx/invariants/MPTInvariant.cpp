@@ -365,8 +365,8 @@ ValidMPTPayment::finalize(
         for (auto const& [id, data] : data_)
         {
             (void)id;
-            constexpr auto kIBefore = static_cast<std::size_t>(Order::Before);
-            constexpr auto kIAfter = static_cast<std::size_t>(Order::After);
+            static constexpr auto kIBefore = static_cast<std::size_t>(Order::Before);
+            static constexpr auto kIAfter = static_cast<std::size_t>(Order::After);
             bool const addOverflows =
                 (data.mptAmount > 0 && data.outstanding[kIBefore] > (signedMax - data.mptAmount)) ||
                 (data.mptAmount < 0 && data.outstanding[kIBefore] < (-signedMax - data.mptAmount));
