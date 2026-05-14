@@ -387,7 +387,7 @@ pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey)
         RipeshaHasher rsh;
         auto const hash = sha512Half(i, view.header().parentHash, pseudoOwnerKey);
         rsh(hash.data(), hash.size());
-        AccountID const ret{static_cast<RipeshaHasher::result_type>(rsh)};
+        AccountID const ret = AccountID::fromRaw(static_cast<RipeshaHasher::result_type>(rsh));
         if (!view.read(keylet::account(ret)))
             return ret;
     }
@@ -418,7 +418,7 @@ getPseudoAccountFields()
         std::vector<SField const*> pseudoFields;
         for (auto const& field : soTemplate)
         {
-            if (field.sField().shouldMeta(SField::SMdPseudoAccount))
+            if (field.sField().shouldMeta(SField::kSMD_PSEUDO_ACCOUNT))
                 pseudoFields.emplace_back(&field.sField());
         }
         return pseudoFields;

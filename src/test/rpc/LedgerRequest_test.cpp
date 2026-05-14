@@ -342,7 +342,7 @@ public:
         // The current HTTP/S ServerHandler returns an HTTP 403 error code here
         // rather than a noPermission JSON error.  The JSONRPCClient just eats
         // that error and returns an null result.
-        BEAST_EXPECT(result.type() == json::NullValue);
+        BEAST_EXPECT(result.type() == json::ValueType::Null);
     }
 
     void

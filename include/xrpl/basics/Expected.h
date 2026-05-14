@@ -148,15 +148,21 @@ public:
     }
 
     [[nodiscard]] constexpr E const&
-    error() const
+    error() const&
     {
         return Base::error();
     }
 
-    constexpr E&
-    error()
+    [[nodiscard]] constexpr E&
+    error() &
     {
         return Base::error();
+    }
+
+    [[nodiscard]] constexpr E&&
+    error() &&
+    {
+        return std::move(Base::error());
     }
 
     constexpr explicit
@@ -215,15 +221,21 @@ public:
     }
 
     [[nodiscard]] constexpr E const&
-    error() const
+    error() const&
     {
         return Base::error();
     }
 
-    constexpr E&
-    error()
+    [[nodiscard]] constexpr E&
+    error() &
     {
         return Base::error();
+    }
+
+    [[nodiscard]] constexpr E&&
+    error() &&
+    {
+        return std::move(Base::error());
     }
 
     constexpr explicit

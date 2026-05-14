@@ -1179,7 +1179,14 @@ removeExpiredCredentials(ApplyView& view, std::vector<uint256> const& creds, bea
     for (auto const& index : creds)
     {
         if (auto const sle = view.peek(keylet::credential(index)))
-            credentials::deleteSLE(view, sle, viewJ);
+        {
+            if (auto const ter = credentials::deleteSLE(view, sle, viewJ); !isTesSuccess(ter))
+            {
+                JLOG(viewJ.error())
+                    << "removeExpiredCredentials: failed to delete expired credential. Err: "
+                    << transToken(ter);
+            }
+        }
     }
 }
 
@@ -1356,7 +1363,7 @@ Transactor::checkTransactionInvariants(TER result, XRPAmount fee)
         {
             JLOG(ctx_.journal.fatal()) <<                                             //
                 "Transaction has failed one or more transaction invariants, tx: " <<  //
-                to_string(ctx_.tx.getJson(JsonOptions::KNone));
+                to_string(ctx_.tx.getJson(JsonOptions::Values::None));
             return tecINVARIANT_FAILED;
         }
     }
@@ -1366,7 +1373,7 @@ Transactor::checkTransactionInvariants(TER result, XRPAmount fee)
             "Exception while checking transaction invariants: " <<  //
             ex.what() <<                                            //
             ", tx: " <<                                             //
-            to_string(ctx_.tx.getJson(JsonOptions::KNone));
+            to_string(ctx_.tx.getJson(JsonOptions::Values::None));
 
         return tecINVARIANT_FAILED;
     }
@@ -1419,8 +1426,8 @@ Transactor::operator()()
         {
             // LCOV_EXCL_START
             JLOG(j_.fatal()) << "Transaction serdes mismatch";
-            JLOG(j_.fatal()) << ctx_.tx.getJson(JsonOptions::KNone);
-            JLOG(j_.fatal()) << s2.getJson(JsonOptions::KNone);
+            JLOG(j_.fatal()) << ctx_.tx.getJson(JsonOptions::Values::None);
+            JLOG(j_.fatal()) << s2.getJson(JsonOptions::Values::None);
             UNREACHABLE("xrpl::Transactor::operator() : transaction serdes mismatch");
             // LCOV_EXCL_STOP
         }

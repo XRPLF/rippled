@@ -243,11 +243,11 @@ VaultClawback::assetsToClawback(
     auto const mptIssuanceID = *vault->at(sfShareMPTID);
     MPTIssue const share{mptIssuanceID};
 
-    // Pre-fixSecurity3_1_3: zero-amount clawback returned early without
+    // Pre-fixCleanup3_1_3: zero-amount clawback returned early without
     // clamping to assetsAvailable, allowing more assets to be recovered
     // than available when there was an outstanding loan. Retained for
     // ledger replay compatibility.
-    if (!ctx_.view().rules().enabled(fixSecurity3_1_3) && clawbackAmount == beast::kZERO)
+    if (!ctx_.view().rules().enabled(fixCleanup3_1_3) && clawbackAmount == beast::kZERO)
     {
         auto const sharesDestroyed = accountHolds(
             view(), holder, share, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth, j_);
@@ -461,6 +461,7 @@ VaultClawback::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -471,6 +472,7 @@ VaultClawback::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

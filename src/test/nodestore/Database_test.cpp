@@ -80,7 +80,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(integrityWarning, &found),
-                    beast::severities::KWarning);
+                    beast::Severity::Warning);
             }();
 
             BEAST_EXPECT(!found);
@@ -109,7 +109,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(integrityWarning, &found),
-                    beast::severities::KWarning);
+                    beast::Severity::Warning);
             }();
 
             BEAST_EXPECT(found);
@@ -139,7 +139,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(integrityWarning, &found),
-                    beast::severities::KWarning);
+                    beast::Severity::Warning);
             }();
 
             // No warning, even though higher risk settings were used because
@@ -172,7 +172,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(integrityWarning, &found),
-                    beast::severities::KWarning);
+                    beast::Severity::Warning);
             }();
 
             // No warning, even though higher risk settings were used because
@@ -210,7 +210,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::severities::KWarning);
+                    beast::Severity::Warning);
                 fail();
             }
             catch (...)
@@ -239,7 +239,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::severities::KWarning);
+                    beast::Severity::Warning);
                 fail();
             }
             catch (...)
@@ -268,7 +268,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::severities::KWarning);
+                    beast::Severity::Warning);
                 fail();
             }
             catch (...)
@@ -297,7 +297,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::severities::KWarning);
+                    beast::Severity::Warning);
                 fail();
             }
             catch (...)
@@ -325,7 +325,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::severities::KWarning);
+                    beast::Severity::Warning);
                 fail();
             }
             catch (...)
@@ -353,7 +353,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::severities::KWarning);
+                    beast::Severity::Warning);
                 fail();
             }
             catch (...)
@@ -381,7 +381,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::severities::KWarning);
+                    beast::Severity::Warning);
                 fail();
             }
             catch (...)
@@ -409,7 +409,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::severities::KWarning);
+                    beast::Severity::Warning);
                 fail();
             }
             catch (...)
@@ -464,7 +464,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::severities::KWarning);
+                    beast::Severity::Warning);
                 fail();
             }
             catch (...)
@@ -487,7 +487,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::severities::KWarning);
+                    beast::Severity::Warning);
                 fail();
             }
             catch (...)
@@ -510,7 +510,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::severities::KWarning);
+                    beast::Severity::Warning);
                 fail();
             }
             catch (...)
