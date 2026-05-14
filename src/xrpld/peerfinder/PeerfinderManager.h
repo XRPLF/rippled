@@ -60,7 +60,7 @@ struct Config
     int ipLimit{0};
 
     /** `true` if we want to verify endpoints in TMEndpoints messages */
-    bool verifyEndpoints = false;
+    bool verifyEndpoints = true;
 
     //--------------------------------------------------------------------------
 
