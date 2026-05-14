@@ -123,7 +123,7 @@ curl -s "$TEMPO/api/v2/search/tag/resource.service.name/values" | jq '.tagValues
 
 # Check RPC spans
 curl -s "$TEMPO/api/search" \
-  --data-urlencode 'q={resource.service.name="xrpld" && name="rpc.request"}' \
+  --data-urlencode 'q={resource.service.name="xrpld" && name="rpc.http_request"}' \
   --data-urlencode 'limit=5' | jq '.traces | length'
 
 curl -s "$TEMPO/api/search" \
@@ -159,7 +159,7 @@ rm -rf data/
 
 | Span Name                   | Expected | Notes                         |
 | --------------------------- | -------- | ----------------------------- |
-| `rpc.request`               | Yes      | Every HTTP RPC call           |
+| `rpc.http_request`          | Yes      | Every HTTP RPC call           |
 | `rpc.process`               | Yes      | Every RPC processing          |
 | `rpc.command.server_info`   | Yes      | server_info RPC               |
 | `rpc.command.server_state`  | Yes      | server_state RPC              |
@@ -285,7 +285,6 @@ online_delete=256
 [telemetry]
 enabled=1
 endpoint=http://localhost:4318/v1/traces
-exporter=otlp_http
 sampling_ratio=1.0
 batch_size=512
 batch_delay_ms=2000
@@ -376,25 +375,26 @@ See the "Verification Queries" section below.
 
 All 16 production span names instrumented across Phases 2-5:
 
-| Span Name                   | Source File           | Phase | Key Attributes                                                                           | How to Trigger            |
-| --------------------------- | --------------------- | ----- | ---------------------------------------------------------------------------------------- | ------------------------- |
-| `rpc.request`               | ServerHandler.cpp:271 | 2     | --                                                                                       | Any HTTP RPC call         |
-| `rpc.process`               | ServerHandler.cpp:573 | 2     | --                                                                                       | Any HTTP RPC call         |
-| `rpc.ws_message`            | ServerHandler.cpp:384 | 2     | --                                                                                       | WebSocket RPC message     |
-| `rpc.command.<name>`        | RPCHandler.cpp:161    | 2     | `xrpl.rpc.command`, `xrpl.rpc.version`, `xrpl.rpc.role`                                  | Any RPC command           |
-| `tx.process`                | NetworkOPs.cpp:1227   | 3     | `xrpl.tx.hash`, `xrpl.tx.local`, `xrpl.tx.path`                                          | Submit transaction        |
-| `tx.receive`                | PeerImp.cpp:1273      | 3     | `xrpl.peer.id`                                                                           | Peer relays transaction   |
-| `consensus.proposal.send`   | RCLConsensus.cpp:177  | 4     | `xrpl.consensus.round`                                                                   | Consensus proposing phase |
-| `consensus.ledger_close`    | RCLConsensus.cpp:282  | 4     | `xrpl.consensus.ledger.seq`, `xrpl.consensus.mode`                                       | Ledger close event        |
-| `consensus.accept`          | RCLConsensus.cpp:395  | 4     | `xrpl.consensus.proposers`, `xrpl.consensus.round_time_ms`                               | Ledger accepted           |
-| `consensus.validation.send` | RCLConsensus.cpp:753  | 4     | `xrpl.consensus.ledger.seq`, `xrpl.consensus.proposing`                                  | Validation sent           |
-| `consensus.accept.apply`    | RCLConsensus.cpp:453  | 4     | `xrpl.consensus.close_time`, `close_time_correct`, `close_resolution_ms`, `state`        | Ledger apply + close time |
-| `tx.apply`                  | BuildLedger.cpp:88    | 5     | `xrpl.ledger.tx_count`, `xrpl.ledger.tx_failed`                                          | Ledger close (tx set)     |
-| `ledger.build`              | BuildLedger.cpp:31    | 5     | `xrpl.ledger.seq`, `xrpl.ledger.close_time`, `close_time_correct`, `close_resolution_ms` | Ledger build              |
-| `ledger.validate`           | LedgerMaster.cpp:915  | 5     | `xrpl.ledger.seq`, `xrpl.ledger.validations`                                             | Ledger validated          |
-| `ledger.store`              | LedgerMaster.cpp:409  | 5     | `xrpl.ledger.seq`                                                                        | Ledger stored             |
-| `peer.proposal.receive`     | PeerImp.cpp:1667      | 5     | `xrpl.peer.id`, `xrpl.peer.proposal.trusted`                                             | Peer sends proposal       |
-| `peer.validation.receive`   | PeerImp.cpp:2264      | 5     | `xrpl.peer.id`, `xrpl.peer.validation.trusted`                                           | Peer sends validation     |
+| Span Name                   | Source File       | Phase | Key Attributes                                                                           | How to Trigger            |
+| --------------------------- | ----------------- | ----- | ---------------------------------------------------------------------------------------- | ------------------------- |
+| `rpc.http_request`          | ServerHandler.cpp | 2     | --                                                                                       | Any HTTP RPC call         |
+| `rpc.ws_upgrade`            | ServerHandler.cpp | 2     | --                                                                                       | WebSocket upgrade         |
+| `rpc.ws_message`            | ServerHandler.cpp | 2     | --                                                                                       | WebSocket RPC message     |
+| `rpc.process`               | ServerHandler.cpp | 2     | --                                                                                       | RPC processing            |
+| `rpc.command.<name>`        | RPCHandler.cpp    | 2     | `xrpl.rpc.command`, `xrpl.rpc.version`, `xrpl.rpc.role`                                  | Any RPC command           |
+| `tx.process`                | NetworkOPs.cpp    | 3     | `xrpl.tx.hash`, `xrpl.tx.local`, `xrpl.tx.path`                                          | Submit transaction        |
+| `tx.receive`                | PeerImp.cpp       | 3     | `xrpl.peer.id`                                                                           | Peer relays transaction   |
+| `consensus.proposal.send`   | RCLConsensus.cpp  | 4     | `xrpl.consensus.round`                                                                   | Consensus proposing phase |
+| `consensus.ledger_close`    | RCLConsensus.cpp  | 4     | `xrpl.consensus.ledger.seq`, `xrpl.consensus.mode`                                       | Ledger close event        |
+| `consensus.accept`          | RCLConsensus.cpp  | 4     | `xrpl.consensus.proposers`, `xrpl.consensus.round_time_ms`                               | Ledger accepted           |
+| `consensus.validation.send` | RCLConsensus.cpp  | 4     | `xrpl.consensus.ledger.seq`, `xrpl.consensus.proposing`                                  | Validation sent           |
+| `consensus.accept.apply`    | RCLConsensus.cpp  | 4     | `xrpl.consensus.close_time`, `close_time_correct`, `close_resolution_ms`, `state`        | Ledger apply + close time |
+| `tx.apply`                  | BuildLedger.cpp   | 5     | `xrpl.ledger.tx_count`, `xrpl.ledger.tx_failed`                                          | Ledger close (tx set)     |
+| `ledger.build`              | BuildLedger.cpp   | 5     | `xrpl.ledger.seq`, `xrpl.ledger.close_time`, `close_time_correct`, `close_resolution_ms` | Ledger build              |
+| `ledger.validate`           | LedgerMaster.cpp  | 5     | `xrpl.ledger.seq`, `xrpl.ledger.validations`                                             | Ledger validated          |
+| `ledger.store`              | LedgerMaster.cpp  | 5     | `xrpl.ledger.seq`                                                                        | Ledger stored             |
+| `peer.proposal.receive`     | PeerImp.cpp       | 5     | `xrpl.peer.id`, `xrpl.peer.proposal.trusted`                                             | Peer sends proposal       |
+| `peer.validation.receive`   | PeerImp.cpp       | 5     | `xrpl.peer.id`, `xrpl.peer.validation.trusted`                                           | Peer sends validation     |
 
 ---
 
@@ -411,7 +411,7 @@ TEMPO="http://localhost:3200"
 curl -s "$TEMPO/api/v2/search/tag/resource.service.name/values" | jq '.tagValues[].value'
 
 # Query traces by operation
-for op in "rpc.request" "rpc.process" \
+for op in "rpc.http_request" "rpc.ws_upgrade" "rpc.ws_message" "rpc.process" \
           "rpc.command.server_info" "rpc.command.server_state" "rpc.command.ledger" \
           "tx.process" "tx.receive" "tx.apply" \
           "consensus.proposal.send" "consensus.ledger_close" \

@@ -11,7 +11,7 @@
   "panels": [
     {
       "title": "Validated Ledger Age",
-      "description": "Age of the most recently validated ledger in seconds. Sourced from the LedgerMaster.Validated_Ledger_Age gauge (LedgerMaster.h:373) which is updated every collection interval via the insight hook. Values above 20s indicate the node is falling behind the network.",
+      "description": "Age of the most recently validated ledger in seconds. Sourced from the LedgerMaster.Validated_Ledger_Age gauge (LedgerMaster.h) which is updated every collection interval via the insight hook. Values above 20s indicate the node is falling behind the network.",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -59,7 +59,7 @@
     },
     {
       "title": "Published Ledger Age",
-      "description": "Age of the most recently published ledger in seconds. Sourced from the LedgerMaster.Published_Ledger_Age gauge (LedgerMaster.h:374). Published ledger age should track close to validated ledger age. A growing gap indicates publish pipeline backlog.",
+      "description": "Age of the most recently published ledger in seconds. Sourced from the LedgerMaster.Published_Ledger_Age gauge (LedgerMaster.h). Published ledger age should track close to validated ledger age. A growing gap indicates publish pipeline backlog.",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -107,7 +107,7 @@
     },
     {
       "title": "Operating Mode Duration",
-      "description": "Cumulative time spent in each operating mode (Disconnected, Connected, Syncing, Tracking, Full). Sourced from State_Accounting.*_duration gauges (NetworkOPs.cpp:774-778) which report microseconds. A healthy node should spend the vast majority of time in Full mode.",
+      "description": "Cumulative time spent in each operating mode (Disconnected, Connected, Syncing, Tracking, Full). Sourced from State_Accounting.*_duration gauges (NetworkOPs.cpp) which report microseconds. A healthy node should spend the vast majority of time in Full mode.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -174,7 +174,7 @@
     },
     {
       "title": "Operating Mode Transitions",
-      "description": "Count of transitions into each operating mode. Sourced from State_Accounting.*_transitions gauges (NetworkOPs.cpp:780-786). Frequent transitions out of Full mode indicate instability. Transitions to Disconnected or Syncing warrant investigation.",
+      "description": "Count of transitions into each operating mode. Sourced from State_Accounting.*_transitions gauges (NetworkOPs.cpp). Frequent transitions out of Full mode indicate instability. Transitions to Disconnected or Syncing warrant investigation.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -241,7 +241,7 @@
     },
     {
       "title": "I/O Latency",
-      "description": "P95 and P50 of the I/O service loop latency in milliseconds. Sourced from the ios_latency event (Application.cpp:438) which measures how long it takes for the io_context to process a timer callback. Values above 10ms are logged; above 500ms trigger warnings. High values indicate thread pool saturation or blocking operations.",
+      "description": "P95 and P50 of the I/O service loop latency in milliseconds. Sourced from the ios_latency event (Application.cpp) which measures how long it takes for the io_context to process a timer callback. Values above 10ms are logged; above 500ms trigger warnings. High values indicate thread pool saturation or blocking operations.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -287,7 +287,7 @@
     },
     {
       "title": "Job Queue Depth",
-      "description": "Current number of jobs waiting in the job queue. Sourced from the job_count gauge (JobQueue.cpp:26). A sustained high value indicates the node cannot process work fast enough \u2014 common during ledger replay or heavy RPC load.",
+      "description": "Current number of jobs waiting in the job queue. Sourced from the job_count gauge (JobQueue.cpp). A sustained high value indicates the node cannot process work fast enough \u2014 common during ledger replay or heavy RPC load.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -326,7 +326,7 @@
     },
     {
       "title": "Ledger Fetch Rate",
-      "description": "Rate of ledger fetch requests initiated by the node. Sourced from the ledger_fetches counter (InboundLedgers.cpp:44) which increments each time the node requests a ledger from a peer. High rates indicate the node is catching up or missing ledgers.",
+      "description": "Rate of ledger fetch requests initiated by the node. Sourced from the ledger_fetches counter (InboundLedgers.cpp) which increments each time the node requests a ledger from a peer. High rates indicate the node is catching up or missing ledgers.",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -358,7 +358,7 @@
     },
     {
       "title": "Ledger History Mismatches",
-      "description": "Rate of ledger history hash mismatches. Sourced from the ledger.history.mismatch counter (LedgerHistory.cpp:16) which increments when a built ledger hash does not match the expected validated hash. Non-zero values indicate consensus divergence or database corruption.",
+      "description": "Rate of ledger history hash mismatches. Sourced from the ledger.history.mismatch counter (LedgerHistory.cpp) which increments when a built ledger hash does not match the expected validated hash. Non-zero values indicate consensus divergence or database corruption.",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -414,7 +414,7 @@
     },
     {
       "title": "Key Jobs Execution Time",
-      "description": "Execution time for critical job types at the selected quantile. Sourced from per-job-type events in JobTypeData (JobTypeData.h:48). Shows how long key consensus, transaction, and maintenance jobs take to execute. Spikes indicate processing bottlenecks.",
+      "description": "Execution time for critical job types at the selected quantile. Sourced from per-job-type events in JobTypeData (JobTypeData.h). Shows how long key consensus, transaction, and maintenance jobs take to execute. Spikes indicate processing bottlenecks.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -523,7 +523,7 @@
     },
     {
       "title": "Key Jobs Dequeue Wait Time",
-      "description": "Time spent waiting in the job queue before execution for critical job types. Sourced from per-job-type dequeue events (JobTypeData.h:47). High dequeue times indicate the job queue is backlogged and jobs are waiting too long to be scheduled.",
+      "description": "Time spent waiting in the job queue before execution for critical job types. Sourced from per-job-type dequeue events (JobTypeData.h). High dequeue times indicate the job queue is backlogged and jobs are waiting too long to be scheduled.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -632,7 +632,7 @@
     },
     {
       "title": "FullBelowCache Size",
-      "description": "Number of entries in the FullBelowCache. Sourced from the TaggedCache size gauge (TaggedCache.h:183) for the Node family full below cache (NodeFamily.cpp:29). This cache tracks which SHAMap nodes have all children present locally, avoiding redundant fetches during ledger acquisition.",
+      "description": "Number of entries in the FullBelowCache. Sourced from the TaggedCache size gauge (TaggedCache.h) for the Node family full below cache (NodeFamily.cpp). This cache tracks which SHAMap nodes have all children present locally, avoiding redundant fetches during ledger acquisition.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -671,7 +671,7 @@
     },
     {
       "title": "FullBelowCache Hit Rate",
-      "description": "Hit rate percentage for the FullBelowCache. Sourced from the TaggedCache hit_rate gauge (TaggedCache.h:184). A high hit rate means the node is efficiently reusing cached knowledge about complete SHAMap subtrees. Low hit rates during steady state warrant investigation.",
+      "description": "Hit rate percentage for the FullBelowCache. Sourced from the TaggedCache hit_rate gauge (TaggedCache.h). A high hit rate means the node is efficiently reusing cached knowledge about complete SHAMap subtrees. Low hit rates during steady state warrant investigation.",
       "type": "gauge",
       "gridPos": {
         "h": 8,
@@ -769,7 +769,7 @@
     },
     {
       "title": "State Duration Rate (Full vs Tracking)",
-      "description": "Rate of change of time spent in Full and Tracking operating modes, normalized to seconds. Sourced from State_Accounting duration gauges (NetworkOPs.cpp:774-778). In steady state the Full duration rate should be close to 1.0 (gaining one second of Full-mode time per wall-clock second). A drop below 1.0 means the node is spending time in other modes.",
+      "description": "Rate of change of time spent in Full and Tracking operating modes, normalized to seconds. Sourced from State_Accounting duration gauges (NetworkOPs.cpp). In steady state the Full duration rate should be close to 1.0 (gaining one second of Full-mode time per wall-clock second). A drop below 1.0 means the node is spending time in other modes.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -923,5 +923,5 @@
     "to": "now"
   },
   "title": "Node Health (System Metrics)",
-  "uid": "rippled-system-node-health"
+  "uid": "xrpld-system-node-health"
 }
