@@ -288,7 +288,7 @@ quality(Keylet const& k, std::uint64_t q) noexcept
 Keylet
 NextT::operator()(Keylet const& k) const
 {
-    XRPL_ASSERT(k.type == ltDIR_NODE, "xrpl::keylet::next_t::operator() : valid input type");
+    XRPL_ASSERT(k.type == ltDIR_NODE, "xrpl::keylet::NextT::operator() : valid input type");
     return {ltDIR_NODE, getQualityNext(k.key)};
 }
 
@@ -392,7 +392,7 @@ nftpageMin(AccountID const& owner)
 {
     std::array<std::uint8_t, 32> buf{};
     std::memcpy(buf.data(), owner.data(), owner.size());
-    return {ltNFTOKEN_PAGE, uint256{buf}};
+    return {ltNFTOKEN_PAGE, uint256::fromRaw(buf)};
 }
 
 Keylet

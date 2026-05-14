@@ -70,7 +70,7 @@ struct SEnv
         std::unique_ptr<Config> config,
         FeatureBitset features,
         std::unique_ptr<Logs> logs = nullptr,
-        beast::severities::Severity thresh = beast::severities::KError)
+        beast::Severity thresh = beast::Severity::Error)
         : env(s, std::move(config), features, std::move(logs), thresh)
     {
     }
@@ -2334,7 +2334,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
             .minAccountCreate = XRP(20),  // minAccountCreate
             .quorum = 4,                  // quorum
             .signers = signers,
-            .jvb = json::NullValue};
+            .jvb = json::ValueType::Null};
 
         xrpB.initBridge(mcEnv, scEnv);
 
@@ -4515,7 +4515,7 @@ public:
             .minAccountCreate = XRP(20),
             .quorum = quorum,
             .signers = signers,
-            .jvb = json::NullValue};
+            .jvb = json::ValueType::Null};
 
         initBridge(xrpB);
 
@@ -4530,7 +4530,7 @@ public:
             .minAccountCreate = XRP(20),
             .quorum = quorum,
             .signers = signers,
-            .jvb = json::NullValue};
+            .jvb = json::ValueType::Null};
 
         initBridge(usdB);
 

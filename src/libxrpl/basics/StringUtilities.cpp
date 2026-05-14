@@ -101,7 +101,7 @@ trimWhitespace(std::string str)
 }
 
 std::optional<std::uint64_t>
-toUint64(std::string const& s)
+toUInt64(std::string const& s)
 {
     std::uint64_t result = 0;
     if (beast::lexicalCastChecked(result, s))

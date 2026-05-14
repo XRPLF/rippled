@@ -15,9 +15,7 @@ class Object;
 namespace xrpl::RPC {
 
 // Under what condition can we call this RPC?
-// Bitwise flags
-// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-enum Condition {
+enum class Condition {
     NoCondition = 0,
     NeedsNetworkConnection = 1,
     NeedsCurrentLedger = 1 << 1,
@@ -41,12 +39,12 @@ struct Handler
 Handler const*
 getHandler(unsigned int version, bool betaEnabled, std::string const&);
 
-/** Return a json::objectValue with a single entry. */
+/** Return a json::ValueType::Object with a single entry. */
 template <class Value>
 json::Value
 makeObjectValue(Value const& value, json::StaticString const& field = jss::message)
 {
-    json::Value result(json::ObjectValue);
+    json::Value result(json::ValueType::Object);
     result[field] = value;
     return result;
 }
@@ -59,17 +57,17 @@ template <class T>
 ErrorCodeI
 conditionMet(Condition conditionRequired, T& context)
 {
-    if (context.app.getOPs().isAmendmentBlocked() && (conditionRequired != NoCondition))
+    if (context.app.getOPs().isAmendmentBlocked() && (conditionRequired != Condition::NoCondition))
     {
         return RpcAmendmentBlocked;
     }
 
-    if (context.app.getOPs().isUNLBlocked() && (conditionRequired != NoCondition))
+    if (context.app.getOPs().isUNLBlocked() && (conditionRequired != Condition::NoCondition))
     {
         return RpcExpiredValidatorList;
     }
 
-    if ((conditionRequired != NoCondition) &&
+    if ((conditionRequired != Condition::NoCondition) &&
         (context.netOps.getOperatingMode() < OperatingMode::SYNCING))
     {
         JLOG(context.j.info()) << "Insufficient network mode for RPC: "
@@ -80,7 +78,7 @@ conditionMet(Condition conditionRequired, T& context)
         return RpcNotSynced;
     }
 
-    if (!context.app.config().standalone() && conditionRequired != NoCondition)
+    if (!context.app.config().standalone() && conditionRequired != Condition::NoCondition)
     {
         if (context.ledgerMaster.getValidatedLedgerAge() > Tuning::kMAX_VALIDATED_LEDGER_AGE)
         {
@@ -102,7 +100,7 @@ conditionMet(Condition conditionRequired, T& context)
         }
     }
 
-    if ((conditionRequired != NoCondition) && !context.ledgerMaster.getClosedLedger())
+    if ((conditionRequired != Condition::NoCondition) && !context.ledgerMaster.getClosedLedger())
     {
         if (context.apiVersion == 1)
             return RpcNoClosed;
