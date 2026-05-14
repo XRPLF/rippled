@@ -174,21 +174,25 @@ Flow:
 
 | File | Purpose |
 |------|---------|
-| [.github/scripts/doc-review.py](.github/scripts/doc-review.py) | Diff-aware LLM analysis script (Python, uses `anthropic` SDK) |
 | [.github/workflows/doc-review.yml](.github/workflows/doc-review.yml) | CI workflow: runs on PR, posts review |
 
-Flow:
-1. On every PR, determine which C++ files changed.
-2. For each changed file, extract git diff hunks and existing doc comments.
-3. Send both to the Anthropic API with a prompt tuned for xrpld:
-   "Given this diff, are existing docs still accurate?"
-4. Post results as **inline review comments** on specific lines (via
-   `actions/github-script`) AND a **sticky summary comment** on the PR.
-5. Runs in **warning-only mode** — does not block merge.
+The workflow invokes the doc-agent `review` mode (Section 3.4) directly —
+there is no separate CI script. The same code path serves CI and local use,
+so prompt and logic changes are tested in one place.
 
-The doc-agent `review` mode is the same logic exposed as a local CLI
-(`npm run review develop..HEAD` or `npm run review -- --pr 1234`), useful
-for testing prompt changes before they ship to CI.
+Flow:
+1. On every PR, the workflow runs `npm run review -- "$BASE..$HEAD"` in the
+   doc-agent directory.
+2. doc-agent enumerates C++ files changed in the range, extracts diff
+   hunks plus existing doc comments, and asks Claude per file whether the
+   docs are still accurate.
+3. Outputs `doc-review-report.md` (sticky PR comment) and
+   `doc-review-comments.json` (inline review comments via
+   `actions/github-script`).
+4. Runs in **warning-only mode** — does not block merge.
+
+Local invocation uses the same command:
+`npm run review develop..HEAD` or `npm run review -- --pr 1234`.
 
 Cost: only changed files and changed hunks within those files are
 processed. Estimated ~$0.05–0.15 per PR.
@@ -261,8 +265,7 @@ Tooling shipped as the foundation PR:
 - [x] [.github/scripts/doc-coverage-check.py](.github/scripts/doc-coverage-check.py)
 - [x] [.github/workflows/doc-coverage.yml](.github/workflows/doc-coverage.yml)
 - [x] [cmake/XrplDocs.cmake](cmake/XrplDocs.cmake)
-- [x] [.github/workflows/doc-review.yml](.github/workflows/doc-review.yml)
-- [x] [.github/scripts/doc-review.py](.github/scripts/doc-review.py)
+- [x] [.github/workflows/doc-review.yml](.github/workflows/doc-review.yml) — invokes doc-agent `review` mode directly
 - [x] [.claude/commands/](.claude/commands/) — 4 developer slash commands
 
 **Exit criteria met:** All workflows pass on a test PR. Coverage report
