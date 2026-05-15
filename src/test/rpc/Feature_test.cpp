@@ -258,9 +258,9 @@ class Feature_test : public beast::unit_test::Suite
         testInvalidParam(1);
         testInvalidParam(1.1);
         testInvalidParam(true);
-        testInvalidParam(json::Value(json::NullValue));
-        testInvalidParam(json::Value(json::ObjectValue));
-        testInvalidParam(json::Value(json::ArrayValue));
+        testInvalidParam(json::Value(json::ValueType::Null));
+        testInvalidParam(json::Value(json::ValueType::Object));
+        testInvalidParam(json::Value(json::ValueType::Array));
 
         {
             auto jrr = env.rpc("feature", "AllTheThings")[jss::result];

@@ -958,7 +958,7 @@ class View_test : public beast::unit_test::Suite
         auto const bob = Account("bob");
 
         // The first Env.
-        Env eA(*this, envconfig(), nullptr, beast::severities::KDisabled);
+        Env eA(*this, envconfig(), nullptr, beast::Severity::Disabled);
 
         eA.fund(XRP(10000), alice);
         eA.close();
@@ -970,7 +970,7 @@ class View_test : public beast::unit_test::Suite
 
         // The two Env's can't share the same ports, so modify the config
         // of the second Env to use higher port numbers
-        Env eB{*this, envconfig(), nullptr, beast::severities::KDisabled};
+        Env eB{*this, envconfig(), nullptr, beast::Severity::Disabled};
 
         // Make ledgers that are incompatible with the first ledgers.  Note
         // that bob is funded before alice.

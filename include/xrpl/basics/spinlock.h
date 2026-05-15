@@ -103,7 +103,7 @@ public:
     {
         XRPL_ASSERT(
             index >= 0 && (mask_ != 0),
-            "xrpl::packed_spinlock::packed_spinlock : valid index and mask");
+            "xrpl::PackedSpinlock::PackedSpinlock : valid index and mask");
     }
 
     [[nodiscard]] bool

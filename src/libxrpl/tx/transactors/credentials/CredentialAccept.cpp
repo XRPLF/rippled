@@ -73,7 +73,7 @@ CredentialAccept::preclaim(PreclaimContext const& ctx)
         return tecNO_ENTRY;
     }
 
-    if ((sleCred->getFieldU32(sfFlags) & lsfAccepted) != 0u)
+    if (sleCred->isFlag(lsfAccepted))
     {
         JLOG(ctx.j.warn()) << "Credential already accepted: " << to_string(subject) << ", "
                            << to_string(issuer) << ", " << credType;
@@ -105,8 +105,10 @@ CredentialAccept::doApply()
     auto const credType(ctx_.tx[sfCredentialType]);
     Keylet const credentialKey = keylet::credential(account_, issuer, credType);
     auto const sleCred = view().peek(credentialKey);  // Checked in preclaim()
+    if (!sleCred)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    if (checkExpired(sleCred, view().header().parentCloseTime))
+    if (checkExpired(*sleCred, view().header().parentCloseTime))
     {
         JLOG(j_.trace()) << "Credential is expired: " << sleCred->getText();
         // delete expired credentials even if the transaction failed

@@ -70,7 +70,7 @@ VaultCreate::preflight(PreflightContext const& ctx)
         {
             return temMALFORMED;
         }
-        if ((ctx.tx.getFlags() & tfVaultPrivate) == 0)
+        if (!ctx.tx.isFlag(tfVaultPrivate))
         {
             return temMALFORMED;  // DomainID only allowed on private vaults
         }
@@ -175,7 +175,6 @@ VaultCreate::doApply()
         ? 0
         : ctx_.tx[~sfScale].value_or(kVAULT_DEFAULT_IOU_SCALE);
 
-    auto const txFlags = tx.getFlags();
     std::uint32_t mptFlags = 0;
     if (!tx.isFlag(tfVaultShareNonTransferable))
         mptFlags |= (lsfMPTCanEscrow | lsfMPTCanTrade | lsfMPTCanTransfer);
@@ -217,7 +216,7 @@ VaultCreate::doApply()
     auto const& mptIssuanceID = *maybeShare;
 
     vault->setFieldIssue(sfAsset, STIssue{sfAsset, asset});
-    vault->at(sfFlags) = txFlags & tfVaultPrivate;
+    vault->at(sfFlags) = tx.getFlags() & tfVaultPrivate;
     vault->at(sfSequence) = sequence;
     vault->at(sfOwner) = account_;
     vault->at(sfAccount) = pseudoId;
@@ -250,7 +249,7 @@ VaultCreate::doApply()
         return err;
 
     // If the vault is private, set the authorized flag for the vault owner
-    if ((txFlags & tfVaultPrivate) != 0u)
+    if (tx.isFlag(tfVaultPrivate))
     {
         if (auto const err = authorizeMPToken(
                 view(), preFeeBalance_, mptIssuanceID, pseudoId, ctx_.journal, {}, account_);

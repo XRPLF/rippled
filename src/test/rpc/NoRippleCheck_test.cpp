@@ -76,9 +76,9 @@ class NoRippleCheck_test : public beast::unit_test::Suite
             testInvalidAccountParam(1);
             testInvalidAccountParam(1.1);
             testInvalidAccountParam(true);
-            testInvalidAccountParam(json::Value(json::NullValue));
-            testInvalidAccountParam(json::Value(json::ObjectValue));
-            testInvalidAccountParam(json::Value(json::ArrayValue));
+            testInvalidAccountParam(json::Value(json::ValueType::Null));
+            testInvalidAccountParam(json::Value(json::ValueType::Object));
+            testInvalidAccountParam(json::Value(json::ValueType::Array));
         }
 
         {  // invalid role field
@@ -153,7 +153,7 @@ class NoRippleCheck_test : public beast::unit_test::Suite
             json::Value params;
             params[jss::account] = Account{"nobody"}.human();
             params[jss::role] = "user";
-            params[jss::ledger] = json::ObjectValue;
+            params[jss::ledger] = json::ValueType::Object;
             auto const result = env.rpc("json", "noripple_check", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "invalidParams");
             BEAST_EXPECT(
@@ -241,7 +241,7 @@ class NoRippleCheck_test : public beast::unit_test::Suite
                 result[jss::transactions][txs.size() - 1][jss::TransactionType] == jss::TrustSet);
             BEAST_EXPECT(
                 result[jss::transactions][txs.size() - 1][jss::LimitAmount] ==
-                gw["USD"](100).value().getJson(JsonOptions::KNone));
+                gw["USD"](100).value().getJson(JsonOptions::Values::None));
         }
         else
         {
@@ -293,11 +293,11 @@ class NoRippleCheckLimits_test : public beast::unit_test::Suite
                 Endpoint::fromString(test::getEnvLocalhostAddr()));
 
             // if we go above the warning threshold, reset
-            if (c.balance() > WarningThreshold)
+            if (c.balance() > kWARNING_THRESHOLD)
             {
                 using ct = beast::AbstractClock<steady_clock>;
                 c.entry().local_balance =
-                    DecayingSample<DecayWindowSeconds, ct>{steady_clock::now()};
+                    DecayingSample<kDECAY_WINDOW_SECONDS, ct>{steady_clock::now()};
             }
         };
 

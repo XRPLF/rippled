@@ -68,10 +68,10 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 
             if (hasExpired(ctx.view, (*offerSLE)[~sfExpiration]))
             {
-                // Before fixSecurity3_1_3 amendment, expired offers caused tecEXPIRED in preclaim,
+                // Before fixCleanup3_1_3 amendment, expired offers caused tecEXPIRED in preclaim,
                 // leaving them on ledger forever. After the amendment, we allow expired offers to
                 // reach doApply() where they get deleted and tecEXPIRED is returned.
-                if (!ctx.view.rules().enabled(fixSecurity3_1_3))
+                if (!ctx.view.rules().enabled(fixCleanup3_1_3))
                     return {nullptr, tecEXPIRED};
                 // Amendment enabled: return the expired offer to be handled in doApply.
             }
@@ -159,7 +159,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 
     if (bo)
     {
-        if (((*bo)[sfFlags] & lsfSellNFToken) == lsfSellNFToken)
+        if (bo->isFlag(lsfSellNFToken))
             return tecNFTOKEN_OFFER_TYPE_MISMATCH;
 
         // An account can't accept an offer it placed:
@@ -218,7 +218,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 
     if (so)
     {
-        if (((*so)[sfFlags] & lsfSellNFToken) != lsfSellNFToken)
+        if (!so->isFlag(lsfSellNFToken))
             return tecNFTOKEN_OFFER_TYPE_MISMATCH;
 
         // An account can't accept an offer it placed:
@@ -450,9 +450,9 @@ NFTokenAcceptOffer::doApply()
     auto bo = loadToken(ctx_.tx[~sfNFTokenBuyOffer]);
     auto so = loadToken(ctx_.tx[~sfNFTokenSellOffer]);
 
-    // With fixSecurity3_1_3 amendment, check for expired offers and delete them, returning
+    // With fixCleanup3_1_3 amendment, check for expired offers and delete them, returning
     // tecEXPIRED. This ensures expired offers are properly cleaned up from the ledger.
-    if (view().rules().enabled(fixSecurity3_1_3))
+    if (view().rules().enabled(fixCleanup3_1_3))
     {
         bool foundExpired = false;
 
