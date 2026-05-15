@@ -56,7 +56,7 @@ Squelch<ClockType>::addSquelch(
     PublicKey const& validator,
     std::chrono::seconds const& squelchDuration)
 {
-    if (squelchDuration >= kMIN_UNSQUELCH_EXPIRE && squelchDuration <= kMAX_UNSQUELCH_EXPIRE_PEERS)
+    if (squelchDuration >= kMinUnsquelchExpire && squelchDuration <= kMaxUnsquelchExpirePeers)
     {
         squelched_[validator] = ClockType::now() + squelchDuration;
         return true;

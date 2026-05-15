@@ -58,7 +58,7 @@ STNumber::associateAsset(Asset const& a)
     STTakesAsset::associateAsset(a);
 
     XRPL_ASSERT_PARTS(
-        getFName().shouldMeta(SField::kSMD_NEEDS_ASSET),
+        getFName().shouldMeta(SField::kSmdNeedsAsset),
         "STNumber::associateAsset",
         "field needs asset");
 
@@ -76,7 +76,7 @@ STNumber::add(Serializer& s) const
     auto const exponent = value.exponent();
 
     SField const& field = getFName();
-    if (field.shouldMeta(SField::kSMD_NEEDS_ASSET))
+    if (field.shouldMeta(SField::kSmdNeedsAsset))
     {
         // asset is defined in the STTakesAsset base class
         if (asset_)
@@ -160,7 +160,7 @@ operator<<(std::ostream& out, STNumber const& rhs)
 NumberParts
 partsFromString(std::string const& number)
 {
-    static boost::regex const kRE_NUMBER(
+    static boost::regex const kReNumber(
         "^"                       // the beginning of the string
         "([-+]?)"                 // (optional) + or - character
         "(0|[1-9][0-9]*)"         // a number (no leading zeroes, unless 0)
@@ -171,7 +171,7 @@ partsFromString(std::string const& number)
 
     boost::smatch match;
 
-    if (!boost::regex_match(number, match, kRE_NUMBER))
+    if (!boost::regex_match(number, match, kReNumber))
         Throw<std::runtime_error>("'" + number + "' is not a number");
 
     // Match fields:

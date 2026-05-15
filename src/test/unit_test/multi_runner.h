@@ -59,13 +59,13 @@ struct Results
     // pointers from different memory spaces do not co-mingle
     using run_time = std::pair<static_string, typename clock_type::duration>;
 
-    static constexpr auto kMAX_TOP = 10;
+    static constexpr auto kMaxTop = 10;
 
     std::size_t suites = 0;
     std::size_t cases = 0;
     std::size_t total = 0;
     std::size_t failed = 0;
-    boost::container::static_vector<run_time, kMAX_TOP> top;
+    boost::container::static_vector<run_time, kMaxTop> top;
     typename clock_type::time_point start = clock_type::now();
 
     void
@@ -131,10 +131,10 @@ class MultiRunnerBase
         printResults(S& s);
     };
 
-    static constexpr char const* kSHARED_MEM_NAME = "XrpldUnitTestSharedMem";
+    static constexpr char const* kSharedMemName = "XrpldUnitTestSharedMem";
     // name of the message queue a multi_runner_child will use to communicate
     // with multi_runner_parent
-    static constexpr char const* kMESSAGE_QUEUE_NAME = "XrpldUnitTestMessageQueue";
+    static constexpr char const* kMessageQueueName = "XrpldUnitTestMessageQueue";
 
     // `inner_` will be created in shared memory
     Inner* inner_;

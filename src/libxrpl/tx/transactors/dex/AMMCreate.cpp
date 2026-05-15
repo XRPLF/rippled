@@ -76,7 +76,7 @@ AMMCreate::preflight(PreflightContext const& ctx)
         return err;
     }
 
-    if (ctx.tx[sfTradingFee] > kTRADING_FEE_THRESHOLD)
+    if (ctx.tx[sfTradingFee] > kTradingFeeThreshold)
     {
         JLOG(ctx.j.debug()) << "AMM Instance: invalid trading fee.";
         return temBAD_FEE;
@@ -147,7 +147,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     AccountRoot const wrappedAcct(accountID, ctx.view, ctx.j);
     STAmount const xrpBalance = wrappedAcct.xrpLiquid(1);
     // Insufficient reserve
-    if (xrpBalance <= beast::kZERO)
+    if (xrpBalance <= beast::kZero)
     {
         JLOG(ctx.j.debug()) << "AMM Instance: insufficient reserves";
         return tecINSUF_RESERVE_LINE;
@@ -188,7 +188,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     {
         if (auto const accountId =
                 pseudoAccountAddress(ctx.view, keylet::amm(amount.asset(), amount2.asset()).key);
-            accountId == beast::kZERO)
+            accountId == beast::kZero)
             return terADDRESS_COLLISION;
     }
 
@@ -375,7 +375,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& creatorAccountID, b
                     << lpTokens << " " << amount << " " << amount2;
     auto addOrderBook = [&](Asset const& assetIn, Asset const& assetOut, std::uint64_t uRate) {
         Book const book{assetIn, assetOut, std::nullopt};
-        auto const dir = keylet::quality(keylet::kBOOK(book), uRate);
+        auto const dir = keylet::quality(keylet::kBook(book), uRate);
         if (auto const bookExisted = static_cast<bool>(sb.read(dir)); !bookExisted)
             ctx.registry.get().getOrderBookDB().addOrderBook(book);
     };

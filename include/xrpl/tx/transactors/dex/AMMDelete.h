@@ -13,7 +13,7 @@ namespace xrpl {
 class AMMDelete : public Transactor
 {
 public:
-    static constexpr auto kCONSEQUENCES_FACTORY = ConsequencesFactoryType::Normal;
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 
     explicit AMMDelete(ApplyContext& ctx) : Transactor(ctx)
     {

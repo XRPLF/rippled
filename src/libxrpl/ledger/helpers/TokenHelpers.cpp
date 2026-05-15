@@ -258,7 +258,7 @@ accountHolds(
     {
         // If the account is the issuer, then their limit is effectively
         // infinite
-        return STAmount{Issue{currency, issuer}, STAmount::kMAX_VALUE, STAmount::kMAX_OFFSET};
+        return STAmount{Issue{currency, issuer}, STAmount::kMaxValue, STAmount::kMaxOffset};
     }
 
     // IOU: Return balance on trust line modulo freeze
@@ -580,9 +580,9 @@ directSendNoFeeIOU(
 
         // FIXME This NEEDS to be cleaned up and simplified. It's impossible
         //       for anyone to understand.
-        if (saBefore > beast::kZERO
+        if (saBefore > beast::kZero
             // Sender balance was positive.
-            && saBalance <= beast::kZERO
+            && saBalance <= beast::kZero
             // Sender is zero or negative.
             && sleRippleState->isFlag(senderReserveFlag)
             // Sender reserve is set.
@@ -803,7 +803,7 @@ accountSendIOU(
 {
     if (view.rules().enabled(fixAMMv1_1))
     {
-        if (saAmount < beast::kZERO || saAmount.holds<MPTIssue>())
+        if (saAmount < beast::kZero || saAmount.holds<MPTIssue>())
         {
             return tecINTERNAL;  // LCOV_EXCL_LINE
         }
@@ -812,7 +812,7 @@ accountSendIOU(
     {
         // LCOV_EXCL_START
         XRPL_ASSERT(
-            saAmount >= beast::kZERO && !saAmount.holds<MPTIssue>(),
+            saAmount >= beast::kZero && !saAmount.holds<MPTIssue>(),
             "xrpl::accountSendIOU : minimum amount and not MPT");
         // LCOV_EXCL_STOP
     }
@@ -954,7 +954,7 @@ accountSendMultiIOU(
         auto const& receiverID = r.first;
         STAmount const amount{issue, r.second};
 
-        if (amount < beast::kZERO)
+        if (amount < beast::kZero)
         {
             return tecINTERNAL;  // LCOV_EXCL_LINE
         }
@@ -1195,7 +1195,7 @@ directSendNoLimitMultiMPT(
     // small-scale mantissa (~16 digits) can lose precision for values near
     // kMAX_MP_TOKEN_AMOUNT (19 digits).
     std::uint64_t totalSendAmount{0};
-    std::uint64_t const maximumAmount = sle->at(~sfMaximumAmount).value_or(kMAX_MP_TOKEN_AMOUNT);
+    std::uint64_t const maximumAmount = sle->at(~sfMaximumAmount).value_or(kMaxMpTokenAmount);
     std::uint64_t const outstandingAmount = sle->getFieldU64(sfOutstandingAmount);
 
     // actual accumulates the total cost to the sender (includes transfer
@@ -1209,7 +1209,7 @@ directSendNoLimitMultiMPT(
     {
         STAmount const amount{mptIssue, amt};
 
-        if (amount < beast::kZERO)
+        if (amount < beast::kZero)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         if (!amount || senderID == receiverID)
@@ -1220,7 +1220,7 @@ directSendNoLimitMultiMPT(
             if (senderID == issuer)
             {
                 XRPL_ASSERT_PARTS(
-                    takeFromSender == beast::kZERO,
+                    takeFromSender == beast::kZero,
                     "xrpl::directSendNoLimitMultiMPT",
                     "sender == issuer, takeFromSender == zero");
 
@@ -1302,7 +1302,7 @@ accountSendMPT(
     AllowMPTOverflow allowOverflow)
 {
     XRPL_ASSERT(
-        saAmount >= beast::kZERO && saAmount.holds<MPTIssue>(),
+        saAmount >= beast::kZero && saAmount.holds<MPTIssue>(),
         "xrpl::accountSendMPT : minimum amount and MPT");
 
     /* If we aren't sending anything or if the sender is the same as the
@@ -1404,8 +1404,8 @@ transferXRP(
     STAmount const& amount,
     beast::Journal j)
 {
-    XRPL_ASSERT(from != beast::kZERO, "xrpl::transferXRP : nonzero from account");
-    XRPL_ASSERT(to != beast::kZERO, "xrpl::transferXRP : nonzero to account");
+    XRPL_ASSERT(from != beast::kZero, "xrpl::transferXRP : nonzero from account");
+    XRPL_ASSERT(to != beast::kZero, "xrpl::transferXRP : nonzero to account");
     XRPL_ASSERT(from != to, "xrpl::transferXRP : sender is not receiver");
     XRPL_ASSERT(amount.native(), "xrpl::transferXRP : amount is XRP");
 

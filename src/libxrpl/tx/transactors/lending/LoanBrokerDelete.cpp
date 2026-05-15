@@ -30,7 +30,7 @@ LoanBrokerDelete::checkExtraFeatures(PreflightContext const& ctx)
 NotTEC
 LoanBrokerDelete::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfLoanBrokerID] == beast::kZERO)
+    if (ctx.tx[sfLoanBrokerID] == beast::kZero)
         return temINVALID;
 
     return tesSUCCESS;
@@ -75,7 +75,7 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
 
     Asset const asset = vault->at(sfAsset);
 
-    if (auto const debtTotal = sleBroker->at(sfDebtTotal); debtTotal != beast::kZERO)
+    if (auto const debtTotal = sleBroker->at(sfDebtTotal); debtTotal != beast::kZero)
     {
         // Any remaining debt should have been wiped out by the last Loan
         // Delete. This check is purely defensive.
@@ -84,7 +84,7 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
         auto const rounded =
             roundToAsset(asset, debtTotal, scale, Number::RoundingMode::TowardsZero);
 
-        if (rounded != beast::kZERO)
+        if (rounded != beast::kZero)
         {
             // LCOV_EXCL_START
             JLOG(ctx.j.warn()) << "LoanBrokerDelete: Debt total is " << debtTotal
@@ -97,7 +97,7 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
     auto const coverAvailable = STAmount{asset, sleBroker->at(sfCoverAvailable)};
     // If there are assets in the cover, broker will receive them on deletion.
     // So we need to check if the broker owner is deep frozen for that asset.
-    if (coverAvailable > beast::kZERO)
+    if (coverAvailable > beast::kZero)
     {
         if (auto const ret = checkDeepFrozen(ctx.view, brokerOwner, asset))
         {

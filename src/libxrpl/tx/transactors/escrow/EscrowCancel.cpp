@@ -183,7 +183,7 @@ EscrowCancel::doApply()
                 [&]<typename T>(T const&) {
                     return escrowUnlockApplyHelper<T>(
                         ctx_.view(),
-                        kPARITY_RATE,
+                        kParityRate,
                         slep,  // Bug: should be wrappedAcct, will be fixed by amendment in #6171
                         preFeeBalance_,
                         amount,

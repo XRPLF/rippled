@@ -651,7 +651,7 @@ class AccountTx_test : public beast::unit_test::Suite
         // clang-format off
         // Do a sanity check on each returned transaction.  They should
         // be returned in the reverse order of application to the ledger.
-        static const NodeSanity kSANITY[]{
+        static const NodeSanity kSanity[]{
             //    txType,                    created,                                                    deleted,                          modified
             {0,  jss::DepositPreauth,         {jss::DepositPreauth},                                      {jss::Ticket},                    {jss::AccountRoot, jss::DirectoryNode}},
             {1,  jss::TicketCreate,           {jss::Ticket},                                              {},                               {jss::AccountRoot, jss::DirectoryNode}},
@@ -678,11 +678,11 @@ class AccountTx_test : public beast::unit_test::Suite
         };
         // clang-format on
 
-        BEAST_EXPECT(std::size(kSANITY) == result[jss::result][jss::transactions].size());
+        BEAST_EXPECT(std::size(kSanity) == result[jss::result][jss::transactions].size());
 
-        for (unsigned int index{0}; index < std::size(kSANITY); ++index)
+        for (unsigned int index{0}; index < std::size(kSanity); ++index)
         {
-            checkSanity(txs[index], kSANITY[index]);
+            checkSanity(txs[index], kSanity[index]);
         }
     }
 
@@ -733,7 +733,7 @@ class AccountTx_test : public beast::unit_test::Suite
         //
         // Note that the first two transactions in sanity have not occurred
         // yet.  We'll see those after becky's account is resurrected.
-        static const NodeSanity kSANITY[]
+        static const NodeSanity kSanity[]
         {
                                     //   txType,                    created,            deleted,            modified
 /* becky pays alice              */ { 0, jss::Payment,              {},                 {},                 {jss::AccountRoot, jss::AccountRoot}},
@@ -759,16 +759,16 @@ class AccountTx_test : public beast::unit_test::Suite
             BEAST_EXPECT(result[jss::result][jss::transactions].isArray());
 
             // The first two transactions listed in sanity haven't happened yet.
-            constexpr unsigned int kBECKY_DELETED_OFFSET = 2;
+            static constexpr unsigned int kBeckyDeletedOffset = 2;
             BEAST_EXPECT(
-                std::size(kSANITY) ==
-                result[jss::result][jss::transactions].size() + kBECKY_DELETED_OFFSET);
+                std::size(kSanity) ==
+                result[jss::result][jss::transactions].size() + kBeckyDeletedOffset);
 
             json::Value const& txs{result[jss::result][jss::transactions]};
 
-            for (unsigned int index = kBECKY_DELETED_OFFSET; index < std::size(kSANITY); ++index)
+            for (unsigned int index = kBeckyDeletedOffset; index < std::size(kSanity); ++index)
             {
-                checkSanity(txs[index - kBECKY_DELETED_OFFSET], kSANITY[index]);
+                checkSanity(txs[index - kBeckyDeletedOffset], kSanity[index]);
             }
         }
 
@@ -802,13 +802,13 @@ class AccountTx_test : public beast::unit_test::Suite
         BEAST_EXPECT(result[jss::result][jss::status] == "success");
         BEAST_EXPECT(result[jss::result][jss::transactions].isArray());
 
-        BEAST_EXPECT(std::size(kSANITY) == result[jss::result][jss::transactions].size());
+        BEAST_EXPECT(std::size(kSanity) == result[jss::result][jss::transactions].size());
 
         json::Value const& txs{result[jss::result][jss::transactions]};
 
-        for (unsigned int index = 0; index < std::size(kSANITY); ++index)
+        for (unsigned int index = 0; index < std::size(kSanity); ++index)
         {
-            checkSanity(txs[index], kSANITY[index]);
+            checkSanity(txs[index], kSanity[index]);
         }
     }
 

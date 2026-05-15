@@ -131,7 +131,7 @@ checkFields(STTx const& tx, beast::Journal j)
         return tesSUCCESS;
 
     auto const& credentials = tx.getFieldV256(sfCredentialIDs);
-    if (credentials.empty() || (credentials.size() > kMAX_CREDENTIALS_ARRAY_SIZE))
+    if (credentials.empty() || (credentials.size() > kMaxCredentialsArraySize))
     {
         JLOG(j.trace()) << "Malformed transaction: Credentials array size is invalid: "
                         << credentials.size();
@@ -288,7 +288,7 @@ checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j)
         }
 
         auto const ct = credential[sfCredentialType];
-        if (ct.empty() || (ct.size() > kMAX_CREDENTIAL_TYPE_LENGTH))
+        if (ct.empty() || (ct.size() > kMaxCredentialTypeLength))
         {
             JLOG(j.trace()) << "Malformed transaction: "
                                "Invalid credentialType size: "

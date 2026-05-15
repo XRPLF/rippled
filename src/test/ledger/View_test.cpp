@@ -151,7 +151,7 @@ class View_test : public beast::unit_test::Suite
         Env env(*this);
         Config const config;
         std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
-            kCREATE_GENESIS,
+            kCreateGenesis,
             Rules{config.features},
             config.FEES.toFees(),
             std::vector<uint256>{},
@@ -419,7 +419,7 @@ class View_test : public beast::unit_test::Suite
         Env env(*this);
         Config const config;
         std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
-            kCREATE_GENESIS,
+            kCreateGenesis,
             Rules{config.features},
             config.FEES.toFees(),
             std::vector<uint256>{},
@@ -628,7 +628,7 @@ class View_test : public beast::unit_test::Suite
         Env env(*this);
         Config const config;
         std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
-            kCREATE_GENESIS,
+            kCreateGenesis,
             Rules{config.features},
             config.FEES.toFees(),
             std::vector<uint256>{},
@@ -936,7 +936,7 @@ class View_test : public beast::unit_test::Suite
         auto rdView = env.closed();
         // Test with no rate set on gw1.
         AccountRoot const issuer(gw1, *rdView);
-        BEAST_EXPECT(issuer.transferRate() == kPARITY_RATE);
+        BEAST_EXPECT(issuer.transferRate() == kParityRate);
 
         env(rate(gw1, 1.02));
         env.close();
@@ -1020,7 +1020,7 @@ class View_test : public beast::unit_test::Suite
             Env env(*this);
             Config const config;
             std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
-                kCREATE_GENESIS,
+                kCreateGenesis,
                 Rules{config.features},
                 config.FEES.toFees(),
                 std::vector<uint256>{},
