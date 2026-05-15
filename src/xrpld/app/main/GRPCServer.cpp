@@ -204,7 +204,7 @@ GRPCServerImpl::CallData<Request, Response>::process(std::shared_ptr<JobQueue::C
                  role,
                  coro,
                  InfoSub::pointer(),
-                 kAPI_VERSION},
+                 kApiVersion},
                 request_};
 
             // Make sure we can currently handle the rpc
@@ -335,15 +335,15 @@ GRPCServerImpl::GRPCServerImpl(Application& app)
     : app_(app), journal_(app_.getJournal("gRPC Server"))
 {
     // if present, get endpoint from config
-    if (app_.config().exists(Sections::kPORT_GRPC))
+    if (app_.config().exists(Sections::kPortGrpc))
     {
-        Section const& section = app_.config().section(Sections::kPORT_GRPC);
+        Section const& section = app_.config().section(Sections::kPortGrpc);
 
-        auto const optIp = section.get(Keys::kIP);
+        auto const optIp = section.get(Keys::kIp);
         if (!optIp)
             return;
 
-        auto const optPort = section.get(Keys::kPORT);
+        auto const optPort = section.get(Keys::kPort);
         if (!optPort)
             return;
         try
@@ -361,7 +361,7 @@ GRPCServerImpl::GRPCServerImpl(Application& app)
             Throw<std::runtime_error>("Error setting grpc server address");
         }
 
-        auto const optSecureGateway = section.get(Keys::kSECURE_GATEWAY);
+        auto const optSecureGateway = section.get(Keys::kSecureGateway);
         if (optSecureGateway)
         {
             try
@@ -391,10 +391,10 @@ GRPCServerImpl::GRPCServerImpl(Application& app)
         }
 
         // Read TLS certificate configuration (optional)
-        sslCertPath_ = section.get(Keys::kSSL_CERT);
-        sslKeyPath_ = section.get(Keys::kSSL_KEY);
-        sslCertChainPath_ = section.get(Keys::kSSL_CERT_CHAIN);
-        sslClientCAPath_ = section.get(Keys::kSSL_CLIENT_CA);
+        sslCertPath_ = section.get(Keys::kSslCert);
+        sslKeyPath_ = section.get(Keys::kSslKey);
+        sslCertChainPath_ = section.get(Keys::kSslCertChain);
+        sslClientCAPath_ = section.get(Keys::kSslClientCa);
 
         // If cert or key is specified, both must be specified
         if (sslCertPath_.has_value() || sslKeyPath_.has_value())
@@ -526,6 +526,7 @@ GRPCServerImpl::handleRpcs()
 std::vector<std::shared_ptr<Processor>>
 GRPCServerImpl::setupListeners()
 {
+    using RPC::Condition;
     std::vector<std::shared_ptr<Processor>> requests;
 
     auto addToRequests = [&requests](auto callData) { requests.push_back(std::move(callData)); };
@@ -542,8 +543,8 @@ GRPCServerImpl::setupListeners()
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::RequestGetLedger,
                 doLedgerGrpc,
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedger,
-                RPC::NoCondition,
-                Resource::kFEE_MEDIUM_BURDEN_RPC,
+                Condition::NoCondition,
+                Resource::kFeeMediumBurdenRpc,
                 secureGatewayIPs_));
     }
     {
@@ -559,8 +560,8 @@ GRPCServerImpl::setupListeners()
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::RequestGetLedgerData,
                 doLedgerDataGrpc,
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedgerData,
-                RPC::NoCondition,
-                Resource::kFEE_MEDIUM_BURDEN_RPC,
+                Condition::NoCondition,
+                Resource::kFeeMediumBurdenRpc,
                 secureGatewayIPs_));
     }
     {
@@ -576,8 +577,8 @@ GRPCServerImpl::setupListeners()
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::RequestGetLedgerDiff,
                 doLedgerDiffGrpc,
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedgerDiff,
-                RPC::NoCondition,
-                Resource::kFEE_MEDIUM_BURDEN_RPC,
+                Condition::NoCondition,
+                Resource::kFeeMediumBurdenRpc,
                 secureGatewayIPs_));
     }
     {
@@ -593,8 +594,8 @@ GRPCServerImpl::setupListeners()
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::RequestGetLedgerEntry,
                 doLedgerEntryGrpc,
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedgerEntry,
-                RPC::NoCondition,
-                Resource::kFEE_MEDIUM_BURDEN_RPC,
+                Condition::NoCondition,
+                Resource::kFeeMediumBurdenRpc,
                 secureGatewayIPs_));
     }
     return requests;

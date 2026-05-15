@@ -39,7 +39,8 @@ class LedgerRPC_test : public beast::unit_test::Suite
             BEAST_EXPECT(jv[jss::error] == err);
         if (msg.empty())
         {
-            BEAST_EXPECT(jv[jss::error_message] == json::NullValue || jv[jss::error_message] == "");
+            BEAST_EXPECT(
+                jv[jss::error_message] == json::ValueType::Null || jv[jss::error_message] == "");
         }
         else if (BEAST_EXPECT(jv.isMember(jss::error_message)))
         {
@@ -431,9 +432,9 @@ class LedgerRPC_test : public beast::unit_test::Suite
         testcase("Ledger with Queued Transactions");
         using namespace test::jtx;
         auto cfg = envconfig([](std::unique_ptr<Config> cfg) {
-            auto& section = cfg->section(Sections::kTRANSACTION_QUEUE);
-            section.set(Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "3");
-            section.set(Keys::kNORMAL_CONSENSUS_INCREASE_PERCENT, "0");
+            auto& section = cfg->section(Sections::kTransactionQueue);
+            section.set(Keys::kMinimumTxnInLedgerStandalone, "3");
+            section.set(Keys::kNormalConsensusIncreasePercent, "0");
             return cfg;
         });
 

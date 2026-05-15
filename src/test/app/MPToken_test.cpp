@@ -148,7 +148,7 @@ class MPToken_test : public beast::unit_test::Suite
             mptAlice.create(
                 {.maxAmt = 100,
                  .assetScale = 0,
-                 .transferFee = kMAX_TRANSFER_FEE + 1,
+                 .transferFee = kMaxTransferFee + 1,
                  .metadata = "test",
                  .flags = tfMPTCanTransfer,
                  .err = temBAD_TRANSFER_FEE});
@@ -157,7 +157,7 @@ class MPToken_test : public beast::unit_test::Suite
             mptAlice.create(
                 {.maxAmt = 100,
                  .assetScale = 0,
-                 .transferFee = kMAX_TRANSFER_FEE,
+                 .transferFee = kMaxTransferFee,
                  .metadata = "test",
                  .err = temMALFORMED});
 
@@ -185,7 +185,7 @@ class MPToken_test : public beast::unit_test::Suite
                  .metadata = "test",
                  .err = temMALFORMED});
             mptAlice.create(
-                {.maxAmt = kMAX_MP_TOKEN_AMOUNT + 1,  // 9'223'372'036'854'775'808
+                {.maxAmt = kMaxMpTokenAmount + 1,  // 9'223'372'036'854'775'808
                  .assetScale = 0,
                  .transferFee = 0,
                  .metadata = "test",
@@ -207,7 +207,7 @@ class MPToken_test : public beast::unit_test::Suite
             Env env{*this, features};
             MPTTester mptAlice(env, alice);
             mptAlice.create(
-                {.maxAmt = kMAX_MP_TOKEN_AMOUNT,  // 9'223'372'036'854'775'807
+                {.maxAmt = kMaxMpTokenAmount,  // 9'223'372'036'854'775'807
                  .assetScale = 1,
                  .transferFee = 10,
                  .metadata = "123",
@@ -216,7 +216,8 @@ class MPToken_test : public beast::unit_test::Suite
                      tfMPTCanTransfer | tfMPTCanClawback});
 
             // Get the hash for the most recent transaction.
-            std::string const txHash{env.tx()->getJson(JsonOptions::KNone)[jss::hash].asString()};
+            std::string const txHash{
+                env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString()};
 
             json::Value const result = env.rpc("tx", txHash)[jss::result];
             BEAST_EXPECT(result[sfMaximumAmount.getJsonName()] == "9223372036854775807");
@@ -236,13 +237,13 @@ class MPToken_test : public beast::unit_test::Suite
 
                 env(pdomain::setTx(credIssuer1, credentials1));
                 auto const domainId1 = [&]() {
-                    auto tx = env.tx()->getJson(JsonOptions::KNone);
+                    auto tx = env.tx()->getJson(JsonOptions::Values::None);
                     return pdomain::getNewDomain(env.meta());
                 }();
 
                 MPTTester mptAlice(env, alice);
                 mptAlice.create({
-                    .maxAmt = kMAX_MP_TOKEN_AMOUNT,  // 9'223'372'036'854'775'807
+                    .maxAmt = kMaxMpTokenAmount,  // 9'223'372'036'854'775'807
                     .assetScale = 1,
                     .transferFee = 10,
                     .metadata = "123",
@@ -254,7 +255,7 @@ class MPToken_test : public beast::unit_test::Suite
 
                 // Get the hash for the most recent transaction.
                 std::string const txHash{
-                    env.tx()->getJson(JsonOptions::KNone)[jss::hash].asString()};
+                    env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString()};
 
                 json::Value const result = env.rpc("tx", txHash)[jss::result];
                 BEAST_EXPECT(result[sfMaximumAmount.getJsonName()] == "9223372036854775807");
@@ -818,7 +819,7 @@ class MPToken_test : public beast::unit_test::Suite
 
                 env(pdomain::setTx(credIssuer1, credentials1));
                 return [&]() {
-                    auto tx = env.tx()->getJson(JsonOptions::KNone);
+                    auto tx = env.tx()->getJson(JsonOptions::Values::None);
                     return pdomain::getNewDomain(env.meta());
                 }();
             }();
@@ -832,7 +833,7 @@ class MPToken_test : public beast::unit_test::Suite
 
                 env(pdomain::setTx(credIssuer2, credentials2));
                 return [&]() {
-                    auto tx = env.tx()->getJson(JsonOptions::KNone);
+                    auto tx = env.tx()->getJson(JsonOptions::Values::None);
                     return pdomain::getNewDomain(env.meta());
                 }();
             }();
@@ -1095,7 +1096,7 @@ class MPToken_test : public beast::unit_test::Suite
 
                     env(pdomain::setTx(credIssuer1, credentials1));
                     return [&]() {
-                        auto tx = env.tx()->getJson(JsonOptions::KNone);
+                        auto tx = env.tx()->getJson(JsonOptions::Values::None);
                         return pdomain::getNewDomain(env.meta());
                     }();
                 }();
@@ -1137,7 +1138,7 @@ class MPToken_test : public beast::unit_test::Suite
 
                     env(pdomain::setTx(credIssuer1, credentials1));
                     return [&]() {
-                        auto tx = env.tx()->getJson(JsonOptions::KNone);
+                        auto tx = env.tx()->getJson(JsonOptions::Values::None);
                         return pdomain::getNewDomain(env.meta());
                     }();
                 }();
@@ -1194,7 +1195,7 @@ class MPToken_test : public beast::unit_test::Suite
 
                     env(pdomain::setTx(credIssuer1, credentials));
                     return [&]() {
-                        auto tx = env.tx()->getJson(JsonOptions::KNone);
+                        auto tx = env.tx()->getJson(JsonOptions::Values::None);
                         return pdomain::getNewDomain(env.meta());
                     }();
                 }();
@@ -1206,7 +1207,7 @@ class MPToken_test : public beast::unit_test::Suite
 
                     env(pdomain::setTx(credIssuer2, credentials));
                     return [&]() {
-                        auto tx = env.tx()->getJson(JsonOptions::KNone);
+                        auto tx = env.tx()->getJson(JsonOptions::Values::None);
                         return pdomain::getNewDomain(env.meta());
                     }();
                 }();
@@ -1516,7 +1517,7 @@ class MPToken_test : public beast::unit_test::Suite
             mptAlice.authorize({.account = bob});
 
             // issuer sends holder the default max amount allowed
-            mptAlice.pay(alice, bob, kMAX_MP_TOKEN_AMOUNT);
+            mptAlice.pay(alice, bob, kMaxMpTokenAmount);
 
             // issuer tries to exceed max amount
             auto const err = mpTokensV2 ? tecPATH_DRY : tecPATH_PARTIAL;
@@ -1532,7 +1533,7 @@ class MPToken_test : public beast::unit_test::Suite
             json::Value jv;
             jv[jss::secret] = alice.name();
             jv[jss::tx_json] = pay(alice, bob, mpt);
-            jv[jss::tx_json][jss::Amount][jss::value] = std::to_string(kMAX_MP_TOKEN_AMOUNT + 1);
+            jv[jss::tx_json][jss::Amount][jss::value] = std::to_string(kMaxMpTokenAmount + 1);
             auto const jrr = env.rpc("json", "submit", to_string(jv));
             BEAST_EXPECT(jrr[jss::result][jss::error] == "invalidParams");
         }
@@ -1561,7 +1562,8 @@ class MPToken_test : public beast::unit_test::Suite
             // payment between the holders
             env(pay(bob, carol, mpt(10'000)), Sendmax(mpt(10'000)), Txflags(tfPartialPayment));
             // Verify the metadata
-            auto const meta = env.meta()->getJson(JsonOptions::KNone)[sfAffectedNodes.fieldName];
+            auto const meta =
+                env.meta()->getJson(JsonOptions::Values::None)[sfAffectedNodes.fieldName];
             // Issuer got 10 in the transfer fees
             BEAST_EXPECT(
                 meta[0u][sfModifiedNode.fieldName][sfFinalFields.fieldName]
@@ -1590,7 +1592,7 @@ class MPToken_test : public beast::unit_test::Suite
             MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
 
             mptAlice.create(
-                {.maxAmt = kMAX_MP_TOKEN_AMOUNT,
+                {.maxAmt = kMaxMpTokenAmount,
                  .ownerCount = 1,
                  .holderCount = 0,
                  .flags = tfMPTCanTransfer});
@@ -1600,14 +1602,14 @@ class MPToken_test : public beast::unit_test::Suite
             mptAlice.authorize({.account = carol});
 
             // issuer sends holder the max amount allowed
-            mptAlice.pay(alice, bob, kMAX_MP_TOKEN_AMOUNT);
-            BEAST_EXPECT(mptAlice.checkMPTokenOutstandingAmount(kMAX_MP_TOKEN_AMOUNT));
+            mptAlice.pay(alice, bob, kMaxMpTokenAmount);
+            BEAST_EXPECT(mptAlice.checkMPTokenOutstandingAmount(kMaxMpTokenAmount));
 
             // payment between the holders
-            mptAlice.pay(bob, carol, kMAX_MP_TOKEN_AMOUNT);
-            BEAST_EXPECT(mptAlice.checkMPTokenOutstandingAmount(kMAX_MP_TOKEN_AMOUNT));
+            mptAlice.pay(bob, carol, kMaxMpTokenAmount);
+            BEAST_EXPECT(mptAlice.checkMPTokenOutstandingAmount(kMaxMpTokenAmount));
             // holder pays back to the issuer
-            mptAlice.pay(carol, alice, kMAX_MP_TOKEN_AMOUNT);
+            mptAlice.pay(carol, alice, kMaxMpTokenAmount);
             BEAST_EXPECT(mptAlice.checkMPTokenOutstandingAmount(0));
         }
 
@@ -1911,7 +1913,7 @@ class MPToken_test : public beast::unit_test::Suite
                 jv[jss::Asset] = toJson(xrpIssue());
                 jv[jss::Asset2] = toJson(usd.issue());
                 if (withAmount)
-                    jv[field.fieldName] = usd(10).value().getJson(JsonOptions::KNone);
+                    jv[field.fieldName] = usd(10).value().getJson(JsonOptions::Values::None);
                 if (field == sfAsset)
                 {
                     jv[jss::Asset] = toJson(mpt.get<MPTIssue>());
@@ -1922,7 +1924,7 @@ class MPToken_test : public beast::unit_test::Suite
                 }
                 else
                 {
-                    jv[field.fieldName] = mpt.getJson(JsonOptions::KNone);
+                    jv[field.fieldName] = mpt.getJson(JsonOptions::Values::None);
                 }
             };
             // All transactions with sfAmount, which don't support MPT.
@@ -1969,7 +1971,7 @@ class MPToken_test : public beast::unit_test::Suite
                 jv[jss::Destination] = carol.human();
                 jv[jss::SettleDelay] = 1;
                 jv[sfPublicKey.fieldName] = strHex(alice.pk().slice());
-                jv[jss::Amount] = mpt.getJson(JsonOptions::KNone);
+                jv[jss::Amount] = mpt.getJson(JsonOptions::Values::None);
                 test(jv, jss::Amount.cStr());
             }
             // PaymentChannelFund
@@ -1978,7 +1980,7 @@ class MPToken_test : public beast::unit_test::Suite
                 jv[jss::TransactionType] = jss::PaymentChannelFund;
                 jv[jss::Account] = alice.human();
                 jv[sfChannel.fieldName] = to_string(uint256{1});
-                jv[jss::Amount] = mpt.getJson(JsonOptions::KNone);
+                jv[jss::Amount] = mpt.getJson(JsonOptions::Values::None);
                 test(jv, jss::Amount.cStr());
             }
             // PaymentChannelClaim
@@ -1987,7 +1989,7 @@ class MPToken_test : public beast::unit_test::Suite
                 jv[jss::TransactionType] = jss::PaymentChannelClaim;
                 jv[jss::Account] = alice.human();
                 jv[sfChannel.fieldName] = to_string(uint256{1});
-                jv[jss::Amount] = mpt.getJson(JsonOptions::KNone);
+                jv[jss::Amount] = mpt.getJson(JsonOptions::Values::None);
                 test(jv, jss::Amount.cStr());
             }
             // NFTokenCreateOffer
@@ -1996,7 +1998,7 @@ class MPToken_test : public beast::unit_test::Suite
                 jv[jss::TransactionType] = jss::NFTokenCreateOffer;
                 jv[jss::Account] = alice.human();
                 jv[sfNFTokenID.fieldName] = to_string(uint256{1});
-                jv[jss::Amount] = mpt.getJson(JsonOptions::KNone);
+                jv[jss::Amount] = mpt.getJson(JsonOptions::Values::None);
                 test(jv, jss::Amount.cStr());
             }
             // NFTokenAcceptOffer
@@ -2004,7 +2006,7 @@ class MPToken_test : public beast::unit_test::Suite
                 json::Value jv;
                 jv[jss::TransactionType] = jss::NFTokenAcceptOffer;
                 jv[jss::Account] = alice.human();
-                jv[sfNFTokenBrokerFee.fieldName] = mpt.getJson(JsonOptions::KNone);
+                jv[sfNFTokenBrokerFee.fieldName] = mpt.getJson(JsonOptions::Values::None);
                 test(jv, sfNFTokenBrokerFee.fieldName);
             }
             // NFTokenMint
@@ -2013,7 +2015,7 @@ class MPToken_test : public beast::unit_test::Suite
                 jv[jss::TransactionType] = jss::NFTokenMint;
                 jv[jss::Account] = alice.human();
                 jv[sfNFTokenTaxon.fieldName] = 1;
-                jv[jss::Amount] = mpt.getJson(JsonOptions::KNone);
+                jv[jss::Amount] = mpt.getJson(JsonOptions::Values::None);
                 test(jv, jss::Amount.cStr());
             }
             // TrustSet
@@ -2022,7 +2024,7 @@ class MPToken_test : public beast::unit_test::Suite
                 jv[jss::TransactionType] = jss::TrustSet;
                 jv[jss::Account] = alice.human();
                 jv[jss::Flags] = 0;
-                jv[field.fieldName] = mpt.getJson(JsonOptions::KNone);
+                jv[field.fieldName] = mpt.getJson(JsonOptions::Values::None);
                 test(jv, field.fieldName);
             };
             trustSet(sfLimitAmount);
@@ -2054,7 +2056,7 @@ class MPToken_test : public beast::unit_test::Suite
                     alice, jvb, alice, mpt, XRP(10), alice, false, 1, alice, Signer(alice));
                 for (auto const& field : {sfAmount.fieldName, sfSignatureReward.fieldName})
                 {
-                    jv[field] = mpt.getJson(JsonOptions::KNone);
+                    jv[field] = mpt.getJson(JsonOptions::Values::None);
                     test(jv, field);
                 }
             }
@@ -2063,7 +2065,7 @@ class MPToken_test : public beast::unit_test::Suite
                 json::Value jv = sidechainXchainAccountCreate(alice, jvb, alice, mpt, XRP(10));
                 for (auto const& field : {sfAmount.fieldName, sfSignatureReward.fieldName})
                 {
-                    jv[field] = mpt.getJson(JsonOptions::KNone);
+                    jv[field] = mpt.getJson(JsonOptions::Values::None);
                     test(jv, field);
                 }
             }
@@ -2076,9 +2078,9 @@ class MPToken_test : public beast::unit_test::Suite
                 jv[jss::TransactionType] = tt;
                 jv[jss::Account] = alice.human();
                 jv[sfXChainBridge.fieldName] = jvb;
-                jv[sfSignatureReward.fieldName] = rewardAmount.getJson(JsonOptions::KNone);
+                jv[sfSignatureReward.fieldName] = rewardAmount.getJson(JsonOptions::Values::None);
                 jv[sfMinAccountCreateAmount.fieldName] =
-                    minAccountAmount.getJson(JsonOptions::KNone);
+                    minAccountAmount.getJson(JsonOptions::Values::None);
                 test(jv, field);
             };
             auto reward = STAmount{sfSignatureReward, mpt};
@@ -2112,7 +2114,8 @@ class MPToken_test : public beast::unit_test::Suite
 
         mptAlice.create();
 
-        std::string const txHash{env.tx()->getJson(JsonOptions::KNone)[jss::hash].asString()};
+        std::string const txHash{
+            env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString()};
         BEAST_EXPECTS(
             txHash ==
                 "E11F0E0CA14219922B7881F060B9CEE67CFBC87E4049A441ED2AE348FF8FAC"
@@ -2263,7 +2266,7 @@ class MPToken_test : public beast::unit_test::Suite
             auto const mpt = xrpl::test::jtx::MPT(alice.name(), makeMptID(env.seq(alice), alice));
 
             json::Value jv = claw(alice, mpt(1), bob);
-            jv[jss::Amount][jss::value] = std::to_string(kMAX_MP_TOKEN_AMOUNT + 1);
+            jv[jss::Amount][jss::value] = std::to_string(kMaxMpTokenAmount + 1);
             json::Value jv1;
             jv1[jss::secret] = alice.name();
             jv1[jss::tx_json] = jv;
@@ -2709,7 +2712,7 @@ class MPToken_test : public beast::unit_test::Suite
 
             mptAlice.create({.ownerCount = 1, .mutableFlags = tmfMPTCanMutateMetadata});
 
-            std::string const metadata(kMAX_MP_TOKEN_METADATA_LENGTH + 1, 'a');
+            std::string const metadata(kMaxMpTokenMetadataLength + 1, 'a');
             mptAlice.set({.account = alice, .metadata = metadata, .err = temMALFORMED});
         }
 
@@ -2733,7 +2736,7 @@ class MPToken_test : public beast::unit_test::Suite
             mptAlice.set(
                 {.account = alice,
                  .id = mptID,
-                 .transferFee = kMAX_TRANSFER_FEE + 1,
+                 .transferFee = kMaxTransferFee + 1,
                  .err = temBAD_TRANSFER_FEE});
         }
 
@@ -2887,8 +2890,8 @@ class MPToken_test : public beast::unit_test::Suite
                  .flags = tfMPTCanTransfer,
                  .mutableFlags = tmfMPTCanMutateTransferFee});
 
-            for (std::uint16_t const fee : std::initializer_list<std::uint16_t>{
-                     1, 10, 100, 200, 500, 1000, kMAX_TRANSFER_FEE})
+            for (std::uint16_t const fee :
+                 std::initializer_list<std::uint16_t>{1, 10, 100, 200, 500, 1000, kMaxTransferFee})
             {
                 mptAlice.set({.account = alice, .transferFee = fee});
                 BEAST_EXPECT(mptAlice.checkTransferFee(fee));
@@ -3148,23 +3151,23 @@ class MPToken_test : public beast::unit_test::Suite
 
         // MPTCanEscrow is not enabled
         env(escrow::create(carol, bob, mpt(3)),
-            escrow::kCONDITION(escrow::kCB1),
-            escrow::kFINISH_TIME(env.now() + 1s),
+            escrow::kCondition(escrow::kCb1),
+            escrow::kFinishTime(env.now() + 1s),
             Fee(baseFee * 150),
             Ter(tecNO_PERMISSION));
 
         // MPTCanEscrow is enabled now
         mptAlice.set({.account = alice, .mutableFlags = tmfMPTSetCanEscrow});
         env(escrow::create(carol, bob, mpt(3)),
-            escrow::kCONDITION(escrow::kCB1),
-            escrow::kFINISH_TIME(env.now() + 1s),
+            escrow::kCondition(escrow::kCb1),
+            escrow::kFinishTime(env.now() + 1s),
             Fee(baseFee * 150));
 
         // Clear MPTCanEscrow
         mptAlice.set({.account = alice, .mutableFlags = tmfMPTClearCanEscrow});
         env(escrow::create(carol, bob, mpt(3)),
-            escrow::kCONDITION(escrow::kCB1),
-            escrow::kFINISH_TIME(env.now() + 1s),
+            escrow::kCondition(escrow::kCb1),
+            escrow::kFinishTime(env.now() + 1s),
             Fee(baseFee * 150),
             Ter(tecNO_PERMISSION));
     }
@@ -3307,7 +3310,7 @@ class MPToken_test : public beast::unit_test::Suite
     testMultiSendMaximumAmount(FeatureBitset features)
     {
         // Verify that directSendNoLimitMultiMPT correctly enforces MaximumAmount
-        // when the issuer sends to multiple receivers. Pre-fixSecurity3_1_3,
+        // when the issuer sends to multiple receivers. Pre-fixCleanup3_1_3,
         // a stale view.read() snapshot caused per-iteration checks to miss
         // aggregate overflows. Post-fix, a running total is used instead.
         testcase("Multi-send MaximumAmount enforcement");
@@ -3318,11 +3321,11 @@ class MPToken_test : public beast::unit_test::Suite
         Account const alice("alice");
         Account const bob("bob");
 
-        std::uint64_t constexpr kMAX_AMT = 150;
+        static constexpr std::uint64_t kMaxAmt = 150;
         Env env{*this, features};
 
         MPTTester mptTester(env, issuer, {.holders = {alice, bob}});
-        mptTester.create({.maxAmt = kMAX_AMT, .ownerCount = 1, .flags = tfMPTCanTransfer});
+        mptTester.create({.maxAmt = kMaxAmt, .ownerCount = 1, .flags = tfMPTCanTransfer});
         mptTester.authorize({.account = alice});
         mptTester.authorize({.account = bob});
 
@@ -3359,14 +3362,14 @@ class MPToken_test : public beast::unit_test::Suite
             std::nullopt,
             "aggregate exceeds max");
 
-        runTest(R{{alice.id(), 75}, {bob.id(), 75}}, tesSUCCESS, kMAX_AMT, "aggregate at boundary");
+        runTest(R{{alice.id(), 75}, {bob.id(), 75}}, tesSUCCESS, kMaxAmt, "aggregate at boundary");
 
         runTest(R{{alice.id(), 50}, {bob.id(), 50}}, tesSUCCESS, 100, "aggregate within limit");
 
         runTest(
             R{{alice.id(), 150}, {bob.id(), 0}},
             tesSUCCESS,
-            kMAX_AMT,
+            kMaxAmt,
             "one receiver at max, other zero");
 
         runTest(
@@ -3384,7 +3387,7 @@ class MPToken_test : public beast::unit_test::Suite
         runTest(
             R{{alice.id(), 50}, {bob.id(), 50}},
             tesSUCCESS,
-            kMAX_AMT,
+            kMaxAmt,
             "nonzero outstanding, aggregate at boundary");
 
         runTest(
@@ -3396,7 +3399,7 @@ class MPToken_test : public beast::unit_test::Suite
         runTest(
             R{{alice.id(), 100}, {bob.id(), 0}},
             tesSUCCESS,
-            kMAX_AMT,
+            kMaxAmt,
             "nonzero outstanding, single send at remaining capacity");
 
         runTest(
@@ -3409,14 +3412,14 @@ class MPToken_test : public beast::unit_test::Suite
         // individual send (100 <= 150) even though the aggregate (200)
         // exceeds MaximumAmount. Preserved for ledger replay.
         {
-            // KNOWN BUG (pre-fixSecurity3_1_3): preserved for ledger replay only
-            env.disableFeature(fixSecurity3_1_3);
+            // KNOWN BUG (pre-fixCleanup3_1_3): preserved for ledger replay only
+            env.disableFeature(fixCleanup3_1_3);
             runTest(
                 R{{alice.id(), 100}, {bob.id(), 100}},
                 tesSUCCESS,
                 250,
                 "pre-amendment allows over-send");
-            env.enableFeature(fixSecurity3_1_3);
+            env.enableFeature(fixCleanup3_1_3);
         }
     }
 
@@ -3555,13 +3558,13 @@ class MPToken_test : public beast::unit_test::Suite
                  .issuer = gw,
                  .holders = {alice, carol, bob, dan},
                  .pay = 100,
-                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+                 .flags = tfMPTCanLock | kMptDexFlags});
             MPTTester eth(
                 {.env = env,
                  .issuer = gw,
                  .holders = {alice, carol, bob, dan},
                  .pay = 100,
-                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+                 .flags = tfMPTCanLock | kMptDexFlags});
 
             env(offer(bob, eth(10), btc(10)), Txflags(tfPassive));
             env(offer(dan, btc(10), eth(10)), Txflags(tfPassive));
@@ -3600,14 +3603,14 @@ class MPToken_test : public beast::unit_test::Suite
                  .issuer = gw,
                  .holders = {alice},
                  .pay = 100,
-                 .flags = tfMPTRequireAuth | kMPT_DEX_FLAGS,
+                 .flags = tfMPTRequireAuth | kMptDexFlags,
                  .authHolder = true});
             MPTTester const eth(
                 {.env = env,
                  .issuer = gw,
                  .holders = {alice},
                  .pay = 100,
-                 .flags = tfMPTRequireAuth | kMPT_DEX_FLAGS,
+                 .flags = tfMPTRequireAuth | kMptDexFlags,
                  .authHolder = true});
 
             btc.authorize({.account = gw, .holder = alice, .flags = tfMPTUnauthorize});
@@ -3914,7 +3917,7 @@ class MPToken_test : public beast::unit_test::Suite
                  .issuer = gw,
                  .holders = {alice, carol, bob},
                  .pay = 1'000,
-                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS,
+                 .flags = tfMPTCanLock | kMptDexFlags,
                  .mutableFlags = tmfMPTCanMutateRequireAuth | tmfMPTCanMutateCanTrade |
                      tmfMPTCanMutateCanTransfer});
             MPTTester eth(
@@ -3922,21 +3925,21 @@ class MPToken_test : public beast::unit_test::Suite
                  .issuer = gw,
                  .holders = {alice, carol, bob},
                  .pay = 1'000,
-                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS,
+                 .flags = tfMPTCanLock | kMptDexFlags,
                  .mutableFlags = tmfMPTCanMutateCanTransfer});
             MPTTester const usd(
                 {.env = env,
                  .issuer = gw,
                  .holders = {alice, carol, bob},
                  .pay = 1'000,
-                 .flags = kMPT_DEX_FLAGS | tfMPTCanLock,
+                 .flags = kMptDexFlags | tfMPTCanLock,
                  .mutableFlags = tmfMPTCanMutateCanTransfer});
             MPTTester const cad(
                 {.env = env,
                  .issuer = gw,
                  .holders = {alice, carol, bob},
                  .pay = 1'000,
-                 .flags = kMPT_DEX_FLAGS | tfMPTCanLock,
+                 .flags = kMptDexFlags | tfMPTCanLock,
                  .mutableFlags = tmfMPTCanMutateCanTransfer});
 
             env(offer(bob, eth(1'000), btc(1'000)), Txflags(tfPassive));
@@ -4025,28 +4028,28 @@ class MPToken_test : public beast::unit_test::Suite
                  .issuer = gw,
                  .holders = {alice, carol, bob},
                  .pay = 1'000,
-                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS,
+                 .flags = tfMPTCanLock | kMptDexFlags,
                  .mutableFlags = tmfMPTCanMutateCanTransfer});
             MPTTester eth(
                 {.env = env,
                  .issuer = gw,
                  .holders = {alice, carol, bob},
                  .pay = 1'000,
-                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS,
+                 .flags = tfMPTCanLock | kMptDexFlags,
                  .mutableFlags = tmfMPTCanMutateCanTransfer});
             MPTTester usd(
                 {.env = env,
                  .issuer = gw,
                  .holders = {alice, carol, bob},
                  .pay = 1'000,
-                 .flags = kMPT_DEX_FLAGS | tfMPTCanLock,
+                 .flags = kMptDexFlags | tfMPTCanLock,
                  .mutableFlags = tmfMPTCanMutateCanTransfer});
             MPTTester cad(
                 {.env = env,
                  .issuer = gw,
                  .holders = {alice, carol, bob},
                  .pay = 1'000,
-                 .flags = kMPT_DEX_FLAGS | tfMPTCanLock,
+                 .flags = kMptDexFlags | tfMPTCanLock,
                  .mutableFlags = tmfMPTCanMutateCanTransfer});
             // takerGets can transfer if:
             //  - CanTransfer is set
@@ -4212,13 +4215,13 @@ class MPToken_test : public beast::unit_test::Suite
                      .issuer = gw,
                      .holders = {alice, carol, bob},
                      .pay = 100,
-                     .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+                     .flags = tfMPTCanLock | kMptDexFlags});
                 MPTTester const eth(
                     {.env = env,
                      .issuer = gw,
                      .holders = {alice, carol, bob},
                      .pay = 100,
-                     .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+                     .flags = tfMPTCanLock | kMptDexFlags});
                 return std::make_pair(btc, eth);
             };
             auto getIOU = [&](Env& env) {
@@ -4347,13 +4350,13 @@ class MPToken_test : public beast::unit_test::Suite
                  .issuer = gw,
                  .holders = {alice, carol, bob},
                  .pay = 100,
-                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+                 .flags = tfMPTCanLock | kMptDexFlags});
             MPTTester eth(
                 {.env = env,
                  .issuer = gw,
                  .holders = {alice, carol, bob},
                  .pay = 100,
-                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+                 .flags = tfMPTCanLock | kMptDexFlags});
 
             env(trust(alice, usd(100)));
             env(pay(gw, alice, usd(100)));
@@ -5839,7 +5842,7 @@ class MPToken_test : public beast::unit_test::Suite
                  .issuer = gw,
                  .holders = {alice, carol},
                  .pay = 100,
-                 .flags = kMPT_DEX_FLAGS | tfMPTCanLock});
+                 .flags = kMptDexFlags | tfMPTCanLock});
 
             mpt.set({.flags = tfMPTLock});
 
@@ -5910,7 +5913,7 @@ class MPToken_test : public beast::unit_test::Suite
                 {.env = env,
                  .issuer = gw,
                  .holders = {alice, carol},
-                 .flags = tfMPTRequireAuth | kMPT_DEX_FLAGS});
+                 .flags = tfMPTRequireAuth | kMptDexFlags});
             uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
             env(check::create(alice, carol, btc(50)));
             env.close();
@@ -6057,7 +6060,7 @@ class MPToken_test : public beast::unit_test::Suite
                 {.env = env,
                  .issuer = gw,
                  .holders = {alice},
-                 .flags = tfMPTRequireAuth | kMPT_DEX_FLAGS,
+                 .flags = tfMPTRequireAuth | kMptDexFlags,
                  .authHolder = true});
             uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
             env(check::create(alice, carol, btc(1)));
@@ -6181,7 +6184,7 @@ class MPToken_test : public beast::unit_test::Suite
                  .issuer = gw,
                  .holders = {alice},
                  .pay = 40'000,
-                 .flags = tfMPTCanLock | tfMPTCanClawback | kMPT_DEX_FLAGS});
+                 .flags = tfMPTCanLock | tfMPTCanClawback | kMptDexFlags});
 
             env.trust(usd(10'000), alice);
             env(pay(gw, alice, usd(10'000)));
@@ -6212,7 +6215,7 @@ class MPToken_test : public beast::unit_test::Suite
                  .issuer = gw,
                  .holders = {alice},
                  .pay = 40'000,
-                 .flags = tfMPTRequireAuth | tfMPTCanClawback | kMPT_DEX_FLAGS,
+                 .flags = tfMPTRequireAuth | tfMPTCanClawback | kMptDexFlags,
                  .authHolder = true});
 
             env.trust(usd(10'000), alice);
@@ -6296,9 +6299,9 @@ class MPToken_test : public beast::unit_test::Suite
                  .issuer = gw,
                  .holders = {alice},
                  .pay = 10'000,
-                 .flags = tfMPTCanClawback | kMPT_DEX_FLAGS});
+                 .flags = tfMPTCanClawback | kMptDexFlags});
             auto eur =
-                MPTTester({.env = env, .issuer = gw, .flags = tfMPTCanClawback | kMPT_DEX_FLAGS});
+                MPTTester({.env = env, .issuer = gw, .flags = tfMPTCanClawback | kMptDexFlags});
             AMM amm(env, gw, usd(1'000), eur(1'000));
             amm.deposit({.account = alice, .asset1In = usd(1'000)});
             // MPToken doesn't exist
@@ -6437,7 +6440,7 @@ class MPToken_test : public beast::unit_test::Suite
             auto usd = MPTTester(
                 {.env = env,
                  .issuer = gw,
-                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS,
+                 .flags = tfMPTCanLock | kMptDexFlags,
                  .mutableFlags = tmfMPTCanMutateRequireAuth | tmfMPTCanMutateCanTransfer |
                      tmfMPTCanMutateCanClawback | tmfMPTCanMutateCanTrade});
             auto eur = MPTTester({.env = env, .issuer = gw, .holders = {alice}, .pay = 1'000'000});

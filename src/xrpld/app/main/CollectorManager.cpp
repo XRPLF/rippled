@@ -26,13 +26,13 @@ public:
 
     CollectorManagerImp(Section const& params, beast::Journal journal) : journal_(journal)
     {
-        std::string const& server = get(params, Keys::kSERVER);
+        std::string const& server = get(params, Keys::kServer);
 
         if (server == "statsd")
         {
             beast::IP::Endpoint const address(
-                beast::IP::Endpoint::fromString(get(params, Keys::kADDRESS)));
-            std::string const& prefix(get(params, Keys::kPREFIX));
+                beast::IP::Endpoint::fromString(get(params, Keys::kAddress)));
+            std::string const& prefix(get(params, Keys::kPrefix));
 
             collector_ = beast::insight::StatsDCollector::make(address, prefix, journal);
         }

@@ -3,6 +3,7 @@
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/config/BasicConfig.h>
@@ -33,15 +34,15 @@ public:
 
         Section params;
         beast::TempDir const tempDir;
-        params.set(Keys::kTYPE, type);
-        params.set(Keys::kPATH, tempDir.path());
+        params.set(Keys::kType, type);
+        params.set(Keys::kPath, tempDir.path());
 
         beast::xor_shift_engine rng(seedValue);
 
         // Create a batch
         auto batch = createPredictableBatch(numObjsToTest, rng());
 
-        using namespace beast::severities;
+        using beast::Severity;
         test::SuiteJournal journal("Backend_test", *this);
 
         {

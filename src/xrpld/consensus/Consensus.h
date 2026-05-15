@@ -549,7 +549,7 @@ private:
     // How long has this round been open
     ConsensusTimer openTime_;
 
-    NetClock::duration closeResolution_ = kLEDGER_DEFAULT_TIME_RESOLUTION;
+    NetClock::duration closeResolution_ = kLedgerDefaultTimeResolution;
 
     ConsensusParms::AvalancheState closeTimeAvalancheState_ = ConsensusParms::AvalancheState::Init;
 
@@ -932,7 +932,7 @@ Consensus<Adaptor>::getJson(bool full) const
     using std::to_string;
     using Int = json::Value::Int;
 
-    json::Value ret(json::ObjectValue);
+    json::Value ret(json::ValueType::Object);
 
     ret["proposing"] = (mode_.get() == ConsensusMode::Proposing);
     ret["proposers"] = static_cast<int>(currPeerPositions_.size());
@@ -968,7 +968,7 @@ Consensus<Adaptor>::getJson(bool full) const
 
         if (!currPeerPositions_.empty())
         {
-            json::Value ppj(json::ObjectValue);
+            json::Value ppj(json::ValueType::Object);
 
             for (auto const& [nodeId, peerPos] : currPeerPositions_)
             {
@@ -979,7 +979,7 @@ Consensus<Adaptor>::getJson(bool full) const
 
         if (!acquired_.empty())
         {
-            json::Value acq(json::ArrayValue);
+            json::Value acq(json::ValueType::Array);
             for (auto const& at : acquired_)
             {
                 acq.append(to_string(at.first));
@@ -989,7 +989,7 @@ Consensus<Adaptor>::getJson(bool full) const
 
         if (result_ && !result_->disputes.empty())
         {
-            json::Value dsj(json::ObjectValue);
+            json::Value dsj(json::ValueType::Object);
             for (auto const& [txId, dispute] : result_->disputes)
             {
                 dsj[to_string(txId)] = dispute.getJson();
@@ -999,7 +999,7 @@ Consensus<Adaptor>::getJson(bool full) const
 
         if (!rawCloseTimes_.peers.empty())
         {
-            json::Value ctj(json::ObjectValue);
+            json::Value ctj(json::ValueType::Object);
             for (auto const& ct : rawCloseTimes_.peers)
             {
                 ctj[std::to_string(ct.first.time_since_epoch().count())] = ct.second;
@@ -1009,7 +1009,7 @@ Consensus<Adaptor>::getJson(bool full) const
 
         if (!deadNodes_.empty())
         {
-            json::Value dnj(json::ArrayValue);
+            json::Value dnj(json::ValueType::Array);
             for (auto const& dn : deadNodes_)
             {
                 dnj.append(to_string(dn));
@@ -1249,7 +1249,7 @@ Consensus<Adaptor>::shouldPause(std::unique_ptr<std::stringstream> const& clog) 
      *  3: >=95%
      *  4: =100%
      */
-    constexpr static std::size_t kMAX_PAUSE_PHASE = 4;
+    static constexpr std::size_t kMaxPausePhase = 4;
 
     /**
      * No particular threshold guarantees consensus. Lower thresholds
@@ -1270,7 +1270,7 @@ Consensus<Adaptor>::shouldPause(std::unique_ptr<std::stringstream> const& clog) 
      * else out of the scope of this delay mechanism is wrong with the
      * network.
      */
-    std::size_t const phase = (ahead - 1) % (kMAX_PAUSE_PHASE + 1);
+    std::size_t const phase = (ahead - 1) % (kMaxPausePhase + 1);
 
     // validators that remain after the laggards() function are considered
     // offline, and should be considered as laggards for purposes of
@@ -1282,7 +1282,7 @@ Consensus<Adaptor>::shouldPause(std::unique_ptr<std::stringstream> const& clog) 
             if (laggards + offline > totalValidators - quorum)
                 willPause = true;
             break;
-        case kMAX_PAUSE_PHASE:
+        case kMaxPausePhase:
             // No tolerance.
             willPause = true;
             break;
@@ -1297,7 +1297,7 @@ Consensus<Adaptor>::shouldPause(std::unique_ptr<std::stringstream> const& clog) 
             float const nonLaggards = totalValidators - (laggards + offline);
             float const quorumRatio = static_cast<float>(quorum) / totalValidators;
             float const allowedDissent = 1.0f - quorumRatio;
-            float const phaseFactor = static_cast<float>(phase) / kMAX_PAUSE_PHASE;
+            float const phaseFactor = static_cast<float>(phase) / kMaxPausePhase;
 
             if (nonLaggards / totalValidators < quorumRatio + (allowedDissent * phaseFactor))
             {
@@ -1696,9 +1696,9 @@ Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog
     // Consensus has taken far too long. Drop out of the round.
     if (result_->state == ConsensusState::Expired)
     {
-        static auto const kMINIMUM_COUNTER = parms.avalancheCutoffs.size() * parms.avMIN_ROUNDS;
+        static auto const kMinimumCounter = parms.avalancheCutoffs.size() * parms.avMIN_ROUNDS;
         std::stringstream ss;
-        if (establishCounter_ < kMINIMUM_COUNTER)
+        if (establishCounter_ < kMinimumCounter)
         {
             // If each round of phaseEstablish takes a very long time, we may
             // "expire" before we've given consensus enough time at each
@@ -1708,7 +1708,7 @@ Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog
             // amount of time.
 
             ss << "Consensus time has expired in round " << establishCounter_
-               << "; continue until round " << kMINIMUM_COUNTER << ". "
+               << "; continue until round " << kMinimumCounter << ". "
                << json::Compact{getJson(false)};
             JLOG(j_.error()) << ss.str();
             CLOG(clog) << ss.str() << ". ";

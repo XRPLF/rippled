@@ -15,7 +15,7 @@ namespace xrpl {
 json::Value
 doLedgerRequest(RPC::JsonContext& context)
 {
-    context.loadType = Resource::kFEE_HEAVY_BURDEN_RPC;
+    context.loadType = Resource::kFeeHeavyBurdenRpc;
     auto res = RPC::getOrAcquireLedger(context);
 
     if (!res.has_value())

@@ -19,11 +19,11 @@ setupHashRouter(Config const& config)
     using namespace std::chrono;
 
     HashRouter::Setup setup;
-    auto const& section = config.section(Sections::kHASHROUTER);
+    auto const& section = config.section(Sections::kHashrouter);
 
     std::int32_t tmp{};
 
-    if (set(tmp, Keys::kHOLD_TIME, section))
+    if (set(tmp, Keys::kHoldTime, section))
     {
         if (tmp < 12)
         {
@@ -33,7 +33,7 @@ setupHashRouter(Config const& config)
         }
         setup.holdTime = seconds(tmp);
     }
-    if (set(tmp, Keys::kRELAY_TIME, section))
+    if (set(tmp, Keys::kRelayTime, section))
     {
         if (tmp < 8)
         {

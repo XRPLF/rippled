@@ -40,8 +40,8 @@ public:
         , j_(j)
     {
         Section config;
-        config.set(Keys::kTYPE, "memory");
-        config.set(Keys::kPATH, "TestFamily");
+        config.set(Keys::kType, "memory");
+        config.set(Keys::kPath, "TestFamily");
         db_ = NodeStore::Manager::instance().makeDatabase(megabytes(4), scheduler_, 1, config, j);
     }
 

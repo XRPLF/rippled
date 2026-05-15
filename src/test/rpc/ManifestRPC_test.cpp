@@ -48,7 +48,7 @@ public:
         using namespace jtx;
         std::string const key = "n949f75evCHwgyP4fPVgaHqNHxUVN15PsJEZ3B3HnXPcPjcZAoy7";
         Env env{*this, envconfig([&key](std::unique_ptr<Config> cfg) {
-                    cfg->section(Sections::kVALIDATORS).append(key);
+                    cfg->section(Sections::kValidators).append(key);
                     return cfg;
                 })};
         {

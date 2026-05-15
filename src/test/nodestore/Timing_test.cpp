@@ -78,9 +78,10 @@ rngcpy(void* buffer, std::size_t bytes, Generator& g)
 class Sequence
 {
 private:
-    // Need to be named before converting
-    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-    enum { MinLedger = 1, MaxLedger = 1000000, MinSize = 250, MaxSize = 1250 };
+    static constexpr auto kMinLedger = 1;
+    static constexpr auto kMaxLedger = 1000000;
+    static constexpr auto kMinSize = 250;
+    static constexpr auto kMaxSize = 1250;
 
     beast::xor_shift_engine gen_;
     std::uint8_t prefix_;
@@ -93,7 +94,7 @@ public:
         // uniform distribution over hotLEDGER - hotTRANSACTION_NODE
         // but exclude  hotTRANSACTION = 2 (removed)
         , d_type_({1, 1, 0, 1, 1})
-        , d_size_(MinSize, MaxSize)
+        , d_size_(kMinSize, kMaxSize)
     {
     }
 
@@ -138,12 +139,7 @@ public:
 class Timing_test : public beast::unit_test::Suite
 {
 public:
-    // Need to be named before converting
-    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-    enum {
-        // percent of fetches for missing nodes
-        MissingNodePercent = 20
-    };
+    static constexpr auto kMissingNodePercent = 20;  // percent of fetches for missing nodes
 
     std::size_t const default_repeat = 3;
 #ifndef NDEBUG
@@ -467,7 +463,7 @@ public:
             {
                 try
                 {
-                    if (rand_(gen_) < MissingNodePercent)
+                    if (rand_(gen_) < kMissingNodePercent)
                     {
                         auto const hash = seq2_.key(dist_(gen_));
                         std::shared_ptr<NodeObject> result;
@@ -654,7 +650,7 @@ public:
             log << ss.str() << std::endl;
         }
 
-        using namespace beast::severities;
+        using beast::Severity;
         test::SuiteJournal journal("Timing_test", *this);
 
         for (auto const& configString : configStrings)
@@ -666,9 +662,9 @@ public:
             {
                 beast::TempDir const tempDir;
                 Section config = parse(configString);
-                config.set(Keys::kPATH, tempDir.path());
+                config.set(Keys::kPath, tempDir.path());
                 std::stringstream ss;
-                ss << std::left << setw(10) << get(config, Keys::kTYPE, std::string())
+                ss << std::left << setw(10) << get(config, Keys::kType, std::string())
                    << std::right;
                 for (auto const& test : tests)
                 {

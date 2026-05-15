@@ -316,13 +316,13 @@ public:
         // PerfLog must be started before any other threads are launched.
         , perfLog_(
               perf::makePerfLog(
-                  perf::setupPerfLog(config_->section(Sections::kPERF), config_->CONFIG_DIR),
+                  perf::setupPerfLog(config_->section(Sections::kPerf), config_->CONFIG_DIR),
                   *this,
                   logs_->journal("PerfLog"),
                   [this] { signalStop("PerfLog"); }))
         , txMaster_(*this)
         , collectorManager_(makeCollectorManager(
-              config_->section(Sections::kINSIGHT),
+              config_->section(Sections::kInsight),
               logs_->journal("Collector")))
         , jobQueue_(
               std::make_unique<JobQueue>(
@@ -865,7 +865,7 @@ public:
                     megabytes(config_->getValueFor(SizedItem::BurstSize, std::nullopt)),
                     dummyScheduler,
                     0,
-                    config_->section(Sections::kIMPORT_NODE_DATABASE),
+                    config_->section(Sections::kImportNodeDatabase),
                     j);
 
             JLOG(j.warn()) << "Starting node import from '" << source->getName() << "' to '"
@@ -1177,9 +1177,9 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         if (!logs_->open(debugLog))
             std::cerr << "Can't open log file " << debugLog << '\n';
 
-        using namespace beast::severities;
-        if (logs_->threshold() > KDebug)
-            logs_->threshold(KDebug);
+        using beast::Severity;
+        if (logs_->threshold() > Severity::Debug)
+            logs_->threshold(Severity::Debug);
     }
 
     JLOG(journal_.info()) << "Process starting: " << BuildInfo::getFullVersionString()
@@ -1221,9 +1221,9 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             }
             return supported;
         }();
-        Section const& downVoted = config_->section(Sections::kVETO_AMENDMENTS);
+        Section const& downVoted = config_->section(Sections::kVetoAmendments);
 
-        Section const& upVoted = config_->section(Sections::kAMENDMENTS);
+        Section const& upVoted = config_->section(Sections::kAmendments);
 
         amendmentTable_ = makeAmendmentTable(
             *this,
@@ -1292,7 +1292,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 
     nodeIdentity_ = getNodeIdentity(*this, cmdline);
 
-    if (!cluster_->load(config().section(Sections::kCLUSTER_NODES)))
+    if (!cluster_->load(config().section(Sections::kClusterNodes)))
     {
         JLOG(journal_.fatal()) << "Invalid entry in cluster configuration.";
         return false;
@@ -1306,7 +1306,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
                 getWalletDB(),
                 "ValidatorManifests",
                 validatorKeys_.manifest,
-                config().section(Sections::kVALIDATOR_KEY_REVOCATION).values()))
+                config().section(Sections::kValidatorKeyRevocation).values()))
         {
             JLOG(journal_.fatal()) << "Invalid configured validator manifest.";
             return false;
@@ -1317,7 +1317,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         // It is possible to have a valid ValidatorKeys object without
         // setting the signingKey or masterKey. This occurs if the
         // configuration file does not have either
-        // Sections::kVALIDATOR_TOKEN or Sections::kVALIDATION_SEED section.
+        // Sections::kValidatorToken or Sections::kValidationSeed section.
 
         // masterKey for the configuration-file specified validator keys
         std::optional<PublicKey> localSigningKey;
@@ -1327,8 +1327,8 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         // Setup trusted validators
         if (!validators_->load(
                 localSigningKey,
-                config().section(Sections::kVALIDATORS).values(),
-                config().section(Sections::kVALIDATOR_LIST_KEYS).values(),
+                config().section(Sections::kValidators).values(),
+                config().section(Sections::kValidatorListKeys).values(),
                 config().VALIDATOR_LIST_THRESHOLD))
         {
             JLOG(journal_.fatal()) << "Invalid entry in validator configuration.";
@@ -1336,9 +1336,9 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         }
     }
 
-    if (!validatorSites_->load(config().section(Sections::kVALIDATOR_LIST_SITES).values()))
+    if (!validatorSites_->load(config().section(Sections::kValidatorListSites).values()))
     {
-        JLOG(journal_.fatal()) << "Invalid entry in [" << Sections::kVALIDATOR_LIST_SITES << "]";
+        JLOG(journal_.fatal()) << "Invalid entry in [" << Sections::kValidatorListSites << "]";
         return false;
     }
 
@@ -1358,7 +1358,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     //             if (!config_.standalone())
     overlay_ = makeOverlay(
         *this,
-        setupOverlay(*config_),
+        setupOverlay(*config_, journal_),
         *serverHandler_,
         *resourceManager_,
         *resolver_,
@@ -1436,7 +1436,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     //
     // Execute start up rpc commands.
     //
-    for (auto const& cmd : config_->section(Sections::kRPC_STARTUP).lines())
+    for (auto const& cmd : config_->section(Sections::kRpcStartup).lines())
     {
         json::Reader jrReader;
         json::Value jvCommand;
@@ -1444,7 +1444,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         if (!jrReader.parse(cmd, jvCommand))
         {
             JLOG(journal_.fatal())
-                << "Couldn't parse entry in [" << Sections::kRPC_STARTUP << "]: '" << cmd;
+                << "Couldn't parse entry in [" << Sections::kRpcStartup << "]: '" << cmd;
         }
 
         if (!config_->quiet())
@@ -1452,7 +1452,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             JLOG(journal_.fatal()) << "Startup RPC: " << jvCommand << std::endl;
         }
 
-        Resource::Charge loadType = Resource::kFEE_REFERENCE_RPC;
+        Resource::Charge loadType = Resource::kFeeReferenceRpc;
         Resource::Consumer c;
         RPC::JsonContext context{
             {.j = getJournal("RPCHandler"),
@@ -1464,7 +1464,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
              .role = Role::ADMIN,
              .coro = {},
              .infoSub = {},
-             .apiVersion = RPC::kAPI_MAXIMUM_SUPPORTED_VERSION},
+             .apiVersion = RPC::kApiMaximumSupportedVersion},
             jvCommand};
 
         json::Value jvResult;
@@ -1500,7 +1500,7 @@ ApplicationImp::start(bool withTimers)
         overlay_->start();
 
     if (grpcServer_->start())
-        fixConfigPorts(*config_, {{Sections::kPORT_GRPC, grpcServer_->getEndpoint()}});
+        fixConfigPorts(*config_, {{Sections::kPortGrpc, grpcServer_->getEndpoint()}});
 
     ledgerCleaner_->start();
     perfLog_->start();
@@ -1665,7 +1665,7 @@ ApplicationImp::startGenesisLedger()
         : std::vector<uint256>{};
 
     std::shared_ptr<Ledger> const genesis = std::make_shared<Ledger>(
-        kCREATE_GENESIS,
+        kCreateGenesis,
         Rules{config_->features},
         config_->FEES.toFees(),
         initialAmendments,
@@ -1675,7 +1675,7 @@ ApplicationImp::startGenesisLedger()
     auto const next = std::make_shared<Ledger>(*genesis, getTimeKeeper().closeTime());
     next->updateSkipList();
     XRPL_ASSERT(
-        next->header().seq < kXRP_LEDGER_EARLIEST_FEES || next->read(keylet::fees()),
+        next->header().seq < kXrpLedgerEarliestFees || next->read(keylet::fees()),
         "xrpl::ApplicationImp::startGenesisLedger : valid ledger fees");
     next->setImmutable();
     openLedger_.emplace(next, cachedSLEs_, logs_->journal("OpenLedger"));
@@ -1697,7 +1697,7 @@ ApplicationImp::getLastFullLedger()
             return ledger;
 
         XRPL_ASSERT(
-            ledger->header().seq < kXRP_LEDGER_EARLIEST_FEES || ledger->read(keylet::fees()),
+            ledger->header().seq < kXrpLedgerEarliestFees || ledger->read(keylet::fees()),
             "xrpl::ApplicationImp::getLastFullLedger : valid ledger fees");
         ledger->setImmutable();
 
@@ -1714,7 +1714,7 @@ ApplicationImp::getLastFullLedger()
         {
             stream << "Failed on ledger";
             json::Value p;
-            addJson(p, {*ledger, nullptr, LedgerFill::Full});
+            addJson(p, {*ledger, nullptr, static_cast<int>(LedgerFill::Options::Full)});
             stream << p;
         }
 
@@ -1848,8 +1848,7 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
         loadLedger->stateMap().flushDirty(NodeObjectType::AccountNode);
 
         XRPL_ASSERT(
-            loadLedger->header().seq < kXRP_LEDGER_EARLIEST_FEES ||
-                loadLedger->read(keylet::fees()),
+            loadLedger->header().seq < kXrpLedgerEarliestFees || loadLedger->read(keylet::fees()),
             "xrpl::ApplicationImp::loadLedgerFromFile : valid ledger fees");
         loadLedger->setAccepted(closeTime, closeTimeResolution, !closeTimeEstimated);
 
@@ -1965,13 +1964,13 @@ ApplicationImp::loadOldLedger(
         }
         using namespace std::chrono_literals;
         using namespace date;
-        static constexpr NetClock::time_point kLEDGER_WARN_TIME_POINT{
+        static constexpr NetClock::time_point kLedgerWarnTimePoint{
             sys_days{January / 1 / 2018} - sys_days{January / 1 / 2000}};
-        if (loadLedger->header().closeTime < kLEDGER_WARN_TIME_POINT)
+        if (loadLedger->header().closeTime < kLedgerWarnTimePoint)
         {
             JLOG(journal_.fatal()) << "\n\n***  WARNING   ***\n"
                                       "You are replaying a ledger from before "
-                                   << to_string(kLEDGER_WARN_TIME_POINT)
+                                   << to_string(kLedgerWarnTimePoint)
                                    << " UTC.\n"
                                       "This replay will not handle your ledger as it was "
                                       "originally "
@@ -2168,12 +2167,12 @@ fixConfigPorts(Config& config, Endpoints const& endpoints)
             continue;
 
         auto& section = config[name];
-        auto const optPort = section.get(Keys::kPORT);
+        auto const optPort = section.get(Keys::kPort);
         if (optPort)
         {
             std::uint16_t const port = beast::lexicalCast<std::uint16_t>(*optPort);
             if (port == 0u)
-                section.set(Keys::kPORT, std::to_string(ep.port()));
+                section.set(Keys::kPort, std::to_string(ep.port()));
         }
     }
 }

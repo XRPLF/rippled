@@ -86,12 +86,12 @@ struct Regression_test : public beast::unit_test::Suite
         // be reproduced against an open ledger. Make a local
         // closed ledger and work with it directly.
         auto closed = std::make_shared<Ledger>(
-            kCREATE_GENESIS,
+            kCreateGenesis,
             Rules{env.app().config().features},
             env.app().config().FEES.toFees(),
             std::vector<uint256>{},
             env.app().getNodeFamily());
-        auto expectedDrops = kINITIAL_XRP;
+        auto expectedDrops = kInitialXrp;
         BEAST_EXPECT(closed->header().drops == expectedDrops);
 
         auto const aliceXRP = 400;
@@ -139,7 +139,7 @@ struct Regression_test : public beast::unit_test::Suite
 
             BEAST_EXPECT(balance == XRP(0));
         }
-        expectedDrops -= aliceXRP * kDROPS_PER_XRP;
+        expectedDrops -= aliceXRP * kDropsPerXrp;
         BEAST_EXPECT(next->header().drops == expectedDrops);
     }
 
@@ -194,8 +194,7 @@ struct Regression_test : public beast::unit_test::Suite
         testcase("Autofilled fee should use the escalated fee");
         using namespace jtx;
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->section(Sections::kTRANSACTION_QUEUE)
-                .set(Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "3");
+            cfg->section(Sections::kTransactionQueue).set(Keys::kMinimumTxnInLedgerStandalone, "3");
             cfg->FEES.reference_fee = 10;
             return cfg;
         }));
@@ -204,7 +203,7 @@ struct Regression_test : public beast::unit_test::Suite
         auto const alice = Account("alice");
         env.fund(XRP(100000), alice);
 
-        auto params = json::Value(json::ObjectValue);
+        auto params = json::Value(json::ValueType::Object);
         // Max fee = 50k drops
         params[jss::fee_mult_max] = 5000;
         std::vector<int> const expectedFees({10, 10, 8889, 13889, 20000});
@@ -213,7 +212,7 @@ struct Regression_test : public beast::unit_test::Suite
         // our fee limit.
         for (int i = 0; i < 5; ++i)
         {
-            envs(noop(alice), Fee(kNONE), Seq(kNONE))(params);
+            envs(noop(alice), Fee(kNone), Seq(kNone))(params);
 
             auto tx = env.tx();
             if (BEAST_EXPECT(tx))
@@ -235,11 +234,11 @@ struct Regression_test : public beast::unit_test::Suite
         using namespace std::chrono_literals;
 
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            auto& s = cfg->section(Sections::kTRANSACTION_QUEUE);
-            s.set(Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "4294967295");
-            s.set(Keys::kMINIMUM_TXN_IN_LEDGER, "4294967295");
-            s.set(Keys::kTARGET_TXN_IN_LEDGER, "4294967295");
-            s.set(Keys::kNORMAL_CONSENSUS_INCREASE_PERCENT, "4294967295");
+            auto& s = cfg->section(Sections::kTransactionQueue);
+            s.set(Keys::kMinimumTxnInLedgerStandalone, "4294967295");
+            s.set(Keys::kMinimumTxnInLedger, "4294967295");
+            s.set(Keys::kTargetTxnInLedger, "4294967295");
+            s.set(Keys::kNormalConsensusIncreasePercent, "4294967295");
 
             return cfg;
         }));
@@ -301,7 +300,7 @@ struct Regression_test : public beast::unit_test::Suite
                 SHAMapHash digest;
                 if (!state.peekItem(bobIndex, digest))
                     return std::nullopt;
-                return digest.asUint256();
+                return digest.asUInt256();
             }();
 
             auto const mapCounts = [&](CountedObjects::List const& list) {

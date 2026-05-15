@@ -196,7 +196,7 @@ parsePort(ParsedPort& port, Section const& section, std::ostream& log)
 {
     port.name = section.name();
     {
-        auto const optResult = section.get(Keys::kIP);
+        auto const optResult = section.get(Keys::kIp);
         if (optResult)
         {
             try
@@ -213,7 +213,7 @@ parsePort(ParsedPort& port, Section const& section, std::ostream& log)
     }
 
     {
-        auto const optResult = section.get(Keys::kPORT);
+        auto const optResult = section.get(Keys::kPort);
         if (optResult)
         {
             try
@@ -234,7 +234,7 @@ parsePort(ParsedPort& port, Section const& section, std::ostream& log)
     }
 
     {
-        auto const optResult = section.get(Keys::kPROTOCOL);
+        auto const optResult = section.get(Keys::kProtocol);
         if (optResult)
         {
             for (auto const& s : beast::rfc2616::splitCommas(optResult->begin(), optResult->end()))
@@ -243,7 +243,7 @@ parsePort(ParsedPort& port, Section const& section, std::ostream& log)
     }
 
     {
-        auto const lim = get(section, Keys::kLIMIT, "unlimited");
+        auto const lim = get(section, Keys::kLimit, "unlimited");
 
         if (!boost::iequals(lim, "unlimited"))
         {
@@ -261,7 +261,7 @@ parsePort(ParsedPort& port, Section const& section, std::ostream& log)
     }
 
     {
-        auto const optResult = section.get(Keys::kSEND_QUEUE_LIMIT);
+        auto const optResult = section.get(Keys::kSendQueueLimit);
         if (optResult)
         {
             try
@@ -286,32 +286,32 @@ parsePort(ParsedPort& port, Section const& section, std::ostream& log)
         }
     }
 
-    populate(section, Keys::kADMIN, log, port.admin_nets_v4, port.admin_nets_v6);
+    populate(section, Keys::kAdmin, log, port.admin_nets_v4, port.admin_nets_v6);
     populate(
         section,
-        Keys::kSECURE_GATEWAY,
+        Keys::kSecureGateway,
         log,
         port.secure_gateway_nets_v4,
         port.secure_gateway_nets_v6);
 
-    set(port.user, Keys::kUSER, section);
-    set(port.password, Keys::kPASSWORD, section);
-    set(port.admin_user, Keys::kADMIN_USER, section);
-    set(port.admin_password, Keys::kADMIN_PASSWORD, section);
-    set(port.ssl_key, Keys::kSSL_KEY, section);
-    set(port.ssl_cert, Keys::kSSL_CERT, section);
-    set(port.ssl_chain, Keys::kSSL_CHAIN, section);
-    set(port.ssl_ciphers, Keys::kSSL_CIPHERS, section);
+    set(port.user, Keys::kUser, section);
+    set(port.password, Keys::kPassword, section);
+    set(port.admin_user, Keys::kAdminUser, section);
+    set(port.admin_password, Keys::kAdminPassword, section);
+    set(port.ssl_key, Keys::kSslKey, section);
+    set(port.ssl_cert, Keys::kSslCert, section);
+    set(port.ssl_chain, Keys::kSslChain, section);
+    set(port.ssl_ciphers, Keys::kSslCiphers, section);
 
-    port.pmd_options.server_enable = section.valueOr(Keys::kPERMESSAGE_DEFLATE, true);
-    port.pmd_options.client_max_window_bits = section.valueOr(Keys::kCLIENT_MAX_WINDOW_BITS, 15);
-    port.pmd_options.server_max_window_bits = section.valueOr(Keys::kSERVER_MAX_WINDOW_BITS, 15);
+    port.pmd_options.server_enable = section.valueOr(Keys::kPermessageDeflate, true);
+    port.pmd_options.client_max_window_bits = section.valueOr(Keys::kClientMaxWindowBits, 15);
+    port.pmd_options.server_max_window_bits = section.valueOr(Keys::kServerMaxWindowBits, 15);
     port.pmd_options.client_no_context_takeover =
-        section.valueOr(Keys::kCLIENT_NO_CONTEXT_TAKEOVER, false);
+        section.valueOr(Keys::kClientNoContextTakeover, false);
     port.pmd_options.server_no_context_takeover =
-        section.valueOr(Keys::kSERVER_NO_CONTEXT_TAKEOVER, false);
-    port.pmd_options.compLevel = section.valueOr(Keys::kCOMPRESS_LEVEL, 8);
-    port.pmd_options.memLevel = section.valueOr(Keys::kMEMORY_LEVEL, 4);
+        section.valueOr(Keys::kServerNoContextTakeover, false);
+    port.pmd_options.compLevel = section.valueOr(Keys::kCompressLevel, 8);
+    port.pmd_options.memLevel = section.valueOr(Keys::kMemoryLevel, 4);
 }
 
 }  // namespace xrpl

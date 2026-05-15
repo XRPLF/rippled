@@ -39,8 +39,8 @@ Database::Database(
     beast::Journal journal)
     : j_(journal)
     , scheduler_(scheduler)
-    , earliestLedgerSeq_(get<std::uint32_t>(config, Keys::kEARLIEST_SEQ, kXRP_LEDGER_EARLIEST_SEQ))
-    , requestBundle_(get<int>(config, Keys::kRQ_BUNDLE, 4))
+    , earliestLedgerSeq_(get<std::uint32_t>(config, Keys::kEarliestSeq, kXrpLedgerEarliestSeq))
+    , requestBundle_(get<int>(config, Keys::kRqBundle, 4))
     , readThreads_(std::max(1, readThreads))
 {
     XRPL_ASSERT(readThreads, "xrpl::NodeStore::Database::Database : nonzero threads input");
@@ -193,7 +193,7 @@ void
 Database::importInternal(Backend& dstBackend, Database& srcDB)
 {
     Batch batch;
-    batch.reserve(BatchWritePreallocationSize);
+    batch.reserve(kBatchWritePreallocationSize);
     auto storeBatch = [&, fname = __func__]() {
         try
         {
@@ -218,7 +218,7 @@ Database::importInternal(Backend& dstBackend, Database& srcDB)
             return;
 
         batch.emplace_back(std::move(nodeObject));
-        if (batch.size() >= BatchWritePreallocationSize)
+        if (batch.size() >= kBatchWritePreallocationSize)
             storeBatch();
     });
 

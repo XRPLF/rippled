@@ -49,7 +49,7 @@ struct TxnTestData
     //   3. sign_for, and
     //   4. submit_multisigned.
     // The JSON is not valid for all of these interfaces, but it should
-    // crash kNONE of them, and should provide reliable error messages.
+    // crash kNone of them, and should provide reliable error messages.
     //
     // The expMsg array contains the expected error string for the above cases.
     std::array<char const* const, 4> const expMsg;
@@ -72,7 +72,7 @@ struct TxnTestData
     operator=(TxnTestData&&) = delete;
 };
 
-static constexpr TxnTestData kTXN_TEST_ARRAY[] = {
+static constexpr TxnTestData kTxnTestArray[] = {
 
     {"Minimal payment, no Amount only DeliverMax",
      __LINE__,
@@ -2375,9 +2375,9 @@ public:
         testcase("autofill escalated fees");
         using namespace test::jtx;
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->loadFromString(std::string("[") + Sections::kSIGNING_SUPPORT + "]\ntrue");
-                    cfg->section(Sections::kTRANSACTION_QUEUE)
-                        .set(Keys::kMINIMUM_TXN_IN_LEDGER_STANDALONE, "3");
+                    cfg->loadFromString(std::string("[") + Sections::kSigningSupport + "]\ntrue");
+                    cfg->section(Sections::kTransactionQueue)
+                        .set(Keys::kMinimumTxnInLedgerStandalone, "3");
                     return cfg;
                 })};
         LoadFeeTrack const& feeTrackOuter = env.app().getFeeTrack();
@@ -2603,7 +2603,7 @@ public:
                 result[jss::tx_json].isMember(jss::Fee) && result[jss::tx_json][jss::Fee] == "10");
             BEAST_EXPECT(
                 result[jss::tx_json].isMember(jss::Sequence) &&
-                result[jss::tx_json][jss::Sequence].isConvertibleTo(json::ValueType::UintValue));
+                result[jss::tx_json][jss::Sequence].isConvertibleTo(json::ValueType::UInt));
         }
 
         {
@@ -2630,7 +2630,7 @@ public:
                 result[jss::tx_json][jss::Fee] == "7813");
             BEAST_EXPECT(
                 result[jss::tx_json].isMember(jss::Sequence) &&
-                result[jss::tx_json][jss::Sequence].isConvertibleTo(json::ValueType::UintValue));
+                result[jss::tx_json][jss::Sequence].isConvertibleTo(json::ValueType::UInt));
 
             env.close();
         }
@@ -2656,7 +2656,7 @@ public:
                 result[jss::tx_json].isMember(jss::Fee) && result[jss::tx_json][jss::Fee] == "47");
             BEAST_EXPECT(
                 result[jss::tx_json].isMember(jss::Sequence) &&
-                result[jss::tx_json][jss::Sequence].isConvertibleTo(json::ValueType::UintValue));
+                result[jss::tx_json][jss::Sequence].isConvertibleTo(json::ValueType::UInt));
         }
 
         {
@@ -2688,7 +2688,7 @@ public:
                 result[jss::tx_json][jss::Fee] == "6806");
             BEAST_EXPECT(
                 result[jss::tx_json].isMember(jss::Sequence) &&
-                result[jss::tx_json][jss::Sequence].isConvertibleTo(json::ValueType::UintValue));
+                result[jss::tx_json][jss::Sequence].isConvertibleTo(json::ValueType::UInt));
         }
     }
 
@@ -2778,26 +2778,26 @@ public:
 
         using TestStuff = std::tuple<signFunc, submitFunc, char const*, unsigned int>;
 
-        static TestStuff const kTEST_FUNCS[] = {
+        static TestStuff const kTestFuncs[] = {
             TestStuff{transactionSign, nullptr, "sign", 0},
             TestStuff{nullptr, transactionSubmit, "submit", 1},
             TestStuff{transactionSignFor, nullptr, "sign_for", 2},
             TestStuff{nullptr, transactionSubmitMultiSigned, "submit_multisigned", 3}};
 
-        for (auto testFunc : kTEST_FUNCS)
+        for (auto testFunc : kTestFuncs)
         {
             // For each JSON test.
-            for (auto const& txnTest : kTXN_TEST_ARRAY)
+            for (auto const& txnTest : kTxnTestArray)
             {
                 json::Value req;
                 json::Reader().parse(txnTest.json, req);
                 if (RPC::containsError(req))
                     Throw<std::runtime_error>("Internal JSONRPC_test error.  Bad test JSON.");
 
-                static Role const kTESTED_ROLES[] = {
+                static Role const kTestedRoles[] = {
                     Role::GUEST, Role::USER, Role::ADMIN, Role::FORBID};
 
-                for (Role const testRole : kTESTED_ROLES)
+                for (Role const testRole : kTestedRoles)
                 {
                     json::Value result;
                     auto const signFn = get<0>(testFunc);

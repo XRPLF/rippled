@@ -54,13 +54,13 @@ getSociSqliteInit(std::string const& name, std::string const& dir, std::string c
 std::string
 getSociInit(BasicConfig const& config, std::string const& dbName)
 {
-    auto const& section = config.section(Sections::kSQDB);
-    auto const backendName = get(section, Keys::kBACKEND, "sqlite");
+    auto const& section = config.section(Sections::kSqdb);
+    auto const backendName = get(section, Keys::kBackend, "sqlite");
 
     if (backendName != "sqlite")
         Throw<std::runtime_error>("Unsupported soci backend: " + backendName);
 
-    auto const path = config.legacy(Sections::kDATABASE_PATH);
+    auto const path = config.legacy(Sections::kDatabasePath);
     auto const ext = dbName == "validators" || dbName == "peerfinder" ? ".sqlite" : ".db";
     return detail::getSociSqliteInit(dbName, path, ext);
 }

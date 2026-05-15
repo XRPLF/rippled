@@ -73,8 +73,8 @@ public:
             Env env = [&]() {
                 auto p = test::jtx::envconfig();
                 {
-                    auto& section = p->section(Sections::kSQLITE);
-                    section.set(Keys::kSAFETY_LEVEL, "high");
+                    auto& section = p->section(Sections::kSqlite);
+                    section.set(Keys::kSafetyLevel, "high");
                 }
                 p->LEDGER_HISTORY = 100'000'000;
 
@@ -82,7 +82,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(integrityWarning, &found),
-                    beast::severities::KWarning);
+                    beast::Severity::Warning);
             }();
 
             BEAST_EXPECT(!found);
@@ -102,8 +102,8 @@ public:
             Env env = [&]() {
                 auto p = test::jtx::envconfig();
                 {
-                    auto& section = p->section(Sections::kSQLITE);
-                    section.set(Keys::kSAFETY_LEVEL, "low");
+                    auto& section = p->section(Sections::kSqlite);
+                    section.set(Keys::kSafetyLevel, "low");
                 }
                 p->LEDGER_HISTORY = 100'000'000;
 
@@ -111,7 +111,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(integrityWarning, &found),
-                    beast::severities::KWarning);
+                    beast::Severity::Warning);
             }();
 
             BEAST_EXPECT(found);
@@ -131,17 +131,17 @@ public:
             Env env = [&]() {
                 auto p = test::jtx::envconfig();
                 {
-                    auto& section = p->section(Sections::kSQLITE);
-                    section.set(Keys::kJOURNAL_MODE, "off");
-                    section.set(Keys::kSYNCHRONOUS, "extra");
-                    section.set(Keys::kTEMP_STORE, "default");
+                    auto& section = p->section(Sections::kSqlite);
+                    section.set(Keys::kJournalMode, "off");
+                    section.set(Keys::kSynchronous, "extra");
+                    section.set(Keys::kTempStore, "default");
                 }
 
                 return Env(
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(integrityWarning, &found),
-                    beast::severities::KWarning);
+                    beast::Severity::Warning);
             }();
 
             // No warning, even though higher risk settings were used because
@@ -163,10 +163,10 @@ public:
             Env env = [&]() {
                 auto p = test::jtx::envconfig();
                 {
-                    auto& section = p->section(Sections::kSQLITE);
-                    section.set(Keys::kJOURNAL_MODE, "off");
-                    section.set(Keys::kSYNCHRONOUS, "extra");
-                    section.set(Keys::kTEMP_STORE, "default");
+                    auto& section = p->section(Sections::kSqlite);
+                    section.set(Keys::kJournalMode, "off");
+                    section.set(Keys::kSynchronous, "extra");
+                    section.set(Keys::kTempStore, "default");
                 }
                 p->LEDGER_HISTORY = 50'000'000;
 
@@ -174,7 +174,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(integrityWarning, &found),
-                    beast::severities::KWarning);
+                    beast::Severity::Warning);
             }();
 
             // No warning, even though higher risk settings were used because
@@ -199,11 +199,11 @@ public:
 
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section(Sections::kSQLITE);
-                section.set(Keys::kSAFETY_LEVEL, "low");
-                section.set(Keys::kJOURNAL_MODE, "off");
-                section.set(Keys::kSYNCHRONOUS, "extra");
-                section.set(Keys::kTEMP_STORE, "default");
+                auto& section = p->section(Sections::kSqlite);
+                section.set(Keys::kSafetyLevel, "low");
+                section.set(Keys::kJournalMode, "off");
+                section.set(Keys::kSynchronous, "extra");
+                section.set(Keys::kTempStore, "default");
             }
 
             try
@@ -212,7 +212,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::severities::KWarning);
+                    beast::Severity::Warning);
                 fail();
             }
             catch (...)
@@ -230,9 +230,9 @@ public:
 
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section(Sections::kSQLITE);
-                section.set(Keys::kSAFETY_LEVEL, "high");
-                section.set(Keys::kJOURNAL_MODE, "off");
+                auto& section = p->section(Sections::kSqlite);
+                section.set(Keys::kSafetyLevel, "high");
+                section.set(Keys::kJournalMode, "off");
             }
 
             try
@@ -241,7 +241,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::severities::KWarning);
+                    beast::Severity::Warning);
                 fail();
             }
             catch (...)
@@ -259,9 +259,9 @@ public:
 
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section(Sections::kSQLITE);
-                section.set(Keys::kSAFETY_LEVEL, "low");
-                section.set(Keys::kSYNCHRONOUS, "extra");
+                auto& section = p->section(Sections::kSqlite);
+                section.set(Keys::kSafetyLevel, "low");
+                section.set(Keys::kSynchronous, "extra");
             }
 
             try
@@ -270,7 +270,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::severities::KWarning);
+                    beast::Severity::Warning);
                 fail();
             }
             catch (...)
@@ -288,9 +288,9 @@ public:
 
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section(Sections::kSQLITE);
-                section.set(Keys::kSAFETY_LEVEL, "high");
-                section.set(Keys::kTEMP_STORE, "default");
+                auto& section = p->section(Sections::kSqlite);
+                section.set(Keys::kSafetyLevel, "high");
+                section.set(Keys::kTempStore, "default");
             }
 
             try
@@ -299,7 +299,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::severities::KWarning);
+                    beast::Severity::Warning);
                 fail();
             }
             catch (...)
@@ -317,8 +317,8 @@ public:
 
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section(Sections::kSQLITE);
-                section.set(Keys::kSAFETY_LEVEL, "slow");
+                auto& section = p->section(Sections::kSqlite);
+                section.set(Keys::kSafetyLevel, "slow");
             }
 
             try
@@ -327,7 +327,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::severities::KWarning);
+                    beast::Severity::Warning);
                 fail();
             }
             catch (...)
@@ -345,8 +345,8 @@ public:
 
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section(Sections::kSQLITE);
-                section.set(Keys::kJOURNAL_MODE, "fast");
+                auto& section = p->section(Sections::kSqlite);
+                section.set(Keys::kJournalMode, "fast");
             }
 
             try
@@ -355,7 +355,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::severities::KWarning);
+                    beast::Severity::Warning);
                 fail();
             }
             catch (...)
@@ -373,8 +373,8 @@ public:
 
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section(Sections::kSQLITE);
-                section.set(Keys::kSYNCHRONOUS, "instant");
+                auto& section = p->section(Sections::kSqlite);
+                section.set(Keys::kSynchronous, "instant");
             }
 
             try
@@ -383,7 +383,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::severities::KWarning);
+                    beast::Severity::Warning);
                 fail();
             }
             catch (...)
@@ -401,8 +401,8 @@ public:
 
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section(Sections::kSQLITE);
-                section.set(Keys::kTEMP_STORE, "network");
+                auto& section = p->section(Sections::kSqlite);
+                section.set(Keys::kTempStore, "network");
             }
 
             try
@@ -411,7 +411,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::severities::KWarning);
+                    beast::Severity::Warning);
                 fail();
             }
             catch (...)
@@ -436,9 +436,9 @@ public:
             Env env = [&]() {
                 auto p = test::jtx::envconfig();
                 {
-                    auto& section = p->section(Sections::kSQLITE);
-                    section.set(Keys::kPAGE_SIZE, "512");
-                    section.set(Keys::kJOURNAL_SIZE_LIMIT, "2582080");
+                    auto& section = p->section(Sections::kSqlite);
+                    section.set(Keys::kPageSize, "512");
+                    section.set(Keys::kJournalSizeLimit, "2582080");
                 }
                 return Env(*this, std::move(p));
             }();
@@ -457,8 +457,8 @@ public:
             bool found = false;
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section(Sections::kSQLITE);
-                section.set(Keys::kPAGE_SIZE, "256");
+                auto& section = p->section(Sections::kSqlite);
+                section.set(Keys::kPageSize, "256");
             }
             try
             {
@@ -466,7 +466,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::severities::KWarning);
+                    beast::Severity::Warning);
                 fail();
             }
             catch (...)
@@ -480,8 +480,8 @@ public:
             bool found = false;
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section(Sections::kSQLITE);
-                section.set(Keys::kPAGE_SIZE, "131072");
+                auto& section = p->section(Sections::kSqlite);
+                section.set(Keys::kPageSize, "131072");
             }
             try
             {
@@ -489,7 +489,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::severities::KWarning);
+                    beast::Severity::Warning);
                 fail();
             }
             catch (...)
@@ -503,8 +503,8 @@ public:
             bool found = false;
             auto p = test::jtx::envconfig();
             {
-                auto& section = p->section(Sections::kSQLITE);
-                section.set(Keys::kPAGE_SIZE, "513");
+                auto& section = p->section(Sections::kSqlite);
+                section.set(Keys::kPageSize, "513");
             }
             try
             {
@@ -512,7 +512,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::severities::KWarning);
+                    beast::Severity::Warning);
                 fail();
             }
             catch (...)
@@ -534,11 +534,11 @@ public:
 
         beast::TempDir const nodeDb;
         Section srcParams;
-        srcParams.set(Keys::kTYPE, srcBackendType);
-        srcParams.set(Keys::kPATH, nodeDb.path());
+        srcParams.set(Keys::kType, srcBackendType);
+        srcParams.set(Keys::kPath, nodeDb.path());
 
         // Create a batch
-        auto batch = createPredictableBatch(kNUM_OBJECTS_TO_TEST, seedValue);
+        auto batch = createPredictableBatch(kNumObjectsToTest, seedValue);
 
         // Write to source db
         {
@@ -557,8 +557,8 @@ public:
             // Set up the destination database
             beast::TempDir const destDb;
             Section destParams;
-            destParams.set(Keys::kTYPE, destBackendType);
-            destParams.set(Keys::kPATH, destDb.path());
+            destParams.set(Keys::kType, destBackendType);
+            destParams.set(Keys::kPath, destDb.path());
 
             std::unique_ptr<Database> dest =
                 Manager::instance().makeDatabase(megabytes(4), scheduler, 2, destParams, journal_);
@@ -595,8 +595,8 @@ public:
 
         beast::TempDir const nodeDb;
         Section nodeParams;
-        nodeParams.set(Keys::kTYPE, type);
-        nodeParams.set(Keys::kPATH, nodeDb.path());
+        nodeParams.set(Keys::kType, type);
+        nodeParams.set(Keys::kPath, nodeDb.path());
 
         beast::xor_shift_engine rng(seedValue);
 
@@ -649,13 +649,13 @@ public:
             {
                 std::unique_ptr<Database> db = Manager::instance().makeDatabase(
                     megabytes(4), scheduler, 2, nodeParams, journal_);
-                BEAST_EXPECT(db->earliestLedgerSeq() == kXRP_LEDGER_EARLIEST_SEQ);
+                BEAST_EXPECT(db->earliestLedgerSeq() == kXrpLedgerEarliestSeq);
             }
 
             // Set an invalid earliest ledger sequence
             try
             {
-                nodeParams.set(Keys::kEARLIEST_SEQ, "0");
+                nodeParams.set(Keys::kEarliestSeq, "0");
                 std::unique_ptr<Database> const db = Manager::instance().makeDatabase(
                     megabytes(4), scheduler, 2, nodeParams, journal_);
             }
@@ -666,7 +666,7 @@ public:
 
             {
                 // Set a valid earliest ledger sequence
-                nodeParams.set(Keys::kEARLIEST_SEQ, "1");
+                nodeParams.set(Keys::kEarliestSeq, "1");
                 std::unique_ptr<Database> db = Manager::instance().makeDatabase(
                     megabytes(4), scheduler, 2, nodeParams, journal_);
 
@@ -678,7 +678,7 @@ public:
             try
             {
                 // Set to default earliest ledger sequence
-                nodeParams.set(Keys::kEARLIEST_SEQ, std::to_string(kXRP_LEDGER_EARLIEST_SEQ));
+                nodeParams.set(Keys::kEarliestSeq, std::to_string(kXrpLedgerEarliestSeq));
                 std::unique_ptr<Database> const db2 = Manager::instance().makeDatabase(
                     megabytes(4), scheduler, 2, nodeParams, journal_);
             }

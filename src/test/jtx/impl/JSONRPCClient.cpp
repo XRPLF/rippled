@@ -41,8 +41,8 @@ class JSONRPCClient : public AbstractClient
     {
         auto& log = std::cerr;
         ParsedPort common;
-        parsePort(common, cfg[Sections::kSERVER], log);
-        for (auto const& name : cfg.section(Sections::kSERVER).values())
+        parsePort(common, cfg[Sections::kServer], log);
+        for (auto const& name : cfg.section(Sections::kServer).values())
         {
             if (!cfg.exists(name))
                 continue;
@@ -125,7 +125,7 @@ public:
             }
             if (params)
             {
-                json::Value& ja = jr[jss::params] = json::ArrayValue;
+                json::Value& ja = jr[jss::params] = json::ValueType::Array;
                 ja.append(params);
             }
             req.body() = to_string(jr);

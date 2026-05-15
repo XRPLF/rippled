@@ -16,9 +16,9 @@
 namespace xrpl::test {
 
 namespace validator_data {
-static auto const kPUBLIC_KEY = "nHBt9fsb4849WmZiCds4r5TXyBeQjqnH5kzPtqgMAQMgi39YZRPa";
+static auto const kPublicKey = "nHBt9fsb4849WmZiCds4r5TXyBeQjqnH5kzPtqgMAQMgi39YZRPa";
 
-static auto const kTOKEN =
+static auto const kToken =
     "eyJ2YWxpZGF0aW9uX3NlY3JldF9rZXkiOiI5ZWQ0NWY4NjYyNDFjYzE4YTI3NDdiNT\n"
     "QzODdjMDYyNTkwNzk3MmY0ZTcxOTAyMzFmYWE5Mzc0NTdmYTlkYWY2IiwibWFuaWZl\n"
     "c3QiOiJKQUFBQUFGeEllMUZ0d21pbXZHdEgyaUNjTUpxQzlnVkZLaWxHZncxL3ZDeE\n"
@@ -54,8 +54,7 @@ protocol = wss2
 admin = 127.0.0.1
 )xrpldConfig");
 
-        p->loadFromString(
-            boost::str(toLoad % validator_data::kTOKEN % validator_data::kPUBLIC_KEY));
+        p->loadFromString(boost::str(toLoad % validator_data::kToken % validator_data::kPublicKey));
 
         setupConfigForUnitTests(*p);
 
@@ -109,9 +108,9 @@ admin = 127.0.0.1
             Env env(*this, makeValidatorConfig());
             auto const& config = env.app().config();
 
-            auto const rpcPort = config[Sections::kPORT_RPC].get<unsigned int>(Keys::kPORT);
-            auto const grpcPort = config[Sections::kPORT_GRPC].get<unsigned int>(Keys::kPORT);
-            auto const wsPort = config[Sections::kPORT_WS].get<unsigned int>(Keys::kPORT);
+            auto const rpcPort = config[Sections::kPortRpc].get<unsigned int>(Keys::kPort);
+            auto const grpcPort = config[Sections::kPortGrpc].get<unsigned int>(Keys::kPort);
+            auto const wsPort = config[Sections::kPortWs].get<unsigned int>(Keys::kPort);
             BEAST_EXPECT(grpcPort);
             BEAST_EXPECT(rpcPort);
             BEAST_EXPECT(wsPort);
@@ -122,7 +121,7 @@ admin = 127.0.0.1
             BEAST_EXPECT(result[jss::result].isMember(jss::info));
             BEAST_EXPECT(
                 result[jss::result][jss::info][jss::pubkey_validator] ==
-                validator_data::kPUBLIC_KEY);
+                validator_data::kPublicKey);
 
             auto const& ports = result[jss::result][jss::info][jss::ports];
             BEAST_EXPECT(ports.isArray() && ports.size() == 3);

@@ -30,10 +30,10 @@ private:
     createSection(std::string const& path, std::string const& blockSize = "")
     {
         Section params;
-        params.set(Keys::kTYPE, "nudb");
-        params.set(Keys::kPATH, path);
+        params.set(Keys::kType, "nudb");
+        params.set(Keys::kPath, path);
         if (!blockSize.empty())
-            params.set(Keys::kNUDB_BLOCK_SIZE, blockSize);
+            params.set(Keys::kNudbBlockSize, blockSize);
         return params;
     }
 
@@ -79,10 +79,7 @@ private:
 
     // Helper function to test log messages
     void
-    testLogMessage(
-        Section const& params,
-        beast::severities::Severity level,
-        std::string const& expectedMessage)
+    testLogMessage(Section const& params, beast::Severity level, std::string const& expectedMessage)
     {
         test::StreamSink sink(level);
         beast::Journal const journal(sink);
@@ -101,7 +98,7 @@ private:
         beast::TempDir const tempDir;
         auto params = createSection(tempDir.path(), size);
 
-        test::StreamSink sink(beast::severities::KWarning);
+        test::StreamSink sink(beast::Severity::Warning);
         beast::Journal const journal(sink);
 
         DummyScheduler scheduler;
@@ -203,7 +200,7 @@ public:
             beast::TempDir const tempDir;
             auto params = createSection(tempDir.path(), "8192");
 
-            testLogMessage(params, beast::severities::KInfo, "Using custom NuDB block size: 8192");
+            testLogMessage(params, beast::Severity::Info, "Using custom NuDB block size: 8192");
         }
 
         // Test invalid block size failure
@@ -211,7 +208,7 @@ public:
             beast::TempDir const tempDir;
             auto params = createSection(tempDir.path(), "5000");
 
-            test::StreamSink sink(beast::severities::KWarning);
+            test::StreamSink sink(beast::Severity::Warning);
             beast::Journal const journal(sink);
 
             DummyScheduler scheduler;
@@ -236,7 +233,7 @@ public:
             beast::TempDir const tempDir;
             auto params = createSection(tempDir.path(), "invalid");
 
-            test::StreamSink sink(beast::severities::KWarning);
+            test::StreamSink sink(beast::Severity::Warning);
             beast::Journal const journal(sink);
 
             DummyScheduler scheduler;
@@ -281,7 +278,7 @@ public:
 
             // We test the validation logic by catching exceptions for invalid
             // values
-            test::StreamSink sink(beast::severities::KWarning);
+            test::StreamSink sink(beast::Severity::Warning);
             beast::Journal const journal(sink);
 
             DummyScheduler scheduler;
@@ -349,7 +346,7 @@ public:
             beast::TempDir const tempDir;
             auto params = createSection(tempDir.path(), format);
 
-            test::StreamSink sink(beast::severities::KInfo);
+            test::StreamSink sink(beast::Severity::Info);
             beast::Journal const journal(sink);
 
             DummyScheduler scheduler;
@@ -371,7 +368,7 @@ public:
             auto params = createSection(tempDir.path(), format);
 
             // Use a lower threshold to capture both info and warning messages
-            test::StreamSink sink(beast::severities::KDebug);
+            test::StreamSink sink(beast::Severity::Debug);
             beast::Journal const journal(sink);
 
             DummyScheduler scheduler;

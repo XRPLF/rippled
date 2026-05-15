@@ -75,8 +75,8 @@ MemoryFactory* gMemoryFactory = nullptr;
 void
 registerMemoryFactory(Manager& manager)
 {
-    static MemoryFactory kINSTANCE{manager};
-    gMemoryFactory = &kINSTANCE;
+    static MemoryFactory kInstance{manager};
+    gMemoryFactory = &kInstance;
 }
 
 //------------------------------------------------------------------------------
@@ -92,7 +92,7 @@ private:
 
 public:
     MemoryBackend(size_t keyBytes, Section const& keyValues, beast::Journal journal)
-        : name_(get(keyValues, Keys::kPATH)), journal_(journal)
+        : name_(get(keyValues, Keys::kPath)), journal_(journal)
     {
         boost::ignore_unused(journal_);  // Keep unused journal_ just in case.
         if (name_.empty())

@@ -17,18 +17,18 @@
 namespace xrpl {
 ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
 {
-    if (config.exists(Sections::kVALIDATOR_TOKEN) && config.exists(Sections::kVALIDATION_SEED))
+    if (config.exists(Sections::kValidatorToken) && config.exists(Sections::kValidationSeed))
     {
         configInvalid_ = true;
-        JLOG(j.fatal()) << "Cannot specify both [" << Sections::kVALIDATION_SEED << "] and ["
-                        << Sections::kVALIDATOR_TOKEN << "]";
+        JLOG(j.fatal()) << "Cannot specify both [" << Sections::kValidationSeed << "] and ["
+                        << Sections::kValidatorToken << "]";
         return;
     }
 
-    if (config.exists(Sections::kVALIDATOR_TOKEN))
+    if (config.exists(Sections::kValidatorToken))
     {
         // token is non-const so it can be moved from
-        if (auto token = loadValidatorToken(config.section(Sections::kVALIDATOR_TOKEN).lines()))
+        if (auto token = loadValidatorToken(config.section(Sections::kValidatorToken).lines()))
         {
             auto const pk = derivePublicKey(KeyType::Secp256k1, token->validationSecret);
             auto const m = deserializeManifest(base64Decode(token->manifest));
@@ -36,7 +36,7 @@ ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
             if (!m || pk != m->signingKey)
             {
                 configInvalid_ = true;
-                JLOG(j.fatal()) << "Invalid token specified in [" << Sections::kVALIDATOR_TOKEN
+                JLOG(j.fatal()) << "Invalid token specified in [" << Sections::kValidatorToken
                                 << "]";
             }
             else
@@ -50,17 +50,17 @@ ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
         else
         {
             configInvalid_ = true;
-            JLOG(j.fatal()) << "Invalid token specified in [" << Sections::kVALIDATOR_TOKEN << "]";
+            JLOG(j.fatal()) << "Invalid token specified in [" << Sections::kValidatorToken << "]";
         }
     }
-    else if (config.exists(Sections::kVALIDATION_SEED))
+    else if (config.exists(Sections::kValidationSeed))
     {
         auto const seed =
-            parseBase58<Seed>(config.section(Sections::kVALIDATION_SEED).lines().front());
+            parseBase58<Seed>(config.section(Sections::kValidationSeed).lines().front());
         if (!seed)
         {
             configInvalid_ = true;
-            JLOG(j.fatal()) << "Invalid seed specified in [" << Sections::kVALIDATION_SEED << "]";
+            JLOG(j.fatal()) << "Invalid seed specified in [" << Sections::kValidationSeed << "]";
         }
         else
         {
