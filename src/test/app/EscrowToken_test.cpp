@@ -916,8 +916,8 @@ struct EscrowToken_test : public beast::unit_test::Suite
 
             auto const seq = env.seq(alice);
             env(escrow::create(alice, bob, usd(1'000)),
-                escrow::kFINISH_TIME(env.now() + 1s),
-                escrow::kCANCEL_TIME(env.now() + 2s),
+                escrow::kFinishTime(env.now() + 1s),
+                escrow::kCancelTime(env.now() + 2s),
                 Fee(baseFee));
             env.close();
 
