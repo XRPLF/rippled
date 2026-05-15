@@ -696,7 +696,7 @@ public:
             }
 
             // Discard invalid addresses
-            if (!isValidAddress(ep.address))
+            if (config_.verifyEndpoints && !isValidAddress(ep.address))
             {
                 JLOG(journal.debug())
                     << beast::Leftw(18) << "Endpoints drop " << ep.address << " as invalid";
@@ -1087,6 +1087,8 @@ public:
     isValidAddress(beast::IP::Endpoint const& address)
     {
         if (isUnspecified(address))
+            return false;
+        if (isLoopback(address))
             return false;
         if (!isPublic(address))
             return false;

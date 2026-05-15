@@ -15,16 +15,6 @@ Config::Config() : outPeers(calcOutPeers())
 {
 }
 
-bool
-operator==(Config const& lhs, Config const& rhs)
-{
-    return lhs.autoConnect == rhs.autoConnect && lhs.peerPrivate == rhs.peerPrivate &&
-        lhs.wantIncoming == rhs.wantIncoming && lhs.inPeers == rhs.inPeers &&
-        lhs.maxPeers == rhs.maxPeers && lhs.outPeers == rhs.outPeers &&
-        lhs.features == rhs.features && lhs.ipLimit == rhs.ipLimit &&
-        lhs.listeningPort == rhs.listeningPort;
-}
-
 std::size_t
 Config::calcOutPeers() const
 {
@@ -60,6 +50,7 @@ Config::onWrite(beast::PropertyStream::Map& map) const
     map["port"] = listeningPort;
     map["features"] = features;
     map["ip_limit"] = ipLimit;
+    map["verify_endpoints"] = verifyEndpoints;
 }
 
 Config
@@ -67,7 +58,8 @@ Config::makeConfig(
     xrpl::Config const& cfg,
     std::uint16_t port,
     bool validationPublicKey,
-    int ipLimit)
+    int ipLimit,
+    bool verifyEndpoints)
 {
     PeerFinder::Config config;
 
@@ -120,6 +112,7 @@ Config::makeConfig(
     config.listeningPort = port;
     config.features = "";
     config.ipLimit = ipLimit;
+    config.verifyEndpoints = verifyEndpoints;
 
     // Enforce business rules
     config.applyTuning();

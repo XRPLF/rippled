@@ -1357,7 +1357,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     //             if (!config_.standalone())
     overlay_ = makeOverlay(
         *this,
-        setupOverlay(*config_),
+        setupOverlay(*config_, journal_),
         *serverHandler_,
         *resourceManager_,
         *resolver_,
