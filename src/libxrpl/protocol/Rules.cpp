@@ -65,7 +65,7 @@ setCurrentTransactionRules(std::optional<Rules> r)
             return MantissaRange::MantissaScale::LargeLegacy;
         return MantissaRange::MantissaScale::Small;
     }();
-    Number::setMantissaRange(range);
+    Number::setMantissaScale(range);
 
     *getCurrentTransactionRulesRef() = std::move(r);
 }
