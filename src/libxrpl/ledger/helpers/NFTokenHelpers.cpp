@@ -636,8 +636,8 @@ deleteTokenOffer(ApplyView& view, std::shared_ptr<SLE> const& offer)
     auto const nftokenID = (*offer)[sfNFTokenID];
 
     if (!view.dirRemove(
-            (((*offer)[sfFlags] & lsfSellNFToken) != 0u) ? keylet::nftSells(nftokenID)
-                                                         : keylet::nftBuys(nftokenID),
+            offer->isFlag(lsfSellNFToken) ? keylet::nftSells(nftokenID)
+                                          : keylet::nftBuys(nftokenID),
             (*offer)[sfNFTokenOfferNode],
             offer->key(),
             false))
@@ -888,7 +888,7 @@ tokenOfferCreatePreclaim(
             return tecNO_DST;
 
         // check if the destination has disallowed incoming offers
-        if ((sleDst->getFlags() & lsfDisallowIncomingNFTokenOffer) != 0u)
+        if (sleDst->isFlag(lsfDisallowIncomingNFTokenOffer))
             return tecNO_PERMISSION;
     }
 
@@ -901,7 +901,7 @@ tokenOfferCreatePreclaim(
         if (!sleOwner)
             return tecNO_TARGET;
 
-        if ((sleOwner->getFlags() & lsfDisallowIncomingNFTokenOffer) != 0u)
+        if (sleOwner->isFlag(lsfDisallowIncomingNFTokenOffer))
             return tecNO_PERMISSION;
     }
 

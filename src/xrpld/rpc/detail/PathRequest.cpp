@@ -219,7 +219,7 @@ PathRequest::isValid(std::shared_ptr<AssetCache> const& crCache)
     }
     else
     {
-        bool const disallowXRP((sleDest->getFlags() & lsfDisallowXRP) != 0u);
+        bool const disallowXRP(sleDest->isFlag(lsfDisallowXRP));
 
         auto const destAssets = accountDestAssets(*raDstAccount_, crCache, !disallowXRP);
 

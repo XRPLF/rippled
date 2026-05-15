@@ -159,7 +159,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 
     if (bo)
     {
-        if (((*bo)[sfFlags] & lsfSellNFToken) == lsfSellNFToken)
+        if (bo->isFlag(lsfSellNFToken))
             return tecNFTOKEN_OFFER_TYPE_MISMATCH;
 
         // An account can't accept an offer it placed:
@@ -218,7 +218,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 
     if (so)
     {
-        if (((*so)[sfFlags] & lsfSellNFToken) != lsfSellNFToken)
+        if (!so->isFlag(lsfSellNFToken))
             return tecNFTOKEN_OFFER_TYPE_MISMATCH;
 
         // An account can't accept an offer it placed:

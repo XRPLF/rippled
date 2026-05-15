@@ -105,7 +105,7 @@ deleteSLE(ApplyView& view, std::shared_ptr<SLE> const& sleCredential, beast::Jou
 
     auto const issuer = sleCredential->getAccountID(sfIssuer);
     auto const subject = sleCredential->getAccountID(sfSubject);
-    bool const accepted = (sleCredential->getFlags() & lsfAccepted) != 0u;
+    bool const accepted = sleCredential->isFlag(lsfAccepted);
 
     auto err = delSLE(issuer, sfIssuerNode, !accepted || (subject == issuer));
     if (!isTesSuccess(err))
@@ -174,7 +174,7 @@ valid(STTx const& tx, ReadView const& view, AccountID const& src, beast::Journal
             return tecBAD_CREDENTIALS;
         }
 
-        if ((sleCred->getFlags() & lsfAccepted) == 0u)
+        if (!sleCred->isFlag(lsfAccepted))
         {
             JLOG(j.trace()) << "Credential isn't accepted. Cred: " << h;
             return tecBAD_CREDENTIALS;
@@ -215,7 +215,7 @@ validDomain(ReadView const& view, uint256 domainID, AccountID const& subject)
                 foundExpired = true;
                 continue;
             }
-            if ((sleCredential->getFlags() & lsfAccepted) != 0u)
+            if (sleCredential->isFlag(lsfAccepted))
             {
                 return tesSUCCESS;
             }
@@ -339,7 +339,7 @@ verifyValidDomain(ApplyView& view, AccountID const& account, uint256 domainID, b
         if (!sleCredential)
             continue;  // expired, i.e. deleted in credentials::removeExpired
 
-        if ((sleCredential->getFlags() & lsfAccepted) != 0u)
+        if (sleCredential->isFlag(lsfAccepted))
             return tesSUCCESS;
     }
 
@@ -373,7 +373,7 @@ verifyDepositPreauth(
             return tecEXPIRED;
     }
 
-    if (sleDst && ((sleDst->getFlags() & lsfDepositAuth) != 0u))
+    if (sleDst && sleDst->isFlag(lsfDepositAuth))
     {
         if (src != dst)
         {

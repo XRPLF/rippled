@@ -84,15 +84,12 @@ public:
         env.fund(XRP(10000), alice, bob);
 
         auto ar = env.le(alice);
-        BEAST_EXPECT(
-            ar->isFieldPresent(sfFlags) && ((ar->getFieldU32(sfFlags) & lsfPasswordSpent) == 0));
+        BEAST_EXPECT(ar->isFieldPresent(sfFlags) && !ar->isFlag(lsfPasswordSpent));
 
         env(regkey(alice, bob), Sig(alice), Fee(0));
 
         ar = env.le(alice);
-        BEAST_EXPECT(
-            ar->isFieldPresent(sfFlags) &&
-            ((ar->getFieldU32(sfFlags) & lsfPasswordSpent) == lsfPasswordSpent));
+        BEAST_EXPECT(ar->isFieldPresent(sfFlags) && ar->isFlag(lsfPasswordSpent));
 
         // The second SetRegularKey transaction with Fee=0 should fail.
         env(regkey(alice, bob), Sig(alice), Fee(0), Ter(telINSUF_FEE_P));
@@ -100,8 +97,7 @@ public:
         env.trust(bob["USD"](1), alice);
         env(pay(bob, alice, bob["USD"](1)));
         ar = env.le(alice);
-        BEAST_EXPECT(
-            ar->isFieldPresent(sfFlags) && ((ar->getFieldU32(sfFlags) & lsfPasswordSpent) == 0));
+        BEAST_EXPECT(ar->isFieldPresent(sfFlags) && !ar->isFlag(lsfPasswordSpent));
     }
 
     void

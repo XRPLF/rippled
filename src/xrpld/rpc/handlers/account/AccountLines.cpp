@@ -219,11 +219,11 @@ doAccountLines(RPC::JsonContext& context)
                     {
                         if (sleCur->getFieldAmount(sfLowLimit).getIssuer() == visitData.accountID)
                         {
-                            ignore = !(sleCur->getFieldU32(sfFlags) & lsfLowReserve);
+                            ignore = !sleCur->isFlag(lsfLowReserve);
                         }
                         else
                         {
-                            ignore = !(sleCur->getFieldU32(sfFlags) & lsfHighReserve);
+                            ignore = !sleCur->isFlag(lsfHighReserve);
                         }
                     }
 

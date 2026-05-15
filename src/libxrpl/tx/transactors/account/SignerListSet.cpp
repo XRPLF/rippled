@@ -197,7 +197,7 @@ removeSignersFromLedger(
     // If the lsfOneOwnerCount bit is set then remove just one owner count.
     // Otherwise use the pre-MultiSignReserve amendment calculation.
     int removeFromOwnerCount = -1;
-    if ((signers->getFlags() & lsfOneOwnerCount) == 0)
+    if (!signers->isFlag(lsfOneOwnerCount))
     {
         STArray const& actualList = signers->getFieldArray(sfSignerEntries);
         removeFromOwnerCount =

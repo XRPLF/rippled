@@ -78,13 +78,11 @@ TrustSet::preflight(PreflightContext const& ctx)
     auto& tx = ctx.tx;
     auto& j = ctx.j;
 
-    std::uint32_t const uTxFlags = tx.getFlags();
-
     if (!ctx.rules.enabled(featureDeepFreeze))
     {
         // Even though the deep freeze flags are included in the
         // `tfTrustSetMask`, they are not valid if the amendment is not enabled.
-        if ((uTxFlags & (tfSetDeepFreeze | tfClearDeepFreeze)) != 0u)
+        if ((tx.getFlags() & (tfSetDeepFreeze | tfClearDeepFreeze)) != 0u)
         {
             return temINVALID_FLAG;
         }
@@ -142,12 +140,10 @@ TrustSet::checkPermission(ReadView const& view, STTx const& tx)
     if (isTesSuccess(checkTxPermission(sle, tx)))
         return tesSUCCESS;
 
-    std::uint32_t const txFlags = tx.getFlags();
-
     // Currently we only support TrustlineAuthorize, TrustlineFreeze and
     // TrustlineUnfreeze granular permission. Setting other flags returns
     // error.
-    if ((txFlags & tfTrustSetPermissionMask) != 0u)
+    if ((tx.getFlags() & tfTrustSetPermissionMask) != 0u)
         return terNO_DELEGATE_PERMISSION;
 
     if (tx.isFieldPresent(sfQualityIn) || tx.isFieldPresent(sfQualityOut))
@@ -166,11 +162,11 @@ TrustSet::checkPermission(ReadView const& view, STTx const& tx)
     std::unordered_set<GranularPermissionType> granularPermissions;
     loadGranularPermission(sle, ttTRUST_SET, granularPermissions);
 
-    if (((txFlags & tfSetfAuth) != 0u) && !granularPermissions.contains(TrustlineAuthorize))
+    if (tx.isFlag(tfSetfAuth) && !granularPermissions.contains(TrustlineAuthorize))
         return terNO_DELEGATE_PERMISSION;
-    if (((txFlags & tfSetFreeze) != 0u) && !granularPermissions.contains(TrustlineFreeze))
+    if (tx.isFlag(tfSetFreeze) && !granularPermissions.contains(TrustlineFreeze))
         return terNO_DELEGATE_PERMISSION;
-    if (((txFlags & tfClearFreeze) != 0u) && !granularPermissions.contains(TrustlineUnfreeze))
+    if (tx.isFlag(tfClearFreeze) && !granularPermissions.contains(TrustlineUnfreeze))
         return terNO_DELEGATE_PERMISSION;
 
     // updating LimitAmount is not allowed only with granular permissions,
@@ -197,11 +193,9 @@ TrustSet::preclaim(PreclaimContext const& ctx)
     if (!sle)
         return terNO_ACCOUNT;
 
-    std::uint32_t const uTxFlags = ctx.tx.getFlags();
+    bool const bSetAuth = ctx.tx.isFlag(tfSetfAuth);
 
-    bool const bSetAuth = (uTxFlags & tfSetfAuth) != 0u;
-
-    if (bSetAuth && ((sle->getFieldU32(sfFlags) & lsfRequireAuth) == 0u))
+    if (bSetAuth && !sle->isFlag(lsfRequireAuth))
     {
         JLOG(ctx.j.trace()) << "Retry: Auth not required.";
         return tefNO_AUTH_REQUIRED;
@@ -223,7 +217,7 @@ TrustSet::preclaim(PreclaimContext const& ctx)
 
     // If the destination has opted to disallow incoming trustlines
     // then honour that flag
-    if ((sleDst->getFlags() & lsfDisallowIncomingTrustline) != 0u)
+    if (sleDst->isFlag(lsfDisallowIncomingTrustline))
     {
         // The original implementation of featureDisallowIncoming was
         // too restrictive. If
@@ -288,8 +282,8 @@ TrustSet::preclaim(PreclaimContext const& ctx)
     if (ctx.view.rules().enabled(featureDeepFreeze))
     {
         bool const bNoFreeze = sle->isFlag(lsfNoFreeze);
-        bool const bSetFreeze = (uTxFlags & tfSetFreeze) != 0u;
-        bool const bSetDeepFreeze = (uTxFlags & tfSetDeepFreeze) != 0u;
+        bool const bSetFreeze = ctx.tx.isFlag(tfSetFreeze);
+        bool const bSetDeepFreeze = ctx.tx.isFlag(tfSetDeepFreeze);
 
         if (bNoFreeze && (bSetFreeze || bSetDeepFreeze))
         {
@@ -297,8 +291,8 @@ TrustSet::preclaim(PreclaimContext const& ctx)
             return tecNO_PERMISSION;
         }
 
-        bool const bClearFreeze = (uTxFlags & tfClearFreeze) != 0u;
-        bool const bClearDeepFreeze = (uTxFlags & tfClearDeepFreeze) != 0u;
+        bool const bClearFreeze = ctx.tx.isFlag(tfClearFreeze);
+        bool const bClearDeepFreeze = ctx.tx.isFlag(tfClearDeepFreeze);
         if ((bSetFreeze || bSetDeepFreeze) && (bClearFreeze || bClearDeepFreeze))
         {
             // Freezing and unfreezing in the same transaction should be
@@ -378,15 +372,13 @@ TrustSet::doApply()
     if (bQualityOut && QUALITY_ONE == uQualityOut)
         uQualityOut = 0;
 
-    std::uint32_t const uTxFlags = ctx_.tx.getFlags();
-
-    bool const bSetAuth = (uTxFlags & tfSetfAuth) != 0u;
-    bool const bSetNoRipple = (uTxFlags & tfSetNoRipple) != 0u;
-    bool const bClearNoRipple = (uTxFlags & tfClearNoRipple) != 0u;
-    bool const bSetFreeze = (uTxFlags & tfSetFreeze) != 0u;
-    bool const bClearFreeze = (uTxFlags & tfClearFreeze) != 0u;
-    bool const bSetDeepFreeze = (uTxFlags & tfSetDeepFreeze) != 0u;
-    bool const bClearDeepFreeze = (uTxFlags & tfClearDeepFreeze) != 0u;
+    bool const bSetAuth = ctx_.tx.isFlag(tfSetfAuth);
+    bool const bSetNoRipple = ctx_.tx.isFlag(tfSetNoRipple);
+    bool const bClearNoRipple = ctx_.tx.isFlag(tfClearNoRipple);
+    bool const bSetFreeze = ctx_.tx.isFlag(tfSetFreeze);
+    bool const bClearFreeze = ctx_.tx.isFlag(tfClearFreeze);
+    bool const bSetDeepFreeze = ctx_.tx.isFlag(tfSetDeepFreeze);
+    bool const bClearDeepFreeze = ctx_.tx.isFlag(tfClearDeepFreeze);
 
     auto viewJ = ctx_.registry.get().getJournal("View");
 
@@ -538,8 +530,8 @@ TrustSet::doApply()
         if (QUALITY_ONE == uHighQualityOut)
             uHighQualityOut = 0;
 
-        bool const bLowDefRipple = (sleLowAccount->getFlags() & lsfDefaultRipple) != 0u;
-        bool const bHighDefRipple = (sleHighAccount->getFlags() & lsfDefaultRipple) != 0u;
+        bool const bLowDefRipple = sleLowAccount->isFlag(lsfDefaultRipple);
+        bool const bHighDefRipple = sleHighAccount->isFlag(lsfDefaultRipple);
 
         bool const bLowReserveSet = (uLowQualityIn != 0u) || (uLowQualityOut != 0u) ||
             ((uFlagsOut & lsfLowNoRipple) == 0) != bLowDefRipple ||
@@ -553,8 +545,8 @@ TrustSet::doApply()
 
         bool const bDefault = bLowReserveClear && bHighReserveClear;
 
-        bool const bLowReserved = (uFlagsIn & lsfLowReserve) != 0u;
-        bool const bHighReserved = (uFlagsIn & lsfHighReserve) != 0u;
+        bool const bLowReserved = sleRippleState->isFlag(lsfLowReserve);
+        bool const bHighReserved = sleRippleState->isFlag(lsfHighReserve);
 
         bool bReserveIncrease = false;
 

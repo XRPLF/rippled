@@ -130,7 +130,7 @@ checkAttestationPublicKey(
         if (accountFromPK == attestationSignerAccount)
         {
             // master key
-            if ((sleAttestationSigningAccount->getFieldU32(sfFlags) & lsfDisableMaster) != 0u)
+            if (sleAttestationSigningAccount->isFlag(lsfDisableMaster))
             {
                 JLOG(j.trace()) << "Attempt to add an attestation with "
                                    "disabled master key.";
@@ -408,7 +408,7 @@ transferHelper(
     {
         // Check dst tag and deposit auth
 
-        if (((sleDst->getFlags() & lsfRequireDestTag) != 0u) && !dstTag)
+        if (sleDst->isFlag(lsfRequireDestTag) && !dstTag)
             return tecDST_TAG_NEEDED;
 
         // If the destination is the claim owner, and this is a claim
@@ -417,7 +417,7 @@ transferHelper(
         bool const canBypassDepositAuth =
             dst == claimOwner && depositAuthPolicy == DepositAuthPolicy::DstCanBypass;
 
-        if (!canBypassDepositAuth && ((sleDst->getFlags() & lsfDepositAuth) != 0u) &&
+        if (!canBypassDepositAuth && sleDst->isFlag(lsfDepositAuth) &&
             !psb.exists(keylet::depositPreauth(dst, src)))
         {
             return tecNO_PERMISSION;
@@ -1425,7 +1425,7 @@ XChainCreateBridge::preclaim(PreclaimContext const& ctx)
 
         // Allowing clawing back funds would break the bridge's invariant that
         // wrapped funds are always backed by locked funds
-        if ((sleIssuer->getFlags() & lsfAllowTrustLineClawback) != 0u)
+        if (sleIssuer->isFlag(lsfAllowTrustLineClawback))
             return tecNO_PERMISSION;
     }
 
@@ -1504,7 +1504,7 @@ BridgeModify::preflight(PreflightContext const& ctx)
     auto const reward = ctx.tx[~sfSignatureReward];
     auto const minAccountCreate = ctx.tx[~sfMinAccountCreateAmount];
     auto const bridgeSpec = ctx.tx[sfXChainBridge];
-    bool const clearAccountCreate = (ctx.tx.getFlags() & tfClearAccountCreateAmount) != 0u;
+    bool const clearAccountCreate = ctx.tx.isFlag(tfClearAccountCreateAmount);
 
     if (!reward && !minAccountCreate && !clearAccountCreate)
     {
@@ -1562,7 +1562,7 @@ BridgeModify::doApply()
     auto const bridgeSpec = ctx_.tx[sfXChainBridge];
     auto const reward = ctx_.tx[~sfSignatureReward];
     auto const minAccountCreate = ctx_.tx[~sfMinAccountCreateAmount];
-    bool const clearAccountCreate = (ctx_.tx.getFlags() & tfClearAccountCreateAmount) != 0u;
+    bool const clearAccountCreate = ctx_.tx.isFlag(tfClearAccountCreateAmount);
 
     auto const sleAcct = ctx_.view().peek(keylet::account(account));
     if (!sleAcct)

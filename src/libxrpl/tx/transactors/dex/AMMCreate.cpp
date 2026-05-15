@@ -132,7 +132,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
             return false;
 
         if (auto const issuerAccount = view.read(keylet::account(asset.getIssuer())))
-            return (issuerAccount->getFlags() & lsfDefaultRipple) == 0;
+            return !issuerAccount->isFlag(lsfDefaultRipple);
 
         return false;
     };
