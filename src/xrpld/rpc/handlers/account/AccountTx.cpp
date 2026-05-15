@@ -321,8 +321,7 @@ populateJsonResponse(
                                 JsonOptions::Values::DisableApiPriorV2) |
                             static_cast<JsonOptions::underlying_t>(
                                 JsonOptions::Values::DisableApiPriorV3);
-                        auto const opts =
-                            context.apiVersion >= 3 ? kOptionsJsonV3 : kOptionsJsonV2;
+                        auto const opts = context.apiVersion >= 3 ? kOptionsJsonV3 : kOptionsJsonV2;
                         jvObj[jsonTx] = txn->getJson(opts, false);
                         jvObj[jss::hash] = to_string(txn->getID());
                         jvObj[jss::ledger_index] = txn->getLedger();
@@ -341,8 +340,7 @@ populateJsonResponse(
                         {
                             uint32_t const lgrSeq = txn->getLedger();
                             uint32_t const txnIdx = txnMeta->getIndex();
-                            uint32_t const netID =
-                                context.app.getNetworkIDService().getNetworkID();
+                            uint32_t const netID = context.app.getNetworkIDService().getNetworkID();
                             if (auto const ctid = RPC::encodeCTID(lgrSeq, txnIdx, netID))
                                 jvObj[jss::ctid] = *ctid;
                         }

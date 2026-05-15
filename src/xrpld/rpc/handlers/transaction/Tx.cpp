@@ -211,8 +211,7 @@ populateJsonResponse(
             static constexpr auto kOptionsJsonV3 =
                 static_cast<JsonOptions::underlying_t>(JsonOptions::Values::DisableApiPriorV2) |
                 static_cast<JsonOptions::underlying_t>(JsonOptions::Values::DisableApiPriorV3);
-            auto const kOptionsJson =
-                context.apiVersion >= 3 ? kOptionsJsonV3 : kOptionsJsonV2;
+            auto const kOptionsJson = context.apiVersion >= 3 ? kOptionsJsonV3 : kOptionsJsonV2;
             if (args.binary)
             {
                 response[jss::tx_blob] = result.txn->getJson(kOptionsJson, true);

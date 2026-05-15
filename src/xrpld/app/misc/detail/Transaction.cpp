@@ -187,6 +187,7 @@ Transaction::getJson(JsonOptions options, bool binary) const
                 if (ctid)
                     ret[jss::ctid] = *ctid;
             }
+        }
     }
 
     return ret;
