@@ -71,7 +71,7 @@ public:
         auto const usd = gw["USD"];
 
         {
-            Env env{*this, testableAmendments()};
+            Env env{*this};
 
             // Make sure none of the offers we generate are under funded.
             env.fund(XRP(10'000'000), gw, alice, bob);
@@ -206,7 +206,7 @@ public:
 
         {
             // Make sure none of the offers we generate are under funded.
-            Env env{*this, testableAmendments()};
+            Env env{*this};
             env.fund(XRP(10'000'000), gw, alice, bob);
             env.close();
 
@@ -339,7 +339,7 @@ public:
         auto const usd = gw["USD"];
 
         {
-            Env env{*this, testableAmendments()};
+            Env env{*this};
 
             env.fund(XRP(10000), alice, bob, gw);
             env.close();
@@ -427,7 +427,7 @@ public:
         STAmount const tinyUSD(usd, /*mantissa*/ 1, /*exponent*/ -81);
 
         {
-            Env env{*this, testableAmendments()};
+            Env env{*this};
 
             env.fund(XRP(10000), alice, bob, gw);
             env.close();
@@ -535,7 +535,7 @@ public:
 
         // Make one test run without fixReducedOffersV2 and one with.
         for (FeatureBitset features :
-             {testableAmendments() - fixReducedOffersV2, testableAmendments() | fixReducedOffersV2})
+             {testableAmendments() - fixReducedOffersV2, testableAmendments()})
         {
             // Make sure none of the offers we generate are under funded.
             Env env{*this, features};

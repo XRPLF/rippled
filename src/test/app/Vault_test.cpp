@@ -536,7 +536,7 @@ class Vault_test : public beast::unit_test::Suite
 
         auto testCases = [&, this](
                              std::string prefix, std::function<PrettyAsset(Env & env)> setup) {
-            Env env{*this, testableAmendments()};
+            Env env{*this};
 
             Vault vault{env};
             env.fund(XRP(1000), issuer, owner, depositor, charlie, dave);
@@ -1112,7 +1112,7 @@ class Vault_test : public beast::unit_test::Suite
                                 Account const& depositor,
                                 Asset const& asset,
                                 Vault& vault)> test) {
-            Env env{*this, testableAmendments()};
+            Env env{*this};
             Account const issuer{"issuer"};
             Account const owner{"owner"};
             Account const depositor{"depositor"};
@@ -1293,7 +1293,7 @@ class Vault_test : public beast::unit_test::Suite
 
             {
                 testcase("IOU fail create frozen");
-                Env env{*this, testableAmendments()};
+                Env env{*this};
                 Account const issuer{"issuer"};
                 Account const owner{"owner"};
                 env.fund(XRP(1000), issuer, owner);
@@ -1311,7 +1311,7 @@ class Vault_test : public beast::unit_test::Suite
 
             {
                 testcase("IOU fail create no ripling");
-                Env env{*this, testableAmendments()};
+                Env env{*this};
                 Account const issuer{"issuer"};
                 Account const owner{"owner"};
                 env.fund(XRP(1000), issuer, owner);
@@ -1328,7 +1328,7 @@ class Vault_test : public beast::unit_test::Suite
 
             {
                 testcase("IOU no issuer");
-                Env env{*this, testableAmendments()};
+                Env env{*this};
                 Account const issuer{"issuer"};
                 Account const owner{"owner"};
                 env.fund(XRP(1000), owner);
@@ -1346,7 +1346,7 @@ class Vault_test : public beast::unit_test::Suite
 
         {
             testcase("IOU fail create vault for AMM LPToken");
-            Env env{*this, testableAmendments()};
+            Env env{*this};
             Account const gw("gateway");
             Account const alice("alice");
             Account const carol("carol");
@@ -1408,7 +1408,7 @@ class Vault_test : public beast::unit_test::Suite
                                 Account const& depositor,
                                 Asset const& asset,
                                 Vault& vault)> test) {
-            Env env{*this, testableAmendments()};
+            Env env{*this};
             Account const issuer{"issuer"};
             Account const owner{"owner"};
             Account const depositor{"depositor"};
@@ -1467,7 +1467,7 @@ class Vault_test : public beast::unit_test::Suite
     {
         using namespace test::jtx;
 
-        Env env{*this, testableAmendments()};
+        Env env{*this};
         Account const issuer{"issuer"};
         Account const owner{"owner"};
         Account const depositor{"depositor"};
@@ -1580,7 +1580,7 @@ class Vault_test : public beast::unit_test::Suite
                                 Vault& vault,
                                 MPTTester& mptt)> test,
                             CaseArgs args = {}) {
-            Env env{*this, testableAmendments()};
+            Env env{*this};
             Account const issuer{"issuer"};
             Account const owner{"owner"};
             Account const depositor{"depositor"};
@@ -1870,7 +1870,7 @@ class Vault_test : public beast::unit_test::Suite
             {.requireAuth = false});
 
         auto const [acctReserve, incReserve] = [this]() -> std::pair<int, int> {
-            Env const env{*this, testableAmendments()};
+            Env const env{*this};
             return {
                 env.current()->fees().accountReserve(0).drops() / kDROPS_PER_XRP.drops(),
                 env.current()->fees().increment.drops() / kDROPS_PER_XRP.drops()};
@@ -2204,7 +2204,7 @@ class Vault_test : public beast::unit_test::Suite
         {
             testcase("MPT shares to a vault");
 
-            Env env{*this, testableAmendments()};
+            Env env{*this};
             Account const owner{"owner"};
             Account const issuer{"issuer"};
             env.fund(XRP(1000000), owner, issuer);
@@ -2277,7 +2277,7 @@ class Vault_test : public beast::unit_test::Suite
         {
             testcase("MPT OutstandingAmount > MaximumAmount");
 
-            Env env{*this, testableAmendments() | featureSingleAssetVault};
+            Env env{*this};
             Account const alice{"alice"};
             Account const issuer{"issuer"};
             env.fund(XRP(1'000), alice, issuer);
@@ -2336,7 +2336,7 @@ class Vault_test : public beast::unit_test::Suite
                                 PrettyAsset const& asset,
                                 std::function<MPTID(xrpl::Keylet)> issuanceId)> test,
                             CaseArgs args = {}) {
-            Env env{*this, testableAmendments()};
+            Env env{*this};
             Account const owner{"owner"};
             Account const issuer{"issuer"};
             Account const charlie{"charlie"};
@@ -2832,7 +2832,7 @@ class Vault_test : public beast::unit_test::Suite
             {.initialIOU = Number(11875, -2)});
 
         auto const [acctReserve, incReserve] = [this]() -> std::pair<int, int> {
-            Env const env{*this, testableAmendments()};
+            Env const env{*this};
             return {
                 env.current()->fees().accountReserve(0).drops() / kDROPS_PER_XRP.drops(),
                 env.current()->fees().increment.drops() / kDROPS_PER_XRP.drops()};
@@ -3020,7 +3020,7 @@ class Vault_test : public beast::unit_test::Suite
 
         testcase("private vault");
 
-        Env env{*this, testableAmendments()};
+        Env env{*this};
         Account const issuer{"issuer"};
         Account const owner{"owner"};
         Account const depositor{"depositor"};
@@ -3268,7 +3268,7 @@ class Vault_test : public beast::unit_test::Suite
 
         testcase("private XRP vault");
 
-        Env env{*this, testableAmendments()};
+        Env env{*this};
         Account const owner{"owner"};
         Account const depositor{"depositor"};
         Account const alice{"charlie"};
@@ -3365,7 +3365,7 @@ class Vault_test : public beast::unit_test::Suite
         using namespace test::jtx;
 
         testcase("fail pseudo-account allocation");
-        Env env{*this, testableAmendments()};
+        Env env{*this};
         Account const owner{"owner"};
         Vault const vault{env};
         env.fund(XRP(1000), owner);
@@ -3408,7 +3408,7 @@ class Vault_test : public beast::unit_test::Suite
 
         auto testCase = [&, this](
                             std::uint8_t scale, std::function<void(Env & env, Data data)> test) {
-            Env env{*this, testableAmendments()};
+            Env env{*this};
             Account const owner{"owner"};
             Account const issuer{"issuer"};
             Account const depositor{"depositor"};
@@ -4241,7 +4241,7 @@ class Vault_test : public beast::unit_test::Suite
         using namespace test::jtx;
 
         testcase("RPC");
-        Env env{*this, testableAmendments()};
+        Env env{*this};
         Account const owner{"owner"};
         Account const issuer{"issuer"};
         Vault const vault{env};
@@ -5479,7 +5479,7 @@ class Vault_test : public beast::unit_test::Suite
 
         using namespace test::jtx;
 
-        Env env{*this, testableAmendments()};
+        Env env{*this};
         Account const owner{"owner"};
         Account const issuer{"issuer"};
 
@@ -5728,7 +5728,7 @@ class Vault_test : public beast::unit_test::Suite
         {
             testcase("Vault deposit fails when MPT asset is escrowed");
 
-            Env env{*this, testableAmendments()};
+            Env env{*this};
             auto const baseFee = env.current()->fees().base;
             Account const owner{"owner"};
             Account const depositor{"depositor"};
@@ -5790,7 +5790,7 @@ class Vault_test : public beast::unit_test::Suite
         {
             testcase("Vault withdraw respects escrowed shares");
 
-            Env env{*this, testableAmendments()};
+            Env env{*this};
             auto const baseFee = env.current()->fees().base;
             Account const owner{"owner"};
             Account const depositor{"depositor"};
@@ -5867,7 +5867,7 @@ class Vault_test : public beast::unit_test::Suite
         {
             testcase("Vault clawback only recovers unlocked shares");
 
-            Env env{*this, testableAmendments() | fixCleanup3_1_3};
+            Env env{*this};
             auto const baseFee = env.current()->fees().base;
             Account const owner{"owner"};
             Account const depositor{"depositor"};
@@ -5955,7 +5955,7 @@ class Vault_test : public beast::unit_test::Suite
         using namespace test::jtx;
         testcase("Bug6 - limit bypass with share-denominated withdrawal");
 
-        auto const allAmendments = testableAmendments() | featureSingleAssetVault;
+        auto const allAmendments = testableAmendments();
 
         for (auto const& features : {allAmendments, allAmendments - fixCleanup3_1_3})
         {

@@ -3061,7 +3061,7 @@ protected:
             CaseArgs{.requireAuth = true});
 
         auto const [acctReserve, incReserve] = [this]() -> std::pair<int, int> {
-            Env const env{*this, testableAmendments()};
+            Env const env{*this};
             return {
                 env.current()->fees().accountReserve(0).drops() / kDROPS_PER_XRP.drops(),
                 env.current()->fees().increment.drops() / kDROPS_PER_XRP.drops()};
@@ -7664,7 +7664,7 @@ public:
         testLoanPayDebtDecreaseInvariant();
         testWrongMaxDebtBehavior();
         testLoanPayComputePeriodicPaymentValidTotalInterestInvariant();
-        testDosLoanPay(all | fixCleanup3_1_3);
+        testDosLoanPay(all);
         testDosLoanPay(all - fixCleanup3_1_3);
         testLoanPayComputePeriodicPaymentValidTotalPrincipalPaidInvariant();
         testLoanPayComputePeriodicPaymentValidTotalInterestPaidInvariant();

@@ -233,7 +233,7 @@ class NegativeUNL_test : public beast::unit_test::Suite
 
         testcase("Create UNLModify Tx and apply to ledgers");
 
-        jtx::Env env(*this, jtx::testableAmendments());
+        jtx::Env env(*this);
         std::vector<PublicKey> publicKeys = createPublicKeys(3);
         // genesis ledger
         auto l = std::make_shared<Ledger>(

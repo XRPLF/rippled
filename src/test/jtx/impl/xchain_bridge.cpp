@@ -9,7 +9,6 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/SField.h>
@@ -382,7 +381,7 @@ XChainBridgeObjects::XChainBridgeObjects()
     , jvXRPBridgeRPC(bridgeRpc(mcDoor, xrpIssue(), Account::kMASTER, xrpIssue()))
     , jvb(bridge(mcDoor, xrpIssue(), Account::kMASTER, xrpIssue()))
     , jvub(bridge(mcuDoor, xrpIssue(), Account::kMASTER, xrpIssue()))
-    , features(testableAmendments() | FeatureBitset{featureXChainBridge})
+    , features(testableAmendments())
     , signers([] {
         constexpr int kNUM_SIGNERS = kUT_XCHAIN_DEFAULT_NUM_SIGNERS;
         std::vector<Signer> result;

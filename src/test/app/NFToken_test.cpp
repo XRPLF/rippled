@@ -1535,8 +1535,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         // The behavior of this test changes dramatically based on the
         // presence (or absence) of the fixRemoveNFTokenAutoTrustLine
         // amendment.  So we test both cases here.
-        for (auto const& tweakedFeatures :
-             {features - fixRemoveNFTokenAutoTrustLine, features | fixRemoveNFTokenAutoTrustLine})
+        for (auto const& tweakedFeatures : {features - fixRemoveNFTokenAutoTrustLine, features})
         {
             Env env{*this, tweakedFeatures};
             env.fund(XRP(1000), alice, becky, cheri, gw);
@@ -6627,9 +6626,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         // In both cases we remove the fixRemoveNFTokenAutoTrustLine amendment.
         // Otherwise we can't create NFTokens with tfTrustLine enabled.
         FeatureBitset const localFeatures = features - fixRemoveNFTokenAutoTrustLine;
-        for (FeatureBitset feats :
-             {localFeatures - fixEnforceNFTokenTrustline,
-              localFeatures | fixEnforceNFTokenTrustline})
+        for (FeatureBitset feats : {localFeatures - fixEnforceNFTokenTrustline, localFeatures})
         {
             Env env{*this, feats};
             env.fund(XRP(1000), issuer, becky, cheri, gw);

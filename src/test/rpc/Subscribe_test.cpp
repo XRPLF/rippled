@@ -1308,9 +1308,7 @@ public:
         testcase("SubBookChanges");
         using namespace jtx;
         using namespace std::chrono_literals;
-        FeatureBitset const all{
-            jtx::testableAmendments() | featurePermissionedDomains | featureCredentials |
-            featurePermissionedDEX};
+        FeatureBitset const all{jtx::testableAmendments()};
 
         Env env(*this, singleThreadIo(envconfig()), all);
         PermissionedDEX const permDex(env);

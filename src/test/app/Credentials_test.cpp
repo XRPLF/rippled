@@ -1165,7 +1165,7 @@ struct Credentials_test : public beast::unit_test::Suite
         testRPC();
 
         testRemoveExpiredCorruption(all - fixCleanup3_1_3);
-        testRemoveExpiredCorruption(all | fixCleanup3_1_3);
+        testRemoveExpiredCorruption(all);
     }
 };
 

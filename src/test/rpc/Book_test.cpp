@@ -1584,9 +1584,7 @@ public:
         testcase("TrackDomainOffer");
         using namespace jtx;
 
-        FeatureBitset const all{
-            jtx::testableAmendments() | featurePermissionedDomains | featureCredentials |
-            featurePermissionedDEX};
+        FeatureBitset const all{jtx::testableAmendments()};
 
         Env env(*this, all);
         PermissionedDEX const permDex(env);
@@ -1709,9 +1707,7 @@ public:
         testcase("TrackHybridOffer");
         using namespace jtx;
 
-        FeatureBitset const all{
-            jtx::testableAmendments() | featurePermissionedDomains | featureCredentials |
-            featurePermissionedDEX};
+        FeatureBitset const all{jtx::testableAmendments()};
 
         Env env(*this, all);
         PermissionedDEX const permDex(env);

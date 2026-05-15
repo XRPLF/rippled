@@ -6331,7 +6331,7 @@ private:
             {{xrpPool, iouPool}},
             889,
             std::nullopt,
-            {testableAmendments() | fixAMMv1_1});
+            {testableAmendments()});
     }
 
     void

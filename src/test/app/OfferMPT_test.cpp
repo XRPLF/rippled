@@ -1248,7 +1248,7 @@ public:
         testcase("Negative Balance");
 
         using namespace jtx;
-        FeatureBitset const localFeatures = features | fixReducedOffersV2;
+        FeatureBitset const localFeatures = features;
 
         Env env{*this, localFeatures};
 

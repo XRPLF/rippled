@@ -83,9 +83,7 @@ public:
         testcase("Domain Offer");
         using namespace jtx;
 
-        FeatureBitset const all{
-            jtx::testableAmendments() | featurePermissionedDomains | featureCredentials |
-            featurePermissionedDEX};
+        FeatureBitset const all{jtx::testableAmendments()};
 
         Env env(*this, all);
         PermissionedDEX const permDex(env);

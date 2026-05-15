@@ -142,7 +142,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
             env(ledgerStateFix::nftPageLinks(alice, alice), Fee(linkFixFee), Ter(temDISABLED));
         }
 
-        Env env{*this, testableAmendments()};
+        Env env{*this};
         env.fund(XRP(1000), alice);
         std::uint32_t const ticketSeq = env.seq(alice);
         env(ticket::create(alice, 1));
@@ -198,7 +198,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
 
         Account const alice("alice");
 
-        Env env{*this, testableAmendments()};
+        Env env{*this};
         env.fund(XRP(1000), alice);
 
         // These cases all return the same TER code, but they exercise

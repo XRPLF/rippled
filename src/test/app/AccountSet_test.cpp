@@ -76,7 +76,7 @@ public:
         using namespace test::jtx;
         Account const alice("alice");
 
-        Env env(*this, testableAmendments());
+        Env env(*this);
         env.fund(XRP(10000), noripple(alice));
 
         // Give alice a regular key so she can legally set and clear

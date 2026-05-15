@@ -1814,7 +1814,7 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
     void
     run() override
     {
-        FeatureBitset const all{jtx::testableAmendments() | fixAMMClawbackRounding};
+        FeatureBitset const all{jtx::testableAmendments()};
 
         testInvalidRequest(all);
         testFeatureDisabled(all);

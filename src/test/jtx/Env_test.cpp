@@ -279,7 +279,7 @@ public:
     {
         using namespace jtx;
 
-        Env env{*this, testableAmendments()};
+        Env env{*this};
         Account const alice("alice", KeyType::Ed25519);
         Account const bob("bob", KeyType::Secp256k1);
         Account const carol("carol");

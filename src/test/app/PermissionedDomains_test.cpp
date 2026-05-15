@@ -49,10 +49,9 @@ exceptionExpected(Env& env, json::Value const& jv)
 
 class PermissionedDomains_test : public beast::unit_test::Suite
 {
-    FeatureBitset withFeature_{
-        (testableAmendments() | featurePermissionedDomains | featureCredentials) - fixCleanup3_1_3};
-    FeatureBitset withFix_{
-        testableAmendments() | featurePermissionedDomains | featureCredentials | fixCleanup3_1_3};
+    FeatureBitset withFeature_{testableAmendments() - fixCleanup3_1_3};
+
+    FeatureBitset withFix_{testableAmendments()};
 
     // Verify that each tx type can execute if the feature is enabled.
     void
