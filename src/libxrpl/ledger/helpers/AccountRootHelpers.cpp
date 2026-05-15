@@ -125,7 +125,7 @@ AccountRoot<ViewT>::transferRate() const
 template <typename ViewT>
 void
 AccountRoot<ViewT>::adjustOwnerCount(std::int32_t amount)
-    requires kIS_WRITABLE
+    requires kIsWritable
 {
     XRPL_ASSERT(this->canModify(), "xrpl::adjustOwnerCount : can modify");
     XRPL_ASSERT(amount, "xrpl::adjustOwnerCount : nonzero amount input");
