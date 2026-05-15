@@ -6788,7 +6788,7 @@ class MPToken_test : public beast::unit_test::Suite
 
         // Create MPT with DEX flags. Only alice is a holder initially.
         MPT const btc = MPTTester(
-            {.env = env, .issuer = gw, .holders = {alice}, .pay = 20'000, .flags = kMPT_DEX_FLAGS});
+            {.env = env, .issuer = gw, .holders = {alice}, .pay = 20'000, .flags = kMptDexFlags});
 
         // Alice creates XRP/MPT AMM pool
         AMM amm(env, alice, XRP(10'000), btc(10'000));
@@ -6830,7 +6830,7 @@ class MPToken_test : public beast::unit_test::Suite
              .issuer = gw,
              .holders = {alice, carol},
              .pay = 100,
-             .flags = kMPT_DEX_FLAGS,
+             .flags = kMptDexFlags,
              .mutableFlags = tmfMPTCanMutateCanTransfer | tmfMPTCanMutateCanTrade});
 
         // Both flags are enabled

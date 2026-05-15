@@ -2250,7 +2250,7 @@ private:
                  .issuer = gw_,
                  .holders = {alice_},
                  .pay = 30'000,
-                 .flags = kMPT_DEX_FLAGS,
+                 .flags = kMptDexFlags,
                  .mutableFlags = tmfMPTCanMutateCanTransfer,
                  .authHolder = true});
 
