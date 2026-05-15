@@ -229,7 +229,7 @@ protected:
             if (!backed)
                 map.setUnbacked();
 
-            EXPECT_EQ(map.getHash(), beast::kZERO);
+            EXPECT_EQ(map.getHash(), beast::kZero);
             for (std::size_t k = 0; k < kEYS.size(); ++k)
             {
                 EXPECT_TRUE(map.addItem(
@@ -244,7 +244,7 @@ protected:
                 EXPECT_TRUE(map.delItem(kEYS[k]));
                 map.invariants();
             }
-            EXPECT_EQ(map.getHash(), beast::kZERO);
+            EXPECT_EQ(map.getHash(), beast::kZero);
         }
 
         {
