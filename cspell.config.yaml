@@ -63,6 +63,7 @@ words:
   - Bougalis
   - Britto
   - Btrfs
+  - Buildx
   - canonicality
   - changespq
   - checkme
@@ -325,3 +326,4 @@ words:
   - xrplf
   - xxhash
   - xxhasher
+  - CGNAT

@@ -108,15 +108,15 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
             STAmount second = noswap ? deltaPays : deltaGets;
 
             // defensively programmed, should (probably) never happen
-            if (second == beast::kZERO)
+            if (second == beast::kZero)
                 continue;
 
             STAmount const rate = divide(first, second, noIssue());
 
-            if (first < beast::kZERO)
+            if (first < beast::kZero)
                 first = -first;
 
-            if (second < beast::kZERO)
+            if (second < beast::kZero)
                 second = -second;
 
             std::stringstream ss;
