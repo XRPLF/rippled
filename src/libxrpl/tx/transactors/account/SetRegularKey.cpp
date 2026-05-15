@@ -1,8 +1,20 @@
-#include <xrpl/basics/Log.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/account/SetRegularKey.h>
+
+#include <xrpl/basics/Slice.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <memory>
 
 namespace xrpl {
 
@@ -17,8 +29,7 @@ SetRegularKey::calculateBaseFee(ReadView const& view, STTx const& tx)
         if (calcAccountID(PublicKey(makeSlice(spk))) == id)
         {
             AccountRoot const acct(id, view);
-
-            if (acct && ((acct->getFlags() & lsfPasswordSpent) == 0u))
+            if (acct && !acct->isFlag(lsfPasswordSpent))
             {
                 // flag is armed and they signed with the right account
                 return XRPAmount{0};
@@ -44,29 +55,49 @@ SetRegularKey::preflight(PreflightContext const& ctx)
 TER
 SetRegularKey::doApply()
 {
-    WAccountRoot acct(accountID_, view(), j_);
-    if (!acct)
+    if (!account_)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     if (!minimumFee(ctx_.registry, ctx_.baseFee, view().fees(), view().flags()))
-        acct->setFlag(lsfPasswordSpent);
+        account_->setFlag(lsfPasswordSpent);
 
     if (ctx_.tx.isFieldPresent(sfRegularKey))
     {
-        acct->setAccountID(sfRegularKey, ctx_.tx.getAccountID(sfRegularKey));
+        account_->setAccountID(sfRegularKey, ctx_.tx.getAccountID(sfRegularKey));
     }
     else
     {
         // Account has disabled master key and no multi-signer signer list.
-        if (acct->isFlag(lsfDisableMaster) && !view().peek(keylet::signers(accountID_)))
+        if (account_->isFlag(lsfDisableMaster) && !view().peek(keylet::signers(accountID_)))
             return tecNO_ALTERNATIVE_KEY;
 
-        acct->makeFieldAbsent(sfRegularKey);
+        account_->makeFieldAbsent(sfRegularKey);
     }
 
-    acct.update();
+    account_.update();
 
     return tesSUCCESS;
+}
+
+void
+SetRegularKey::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+SetRegularKey::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

@@ -1,10 +1,24 @@
-#include <xrpl/ledger/View.h>
+#include <xrpl/tx/transactors/system/TicketCreate.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/system/TicketCreate.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/applySteps.h>
+
+#include <cstdint>
+#include <memory>
 
 namespace xrpl {
 
@@ -19,7 +33,7 @@ NotTEC
 TicketCreate::preflight(PreflightContext const& ctx)
 {
     if (std::uint32_t const count = ctx.tx[sfTicketCount];
-        count < minValidCount || count > maxValidCount)
+        count < kMinValidCount || count > kMaxValidCount)
         return temINVALID_COUNT;
 
     return tesSUCCESS;
@@ -45,7 +59,7 @@ TicketCreate::preclaim(PreclaimContext const& ctx)
     //  o consumedTickets  <= 1
     // So in the worst case addedTickets == consumedTickets and the
     // computation yields curTicketCount.
-    if (curTicketCount + addedTickets - consumedTickets > maxTicketThreshold)
+    if (curTicketCount + addedTickets - consumedTickets > kMaxTicketThreshold)
         return tecDIR_FULL;
 
     return tesSUCCESS;
@@ -85,7 +99,7 @@ TicketCreate::doApply()
     for (std::uint32_t i = 0; i < ticketCount; ++i)
     {
         std::uint32_t const curTicketSeq = firstTicketSeq + i;
-        Keylet const ticketKeylet = keylet::ticket(accountID_, curTicketSeq);
+        Keylet const ticketKeylet = keylet::kTicket(accountID_, curTicketSeq);
         SLE::pointer const sleTicket = std::make_shared<SLE>(ticketKeylet);
 
         sleTicket->setAccountID(sfAccount, accountID_);
@@ -105,7 +119,7 @@ TicketCreate::doApply()
     }
 
     // Update the record of the number of Tickets this account owns.
-    std::uint32_t const oldTicketCount = (*(wrappedOwner))[~sfTicketCount].value_or(0u);
+    std::uint32_t const oldTicketCount = (*(wrappedOwner))[~sfTicketCount].valueOr(0u);
 
     wrappedOwner->setFieldU32(sfTicketCount, oldTicketCount + ticketCount);
 
@@ -117,6 +131,27 @@ TicketCreate::doApply()
     wrappedOwner->setFieldU32(sfSequence, firstTicketSeq + ticketCount);
 
     return tesSUCCESS;
+}
+
+void
+TicketCreate::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+TicketCreate::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

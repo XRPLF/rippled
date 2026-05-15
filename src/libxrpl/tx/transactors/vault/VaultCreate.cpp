@@ -1,3 +1,8 @@
+#include <xrpl/tx/transactors/vault/VaultCreate.h>
+
+#include <xrpl/basics/Number.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
@@ -6,16 +11,23 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTakesAsset.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/token/MPTokenAuthorize.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/transactors/token/MPTokenIssuanceCreate.h>
-#include <xrpl/tx/transactors/vault/VaultCreate.h>
+
+#include <cstdint>
+#include <memory>
+#include <optional>
 
 namespace xrpl {
 
@@ -40,23 +52,23 @@ VaultCreate::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 VaultCreate::preflight(PreflightContext const& ctx)
 {
-    if (!validDataLength(ctx.tx[~sfData], maxDataPayloadLength))
+    if (!validDataLength(ctx.tx[~sfData], kMaxDataPayloadLength))
         return temMALFORMED;
 
     if (auto const withdrawalPolicy = ctx.tx[~sfWithdrawalPolicy])
     {
         // Enforce valid withdrawal policy
-        if (*withdrawalPolicy != vaultStrategyFirstComeFirstServe)
+        if (*withdrawalPolicy != kVaultStrategyFirstComeFirstServe)
             return temMALFORMED;
     }
 
     if (auto const domain = ctx.tx[~sfDomainID])
     {
-        if (*domain == beast::zero)
+        if (*domain == beast::kZero)
         {
             return temMALFORMED;
         }
-        if ((ctx.tx.getFlags() & tfVaultPrivate) == 0)
+        if (!ctx.tx.isFlag(tfVaultPrivate))
         {
             return temMALFORMED;  // DomainID only allowed on private vaults
         }
@@ -64,13 +76,13 @@ VaultCreate::preflight(PreflightContext const& ctx)
 
     if (auto const assetMax = ctx.tx[~sfAssetsMaximum])
     {
-        if (*assetMax < beast::zero)
+        if (*assetMax < beast::kZero)
             return temMALFORMED;
     }
 
     if (auto const metadata = ctx.tx[~sfMPTokenMetadata])
     {
-        if (metadata->empty() || metadata->length() > maxMPTokenMetadataLength)
+        if (metadata->empty() || metadata->length() > kMaxMpTokenMetadataLength)
             return temMALFORMED;
     }
 
@@ -80,7 +92,7 @@ VaultCreate::preflight(PreflightContext const& ctx)
         if (vaultAsset.holds<MPTIssue>() || vaultAsset.native())
             return temMALFORMED;
 
-        if (scale > vaultMaximumIOUScale)
+        if (scale > kVaultMaximumIouScale)
             return temMALFORMED;
     }
 
@@ -119,7 +131,7 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
 
     auto const sequence = ctx.tx.getSeqValue();
     if (auto const accountId = pseudoAccountAddress(ctx.view, keylet::vault(account, sequence).key);
-        accountId == beast::zero)
+        accountId == beast::kZero)
         return terADDRESS_COLLISION;
 
     return tesSUCCESS;
@@ -160,13 +172,12 @@ VaultCreate::doApply()
 
     std::uint8_t const scale = (asset.holds<MPTIssue>() || asset.native())
         ? 0
-        : ctx_.tx[~sfScale].value_or(vaultDefaultIOUScale);
+        : ctx_.tx[~sfScale].value_or(kVaultDefaultIouScale);
 
-    auto txFlags = tx.getFlags();
     std::uint32_t mptFlags = 0;
-    if ((txFlags & tfVaultShareNonTransferable) == 0)
+    if (!tx.isFlag(tfVaultShareNonTransferable))
         mptFlags |= (lsfMPTCanEscrow | lsfMPTCanTrade | lsfMPTCanTransfer);
-    if ((txFlags & tfVaultPrivate) != 0u)
+    if (tx.isFlag(tfVaultPrivate))
         mptFlags |= lsfMPTRequireAuth;
 
     // Note, here we are **not** creating an MPToken for the assets held in
@@ -182,15 +193,17 @@ VaultCreate::doApply()
             .sequence = 1,
             .flags = mptFlags,
             .assetScale = scale,
+            .transferFee = std::nullopt,
             .metadata = tx[~sfMPTokenMetadata],
             .domainId = tx[~sfDomainID],
+            .mutableFlags = std::nullopt,
         });
     if (!maybeShare)
         return maybeShare.error();  // LCOV_EXCL_LINE
     auto const& mptIssuanceID = *maybeShare;
 
     vault->setFieldIssue(sfAsset, STIssue{sfAsset, asset});
-    vault->at(sfFlags) = txFlags & tfVaultPrivate;
+    vault->at(sfFlags) = tx.getFlags() & tfVaultPrivate;
     vault->at(sfSequence) = sequence;
     vault->at(sfOwner) = accountID_;
     vault->at(sfAccount) = pseudoId;
@@ -210,7 +223,7 @@ VaultCreate::doApply()
     }
     else
     {
-        vault->at(sfWithdrawalPolicy) = vaultStrategyFirstComeFirstServe;
+        vault->at(sfWithdrawalPolicy) = kVaultStrategyFirstComeFirstServe;
     }
     if (scale != 0u)
         vault->at(sfScale) = scale;
@@ -223,7 +236,7 @@ VaultCreate::doApply()
         return err;
 
     // If the vault is private, set the authorized flag for the vault owner
-    if ((txFlags & tfVaultPrivate) != 0u)
+    if (tx.isFlag(tfVaultPrivate))
     {
         if (auto const err = authorizeMPToken(
                 view(), preFeeBalance_, mptIssuanceID, pseudoId, ctx_.journal, {}, accountID_);
@@ -234,6 +247,22 @@ VaultCreate::doApply()
     associateAsset(*vault, asset);
 
     return tesSUCCESS;
+}
+
+void
+VaultCreate::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+VaultCreate::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

@@ -1,12 +1,30 @@
-#include <xrpl/ledger/View.h>
+#include <xrpl/tx/transactors/token/Clawback.h>
+
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTAmount.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/token/Clawback.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <algorithm>
+#include <memory>
+#include <variant>
 
 namespace xrpl {
 
@@ -27,7 +45,7 @@ preflightHelper<Issue>(PreflightContext const& ctx)
     // The issuer field is used for the token holder instead
     AccountID const& holder = clawAmount.getIssuer();
 
-    if (issuer == holder || isXRP(clawAmount) || clawAmount <= beast::zero)
+    if (issuer == holder || isXRP(clawAmount) || clawAmount <= beast::kZero)
         return temBAD_AMOUNT;
 
     return tesSUCCESS;
@@ -50,7 +68,7 @@ preflightHelper<MPTIssue>(PreflightContext const& ctx)
     if (ctx.tx[sfAccount] == *mptHolder)
         return temMALFORMED;
 
-    if (clawAmount.mpt() > MPTAmount{maxMPTokenAmount} || clawAmount <= beast::zero)
+    if (clawAmount.mpt() > MPTAmount{kMaxMpTokenAmount} || clawAmount <= beast::kZero)
         return temBAD_AMOUNT;
 
     return tesSUCCESS;
@@ -86,12 +104,9 @@ preclaimHelper<Issue>(
     AccountID const& holder,
     STAmount const& clawAmount)
 {
-    std::uint32_t const issuerFlagsIn = sleIssuer.getFieldU32(sfFlags);
-
     // If AllowTrustLineClawback is not set or NoFreeze is set, return no
     // permission
-    if (((issuerFlagsIn & lsfAllowTrustLineClawback) == 0u) ||
-        ((issuerFlagsIn & lsfNoFreeze) != 0u))
+    if (!sleIssuer.isFlag(lsfAllowTrustLineClawback) || sleIssuer.isFlag(lsfNoFreeze))
         return tecNO_PERMISSION;
 
     auto const sleRippleState =
@@ -102,11 +117,11 @@ preclaimHelper<Issue>(
     STAmount const balance = (*sleRippleState)[sfBalance];
 
     // If balance is positive, issuer must have higher address than holder
-    if (balance > beast::zero && issuer < holder)
+    if (balance > beast::kZero && issuer < holder)
         return tecNO_PERMISSION;
 
     // If balance is negative, issuer must have lower address than holder
-    if (balance < beast::zero && issuer > holder)
+    if (balance < beast::kZero && issuer > holder)
         return tecNO_PERMISSION;
 
     // At this point, we know that issuer and holder accounts
@@ -119,8 +134,12 @@ preclaimHelper<Issue>(
     // the available balance of a trustline is prone to new changes (eg.
     // XLS-34). So we must use `accountHolds`.
     if (accountHolds(
-            ctx.view, holder, clawAmount.get<Issue>().currency, issuer, fhIGNORE_FREEZE, ctx.j) <=
-        beast::zero)
+            ctx.view,
+            holder,
+            clawAmount.get<Issue>().currency,
+            issuer,
+            FreezeHandling::IgnoreFreeze,
+            ctx.j) <= beast::kZero)
         return tecINSUFFICIENT_FUNDS;
 
     return tesSUCCESS;
@@ -140,7 +159,7 @@ preclaimHelper<MPTIssue>(
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    if (((*sleIssuance)[sfFlags] & lsfMPTCanClawback) == 0u)
+    if (!sleIssuance->isFlag(lsfMPTCanClawback))
         return tecNO_PERMISSION;
 
     if (sleIssuance->getAccountID(sfIssuer) != issuer)
@@ -150,8 +169,12 @@ preclaimHelper<MPTIssue>(
         return tecOBJECT_NOT_FOUND;
 
     if (accountHolds(
-            ctx.view, holder, clawAmount.get<MPTIssue>(), fhIGNORE_FREEZE, ahIGNORE_AUTH, ctx.j) <=
-        beast::zero)
+            ctx.view,
+            holder,
+            clawAmount.get<MPTIssue>(),
+            FreezeHandling::IgnoreFreeze,
+            AuthHandling::IgnoreAuth,
+            ctx.j) <= beast::kZero)
         return tecINSUFFICIENT_FUNDS;
 
     return tesSUCCESS;
@@ -210,7 +233,7 @@ applyHelper<Issue>(ApplyContext& ctx)
         holder,
         clawAmount.get<Issue>().currency,
         clawAmount.getIssuer(),
-        fhIGNORE_FREEZE,
+        FreezeHandling::IgnoreFreeze,
         ctx.journal);
 
     return directSendNoFee(
@@ -230,8 +253,8 @@ applyHelper<MPTIssue>(ApplyContext& ctx)
         ctx.view(),
         holder,
         clawAmount.get<MPTIssue>(),
-        fhIGNORE_FREEZE,
-        ahIGNORE_AUTH,
+        FreezeHandling::IgnoreFreeze,
+        AuthHandling::IgnoreAuth,
         ctx.journal);
 
     return directSendNoFee(
@@ -249,6 +272,22 @@ Clawback::doApply()
     return std::visit(
         [&]<typename T>(T const&) { return applyHelper<T>(ctx_); },
         ctx_.tx[sfAmount].asset().value());
+}
+
+void
+Clawback::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+Clawback::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

@@ -1,13 +1,33 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-//
+
+#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Rate.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/digest.h>
 
 #include <algorithm>
+#include <cstdint>
 #include <limits>
+#include <memory>
+#include <optional>
+#include <set>
+#include <stdexcept>
+#include <vector>
 
 namespace xrpl {
 
@@ -67,7 +87,7 @@ XRPAmount
 AccountRoot<ViewT>::xrpLiquid(std::int32_t ownerCountAdj) const
 {
     if (!this->exists())
-        return beast::zero;
+        return beast::kZero;
 
     // Return balance minus reserve
     std::uint32_t const ownerCount = confineOwnerCount(
@@ -99,13 +119,13 @@ AccountRoot<ViewT>::transferRate() const
     if (this->sle_ && this->sle_->isFieldPresent(sfTransferRate))
         return Rate{this->sle_->getFieldU32(sfTransferRate)};
 
-    return parityRate;
+    return kParityRate;
 }
 
 template <typename ViewT>
 void
 AccountRoot<ViewT>::adjustOwnerCount(std::int32_t amount)
-    requires is_writable
+    requires kIsWritable
 {
     XRPL_ASSERT(this->canModify(), "xrpl::adjustOwnerCount : can modify");
     XRPL_ASSERT(amount, "xrpl::adjustOwnerCount : nonzero amount input");
@@ -121,17 +141,17 @@ AccountRoot<ViewT>::adjustOwnerCount(std::int32_t amount)
 pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey)
 {
     // This number must not be changed without an amendment
-    constexpr std::uint16_t maxAccountAttempts = 256;
-    for (std::uint16_t i = 0; i < maxAccountAttempts; ++i)
+    static constexpr std::uint16_t kMaxAccountAttempts = 256;
+    for (std::uint16_t i = 0; i < kMaxAccountAttempts; ++i)
     {
-        ripesha_hasher rsh;
+        RipeshaHasher rsh;
         auto const hash = sha512Half(i, view.header().parentHash, pseudoOwnerKey);
         rsh(hash.data(), hash.size());
-        AccountID const ret{static_cast<ripesha_hasher::result_type>(rsh)};
+        AccountID const ret = AccountID::fromRaw(static_cast<RipeshaHasher::result_type>(rsh));
         if (!view.read(keylet::account(ret)))
             return ret;
     }
-    return beast::zero;
+    return beast::kZero;
 }
 
 // Pseudo-account designator fields MUST be maintained by including the
@@ -143,12 +163,12 @@ pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey)
 [[nodiscard]] std::vector<SField const*> const&
 getPseudoAccountFields()
 {
-    static std::vector<SField const*> const pseudoFields = []() {
+    static std::vector<SField const*> const kPseudoFields = []() {
         auto const ar = LedgerFormats::getInstance().findByType(ltACCOUNT_ROOT);
         if (!ar)
         {
             // LCOV_EXCL_START
-            LogicError(
+            Throw<std::logic_error>(
                 "xrpl::getPseudoAccountFields : unable to find account root "
                 "ledger format");
             // LCOV_EXCL_STOP
@@ -158,12 +178,12 @@ getPseudoAccountFields()
         std::vector<SField const*> pseudoFields;
         for (auto const& field : soTemplate)
         {
-            if (field.sField().shouldMeta(SField::sMD_PseudoAccount))
+            if (field.sField().shouldMeta(SField::kSmdPseudoAccount))
                 pseudoFields.emplace_back(&field.sField());
         }
         return pseudoFields;
     }();
-    return pseudoFields;
+    return kPseudoFields;
 }
 
 template <typename ViewT>
@@ -195,7 +215,7 @@ createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey, SField const
         "xrpl::createPseudoAccount : valid owner field");
 
     auto const accountId = pseudoAccountAddress(view, pseudoOwnerKey);
-    if (accountId == beast::zero)
+    if (accountId == beast::kZero)
         return Unexpected(tecDUPLICATE);
 
     // Create pseudo-account.

@@ -18,9 +18,8 @@ Historically, ledger entries are passed around as bare `std::shared_ptr<SLE>` (o
 
 `SLEBase.h` introduces a single template class `SLEBase<ViewT>` that pairs an SLE with its view context and enforces read/write semantics at compile time via `requires` clauses.
 
-**`SLEBase<ReadView>`** (aliased as `ReadOnlySLE`) holds a `std::shared_ptr<SLE const>` and a `ReadView const&`. Write-only members are excluded at compile time.
-
-**`SLEBase<ApplyView>`** (aliased as `WritableSLE`) holds a mutable `std::shared_ptr<SLE>`, an `ApplyView&`, and a `Keylet`. It exposes `insert()`, `update()`, `erase()`, and `newSLE()` to keep the SLE and its view in sync automatically.
+**`SLEBase<ReadView>`** holds a `std::shared_ptr<SLE const>` and a `ReadView const&`. Write-only members are excluded at compile time.
+holds a mutable `std::shared_ptr<SLE>`, an `ApplyView&`, and a `Keylet`. It exposes `insert()`, `update()`, `erase()`, and `newSLE()` to keep the SLE and its view in sync automatically.
 
 A converting constructor allows implicit conversion from `SLEBase<ApplyView>` to `SLEBase<ReadView>`, so functions taking a read-only wrapper can accept a writable one without a cast.
 
@@ -39,7 +38,7 @@ Both specializations share all domain read methods. Write methods on `WAccountRo
 
 | File                   | Description                                                                                                                                                 |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SLEBase.h`            | Template base class `SLEBase<ViewT>` and `ReadOnlySLE`/`WritableSLE` aliases                                                                                |
+| `SLEBase.h`            | Template base class `SLEBase<ViewT>` for read-only and writable SLE wrappers                                                                                |
 | `AccountRootHelpers.h` | `AccountRoot<ViewT>` wrapper (`RAccountRoot`, `WAccountRoot`) and free functions for pseudo-accounts                                                        |
 | `CredentialHelpers.h`  | Free functions for Credential ledger entries                                                                                                                |
 | `DirectoryHelpers.h`   | Free functions for directory traversal (`dirFirst`, `dirNext`, `forEachItem`, etc.)                                                                         |

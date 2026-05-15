@@ -2,20 +2,20 @@
 
 #include <xrpl/json/json_value.h>
 
-namespace xrpl {
-namespace jss {
+namespace xrpl::jss {
 
+// NOLINTBEGIN(readability-identifier-naming)
 // JSON static strings
 
-#define JSS(x) constexpr ::Json::StaticString x(#x)
+#define JSS(x) constexpr ::json::StaticString x(#x)
 
 /* These "StaticString" field names are used instead of string literals to
-   optimize the performance of accessing properties of Json::Value objects.
+   optimize the performance of accessing properties of json::Value objects.
 
    Most strings have a trailing comment. Here is the legend:
 
-   in: Read by the given RPC handler from its `Json::Value` parameter.
-   out: Assigned by the given RPC handler in the `Json::Value` it returns.
+   in: Read by the given RPC handler from its `json::Value` parameter.
+   out: Assigned by the given RPC handler in the `json::Value` it returns.
    field: A field of at least one type of transaction.
    RPC: Common properties of RPC requests and responses.
    error: Common properties of RPC error responses.
@@ -708,5 +708,6 @@ JSS(write_load);                  // out: GetCounts
 
 #undef JSS
 
-}  // namespace jss
-}  // namespace xrpl
+// NOLINTEND(readability-identifier-naming)
+
+}  // namespace xrpl::jss

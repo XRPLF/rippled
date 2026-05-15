@@ -1,13 +1,27 @@
+#include <xrpl/tx/transactors/payment_channel/PaymentChannelCreate.h>
+
 #include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/tx/transactors/payment_channel/PaymentChannelCreate.h>
+#include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/applySteps.h>
+
+#include <memory>
 
 namespace xrpl {
 
@@ -42,7 +56,7 @@ PaymentChannelCreate::makeTxConsequences(PreflightContext const& ctx)
 NotTEC
 PaymentChannelCreate::preflight(PreflightContext const& ctx)
 {
-    if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::zero))
+    if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::kZero))
         return temBAD_AMOUNT;
 
     if (ctx.tx[sfAccount] == ctx.tx[sfDestination])
@@ -65,7 +79,7 @@ PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
     // Check reserve and funds availability
     {
         auto const balance = acctSrc->at(sfBalance);
-        auto const reserve = ctx.view.fees().accountReserve(acctSrc->getFieldU32(sfOwnerCount) + 1);
+        auto const reserve = ctx.view.fees().accountReserve(acctSrc->at(sfOwnerCount) + 1);
 
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
@@ -82,13 +96,11 @@ PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
         if (!acctDst)
             return tecNO_DST;
 
-        auto const flags = acctDst->getFlags();
-
         // Check if they have disallowed incoming payment channels
-        if ((flags & lsfDisallowIncomingPayChan) != 0u)
+        if (acctDst->isFlag(lsfDisallowIncomingPayChan))
             return tecNO_PERMISSION;
 
-        if (((flags & lsfRequireDestTag) != 0u) && !ctx.tx[~sfDestinationTag])
+        if (acctDst->isFlag(lsfRequireDestTag) && !ctx.tx[~sfDestinationTag])
             return tecDST_TAG_NEEDED;
 
         // Pseudo-accounts cannot receive payment channels, other than native
@@ -122,7 +134,7 @@ PaymentChannelCreate::doApply()
 
     // Create PayChan in ledger.
     //
-    // Note that we we use the value from the sequence or ticket as the
+    // Note that we use the value from the sequence or ticket as the
     // payChan sequence.  For more explanation see comments in SeqProxy.h.
     Keylet const payChanKeylet = keylet::payChan(accountID_, dst, ctx_.tx.getSeqValue());
     auto const slep = std::make_shared<SLE>(payChanKeylet);
@@ -171,4 +183,24 @@ PaymentChannelCreate::doApply()
     return tesSUCCESS;
 }
 
+void
+PaymentChannelCreate::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+PaymentChannelCreate::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
+}
 }  // namespace xrpl

@@ -1,26 +1,41 @@
+#include <xrpl/tx/transactors/vault/VaultClawback.h>
+
+#include <xrpl/basics/Expected.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/ledger/View.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTakesAsset.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/vault/VaultClawback.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
 
+#include <memory>
 #include <optional>
+#include <stdexcept>
 #include <utility>
 
 namespace xrpl {
 NotTEC
 VaultClawback::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfVaultID] == beast::zero)
+    if (ctx.tx[sfVaultID] == beast::kZero)
     {
         JLOG(ctx.j.debug()) << "VaultClawback: zero/empty vault ID.";
         return temMALFORMED;
@@ -30,7 +45,7 @@ VaultClawback::preflight(PreflightContext const& ctx)
     if (amount)
     {
         // Note, zero amount is valid, it means "all". It is also the default.
-        if (*amount < beast::zero)
+        if (*amount < beast::kZero)
         {
             return temBAD_AMOUNT;
         }
@@ -118,14 +133,14 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
         }
 
         // If amount is non-zero, the VaultOwner must burn all shares
-        if (amount != beast::zero)
+        if (amount != beast::kZero)
         {
             Number const& sharesHeld = accountHolds(
                 ctx.view,
                 holder,
                 share,
-                FreezeHandling::fhIGNORE_FREEZE,
-                AuthHandling::ahIGNORE_AUTH,
+                FreezeHandling::IgnoreFreeze,
+                AuthHandling::IgnoreAuth,
                 ctx.j);
 
             // The VaultOwner must burn all shares
@@ -170,8 +185,7 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
                 if (mptIssue == nullptr)
                     return tecOBJECT_NOT_FOUND;
 
-                std::uint32_t const issueFlags = mptIssue->getFieldU32(sfFlags);
-                if ((issueFlags & lsfMPTCanClawback) == 0u)
+                if (!mptIssue->isFlag(lsfMPTCanClawback))
                 {
                     JLOG(ctx.j.debug()) << "VaultClawback: cannot clawback "
                                            "MPT vault asset.";
@@ -190,9 +204,7 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
                     // LCOV_EXCL_STOP
                 }
 
-                std::uint32_t const issuerFlags = issuerSle->getFieldU32(sfFlags);
-                if (((issuerFlags & lsfAllowTrustLineClawback) == 0u) ||
-                    ((issuerFlags & lsfNoFreeze) != 0u))
+                if (!issuerSle->isFlag(lsfAllowTrustLineClawback) || issuerSle->isFlag(lsfNoFreeze))
                 {
                     JLOG(ctx.j.debug()) << "VaultClawback: cannot clawback "
                                            "IOU vault asset.";
@@ -227,19 +239,14 @@ VaultClawback::assetsToClawback(
     auto const mptIssuanceID = *vault->at(sfShareMPTID);
     MPTIssue const share{mptIssuanceID};
 
-    // Pre-fixSecurity3_1_3: zero-amount clawback returned early without
+    // Pre-fixCleanup3_1_3: zero-amount clawback returned early without
     // clamping to assetsAvailable, allowing more assets to be recovered
     // than available when there was an outstanding loan. Retained for
     // ledger replay compatibility.
-    if (!ctx_.view().rules().enabled(fixSecurity3_1_3) && clawbackAmount == beast::zero)
+    if (!ctx_.view().rules().enabled(fixCleanup3_1_3) && clawbackAmount == beast::kZero)
     {
         auto const sharesDestroyed = accountHolds(
-            view(),
-            holder,
-            share,
-            FreezeHandling::fhIGNORE_FREEZE,
-            AuthHandling::ahIGNORE_AUTH,
-            j_);
+            view(), holder, share, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth, j_);
         auto const maybeAssets = sharesToAssetsWithdraw(vault, sleShareIssuance, sharesDestroyed);
         if (!maybeAssets)
             return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
@@ -252,15 +259,10 @@ VaultClawback::assetsToClawback(
 
     try
     {
-        if (clawbackAmount == beast::zero)
+        if (clawbackAmount == beast::kZero)
         {
             sharesDestroyed = accountHolds(
-                view(),
-                holder,
-                share,
-                FreezeHandling::fhIGNORE_FREEZE,
-                AuthHandling::ahIGNORE_AUTH,
-                j_);
+                view(), holder, share, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth, j_);
             auto const maybeAssets =
                 sharesToAssetsWithdraw(vault, sleShareIssuance, sharesDestroyed);
             if (!maybeAssets)
@@ -291,7 +293,7 @@ VaultClawback::assetsToClawback(
             // AssetsAvailable
             {
                 auto const maybeShares = assetsToSharesWithdraw(
-                    vault, sleShareIssuance, assetsRecovered, TruncateShares::yes);
+                    vault, sleShareIssuance, assetsRecovered, TruncateShares::Yes);
                 if (!maybeShares)
                     return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
                 sharesDestroyed = *maybeShares;
@@ -365,12 +367,7 @@ VaultClawback::doApply()
     if (accountID_ == vault->at(sfOwner) && amount.asset() == share)
     {
         sharesDestroyed = accountHolds(
-            view(),
-            holder,
-            share,
-            FreezeHandling::fhIGNORE_FREEZE,
-            AuthHandling::ahIGNORE_AUTH,
-            j_);
+            view(), holder, share, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth, j_);
     }
     else  // The Issuer is clawbacking vault assets
     {
@@ -384,7 +381,7 @@ VaultClawback::doApply()
         sharesDestroyed = clawbackParts->second;
     }
 
-    if (sharesDestroyed == beast::zero)
+    if (sharesDestroyed == beast::kZero)
         return tecPRECISION_LOSS;
 
     assetsTotal -= assetsRecovered;
@@ -425,7 +422,7 @@ VaultClawback::doApply()
         // else quietly ignore, holder balance is not zero
     }
 
-    if (assetsRecovered > beast::zero)
+    if (assetsRecovered > beast::kZero)
     {
         // Transfer assets from vault to issuer.
         if (auto const ter = accountSend(
@@ -438,9 +435,9 @@ VaultClawback::doApply()
                 view(),
                 vaultAccount,
                 assetsRecovered.asset(),
-                FreezeHandling::fhIGNORE_FREEZE,
-                AuthHandling::ahIGNORE_AUTH,
-                j_) < beast::zero)
+                FreezeHandling::IgnoreFreeze,
+                AuthHandling::IgnoreAuth,
+                j_) < beast::kZero)
         {
             // LCOV_EXCL_START
             JLOG(j_.error()) << "VaultClawback: negative balance of vault assets.";
@@ -452,6 +449,27 @@ VaultClawback::doApply()
     associateAsset(*vault, vaultAsset);
 
     return tesSUCCESS;
+}
+
+void
+VaultClawback::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+VaultClawback::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

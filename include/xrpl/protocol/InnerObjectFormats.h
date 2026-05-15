@@ -18,7 +18,7 @@ public:
     static InnerObjectFormats const&
     getInstance();
 
-    SOTemplate const*
+    [[nodiscard]] SOTemplate const*
     findSOTemplateBySField(SField const& sField) const;
 };
 

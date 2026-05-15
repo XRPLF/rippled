@@ -1,11 +1,22 @@
+#include <xrpl/tx/transactors/delegate/DelegateSet.h>
+
 #include <xrpl/basics/Log.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/st.h>
-#include <xrpl/tx/transactors/delegate/DelegateSet.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
+#include <memory>
+#include <unordered_set>
 
 namespace xrpl {
 
@@ -13,7 +24,7 @@ NotTEC
 DelegateSet::preflight(PreflightContext const& ctx)
 {
     auto const& permissions = ctx.tx.getFieldArray(sfPermissions);
-    if (permissions.size() > permissionMaxSize)
+    if (permissions.size() > kPermissionMaxSize)
         return temARRAY_TOO_LARGE;
 
     // can not authorize self
@@ -70,7 +81,7 @@ DelegateSet::doApply()
         if (permissions.empty())
         {
             // if permissions array is empty, delete the ledger object.
-            return deleteDelegate(view(), sle, accountID_, j_);
+            return deleteDelegate(view(), sle, j_);
         }
 
         sle->setFieldArray(sfPermissions, permissions);
@@ -93,6 +104,8 @@ DelegateSet::doApply()
     sle->setAccountID(sfAuthorize, authAccount);
 
     sle->setFieldArray(sfPermissions, permissions);
+
+    // Add to delegating account's owner directory.
     auto const page = ctx_.view().dirInsert(
         keylet::ownerDir(accountID_), delegateKey, describeOwnerDir(accountID_));
 
@@ -100,6 +113,17 @@ DelegateSet::doApply()
         return tecDIR_FULL;  // LCOV_EXCL_LINE
 
     (*sle)[sfOwnerNode] = *page;
+
+    // Add to authorized account's owner directory so AccountDelete can find
+    // and clean up inbound delegations when the authorized account is deleted.
+    auto const destPage = ctx_.view().dirInsert(
+        keylet::ownerDir(authAccount), delegateKey, describeOwnerDir(authAccount));
+
+    if (!destPage)
+        return tecDIR_FULL;  // LCOV_EXCL_LINE
+
+    (*sle)[sfDestinationNode] = *destPage;
+
     ctx_.view().insert(sle);
     wrappedOwner.adjustOwnerCount(1);
 
@@ -107,16 +131,16 @@ DelegateSet::doApply()
 }
 
 TER
-DelegateSet::deleteDelegate(
-    ApplyView& view,
-    std::shared_ptr<SLE> const& sle,
-    AccountID const& account,
-    beast::Journal j)
+DelegateSet::deleteDelegate(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
 {
     if (!sle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    if (!view.dirRemove(keylet::ownerDir(account), (*sle)[sfOwnerNode], sle->key(), false))
+    auto const delegator = (*sle)[sfAccount];
+    auto const delegatee = (*sle)[sfAuthorize];
+
+    // Remove from delegating account's owner directory
+    if (!view.dirRemove(keylet::ownerDir(delegator), (*sle)[sfOwnerNode], sle->key(), false))
     {
         // LCOV_EXCL_START
         JLOG(j.fatal()) << "Unable to delete Delegate from owner.";
@@ -124,7 +148,20 @@ DelegateSet::deleteDelegate(
         // LCOV_EXCL_STOP
     }
 
-    WAccountRoot wrappedOwner(account, view, j);
+    // Remove from authorized account's owner directory, if present
+    if (auto const optPage = (*sle)[~sfDestinationNode])
+    {
+        if (!view.dirRemove(keylet::ownerDir(delegatee), *optPage, sle->key(), false))
+        {
+            // LCOV_EXCL_START
+            JLOG(j.fatal()) << "Unable to delete Delegate from authorized account.";
+            return tefBAD_LEDGER;
+            // LCOV_EXCL_STOP
+        }
+    }
+
+    // Only the delegating account's owner count was incremented on creation
+    WAccountRoot wrappedOwner(delegator, view, j);
     if (!wrappedOwner)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -133,6 +170,22 @@ DelegateSet::deleteDelegate(
     view.erase(sle);
 
     return tesSUCCESS;
+}
+
+void
+DelegateSet::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+DelegateSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

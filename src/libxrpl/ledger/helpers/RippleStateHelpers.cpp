@@ -1,15 +1,34 @@
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
-//
+
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
+
+#include <algorithm>
+#include <cstdint>
+#include <memory>
+#include <optional>
 
 namespace xrpl {
 
@@ -322,22 +341,25 @@ updateTrustLine(
 {
     if (!state)
         return false;
-    std::uint32_t const flags(state->getFieldU32(sfFlags));
 
     WAccountRoot wrappedAcct(sender, view, j);
     if (!wrappedAcct)
         return false;
 
+    auto const senderReserveFlag = bSenderHigh ? lsfHighReserve : lsfLowReserve;
+    auto const senderNoRippleFlag = bSenderHigh ? lsfHighNoRipple : lsfLowNoRipple;
+    auto const senderFreezeFlag = bSenderHigh ? lsfHighFreeze : lsfLowFreeze;
+    auto const receiverReserveFlag = bSenderHigh ? lsfLowReserve : lsfHighReserve;
+
     // YYY Could skip this if rippling in reverse.
-    if (before > beast::zero
+    if (before > beast::kZero
         // Sender balance was positive.
-        && after <= beast::zero
+        && after <= beast::kZero
         // Sender is zero or negative.
-        && ((flags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve)) != 0u)
+        && state->isFlag(senderReserveFlag)
         // Sender reserve is set.
-        && static_cast<bool>(flags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)) !=
-            static_cast<bool>(wrappedAcct->isFlag(lsfDefaultRipple)) &&
-        ((flags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze)) == 0u) &&
+        && state->isFlag(senderNoRippleFlag) != wrappedAcct->isFlag(lsfDefaultRipple) &&
+        !state->isFlag(senderFreezeFlag) &&
         !state->getFieldAmount(!bSenderHigh ? sfLowLimit : sfHighLimit)
         // Sender trust limit is 0.
         && (state->getFieldU32(!bSenderHigh ? sfLowQualityIn : sfHighQualityIn) == 0u)
@@ -350,11 +372,10 @@ updateTrustLine(
         wrappedAcct.adjustOwnerCount(-1);
 
         // Clear reserve flag.
-        state->setFieldU32(sfFlags, flags & (!bSenderHigh ? ~lsfLowReserve : ~lsfHighReserve));
+        state->clearFlag(senderReserveFlag);
 
         // Balance is zero, receiver reserve is clear.
-        if (!after  // Balance is zero.
-            && ((flags & (bSenderHigh ? lsfLowReserve : lsfHighReserve)) == 0u))
+        if (!after && !state->isFlag(receiverReserveFlag))
             return true;
     }
     return false;
@@ -386,28 +407,28 @@ issueIOU(
 
     if (auto state = view.peek(index))
     {
-        STAmount final_balance = state->getFieldAmount(sfBalance);
+        STAmount finalBalance = state->getFieldAmount(sfBalance);
 
         if (bSenderHigh)
-            final_balance.negate();  // Put balance in sender terms.
+            finalBalance.negate();  // Put balance in sender terms.
 
-        STAmount const start_balance = final_balance;
+        STAmount const startBalance = finalBalance;
 
-        final_balance -= amount;
+        finalBalance -= amount;
 
-        auto const must_delete = updateTrustLine(
-            view, state, bSenderHigh, issue.account, start_balance, final_balance, j);
+        auto const mustDelete =
+            updateTrustLine(view, state, bSenderHigh, issue.account, startBalance, finalBalance, j);
 
-        view.creditHookIOU(issue.account, account, amount, start_balance);
+        view.creditHookIOU(issue.account, account, amount, startBalance);
 
         if (bSenderHigh)
-            final_balance.negate();
+            finalBalance.negate();
 
         // Adjust the balance on the trust line if necessary. We do this even
         // if we are going to delete the line to reflect the correct balance
         // at the time of deletion.
-        state->setFieldAmount(sfBalance, final_balance);
-        if (must_delete)
+        state->setFieldAmount(sfBalance, finalBalance);
+        if (mustDelete)
         {
             return trustDelete(
                 view,
@@ -426,15 +447,15 @@ issueIOU(
     // this is unnecessarily inefficient as copying which could be avoided
     // is now required. Consider available options.
     STAmount const limit(Issue{issue.currency, account});
-    STAmount final_balance = amount;
+    STAmount finalBalance = amount;
 
-    final_balance.get<Issue>().account = noAccount();
+    finalBalance.get<Issue>().account = noAccount();
 
     WAccountRoot receiverAccount(account, view, j);
     if (!receiverAccount)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    bool const noRipple = (receiverAccount->getFlags() & lsfDefaultRipple) == 0;
+    bool const noRipple = !receiverAccount->isFlag(lsfDefaultRipple);
 
     return trustCreate(
         view,
@@ -447,7 +468,7 @@ issueIOU(
         noRipple,
         false,
         false,
-        final_balance,
+        finalBalance,
         limit,
         0,
         0,
@@ -478,29 +499,29 @@ redeemIOU(
 
     if (auto state = view.peek(keylet::line(account, issue.account, issue.currency)))
     {
-        STAmount final_balance = state->getFieldAmount(sfBalance);
+        STAmount finalBalance = state->getFieldAmount(sfBalance);
 
         if (bSenderHigh)
-            final_balance.negate();  // Put balance in sender terms.
+            finalBalance.negate();  // Put balance in sender terms.
 
-        STAmount const start_balance = final_balance;
+        STAmount const startBalance = finalBalance;
 
-        final_balance -= amount;
+        finalBalance -= amount;
 
-        auto const must_delete =
-            updateTrustLine(view, state, bSenderHigh, account, start_balance, final_balance, j);
+        auto const mustDelete =
+            updateTrustLine(view, state, bSenderHigh, account, startBalance, finalBalance, j);
 
-        view.creditHookIOU(account, issue.account, amount, start_balance);
+        view.creditHookIOU(account, issue.account, amount, startBalance);
 
         if (bSenderHigh)
-            final_balance.negate();
+            finalBalance.negate();
 
         // Adjust the balance on the trust line if necessary. We do this even
         // if we are going to delete the line to reflect the correct balance
         // at the time of deletion.
-        state->setFieldAmount(sfBalance, final_balance);
+        state->setFieldAmount(sfBalance, finalBalance);
 
-        if (must_delete)
+        if (mustDelete)
         {
             return trustDelete(
                 view,
@@ -545,12 +566,12 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account, 
     // If this is a weak or legacy check, or if the account has a line, fail if
     // auth is required and not set on the line
     auto const issuerAccount = AccountRoot(issue.account, view);
-    if (issuerAccount.exists() && ((issuerAccount->isFlag(lsfRequireAuth)) != 0u))
+    if (issuerAccount.exists() &&
+        (static_cast<unsigned int>(issuerAccount->isFlag(lsfRequireAuth)) != 0u))
     {
         if (trustLine)
         {
-            return (((*trustLine)[sfFlags] &
-                     ((account > issue.account) ? lsfLowAuth : lsfHighAuth)) != 0u)
+            return trustLine->isFlag((account > issue.account) ? lsfLowAuth : lsfHighAuth)
                 ? tesSUCCESS
                 : TER{tecNO_AUTH};
         }
@@ -680,7 +701,7 @@ removeEmptyHolding(
     auto const line = view.peek(keylet::line(accountID, issue));
     if (!line)
         return accountIsIssuer ? (TER)tesSUCCESS : (TER)tecOBJECT_NOT_FOUND;
-    if (!accountIsIssuer && line->at(sfBalance)->iou() != beast::zero)
+    if (!accountIsIssuer && line->at(sfBalance)->iou() != beast::kZero)
         return tecHAS_OBLIGATIONS;
 
     // Adjust the owner count(s)
@@ -756,7 +777,7 @@ deleteAMMTrustLine(
     }
 
     auto const uFlags = !ammLow ? lsfLowReserve : lsfHighReserve;
-    if ((sleState->getFlags() & uFlags) == 0u)
+    if (!sleState->isFlag(uFlags))
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     WAccountRoot wrappedHolder = !ammLow ? wrappedLow : wrappedHigh;

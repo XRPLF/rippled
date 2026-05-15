@@ -4,15 +4,17 @@
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/core/JobTypeInfo.h>
 
+#include <utility>
+
 namespace xrpl {
 
 struct JobTypeData
 {
 private:
-    LoadMonitor m_load;
+    LoadMonitor load_;
 
     /* Support for insight */
-    beast::insight::Collector::ptr m_collector;
+    beast::insight::Collector::ptr collector_;
 
 public:
     /* The job category which we represent */
@@ -32,18 +34,18 @@ public:
     beast::insight::Event execute;
 
     JobTypeData(
-        JobTypeInfo const& info_,
-        beast::insight::Collector::ptr const& collector,
+        JobTypeInfo const& info,
+        beast::insight::Collector::ptr collector,
         Logs& logs) noexcept
-        : m_load(logs.journal("LoadMonitor")), m_collector(collector), info(info_)
+        : load_(logs.journal("LoadMonitor")), collector_(std::move(collector)), info(info)
 
     {
-        m_load.setTargetLatency(info.getAverageLatency(), info.getPeakLatency());
+        load_.setTargetLatency(info.getAverageLatency(), info.getPeakLatency());
 
         if (!info.special())
         {
-            dequeue = m_collector->make_event(info.name() + "_q");
-            execute = m_collector->make_event(info.name());
+            dequeue = collector_->makeEvent(info.name() + "_q");
+            execute = collector_->makeEvent(info.name());
         }
     }
 
@@ -52,13 +54,13 @@ public:
     JobTypeData&
     operator=(JobTypeData const& other) = delete;
 
-    std::string
+    [[nodiscard]] std::string
     name() const
     {
         return info.name();
     }
 
-    JobType
+    [[nodiscard]] JobType
     type() const
     {
         return info.type();
@@ -67,13 +69,13 @@ public:
     LoadMonitor&
     load()
     {
-        return m_load;
+        return load_;
     }
 
     LoadMonitor::Stats
     stats()
     {
-        return m_load.getStats();
+        return load_.getStats();
     }
 };
 

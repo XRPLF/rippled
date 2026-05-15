@@ -27,7 +27,7 @@ public:
     virtual NodeStore::Database&
     db() = 0;
 
-    virtual NodeStore::Database const&
+    [[nodiscard]] virtual NodeStore::Database const&
     db() const = 0;
 
     virtual beast::Journal const&
