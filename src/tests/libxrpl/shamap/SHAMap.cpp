@@ -82,24 +82,9 @@ static_assert(!std::is_move_assignable<SHAMapLeafNode>{}, "");
 #endif
 
 inline bool
-operator==(SHAMapItem const& a, SHAMapItem const& b)
-{
-    return a.key() == b.key();
-}
-inline bool
 operator!=(SHAMapItem const& a, SHAMapItem const& b)
 {
     return a.key() != b.key();
-}
-inline bool
-operator==(SHAMapItem const& a, uint256 const& b)
-{
-    return a.key() == b;
-}
-inline bool
-operator!=(SHAMapItem const& a, uint256 const& b)
-{
-    return a.key() != b;
 }
 
 class SHAMapTest : public ::testing::Test
@@ -147,7 +132,7 @@ protected:
         ++i;
         EXPECT_FALSE(i == e || (*i != *i2)) << "bad traverse";
         ++i;
-        EXPECT_FALSE(i != e) << "bad traverse";
+        EXPECT_EQ(i, e) << "bad traverse";
         sMap.addItem(SHAMapNodeType::TnTransactionNm, makeShamapitem(*i4));
         sMap.invariants();
         sMap.delItem(i2->key());
@@ -162,13 +147,13 @@ protected:
         ++i;
         EXPECT_FALSE(i == e || (*i != *i4)) << "bad traverse";
         ++i;
-        EXPECT_FALSE(i != e) << "bad traverse";
+        EXPECT_EQ(i, e) << "bad traverse";
 
         SHAMapHash const mapHash = sMap.getHash();
         std::shared_ptr<SHAMap> const map2 = sMap.snapShot(false);
         map2->invariants();
-        EXPECT_FALSE(sMap.getHash() != mapHash) << "bad snapshot";
-        EXPECT_FALSE(map2->getHash() != mapHash) << "bad snapshot";
+        EXPECT_EQ(sMap.getHash(), mapHash) << "bad snapshot";
+        EXPECT_EQ(map2->getHash(), mapHash) << "bad snapshot";
 
         SHAMap::Delta delta;
         ASSERT_TRUE(sMap.compare(*map2, delta, 100));
@@ -176,15 +161,15 @@ protected:
 
         EXPECT_TRUE(sMap.delItem(sMap.begin()->key())) << "bad mod";
         sMap.invariants();
-        EXPECT_FALSE(sMap.getHash() == mapHash) << "bad snapshot";
-        EXPECT_FALSE(map2->getHash() != mapHash) << "bad snapshot";
+        EXPECT_NE(sMap.getHash(), mapHash) << "bad snapshot";
+        EXPECT_EQ(map2->getHash(), mapHash) << "bad snapshot";
 
         ASSERT_TRUE(sMap.compare(*map2, delta, 100));
         ASSERT_EQ(delta.size(), 1);
-        EXPECT_TRUE(delta.begin()->first == kH1);
+        EXPECT_EQ(delta.begin()->first, kH1);
         EXPECT_EQ(delta.begin()->second.first, nullptr);
         ASSERT_NE(delta.begin()->second.second, nullptr);
-        EXPECT_TRUE(delta.begin()->second.second->key() == kH1);
+        EXPECT_EQ(delta.begin()->second.second->key(), kH1);
 
         sMap.dump();
         {
@@ -244,22 +229,22 @@ protected:
             if (!backed)
                 map.setUnbacked();
 
-            EXPECT_TRUE(map.getHash() == beast::kZERO);
+            EXPECT_EQ(map.getHash(), beast::kZERO);
             for (std::size_t k = 0; k < kEYS.size(); ++k)
             {
                 EXPECT_TRUE(map.addItem(
                     SHAMapNodeType::TnTransactionNm,
                     makeShamapitem(kEYS[k], intToVuc(static_cast<int>(k)))));
-                EXPECT_TRUE(map.getHash().asUInt256() == kHASHES[k]);
+                EXPECT_EQ(map.getHash().asUInt256(), kHASHES[k]);
                 map.invariants();
             }
             for (std::size_t k = kEYS.size(); k-- > 0;)
             {
-                EXPECT_TRUE(map.getHash().asUInt256() == kHASHES[k]);
+                EXPECT_EQ(map.getHash().asUInt256(), kHASHES[k]);
                 EXPECT_TRUE(map.delItem(kEYS[k]));
                 map.invariants();
             }
-            EXPECT_TRUE(map.getHash() == beast::kZERO);
+            EXPECT_EQ(map.getHash(), beast::kZERO);
         }
 
         {
@@ -302,7 +287,7 @@ protected:
             int h = 7;
             for (auto const& k : map)
             {
-                EXPECT_TRUE(k.key() == kEYS[h]);
+                EXPECT_EQ(k.key(), kEYS[h]);
                 --h;
             }
         }

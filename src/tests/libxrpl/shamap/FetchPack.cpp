@@ -60,17 +60,13 @@ protected:
 
         void
         gotNode(
-            bool fromFilter,
-            SHAMapHash const& nodeHash,
-            std::uint32_t ledgerSeq,
-            Blob&& nodeData,  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
-            SHAMapNodeType type) const override
+            [[maybe_unused]] bool fromFilter,
+            [[maybe_unused]] SHAMapHash const& nodeHash,
+            [[maybe_unused]] std::uint32_t ledgerSeq,
+            // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
+            [[maybe_unused]] Blob&& nodeData,
+            [[maybe_unused]] SHAMapNodeType type) const override
         {
-            (void)fromFilter;
-            (void)nodeHash;
-            (void)ledgerSeq;
-            (void)nodeData;
-            (void)type;
         }
 
         [[nodiscard]] std::optional<Blob>
@@ -112,7 +108,7 @@ protected:
     static void
     onFetch(Map& map, SHAMapHash const& hash, Blob const& blob)
     {
-        EXPECT_TRUE(sha512Half(makeSlice(blob)) == hash.asUInt256());
+        EXPECT_EQ(sha512Half(makeSlice(blob)), hash.asUInt256());
         map.emplace(hash, blob);
     }
 };
@@ -123,49 +119,6 @@ TEST_F(FetchPackTest, construct_table)
     std::shared_ptr<Table> const t1(std::make_shared<Table>(SHAMapType::FREE, f));
 
     EXPECT_NE(t1, nullptr);
-
-    //         beast::Random r;
-    //         add_random_items_ (tableItems, *t1, r);
-    //         std::shared_ptr <Table> t2 (t1->snapShot (true));
-    //
-    //         add_random_items_ (tableItemsExtra, *t1, r);
-    //         add_random_items_ (tableItemsExtra, *t2, r);
-
-    // turn t1 into t2
-    //         Map map;
-    //         t2->getFetchPack (t1.get(), true, 1000000, std::bind (
-    //             &FetchPackTest::onFetch, this, std::ref (map),
-    //             std::placeholders::_1, std::placeholders::_2));
-    //         t1->getFetchPack (nullptr, true, 1000000, std::bind (
-    //             &FetchPackTest::onFetch, this, std::ref (map),
-    //             std::placeholders::_1, std::placeholders::_2));
-
-    // try to rebuild t2 from the fetch pack
-    //         std::shared_ptr <Table> t3;
-    //         try
-    //         {
-    //             TestFilter filter (map, beast::Journal());
-    //
-    //             t3 = std::make_shared <Table> (SHAMapType::FREE,
-    //             t2->getHash (),
-    //                 fullBelowCache);
-    //
-    //             EXPECT_TRUE(t3->fetchRoot (t2->getHash (), &filter))
-    //                 << "unable to get root";
-    //
-    //             // everything should be in the pack, no hashes should be
-    //             needed std::vector <uint256> hashes =
-    //             t3->getNeededHashes(1, &filter);
-    //             EXPECT_TRUE(hashes.empty()) << "missing hashes";
-    //
-    //             EXPECT_TRUE(t3->getHash () == t2->getHash ())
-    //                 << "root hashes do not match";
-    //             EXPECT_TRUE(t3->deepCompare (*t2)) << "failed compare";
-    //         }
-    //         catch (std::exception const&)
-    //         {
-    //             FAIL() << "unhandled exception";
-    //         }
 }
 
 }  // namespace xrpl::tests
