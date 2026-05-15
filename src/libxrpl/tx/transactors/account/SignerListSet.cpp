@@ -194,7 +194,7 @@ removeSignersFromLedger(
         return tesSUCCESS;
 
     // There are two different ways that the OwnerCount could be managed.
-    // If the lsfOneOwnerCount bit is Operation::Set then remove just one owner count.
+    // If the lsfOneOwnerCount bit is set then remove just one owner count.
     // Otherwise use the pre-MultiSignReserve amendment calculation.
     int removeFromOwnerCount = -1;
     if (!signers->isFlag(lsfOneOwnerCount))
@@ -252,9 +252,6 @@ SignerListSet::validateQuorumAndSignerEntries(
     }
 
     // Make sure there are no duplicate signers.
-    // SignerEntry only defines operator< and operator==, not the full
-    // std::totally_ordered Operation::Set required by std::ranges::less, so the
-    // ranges version does not compile. NOLINTNEXTLINE(modernize-use-ranges)
     XRPL_ASSERT(
         std::ranges::is_sorted(signers),
         "xrpl::SignerListSet::validateQuorumAndSignerEntries : sorted "
@@ -378,7 +375,7 @@ SignerListSet::writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t 
     STArray toLedger(signers_.size());
     for (auto const& entry : signers_)
     {
-        toLedger.push_back(STObject::makeInnerObject(sfSignerEntry));
+        toLedger.pushBack(STObject::makeInnerObject(sfSignerEntry));
         STObject& obj = toLedger.back();
         obj.reserve(2);
         obj[sfAccount] = entry.account;

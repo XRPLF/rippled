@@ -116,16 +116,16 @@ doNoRippleCheck(RPC::JsonContext& context)
 
     json::Value& problems = (result["problems"] = json::ValueType::Array);
 
-    bool const bDefaultRipple = (acct->getFieldU32(sfFlags) & lsfDefaultRipple) != 0u;
+    bool const bDefaultRipple = acct->isFlag(lsfDefaultRipple);
 
-    if ((static_cast<int>(bDefaultRipple) & static_cast<int>(!roleGateway)) != 0)
+    if (bDefaultRipple && !roleGateway)
     {
         problems.append(
             "You appear to have set your default ripple flag even though you "
             "are not a gateway. This is not recommended unless you are "
             "experimenting");
     }
-    else if ((static_cast<int>(roleGateway) & static_cast<int>(!bDefaultRipple)) != 0)
+    else if (roleGateway && !bDefaultRipple)
     {
         problems.append("You should immediately set your default ripple flag");
         if (transactions)
@@ -147,12 +147,12 @@ doNoRippleCheck(RPC::JsonContext& context)
 
                 std::string problem;
                 bool needFix = false;
-                if (bNoRipple & roleGateway)
+                if (bNoRipple && roleGateway)
                 {
                     problem = "You should clear the no ripple flag on your ";
                     needFix = true;
                 }
-                else if (!roleGateway & !bNoRipple)
+                else if (!roleGateway && !bNoRipple)
                 {
                     problem = "You should probably set the no ripple flag on your ";
                     needFix = true;

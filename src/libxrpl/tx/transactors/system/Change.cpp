@@ -200,7 +200,7 @@ Change::applyAmendment()
             else
             {
                 // pass through
-                newMajorities.push_back(majority);
+                newMajorities.pushBack(majority);
             }
         }
     }
@@ -211,7 +211,7 @@ Change::applyAmendment()
     if (gotMajority)
     {
         // This amendment now has a majority
-        newMajorities.push_back(STObject::makeInnerObject(sfMajority));
+        newMajorities.pushBack(STObject::makeInnerObject(sfMajority));
         auto& entry = newMajorities.back();
         entry[sfAmendment] = amendment;
         entry[sfCloseTime] = view().parentCloseTime().time_since_epoch().count();

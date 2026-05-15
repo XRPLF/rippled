@@ -333,6 +333,7 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& accountId, beast::Jour
             // Other intervals slot price
             return pricePurchased * p105 * (1 - power(fractionUsed, 60)) + minSlotPrice;
         }();
+        // NOLINTEND(bugprone-unchecked-optional-access)
 
         auto const payPrice = getPayPrice(computedPrice);
 

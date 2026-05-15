@@ -8,6 +8,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/join.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/Job.h>
@@ -39,8 +40,22 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <ostream>
 #include <string>
 #include <vector>
+
+namespace xrpl {
+static std::ostream&
+operator<<(std::ostream& os, Pathfinder::NodeType t)
+{
+    return os << static_cast<int>(t);
+}
+static std::ostream&
+operator<<(std::ostream& os, Pathfinder::PaymentType t)
+{
+    return os << static_cast<int>(t);
+}
+}  // namespace xrpl
 
 /*
 
@@ -128,7 +143,7 @@ struct PathCost
 };
 using PathCostList = std::vector<PathCost>;
 
-PathTable gMPathTable;
+PathTable gPathTable;
 
 std::string
 pathTypeToString(Pathfinder::PathType const& type)
@@ -343,14 +358,14 @@ Pathfinder::findPaths(int searchLevel, std::function<bool(void)> const& continue
     }
 
     // Now iterate over all paths for that paymentType.
-    for (auto const& costedPath : gMPathTable[paymentType])
+    for (auto const& costedPath : gPathTable[paymentType])
     {
         if (continueCallback && !continueCallback())
             return false;
         // Only use paths with at most the current search level.
         if (costedPath.searchLevel <= searchLevel)
         {
-            JLOG(j_.trace()) << "findPaths trying payment type " << static_cast<int>(paymentType);
+            JLOG(j_.trace()) << "findPaths trying payment type " << paymentType;
             addPathsForType(costedPath.type, continueCallback);
 
             if (completePaths_.size() > kPathfinderMaxCompletePaths)
@@ -748,20 +763,19 @@ Pathfinder::getPathsOut(
     if (!inserted)
         return it->second;
 
-    AccountRoot const acctRoot(account, *ledger_);
+    RAccountRoot const acctRoot(account, *ledger_);
 
     if (!acctRoot)
         return 0;
 
-    auto const aFlags = acctRoot->getFieldU32(sfFlags);
     bool const bAuthRequired = [&]() {
         if (pathAsset.holds<Currency>())
-            return (aFlags & lsfRequireAuth) != 0;
+            return acctRoot->isFlag(lsfRequireAuth);
         return !isTesSuccess(requireAuth(*ledger_, asset.get<MPTIssue>(), account));
     }();
     bool const bFrozen = [&]() {
         if (pathAsset.holds<Currency>())
-            return (aFlags & lsfGlobalFreeze) != 0;
+            return acctRoot.isGlobalFrozen();
         return isGlobalFrozen(*ledger_, asset.get<MPTIssue>());
     }();
 
@@ -860,7 +874,7 @@ Pathfinder::addPathsForType(
     PathType const& pathType,
     std::function<bool(void)> const& continueCallback)
 {
-    JLOG(j_.debug()) << "addPathsForType " << pathTypeToString(pathType);
+    JLOG(j_.debug()) << "addPathsForType " << CollectionAndDelimiter(pathType, ", ");
     // See if the set of paths for this type already exists.
     auto it = paths_.find(pathType);
     if (it != paths_.end())
@@ -1162,7 +1176,6 @@ Pathfinder::addLink(
                 {
                     std::ranges::sort(
                         candidates,
-
                         std::bind(
                             compareAccountCandidate,
                             ledger_->seq(),
@@ -1357,7 +1370,7 @@ makePath(char const* string)
 void
 fillPaths(Pathfinder::PaymentType type, PathCostList const& costs)
 {
-    auto& list = gMPathTable[type];
+    auto& list = gPathTable[type];
     XRPL_ASSERT(list.empty(), "xrpl::fillPaths : empty paths");
     for (auto& cost : costs)
         list.push_back({cost.cost, makePath(cost.path)});
@@ -1377,7 +1390,7 @@ Pathfinder::initPathTable()
 {
     // CAUTION: Do not include rules that build default paths
 
-    gMPathTable.clear();
+    gPathTable.clear();
     fillPaths(PaymentType::XrpToXrp, {});
     /* cspell: disable */
 

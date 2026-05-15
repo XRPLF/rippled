@@ -7037,7 +7037,7 @@ private:
         }
 
         // This test validates both invariant changes work together for
-        // the specific case of MPT/MPT pools with > kMAX_DELETABLE_AMM_TRUST_LINES.
+        // the specific case of MPT/MPT pools with > kMaxDeletableAmmTrustLines.
         {
             Env env(
                 *this,

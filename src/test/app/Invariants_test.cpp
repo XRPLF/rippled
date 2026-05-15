@@ -94,8 +94,7 @@ class Invariants_test : public beast::unit_test::Suite
     static FeatureBitset
     defaultAmendments()
     {
-        return xrpl::test::jtx::testableAmendments() | featureSingleAssetVault | fixCleanup3_1_3 |
-            fixCleanup3_2_0;
+        return xrpl::test::jtx::testableAmendments() | fixCleanup3_1_3 | fixCleanup3_2_0;
     }
 
     /** Run a specific test case to put the ledger into a state that will be
@@ -181,9 +180,9 @@ class Invariants_test : public beast::unit_test::Suite
         beast::Journal const jlog{sink};
         ApplyContext ac{env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
 
-        // Invariants normally run in Transactor::operator(), which installs
-        // the current ledger rules for rule-aware protocol helpers.
-        CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+        // Invariants normally run in the Transaction's "apply" (operator()) context, and can always
+        // access global Rules.
+        CurrentTransactionRulesGuard const rg(ov.rules());
 
         BEAST_EXPECT(precheck(a1, a2, ac));
 
@@ -303,10 +302,11 @@ class Invariants_test : public beast::unit_test::Suite
 
         doInvariantCheck(
             {{"account deletion left behind a non-zero balance"}},
-            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+            // NOLINTNEXTLINE(readability-identifier-naming)
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 // A1 has a balance. Delete A1
-                auto const a1ID = a1.id();
-                auto const sleA1 = ac.view().peek(keylet::account(a1ID));
+                auto const a1 = A1.id();
+                auto const sleA1 = ac.view().peek(keylet::account(a1));
                 if (!sleA1)
                     return false;
                 if (!BEAST_EXPECT(*sleA1->at(sfBalance) != beast::kZero))
@@ -321,10 +321,11 @@ class Invariants_test : public beast::unit_test::Suite
 
         doInvariantCheck(
             {{"account deletion left behind a non-zero owner count"}},
-            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+            // NOLINTNEXTLINE(readability-identifier-naming)
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 // Increment A1's owner count, then delete A1
-                auto const a1ID = a1.id();
-                WAccountRoot wrappedA1(a1ID, ac.view());
+                auto const a1 = A1.id();
+                WAccountRoot wrappedA1(a1, ac.view(), ac.journal);
                 if (!wrappedA1)
                     return false;
                 // Clear the balance so the "account deletion left behind a
@@ -356,15 +357,16 @@ class Invariants_test : public beast::unit_test::Suite
 
             doInvariantCheck(
                 {{"account deletion left behind a "s + type.cStr() + " object"}},
-                [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                // NOLINTNEXTLINE(readability-identifier-naming)
+                [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                     // Add an object to the ledger for account A1, then delete
                     // A1
-                    auto const a1ID = a1.id();
-                    auto sleA1 = ac.view().peek(keylet::account(a1ID));
+                    auto const a1 = A1.id();
+                    auto sleA1 = ac.view().peek(keylet::account(a1));
                     if (!sleA1)
                         return false;
 
-                    auto const key = std::invoke(keyletfunc, a1ID);
+                    auto const key = std::invoke(keyletfunc, a1);
                     auto const newSLE = std::make_shared<SLE>(key);
                     ac.view().insert(newSLE);
                     // Clear the balance so the "account deletion left behind a
@@ -939,7 +941,7 @@ class Invariants_test : public beast::unit_test::Suite
                     return false;
                 auto sleNew = std::make_shared<SLE>(keylet::escrow(a1, (*sle)[sfSequence] + 2));
 
-                MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
+                MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
                 STAmount const amt(mpt, -1);
                 sleNew->setFieldAmount(sfAmount, amt);
                 ac.view().insert(sleNew);
@@ -955,7 +957,7 @@ class Invariants_test : public beast::unit_test::Suite
                 if (!sle)
                     return false;
 
-                MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
+                MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
                 auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
                 sleNew->setFieldU64(sfOutstandingAmount, -1);
                 ac.view().insert(sleNew);
@@ -971,7 +973,7 @@ class Invariants_test : public beast::unit_test::Suite
                 if (!sle)
                     return false;
 
-                MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
+                MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
                 auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
                 sleNew->setFieldU64(sfLockedAmount, -1);
                 ac.view().insert(sleNew);
@@ -987,7 +989,7 @@ class Invariants_test : public beast::unit_test::Suite
                 if (!sle)
                     return false;
 
-                MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
+                MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
                 auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
                 sleNew->setFieldU64(sfOutstandingAmount, 1);
                 sleNew->setFieldU64(sfLockedAmount, 10);
@@ -1004,7 +1006,7 @@ class Invariants_test : public beast::unit_test::Suite
                 if (!sle)
                     return false;
 
-                MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
+                MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
                 auto sleNew = std::make_shared<SLE>(keylet::mptoken(mpt.getMptID(), a1));
                 sleNew->setFieldU64(sfMPTAmount, -1);
                 ac.view().insert(sleNew);
@@ -1020,7 +1022,7 @@ class Invariants_test : public beast::unit_test::Suite
                 if (!sle)
                     return false;
 
-                MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
+                MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
                 auto sleNew = std::make_shared<SLE>(keylet::mptoken(mpt.getMptID(), a1));
                 sleNew->setFieldU64(sfLockedAmount, -1);
                 ac.view().insert(sleNew);
@@ -1162,7 +1164,7 @@ class Invariants_test : public beast::unit_test::Suite
                 STObject newNFToken(*nfTokenTemplate, sfNFToken, [&nftID](STObject& object) {
                     object.setFieldH256(sfNFTokenID, nftID);
                 });
-                ret.push_back(std::move(newNFToken));
+                ret.pushBack(std::move(newNFToken));
                 ++nftID;
             }
             return ret;
@@ -1298,7 +1300,7 @@ class Invariants_test : public beast::unit_test::Suite
                 cred.setAccountID(sfIssuer, a2);
                 auto credType = "cred_type" + std::to_string(n);
                 cred.setFieldVL(sfCredentialType, Slice(credType.c_str(), credType.size()));
-                credentials.push_back(std::move(cred));
+                credentials.pushBack(std::move(cred));
             }
             sle->setFieldArray(sfAcceptedCredentials, credentials);
         }
@@ -1355,7 +1357,7 @@ class Invariants_test : public beast::unit_test::Suite
                     cred.setAccountID(sfIssuer, a2);
                     auto credType = std::string("cred_type") + std::to_string(9 - n);
                     cred.setFieldVL(sfCredentialType, Slice(credType.c_str(), credType.size()));
-                    credentials.push_back(std::move(cred));
+                    credentials.pushBack(std::move(cred));
                 }
                 slePd->setFieldArray(sfAcceptedCredentials, credentials);
                 ac.view().update(slePd);
@@ -1378,7 +1380,7 @@ class Invariants_test : public beast::unit_test::Suite
                     auto cred = STObject::makeInnerObject(sfCredential);
                     cred.setAccountID(sfIssuer, a2);
                     cred.setFieldVL(sfCredentialType, Slice("cred_type", 9));
-                    credentials.push_back(std::move(cred));
+                    credentials.pushBack(std::move(cred));
                 }
                 slePd->setFieldArray(sfAcceptedCredentials, credentials);
                 ac.view().update(slePd);
@@ -1427,7 +1429,7 @@ class Invariants_test : public beast::unit_test::Suite
                         cred.setAccountID(sfIssuer, a2);
                         auto credType = "cred_type2" + std::to_string(n);
                         cred.setFieldVL(sfCredentialType, Slice(credType.c_str(), credType.size()));
-                        credentials.push_back(std::move(cred));
+                        credentials.pushBack(std::move(cred));
                     }
 
                     slePd->setFieldArray(sfAcceptedCredentials, credentials);
@@ -1457,7 +1459,7 @@ class Invariants_test : public beast::unit_test::Suite
                         cred.setAccountID(sfIssuer, a2);
                         auto credType = std::string("cred_type2") + std::to_string(9 - n);
                         cred.setFieldVL(sfCredentialType, Slice(credType.c_str(), credType.size()));
-                        credentials.push_back(std::move(cred));
+                        credentials.pushBack(std::move(cred));
                     }
 
                     slePd->setFieldArray(sfAcceptedCredentials, credentials);
@@ -1486,7 +1488,7 @@ class Invariants_test : public beast::unit_test::Suite
                         auto cred = STObject::makeInnerObject(sfCredential);
                         cred.setAccountID(sfIssuer, a2);
                         cred.setFieldVL(sfCredentialType, Slice("cred_type", 9));
-                        credentials.push_back(std::move(cred));
+                        credentials.pushBack(std::move(cred));
                     }
                     slePd->setFieldArray(sfAcceptedCredentials, credentials);
                     ac.view().update(slePd);
@@ -1841,7 +1843,7 @@ class Invariants_test : public beast::unit_test::Suite
                 sleOffer->setFlag(lsfHybrid);
 
                 STArray bookArr;
-                bookArr.push_back(STObject::makeInnerObject(sfBook));
+                bookArr.pushBack(STObject::makeInnerObject(sfBook));
                 sleOffer->setFieldArray(sfAdditionalBooks, bookArr);
                 ac.view().insert(sleOffer);
                 return true;
@@ -1877,8 +1879,8 @@ class Invariants_test : public beast::unit_test::Suite
                     sleOffer->setFieldH256(sfDomainID, pd1);
 
                     STArray bookArr;
-                    bookArr.push_back(STObject::makeInnerObject(sfBook));
-                    bookArr.push_back(STObject::makeInnerObject(sfBook));
+                    bookArr.pushBack(STObject::makeInnerObject(sfBook));
+                    bookArr.pushBack(STObject::makeInnerObject(sfBook));
                     sleOffer->setFieldArray(sfAdditionalBooks, bookArr);
                     ac.view().insert(sleOffer);
                     return true;
@@ -3970,7 +3972,7 @@ class Invariants_test : public beast::unit_test::Suite
                 if (!sle)
                     return false;
 
-                MPTIssue const mpt{MPTIssue{makeMptID(sle->getFieldU32(sfSequence), a1)}};
+                MPTIssue const mpt{makeMptID(sle->getFieldU32(sfSequence), a1)};
                 auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
                 sleNew->setFieldU64(sfOutstandingAmount, 110);
                 sleNew->setFieldU64(sfMaximumAmount, 100);
@@ -3987,7 +3989,7 @@ class Invariants_test : public beast::unit_test::Suite
                 if (!sle)
                     return false;
 
-                MPTIssue const mpt{MPTIssue{makeMptID(sle->getFieldU32(sfSequence), a1)}};
+                MPTIssue const mpt{makeMptID(sle->getFieldU32(sfSequence), a1)};
                 auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
                 sleNew->setFieldU64(sfOutstandingAmount, 100);
                 sleNew->setFieldU64(sfMaximumAmount, 100);
@@ -4058,7 +4060,7 @@ class Invariants_test : public beast::unit_test::Suite
                     auto seq = sle->getFieldU32(sfSequence);
                     for (int i = 0; i < nTokens; ++i)
                     {
-                        MPTIssue const mpt{MPTIssue{makeMptID(seq + i, a1)}};
+                        MPTIssue const mpt{makeMptID(seq + i, a1)};
                         auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
                         ac.view().insert(sleNew);
 

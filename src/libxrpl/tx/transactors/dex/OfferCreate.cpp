@@ -577,7 +577,7 @@ OfferCreate::applyHybrid(
     auto bookInfo = STObject::makeInnerObject(sfBook);
     bookInfo.setFieldH256(sfBookDirectory, dir.key);
     bookInfo.setFieldU64(sfBookNode, *bookNode);
-    bookArr.push_back(std::move(bookInfo));
+    bookArr.pushBack(std::move(bookInfo));
 
     if (!bookExists)
         ctx_.registry.get().getOrderBookDB().addOrderBook(book);
@@ -640,7 +640,6 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         return {tecEXPIRED, true};
     }
 
-    bool const bOpenLedger = sb.open();
     bool crossed = false;
 
     if (isTesSuccess(result))
@@ -684,7 +683,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
             }
             if (!saTakerGets || !saTakerPays)
             {
-                JLOG(j_.debug()) << "Offer rounded to beast::kZERO";
+                JLOG(j_.debug()) << "Offer rounded to zero";
                 return {result, true};
             }
 
@@ -729,7 +728,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
             stream << "    out: " << formatAmount(placeOffer.out);
         }
 
-        if (result == tecFAILED_PROCESSING && bOpenLedger)
+        if (result == tecFAILED_PROCESSING && sb.open())
             result = telFAILED_PROCESSING;
 
         if (!isTesSuccess(result))

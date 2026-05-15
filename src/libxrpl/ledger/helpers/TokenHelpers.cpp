@@ -589,7 +589,7 @@ directSendNoFeeIOU(
             && sleRippleState->isFlag(senderNoRippleFlag) !=
                 AccountRoot(uSenderID, view, j)->isFlag(lsfDefaultRipple) &&
             !sleRippleState->isFlag(senderFreezeFlag) &&
-            !sleRippleState->getFieldAmount(!bSenderHigh ? sfLowLimit : sfHighLimit)
+            !sleRippleState->getFieldAmount(bSenderHigh ? sfHighLimit : sfLowLimit)
             // Sender trust limit is 0.
             && (sleRippleState->getFieldU32(bSenderHigh ? sfHighQualityIn : sfLowQualityIn) == 0u)
             // Sender quality in is 0.
@@ -645,7 +645,7 @@ directSendNoFeeIOU(
     if (!wrappedAccount)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    bool const noRipple = (wrappedAccount->getFlags() & lsfDefaultRipple) == 0;
+    bool const noRipple = !wrappedAccount->isFlag(lsfDefaultRipple);
 
     return trustCreate(
         view,
@@ -666,7 +666,7 @@ directSendNoFeeIOU(
 }
 
 // Send regardless of limits.
-// saAmount: Amount/currency/issuer to deliver to receiver.
+// --> saAmount: Amount/currency/issuer to deliver to receiver.
 // <-- saActual: Amount actually cost.  Sender pays fees.
 static TER
 directSendNoLimitIOU(
@@ -717,7 +717,7 @@ directSendNoLimitIOU(
 }
 
 // Send regardless of limits.
-// receivers: Amount/currency/issuer to deliver to receivers.
+// --> receivers: Amount/currency/issuer to deliver to receivers.
 // <-- saActual: Amount actually cost to sender.  Sender pays fees.
 static TER
 directSendNoLimitMultiIOU(
@@ -1193,7 +1193,7 @@ directSendNoLimitMultiMPT(
     // Use uint64_t, not STAmount, to keep MaximumAmount comparisons in exact
     // integer arithmetic. STAmount implicitly converts to Number, whose
     // small-scale mantissa (~16 digits) can lose precision for values near
-    // kMAX_MP_TOKEN_AMOUNT (19 digits).
+    // kMaxMpTokenAmount (19 digits).
     std::uint64_t totalSendAmount{0};
     std::uint64_t const maximumAmount = sle->at(~sfMaximumAmount).value_or(kMaxMpTokenAmount);
     std::uint64_t const outstandingAmount = sle->getFieldU64(sfOutstandingAmount);

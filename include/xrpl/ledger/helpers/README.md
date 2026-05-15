@@ -38,7 +38,7 @@ Both specializations share all domain read methods. Write methods on `WAccountRo
 
 | File                   | Description                                                                                          |
 | ---------------------- | ---------------------------------------------------------------------------------------------------- |
-| `SLEBase.h`            | Template base class `SLEBase<ViewT>` and `ReadOnlySLE`/`WritableSLE` aliases                         |
+| `SLEBase.h`            | Template base class `SLEBase<ViewT>` for read-only and writable SLE wrappers                         |
 | `AccountRootHelpers.h` | `AccountRoot<ViewT>` wrapper (`RAccountRoot`, `WAccountRoot`) and free functions for pseudo-accounts |
 | `CredentialHelpers.h`  | Free functions for Credential ledger entries                                                         |
 | `DirectoryHelpers.h`   | Free functions for directory traversal (`dirFirst`, `dirNext`, `forEachItem`, etc.)                  |

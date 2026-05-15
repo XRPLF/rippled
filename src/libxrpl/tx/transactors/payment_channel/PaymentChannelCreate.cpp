@@ -79,7 +79,7 @@ PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
     // Check reserve and funds availability
     {
         auto const balance = acctSrc->at(sfBalance);
-        auto const reserve = ctx.view.fees().accountReserve(acctSrc->getFieldU32(sfOwnerCount) + 1);
+        auto const reserve = ctx.view.fees().accountReserve(acctSrc->at(sfOwnerCount) + 1);
 
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
@@ -96,13 +96,11 @@ PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
         if (!acctDst)
             return tecNO_DST;
 
-        auto const flags = acctDst->getFlags();
-
         // Check if they have disallowed incoming payment channels
-        if ((flags & lsfDisallowIncomingPayChan) != 0u)
+        if (acctDst->isFlag(lsfDisallowIncomingPayChan))
             return tecNO_PERMISSION;
 
-        if (((flags & lsfRequireDestTag) != 0u) && !ctx.tx[~sfDestinationTag])
+        if (acctDst->isFlag(lsfRequireDestTag) && !ctx.tx[~sfDestinationTag])
             return tecDST_TAG_NEEDED;
 
         // Pseudo-accounts cannot receive payment channels, other than native

@@ -29,8 +29,7 @@ SetRegularKey::calculateBaseFee(ReadView const& view, STTx const& tx)
         if (calcAccountID(PublicKey(makeSlice(spk))) == id)
         {
             AccountRoot const acct(id, view);
-
-            if (acct && ((acct->getFlags() & lsfPasswordSpent) == 0u))
+            if (acct && !acct->isFlag(lsfPasswordSpent))
             {
                 // flag is armed and they signed with the right account
                 return XRPAmount{0};
@@ -56,27 +55,26 @@ SetRegularKey::preflight(PreflightContext const& ctx)
 TER
 SetRegularKey::doApply()
 {
-    WAccountRoot acct(accountID_, view(), j_);
-    if (!acct)
+    if (!account_)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     if (!minimumFee(ctx_.registry, ctx_.baseFee, view().fees(), view().flags()))
-        acct->setFlag(lsfPasswordSpent);
+        account_->setFlag(lsfPasswordSpent);
 
     if (ctx_.tx.isFieldPresent(sfRegularKey))
     {
-        acct->setAccountID(sfRegularKey, ctx_.tx.getAccountID(sfRegularKey));
+        account_->setAccountID(sfRegularKey, ctx_.tx.getAccountID(sfRegularKey));
     }
     else
     {
         // Account has disabled master key and no multi-signer signer list.
-        if (acct->isFlag(lsfDisableMaster) && !view().peek(keylet::signers(accountID_)))
+        if (account_->isFlag(lsfDisableMaster) && !view().peek(keylet::signers(accountID_)))
             return tecNO_ALTERNATIVE_KEY;
 
-        acct->makeFieldAbsent(sfRegularKey);
+        account_->makeFieldAbsent(sfRegularKey);
     }
 
-    acct.update();
+    account_.update();
 
     return tesSUCCESS;
 }

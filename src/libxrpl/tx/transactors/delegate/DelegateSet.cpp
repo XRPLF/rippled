@@ -115,7 +115,7 @@ DelegateSet::doApply()
     (*sle)[sfOwnerNode] = *page;
 
     // Add to authorized account's owner directory so AccountDelete can find
-    // and clean up inbound delegations.
+    // and clean up inbound delegations when the authorized account is deleted.
     auto const destPage = ctx_.view().dirInsert(
         keylet::ownerDir(authAccount), delegateKey, describeOwnerDir(authAccount));
 
@@ -139,6 +139,7 @@ DelegateSet::deleteDelegate(ApplyView& view, std::shared_ptr<SLE> const& sle, be
     auto const delegator = (*sle)[sfAccount];
     auto const delegatee = (*sle)[sfAuthorize];
 
+    // Remove from delegating account's owner directory
     if (!view.dirRemove(keylet::ownerDir(delegator), (*sle)[sfOwnerNode], sle->key(), false))
     {
         // LCOV_EXCL_START
@@ -147,6 +148,7 @@ DelegateSet::deleteDelegate(ApplyView& view, std::shared_ptr<SLE> const& sle, be
         // LCOV_EXCL_STOP
     }
 
+    // Remove from authorized account's owner directory, if present
     if (auto const optPage = (*sle)[~sfDestinationNode])
     {
         if (!view.dirRemove(keylet::ownerDir(delegatee), *optPage, sle->key(), false))
@@ -158,6 +160,7 @@ DelegateSet::deleteDelegate(ApplyView& view, std::shared_ptr<SLE> const& sle, be
         }
     }
 
+    // Only the delegating account's owner count was incremented on creation
     WAccountRoot wrappedOwner(delegator, view, j);
     if (!wrappedOwner)
         return tecINTERNAL;  // LCOV_EXCL_LINE

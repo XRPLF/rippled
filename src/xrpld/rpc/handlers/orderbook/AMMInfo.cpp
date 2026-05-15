@@ -13,7 +13,6 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
@@ -37,7 +36,7 @@
 namespace xrpl {
 
 Expected<Asset, ErrorCodeI>
-getJsonAsset(json::Value const& v, beast::Journal j)
+getAsset(json::Value const& v, beast::Journal j)
 {
     try
     {
@@ -51,7 +50,7 @@ getJsonAsset(json::Value const& v, beast::Journal j)
 }
 
 std::string
-to_iso8601(NetClock::time_point tp)
+toIso8601(NetClock::time_point tp)
 {
     // 2000-01-01 00:00:00 UTC is 946684800s from 1970-01-01 00:00:00 UTC
     using namespace std::chrono;
@@ -97,7 +96,7 @@ doAMMInfo(RPC::JsonContext& context)
 
         if (params.isMember(jss::asset))
         {
-            if (auto const i = getJsonAsset(params[jss::asset], context.j))
+            if (auto const i = getAsset(params[jss::asset], context.j))
             {
                 asset1 = *i;
             }
@@ -109,7 +108,7 @@ doAMMInfo(RPC::JsonContext& context)
 
         if (params.isMember(jss::asset2))
         {
-            if (auto const i = getJsonAsset(params[jss::asset2], context.j))
+            if (auto const i = getAsset(params[jss::asset2], context.j))
             {
                 asset2 = *i;
             }
@@ -225,7 +224,7 @@ doAMMInfo(RPC::JsonContext& context)
             auction[jss::discounted_fee] = auctionSlot[sfDiscountedFee];
             auction[jss::account] = to_string(auctionSlot.getAccountID(sfAccount));
             auction[jss::expiration] =
-                to_iso8601(NetClock::time_point{NetClock::duration{auctionSlot[sfExpiration]}});
+                toIso8601(NetClock::time_point{NetClock::duration{auctionSlot[sfExpiration]}});
             if (auctionSlot.isFieldPresent(sfAuthAccounts))
             {
                 json::Value auth;

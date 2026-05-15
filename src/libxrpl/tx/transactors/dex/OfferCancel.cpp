@@ -40,7 +40,7 @@ OfferCancel::preclaim(PreclaimContext const& ctx)
     if (!acct)
         return terNO_ACCOUNT;
 
-    if (acct->getFieldU32(sfSequence) <= offerSequence)
+    if (acct->at(sfSequence) <= offerSequence)
     {
         JLOG(ctx.j.trace()) << "Malformed transaction: "
                             << "Sequence " << offerSequence << " is invalid.";

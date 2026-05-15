@@ -227,8 +227,6 @@ AccountSet::preclaim(PreclaimContext const& ctx)
     if (!acctRoot)
         return terNO_ACCOUNT;
 
-    std::uint32_t const uFlagsIn = acctRoot->getFieldU32(sfFlags);
-
     std::uint32_t const uSetFlag = ctx.tx.getFieldU32(sfSetFlag);
 
     // legacy AccountSet flags
@@ -237,7 +235,7 @@ AccountSet::preclaim(PreclaimContext const& ctx)
     //
     // RequireAuth
     //
-    if (bSetRequireAuth && ((uFlagsIn & lsfRequireAuth) == 0u))
+    if (bSetRequireAuth && !acctRoot->isFlag(lsfRequireAuth))
     {
         if (!dirIsEmpty(ctx.view, keylet::ownerDir(id)))
         {
@@ -253,7 +251,7 @@ AccountSet::preclaim(PreclaimContext const& ctx)
     {
         if (uSetFlag == asfAllowTrustLineClawback)
         {
-            if ((uFlagsIn & lsfNoFreeze) != 0u)
+            if (acctRoot->isFlag(lsfNoFreeze))
             {
                 JLOG(ctx.j.trace()) << "Can't set Clawback if NoFreeze is set";
                 return tecNO_PERMISSION;
@@ -268,7 +266,7 @@ AccountSet::preclaim(PreclaimContext const& ctx)
         else if (uSetFlag == asfNoFreeze)
         {
             // Cannot set NoFreeze if clawback is enabled
-            if ((uFlagsIn & lsfAllowTrustLineClawback) != 0u)
+            if (acctRoot->isFlag(lsfAllowTrustLineClawback))
             {
                 JLOG(ctx.j.trace()) << "Can't set NoFreeze if clawback is enabled";
                 return tecNO_PERMISSION;
@@ -282,11 +280,10 @@ AccountSet::preclaim(PreclaimContext const& ctx)
 TER
 AccountSet::doApply()
 {
-    WAccountRoot acct(accountID_, view(), j_);
-    if (!acct)
+    if (!account_)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    std::uint32_t const uFlagsIn = acct->getFieldU32(sfFlags);
+    std::uint32_t const uFlagsIn = account_->getFieldU32(sfFlags);
     std::uint32_t uFlagsOut = uFlagsIn;
 
     STTx const& tx{ctx_.tx};
@@ -317,13 +314,13 @@ AccountSet::doApply()
     //
     // RequireAuth
     //
-    if (bSetRequireAuth && ((uFlagsIn & lsfRequireAuth) == 0u))
+    if (bSetRequireAuth && !account_->isFlag(lsfRequireAuth))
     {
         JLOG(j_.trace()) << "Set RequireAuth.";
         uFlagsOut |= lsfRequireAuth;
     }
 
-    if (bClearRequireAuth && ((uFlagsIn & lsfRequireAuth) != 0u))
+    if (bClearRequireAuth && account_->isFlag(lsfRequireAuth))
     {
         JLOG(j_.trace()) << "Clear RequireAuth.";
         uFlagsOut &= ~lsfRequireAuth;
@@ -332,13 +329,13 @@ AccountSet::doApply()
     //
     // RequireDestTag
     //
-    if (bSetRequireDest && ((uFlagsIn & lsfRequireDestTag) == 0u))
+    if (bSetRequireDest && !account_->isFlag(lsfRequireDestTag))
     {
         JLOG(j_.trace()) << "Set lsfRequireDestTag.";
         uFlagsOut |= lsfRequireDestTag;
     }
 
-    if (bClearRequireDest && ((uFlagsIn & lsfRequireDestTag) != 0u))
+    if (bClearRequireDest && account_->isFlag(lsfRequireDestTag))
     {
         JLOG(j_.trace()) << "Clear lsfRequireDestTag.";
         uFlagsOut &= ~lsfRequireDestTag;
@@ -347,13 +344,13 @@ AccountSet::doApply()
     //
     // DisallowXRP
     //
-    if (bSetDisallowXRP && ((uFlagsIn & lsfDisallowXRP) == 0u))
+    if (bSetDisallowXRP && !account_->isFlag(lsfDisallowXRP))
     {
         JLOG(j_.trace()) << "Set lsfDisallowXRP.";
         uFlagsOut |= lsfDisallowXRP;
     }
 
-    if (bClearDisallowXRP && ((uFlagsIn & lsfDisallowXRP) != 0u))
+    if (bClearDisallowXRP && account_->isFlag(lsfDisallowXRP))
     {
         JLOG(j_.trace()) << "Clear lsfDisallowXRP.";
         uFlagsOut &= ~lsfDisallowXRP;
@@ -362,7 +359,7 @@ AccountSet::doApply()
     //
     // DisableMaster
     //
-    if ((uSetFlag == asfDisableMaster) && ((uFlagsIn & lsfDisableMaster) == 0u))
+    if ((uSetFlag == asfDisableMaster) && !account_->isFlag(lsfDisableMaster))
     {
         if (!sigWithMaster)
         {
@@ -370,7 +367,8 @@ AccountSet::doApply()
             return tecNEED_MASTER_KEY;
         }
 
-        if ((!acct->isFieldPresent(sfRegularKey)) && (!view().peek(keylet::signers(accountID_))))
+        if ((!account_->isFieldPresent(sfRegularKey)) &&
+            (!view().peek(keylet::signers(accountID_))))
         {
             // Account has no regular key or multi-signer signer list.
             return tecNO_ALTERNATIVE_KEY;
@@ -380,7 +378,7 @@ AccountSet::doApply()
         uFlagsOut |= lsfDisableMaster;
     }
 
-    if ((uClearFlag == asfDisableMaster) && ((uFlagsIn & lsfDisableMaster) != 0u))
+    if ((uClearFlag == asfDisableMaster) && account_->isFlag(lsfDisableMaster))
     {
         JLOG(j_.trace()) << "Clear lsfDisableMaster.";
         uFlagsOut &= ~lsfDisableMaster;
@@ -405,7 +403,7 @@ AccountSet::doApply()
     //
     if (uSetFlag == asfNoFreeze)
     {
-        if (!sigWithMaster && ((uFlagsIn & lsfDisableMaster) == 0u))
+        if (!sigWithMaster && !account_->isFlag(lsfDisableMaster))
         {
             JLOG(j_.trace()) << "Must use master key to set NoFreeze.";
             return tecNEED_MASTER_KEY;
@@ -435,16 +433,16 @@ AccountSet::doApply()
     //
     // Track transaction IDs signed by this account in its root
     //
-    if ((uSetFlag == asfAccountTxnID) && !acct->isFieldPresent(sfAccountTxnID))
+    if ((uSetFlag == asfAccountTxnID) && !account_->isFieldPresent(sfAccountTxnID))
     {
         JLOG(j_.trace()) << "Set AccountTxnID.";
-        acct->makeFieldPresent(sfAccountTxnID);
+        account_->makeFieldPresent(sfAccountTxnID);
     }
 
-    if ((uClearFlag == asfAccountTxnID) && acct->isFieldPresent(sfAccountTxnID))
+    if ((uClearFlag == asfAccountTxnID) && account_->isFieldPresent(sfAccountTxnID))
     {
         JLOG(j_.trace()) << "Clear AccountTxnID.";
-        acct->makeFieldAbsent(sfAccountTxnID);
+        account_->makeFieldAbsent(sfAccountTxnID);
     }
 
     //
@@ -471,12 +469,12 @@ AccountSet::doApply()
         if (!uHash)
         {
             JLOG(j_.trace()) << "unset email hash";
-            acct->makeFieldAbsent(sfEmailHash);
+            account_->makeFieldAbsent(sfEmailHash);
         }
         else
         {
             JLOG(j_.trace()) << "set email hash";
-            acct->setFieldH128(sfEmailHash, uHash);
+            account_->setFieldH128(sfEmailHash, uHash);
         }
     }
 
@@ -490,12 +488,12 @@ AccountSet::doApply()
         if (!uHash)
         {
             JLOG(j_.trace()) << "unset wallet locator";
-            acct->makeFieldAbsent(sfWalletLocator);
+            account_->makeFieldAbsent(sfWalletLocator);
         }
         else
         {
             JLOG(j_.trace()) << "set wallet locator";
-            acct->setFieldH256(sfWalletLocator, uHash);
+            account_->setFieldH256(sfWalletLocator, uHash);
         }
     }
 
@@ -509,12 +507,12 @@ AccountSet::doApply()
         if (messageKey.empty())
         {
             JLOG(j_.debug()) << "clear message key";
-            acct->makeFieldAbsent(sfMessageKey);
+            account_->makeFieldAbsent(sfMessageKey);
         }
         else
         {
             JLOG(j_.debug()) << "set message key";
-            acct->setFieldVL(sfMessageKey, messageKey);
+            account_->setFieldVL(sfMessageKey, messageKey);
         }
     }
 
@@ -528,12 +526,12 @@ AccountSet::doApply()
         if (domain.empty())
         {
             JLOG(j_.trace()) << "unset domain";
-            acct->makeFieldAbsent(sfDomain);
+            account_->makeFieldAbsent(sfDomain);
         }
         else
         {
             JLOG(j_.trace()) << "set domain";
-            acct->setFieldVL(sfDomain, domain);
+            account_->setFieldVL(sfDomain, domain);
         }
     }
 
@@ -547,12 +545,12 @@ AccountSet::doApply()
         if (uRate == 0 || uRate == QUALITY_ONE)
         {
             JLOG(j_.trace()) << "unset transfer rate";
-            acct->makeFieldAbsent(sfTransferRate);
+            account_->makeFieldAbsent(sfTransferRate);
         }
         else
         {
             JLOG(j_.trace()) << "set transfer rate";
-            acct->setFieldU32(sfTransferRate, uRate);
+            account_->setFieldU32(sfTransferRate, uRate);
         }
     }
 
@@ -565,21 +563,21 @@ AccountSet::doApply()
         if ((uTickSize == 0) || (uTickSize == Quality::kMaxTickSize))
         {
             JLOG(j_.trace()) << "unset tick size";
-            acct->makeFieldAbsent(sfTickSize);
+            account_->makeFieldAbsent(sfTickSize);
         }
         else
         {
             JLOG(j_.trace()) << "set tick size";
-            acct->setFieldU8(sfTickSize, uTickSize);
+            account_->setFieldU8(sfTickSize, uTickSize);
         }
     }
 
     // Configure authorized minting account:
     if (uSetFlag == asfAuthorizedNFTokenMinter)
-        acct->setAccountID(sfNFTokenMinter, ctx_.tx[sfNFTokenMinter]);
+        account_->setAccountID(sfNFTokenMinter, ctx_.tx[sfNFTokenMinter]);
 
-    if (uClearFlag == asfAuthorizedNFTokenMinter && acct->isFieldPresent(sfNFTokenMinter))
-        acct->makeFieldAbsent(sfNFTokenMinter);
+    if (uClearFlag == asfAuthorizedNFTokenMinter && account_->isFieldPresent(sfNFTokenMinter))
+        account_->makeFieldAbsent(sfNFTokenMinter);
 
     if (uSetFlag == asfDisallowIncomingNFTokenOffer)
     {
@@ -638,9 +636,9 @@ AccountSet::doApply()
     }
 
     if (uFlagsIn != uFlagsOut)
-        acct->setFieldU32(sfFlags, uFlagsOut);
+        account_->setFieldU32(sfFlags, uFlagsOut);
 
-    acct.update();
+    account_.update();
 
     return tesSUCCESS;
 }

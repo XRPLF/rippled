@@ -100,7 +100,7 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
 
     if (loanSle->at(sfPaymentRemaining) <= kLoanPaymentsPerFeeIncrement)
     {
-        // If there are fewer than kLOAN_PAYMENTS_PER_FEE_INCREMENT payments left to
+        // If there are fewer than kLoanPaymentsPerFeeIncrement payments left to
         // pay, we can skip the computations.
         return normalCost;
     }

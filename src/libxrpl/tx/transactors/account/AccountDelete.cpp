@@ -232,7 +232,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     if (!acctDst)
         return tecNO_DST;
 
-    if (((acctDst->getFlags() & lsfRequireDestTag) != 0u) && !ctx.tx[~sfDestinationTag])
+    if (acctDst->isFlag(lsfRequireDestTag) && !ctx.tx[~sfDestinationTag])
         return tecDST_TAG_NEEDED;
 
     // If credentials are provided - check them anyway
@@ -244,7 +244,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     if (!ctx.tx.isFieldPresent(sfCredentialIDs))
     {
         // Check whether the destination account requires deposit authorization.
-        if ((acctDst->getFlags() & lsfDepositAuth) != 0u)
+        if (acctDst->isFlag(lsfDepositAuth))
         {
             if (!ctx.view.exists(keylet::depositPreauth(dst, account)))
                 return tecNO_PERMISSION;

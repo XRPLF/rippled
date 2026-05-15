@@ -108,7 +108,7 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& accountId, beast::Jou
         auto lpTokens = ammLPHolds(sb, *ammSle, entryAccount, ctx.journal);
         if (lpTokens == beast::kZero)
         {
-            JLOG(j.debug()) << "AMMVote::applyVote, account " << entryAccount << " is not LP";
+            JLOG(j.debug()) << "AMMVote::applyVote, accountId " << entryAccount << " is not LP";
             continue;
         }
         auto feeVal = entry[sfTradingFee];
@@ -132,24 +132,17 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& accountId, beast::Jou
 
         // Find an entry with the least tokens/fee. Make the order deterministic
         // if the tokens/fees are equal.
-        if (!minTokens)
+        if (!minTokens ||
+            (lpTokens < *minTokens ||
+             (lpTokens == *minTokens &&
+              (feeVal < minFee || (feeVal == minFee && entryAccount < minAccount)))))
         {
             minTokens = lpTokens;
             minPos = updatedVoteSlots.size();
             minAccount = entryAccount;
             minFee = feeVal;
         }
-        else if (
-            auto const& minTokensValue = *minTokens; lpTokens < minTokensValue ||
-            (lpTokens == minTokensValue &&
-             (feeVal < minFee || (feeVal == minFee && entryAccount < minAccount))))
-        {
-            minTokens = lpTokens;
-            minPos = updatedVoteSlots.size();
-            minAccount = entryAccount;
-            minFee = feeVal;
-        }
-        updatedVoteSlots.push_back(std::move(newEntry));
+        updatedVoteSlots.pushBack(std::move(newEntry));
     }
 
     // The account doesn't have the vote entry.
@@ -172,7 +165,7 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& accountId, beast::Jou
             }
             else
             {
-                updatedVoteSlots.push_back(std::move(newEntry));
+                updatedVoteSlots.pushBack(std::move(newEntry));
             }
         };
         // Add new entry if the number of the vote entries
@@ -183,23 +176,17 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& accountId, beast::Jou
             // Add the entry if the account has more tokens than
             // the least token holder or same tokens and higher fee.
         }
-        else if (minTokens)
+        // NOLINTBEGIN(bugprone-unchecked-optional-access) slots full means loop ran, minTokens is
+        // set
+        else if (lpTokensNew > *minTokens || (lpTokensNew == *minTokens && feeNew > minFee))
         {
-            auto const& minTokensValue = *minTokens;
-            if (lpTokensNew > minTokensValue || (lpTokensNew == minTokensValue && feeNew > minFee))
-            {
-                auto const entry = updatedVoteSlots.begin() + minPos;
-                // Remove the least token vote entry.
-                num -= Number((*entry)[~sfTradingFee].valueOr(0)) * minTokensValue;
-                den -= minTokensValue;
-                update(minPos);
-            }
-            else
-            {
-                JLOG(j.debug()) << "AMMVote::applyVote, insufficient tokens to "
-                                   "override other votes";
-            }
+            auto const entry = updatedVoteSlots.begin() + minPos;
+            // Remove the least token vote entry.
+            num -= Number((*entry)[~sfTradingFee].valueOr(0)) * *minTokens;
+            den -= *minTokens;
+            update(minPos);
         }
+        // NOLINTEND(bugprone-unchecked-optional-access)
         // All slots are full and the account does not hold more LPTokens.
         // Update anyway to refresh the slots.
         else

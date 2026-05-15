@@ -115,8 +115,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
             return tecNO_ENTRY;
         }
 
-        if (((acctDst->getFlags() & lsfRequireDestTag) != 0u) &&
-            !sleCheck->isFieldPresent(sfDestinationTag))
+        if (acctDst->isFlag(lsfRequireDestTag) && !sleCheck->isFieldPresent(sfDestinationTag))
         {
             // The tag is basically account-specific information we don't
             // understand, but we can require someone to fill it in.
@@ -200,7 +199,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                         return tecNO_ISSUER;
                     }
 
-                    if ((issuer->at(sfFlags) & lsfRequireAuth) != 0u)
+                    if (issuer->isFlag(lsfRequireAuth))
                     {
                         if (!sleTrustLine)
                         {

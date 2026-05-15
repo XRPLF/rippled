@@ -11,7 +11,6 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -44,7 +43,6 @@
 #include <memory>
 #include <mutex>
 #include <optional>
-#include <stdexcept>
 #include <string>
 #include <utility>
 #include <variant>
@@ -182,8 +180,6 @@ PathRequest::isValid(std::shared_ptr<AssetCache> const& crCache)
 {
     if (!raSrcAccount_ || !raDstAccount_)
         return false;
-    auto const& srcAccount = *raSrcAccount_;
-    auto const& dstAccount = *raDstAccount_;
 
     if (!convert_all_ && (saSendMax_ || saDstAmount_ <= beast::kZero))
     {
@@ -194,14 +190,14 @@ PathRequest::isValid(std::shared_ptr<AssetCache> const& crCache)
 
     auto const& lrLedger = crCache->getLedger();
 
-    if (!lrLedger->exists(keylet::account(srcAccount)))
+    if (!lrLedger->exists(keylet::account(*raSrcAccount_)))
     {
         // Source account does not exist.
         jvStatus_ = rpcError(RpcSrcActNotFound);
         return false;
     }
 
-    AccountRoot const acctDest(dstAccount, *lrLedger);
+    AccountRoot const acctDest(*raDstAccount_, *lrLedger);
 
     json::Value& jvDestCur = (jvStatus_[jss::destination_currencies] = json::ValueType::Array);
 
@@ -224,14 +220,14 @@ PathRequest::isValid(std::shared_ptr<AssetCache> const& crCache)
     }
     else
     {
-        bool const disallowXRP((acctDest->getFlags() & lsfDisallowXRP) != 0u);
+        bool const disallowXRP(acctDest->isFlag(lsfDisallowXRP));
 
-        auto const destAssets = accountDestAssets(dstAccount, crCache, !disallowXRP);
+        auto const destAssets = accountDestAssets(*raDstAccount_, crCache, !disallowXRP);
 
         for (auto const& asset : destAssets)
             jvDestCur.append(to_string(asset));
 
-        jvStatus_[jss::destination_tag] = (acctDest->getFlags() & lsfRequireDestTag);
+        jvStatus_[jss::destination_tag] = acctDest->isFlag(lsfRequireDestTag);
     }
 
     jvStatus_[jss::ledger_hash] = to_string(lrLedger->header().hash);
@@ -264,7 +260,6 @@ PathRequest::doCreate(std::shared_ptr<AssetCache> const& cache, json::Value cons
     {
         if (valid)
         {
-            // NOLINTNEXTLINE(bugprone-unchecked-optional-access) valid is from isValid()
             stream << iIdentifier_ << " valid: " << toBase58(*raSrcAccount_);
             stream << iIdentifier_ << " deliver: " << saDstAmount_.getFullText();
         }
@@ -506,21 +501,27 @@ PathRequest::doAborting() const
 std::unique_ptr<Pathfinder> const&
 PathRequest::getPathFinder(
     std::shared_ptr<AssetCache> const& cache,
-    hash_map<PathAsset, std::unique_ptr<Pathfinder>>& pathassetMap,
-    PathAsset const& asset,
+    hash_map<PathAsset, std::unique_ptr<Pathfinder>>& currencyMap,
+    PathAsset const& currency,
     STAmount const& dstAmount,
     int const level,
     std::function<bool(void)> const& continueCallback)
 {
-    auto i = pathassetMap.find(asset);
-    if (i != pathassetMap.end())
+    auto i = currencyMap.find(currency);
+    if (i != currencyMap.end())
         return i->second;
-    if (!raSrcAccount_ || !raDstAccount_)
-        Throw<std::logic_error>("PathRequest::getPathFinder: missing accounts");
-    auto const& srcAccount = *raSrcAccount_;
-    auto const& dstAccount = *raDstAccount_;
+    // NOLINTBEGIN(bugprone-unchecked-optional-access) isValid() ensures both are set
     auto pathfinder = std::make_unique<Pathfinder>(
-        cache, srcAccount, dstAccount, asset, std::nullopt, dstAmount, saSendMax_, domain_, app_);
+        cache,
+        *raSrcAccount_,
+        *raDstAccount_,
+        currency,
+        std::nullopt,
+        dstAmount,
+        saSendMax_,
+        domain_,
+        app_);
+    // NOLINTEND(bugprone-unchecked-optional-access)
     if (pathfinder->findPaths(level, continueCallback))
     {
         pathfinder->computePathRanks(kMaxPaths, continueCallback);
@@ -529,7 +530,7 @@ PathRequest::getPathFinder(
     {
         pathfinder.reset();  // It's a bad request - clear it.
     }
-    return pathassetMap[asset] = std::move(pathfinder);
+    return currencyMap[currency] = std::move(pathfinder);
 }
 
 bool
@@ -539,10 +540,6 @@ PathRequest::findPaths(
     json::Value& jvArray,
     std::function<bool(void)> const& continueCallback)
 {
-    if (!raSrcAccount_ || !raDstAccount_)
-        Throw<std::logic_error>("PathRequest::findPaths: missing accounts");
-    auto const& srcAccount = *raSrcAccount_;
-    auto const& dstAccount = *raDstAccount_;
     auto sourceAssets = sciSourceAssets_;
     if (sourceAssets.empty() && saSendMax_)
     {
@@ -550,8 +547,10 @@ PathRequest::findPaths(
     }
     if (sourceAssets.empty())
     {
-        auto assets = accountSourceAssets(srcAccount, cache, true);
-        bool const sameAccount = srcAccount == dstAccount;
+        // NOLINTBEGIN(bugprone-unchecked-optional-access) isValid() ensures both are set
+        auto assets = accountSourceAssets(*raSrcAccount_, cache, true);
+        bool const sameAccount = *raSrcAccount_ == *raDstAccount_;
+        // NOLINTEND(bugprone-unchecked-optional-access)
         for (auto const& asset : assets)
         {
             if (!std::visit(
@@ -563,7 +562,7 @@ PathRequest::findPaths(
                             if constexpr (std::is_same_v<TAsset, Currency>)
                             {
                                 sourceAssets.insert(
-                                    Issue{a, a.isZero() ? xrpAccount() : srcAccount});
+                                    Issue{a, a.isZero() ? xrpAccount() : *raSrcAccount_});
                             }
                             else
                             {
@@ -580,7 +579,7 @@ PathRequest::findPaths(
     }
 
     auto const dstAmount = convertAmount(saDstAmount_, convert_all_);
-    hash_map<PathAsset, std::unique_ptr<Pathfinder>> pathassetMap;
+    hash_map<PathAsset, std::unique_ptr<Pathfinder>> currencyMap;
     for (auto const& asset : sourceAssets)
     {
         if (continueCallback && !continueCallback())
@@ -589,7 +588,7 @@ PathRequest::findPaths(
                                << " Trying to find paths: " << STAmount(asset, 1).getFullText();
 
         auto& pathfinder =
-            getPathFinder(cache, pathassetMap, asset, dstAmount, level, continueCallback);
+            getPathFinder(cache, currencyMap, PathAsset(asset), dstAmount, level, continueCallback);
         if (!pathfinder)
         {
             JLOG(journal_.debug()) << iIdentifier_ << " No paths found";
@@ -608,7 +607,7 @@ PathRequest::findPaths(
             if (isXRP(asset))
                 return xrpAccount();
 
-            return srcAccount;
+            return *raSrcAccount_;
         }();
 
         STAmount const saMaxAmount = [&]() {
@@ -632,10 +631,12 @@ PathRequest::findPaths(
             saMaxAmount,  // --> Amount to send is unlimited
                           //     to get an estimate.
             dstAmount,    // --> Amount to deliver.
-            dstAccount,   // --> Account to deliver to.
-            srcAccount,   // --> Account sending from.
-            ps,           // --> Path set.
-            domain_,      // --> Domain.
+            // NOLINTBEGIN(bugprone-unchecked-optional-access) isValid() ensures both are set
+            *raDstAccount_,  // --> Account to deliver to.
+            *raSrcAccount_,  // --> Account sending from.
+            // NOLINTEND(bugprone-unchecked-optional-access)
+            ps,       // --> Path set.
+            domain_,  // --> Domain.
             app_,
             &rcInput);
 
@@ -651,10 +652,12 @@ PathRequest::findPaths(
                 saMaxAmount,  // --> Amount to send is unlimited
                               //     to get an estimate.
                 dstAmount,    // --> Amount to deliver.
-                dstAccount,   // --> Account to deliver to.
-                srcAccount,   // --> Account sending from.
-                ps,           // --> Path set.
-                domain_,      // --> Domain.
+                // NOLINTBEGIN(bugprone-unchecked-optional-access) isValid() ensures both are set
+                *raDstAccount_,  // --> Account to deliver to.
+                *raSrcAccount_,  // --> Account sending from.
+                // NOLINTEND(bugprone-unchecked-optional-access)
+                ps,       // --> Path set.
+                domain_,  // --> Domain.
                 app_);
 
             if (!isTesSuccess(rc.result()))
@@ -738,8 +741,8 @@ PathRequest::doUpdate(
     // NOLINTBEGIN(bugprone-unchecked-optional-access) isValid() ensures both are set
     newStatus[jss::source_account] = toBase58(*raSrcAccount_);
     newStatus[jss::destination_account] = toBase58(*raDstAccount_);
-    newStatus[jss::destination_amount] = saDstAmount_.getJson(JsonOptions::Values::None);
     // NOLINTEND(bugprone-unchecked-optional-access)
+    newStatus[jss::destination_amount] = saDstAmount_.getJson(JsonOptions::Values::None);
     newStatus[jss::full_reply] = !fast;
 
     if (jvId_)

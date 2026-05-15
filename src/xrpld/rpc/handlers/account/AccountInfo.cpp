@@ -38,7 +38,7 @@ namespace xrpl {
  * @brief Injects JSON describing a ledger entry.
  *
  * @param jv The JSON value to populate.
- * @param sle The ledger entry to describe.
+ * @param account The ledger entry to describe.
  *
  * @details
  * Populates the provided JSON value with the description of the specified

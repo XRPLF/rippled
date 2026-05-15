@@ -193,10 +193,9 @@ TrustSet::preclaim(PreclaimContext const& ctx)
     if (!acct)
         return terNO_ACCOUNT;
 
-    std::uint32_t const uTxFlags = ctx.tx.getFlags();
-    bool const bSetAuth = (uTxFlags & tfSetfAuth) != 0u;
+    bool const bSetAuth = ctx.tx.isFlag(tfSetfAuth);
 
-    if (bSetAuth && ((acct->getFieldU32(sfFlags) & lsfRequireAuth) == 0u))
+    if (bSetAuth && !acct->isFlag(lsfRequireAuth))
     {
         JLOG(ctx.j.trace()) << "Retry: Auth not required.";
         return tefNO_AUTH_REQUIRED;
@@ -218,7 +217,7 @@ TrustSet::preclaim(PreclaimContext const& ctx)
 
     // If the destination has opted to disallow incoming trustlines
     // then honour that flag
-    if ((acctDst->getFlags() & lsfDisallowIncomingTrustline) != 0u)
+    if (acctDst->isFlag(lsfDisallowIncomingTrustline))
     {
         // The original implementation of featureDisallowIncoming was
         // too restrictive. If
@@ -283,8 +282,8 @@ TrustSet::preclaim(PreclaimContext const& ctx)
     if (ctx.view.rules().enabled(featureDeepFreeze))
     {
         bool const bNoFreeze = acct->isFlag(lsfNoFreeze);
-        bool const bSetFreeze = (uTxFlags & tfSetFreeze) != 0u;
-        bool const bSetDeepFreeze = (uTxFlags & tfSetDeepFreeze) != 0u;
+        bool const bSetFreeze = ctx.tx.isFlag(tfSetFreeze);
+        bool const bSetDeepFreeze = ctx.tx.isFlag(tfSetDeepFreeze);
 
         if (bNoFreeze && (bSetFreeze || bSetDeepFreeze))
         {
@@ -530,8 +529,8 @@ TrustSet::doApply()
         if (QUALITY_ONE == uHighQualityOut)
             uHighQualityOut = 0;
 
-        bool const bLowDefRipple = (lowAcct->getFlags() & lsfDefaultRipple) != 0u;
-        bool const bHighDefRipple = (highAcct->getFlags() & lsfDefaultRipple) != 0u;
+        bool const bLowDefRipple = lowAcct->isFlag(lsfDefaultRipple);
+        bool const bHighDefRipple = highAcct->isFlag(lsfDefaultRipple);
 
         bool const bLowReserveSet = (uLowQualityIn != 0u) || (uLowQualityOut != 0u) ||
             ((uFlagsOut & lsfLowNoRipple) == 0) != bLowDefRipple ||
