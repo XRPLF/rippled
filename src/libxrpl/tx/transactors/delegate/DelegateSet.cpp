@@ -68,12 +68,12 @@ DelegateSet::preclaim(PreclaimContext const& ctx)
 TER
 DelegateSet::doApply()
 {
-    auto const sleOwner = ctx_.view().peek(keylet::account(account_));
+    auto const sleOwner = ctx_.view().peek(keylet::account(accountID_));
     if (!sleOwner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const& authAccount = ctx_.tx[sfAuthorize];
-    auto const delegateKey = keylet::delegate(account_, authAccount);
+    auto const delegateKey = keylet::delegate(accountID_, authAccount);
 
     auto sle = ctx_.view().peek(delegateKey);
     if (sle)
@@ -101,14 +101,14 @@ DelegateSet::doApply()
         return tecINSUFFICIENT_RESERVE;
 
     sle = std::make_shared<SLE>(delegateKey);
-    sle->setAccountID(sfAccount, account_);
+    sle->setAccountID(sfAccount, accountID_);
     sle->setAccountID(sfAuthorize, authAccount);
 
     sle->setFieldArray(sfPermissions, permissions);
 
     // Add to delegating account's owner directory
-    auto const page =
-        ctx_.view().dirInsert(keylet::ownerDir(account_), delegateKey, describeOwnerDir(account_));
+    auto const page = ctx_.view().dirInsert(
+        keylet::ownerDir(accountID_), delegateKey, describeOwnerDir(accountID_));
 
     if (!page)
         return tecDIR_FULL;  // LCOV_EXCL_LINE

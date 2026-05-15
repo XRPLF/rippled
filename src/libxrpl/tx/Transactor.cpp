@@ -262,7 +262,7 @@ Transactor::Transactor(ApplyContext& ctx)
     : ctx_(ctx)
     , sink_(ctx.journal, toShortString(ctx.tx.getTransactionID()) + " ")
     , j_(sink_)
-    , account_(ctx.tx.getAccountID(sfAccount))
+    , accountID_(ctx.tx.getAccountID(sfAccount))
 {
 }
 
@@ -431,7 +431,7 @@ Transactor::payFee()
     // Deduct the fee, so it's not available during the transaction.
     // Will only write the account back if the transaction succeeds.
     sle->setFieldAmount(sfBalance, sle->getFieldAmount(sfBalance) - feePaid);
-    if (feePayer != account_)
+    if (feePayer != accountID_)
         view().update(sle);  // done in `apply()` for the account
 
     // VFALCO Should we call view().rawDestroyXRP() here as well?
@@ -544,7 +544,7 @@ Transactor::consumeSeqProxy(SLE::pointer const& sleAccount)
         sleAccount->setFieldU32(sfSequence, seqProx.value() + 1);
         return tesSUCCESS;
     }
-    return ticketDelete(view(), account_, getTicketIndex(account_, seqProx), j_);
+    return ticketDelete(view(), accountID_, getTicketIndex(accountID_, seqProx), j_);
 }
 
 // Remove a single Ticket from the ledger.
@@ -617,7 +617,7 @@ Transactor::ticketDelete(
 void
 Transactor::preCompute()
 {
-    XRPL_ASSERT(account_ != beast::kZero, "xrpl::Transactor::preCompute : nonzero account");
+    XRPL_ASSERT(accountID_ != beast::kZero, "xrpl::Transactor::preCompute : nonzero account");
 }
 
 TER
@@ -627,12 +627,12 @@ Transactor::apply()
 
     // If the transactor requires a valid account and the transaction doesn't
     // list one, preflight will have already a flagged a failure.
-    auto const sle = view().peek(keylet::account(account_));
+    auto const sle = view().peek(keylet::account(accountID_));
 
     // sle must exist except for transactions
     // that allow zero account.
     XRPL_ASSERT(
-        sle != nullptr || account_ == beast::kZero,
+        sle != nullptr || accountID_ == beast::kZero,
         "xrpl::Transactor::apply : non-null SLE or zero account");
 
     if (sle)
