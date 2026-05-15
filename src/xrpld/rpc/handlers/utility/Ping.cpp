@@ -10,10 +10,10 @@ namespace RPC {
 struct JsonContext;
 }  // namespace RPC
 
-Json::Value
+json::Value
 doPing(RPC::JsonContext& context)
 {
-    Json::Value ret(Json::objectValue);
+    json::Value ret(json::ValueType::Object);
     switch (context.role)
     {
         case Role::ADMIN:
@@ -27,7 +27,9 @@ doPing(RPC::JsonContext& context)
             break;
         case Role::PROXY:
             ret[jss::role] = "proxied";
-            ret[jss::ip] = std::string{context.headers.forwardedFor};
+            if (!context.headers.forwardedFor.empty())
+                ret[jss::ip] = std::string{context.headers.forwardedFor};
+            break;
         default:;
     }
 

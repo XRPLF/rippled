@@ -1,12 +1,21 @@
+#include <xrpl/ledger/helpers/DelegateHelpers.h>
+#include <xrpl/protocol/Permissions.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
-#include <xrpl/tx/transactors/delegate/DelegateUtils.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFormats.h>
+
+#include <memory>
+#include <unordered_set>
 
 namespace xrpl {
 NotTEC
 checkTxPermission(std::shared_ptr<SLE const> const& delegate, STTx const& tx)
 {
     if (!delegate)
-        return terNO_DELEGATE_PERMISSION;  // LCOV_EXCL_LINE
+        return terNO_DELEGATE_PERMISSION;
 
     auto const permissionArray = delegate->getFieldArray(sfPermissions);
     auto const txPermission = tx.getTxnType() + 1;
@@ -28,7 +37,7 @@ loadGranularPermission(
     std::unordered_set<GranularPermissionType>& granularPermissions)
 {
     if (!delegate)
-        return;  // LCOV_EXCL_LINE
+        return;
 
     auto const permissionArray = delegate->getFieldArray(sfPermissions);
     for (auto const& permission : permissionArray)

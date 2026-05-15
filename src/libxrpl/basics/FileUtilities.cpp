@@ -1,6 +1,5 @@
 #include <xrpl/basics/FileUtilities.h>
 
-#include <boost/filesystem/fstream.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/system/detail/errc.hpp>

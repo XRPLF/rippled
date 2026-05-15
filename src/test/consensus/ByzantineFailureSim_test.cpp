@@ -1,13 +1,22 @@
 #include <test/csf.h>
+#include <test/csf/Peer.h>
+#include <test/csf/PeerGroup.h>
+#include <test/csf/Sim.h>
+#include <test/csf/SimTime.h>
+#include <test/csf/TrustGraph.h>
+#include <test/csf/collectors.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpld/consensus/ConsensusParms.h>
 
-#include <utility>
+#include <xrpl/beast/unit_test/suite.h>
 
-namespace xrpl {
-namespace test {
+#include <chrono>
+#include <ios>
+#include <iostream>
 
-class ByzantineFailureSim_test : public beast::unit_test::suite
+namespace xrpl::test {
+
+class ByzantineFailureSim_test : public beast::unit_test::Suite
 {
     void
     run() override
@@ -77,5 +86,4 @@ class ByzantineFailureSim_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE_MANUAL(ByzantineFailureSim, consensus, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

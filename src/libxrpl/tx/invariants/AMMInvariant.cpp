@@ -1,10 +1,26 @@
 #include <xrpl/tx/invariants/AMMInvariant.h>
-//
+
 #include <xrpl/basics/Log.h>
-#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
-#include <xrpl/tx/transactors/dex/AMMHelpers.h>
-#include <xrpl/tx/transactors/dex/AMMUtils.h>
+#include <xrpl/protocol/XRPAmount.h>
+
+#include <memory>
+#include <string>
 
 namespace xrpl {
 
@@ -28,7 +44,7 @@ ValidAMM::visitEntry(
         }
         // AMM pool changed
         else if (
-            (type == ltRIPPLE_STATE && ((after->getFlags() & lsfAMMNode) != 0u)) ||
+            (type == ltRIPPLE_STATE && after->isFlag(lsfAMMNode)) ||
             (type == ltACCOUNT_ROOT && after->isFieldPresent(sfAMMID)))
         {
             ammPoolChanged_ = true;
@@ -53,11 +69,11 @@ validBalances(
     ValidAMM::ZeroAllowed zeroAllowed)
 {
     bool const positive =
-        amount > beast::zero && amount2 > beast::zero && lptAMMBalance > beast::zero;
+        amount > beast::kZero && amount2 > beast::kZero && lptAMMBalance > beast::kZero;
     if (zeroAllowed == ValidAMM::ZeroAllowed::Yes)
     {
         return positive ||
-            (amount == beast::zero && amount2 == beast::zero && lptAMMBalance == beast::zero);
+            (amount == beast::kZero && amount2 == beast::kZero && lptAMMBalance == beast::kZero);
     }
     return positive;
 }
@@ -95,7 +111,7 @@ ValidAMM::finalizeBid(bool enforce, beast::Journal const& j) const
     // LPTokens are burnt, therefore there should be fewer LPTokens
     else if (
         lptAMMBalanceBefore_ && lptAMMBalanceAfter_ &&
-        (*lptAMMBalanceAfter_ > *lptAMMBalanceBefore_ || *lptAMMBalanceAfter_ <= beast::zero))
+        (*lptAMMBalanceAfter_ > *lptAMMBalanceBefore_ || *lptAMMBalanceAfter_ <= beast::kZero))
     {
         // LCOV_EXCL_START
         JLOG(j.error()) << "AMMBid invariant failed: " << *lptAMMBalanceBefore_ << " "
@@ -128,21 +144,25 @@ ValidAMM::finalizeCreate(
         auto const [amount, amount2] = ammPoolHolds(
             view,
             *ammAccount_,
-            tx[sfAmount].get<Issue>(),
-            tx[sfAmount2].get<Issue>(),
-            fhIGNORE_FREEZE,
+            tx[sfAmount].asset(),
+            tx[sfAmount2].asset(),
+            FreezeHandling::IgnoreFreeze,
+            AuthHandling::IgnoreAuth,
             j);
         // Create invariant:
         // sqrt(amount * amount2) == LPTokens
         // all balances are greater than zero
+        // NOLINTBEGIN(bugprone-unchecked-optional-access) lptAMMBalanceAfter_ set with ammAccount_
+        // in visitEntry
         if (!validBalances(amount, amount2, *lptAMMBalanceAfter_, ZeroAllowed::No) ||
-            ammLPTokens(amount, amount2, lptAMMBalanceAfter_->issue()) != *lptAMMBalanceAfter_)
+            ammLPTokens(amount, amount2, lptAMMBalanceAfter_->get<Issue>()) != *lptAMMBalanceAfter_)
         {
             JLOG(j.error()) << "AMMCreate invariant failed: " << amount << " " << amount2 << " "
                             << *lptAMMBalanceAfter_;
             if (enforce)
                 return false;
         }
+        // NOLINTEND(bugprone-unchecked-optional-access)
     }
 
     return true;
@@ -187,12 +207,15 @@ ValidAMM::generalInvariant(
     ZeroAllowed zeroAllowed,
     beast::Journal const& j) const
 {
+    // NOLINTBEGIN(bugprone-unchecked-optional-access) ammAccount_ and lptAMMBalanceAfter_ set
+    // together in visitEntry; callers only invoke this inside else-of-if(!ammAccount_)
     auto const [amount, amount2] = ammPoolHolds(
         view,
         *ammAccount_,
-        tx[sfAsset].get<Issue>(),
-        tx[sfAsset2].get<Issue>(),
-        fhIGNORE_FREEZE,
+        tx[sfAsset],
+        tx[sfAsset2],
+        FreezeHandling::IgnoreFreeze,
+        AuthHandling::IgnoreAuth,
         j);
     // Deposit and Withdrawal invariant:
     // sqrt(amount * amount2) >= LPTokens
@@ -204,20 +227,21 @@ ValidAMM::generalInvariant(
     bool const strongInvariantCheck = poolProductMean >= *lptAMMBalanceAfter_;
     // Allow for a small relative error if strongInvariantCheck fails
     auto weakInvariantCheck = [&]() {
-        return *lptAMMBalanceAfter_ != beast::zero &&
+        return *lptAMMBalanceAfter_ != beast::kZero &&
             withinRelativeDistance(poolProductMean, Number{*lptAMMBalanceAfter_}, Number{1, -11});
     };
     if (!nonNegativeBalances || (!strongInvariantCheck && !weakInvariantCheck()))
     {
         JLOG(j.error()) << "AMM " << tx.getTxnType()
-                        << " invariant failed: " << tx.getHash(HashPrefix::transactionID) << " "
+                        << " invariant failed: " << tx.getHash(HashPrefix::TransactionId) << " "
                         << ammPoolChanged_ << " " << amount << " " << amount2 << " "
                         << poolProductMean << " " << lptAMMBalanceAfter_->getText() << " "
-                        << ((*lptAMMBalanceAfter_ == beast::zero)
+                        << ((*lptAMMBalanceAfter_ == beast::kZero)
                                 ? Number{1}
                                 : ((*lptAMMBalanceAfter_ - poolProductMean) / poolProductMean));
         return false;
     }
+    // NOLINTEND(bugprone-unchecked-optional-access)
 
     return true;
 }

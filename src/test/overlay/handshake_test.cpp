@@ -1,12 +1,10 @@
 #include <xrpld/overlay/detail/Handshake.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 
-namespace xrpl {
+namespace xrpl::test {
 
-namespace test {
-
-class handshake_test : public beast::unit_test::suite
+class handshake_test : public beast::unit_test::Suite
 {
 public:
     handshake_test() = default;
@@ -42,5 +40,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(handshake, overlay, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

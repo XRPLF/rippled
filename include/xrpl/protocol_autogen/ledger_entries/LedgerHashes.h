@@ -46,7 +46,7 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfFirstLedgerSequence (soeOPTIONAL)
+     * @brief Get sfFirstLedgerSequence (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -70,7 +70,7 @@ public:
     }
 
     /**
-     * @brief Get sfLastLedgerSequence (soeOPTIONAL)
+     * @brief Get sfLastLedgerSequence (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -94,7 +94,7 @@ public:
     }
 
     /**
-     * @brief Get sfHashes (soeREQUIRED)
+     * @brief Get sfHashes (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -109,7 +109,7 @@ public:
  * @brief Builder for LedgerHashes ledger entries.
  *
  * Provides a fluent interface for constructing ledger entries with method chaining.
- * Uses Json::Value internally for flexible ledger entry construction.
+ * Uses STObject internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
  */
 class LedgerHashesBuilder : public LedgerEntryBuilderBase<LedgerHashesBuilder>
@@ -142,7 +142,7 @@ public:
     /** @brief Ledger entry-specific field setters */
 
     /**
-     * @brief Set sfFirstLedgerSequence (soeOPTIONAL)
+     * @brief Set sfFirstLedgerSequence (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     LedgerHashesBuilder&
@@ -153,7 +153,7 @@ public:
     }
 
     /**
-     * @brief Set sfLastLedgerSequence (soeOPTIONAL)
+     * @brief Set sfLastLedgerSequence (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     LedgerHashesBuilder&
@@ -164,7 +164,7 @@ public:
     }
 
     /**
-     * @brief Set sfHashes (soeREQUIRED)
+     * @brief Set sfHashes (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     LedgerHashesBuilder&

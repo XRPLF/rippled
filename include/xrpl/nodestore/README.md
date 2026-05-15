@@ -51,7 +51,7 @@ A blob containing the payload. Stored in the following format.
 ---
 
 The `NodeStore` provides an interface that stores, in a persistent database, a
-collection of NodeObjects that rippled uses as its primary representation of
+collection of NodeObjects that xrpld uses as its primary representation of
 ledger entries. All ledger entries are stored as NodeObjects and as such, need
 to be persisted between launches. If a NodeObject is accessed and is not in
 memory, it will be retrieved from the database.
@@ -110,7 +110,7 @@ The `NodeStore.Timing` test is used to execute a set of read/write workloads to
 compare current available nodestore backends. It can be executed with:
 
 ```
-$rippled --unittest=NodeStoreTiming
+$xrpld --unittest=NodeStoreTiming
 ```
 
 It is also possible to use alternate DB config params by passing config strings
@@ -143,10 +143,10 @@ Through various executions and profiling some conclusions are presented below.
   just after ledger close, then that would provide similar, but more predictable
   guarantees. It would also remove an unneeded thread and unnecessary memory
   usage. An alternative point of view is that because there will always be many
-  other rippled instances running there is no need for such guarantees. The nodes
+  other xrpld instances running there is no need for such guarantees. The nodes
   will always be available from another peer.
 
-- Lookup in a block was previously using binary search. With rippled's use case
+- Lookup in a block was previously using binary search. With xrpld's use case
   it is highly unlikely that two adjacent key/values will ever be requested one
   after the other. Therefore hash indexing of blocks makes much more sense.
   Rocksdb has a number of options for hash indexing both memtables and blocks and

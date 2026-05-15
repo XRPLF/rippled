@@ -46,7 +46,7 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfAccount (soeREQUIRED)
+     * @brief Get sfAccount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -57,7 +57,7 @@ public:
     }
 
     /**
-     * @brief Get sfSequence (soeREQUIRED)
+     * @brief Get sfSequence (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -68,7 +68,7 @@ public:
     }
 
     /**
-     * @brief Get sfBalance (soeREQUIRED)
+     * @brief Get sfBalance (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -79,7 +79,7 @@ public:
     }
 
     /**
-     * @brief Get sfOwnerCount (soeREQUIRED)
+     * @brief Get sfOwnerCount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -90,7 +90,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -101,7 +101,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -112,7 +112,7 @@ public:
     }
 
     /**
-     * @brief Get sfAccountTxnID (soeOPTIONAL)
+     * @brief Get sfAccountTxnID (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -136,7 +136,7 @@ public:
     }
 
     /**
-     * @brief Get sfRegularKey (soeOPTIONAL)
+     * @brief Get sfRegularKey (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -160,7 +160,7 @@ public:
     }
 
     /**
-     * @brief Get sfEmailHash (soeOPTIONAL)
+     * @brief Get sfEmailHash (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -184,7 +184,7 @@ public:
     }
 
     /**
-     * @brief Get sfWalletLocator (soeOPTIONAL)
+     * @brief Get sfWalletLocator (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -208,7 +208,7 @@ public:
     }
 
     /**
-     * @brief Get sfWalletSize (soeOPTIONAL)
+     * @brief Get sfWalletSize (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -232,7 +232,7 @@ public:
     }
 
     /**
-     * @brief Get sfMessageKey (soeOPTIONAL)
+     * @brief Get sfMessageKey (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -256,7 +256,7 @@ public:
     }
 
     /**
-     * @brief Get sfTransferRate (soeOPTIONAL)
+     * @brief Get sfTransferRate (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -280,7 +280,7 @@ public:
     }
 
     /**
-     * @brief Get sfDomain (soeOPTIONAL)
+     * @brief Get sfDomain (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -304,7 +304,7 @@ public:
     }
 
     /**
-     * @brief Get sfTickSize (soeOPTIONAL)
+     * @brief Get sfTickSize (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -328,7 +328,7 @@ public:
     }
 
     /**
-     * @brief Get sfTicketCount (soeOPTIONAL)
+     * @brief Get sfTicketCount (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -352,7 +352,7 @@ public:
     }
 
     /**
-     * @brief Get sfNFTokenMinter (soeOPTIONAL)
+     * @brief Get sfNFTokenMinter (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -376,7 +376,7 @@ public:
     }
 
     /**
-     * @brief Get sfMintedNFTokens (soeDEFAULT)
+     * @brief Get sfMintedNFTokens (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -400,7 +400,7 @@ public:
     }
 
     /**
-     * @brief Get sfBurnedNFTokens (soeDEFAULT)
+     * @brief Get sfBurnedNFTokens (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -424,7 +424,7 @@ public:
     }
 
     /**
-     * @brief Get sfFirstNFTokenSequence (soeOPTIONAL)
+     * @brief Get sfFirstNFTokenSequence (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -448,7 +448,7 @@ public:
     }
 
     /**
-     * @brief Get sfAMMID (soeOPTIONAL)
+     * @brief Get sfAMMID (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -472,7 +472,7 @@ public:
     }
 
     /**
-     * @brief Get sfVaultID (soeOPTIONAL)
+     * @brief Get sfVaultID (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -496,7 +496,7 @@ public:
     }
 
     /**
-     * @brief Get sfLoanBrokerID (soeOPTIONAL)
+     * @brief Get sfLoanBrokerID (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -524,7 +524,7 @@ public:
  * @brief Builder for AccountRoot ledger entries.
  *
  * Provides a fluent interface for constructing ledger entries with method chaining.
- * Uses Json::Value internally for flexible ledger entry construction.
+ * Uses STObject internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
  */
 class AccountRootBuilder : public LedgerEntryBuilderBase<AccountRootBuilder>
@@ -567,7 +567,7 @@ public:
     /** @brief Ledger entry-specific field setters */
 
     /**
-     * @brief Set sfAccount (soeREQUIRED)
+     * @brief Set sfAccount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -578,7 +578,7 @@ public:
     }
 
     /**
-     * @brief Set sfSequence (soeREQUIRED)
+     * @brief Set sfSequence (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -589,7 +589,7 @@ public:
     }
 
     /**
-     * @brief Set sfBalance (soeREQUIRED)
+     * @brief Set sfBalance (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -600,7 +600,7 @@ public:
     }
 
     /**
-     * @brief Set sfOwnerCount (soeREQUIRED)
+     * @brief Set sfOwnerCount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -611,7 +611,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -622,7 +622,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -633,7 +633,7 @@ public:
     }
 
     /**
-     * @brief Set sfAccountTxnID (soeOPTIONAL)
+     * @brief Set sfAccountTxnID (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -644,7 +644,7 @@ public:
     }
 
     /**
-     * @brief Set sfRegularKey (soeOPTIONAL)
+     * @brief Set sfRegularKey (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -655,7 +655,7 @@ public:
     }
 
     /**
-     * @brief Set sfEmailHash (soeOPTIONAL)
+     * @brief Set sfEmailHash (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -666,7 +666,7 @@ public:
     }
 
     /**
-     * @brief Set sfWalletLocator (soeOPTIONAL)
+     * @brief Set sfWalletLocator (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -677,7 +677,7 @@ public:
     }
 
     /**
-     * @brief Set sfWalletSize (soeOPTIONAL)
+     * @brief Set sfWalletSize (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -688,7 +688,7 @@ public:
     }
 
     /**
-     * @brief Set sfMessageKey (soeOPTIONAL)
+     * @brief Set sfMessageKey (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -699,7 +699,7 @@ public:
     }
 
     /**
-     * @brief Set sfTransferRate (soeOPTIONAL)
+     * @brief Set sfTransferRate (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -710,7 +710,7 @@ public:
     }
 
     /**
-     * @brief Set sfDomain (soeOPTIONAL)
+     * @brief Set sfDomain (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -721,7 +721,7 @@ public:
     }
 
     /**
-     * @brief Set sfTickSize (soeOPTIONAL)
+     * @brief Set sfTickSize (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -732,7 +732,7 @@ public:
     }
 
     /**
-     * @brief Set sfTicketCount (soeOPTIONAL)
+     * @brief Set sfTicketCount (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -743,7 +743,7 @@ public:
     }
 
     /**
-     * @brief Set sfNFTokenMinter (soeOPTIONAL)
+     * @brief Set sfNFTokenMinter (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -754,7 +754,7 @@ public:
     }
 
     /**
-     * @brief Set sfMintedNFTokens (soeDEFAULT)
+     * @brief Set sfMintedNFTokens (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -765,7 +765,7 @@ public:
     }
 
     /**
-     * @brief Set sfBurnedNFTokens (soeDEFAULT)
+     * @brief Set sfBurnedNFTokens (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -776,7 +776,7 @@ public:
     }
 
     /**
-     * @brief Set sfFirstNFTokenSequence (soeOPTIONAL)
+     * @brief Set sfFirstNFTokenSequence (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -787,7 +787,7 @@ public:
     }
 
     /**
-     * @brief Set sfAMMID (soeOPTIONAL)
+     * @brief Set sfAMMID (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -798,7 +798,7 @@ public:
     }
 
     /**
-     * @brief Set sfVaultID (soeOPTIONAL)
+     * @brief Set sfVaultID (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -809,7 +809,7 @@ public:
     }
 
     /**
-     * @brief Set sfLoanBrokerID (soeOPTIONAL)
+     * @brief Set sfLoanBrokerID (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&

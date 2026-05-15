@@ -4,19 +4,16 @@
 
 #include <date/date.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
-namespace oracle {
+namespace xrpl::test::jtx::oracle {
 
-using AnyValue = std::variant<std::string, double, Json::Int, Json::UInt>;
+using AnyValue = std::variant<std::string, double, json::Int, json::UInt>;
 using OraclesData = std::vector<std::pair<std::optional<Account>, std::optional<AnyValue>>>;
 
 // Special string value, which is converted to unquoted string in the string
 // passed to rpc.
-constexpr char const* NoneTag = "%None%";
-constexpr char const* UnquotedNone = "None";
-constexpr char const* NonePattern = "\"%None%\"";
+constexpr char const* kNoneTag = "%None%";
+constexpr char const* kUnquotedNone = "None";
+constexpr char const* kNonePattern = "\"%None%\"";
 
 std::uint32_t
 asUInt(AnyValue const& v);
@@ -25,10 +22,10 @@ bool
 validDocumentID(AnyValue const& v);
 
 void
-toJson(Json::Value& jv, AnyValue const& v);
+toJson(json::Value& jv, AnyValue const& v);
 
 void
-toJsonHex(Json::Value& jv, AnyValue const& v);
+toJsonHex(json::Value& jv, AnyValue const& v);
 
 // base asset, quote asset, price, scale
 using DataSeries = std::vector<
@@ -46,10 +43,10 @@ struct CreateArg
     std::optional<AnyValue> uri = "URI";
     std::optional<AnyValue> lastUpdateTime = std::nullopt;
     std::uint32_t flags = 0;
-    std::optional<jtx::msig> msig = std::nullopt;
-    std::optional<jtx::seq> seq = std::nullopt;
+    std::optional<jtx::Msig> msig = std::nullopt;
+    std::optional<jtx::Seq> seq = std::nullopt;
     int fee = 10;
-    std::optional<ter> err = std::nullopt;
+    std::optional<Ter> err = std::nullopt;
     bool close = false;
 };
 
@@ -58,16 +55,16 @@ struct UpdateArg
 {
     std::optional<AccountID> owner = std::nullopt;
     std::optional<AnyValue> documentID = std::nullopt;
-    DataSeries series = {};
+    DataSeries series = {};  // NOLINT(readability-redundant-member-init)
     std::optional<AnyValue> assetClass = std::nullopt;
     std::optional<AnyValue> provider = std::nullopt;
     std::optional<AnyValue> uri = "URI";
     std::optional<AnyValue> lastUpdateTime = std::nullopt;
     std::uint32_t flags = 0;
-    std::optional<jtx::msig> msig = std::nullopt;
-    std::optional<jtx::seq> seq = std::nullopt;
+    std::optional<jtx::Msig> msig = std::nullopt;
+    std::optional<jtx::Seq> seq = std::nullopt;
     int fee = 10;
-    std::optional<ter> err = std::nullopt;
+    std::optional<Ter> err = std::nullopt;
 };
 
 struct RemoveArg
@@ -75,18 +72,18 @@ struct RemoveArg
     std::optional<AccountID> const& owner = std::nullopt;
     std::optional<AnyValue> const& documentID = std::nullopt;
     std::uint32_t flags = 0;
-    std::optional<jtx::msig> const& msig = std::nullopt;
-    std::optional<jtx::seq> seq = std::nullopt;
+    std::optional<jtx::Msig> const& msig = std::nullopt;
+    std::optional<jtx::Seq> seq = std::nullopt;
     int fee = 10;
-    std::optional<ter> const& err = std::nullopt;
+    std::optional<Ter> const& err = std::nullopt;
 };
 
-// Simulate testStartTime as 10'000s from Ripple epoch time to make
+// Simulate testStartTime as 10'000s from XRPL epoch time to make
 // LastUpdateTime validation to work and to make unit-test consistent.
 // The value doesn't matter much, it has to be greater
 // than maxLastUpdateTimeDelta in order to pass LastUpdateTime
 // validation {close-maxLastUpdateTimeDelta,close+maxLastUpdateTimeDelta}.
-constexpr static std::chrono::seconds testStartTime = epoch_offset + std::chrono::seconds(10'000);
+static constexpr std::chrono::seconds kTestStartTime = kEpochOffset + std::chrono::seconds(10'000);
 
 /** Oracle class facilitates unit-testing of the Price Oracle feature.
  * It defines functions to create, update, and delete the Oracle object,
@@ -104,10 +101,10 @@ private:
 private:
     void
     submit(
-        Json::Value const& jv,
-        std::optional<jtx::msig> const& msig,
-        std::optional<jtx::seq> const& seq,
-        std::optional<ter> const& err);
+        json::Value const& jv,
+        std::optional<jtx::Msig> const& msig,
+        std::optional<jtx::Seq> const& seq,
+        std::optional<Ter> const& err);
 
 public:
     Oracle(Env& env, CreateArg const& arg, bool submit = true);
@@ -120,7 +117,7 @@ public:
     void
     set(UpdateArg const& arg);
 
-    static Json::Value
+    static json::Value
     aggregatePrice(
         Env& env,
         std::optional<AnyValue> const& baseAsset,
@@ -129,7 +126,7 @@ public:
         std::optional<AnyValue> const& trim = std::nullopt,
         std::optional<AnyValue> const& timeThreshold = std::nullopt);
 
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     documentID() const
     {
         return documentID_;
@@ -150,14 +147,14 @@ public:
     [[nodiscard]] bool
     expectLastUpdateTime(std::uint32_t lastUpdateTime) const;
 
-    static Json::Value
+    static json::Value
     ledgerEntry(
         Env& env,
         std::optional<std::variant<AccountID, std::string>> const& account,
         std::optional<AnyValue> const& documentID,
         std::optional<std::string> const& index = std::nullopt);
 
-    Json::Value
+    [[nodiscard]] json::Value
     ledgerEntry(std::optional<std::string> const& index = std::nullopt) const
     {
         return Oracle::ledgerEntry(env_, owner_, documentID_, index);
@@ -177,7 +174,4 @@ public:
     }
 };
 
-}  // namespace oracle
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::oracle
