@@ -685,7 +685,7 @@ private:
      * bring it back into range.
      *
      */
-    template <bool expectNormal = true, detail::UnsignedMantissa Rep = internalrep>
+    template <bool ExpectNormal = true, detail::UnsignedMantissa Rep = internalrep>
     void
     fromInternal(bool negative, Rep mantissa, int exponent, MantissaRange const* pRange);
 
@@ -699,7 +699,7 @@ private:
      * bring it back into range.
      *
      */
-    template <bool expectNormal = true, detail::UnsignedMantissa Rep = internalrep>
+    template <bool ExpectNormal = true, detail::UnsignedMantissa Rep = internalrep>
     void
     fromInternal(bool negative, Rep mantissa, int exponent);
 
@@ -710,11 +710,7 @@ public:
         MantissaRange{MantissaRange::MantissaScale::Large}.max;
 };
 
-inline constexpr Number::Number(
-    bool negative,
-    internalrep mantissa,
-    int exponent,
-    Unchecked) noexcept
+constexpr Number::Number(bool negative, internalrep mantissa, int exponent, Unchecked) noexcept
     : mantissa_{negative ? -static_cast<rep>(mantissa) : static_cast<rep>(mantissa)}
     , exponent_{exponent}
 {
@@ -923,9 +919,11 @@ Number::normalizeToRangeImpl(T minMantissa, T maxMantissa, MantissaRange::CuspRo
         // To avoid logical errors in release builds, throw if the Number is
         // negative for an unsigned range.
         if (negative)
+        {
             throw std::runtime_error(
                 "Number::normalizeToRange: Number is negative for "
                 "unsigned range.");
+        }
     }
     Number::normalize(negative, mantissa, exponent, minMantissa, maxMantissa, fix);
 

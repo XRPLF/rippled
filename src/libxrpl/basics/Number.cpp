@@ -8,11 +8,12 @@
 #include <cstdint>
 #include <functional>
 #include <iterator>
-#include <limits>
 #include <numeric>
 #include <set>
+#include <stdexcept>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
@@ -550,11 +551,11 @@ Number::toInternal() const
  * bring it back into range.
  *
  */
-template <bool expectNormal, detail::UnsignedMantissa Rep>
+template <bool ExpectNormal, detail::UnsignedMantissa Rep>
 void
 Number::fromInternal(bool negative, Rep mantissa, int exponent, MantissaRange const* pRange)
 {
-    if constexpr (std::is_same_v<std::bool_constant<expectNormal>, std::false_type>)
+    if constexpr (std::is_same_v<std::bool_constant<ExpectNormal>, std::false_type>)
     {
         if (!pRange)
             throw std::runtime_error("Missing range to Number::fromInternal!");
@@ -599,12 +600,12 @@ Number::fromInternal(bool negative, Rep mantissa, int exponent, MantissaRange co
  * into range.
  *
  */
-template <bool expectNormal, detail::UnsignedMantissa Rep>
+template <bool ExpectNormal, detail::UnsignedMantissa Rep>
 void
 Number::fromInternal(bool negative, Rep mantissa, int exponent)
 {
     MantissaRange const* pRange = nullptr;
-    if constexpr (std::is_same_v<std::bool_constant<expectNormal>, std::false_type>)
+    if constexpr (std::is_same_v<std::bool_constant<ExpectNormal>, std::false_type>)
     {
         pRange = &Number::kRANGE.get();
     }
@@ -1046,9 +1047,10 @@ operator rep() const
     g.doRound(drops, "Number::operator rep() rounding overflow");
 
     if (g.isNegative())
+    {
         return -drops;
-    else
-        return drops;
+    }
+    return drops;
 }
 
 Number

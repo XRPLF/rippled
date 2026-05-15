@@ -9,6 +9,7 @@
 #include <boost/multiprecision/number.hpp>
 
 #include <array>
+#include <chrono>
 #include <cstdint>
 #include <limits>
 #include <map>
@@ -367,9 +368,9 @@ public:
     static std::uint64_t
     getMaxInternalMantissa()
     {
-        return static_cast<std::uint64_t>(
-                   static_cast<std::int64_t>(power(10, Number::mantissaLog()))) *
-            10 -
+        return (static_cast<std::uint64_t>(
+                    static_cast<std::int64_t>(power(10, Number::mantissaLog()))) *
+                10) -
             1;
     }
 
@@ -570,7 +571,7 @@ public:
                     // 99'999'999'999'999'999'800'000'000'000'000'000'100
                     {Number{false, maxInternalMantissa, 0, Number::Normalized{}},
                      Number{false, maxInternalMantissa, 0, Number::Normalized{}},
-                     Number{false, maxInternalMantissa / 10 - 1, 20, Number::Normalized{}},
+                     Number{false, (maxInternalMantissa / 10) - 1, 20, Number::Normalized{}},
                      __LINE__},
                     // Maximum actual mantissa range - same as int64
                     {Number{false, maxMantissa, 0, Number::Normalized{}},
@@ -661,7 +662,7 @@ public:
                     // 99'999'999'999'999'999'800'000'000'000'000'000'100
                     {Number{false, maxInternalMantissa, 0, Number::Normalized{}},
                      Number{false, maxInternalMantissa, 0, Number::Normalized{}},
-                     Number{false, maxInternalMantissa / 10 - 1, 20, Number::Normalized{}},
+                     Number{false, (maxInternalMantissa / 10) - 1, 20, Number::Normalized{}},
                      __LINE__},
                     // Maximum external mantissa range - same as INT64_MAX (2^63-1)
                     {Number{false, maxMantissa, 0, Number::Normalized{}},
@@ -1764,16 +1765,16 @@ public:
                     ", got: " + std::to_string(normalized.second) + " @ " + std::to_string(line));
         };
 
-        std::int64_t constexpr iRangeMin = 100;
-        std::int64_t constexpr iRangeMax = 999;
+        std::int64_t constexpr kI_RANGE_MIN = 100;
+        std::int64_t constexpr kI_RANGE_MAX = 999;
 
-        std::uint64_t constexpr uRangeMin = 100;
-        std::uint64_t constexpr uRangeMax = 999;
+        std::uint64_t constexpr kU_RANGE_MIN = 100;
+        std::uint64_t constexpr kU_RANGE_MAX = 999;
 
-        constexpr static MantissaRange largeRange{MantissaRange::MantissaScale::Large};
+        constexpr static MantissaRange kLARGE_RANGE{MantissaRange::MantissaScale::Large};
 
-        std::int64_t constexpr iBigMin = largeRange.min;
-        std::int64_t constexpr iBigMax = largeRange.max;
+        std::int64_t constexpr kI_BIG_MIN = kLARGE_RANGE.min;
+        std::int64_t constexpr kI_BIG_MAX = kLARGE_RANGE.max;
 
         auto const testSuite = [&](Number const& n,
                                    auto const expectedSmallMantissa,
@@ -1781,18 +1782,24 @@ public:
                                    auto const expectedLargeMantissa,
                                    auto const expectedLargeExponent,
                                    auto const line) {
-            test(n, iRangeMin, iRangeMax, expectedSmallMantissa, expectedSmallExponent, line);
-            test(n, iBigMin, iBigMax, expectedLargeMantissa, expectedLargeExponent, line);
+            test(n, kI_RANGE_MIN, kI_RANGE_MAX, expectedSmallMantissa, expectedSmallExponent, line);
+            test(n, kI_BIG_MIN, kI_BIG_MAX, expectedLargeMantissa, expectedLargeExponent, line);
 
             // Only test non-negative. testing a negative number with an
             // unsigned range will assert, and asserts can't be tested.
             if (n.signum() >= 0)
             {
-                test(n, uRangeMin, uRangeMax, expectedSmallMantissa, expectedSmallExponent, line);
                 test(
                     n,
-                    largeRange.min,
-                    largeRange.max,
+                    kU_RANGE_MIN,
+                    kU_RANGE_MAX,
+                    expectedSmallMantissa,
+                    expectedSmallExponent,
+                    line);
+                test(
+                    n,
+                    kLARGE_RANGE.min,
+                    kLARGE_RANGE.max,
                     expectedLargeMantissa,
                     expectedLargeExponent,
                     line);
@@ -1828,70 +1835,94 @@ public:
             Number const n{Number::kLARGEST_MANTISSA, 0, Number::Normalized{}};
 
             if (scale == MantissaRange::MantissaScale::Small)
+            {
                 // With the small mantissa range, the value rounds up. Because
                 // it rounds up, when scaling up to the full int64 range, it
                 // can't go over the max, so it is one digit smaller than the
                 // full value.
                 testSuite(n, 922, 16, 922'337'203'685'477'600, 1, __LINE__);
+            }
             else
+            {
                 testSuite(n, 922, 16, Number::kLARGEST_MANTISSA, 0, __LINE__);
+            }
         }
         {
             // Biggest valid mantissa + 1
             Number const n{Number::kLARGEST_MANTISSA + 1, 0, Number::Normalized{}};
 
             if (scale == MantissaRange::MantissaScale::Small)
+            {
                 // With the small mantissa range, the value rounds up. Because
                 // it rounds up, when scaling up to the full int64 range, it
                 // can't go over the max, so it is one digit smaller than the
                 // full value.
                 testSuite(n, 922, 16, 922'337'203'685'477'600, 1, __LINE__);
+            }
             else
-                testSuite(n, 922, 16, Number::kLARGEST_MANTISSA / 10 + 1, 1, __LINE__);
+            {
+                testSuite(n, 922, 16, (Number::kLARGEST_MANTISSA / 10) + 1, 1, __LINE__);
+            }
         }
         {
             // Biggest valid mantissa + 2
             Number const n{Number::kLARGEST_MANTISSA + 2, 0, Number::Normalized{}};
 
             if (scale == MantissaRange::MantissaScale::Small)
+            {
                 // With the small mantissa range, the value rounds up. Because
                 // it rounds up, when scaling up to the full int64 range, it
                 // can't go over the max, so it is one digit smaller than the
                 // full value.
                 testSuite(n, 922, 16, 922'337'203'685'477'600, 1, __LINE__);
+            }
             else
-                testSuite(n, 922, 16, Number::kLARGEST_MANTISSA / 10 + 1, 1, __LINE__);
+            {
+                testSuite(n, 922, 16, (Number::kLARGEST_MANTISSA / 10) + 1, 1, __LINE__);
+            }
         }
         {
             // Biggest valid mantissa + 3
             Number const n{Number::kLARGEST_MANTISSA + 3, 0, Number::Normalized{}};
 
             if (scale == MantissaRange::MantissaScale::Small)
+            {
                 // With the small mantissa range, the value rounds up. Because
                 // it rounds up, when scaling up to the full int64 range, it
                 // can't go over the max, so it is one digit smaller than the
                 // full value.
                 testSuite(n, 922, 16, 922'337'203'685'477'600, 1, __LINE__);
+            }
             else
-                testSuite(n, 922, 16, Number::kLARGEST_MANTISSA / 10 + 1, 1, __LINE__);
+            {
+                testSuite(n, 922, 16, (Number::kLARGEST_MANTISSA / 10) + 1, 1, __LINE__);
+            }
         }
         {
             // int64 min
             Number const n{std::numeric_limits<std::int64_t>::min(), 0};
 
             if (scale == MantissaRange::MantissaScale::Small)
+            {
                 testSuite(n, -922, 16, -922'337'203'685'477'600, 1, __LINE__);
+            }
             else
-                testSuite(n, -922, 16, -(Number::kLARGEST_MANTISSA / 10 + 1), 1, __LINE__);
+            {
+                testSuite(n, -922, 16, -((Number::kLARGEST_MANTISSA / 10) + 1), 1, __LINE__);
+            }
         }
         {
             // int64 min + 1
             Number const n{std::numeric_limits<std::int64_t>::min() + 1, 0};
 
             if (scale == MantissaRange::MantissaScale::Small)
+            {
                 testSuite(n, -922, 16, -922'337'203'685'477'600, 1, __LINE__);
+            }
             else
+            {
                 testSuite(n, -922, 16, -Number::kLARGEST_MANTISSA, 0, __LINE__);
+            }
         }
         {
             // int64 min - 1
@@ -1904,9 +1935,13 @@ public:
                 Number::Normalized{}};
 
             if (scale == MantissaRange::MantissaScale::Small)
+            {
                 testSuite(n, -922, 16, -922'337'203'685'477'600, 1, __LINE__);
+            }
             else
-                testSuite(n, -922, 16, -(Number::kLARGEST_MANTISSA / 10 + 1), 1, __LINE__);
+            {
+                testSuite(n, -922, 16, -((Number::kLARGEST_MANTISSA / 10) + 1), 1, __LINE__);
+            }
         }
     }
 
@@ -1993,7 +2028,7 @@ class NumberPerf_test : public Number_test
         // "--unittest=NumberPerf --quiet --unittest-log"
         using clock_type = std::chrono::steady_clock;
 
-        int limit = 100000;
+        int const limit = 100000;
         auto const start = clock_type::now();
         for (int i = 0; i < limit; ++i)
         {
