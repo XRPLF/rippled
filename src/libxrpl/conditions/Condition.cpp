@@ -52,7 +52,7 @@ namespace detail {
 //      ed25519Sha256    (4)
 //    }
 
-constexpr std::size_t fingerprintSize = 32;
+constexpr std::size_t kFINGERPRINT_SIZE = 32;
 
 std::unique_ptr<Condition>
 loadSimpleSha256(Type type, Slice s, std::error_code& ec)
@@ -66,19 +66,19 @@ loadSimpleSha256(Type type, Slice s, std::error_code& ec)
 
     if (!isPrimitive(p) || !isContextSpecific(p))
     {
-        ec = error::incorrect_encoding;
+        ec = Error::IncorrectEncoding;
         return {};
     }
 
     if (p.tag != 0)
     {
-        ec = error::unexpected_tag;
+        ec = Error::UnexpectedTag;
         return {};
     }
 
-    if (p.length != fingerprintSize)
+    if (p.length != kFINGERPRINT_SIZE)
     {
-        ec = error::fingerprint_size;
+        ec = Error::FingerprintSize;
         return {};
     }
 
@@ -94,13 +94,13 @@ loadSimpleSha256(Type type, Slice s, std::error_code& ec)
 
     if (!isPrimitive(p) || !isContextSpecific(p))
     {
-        ec = error::malformed_encoding;
+        ec = Error::MalformedEncoding;
         return {};
     }
 
     if (p.tag != 1)
     {
-        ec = error::unexpected_tag;
+        ec = Error::UnexpectedTag;
         return {};
     }
 
@@ -111,16 +111,16 @@ loadSimpleSha256(Type type, Slice s, std::error_code& ec)
 
     if (!s.empty())
     {
-        ec = error::trailing_garbage;
+        ec = Error::TrailingGarbage;
         return {};
     }
 
     switch (type)
     {
-        case Type::preimageSha256:
-            if (cost > PreimageSha256::maxPreimageLength)
+        case Type::PreimageSha256:
+            if (cost > PreimageSha256::kMAX_PREIMAGE_LENGTH)
             {
-                ec = error::preimage_too_long;
+                ec = Error::PreimageTooLong;
                 return {};
             }
             break;
@@ -149,7 +149,7 @@ Condition::deserialize(Slice s, std::error_code& ec)
     // }
     if (s.empty())
     {
-        ec = error::buffer_empty;
+        ec = Error::BufferEmpty;
         return {};
     }
 
@@ -163,19 +163,19 @@ Condition::deserialize(Slice s, std::error_code& ec)
     // types
     if (!isConstructed(p) || !isContextSpecific(p))
     {
-        ec = error::malformed_encoding;
+        ec = Error::MalformedEncoding;
         return {};
     }
 
     if (p.length > s.size())
     {
-        ec = error::buffer_underfull;
+        ec = Error::BufferUnderfull;
         return {};
     }
 
-    if (s.size() > maxSerializedCondition)
+    if (s.size() > kMAX_SERIALIZED_CONDITION)
     {
-        ec = error::large_size;
+        ec = Error::LargeSize;
         return {};
     }
 
@@ -184,35 +184,35 @@ Condition::deserialize(Slice s, std::error_code& ec)
     switch (p.tag)
     {
         case 0:  // PreimageSha256
-            c = detail::loadSimpleSha256(Type::preimageSha256, Slice(s.data(), p.length), ec);
+            c = detail::loadSimpleSha256(Type::PreimageSha256, Slice(s.data(), p.length), ec);
             if (!ec)
                 s += p.length;
             break;
 
         case 1:  // PrefixSha256
-            ec = error::unsupported_type;
+            ec = Error::UnsupportedType;
             return {};
 
         case 2:  // ThresholdSha256
-            ec = error::unsupported_type;
+            ec = Error::UnsupportedType;
             return {};
 
         case 3:  // RsaSha256
-            ec = error::unsupported_type;
+            ec = Error::UnsupportedType;
             return {};
 
         case 4:  // Ed25519Sha256
-            ec = error::unsupported_type;
+            ec = Error::UnsupportedType;
             return {};
 
         default:
-            ec = error::unknown_type;
+            ec = Error::UnknownType;
             return {};
     }
 
     if (!s.empty())
     {
-        ec = error::trailing_garbage;
+        ec = Error::TrailingGarbage;
         return {};
     }
 

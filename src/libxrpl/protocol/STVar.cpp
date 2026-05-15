@@ -25,8 +25,8 @@
 
 namespace xrpl::detail {
 
-defaultObject_t defaultObject;
-nonPresentObject_t nonPresentObject;
+DefaultObjectT gDefaultObject;
+NonPresentObjectT gNonPresentObject;
 
 //------------------------------------------------------------------------------
 
@@ -38,19 +38,19 @@ STVar::~STVar()
 STVar::STVar(STVar const& other)
 {
     if (other.p_ != nullptr)
-        p_ = other.p_->copy(max_size, &d_);
+        p_ = other.p_->copy(kMAX_SIZE, &d_);
 }
 
 STVar::STVar(STVar&& other)
 {
-    if (other.on_heap())
+    if (other.onHeap())
     {
         p_ = other.p_;
         other.p_ = nullptr;
     }
     else
     {
-        p_ = other.p_->move(max_size, &d_);
+        p_ = other.p_->move(kMAX_SIZE, &d_);
     }
 }
 
@@ -62,7 +62,7 @@ STVar::operator=(STVar const& rhs)
         destroy();
         if (rhs.p_ != nullptr)
         {
-            p_ = rhs.p_->copy(max_size, &d_);
+            p_ = rhs.p_->copy(kMAX_SIZE, &d_);
         }
         else
         {
@@ -79,25 +79,25 @@ STVar::operator=(STVar&& rhs)
     if (&rhs != this)
     {
         destroy();
-        if (rhs.on_heap())
+        if (rhs.onHeap())
         {
             p_ = rhs.p_;
             rhs.p_ = nullptr;
         }
         else
         {
-            p_ = rhs.p_->move(max_size, &d_);
+            p_ = rhs.p_->move(kMAX_SIZE, &d_);
         }
     }
 
     return *this;
 }
 
-STVar::STVar(defaultObject_t, SField const& name) : STVar(name.fieldType, name)
+STVar::STVar(DefaultObjectT, SField const& name) : STVar(name.fieldType, name)
 {
 }
 
-STVar::STVar(nonPresentObject_t, SField const& name) : STVar(STI_NOTPRESENT, name)
+STVar::STVar(NonPresentObjectT, SField const& name) : STVar(STI_NOTPRESENT, name)
 {
 }
 
@@ -119,7 +119,7 @@ STVar::STVar(SerializedTypeID id, SField const& name)
 void
 STVar::destroy()
 {
-    if (on_heap())
+    if (onHeap())
     {
         delete p_;
     }
@@ -149,8 +149,9 @@ STVar::constructST(SerializedTypeID id, int depth, Args&&... args)
         }
         else
         {
-            constexpr bool alwaysFalse = !std::is_same_v<std::tuple<Args...>, std::tuple<Args...>>;
-            static_assert(alwaysFalse, "Invalid STVar constructor arguments");
+            constexpr bool kALWAYS_FALSE =
+                !std::is_same_v<std::tuple<Args...>, std::tuple<Args...>>;
+            static_assert(kALWAYS_FALSE, "Invalid STVar constructor arguments");
         }
     };
 

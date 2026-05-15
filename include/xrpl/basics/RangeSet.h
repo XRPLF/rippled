@@ -101,7 +101,7 @@ to_string(RangeSet<T> const& rs)
 */
 template <class T>
 [[nodiscard]] bool
-from_string(RangeSet<T>& rs, std::string const& s)
+fromString(RangeSet<T>& rs, std::string const& s)
 {
     std::vector<std::string> intervals;
     std::vector<std::string> tokens;

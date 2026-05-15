@@ -6,28 +6,26 @@
 
 namespace xrpl::NodeStore {
 
-enum {
-    // This is only used to pre-allocate the array for
-    // batch objects and does not affect the amount written.
-    //
-    batchWritePreallocationSize = 256,
+// This is only used to pre-allocate the array for
+// batch objects and does not affect the amount written.
+//
+static constexpr auto kBATCH_WRITE_PREALLOCATION_SIZE = 256;
 
-    // This sets a limit on the maximum number of writes
-    // in a batch. Actual usage can be twice this since
-    // we have a new batch growing as we write the old.
-    //
-    batchWriteLimitSize = 65536
-};
+// This sets a limit on the maximum number of writes
+// in a batch. Actual usage can be twice this since
+// we have a new batch growing as we write the old.
+//
+static constexpr auto kBATCH_WRITE_LIMIT_SIZE = 65536;
 
 /** Return codes from Backend operations. */
-enum Status {
-    ok = 0,
-    notFound = 1,
-    dataCorrupt = 2,
-    unknown = 3,
-    backendError = 4,
+enum class Status {
+    Ok = 0,
+    NotFound = 1,
+    DataCorrupt = 2,
+    Unknown = 3,
+    BackendError = 4,
 
-    customCode = 100
+    CustomCode = 100
 };
 
 /** A batch of NodeObjects to write at once. */

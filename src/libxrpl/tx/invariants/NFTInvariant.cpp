@@ -31,16 +31,16 @@ ValidNFTokenPage::visitEntry(
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
-    static constexpr uint256 const& pageBits = nft::pageMask;
-    static constexpr uint256 const accountBits = ~pageBits;
+    static constexpr uint256 const& kPAGE_BITS = nft::kPAGE_MASK;
+    static constexpr uint256 const kACCOUNT_BITS = ~kPAGE_BITS;
 
     if ((before && before->getType() != ltNFTOKEN_PAGE) ||
         (after && after->getType() != ltNFTOKEN_PAGE))
         return;
 
     auto check = [this, isDelete](std::shared_ptr<SLE const> const& sle) {
-        uint256 const account = sle->key() & accountBits;
-        uint256 const hiLimit = sle->key() & pageBits;
+        uint256 const account = sle->key() & kACCOUNT_BITS;
+        uint256 const hiLimit = sle->key() & kPAGE_BITS;
         std::optional<uint256> const prev = (*sle)[~sfPreviousPageMin];
 
         // Make sure that any page links...
@@ -48,19 +48,19 @@ ValidNFTokenPage::visitEntry(
         //  2. The page is correctly ordered between links.
         if (prev)
         {
-            if (account != (*prev & accountBits))
+            if (account != (*prev & kACCOUNT_BITS))
                 badLink_ = true;
 
-            if (hiLimit <= (*prev & pageBits))
+            if (hiLimit <= (*prev & kPAGE_BITS))
                 badLink_ = true;
         }
 
         if (auto const next = (*sle)[~sfNextPageMin])
         {
-            if (account != (*next & accountBits))
+            if (account != (*next & kACCOUNT_BITS))
                 badLink_ = true;
 
-            if (hiLimit >= (*next & pageBits))
+            if (hiLimit >= (*next & kPAGE_BITS))
                 badLink_ = true;
         }
 
@@ -69,12 +69,12 @@ ValidNFTokenPage::visitEntry(
 
             // An NFTokenPage should never contain too many tokens or be empty.
             if (std::size_t const nftokenCount = nftokens.size();
-                (!isDelete && nftokenCount == 0) || nftokenCount > dirMaxTokensPerPage)
+                (!isDelete && nftokenCount == 0) || nftokenCount > kDIR_MAX_TOKENS_PER_PAGE)
                 invalidSize_ = true;
 
             // If prev is valid, use it to establish a lower bound for
             // page entries.  If prev is not valid the lower bound is zero.
-            uint256 const loLimit = prev ? *prev & pageBits : uint256(beast::zero);
+            uint256 const loLimit = prev ? *prev & kPAGE_BITS : uint256(beast::kZERO);
 
             // Also verify that all NFTokenIDs in the page are sorted.
             uint256 loCmp = loLimit;
@@ -87,7 +87,7 @@ ValidNFTokenPage::visitEntry(
 
                 // None of the NFTs on this page should belong on lower or
                 // higher pages.
-                if (uint256 const tokenPageBits = tokenID & pageBits;
+                if (uint256 const tokenPageBits = tokenID & kPAGE_BITS;
                     tokenPageBits < loLimit || tokenPageBits >= hiLimit)
                     badEntry_ = true;
 
@@ -104,7 +104,7 @@ ValidNFTokenPage::visitEntry(
         // While an account's NFToken directory contains any NFTokens, the last
         // NFTokenPage (with 96 bits of 1 in the low part of the index) should
         // never be deleted.
-        if (isDelete && (before->key() & nft::pageMask) == nft::pageMask &&
+        if (isDelete && (before->key() & nft::kPAGE_MASK) == nft::kPAGE_MASK &&
             before->isFieldPresent(sfPreviousPageMin))
         {
             deletedFinalPage_ = true;
@@ -121,7 +121,7 @@ ValidNFTokenPage::visitEntry(
         //  2. This is not the last page in the directory
         // Then we have identified a corruption in the links between the
         // NFToken pages in the NFToken directory.
-        if ((before->key() & nft::pageMask) != nft::pageMask &&
+        if ((before->key() & nft::kPAGE_MASK) != nft::kPAGE_MASK &&
             before->isFieldPresent(sfNextPageMin) && !after->isFieldPresent(sfNextPageMin))
         {
             deletedLink_ = true;
@@ -194,14 +194,14 @@ NFTokenCountTracking::visitEntry(
 {
     if (before && before->getType() == ltACCOUNT_ROOT)
     {
-        beforeMintedTotal += (*before)[~sfMintedNFTokens].value_or(0);
-        beforeBurnedTotal += (*before)[~sfBurnedNFTokens].value_or(0);
+        beforeMintedTotal_ += (*before)[~sfMintedNFTokens].value_or(0);
+        beforeBurnedTotal_ += (*before)[~sfBurnedNFTokens].value_or(0);
     }
 
     if (after && after->getType() == ltACCOUNT_ROOT)
     {
-        afterMintedTotal += (*after)[~sfMintedNFTokens].value_or(0);
-        afterBurnedTotal += (*after)[~sfBurnedNFTokens].value_or(0);
+        afterMintedTotal_ += (*after)[~sfMintedNFTokens].value_or(0);
+        afterBurnedTotal_ += (*after)[~sfBurnedNFTokens].value_or(0);
     }
 }
 
@@ -213,16 +213,16 @@ NFTokenCountTracking::finalize(
     ReadView const& view,
     beast::Journal const& j) const
 {
-    if (!hasPrivilege(tx, changeNFTCounts))
+    if (!hasPrivilege(tx, ChangeNftCounts))
     {
-        if (beforeMintedTotal != afterMintedTotal)
+        if (beforeMintedTotal_ != afterMintedTotal_)
         {
             JLOG(j.fatal()) << "Invariant failed: the number of minted tokens "
                                "changed without a mint transaction!";
             return false;
         }
 
-        if (beforeBurnedTotal != afterBurnedTotal)
+        if (beforeBurnedTotal_ != afterBurnedTotal_)
         {
             JLOG(j.fatal()) << "Invariant failed: the number of burned tokens "
                                "changed without a burn transaction!";
@@ -234,21 +234,21 @@ NFTokenCountTracking::finalize(
 
     if (tx.getTxnType() == ttNFTOKEN_MINT)
     {
-        if (isTesSuccess(result) && beforeMintedTotal >= afterMintedTotal)
+        if (isTesSuccess(result) && beforeMintedTotal_ >= afterMintedTotal_)
         {
             JLOG(j.fatal()) << "Invariant failed: successful minting didn't increase "
                                "the number of minted tokens.";
             return false;
         }
 
-        if (!isTesSuccess(result) && beforeMintedTotal != afterMintedTotal)
+        if (!isTesSuccess(result) && beforeMintedTotal_ != afterMintedTotal_)
         {
             JLOG(j.fatal()) << "Invariant failed: failed minting changed the "
                                "number of minted tokens.";
             return false;
         }
 
-        if (beforeBurnedTotal != afterBurnedTotal)
+        if (beforeBurnedTotal_ != afterBurnedTotal_)
         {
             JLOG(j.fatal()) << "Invariant failed: minting changed the number of "
                                "burned tokens.";
@@ -260,7 +260,7 @@ NFTokenCountTracking::finalize(
     {
         if (isTesSuccess(result))
         {
-            if (beforeBurnedTotal >= afterBurnedTotal)
+            if (beforeBurnedTotal_ >= afterBurnedTotal_)
             {
                 JLOG(j.fatal()) << "Invariant failed: successful burning didn't increase "
                                    "the number of burned tokens.";
@@ -268,14 +268,14 @@ NFTokenCountTracking::finalize(
             }
         }
 
-        if (!isTesSuccess(result) && beforeBurnedTotal != afterBurnedTotal)
+        if (!isTesSuccess(result) && beforeBurnedTotal_ != afterBurnedTotal_)
         {
             JLOG(j.fatal()) << "Invariant failed: failed burning changed the "
                                "number of burned tokens.";
             return false;
         }
 
-        if (beforeMintedTotal != afterMintedTotal)
+        if (beforeMintedTotal_ != afterMintedTotal_)
         {
             JLOG(j.fatal()) << "Invariant failed: burning changed the number of "
                                "minted tokens.";

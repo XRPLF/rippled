@@ -62,7 +62,7 @@ public:
 };
 
 std::unique_ptr<PeerSetBuilder>
-make_PeerSetBuilder(Application& app);
+makePeerSetBuilder(Application& app);
 
 /**
  * Make a dummy PeerSet that does not do anything.
@@ -70,6 +70,6 @@ make_PeerSetBuilder(Application& app);
  *       where a real PeerSet is not needed.
  */
 std::unique_ptr<PeerSet>
-make_DummyPeerSet(Application& app);
+makeDummyPeerSet(Application& app);
 
 }  // namespace xrpl

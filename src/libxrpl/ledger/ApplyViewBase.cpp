@@ -65,31 +65,31 @@ ApplyViewBase::read(Keylet const& k) const
 }
 
 auto
-ApplyViewBase::slesBegin() const -> std::unique_ptr<sles_type::iter_base>
+ApplyViewBase::slesBegin() const -> std::unique_ptr<SlesType::iter_base>
 {
     return base_->slesBegin();
 }
 
 auto
-ApplyViewBase::slesEnd() const -> std::unique_ptr<sles_type::iter_base>
+ApplyViewBase::slesEnd() const -> std::unique_ptr<SlesType::iter_base>
 {
     return base_->slesEnd();
 }
 
 auto
-ApplyViewBase::slesUpperBound(uint256 const& key) const -> std::unique_ptr<sles_type::iter_base>
+ApplyViewBase::slesUpperBound(uint256 const& key) const -> std::unique_ptr<SlesType::iter_base>
 {
     return base_->slesUpperBound(key);
 }
 
 auto
-ApplyViewBase::txsBegin() const -> std::unique_ptr<txs_type::iter_base>
+ApplyViewBase::txsBegin() const -> std::unique_ptr<TxsType::iter_base>
 {
     return base_->txsBegin();
 }
 
 auto
-ApplyViewBase::txsEnd() const -> std::unique_ptr<txs_type::iter_base>
+ApplyViewBase::txsEnd() const -> std::unique_ptr<TxsType::iter_base>
 {
     return base_->txsEnd();
 }
