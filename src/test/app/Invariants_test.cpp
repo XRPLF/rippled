@@ -182,7 +182,7 @@ class Invariants_test : public beast::unit_test::Suite
 
         // Invariants normally run in the Transaction's "apply" (operator()) context, and can always
         // access global Rules.
-        CurrentTransactionRulesGuard const rg(ov.rules());
+        CurrentTransactionRulesGuard const rulesGuard(ov.rules());
 
         BEAST_EXPECT(precheck(a1, a2, ac));
 
@@ -358,10 +358,10 @@ class Invariants_test : public beast::unit_test::Suite
             doInvariantCheck(
                 {{"account deletion left behind a "s + type.cStr() + " object"}},
                 // NOLINTNEXTLINE(readability-identifier-naming)
-                [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                    // Add an object to the ledger for account A1, then delete
-                    // A1
-                    auto const a1 = A1.id();
+                [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                    // Add an object to the ledger for account a1, then delete
+                    // a1
+                    auto const a1 = a1.id();
                     auto sleA1 = ac.view().peek(keylet::account(a1));
                     if (!sleA1)
                         return false;

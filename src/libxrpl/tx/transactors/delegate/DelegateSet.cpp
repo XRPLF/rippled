@@ -115,8 +115,8 @@ DelegateSet::doApply()
 
     (*sle)[sfOwnerNode] = *page;
 
-    // Add to authorized account's owner directory so the object can be found
-    // and cleaned up when the authorized account is deleted.
+    // Add to authorized account's owner directory so AccountDelete can find
+    // and clean up inbound delegations when the authorized account is deleted.
     auto const destPage = ctx_.view().dirInsert(
         keylet::ownerDir(authAccount), delegateKey, describeOwnerDir(authAccount));
 
