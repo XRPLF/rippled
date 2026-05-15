@@ -2741,18 +2741,17 @@ private:
 
                 // 1st Interval after close, price for 0th interval.
                 env(ammAlice.bid({.account = bob_}));
-                env.close(seconds(kAUCTION_SLOT_INTERVAL_DURATION + 1));
+                env.close(seconds(kAuctionSlotIntervalDuration + 1));
                 BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 1, IOUAmount{1'155, -1}));
 
                 // 10th Interval after close, price for 1st interval.
                 env(ammAlice.bid({.account = carol_}));
-                env.close(seconds((10 * kAUCTION_SLOT_INTERVAL_DURATION) + 1));
+                env.close(seconds((10 * kAuctionSlotIntervalDuration) + 1));
                 BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 10, IOUAmount{121'275, -3}));
 
                 // 20th Interval (expired) after close, price for 10th interval.
                 env(ammAlice.bid({.account = bob_}));
-                env.close(
-                    seconds((kAUCTION_SLOT_TIME_INTERVALS * kAUCTION_SLOT_INTERVAL_DURATION) + 1));
+                env.close(seconds((kAuctionSlotTimeIntervals * kAuctionSlotIntervalDuration) + 1));
                 BEAST_EXPECT(ammAlice.expectAuctionSlot(0, std::nullopt, IOUAmount{127'33875, -5}));
 
                 // 0 Interval.
@@ -2979,7 +2978,7 @@ private:
                         ammTokens));
                 }
                 // Auction slot expired, no discounted fee
-                env.close(seconds(kTOTAL_TIME_SLOT_SECS + 1));
+                env.close(seconds(kTotalTimeSlotSecs + 1));
                 // clock is parent's based
                 env.close();
                 if (!features[fixAMMv1_1])
@@ -3068,7 +3067,7 @@ private:
         testAMM(
             [&](AMM& ammAlice, Env& env) {
                 // Bid a tiny amount
-                auto const tiny = Number{STAmount::kMIN_VALUE, STAmount::kMIN_OFFSET};
+                auto const tiny = Number{STAmount::kMinValue, STAmount::kMinOffset};
                 env(ammAlice.bid({.account = alice_, .bidMin = IOUAmount{tiny}}));
                 // Auction slot purchase price is equal to the tiny amount
                 // since the minSlotPrice is 0 with no trading fee.
@@ -3078,7 +3077,7 @@ private:
                 // Bid the tiny amount
                 env(ammAlice.bid({
                     .account = alice_,
-                    .bidMin = IOUAmount{STAmount::kMIN_VALUE, STAmount::kMIN_OFFSET},
+                    .bidMin = IOUAmount{STAmount::kMinValue, STAmount::kMinOffset},
                 }));
                 // Pay slightly higher price
                 BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{tiny * Number{105, -2}}));
@@ -3236,9 +3235,9 @@ private:
         testAMM([&](AMM& ammAlice, Env& env) {
             auto const baseFee = env.current()->fees().base;
             env(escrow::create(carol_, ammAlice.ammAccount(), XRP(1)),
-                escrow::kCONDITION(escrow::kCB1),
-                escrow::kFINISH_TIME(env.now() + 1s),
-                escrow::kCANCEL_TIME(env.now() + 2s),
+                escrow::kCondition(escrow::kCb1),
+                escrow::kFinishTime(env.now() + 1s),
+                escrow::kCancelTime(env.now() + 2s),
                 Fee(baseFee * 150),
                 Ter(tecNO_PERMISSION));
         });
@@ -5110,7 +5109,7 @@ private:
                 all);
             fund(env, gw_, {alice_}, XRP(20'000), {USD(10'000)});
             AMM amm(env, gw_, XRP(10'000), USD(10'000));
-            for (auto i = 0; i < kMAX_DELETABLE_AMM_TRUST_LINES + 10; ++i)
+            for (auto i = 0; i < kMaxDeletableAmmTrustLines + 10; ++i)
             {
                 Account const a{std::to_string(i)};
                 env.fund(XRP(1'000), a);
@@ -5168,7 +5167,7 @@ private:
                 all);
             fund(env, gw_, {alice_}, XRP(20'000), {USD(10'000)});
             AMM amm(env, gw_, XRP(10'000), USD(10'000));
-            for (auto i = 0; i < (kMAX_DELETABLE_AMM_TRUST_LINES * 2) + 10; ++i)
+            for (auto i = 0; i < (kMaxDeletableAmmTrustLines * 2) + 10; ++i)
             {
                 Account const a{std::to_string(i)};
                 env.fund(XRP(1'000), a);
@@ -6738,9 +6737,9 @@ private:
                 AccountID const accountId = xrpl::pseudoAccountAddress(*env.current(), keylet.key);
 
                 env(pay(env.master.id(), accountId, XRP(1000)),
-                    Seq(kAUTOFILL),
-                    Fee(kAUTOFILL),
-                    Sig(kAUTOFILL));
+                    Seq(kAutofill),
+                    Fee(kAutofill),
+                    Sig(kAutofill));
             }
 
             AMM const ammAlice(
@@ -7110,7 +7109,7 @@ private:
         fund(env, gw_, {alice_, carol_, bob_, dan, ed}, XRP(50'000), {USD(50'000)});
         AMM amm(env, alice_, XRP(10'000), USD(10'000));
         // Create excess trustlines to prevent AMM auto-deletion on withdrawal.
-        for (auto i = 0; i < kMAX_DELETABLE_AMM_TRUST_LINES + 10; ++i)
+        for (auto i = 0; i < kMaxDeletableAmmTrustLines + 10; ++i)
         {
             Account const a{std::to_string(i)};
             env.fund(XRP(1'000), a);
@@ -7167,7 +7166,7 @@ private:
         {
             BEAST_EXPECT(votes[0].getAccountID(sfAccount) == ed.id());
             BEAST_EXPECT(votes[0].getFieldU16(sfTradingFee) == 500);
-            BEAST_EXPECT(votes[0].getFieldU32(sfVoteWeight) == kVOTE_WEIGHT_SCALE_FACTOR);
+            BEAST_EXPECT(votes[0].getFieldU32(sfVoteWeight) == kVoteWeightScaleFactor);
         }
         // sfAuthAccounts behaviour depends on the fix.
         if (features[fixCleanup3_2_0])

@@ -180,7 +180,7 @@ template <int Bits>
 bool
 STBitString<Bits>::isDefault() const
 {
-    return value_ == beast::kZERO;
+    return value_ == beast::kZero;
 }
 
 }  // namespace xrpl

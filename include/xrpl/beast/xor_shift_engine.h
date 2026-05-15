@@ -26,12 +26,14 @@ public:
     result_type
     operator()();
 
-    static result_type constexpr min()
+    static constexpr result_type
+    min()
     {
         return std::numeric_limits<result_type>::min();
     }
 
-    static result_type constexpr max()
+    static constexpr result_type
+    max()
     {
         return std::numeric_limits<result_type>::max();
     }

@@ -299,7 +299,7 @@ ValidMPTPayment::visitEntry(
         if (type == ltMPTOKEN_ISSUANCE)
         {
             auto const outstanding = sle[sfOutstandingAmount];
-            if (outstanding > kMAX_MP_TOKEN_AMOUNT)
+            if (outstanding > kMaxMpTokenAmount)
             {
                 overflow_ = true;
                 return false;
@@ -310,8 +310,8 @@ ValidMPTPayment::visitEntry(
         {
             auto const mptAmt = sle[sfMPTAmount];
             auto const lockedAmt = sle[~sfLockedAmount].value_or(0);
-            if (mptAmt > kMAX_MP_TOKEN_AMOUNT || lockedAmt > kMAX_MP_TOKEN_AMOUNT ||
-                lockedAmt > (kMAX_MP_TOKEN_AMOUNT - mptAmt))
+            if (mptAmt > kMaxMpTokenAmount || lockedAmt > kMaxMpTokenAmount ||
+                lockedAmt > (kMaxMpTokenAmount - mptAmt))
             {
                 overflow_ = true;
                 return false;
@@ -361,21 +361,20 @@ ValidMPTPayment::finalize(
             return !enforce;
         }
 
-        auto const signedMax = static_cast<std::int64_t>(kMAX_MP_TOKEN_AMOUNT);
+        auto const signedMax = static_cast<std::int64_t>(kMaxMpTokenAmount);
         for (auto const& [id, data] : data_)
         {
             (void)id;
-            constexpr auto kI_BEFORE = static_cast<std::size_t>(Order::Before);
-            constexpr auto kI_AFTER = static_cast<std::size_t>(Order::After);
+            static constexpr auto kIBefore = static_cast<std::size_t>(Order::Before);
+            static constexpr auto kIAfter = static_cast<std::size_t>(Order::After);
             bool const addOverflows =
-                (data.mptAmount > 0 &&
-                 data.outstanding[kI_BEFORE] > (signedMax - data.mptAmount)) ||
-                (data.mptAmount < 0 && data.outstanding[kI_BEFORE] < (-signedMax - data.mptAmount));
+                (data.mptAmount > 0 && data.outstanding[kIBefore] > (signedMax - data.mptAmount)) ||
+                (data.mptAmount < 0 && data.outstanding[kIBefore] < (-signedMax - data.mptAmount));
             if (addOverflows ||
-                data.outstanding[kI_AFTER] != (data.outstanding[kI_BEFORE] + data.mptAmount))
+                data.outstanding[kIAfter] != (data.outstanding[kIBefore] + data.mptAmount))
             {
                 JLOG(j.fatal()) << "Invariant failed: invalid OutstandingAmount balance "
-                                << data.outstanding[kI_BEFORE] << " " << data.outstanding[kI_AFTER]
+                                << data.outstanding[kIBefore] << " " << data.outstanding[kIAfter]
                                 << " " << data.mptAmount;
                 return !enforce;
             }

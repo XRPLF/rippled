@@ -69,9 +69,9 @@ public:
     [[nodiscard]] bool
     fullyConsumed() const
     {
-        if (amounts_.in <= beast::kZERO)
+        if (amounts_.in <= beast::kZero)
             return true;
-        if (amounts_.out <= beast::kZERO)
+        if (amounts_.out <= beast::kZero)
             return true;
         return false;
     }

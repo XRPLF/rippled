@@ -189,7 +189,7 @@ class NetworkOPsImp final : public NetworkOPs
         Running,
     };
 
-    static std::array<char const*, 5> const kSTATES;
+    static std::array<char const*, 5> const kStates;
 
     /**
      * State accounting records two attributes for each possible server state:
@@ -221,7 +221,7 @@ class NetworkOPsImp final : public NetworkOPs
         std::chrono::steady_clock::time_point start_ = std::chrono::steady_clock::now();
         std::chrono::steady_clock::time_point const processStart_ = start_;
         std::uint64_t initialSyncUs_{0};
-        static std::array<json::StaticString const, 5> const kSTATES;
+        static std::array<json::StaticString const, 5> const kStates;
 
     public:
         explicit StateAccounting()
@@ -893,19 +893,19 @@ private:
 
 //------------------------------------------------------------------------------
 
-static std::array<char const*, 5> const kSTATE_NAMES{
+static std::array<char const*, 5> const kStateNames{
     {"disconnected", "connected", "syncing", "tracking", "full"}};
 
-std::array<char const*, 5> const NetworkOPsImp::kSTATES = kSTATE_NAMES;
+std::array<char const*, 5> const NetworkOPsImp::kStates = kStateNames;
 
-std::array<json::StaticString const, 5> const NetworkOPsImp::StateAccounting::kSTATES = {
-    {json::StaticString(kSTATE_NAMES[0]),
-     json::StaticString(kSTATE_NAMES[1]),
-     json::StaticString(kSTATE_NAMES[2]),
-     json::StaticString(kSTATE_NAMES[3]),
-     json::StaticString(kSTATE_NAMES[4])}};
+std::array<json::StaticString const, 5> const NetworkOPsImp::StateAccounting::kStates = {
+    {json::StaticString(kStateNames[0]),
+     json::StaticString(kStateNames[1]),
+     json::StaticString(kStateNames[2]),
+     json::StaticString(kStateNames[3]),
+     json::StaticString(kStateNames[4])}};
 
-static auto const kGENESIS_ACCOUNT_ID =
+static auto const kGenesisAccountId =
     calcAccountID(generateKeyPair(KeyType::Secp256k1, generateSeed("masterpassphrase")).first);
 
 //------------------------------------------------------------------------------
@@ -954,20 +954,20 @@ NetworkOPsImp::isFull()
 std::string
 NetworkOPsImp::getHostId(bool forAdmin)
 {
-    static std::string const kHOSTNAME = boost::asio::ip::host_name();
+    static std::string const kHostname = boost::asio::ip::host_name();
 
     if (forAdmin)
-        return kHOSTNAME;
+        return kHostname;
 
     // For non-admin uses hash the node public key into a
     // single RFC1751 word:
-    static std::string const kSHROUDED_HOST_ID = [this]() {
+    static std::string const kShroudedHostId = [this]() {
         auto const& id = registry_.get().getApp().nodeIdentity();
 
         return RFC1751::getWordFromBlob(id.first.data(), id.first.size());
     }();
 
-    return kSHROUDED_HOST_ID;
+    return kShroudedHostId;
 }
 
 void
@@ -1194,7 +1194,7 @@ NetworkOPsImp::strOperatingMode(OperatingMode const mode, bool const admin) cons
         }
     }
 
-    return kSTATES[static_cast<std::size_t>(mode)];
+    return kStates[static_cast<std::size_t>(mode)];
 }
 
 void
@@ -1569,7 +1569,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
 
                 std::size_t count = 0;
                 for (auto txNext = ledgerMaster_.popAcctTransaction(txCur);
-                     txNext && count < kMAX_POPPED_TRANSACTIONS;
+                     txNext && count < kMaxPoppedTransactions;
                      txNext = ledgerMaster_.popAcctTransaction(txCur), ++count)
                 {
                     if (!batchLock.owns_lock())
@@ -1618,7 +1618,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     // 1. It was submitted locally. (Note that this flag is only
                     //    true on the initial submission.)
                     // 2. The transaction has a LastLedgerSequence, and the
-                    //    LastLedgerSequence is fewer than LocalTxs::kHOLD_LEDGERS
+                    //    LastLedgerSequence is fewer than LocalTxs::kHoldLedgers
                     //    (5) ledgers into the future. (Remember that an
                     //    unseated optional compares as less than all seated
                     //    values, so it has to be checked explicitly first.)
@@ -1629,7 +1629,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     //    the other conditions, so don't hold it again. Time's
                     //    up!)
                     //
-                    if (e.local || (ledgersLeft && ledgersLeft <= LocalTxs::kHOLD_LEDGERS) ||
+                    if (e.local || (ledgersLeft && ledgersLeft <= LocalTxs::kHoldLedgers) ||
                         registry_.get().getHashRouter().setFlags(
                             e.transaction->getID(), HashRouterFlags::HELD))
                     {
@@ -2258,9 +2258,9 @@ NetworkOPsImp::ServerFeeSummary::operator!=(NetworkOPsImp::ServerFeeSummary cons
 static std::uint32_t
 trunc32(std::uint64_t v)
 {
-    constexpr std::uint64_t kMAX32 = std::numeric_limits<std::uint32_t>::max();
+    constexpr std::uint64_t kMax32 = std::numeric_limits<std::uint32_t>::max();
 
-    return std::min(kMAX32, v);
+    return std::min(kMax32, v);
 };
 
 void
@@ -2292,7 +2292,7 @@ NetworkOPsImp::pubServer()
             auto const loadFactor = std::max(
                 safeCast<std::uint64_t>(f.loadFactorServer),
                 mulDiv(f.em->openLedgerFeeLevel, f.loadBaseServer, f.em->referenceFeeLevel)
-                    .value_or(xrpl::kMULDIV_MAX));
+                    .value_or(xrpl::kMuldivMax));
 
             jvObj[jss::load_factor] = trunc32(loadFactor);
             jvObj[jss::load_factor_fee_escalation] = f.em->openLedgerFeeLevel.jsonClipped();
@@ -2433,7 +2433,7 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
         // for consumers supporting different API versions
         MultiApiJson multiObj{jvObj};
         multiObj.visit(
-            RPC::kAPI_VERSION<1>,  //
+            RPC::kApiVersion<1>,  //
             [](json::Value& jvTx) {
                 // Type conversion for older API versions to string
                 if (jvTx.isMember(jss::ledger_index))
@@ -2804,7 +2804,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
                                              escalationMetrics.openLedgerFeeLevel,
                                              loadBaseServer,
                                              escalationMetrics.referenceFeeLevel)
-                                             .value_or(xrpl::kMULDIV_MAX);
+                                             .value_or(xrpl::kMuldivMax);
 
     auto const loadFactor =
         std::max(safeCast<std::uint64_t>(loadFactorServer), loadFactorFeeEscalation);
@@ -2895,11 +2895,11 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
                 std::abs(closeOffset.count()) >= 60)
                 l[jss::close_time_offset] = static_cast<std::uint32_t>(closeOffset.count());
 
-            constexpr std::chrono::seconds kHIGH_AGE_THRESHOLD{1000000};
+            static constexpr std::chrono::seconds kHighAgeThreshold{1000000};
             if (ledgerMaster_.haveValidated())
             {
                 auto const age = ledgerMaster_.getValidatedLedgerAge();
-                l[jss::age] = json::UInt(age < kHIGH_AGE_THRESHOLD ? age.count() : 0);
+                l[jss::age] = json::UInt(age < kHighAgeThreshold ? age.count() : 0);
             }
             else
             {
@@ -2909,7 +2909,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
                 {
                     using namespace std::chrono_literals;
                     auto age = closeTime - lCloseTime;
-                    l[jss::age] = json::UInt(age < kHIGH_AGE_THRESHOLD ? age.count() : 0);
+                    l[jss::age] = json::UInt(age < kHighAgeThreshold ? age.count() : 0);
                 }
             }
         }
@@ -2943,9 +2943,9 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
         std::to_string(registry_.get().getOverlay().getPeerDisconnectCharges());
 
     // This array must be sorted in increasing order.
-    static constexpr std::array<std::string_view, 7> kPROTOCOLS{
+    static constexpr std::array<std::string_view, 7> kProtocols{
         "http", "https", "peer", "ws", "ws2", "wss", "wss2"};
-    static_assert(std::ranges::is_sorted(kPROTOCOLS));
+    static_assert(std::ranges::is_sorted(kProtocols));
     {
         json::Value ports{json::ValueType::Array};
         for (auto const& port : registry_.get().getServerHandler().setup().ports)
@@ -2960,8 +2960,8 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
             std::set_intersection(
                 std::begin(port.protocol),
                 std::end(port.protocol),
-                std::begin(kPROTOCOLS),
-                std::end(kPROTOCOLS),
+                std::begin(kProtocols),
+                std::end(kProtocols),
                 std::back_inserter(proto));
             if (!proto.empty())
             {
@@ -3016,7 +3016,7 @@ NetworkOPsImp::pubProposedTransaction(
     if (transaction->isFlag(tfInnerBatchTxn))
         return;
 
-    MultiApiJson jvObj = transJson(transaction, result, false, ledger, std::nullopt);
+    MultiApiJson const jvObj = transJson(transaction, result, false, ledger, std::nullopt);
 
     {
         std::scoped_lock const sl(subLock_);
@@ -3081,7 +3081,7 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
             jvObj[jss::network_id] = registry_.get().getNetworkIDService().getNetworkID();
 
             if (!lpAccepted->rules().enabled(featureXRPFees))
-                jvObj[jss::fee_ref] = kFEE_UNITS_DEPRECATED;
+                jvObj[jss::fee_ref] = kFeeUnitsDeprecated;
             jvObj[jss::fee_base] = lpAccepted->fees().base.jsonClipped();
             jvObj[jss::reserve_base] = lpAccepted->fees().reserve.jsonClipped();
             jvObj[jss::reserve_inc] = lpAccepted->fees().increment.jsonClipped();
@@ -3131,11 +3131,11 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
         }
 
         {
-            static bool kFIRST_TIME = true;
-            if (kFIRST_TIME)
+            static bool kFirstTime = true;
+            if (kFirstTime)
             {
                 // First validated ledger, start delayed SubAccountHistory
-                kFIRST_TIME = false;
+                kFirstTime = false;
                 for (auto& outer : subAccountHistory_)
                 {
                     for (auto& inner : outer.second)
@@ -3308,7 +3308,7 @@ NetworkOPsImp::pubValidatedTransaction(
     // Create two different Json objects, for different API versions
     auto const metaRef = std::ref(transaction.getMeta());
     auto const trResult = transaction.getResult();
-    MultiApiJson jvObj = transJson(stTxn, trResult, true, ledger, metaRef);
+    MultiApiJson const jvObj = transJson(stTxn, trResult, true, ledger, metaRef);
 
     {
         std::scoped_lock const sl(subLock_);
@@ -3669,7 +3669,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
              * genesis account: first tx is the one with seq 1
              * other account: first tx is the one created the account
              */
-            if (accountId == kGENESIS_ACCOUNT_ID)
+            if (accountId == kGenesisAccountId)
             {
                 auto stx = tx->getSTransaction();
                 if (stx->getAccountID(sfAccount) == accountId && stx->getSeqValue() == 1)
@@ -3749,7 +3749,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
             int feeChargeCount = 0;
             if (auto sptr = subInfo.sinkWptr.lock(); sptr)
             {
-                sptr->getConsumer().charge(Resource::kFEE_MEDIUM_BURDEN_RPC);
+                sptr->getConsumer().charge(Resource::kFeeMediumBurdenRpc);
                 ++feeChargeCount;
             }
             else
@@ -3894,7 +3894,7 @@ NetworkOPsImp::subAccountHistoryStart(
                                << ", no need to add AccountHistory job.";
         return;
     }
-    if (accountId == kGENESIS_ACCOUNT_ID)
+    if (accountId == kGenesisAccountId)
     {
         if (auto const sleAcct = ledger->read(accountKeylet); sleAcct)
         {
@@ -4060,7 +4060,7 @@ NetworkOPsImp::subLedger(InfoSub::ref isrListener, json::Value& jvResult)
         jvResult[jss::ledger_time] =
             json::Value::UInt(lpClosed->header().closeTime.time_since_epoch().count());
         if (!lpClosed->rules().enabled(featureXRPFees))
-            jvResult[jss::fee_ref] = kFEE_UNITS_DEPRECATED;
+            jvResult[jss::fee_ref] = kFeeUnitsDeprecated;
         jvResult[jss::fee_base] = lpClosed->fees().base.jsonClipped();
         jvResult[jss::reserve_base] = lpClosed->fees().reserve.jsonClipped();
         jvResult[jss::reserve_inc] = lpClosed->fees().increment.jsonClipped();
@@ -4405,7 +4405,7 @@ NetworkOPsImp::getBookPage(
                             AuthHandling::ZeroIfUnauthorized,
                             viewJ);
 
-                        if (saOwnerFunds < beast::kZERO)
+                        if (saOwnerFunds < beast::kZero)
                         {
                             // Treat negative funds as zero.
 
@@ -4418,9 +4418,9 @@ NetworkOPsImp::getBookPage(
 
                 STAmount saTakerGetsFunded;
                 STAmount saOwnerFundsLimit = saOwnerFunds;
-                Rate offerRate = kPARITY_RATE;
+                Rate offerRate = kParityRate;
 
-                if (rate != kPARITY_RATE
+                if (rate != kParityRate
                     // Have a transfer fee.
                     && uTakerID != book.out.getIssuer()
                     // Not taking offers of own IOUs.
@@ -4449,7 +4449,7 @@ NetworkOPsImp::getBookPage(
                         .setJson(jvOffer[jss::taker_pays_funded]);
                 }
 
-                STAmount const saOwnerPays = (kPARITY_RATE == offerRate)
+                STAmount const saOwnerPays = (kParityRate == offerRate)
                     ? saTakerGetsFunded
                     : std::min(saOwnerFunds, multiply(saTakerGetsFunded, offerRate));
 
@@ -4680,8 +4680,8 @@ NetworkOPsImp::StateAccounting::json(json::Value& obj) const
          i <= static_cast<std::size_t>(OperatingMode::FULL);
          ++i)
     {
-        obj[jss::state_accounting][kSTATES[i]] = json::ValueType::Object;
-        auto& state = obj[jss::state_accounting][kSTATES[i]];
+        obj[jss::state_accounting][kStates[i]] = json::ValueType::Object;
+        auto& state = obj[jss::state_accounting][kStates[i]];
         state[jss::transitions] = std::to_string(counters[i].transitions);
         state[jss::duration_us] = std::to_string(counters[i].dur.count());
     }

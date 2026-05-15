@@ -259,7 +259,7 @@ forwardedFor(http_request_type const& request)
 
         // Look for the first (case insensitive) "for=" at a directive
         // boundary (start of value, or preceded by , ; or OWS).
-        static constexpr std::string_view kFOR_STR{"for="};
+        static constexpr std::string_view kForStr{"for="};
         auto const atFieldBoundary = [begin = it->value().begin()](auto p) {
             return p == begin || p[-1] == ';' || p[-1] == ',' || p[-1] == ' ' || p[-1] == '\t';
         };
@@ -269,8 +269,8 @@ forwardedFor(http_request_type const& request)
             found = std::search(
                 found,
                 it->value().end(),
-                kFOR_STR.begin(),
-                kFOR_STR.end(),
+                kForStr.begin(),
+                kForStr.end(),
                 [&asciiToLower](char c1, char c2) { return asciiToLower(c1) == asciiToLower(c2); });
 
             if (found == it->value().end())
@@ -282,7 +282,7 @@ forwardedFor(http_request_type const& request)
             ++found;
         }
 
-        std::advance(found, kFOR_STR.size());
+        std::advance(found, kForStr.size());
 
         // We found a "for=".  Scan for the end of the IP address.
         auto const end = it->value().end();

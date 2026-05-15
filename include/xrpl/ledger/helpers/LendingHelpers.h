@@ -10,7 +10,7 @@ namespace xrpl {
 bool
 checkLendingProtocolDependencies(Rules const& rules, STTx const& tx);
 
-static constexpr std::uint32_t kSECONDS_IN_YEAR = 365 * 24 * 60 * 60;
+static constexpr std::uint32_t kSecondsInYear = 365 * 24 * 60 * 60;
 
 Number
 loanPeriodicRate(TenthBips32 interestRate, std::uint32_t paymentInterval);
@@ -42,14 +42,14 @@ struct LoanPaymentParts
     // The amount of principal paid that reduces the loan balance.
     // This amount is subtracted from sfPrincipalOutstanding in the Loan object
     // and paid to the Vault
-    Number principalPaid = kNUM_ZERO;
+    Number principalPaid = kNumZero;
 
     // The total amount of interest paid to the Vault.
     // This includes:
     // - Tracked interest from the amortization schedule
     // - Untracked interest (e.g., late payment penalty interest)
     // This value is always non-negative.
-    Number interestPaid = kNUM_ZERO;
+    Number interestPaid = kNumZero;
 
     // The change in the loan's total value outstanding.
     // - If valueChange < 0: Loan value decreased
@@ -62,7 +62,7 @@ struct LoanPaymentParts
     // - Late payments add penalty interest to the loan value
     // - Early full payment may increase or decrease the loan value based on
     // terms
-    Number valueChange = kNUM_ZERO;
+    Number valueChange = kNumZero;
 
     /* The total amount of fees paid to the Broker.
      * This includes:
@@ -70,7 +70,7 @@ struct LoanPaymentParts
      * - Untracked fees (e.g., late payment fees, service fees, origination
      * fees) This value is always non-negative.
      */
-    Number feePaid = kNUM_ZERO;
+    Number feePaid = kNumZero;
 
     LoanPaymentParts&
     operator+=(LoanPaymentParts const& other);
@@ -161,7 +161,7 @@ adjustImpreciseNumber(
 {
     value = roundToAsset(asset, value + adjustment, vaultScale);
 
-    if (*value < beast::kZERO)
+    if (*value < beast::kZero)
         value = 0;
 }
 
@@ -169,7 +169,7 @@ inline int
 getAssetsTotalScale(SLE::const_ref vaultSle)
 {
     if (!vaultSle)
-        return Number::kMIN_EXPONENT - 1;  // LCOV_EXCL_LINE
+        return Number::kMinExponent - 1;  // LCOV_EXCL_LINE
     return scale(vaultSle->at(sfAssetsTotal), vaultSle->at(sfAsset));
 }
 
@@ -311,7 +311,7 @@ struct ExtendedPaymentComponents : public PaymentComponents
     // borrower is sufficient to cover all components of the payment.
     Number totalDue;
 
-    ExtendedPaymentComponents(PaymentComponents const& p, Number fee, Number interest = kNUM_ZERO)
+    ExtendedPaymentComponents(PaymentComponents const& p, Number fee, Number interest = kNumZero)
         : PaymentComponents(p)
         , untrackedManagementFee(fee)
         , untrackedInterest(interest)
