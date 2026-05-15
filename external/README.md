@@ -1,6 +1,6 @@
 # External Conan recipes
 
-The subdirectories in this directory contain external libraries used by rippled.
+The subdirectories in this directory contain external libraries used by xrpld.
 
 | Folder           | Upstream                                                       | Description                                                                                  |
 | :--------------- | :------------------------------------------------------------- | :------------------------------------------------------------------------------------------- |

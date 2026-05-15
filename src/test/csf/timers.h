@@ -6,9 +6,7 @@
 #include <chrono>
 #include <ostream>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 // Timers are classes that schedule repeated events and are mostly independent
 // of simulation-specific details.
@@ -60,6 +58,4 @@ public:
     }
 };
 
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf

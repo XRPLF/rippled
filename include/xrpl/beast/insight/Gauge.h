@@ -4,8 +4,7 @@
 
 #include <memory>
 
-namespace beast {
-namespace insight {
+namespace beast::insight {
 
 /** A metric for measuring an integral value.
 
@@ -25,16 +24,14 @@ public:
     /** Create a null metric.
         A null metric reports no information.
     */
-    Gauge()
-    {
-    }
+    Gauge() = default;
 
     /** Create the metric reference the specified implementation.
         Normally this won't be called directly. Instead, call the appropriate
         factory function in the Collector interface.
         @see Collector.
     */
-    explicit Gauge(std::shared_ptr<GaugeImpl> const& impl) : m_impl(impl)
+    explicit Gauge(std::shared_ptr<GaugeImpl> const& impl) : impl_(impl)
     {
     }
 
@@ -47,8 +44,8 @@ public:
     void
     set(value_type value) const
     {
-        if (m_impl)
-            m_impl->set(value);
+        if (impl_)
+            impl_->set(value);
     }
 
     Gauge const&
@@ -64,8 +61,8 @@ public:
     void
     increment(difference_type amount) const
     {
-        if (m_impl)
-            m_impl->increment(amount);
+        if (impl_)
+            impl_->increment(amount);
     }
 
     Gauge const&
@@ -111,15 +108,14 @@ public:
     }
     /** @} */
 
-    std::shared_ptr<GaugeImpl> const&
+    [[nodiscard]] std::shared_ptr<GaugeImpl> const&
     impl() const
     {
-        return m_impl;
+        return impl_;
     }
 
 private:
-    std::shared_ptr<GaugeImpl> m_impl;
+    std::shared_ptr<GaugeImpl> impl_;
 };
 
-}  // namespace insight
-}  // namespace beast
+}  // namespace beast::insight

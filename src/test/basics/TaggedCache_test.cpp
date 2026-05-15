@@ -1,9 +1,13 @@
 #include <test/unit_test/SuiteJournal.h>
 
 #include <xrpl/basics/TaggedCache.h>
-#include <xrpl/basics/TaggedCache.ipp>
+#include <xrpl/basics/TaggedCache.ipp>  // IWYU pragma: keep
 #include <xrpl/basics/chrono.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/Protocol.h>
+
+#include <memory>
 
 namespace xrpl {
 
@@ -17,14 +21,14 @@ then canonicalize a new object with the same key, make sure you get the
 original object.
 */
 
-class TaggedCache_test : public beast::unit_test::suite
+class TaggedCache_test : public beast::unit_test::Suite
 {
 public:
     void
     run() override
     {
         using namespace std::chrono_literals;
-        using namespace beast::severities;
+        using beast::Severity;
         test::SuiteJournal journal("TaggedCache_test", *this);
 
         TestStopwatch clock;
@@ -86,7 +90,7 @@ public:
             {
                 auto const p1 = c.fetch(3);
                 auto p2 = std::make_shared<Value>("three");
-                c.canonicalize_replace_client(3, p2);
+                c.canonicalizeReplaceClient(3, p2);
                 BEAST_EXPECT(p1.get() == p2.get());
             }
             ++clock;
@@ -117,7 +121,7 @@ public:
                 BEAST_EXPECT(c.getTrackSize() == 1);
                 // Canonicalize a new object with the same key
                 auto p2 = std::make_shared<std::string>("four");
-                BEAST_EXPECT(c.canonicalize_replace_client(4, p2));
+                BEAST_EXPECT(c.canonicalizeReplaceClient(4, p2));
                 BEAST_EXPECT(c.getCacheSize() == 1);
                 BEAST_EXPECT(c.getTrackSize() == 1);
                 // Make sure we get the original object
