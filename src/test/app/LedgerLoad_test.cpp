@@ -127,7 +127,7 @@ class LedgerLoad_test : public beast::unit_test::Suite
             *this,
             envconfig(ledgerConfig, sd.dbPath, sd.ledgerFile, StartUpType::LoadFile, std::nullopt),
             nullptr,
-            beast::severities::KDisabled);
+            beast::Severity::Disabled);
         auto jrb = env.rpc("ledger", "current", "full")[jss::result];
         BEAST_EXPECT(
             sd.ledger[jss::ledger][jss::accountState].size() ==
@@ -147,7 +147,7 @@ class LedgerLoad_test : public beast::unit_test::Suite
                 *this,
                 envconfig(ledgerConfig, sd.dbPath, "", StartUpType::LoadFile, std::nullopt),
                 nullptr,
-                beast::severities::KDisabled);
+                beast::Severity::Disabled);
         });
 
         // file does not exist
@@ -157,7 +157,7 @@ class LedgerLoad_test : public beast::unit_test::Suite
                 envconfig(
                     ledgerConfig, sd.dbPath, "badfile.json", StartUpType::LoadFile, std::nullopt),
                 nullptr,
-                beast::severities::KDisabled);
+                beast::Severity::Disabled);
         });
 
         // make a corrupted version of the ledger file (last 10 bytes removed).
@@ -183,7 +183,7 @@ class LedgerLoad_test : public beast::unit_test::Suite
                     StartUpType::LoadFile,
                     std::nullopt),
                 nullptr,
-                beast::severities::KDisabled);
+                beast::Severity::Disabled);
         });
     }
 
@@ -200,7 +200,7 @@ class LedgerLoad_test : public beast::unit_test::Suite
             *this,
             envconfig(ledgerConfig, sd.dbPath, ledgerHash, StartUpType::Load, std::nullopt),
             nullptr,
-            beast::severities::KDisabled);
+            beast::Severity::Disabled);
         auto jrb = env.rpc("ledger", "current", "full")[jss::result];
         BEAST_EXPECT(jrb[jss::ledger][jss::accountState].size() == 98);
         BEAST_EXPECT(
@@ -221,7 +221,7 @@ class LedgerLoad_test : public beast::unit_test::Suite
             *this,
             envconfig(ledgerConfig, sd.dbPath, ledgerHash, StartUpType::Replay, std::nullopt),
             nullptr,
-            beast::severities::KDisabled);
+            beast::Severity::Disabled);
         auto const jrb = env.rpc("ledger", "current", "full")[jss::result];
         BEAST_EXPECT(jrb[jss::ledger][jss::accountState].size() == 97);
         // in replace mode do not automatically accept the ledger being replayed
@@ -247,7 +247,7 @@ class LedgerLoad_test : public beast::unit_test::Suite
             *this,
             envconfig(ledgerConfig, sd.dbPath, ledgerHash, StartUpType::Replay, sd.trapTxHash),
             nullptr,
-            beast::severities::KDisabled);
+            beast::Severity::Disabled);
         auto const jrb = env.rpc("ledger", "current", "full")[jss::result];
         BEAST_EXPECT(jrb[jss::ledger][jss::accountState].size() == 97);
         // in replace mode do not automatically accept the ledger being replayed
@@ -277,7 +277,7 @@ class LedgerLoad_test : public beast::unit_test::Suite
                 *this,
                 envconfig(ledgerConfig, sd.dbPath, ledgerHash, StartUpType::Replay, ~sd.trapTxHash),
                 nullptr,
-                beast::severities::KDisabled);
+                beast::Severity::Disabled);
             BEAST_EXPECT(false);
         }
         catch (std::runtime_error const&)
@@ -301,7 +301,7 @@ class LedgerLoad_test : public beast::unit_test::Suite
             *this,
             envconfig(ledgerConfig, sd.dbPath, "latest", StartUpType::Load, std::nullopt),
             nullptr,
-            beast::severities::KDisabled);
+            beast::Severity::Disabled);
         auto jrb = env.rpc("ledger", "current", "full")[jss::result];
         BEAST_EXPECT(
             sd.ledger[jss::ledger][jss::accountState].size() ==
@@ -319,7 +319,7 @@ class LedgerLoad_test : public beast::unit_test::Suite
             *this,
             envconfig(ledgerConfig, sd.dbPath, "43", StartUpType::Load, std::nullopt),
             nullptr,
-            beast::severities::KDisabled);
+            beast::Severity::Disabled);
         auto jrb = env.rpc("ledger", "current", "full")[jss::result];
         BEAST_EXPECT(
             sd.ledger[jss::ledger][jss::accountState].size() ==

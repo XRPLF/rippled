@@ -44,8 +44,8 @@ realValidatorContents()
 )vl";
 }
 
-auto constexpr kDEFAULT_EXPIRES = std::chrono::seconds{3600};
-auto constexpr kDEFAULT_EFFECTIVE_OVERLAP = std::chrono::seconds{30};
+constexpr auto kDefaultExpires = std::chrono::seconds{3600};
+constexpr auto kDefaultEffectiveOverlap = std::chrono::seconds{30};
 }  // namespace detail
 
 namespace test {
@@ -61,7 +61,7 @@ private:
 
         using namespace jtx;
 
-        Env env(*this, envconfig(), nullptr, beast::severities::KDisabled);
+        Env env(*this, envconfig(), nullptr, beast::Severity::Disabled);
         auto trustedSites = std::make_unique<ValidatorSite>(env.app(), env.journal);
 
         // load should accept empty sites list
@@ -128,8 +128,8 @@ private:
         bool failFetch = false;
         bool failApply = false;
         int serverVersion = 1;
-        std::chrono::seconds expiresFromNow = detail::kDEFAULT_EXPIRES;
-        std::chrono::seconds effectiveOverlap = detail::kDEFAULT_EFFECTIVE_OVERLAP;
+        std::chrono::seconds expiresFromNow = detail::kDefaultExpires;
+        std::chrono::seconds effectiveOverlap = detail::kDefaultEffectiveOverlap;
         int expectedRefreshMin = 0;
     };
     void
@@ -171,7 +171,7 @@ private:
         };
         std::vector<Publisher> servers;
 
-        auto constexpr kLIST_SIZE = 20;
+        static constexpr auto kListSize = 20;
         std::vector<std::string> cfgPublishers;
 
         for (auto const& cfg : paths)
@@ -179,8 +179,8 @@ private:
             servers.emplace_back(cfg);
             auto& item = servers.back();
             item.isRetry = cfg.path == "/bad-resource";
-            item.list.reserve(kLIST_SIZE);
-            while (item.list.size() < kLIST_SIZE)
+            item.list.reserve(kListSize);
+            while (item.list.size() < kListSize)
                 item.list.push_back(TrustedPublisherServer::randomValidator());
 
             NetClock::time_point const expires = env.timeKeeper().now() + cfg.expiresFromNow;
@@ -404,7 +404,7 @@ public:
                   false,
                   false,
                   1,
-                  detail::kDEFAULT_EXPIRES,
+                  detail::kDefaultExpires,
                   std::chrono::seconds{-90}}});
             // fetch single site with unending redirect (fails to load)
             testFetchList(
@@ -494,7 +494,7 @@ public:
                   false,
                   true,
                   1,
-                  std::chrono::seconds{json::Value::kMIN_INT}}});
+                  std::chrono::seconds{json::Value::kMinInt}}});
             // force an out-of-range validUntil value on the future list
             // The first list is accepted. The second fails. The parser
             // returns the "best" result, so this looks like a success.
@@ -506,7 +506,7 @@ public:
                   false,
                   false,
                   1,
-                  std::chrono::seconds{json::Value::kMAX_INT - 300},
+                  std::chrono::seconds{json::Value::kMaxInt - 300},
                   299s}});
             // force an out-of-range validFrom value
             // The first list is accepted. The second fails. The parser
@@ -519,7 +519,7 @@ public:
                   false,
                   false,
                   1,
-                  std::chrono::seconds{json::Value::kMAX_INT - 300},
+                  std::chrono::seconds{json::Value::kMaxInt - 300},
                   301s}});
             // force an out-of-range validUntil value on _both_ lists
             testFetchList(
@@ -530,8 +530,8 @@ public:
                   false,
                   true,
                   1,
-                  std::chrono::seconds{json::Value::kMIN_INT},
-                  std::chrono::seconds{json::Value::kMAX_INT - 6000}}});
+                  std::chrono::seconds{json::Value::kMinInt},
+                  std::chrono::seconds{json::Value::kMaxInt - 6000}}});
             // verify refresh intervals are properly clamped
             testFetchList(
                 good,
@@ -541,8 +541,8 @@ public:
                   false,
                   false,
                   1,
-                  detail::kDEFAULT_EXPIRES,
-                  detail::kDEFAULT_EFFECTIVE_OVERLAP,
+                  detail::kDefaultExpires,
+                  detail::kDefaultEffectiveOverlap,
                   1}});  // minimum of 1 minute
             testFetchList(
                 good,
@@ -552,8 +552,8 @@ public:
                   false,
                   false,
                   1,
-                  detail::kDEFAULT_EXPIRES,
-                  detail::kDEFAULT_EFFECTIVE_OVERLAP,
+                  detail::kDefaultExpires,
+                  detail::kDefaultEffectiveOverlap,
                   1}});  // minimum of 1 minute
             testFetchList(
                 good,
@@ -563,8 +563,8 @@ public:
                   false,
                   false,
                   1,
-                  detail::kDEFAULT_EXPIRES,
-                  detail::kDEFAULT_EFFECTIVE_OVERLAP,
+                  detail::kDefaultExpires,
+                  detail::kDefaultEffectiveOverlap,
                   10}});  // 10 minutes is fine
             testFetchList(
                 good,
@@ -574,8 +574,8 @@ public:
                   false,
                   false,
                   1,
-                  detail::kDEFAULT_EXPIRES,
-                  detail::kDEFAULT_EFFECTIVE_OVERLAP,
+                  detail::kDefaultExpires,
+                  detail::kDefaultEffectiveOverlap,
                   10}});  // 10 minutes is fine
             testFetchList(
                 good,
@@ -585,8 +585,8 @@ public:
                   false,
                   false,
                   1,
-                  detail::kDEFAULT_EXPIRES,
-                  detail::kDEFAULT_EFFECTIVE_OVERLAP,
+                  detail::kDefaultExpires,
+                  detail::kDefaultEffectiveOverlap,
                   60 * 24}});  // max of 24 hours
             testFetchList(
                 good,
@@ -596,8 +596,8 @@ public:
                   false,
                   false,
                   1,
-                  detail::kDEFAULT_EXPIRES,
-                  detail::kDEFAULT_EFFECTIVE_OVERLAP,
+                  detail::kDefaultExpires,
+                  detail::kDefaultEffectiveOverlap,
                   60 * 24}});  // max of 24 hours
         }
         using namespace std::filesystem;

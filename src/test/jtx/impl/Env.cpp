@@ -73,19 +73,19 @@ Env::AppBundle::AppBundle(
     beast::unit_test::Suite& suite,
     std::unique_ptr<Config> config,
     std::unique_ptr<Logs> logs,
-    beast::severities::Severity thresh)
+    beast::Severity thresh)
     : AppBundle()
 {
-    using namespace beast::severities;
+    using beast::Severity;
     if (logs)
     {
-        setDebugLogSink(logs->makeSink("Debug", KFatal));
+        setDebugLogSink(logs->makeSink("Debug", Severity::Fatal));
     }
     else
     {
         logs = std::make_unique<SuiteLogs>(suite);
         // Use kFatal threshold to reduce noise from STObject.
-        setDebugLogSink(std::make_unique<SuiteJournalSink>("Debug", KFatal, suite));
+        setDebugLogSink(std::make_unique<SuiteJournalSink>("Debug", Severity::Fatal, suite));
     }
     auto tk = std::make_unique<ManualTimeKeeper>();
     timeKeeper = tk.get();
@@ -301,23 +301,23 @@ Env::fund(bool setDefaultRipple, STAmount const& amount, Account const& account)
         // VFALCO NOTE Is the fee formula correct?
         apply(
             pay(master, account, amount + drops(current()->fees().base)),
-            jtx::Seq(jtx::kAUTOFILL),
-            Fee(jtx::kAUTOFILL),
-            Sig(jtx::kAUTOFILL));
+            jtx::Seq(jtx::kAutofill),
+            Fee(jtx::kAutofill),
+            Sig(jtx::kAutofill));
         apply(
             fset(account, asfDefaultRipple),
-            jtx::Seq(jtx::kAUTOFILL),
-            Fee(jtx::kAUTOFILL),
-            Sig(jtx::kAUTOFILL));
+            jtx::Seq(jtx::kAutofill),
+            Fee(jtx::kAutofill),
+            Sig(jtx::kAutofill));
         require(Flags(account, asfDefaultRipple));
     }
     else
     {
         apply(
             pay(master, account, amount),
-            jtx::Seq(jtx::kAUTOFILL),
-            Fee(jtx::kAUTOFILL),
-            Sig(jtx::kAUTOFILL));
+            jtx::Seq(jtx::kAutofill),
+            Fee(jtx::kAutofill),
+            Sig(jtx::kAutofill));
         require(Nflags(account, asfDefaultRipple));
     }
     require(jtx::Balance(account, amount));
@@ -331,14 +331,14 @@ Env::trust(STAmount const& amount, Account const& account)
     auto const start = balance(account);
     apply(
         jtx::trust(account, amount),
-        jtx::Seq(jtx::kAUTOFILL),
-        Fee(jtx::kAUTOFILL),
-        Sig(jtx::kAUTOFILL));
+        jtx::Seq(jtx::kAutofill),
+        Fee(jtx::kAutofill),
+        Sig(jtx::kAutofill));
     apply(
         pay(master, account, drops(current()->fees().base)),
-        jtx::Seq(jtx::kAUTOFILL),
-        Fee(jtx::kAUTOFILL),
-        Sig(jtx::kAUTOFILL));
+        jtx::Seq(jtx::kAutofill),
+        Fee(jtx::kAutofill),
+        Sig(jtx::kAutofill));
     test.expect(balance(account) == start);
 }
 

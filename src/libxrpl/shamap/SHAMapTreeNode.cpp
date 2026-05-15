@@ -28,6 +28,13 @@ namespace xrpl {
 intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMapTreeNode::makeTransaction(Slice data, SHAMapHash const& hash, bool hashValid)
 {
+    if (data.size() < kMinShaMapItemBytes)
+    {
+        Throw<std::runtime_error>(
+            "Short TXN node: " + std::to_string(data.size()) + " bytes (minimum " +
+            std::to_string(kMinShaMapItemBytes) + " required)");
+    }
+
     auto item = makeShamapitem(sha512Half(HashPrefix::TransactionId, data), data);
 
     if (hashValid)
@@ -43,14 +50,30 @@ SHAMapTreeNode::makeTransactionWithMeta(Slice data, SHAMapHash const& hash, bool
 
     uint256 tag;
 
-    if (s.size() < tag.kBYTES)
-        Throw<std::runtime_error>("Short TXN+MD node");
+    if (s.size() < tag.kBytes)
+    {
+        Throw<std::runtime_error>(
+            "Short TXN+MD node: " + std::to_string(s.size()) + " bytes (minimum " +
+            std::to_string(tag.kBytes) + " required for tag)");
+    }
 
     // FIXME: improve this interface so that the above check isn't needed
-    if (!s.getBitString(tag, s.size() - tag.kBYTES))
-        Throw<std::out_of_range>("Short TXN+MD node (" + std::to_string(s.size()) + ")");
+    if (!s.getBitString(tag, s.size() - tag.kBytes))
+    {
+        Throw<std::out_of_range>(
+            "Short TXN+MD node: failed to read tag at offset " +
+            std::to_string(s.size() - tag.kBytes));
+    }
 
-    s.chop(tag.kBYTES);
+    s.chop(tag.kBytes);
+
+    if (s.size() < kMinShaMapItemBytes)
+    {
+        Throw<std::runtime_error>(
+            "Short TXN+MD node: " + std::to_string(s.size()) +
+            " bytes after tag removal (minimum " + std::to_string(kMinShaMapItemBytes) +
+            " required)");
+    }
 
     auto item = makeShamapitem(tag, s.slice());
 
@@ -67,17 +90,31 @@ SHAMapTreeNode::makeAccountState(Slice data, SHAMapHash const& hash, bool hashVa
 
     uint256 tag;
 
-    if (s.size() < tag.kBYTES)
-        Throw<std::runtime_error>("short AS node");
+    if (s.size() < tag.kBytes)
+    {
+        Throw<std::runtime_error>(
+            "Short AS node: " + std::to_string(s.size()) + " bytes (minimum " +
+            std::to_string(tag.kBytes) + " required for tag)");
+    }
 
     // FIXME: improve this interface so that the above check isn't needed
-    if (!s.getBitString(tag, s.size() - tag.kBYTES))
-        Throw<std::out_of_range>("Short AS node (" + std::to_string(s.size()) + ")");
+    if (!s.getBitString(tag, s.size() - tag.kBytes))
+    {
+        Throw<std::out_of_range>(
+            "Short AS node: failed to read tag at offset " + std::to_string(s.size() - tag.kBytes));
+    }
 
-    s.chop(tag.kBYTES);
+    s.chop(tag.kBytes);
 
     if (tag.isZero())
         Throw<std::runtime_error>("Invalid AS node");
+
+    if (s.size() < kMinShaMapItemBytes)
+    {
+        Throw<std::runtime_error>(
+            "Short AS node: " + std::to_string(s.size()) + " bytes after tag removal (minimum " +
+            std::to_string(kMinShaMapItemBytes) + " required)");
+    }
 
     auto item = makeShamapitem(tag, s.slice());
 
@@ -100,19 +137,19 @@ SHAMapTreeNode::makeFromWire(Slice rawNode)
     bool const hashValid = false;
     SHAMapHash const hash;
 
-    if (type == kWIRE_TYPE_TRANSACTION)
+    if (type == kWireTypeTransaction)
         return makeTransaction(rawNode, hash, hashValid);
 
-    if (type == kWIRE_TYPE_ACCOUNT_STATE)
+    if (type == kWireTypeAccountState)
         return makeAccountState(rawNode, hash, hashValid);
 
-    if (type == kWIRE_TYPE_INNER)
+    if (type == kWireTypeInner)
         return SHAMapInnerNode::makeFullInner(rawNode, hash, hashValid);
 
-    if (type == kWIRE_TYPE_COMPRESSED_INNER)
+    if (type == kWireTypeCompressedInner)
         return SHAMapInnerNode::makeCompressedInner(rawNode);
 
-    if (type == kWIRE_TYPE_TRANSACTION_WITH_META)
+    if (type == kWireTypeTransactionWithMeta)
         return makeTransactionWithMeta(rawNode, hash, hashValid);
 
     Throw<std::runtime_error>("wire: Unknown type (" + std::to_string(type) + ")");

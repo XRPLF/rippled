@@ -128,7 +128,7 @@ ValidatorList::MessageWithHash::MessageWithHash(
 {
 }
 
-std::string const ValidatorList::kFILE_PREFIX = "cache.";
+std::string const ValidatorList::kFilePrefix = "cache.";
 
 ValidatorList::ValidatorList(
     ManifestCache& validatorManifests,
@@ -289,7 +289,7 @@ ValidatorList::load(
 std::filesystem::path
 ValidatorList::getCacheFileName(ValidatorList::scoped_lock const&, PublicKey const& pubKey) const
 {
-    return dataPath_ / (kFILE_PREFIX + strHex(pubKey));
+    return dataPath_ / (kFilePrefix + strHex(pubKey));
 }
 
 // static
@@ -310,7 +310,7 @@ ValidatorList::buildFileData(
     std::optional<std::uint32_t> forceVersion,
     beast::Journal j)
 {
-    json::Value value(json::ObjectValue);
+    json::Value value(json::ValueType::Object);
 
     XRPL_ASSERT(
         pubCollection.rawVersion == 2 || pubCollection.remaining.empty(),
@@ -334,11 +334,11 @@ ValidatorList::buildFileData(
             break;
         }
         case 2: {
-            json::Value blobs(json::ArrayValue);
+            json::Value blobs(json::ValueType::Array);
 
             auto add = [&blobs,
                         &outerManifest = pubCollection.rawManifest](PublisherList const& pubList) {
-                auto& blob = blobs.append(json::ObjectValue);
+                auto& blob = blobs.append(json::ValueType::Object);
                 blob[jss::blob] = pubList.rawBlob;
                 blob[jss::signature] = pubList.rawSignature;
                 if (pubList.rawManifest && *pubList.rawManifest != outerManifest)
@@ -357,7 +357,7 @@ ValidatorList::buildFileData(
         }
         default:
             JLOG(j.trace()) << "Invalid VL version provided: " << effectiveVersion;
-            value = json::NullValue;
+            value = json::ValueType::Null;
     }
 
     return value;
@@ -418,7 +418,7 @@ ValidatorList::parseBlobs(std::uint32_t version, json::Value const& body)
         case 2:
         default: {
             if (!body.isMember(jss::blobs_v2) || !body[jss::blobs_v2].isArray() ||
-                body[jss::blobs_v2].size() > kMAX_SUPPORTED_BLOBS ||
+                body[jss::blobs_v2].size() > kMaxSupportedBlobs ||
                 // If any of the v1 fields are present, the VL is malformed
                 body.isMember(jss::blob) || body.isMember(jss::signature))
                 return {};
@@ -460,7 +460,7 @@ ValidatorList::parseBlobs(protocol::TMValidatorList const& body)
 std::vector<ValidatorBlobInfo>
 ValidatorList::parseBlobs(protocol::TMValidatorListCollection const& body)
 {
-    if (body.blobs_size() > kMAX_SUPPORTED_BLOBS)
+    if (body.blobs_size() > kMaxSupportedBlobs)
         return {};
     std::vector<ValidatorBlobInfo> result;
     result.reserve(body.blobs_size());
@@ -534,7 +534,7 @@ splitMessageParts(
             smallMsg.set_manifest(blob.manifest());
 
         XRPL_ASSERT(
-            Message::totalSize(smallMsg) <= kMAXIMUM_MESSAGE_SIZE,
+            Message::totalSize(smallMsg) <= kMaximumMessageSize,
             "xrpl::splitMessageParts : maximum message size");
 
         messages.emplace_back(
@@ -591,7 +591,7 @@ buildValidatorListMessage(
     msg.set_version(version);
 
     XRPL_ASSERT(
-        Message::totalSize(msg) <= kMAXIMUM_MESSAGE_SIZE,
+        Message::totalSize(msg) <= kMaximumMessageSize,
         "xrpl::buildValidatorListMessage(ValidatorBlobInfo) : maximum "
         "message size");
     messages.emplace_back(
@@ -657,7 +657,7 @@ ValidatorList::buildValidatorListMessages(
     std::string const& rawManifest,
     std::map<std::size_t, ValidatorBlobInfo> const& blobInfos,
     std::vector<ValidatorList::MessageWithHash>& messages,
-    std::size_t maxSize /*= kMAXIMUM_MESSAGE_SIZE*/)
+    std::size_t maxSize /*= kMaximumMessageSize*/)
 {
     XRPL_ASSERT(
         !blobInfos.empty(),
@@ -976,8 +976,8 @@ ValidatorList::applyLists(
     std::string siteUri,
     std::optional<uint256> const& hash /* = {} */)
 {
-    if (std::count(
-            std::begin(kSUPPORTED_LIST_VERSIONS), std::end(kSUPPORTED_LIST_VERSIONS), version) != 1)
+    if (std::count(std::begin(kSupportedListVersions), std::end(kSupportedListVersions), version) !=
+        1)
         return PublisherListStats{ListDisposition::UnsupportedVersion};
 
     std::scoped_lock const lock{mutex_};
@@ -1602,14 +1602,14 @@ ValidatorList::expires() const
 json::Value
 ValidatorList::getJson() const
 {
-    json::Value res(json::ObjectValue);
+    json::Value res(json::ValueType::Object);
 
     std::shared_lock const readLock{mutex_};
 
     res[jss::validation_quorum] = static_cast<json::UInt>(quorum_);
 
     {
-        auto& x = (res[jss::validator_list] = json::ObjectValue);
+        auto& x = (res[jss::validator_list] = json::ValueType::Object);
 
         x[jss::count] = static_cast<json::UInt>(count(readLock));
 
@@ -1644,16 +1644,16 @@ ValidatorList::getJson() const
     }
 
     // Validator keys listed in the local config file
-    json::Value& jLocalStaticKeys = (res[jss::local_static_keys] = json::ArrayValue);
+    json::Value& jLocalStaticKeys = (res[jss::local_static_keys] = json::ValueType::Array);
 
     for (auto const& key : localPublisherList_.list)
         jLocalStaticKeys.append(toBase58(TokenType::NodePublic, key));
 
     // Publisher lists
-    json::Value& jPublisherLists = (res[jss::publisher_lists] = json::ArrayValue);
+    json::Value& jPublisherLists = (res[jss::publisher_lists] = json::ValueType::Array);
     for (auto const& [publicKey, pubCollection] : publisherLists_)
     {
-        json::Value& curr = jPublisherLists.append(json::ObjectValue);
+        json::Value& curr = jPublisherLists.append(json::ValueType::Object);
         curr[jss::pubkey_publisher] = strHex(publicKey);
         curr[jss::available] = pubCollection.status == PublisherStatus::Available;
 
@@ -1666,7 +1666,7 @@ ValidatorList::getJson() const
             }
             if (publisherList.validFrom != TimeKeeper::time_point{})
                 target[jss::effective] = to_string(publisherList.validFrom);
-            json::Value& keys = (target[jss::list] = json::ArrayValue);
+            json::Value& keys = (target[jss::list] = json::ValueType::Array);
             for (auto const& key : publisherList.list)
             {
                 keys.append(toBase58(TokenType::NodePublic, key));
@@ -1681,13 +1681,13 @@ ValidatorList::getJson() const
             }
         }
 
-        json::Value remaining(json::ArrayValue);
+        json::Value remaining(json::ValueType::Array);
         for (auto const& [sequence, future] : pubCollection.remaining)
         {
             using namespace std::chrono_literals;
 
             (void)sequence;
-            json::Value& r = remaining.append(json::ObjectValue);
+            json::Value& r = remaining.append(json::ValueType::Object);
             appendList(future, r);
             // Race conditions can happen, so make this check "fuzzy"
             XRPL_ASSERT(
@@ -1699,14 +1699,14 @@ ValidatorList::getJson() const
     }
 
     // Trusted validator keys
-    json::Value& jValidatorKeys = (res[jss::trusted_validator_keys] = json::ArrayValue);
+    json::Value& jValidatorKeys = (res[jss::trusted_validator_keys] = json::ValueType::Array);
     for (auto const& k : trustedMasterKeys_)
     {
         jValidatorKeys.append(toBase58(TokenType::NodePublic, k));
     }
 
     // signing keys
-    json::Value& jSigningKeys = (res[jss::signing_keys] = json::ObjectValue);
+    json::Value& jSigningKeys = (res[jss::signing_keys] = json::ValueType::Object);
     validatorManifests_.forEachManifest([&jSigningKeys, this](Manifest const& manifest) {
         auto it = keyListings_.find(manifest.masterKey);
         if (it != keyListings_.end() && manifest.signingKey)
@@ -1719,7 +1719,7 @@ ValidatorList::getJson() const
     // Negative UNL
     if (!negativeUNL_.empty())
     {
-        json::Value& jNegativeUNL = (res[jss::NegativeUNL] = json::ArrayValue);
+        json::Value& jNegativeUNL = (res[jss::NegativeUNL] = json::ValueType::Array);
         for (auto const& k : negativeUNL_)
         {
             jNegativeUNL.append(toBase58(TokenType::NodePublic, k));

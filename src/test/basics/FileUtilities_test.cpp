@@ -16,7 +16,8 @@ public:
     {
         using namespace xrpl::detail;
 
-        constexpr char const* kEXPECTED_CONTENTS = "This file is very short. That's all we need.";
+        static constexpr char const* kExpectedContents =
+            "This file is very short. That's all we need.";
 
         FileDirGuard const file(
             *this, "test_file", "test.txt", "This is temporary text that should get overwritten");
@@ -24,21 +25,21 @@ public:
         std::error_code ec;
         auto const path = file.file();
 
-        writeFileContents(ec, path, kEXPECTED_CONTENTS);
+        writeFileContents(ec, path, kExpectedContents);
         BEAST_EXPECT(!ec);
 
         {
             // Test with no max
             auto const good = getFileContents(ec, path);
             BEAST_EXPECT(!ec);
-            BEAST_EXPECT(good == kEXPECTED_CONTENTS);
+            BEAST_EXPECT(good == kExpectedContents);
         }
 
         {
             // Test with large max
             auto const good = getFileContents(ec, path, kilobytes(1));
             BEAST_EXPECT(!ec);
-            BEAST_EXPECT(good == kEXPECTED_CONTENTS);
+            BEAST_EXPECT(good == kExpectedContents);
         }
 
         {

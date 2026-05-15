@@ -113,7 +113,7 @@ public:
         SecretKey const& ssk,
         int seq)
     {
-        STObject st(kSF_GENERIC);
+        STObject st(kSfGeneric);
         st[sfSequence] = seq;
         st[sfPublicKey] = pk;
         st[sfSigningPubKey] = spk;
@@ -135,7 +135,7 @@ public:
     {
         auto const pk = derivePublicKey(type, sk);
 
-        STObject st(kSF_GENERIC);
+        STObject st(kSfGeneric);
         st[sfSequence] = std::numeric_limits<std::uint32_t>::max();
         st[sfPublicKey] = pk;
 
@@ -154,7 +154,7 @@ public:
     {
         auto const pk = derivePublicKey(type, sk);
 
-        STObject st(kSF_GENERIC);
+        STObject st(kSfGeneric);
         st[sfSequence] = std::numeric_limits<std::uint32_t>::max();
         st[sfPublicKey] = pk;
 
@@ -184,7 +184,7 @@ public:
         auto const pk = derivePublicKey(type, sk);
         auto const spk = derivePublicKey(stype, ssk);
 
-        STObject st(kSF_GENERIC);
+        STObject st(kSfGeneric);
         st[sfSequence] = seq;
         st[sfPublicKey] = pk;
         st[sfSigningPubKey] = spk;
@@ -361,7 +361,7 @@ public:
         auto const kp = randomKeyPair(KeyType::Secp256k1);
         auto const m = makeManifest(sk, KeyType::Ed25519, kp.second, KeyType::Secp256k1, 0);
 
-        STObject st(kSF_GENERIC);
+        STObject st(kSfGeneric);
         st[sfSequence] = 0;
         st[sfPublicKey] = pk;
         st[sfSigningPubKey] = kp.first;
@@ -493,7 +493,7 @@ public:
         auto const spk = derivePublicKey(KeyType::Secp256k1, ssk);
 
         auto buildManifestObject = [&](std::uint16_t version) {
-            STObject st(kSF_GENERIC);
+            STObject st(kSfGeneric);
             st[sfSequence] = 3;
             st[sfPublicKey] = pk;
             st[sfSigningPubKey] = spk;
@@ -571,7 +571,7 @@ public:
                                                std::optional<std::string> domain,
                                                bool noSigningPublic = false,
                                                bool noSignature = false) {
-                    STObject st(kSF_GENERIC);
+                    STObject st(kSfGeneric);
                     st[sfSequence] = seq;
                     st[sfPublicKey] = pk;
 
@@ -722,7 +722,7 @@ public:
                     }
                     {
                         // reject matching master & ephemeral keys
-                        STObject st(kSF_GENERIC);
+                        STObject st(kSfGeneric);
                         st[sfSequence] = 314159;
                         st[sfPublicKey] = pk;
                         st[sfSigningPubKey] = pk;
@@ -795,7 +795,7 @@ public:
         auto const pk2 = derivePublicKey(KeyType::Secp256k1, sk2);
 
         auto test = [&](std::string domain) {
-            STObject st(kSF_GENERIC);
+            STObject st(kSfGeneric);
             st[sfSequence] = 7;
             st[sfPublicKey] = pk1;
             st[sfDomain] = makeSlice(domain);
