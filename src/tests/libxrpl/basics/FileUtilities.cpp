@@ -94,12 +94,6 @@ public:
             EXPECT_TRUE(bad.empty());
         }
     }
-
-    static void
-    run()
-    {
-        testGetFileContents();
-    }
 };
 
 TEST_F(FileUtilitiesTest, get_file_contents)

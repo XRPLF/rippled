@@ -299,23 +299,41 @@ public:
     }  // namespace xrpl
 
     //--------------------------------------------------------------------------
-
-    static void
-    run()
-    {
-        testSigNum();
-        testBeastZero();
-        testComparisons();
-        testAddSub();
-        testDecimal();
-        testFunctions();
-        testMulRatio();
-    }
 };
 
-TEST_F(XRPAmountTest, xrp_amount)
+TEST_F(XRPAmountTest, sig_num)
 {
-    run();
+    testSigNum();
+}
+
+TEST_F(XRPAmountTest, beast_zero)
+{
+    testBeastZero();
+}
+
+TEST_F(XRPAmountTest, comparisons)
+{
+    testComparisons();
+}
+
+TEST_F(XRPAmountTest, add_sub)
+{
+    testAddSub();
+}
+
+TEST_F(XRPAmountTest, decimal)
+{
+    testDecimal();
+}
+
+TEST_F(XRPAmountTest, functions)
+{
+    testFunctions();
+}
+
+TEST_F(XRPAmountTest, mul_ratio)
+{
+    testMulRatio();
 }
 
 }  // namespace xrpl

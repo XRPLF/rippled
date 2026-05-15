@@ -1520,40 +1520,120 @@ public:
     }
 
     static void
-    run()
+    testWithMantissaScales(void (*test)())
     {
         for (auto const scale :
              {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
         {
             NumberMantissaScaleGuard const sg(scale);
-            testZero();
-            testLimits();
-            testToString();
-            testAdd();
-            testSub();
-            testMul();
-            testDiv();
-            testRoot();
-            testRoot2();
-            testPower1();
-            testPower2();
-            testConversions();
-            testToInteger();
-            testSquelch();
-            testRelationals();
-            testStream();
-            testIncDec();
-            testToStAmount();
-            testTruncate();
-            testRounding();
-            testInt64();
+            test();
         }
     }
 };
 
-TEST_F(NumberTest, number)
+TEST_F(NumberTest, zero)
 {
-    run();
+    testWithMantissaScales(testZero);
+}
+
+TEST_F(NumberTest, limits)
+{
+    testWithMantissaScales(testLimits);
+}
+
+TEST_F(NumberTest, to_string)
+{
+    testWithMantissaScales(testToString);
+}
+
+TEST_F(NumberTest, add)
+{
+    testWithMantissaScales(testAdd);
+}
+
+TEST_F(NumberTest, sub)
+{
+    testWithMantissaScales(testSub);
+}
+
+TEST_F(NumberTest, mul)
+{
+    testWithMantissaScales(testMul);
+}
+
+TEST_F(NumberTest, div)
+{
+    testWithMantissaScales(testDiv);
+}
+
+TEST_F(NumberTest, root)
+{
+    testWithMantissaScales(testRoot);
+}
+
+TEST_F(NumberTest, root2)
+{
+    testWithMantissaScales(testRoot2);
+}
+
+TEST_F(NumberTest, power1)
+{
+    testWithMantissaScales(testPower1);
+}
+
+TEST_F(NumberTest, power2)
+{
+    testWithMantissaScales(testPower2);
+}
+
+TEST_F(NumberTest, conversions)
+{
+    testWithMantissaScales(testConversions);
+}
+
+TEST_F(NumberTest, to_integer)
+{
+    testWithMantissaScales(testToInteger);
+}
+
+TEST_F(NumberTest, squelch)
+{
+    testWithMantissaScales(testSquelch);
+}
+
+TEST_F(NumberTest, relationals)
+{
+    testWithMantissaScales(testRelationals);
+}
+
+TEST_F(NumberTest, stream)
+{
+    testWithMantissaScales(testStream);
+}
+
+TEST_F(NumberTest, inc_dec)
+{
+    testWithMantissaScales(testIncDec);
+}
+
+TEST_F(NumberTest, to_st_amount)
+{
+    testWithMantissaScales(testToStAmount);
+}
+
+TEST_F(NumberTest, truncate)
+{
+    testWithMantissaScales(testTruncate);
+}
+
+TEST_F(NumberTest, rounding)
+{
+    testWithMantissaScales(testRounding);
+}
+
+TEST_F(NumberTest, int64)
+{
+    testWithMantissaScales(testInt64);
 }
 
 }  // namespace xrpl

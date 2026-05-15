@@ -222,18 +222,16 @@ public:
         checkContainer<detail::test_hardened_unordered_multiset>();
         checkContainer<detail::test_hardened_unordered_multimap>();
     }
-
-    static void
-    run()
-    {
-        testUserTypes();
-        testContainers();
-    }
 };
 
-TEST_F(HardenedHashTest, hardened_hash)
+TEST_F(HardenedHashTest, user_types)
 {
-    run();
+    testUserTypes();
+}
+
+TEST_F(HardenedHashTest, containers)
+{
+    testContainers();
 }
 
 }  // namespace xrpl

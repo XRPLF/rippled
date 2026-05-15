@@ -250,22 +250,36 @@ public:
     }  // namespace xrpl
 
     //--------------------------------------------------------------------------
-
-    static void
-    run()
-    {
-        testZero();
-        testSigNum();
-        testBeastZero();
-        testComparisons();
-        testToString();
-        testMulRatio();
-    }
 };
 
-TEST_F(IOUAmountTest, iou_amount)
+TEST_F(IOUAmountTest, zero)
 {
-    run();
+    testZero();
+}
+
+TEST_F(IOUAmountTest, sig_num)
+{
+    testSigNum();
+}
+
+TEST_F(IOUAmountTest, beast_zero)
+{
+    testBeastZero();
+}
+
+TEST_F(IOUAmountTest, comparisons)
+{
+    testComparisons();
+}
+
+TEST_F(IOUAmountTest, to_string)
+{
+    testToString();
+}
+
+TEST_F(IOUAmountTest, mul_ratio)
+{
+    testMulRatio();
 }
 
 }  // namespace xrpl

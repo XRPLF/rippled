@@ -852,22 +852,36 @@ public:
             threads[i].join();
         }
     }
-
-    static void
-    run()
-    {
-        testBasics();
-        testPartialDelete();
-        testDestructor();
-        testMultithreadedClearMixedVariant();
-        testMultithreadedClearMixedUnion();
-        testMultithreadedLockingWeak();
-    }
 };
 
-TEST_F(IntrusiveSharedTest, intrusive_shared)
+TEST_F(IntrusiveSharedTest, basics)
 {
-    run();
+    testBasics();
+}
+
+TEST_F(IntrusiveSharedTest, partial_delete)
+{
+    testPartialDelete();
+}
+
+TEST_F(IntrusiveSharedTest, destructor)
+{
+    testDestructor();
+}
+
+TEST_F(IntrusiveSharedTest, multithreaded_clear_mixed_variant)
+{
+    testMultithreadedClearMixedVariant();
+}
+
+TEST_F(IntrusiveSharedTest, multithreaded_clear_mixed_union)
+{
+    testMultithreadedClearMixedUnion();
+}
+
+TEST_F(IntrusiveSharedTest, multithreaded_locking_weak)
+{
+    testMultithreadedLockingWeak();
 }
 
 }  // namespace xrpl::tests

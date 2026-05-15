@@ -291,19 +291,21 @@ public:
         auto result = to_string("hello");
         EXPECT_EQ(result, "hello");
     }
-
-    static void
-    run()
-    {
-        testParseUrl();
-        testUnHex();
-        testToString();
-    }
 };
 
-TEST_F(StringUtilitiesTest, string_utilities)
+TEST_F(StringUtilitiesTest, parse_url)
 {
-    run();
+    testParseUrl();
+}
+
+TEST_F(StringUtilitiesTest, un_hex)
+{
+    testUnHex();
+}
+
+TEST_F(StringUtilitiesTest, to_string)
+{
+    testToString();
 }
 
 }  // namespace xrpl

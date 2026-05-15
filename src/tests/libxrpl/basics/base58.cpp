@@ -436,18 +436,16 @@ public:
             testIt(tokType, b256Data);
         }
     }
-
-    static void
-    run()
-    {
-        testMultiprecision();
-        testFastMatchesRef();
-    }
 };
 
-TEST_F(Base58Test, base58)
+TEST_F(Base58Test, multiprecision)
 {
-    run();
+    testMultiprecision();
+}
+
+TEST_F(Base58Test, fast_matches_ref)
+{
+    testFastMatchesRef();
 }
 
 }  // namespace xrpl::test

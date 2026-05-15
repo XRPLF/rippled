@@ -15,7 +15,7 @@ namespace xrpl::test {
 
 class UnitsTest : public ::testing::Test
 {
-private:
+protected:
     static void
     testTypes()
     {
@@ -327,23 +327,27 @@ private:
             EXPECT_EQ(to_string(test), "200.000000");
         }
     }
-
-public:
-    static void
-    run()
-    {
-        EXPECT_EQ(kINITIAL_XRP.drops(), 100'000'000'000'000'000);
-        EXPECT_EQ(kINITIAL_XRP, XRPAmount{100'000'000'000'000'000});
-
-        testTypes();
-        testJson();
-        testFunctions();
-    }
 };
 
-TEST_F(UnitsTest, units)
+TEST_F(UnitsTest, initial_xrp)
 {
-    run();
+    EXPECT_EQ(kINITIAL_XRP.drops(), 100'000'000'000'000'000);
+    EXPECT_EQ(kINITIAL_XRP, XRPAmount{100'000'000'000'000'000});
+}
+
+TEST_F(UnitsTest, types)
+{
+    testTypes();
+}
+
+TEST_F(UnitsTest, json)
+{
+    testJson();
+}
+
+TEST_F(UnitsTest, functions)
+{
+    testFunctions();
 }
 
 }  // namespace xrpl::test
