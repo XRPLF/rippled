@@ -1,7 +1,8 @@
+#include <xrpl/json/json_writer.h>
+
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
-#include <xrpl/json/json_writer.h>
 
 #include <cstdio>
 #include <cstring>
@@ -12,7 +13,7 @@
 #include <string>
 #include <utility>
 
-namespace Json {
+namespace json {
 
 static bool
 isControlCharacter(char ch)
@@ -58,7 +59,7 @@ valueToString(Int value)
     if (isNegative)
         *--current = '-';
 
-    XRPL_ASSERT(current >= buffer, "Json::valueToString(Int) : buffer check");
+    XRPL_ASSERT(current >= buffer, "json::valueToString(Int) : buffer check");
     return current;
 }
 
@@ -68,7 +69,7 @@ valueToString(UInt value)
     char buffer[32];
     char* current = buffer + sizeof(buffer);  // NOLINT(misc-const-correctness)
     uintToString(value, current);
-    XRPL_ASSERT(current >= buffer, "Json::valueToString(UInt) : buffer check");
+    XRPL_ASSERT(current >= buffer, "json::valueToString(UInt) : buffer check");
     return current;
 }
 
@@ -187,31 +188,31 @@ FastWriter::writeValue(Value const& value)
 {
     switch (value.type())
     {
-        case nullValue:
+        case ValueType::Null:
             document_ += "null";
             break;
 
-        case intValue:
+        case ValueType::Int:
             document_ += valueToString(value.asInt());
             break;
 
-        case uintValue:
+        case ValueType::UInt:
             document_ += valueToString(value.asUInt());
             break;
 
-        case realValue:
+        case ValueType::Real:
             document_ += valueToString(value.asDouble());
             break;
 
-        case stringValue:
+        case ValueType::String:
             document_ += valueToQuotedString(value.asCString());
             break;
 
-        case booleanValue:
+        case ValueType::Boolean:
             document_ += valueToString(value.asBool());
             break;
 
-        case arrayValue: {
+        case ValueType::Array: {
             document_ += "[";
             int const size = value.size();
 
@@ -227,7 +228,7 @@ FastWriter::writeValue(Value const& value)
         }
         break;
 
-        case objectValue: {
+        case ValueType::Object: {
             Value::Members members(value.getMemberNames());
             document_ += "{";
 
@@ -252,9 +253,7 @@ FastWriter::writeValue(Value const& value)
 // Class StyledWriter
 // //////////////////////////////////////////////////////////////////
 
-StyledWriter::StyledWriter()
-{
-}
+StyledWriter::StyledWriter() = default;
 
 std::string
 StyledWriter::write(Value const& root)
@@ -272,35 +271,35 @@ StyledWriter::writeValue(Value const& value)
 {
     switch (value.type())
     {
-        case nullValue:
+        case ValueType::Null:
             pushValue("null");
             break;
 
-        case intValue:
+        case ValueType::Int:
             pushValue(valueToString(value.asInt()));
             break;
 
-        case uintValue:
+        case ValueType::UInt:
             pushValue(valueToString(value.asUInt()));
             break;
 
-        case realValue:
+        case ValueType::Real:
             pushValue(valueToString(value.asDouble()));
             break;
 
-        case stringValue:
+        case ValueType::String:
             pushValue(valueToQuotedString(value.asCString()));
             break;
 
-        case booleanValue:
+        case ValueType::Boolean:
             pushValue(valueToString(value.asBool()));
             break;
 
-        case arrayValue:
+        case ValueType::Array:
             writeArrayValue(value);
             break;
 
-        case objectValue: {
+        case ValueType::Object: {
             Value::Members members(value.getMemberNames());
 
             if (members.empty())
@@ -382,7 +381,7 @@ StyledWriter::writeArrayValue(Value const& value)
         {
             XRPL_ASSERT(
                 childValues_.size() == size,
-                "Json::StyledWriter::writeArrayValue : child size match");
+                "json::StyledWriter::writeArrayValue : child size match");
             document_ += "[ ";
 
             for (unsigned index = 0; index < size; ++index)
@@ -479,14 +478,15 @@ StyledWriter::unindent()
 {
     XRPL_ASSERT(
         int(indentString_.size()) >= indentSize_,
-        "Json::StyledWriter::unindent : maximum indent size");
+        "json::StyledWriter::unindent : maximum indent size");
     indentString_.resize(indentString_.size() - indentSize_);
 }
 
 // Class StyledStreamWriter
 // //////////////////////////////////////////////////////////////////
 
-StyledStreamWriter::StyledStreamWriter(std::string indentation) : indentation_(indentation)
+StyledStreamWriter::StyledStreamWriter(std::string indentation)
+    : indentation_(std::move(indentation))
 {
 }
 
@@ -506,35 +506,35 @@ StyledStreamWriter::writeValue(Value const& value)
 {
     switch (value.type())
     {
-        case nullValue:
+        case ValueType::Null:
             pushValue("null");
             break;
 
-        case intValue:
+        case ValueType::Int:
             pushValue(valueToString(value.asInt()));
             break;
 
-        case uintValue:
+        case ValueType::UInt:
             pushValue(valueToString(value.asUInt()));
             break;
 
-        case realValue:
+        case ValueType::Real:
             pushValue(valueToString(value.asDouble()));
             break;
 
-        case stringValue:
+        case ValueType::String:
             pushValue(valueToQuotedString(value.asCString()));
             break;
 
-        case booleanValue:
+        case ValueType::Boolean:
             pushValue(valueToString(value.asBool()));
             break;
 
-        case arrayValue:
+        case ValueType::Array:
             writeArrayValue(value);
             break;
 
-        case objectValue: {
+        case ValueType::Object: {
             Value::Members members(value.getMemberNames());
 
             if (members.empty())
@@ -616,7 +616,7 @@ StyledStreamWriter::writeArrayValue(Value const& value)
         {
             XRPL_ASSERT(
                 childValues_.size() == size,
-                "Json::StyledStreamWriter::writeArrayValue : child size match");
+                "json::StyledStreamWriter::writeArrayValue : child size match");
             *document_ << "[ ";
 
             for (unsigned index = 0; index < size; ++index)
@@ -714,16 +714,16 @@ StyledStreamWriter::unindent()
 {
     XRPL_ASSERT(
         indentString_.size() >= indentation_.size(),
-        "Json::StyledStreamWriter::unindent : maximum indent size");
+        "json::StyledStreamWriter::unindent : maximum indent size");
     indentString_.resize(indentString_.size() - indentation_.size());
 }
 
 std::ostream&
 operator<<(std::ostream& sout, Value const& root)
 {
-    Json::StyledStreamWriter writer;
+    json::StyledStreamWriter writer;
     writer.write(sout, root);
     return sout;
 }
 
-}  // namespace Json
+}  // namespace json

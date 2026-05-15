@@ -23,10 +23,10 @@ class ValidPermissionedDomain
 {
     struct SleStatus
     {
-        std::size_t credentialsSize_{0};
-        bool isSorted_ = false;
-        bool isUnique_ = false;
-        bool isDelete_ = false;
+        std::size_t credentialsSize{0};
+        bool isSorted = false;
+        bool isUnique = false;
+        bool isDelete = false;
     };
     std::vector<SleStatus> sleStatus_;
 

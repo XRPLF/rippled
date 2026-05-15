@@ -46,7 +46,7 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfAccount (soeREQUIRED)
+     * @brief Get sfAccount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -57,7 +57,7 @@ public:
     }
 
     /**
-     * @brief Get sfTradingFee (soeDEFAULT)
+     * @brief Get sfTradingFee (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -81,7 +81,7 @@ public:
     }
 
     /**
-     * @brief Get sfVoteSlots (soeOPTIONAL)
+     * @brief Get sfVoteSlots (SoeOptional)
      * @note This is an untyped field (unknown).
      * @return The field value, or std::nullopt if not present.
      */
@@ -106,7 +106,7 @@ public:
     }
 
     /**
-     * @brief Get sfAuctionSlot (soeOPTIONAL)
+     * @brief Get sfAuctionSlot (SoeOptional)
      * @note This is an untyped field (unknown).
      * @return The field value, or std::nullopt if not present.
      */
@@ -131,7 +131,7 @@ public:
     }
 
     /**
-     * @brief Get sfLPTokenBalance (soeREQUIRED)
+     * @brief Get sfLPTokenBalance (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -142,7 +142,7 @@ public:
     }
 
     /**
-     * @brief Get sfAsset (soeREQUIRED)
+     * @brief Get sfAsset (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -153,7 +153,7 @@ public:
     }
 
     /**
-     * @brief Get sfAsset2 (soeREQUIRED)
+     * @brief Get sfAsset2 (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -164,7 +164,7 @@ public:
     }
 
     /**
-     * @brief Get sfOwnerNode (soeREQUIRED)
+     * @brief Get sfOwnerNode (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -175,7 +175,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnID (soeOPTIONAL)
+     * @brief Get sfPreviousTxnID (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -199,7 +199,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnLgrSeq (soeOPTIONAL)
+     * @brief Get sfPreviousTxnLgrSeq (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -227,7 +227,7 @@ public:
  * @brief Builder for AMM ledger entries.
  *
  * Provides a fluent interface for constructing ledger entries with method chaining.
- * Uses Json::Value internally for flexible ledger entry construction.
+ * Uses STObject internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
  */
 class AMMBuilder : public LedgerEntryBuilderBase<AMMBuilder>
@@ -268,7 +268,7 @@ public:
     /** @brief Ledger entry-specific field setters */
 
     /**
-     * @brief Set sfAccount (soeREQUIRED)
+     * @brief Set sfAccount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     AMMBuilder&
@@ -279,7 +279,7 @@ public:
     }
 
     /**
-     * @brief Set sfTradingFee (soeDEFAULT)
+     * @brief Set sfTradingFee (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
     AMMBuilder&
@@ -290,7 +290,7 @@ public:
     }
 
     /**
-     * @brief Set sfVoteSlots (soeOPTIONAL)
+     * @brief Set sfVoteSlots (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AMMBuilder&
@@ -301,7 +301,7 @@ public:
     }
 
     /**
-     * @brief Set sfAuctionSlot (soeOPTIONAL)
+     * @brief Set sfAuctionSlot (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AMMBuilder&
@@ -312,7 +312,7 @@ public:
     }
 
     /**
-     * @brief Set sfLPTokenBalance (soeREQUIRED)
+     * @brief Set sfLPTokenBalance (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     AMMBuilder&
@@ -323,7 +323,7 @@ public:
     }
 
     /**
-     * @brief Set sfAsset (soeREQUIRED)
+     * @brief Set sfAsset (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     AMMBuilder&
@@ -334,7 +334,7 @@ public:
     }
 
     /**
-     * @brief Set sfAsset2 (soeREQUIRED)
+     * @brief Set sfAsset2 (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     AMMBuilder&
@@ -345,7 +345,7 @@ public:
     }
 
     /**
-     * @brief Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     AMMBuilder&
@@ -356,7 +356,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnID (soeOPTIONAL)
+     * @brief Set sfPreviousTxnID (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AMMBuilder&
@@ -367,7 +367,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnLgrSeq (soeOPTIONAL)
+     * @brief Set sfPreviousTxnLgrSeq (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AMMBuilder&

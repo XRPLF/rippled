@@ -18,7 +18,7 @@ public:
         TxID txid;
         Sequence seq;
 
-        TxIDSeq(TxID const& txid_, Sequence const& seq_) : txid(txid_), seq(seq_)
+        TxIDSeq(TxID const& txid, Sequence const& seq) : txid(txid), seq(seq)
         {
         }
     };
@@ -64,7 +64,7 @@ public:
         // And we also want to preserve the Sequence of entries that we proposed
         // in the last round and want to propose again.
         std::sort(proposed.begin(), proposed.end());
-        generalized_set_intersection(
+        generalizedSetIntersection(
             proposed.begin(),
             proposed.end(),
             tracker_.cbegin(),
@@ -98,7 +98,7 @@ public:
         // We want to remove all tracking entries for transactions that were
         // accepted as well as those which match the predicate.
 
-        auto i = remove_if_intersect_or_match(
+        auto i = removeIfIntersectOrMatch(
             tracker_.begin(),
             tracker_.end(),
             accepted.begin(),

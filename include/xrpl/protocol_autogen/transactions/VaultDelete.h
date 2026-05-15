@@ -19,9 +19,9 @@ class VaultDeleteBuilder;
  * @brief Transaction: VaultDelete
  *
  * Type: ttVAULT_DELETE (67)
- * Delegable: Delegation::notDelegable
+ * Delegable: Delegation::NotDelegable
  * Amendment: featureSingleAssetVault
- * Privileges: mustDeleteAcct | destroyMPTIssuance | mustModifyVault
+ * Privileges: MustDeleteAcct | DestroyMptIssuance | MustModifyVault
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use VaultDeleteBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfVaultID (soeREQUIRED)
+     * @brief Get sfVaultID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -63,7 +63,7 @@ public:
  * @brief Builder for VaultDelete transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class VaultDeleteBuilder : public TransactionBuilderBase<VaultDeleteBuilder>
@@ -102,7 +102,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfVaultID (soeREQUIRED)
+     * @brief Set sfVaultID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     VaultDeleteBuilder&

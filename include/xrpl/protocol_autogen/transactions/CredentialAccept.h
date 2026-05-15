@@ -19,9 +19,9 @@ class CredentialAcceptBuilder;
  * @brief Transaction: CredentialAccept
  *
  * Type: ttCREDENTIAL_ACCEPT (59)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: featureCredentials
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use CredentialAcceptBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfIssuer (soeREQUIRED)
+     * @brief Get sfIssuer (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -59,7 +59,7 @@ public:
     }
 
     /**
-     * @brief Get sfCredentialType (soeREQUIRED)
+     * @brief Get sfCredentialType (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -74,7 +74,7 @@ public:
  * @brief Builder for CredentialAccept transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class CredentialAcceptBuilder : public TransactionBuilderBase<CredentialAcceptBuilder>
@@ -115,7 +115,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfIssuer (soeREQUIRED)
+     * @brief Set sfIssuer (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     CredentialAcceptBuilder&
@@ -126,7 +126,7 @@ public:
     }
 
     /**
-     * @brief Set sfCredentialType (soeREQUIRED)
+     * @brief Set sfCredentialType (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     CredentialAcceptBuilder&

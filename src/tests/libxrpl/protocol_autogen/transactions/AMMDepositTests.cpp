@@ -21,7 +21,7 @@ TEST(TransactionsAMMDepositTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testAMMDeposit"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testAMMDeposit"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -128,7 +128,7 @@ TEST(TransactionsAMMDepositTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testAMMDepositFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testAMMDepositFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -230,7 +230,7 @@ TEST(TransactionsAMMDepositTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -244,7 +244,7 @@ TEST(TransactionsAMMDepositTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -258,7 +258,7 @@ TEST(TransactionsAMMDepositTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testAMMDepositNullopt"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testAMMDepositNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
