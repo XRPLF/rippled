@@ -155,16 +155,16 @@ inplaceBigintDivRem(std::span<uint64_t> numerator, std::uint64_t divisor)
 [[nodiscard]] inline std::array<std::uint8_t, 10>
 b5810ToB58Be(std::uint64_t input)
 {
-    [[maybe_unused]] static constexpr std::uint64_t kB_58_10 = 430804206899405824;  // 58^10;
-    XRPL_ASSERT(input < kB_58_10, "xrpl::b58_fast::detail::b5810ToB58Be : valid input");
-    constexpr std::size_t kRESULT_SIZE = 10;
-    std::array<std::uint8_t, kRESULT_SIZE> result{};
+    [[maybe_unused]] static constexpr std::uint64_t kB5810 = 430804206899405824;  // 58^10;
+    XRPL_ASSERT(input < kB5810, "xrpl::b58_fast::detail::b5810ToB58Be : valid input");
+    static constexpr std::size_t kResultSize = 10;
+    std::array<std::uint8_t, kResultSize> result{};
     int i = 0;
     while (input > 0)
     {
         std::uint64_t rem = 0;
         std::tie(input, rem) = divRem(input, 58);
-        result[kRESULT_SIZE - 1 - i] = rem;
+        result[kResultSize - 1 - i] = rem;
         i += 1;
     }
 

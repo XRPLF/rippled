@@ -92,7 +92,7 @@ class STCurrency;
 // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum SerializedTypeID { XMACRO(TO_ENUM) };
 
-static std::map<std::string, int> const kS_TYPE_MAP = {XMACRO(TO_MAP)};
+static std::map<std::string, int> const kSTypeMap = {XMACRO(TO_MAP)};
 
 #undef XMACRO
 #undef TO_ENUM
@@ -129,23 +129,23 @@ fieldCode(int id, int index)
 class SField
 {
 public:
-    static constexpr auto kSMD_NEVER = 0x00;
-    static constexpr auto kSMD_CHANGE_ORIG = 0x01;   // original value when it changes
-    static constexpr auto kSMD_CHANGE_NEW = 0x02;    // new value when it changes
-    static constexpr auto kSMD_DELETE_FINAL = 0x04;  // final value when it is deleted
-    static constexpr auto kSMD_CREATE = 0x08;        // value when it's created
-    static constexpr auto kSMD_ALWAYS = 0x10;    // value when node containing it is affected at all
-    static constexpr auto kSMD_BASE_TEN = 0x20;  // value is treated as base 10, overriding behavior
-    static constexpr auto kSMD_PSEUDO_ACCOUNT = 0x40;  // if this field is set in an ACCOUNT_ROOT
-                                                       // _only_, then it is a pseudo-account
-    static constexpr auto kSMD_NEEDS_ASSET = 0x80;     // This field needs to be associated with an
-                                                       // asset before it is serialized as a ledger
-                                                       // object. Intended for STNumber.
-    static constexpr auto kSMD_DEFAULT =
-        kSMD_CHANGE_ORIG | kSMD_CHANGE_NEW | kSMD_DELETE_FINAL | kSMD_CREATE;
+    static constexpr auto kSmdNever = 0x00;
+    static constexpr auto kSmdChangeOrig = 0x01;   // original value when it changes
+    static constexpr auto kSmdChangeNew = 0x02;    // new value when it changes
+    static constexpr auto kSmdDeleteFinal = 0x04;  // final value when it is deleted
+    static constexpr auto kSmdCreate = 0x08;       // value when it's created
+    static constexpr auto kSmdAlways = 0x10;   // value when node containing it is affected at all
+    static constexpr auto kSmdBaseTen = 0x20;  // value is treated as base 10, overriding behavior
+    static constexpr auto kSmdPseudoAccount = 0x40;  // if this field is set in an ACCOUNT_ROOT
+                                                     // _only_, then it is a pseudo-account
+    static constexpr auto kSmdNeedsAsset = 0x80;     // This field needs to be associated with an
+                                                     // asset before it is serialized as a ledger
+                                                     // object. Intended for STNumber.
+    static constexpr auto kSmdDefault =
+        kSmdChangeOrig | kSmdChangeNew | kSmdDeleteFinal | kSmdCreate;
 
     enum class IsSigning : unsigned char { No, Yes };
-    static IsSigning const kNOT_SIGNING = IsSigning::No;
+    static IsSigning const kNotSigning = IsSigning::No;
 
     int const fieldCodeMem;            // (type<<16)|index // TODO: rename, clashes with function
     SerializedTypeID const fieldType;  // STI_*
@@ -172,7 +172,7 @@ public:
         SerializedTypeID tid,
         int fv,
         char const* fn,
-        int meta = kSMD_DEFAULT,
+        int meta = kSmdDefault,
         IsSigning signing = IsSigning::Yes);
     explicit SField(PrivateAccessTagT, int fc, char const* fn);
 
@@ -365,8 +365,8 @@ using SF_XCHAIN_BRIDGE = TypedField<STXChainBridge>;
 #define UNTYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) extern SField const sfName;
 #define TYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) extern SF_##stiSuffix const sfName;
 
-extern SField const kSF_INVALID;
-extern SField const kSF_GENERIC;
+extern SField const kSfInvalid;
+extern SField const kSfGeneric;
 
 #include <xrpl/protocol/detail/sfields.macro>
 

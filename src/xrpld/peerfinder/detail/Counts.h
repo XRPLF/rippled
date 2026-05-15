@@ -51,9 +51,9 @@ public:
     [[nodiscard]] std::size_t
     attemptsNeeded() const
     {
-        if (attempts_ >= Tuning::kMAX_CONNECT_ATTEMPTS)
+        if (attempts_ >= Tuning::kMaxConnectAttempts)
             return 0;
-        return Tuning::kMAX_CONNECT_ATTEMPTS - attempts_;
+        return Tuning::kMaxConnectAttempts - attempts_;
     }
 
     /** Returns the number of outbound connection attempts. */

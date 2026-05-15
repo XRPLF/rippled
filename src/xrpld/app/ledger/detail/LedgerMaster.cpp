@@ -81,13 +81,13 @@
 namespace xrpl {
 
 // Don't catch up more than 100 ledgers (cannot exceed 256)
-static constexpr int kMAX_LEDGER_GAP{100};
+static constexpr int kMaxLedgerGap{100};
 
 // Don't acquire history if ledger is too old
-static constexpr std::chrono::minutes kMAX_LEDGER_AGE_ACQUIRE{1};
+static constexpr std::chrono::minutes kMaxLedgerAgeAcquire{1};
 
 // Don't acquire history if write load is too high
-static constexpr int kMAX_WRITE_LOAD_ACQUIRE{8192};
+static constexpr int kMaxWriteLoadAcquire{8192};
 
 // Helper function for LedgerMaster::doAdvance()
 // Return true if candidateLedger should be fetched from the network.
@@ -189,12 +189,12 @@ LedgerMaster::getPublishedLedgerAge()
     std::chrono::seconds ret = app_.getTimeKeeper().closeTime().time_since_epoch();
     ret -= pubClose;
     ret = (ret > 0s) ? ret : 0s;
-    static std::chrono::seconds kLAST_RET = -1s;
+    static std::chrono::seconds kLastRet = -1s;
 
-    if (ret != kLAST_RET)
+    if (ret != kLastRet)
     {
         JLOG(journal_.trace()) << "Published ledger age is " << ret.count();
-        kLAST_RET = ret;
+        kLastRet = ret;
     }
     return ret;
 }
@@ -214,12 +214,12 @@ LedgerMaster::getValidatedLedgerAge()
     std::chrono::seconds ret = app_.getTimeKeeper().closeTime().time_since_epoch();
     ret -= valClose;
     ret = (ret > 0s) ? ret : 0s;
-    static std::chrono::seconds kLAST_RET = -1s;
+    static std::chrono::seconds kLastRet = -1s;
 
-    if (ret != kLAST_RET)
+    if (ret != kLastRet)
     {
         JLOG(journal_.trace()) << "Validated ledger age is " << ret.count();
-        kLAST_RET = ret;
+        kLastRet = ret;
     }
     return ret;
 }
@@ -1047,12 +1047,12 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
             // and (3) the calculation won't cause divide-by-zero.
             if (higherVersionCount > 0 && xrpldCount > 0)
             {
-                constexpr std::size_t kREPORTING_PERCENT = 90;
-                constexpr std::size_t kCUTOFF_PERCENT = 60;
+                static constexpr std::size_t kReportingPercent = 90;
+                static constexpr std::size_t kCutoffPercent = 60;
                 auto const unlSize{app_.getValidators().getQuorumKeys().second.size()};
                 needPrint = unlSize > 0 &&
-                    calculatePercent(vals.size(), unlSize) >= kREPORTING_PERCENT &&
-                    calculatePercent(higherVersionCount, xrpldCount) >= kCUTOFF_PERCENT;
+                    calculatePercent(vals.size(), unlSize) >= kReportingPercent &&
+                    calculatePercent(higherVersionCount, xrpldCount) >= kCutoffPercent;
             }
         }
         // To throttle the warning messages, instead of printing a warning
@@ -1219,7 +1219,7 @@ LedgerMaster::findNewLedgersToPublish(std::unique_lock<std::recursive_mutex>& sl
         return {validLedger_.get()};
     }
 
-    if (validLedgerSeq_ > (pubLedgerSeq_ + kMAX_LEDGER_GAP))
+    if (validLedgerSeq_ > (pubLedgerSeq_ + kMaxLedgerGap))
     {
         JLOG(journal_.warn()) << "Gap in validated ledger stream " << pubLedgerSeq_ << " - "
                               << validLedgerSeq_ - 1;
@@ -1257,7 +1257,7 @@ LedgerMaster::findNewLedgersToPublish(std::unique_lock<std::recursive_mutex>& sl
             // VFALCO TODO Restructure this code so that zero is not
             // used.
             if (!hash)
-                hash = beast::kZERO;  // kludge
+                hash = beast::kZero;  // kludge
             if (seq == valSeq)
             {
                 // We need to publish the ledger we just fully validated
@@ -1884,8 +1884,8 @@ LedgerMaster::doAdvance(std::unique_lock<std::recursive_mutex>& sl)
             if (!standalone_ && !app_.getFeeTrack().isLoadedLocal() &&
                 (app_.getJobQueue().getJobCount(JtPuboldledger) < 10) &&
                 (validLedgerSeq_ == pubLedgerSeq_) &&
-                (getValidatedLedgerAge() < kMAX_LEDGER_AGE_ACQUIRE) &&
-                (app_.getNodeStore().getWriteLoad() < kMAX_WRITE_LOAD_ACQUIRE))
+                (getValidatedLedgerAge() < kMaxLedgerAgeAcquire) &&
+                (app_.getNodeStore().getWriteLoad() < kMaxWriteLoadAcquire))
             {
                 // We are in sync, so can acquire
                 InboundLedger::Reason const reason = InboundLedger::Reason::HISTORY;
@@ -2076,21 +2076,21 @@ LedgerMaster::makeFetchPack(
     if (!have)
     {
         JLOG(journal_.info()) << "Peer requests fetch pack for ledger we don't have: " << have;
-        peer->charge(Resource::kFEE_REQUEST_NO_REPLY, "get_object ledger");
+        peer->charge(Resource::kFeeRequestNoReply, "get_object ledger");
         return;
     }
 
     if (have->open())
     {
         JLOG(journal_.warn()) << "Peer requests fetch pack from open ledger: " << have;
-        peer->charge(Resource::kFEE_MALFORMED_REQUEST, "get_object ledger open");
+        peer->charge(Resource::kFeeMalformedRequest, "get_object ledger open");
         return;
     }
 
     if (have->header().seq < getEarliestFetch())
     {
         JLOG(journal_.debug()) << "Peer requests fetch pack that is too early";
-        peer->charge(Resource::kFEE_MALFORMED_REQUEST, "get_object ledger early");
+        peer->charge(Resource::kFeeMalformedRequest, "get_object ledger early");
         return;
     }
 
@@ -2100,7 +2100,7 @@ LedgerMaster::makeFetchPack(
     {
         JLOG(journal_.info()) << "Peer requests fetch pack for ledger whose predecessor we "
                               << "don't have: " << have;
-        peer->charge(Resource::kFEE_REQUEST_NO_REPLY, "get_object ledger no parent");
+        peer->charge(Resource::kFeeRequestNoReply, "get_object ledger no parent");
         return;
     }
 

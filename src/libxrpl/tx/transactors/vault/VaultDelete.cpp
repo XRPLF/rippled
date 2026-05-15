@@ -24,7 +24,7 @@ namespace xrpl {
 NotTEC
 VaultDelete::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfVaultID] == beast::kZERO)
+    if (ctx.tx[sfVaultID] == beast::kZero)
     {
         JLOG(ctx.j.debug()) << "VaultDelete: zero/empty vault ID.";
         return temMALFORMED;

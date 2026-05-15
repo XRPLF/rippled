@@ -42,7 +42,7 @@ Transactor::invokePreflight<Change>(PreflightContext const& ctx)
         return ret;
 
     auto account = ctx.tx.getAccountID(sfAccount);
-    if (account != beast::kZERO)
+    if (account != beast::kZero)
     {
         JLOG(ctx.j.warn()) << "Change: Bad source id";
         return temBAD_SRC_ACCOUNT;
@@ -50,7 +50,7 @@ Transactor::invokePreflight<Change>(PreflightContext const& ctx)
 
     // No point in going any further if the transaction fee is malformed.
     auto const fee = ctx.tx.getFieldAmount(sfFee);
-    if (!fee.native() || fee != beast::kZERO)
+    if (!fee.native() || fee != beast::kZero)
     {
         JLOG(ctx.j.warn()) << "Change: invalid fee";
         return temBAD_FEE;
@@ -154,7 +154,7 @@ Change::doApply()
 void
 Change::preCompute()
 {
-    XRPL_ASSERT(account_ == beast::kZERO, "xrpl::Change::preCompute : zero account");
+    XRPL_ASSERT(account_ == beast::kZero, "xrpl::Change::preCompute : zero account");
 }
 
 TER

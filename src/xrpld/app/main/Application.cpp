@@ -1451,7 +1451,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             JLOG(journal_.fatal()) << "Startup RPC: " << jvCommand << std::endl;
         }
 
-        Resource::Charge loadType = Resource::kFEE_REFERENCE_RPC;
+        Resource::Charge loadType = Resource::kFeeReferenceRpc;
         Resource::Consumer c;
         RPC::JsonContext context{
             {.j = getJournal("RPCHandler"),
@@ -1463,7 +1463,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
              .role = Role::ADMIN,
              .coro = {},
              .infoSub = {},
-             .apiVersion = RPC::kAPI_MAXIMUM_SUPPORTED_VERSION},
+             .apiVersion = RPC::kApiMaximumSupportedVersion},
             jvCommand};
 
         json::Value jvResult;
@@ -1664,7 +1664,7 @@ ApplicationImp::startGenesisLedger()
         : std::vector<uint256>{};
 
     std::shared_ptr<Ledger> const genesis = std::make_shared<Ledger>(
-        kCREATE_GENESIS,
+        kCreateGenesis,
         Rules{config_->features},
         config_->FEES.toFees(),
         initialAmendments,
@@ -1674,7 +1674,7 @@ ApplicationImp::startGenesisLedger()
     auto const next = std::make_shared<Ledger>(*genesis, getTimeKeeper().closeTime());
     next->updateSkipList();
     XRPL_ASSERT(
-        next->header().seq < kXRP_LEDGER_EARLIEST_FEES || next->read(keylet::fees()),
+        next->header().seq < kXrpLedgerEarliestFees || next->read(keylet::fees()),
         "xrpl::ApplicationImp::startGenesisLedger : valid ledger fees");
     next->setImmutable();
     openLedger_.emplace(next, cachedSLEs_, logs_->journal("OpenLedger"));
@@ -1696,7 +1696,7 @@ ApplicationImp::getLastFullLedger()
             return ledger;
 
         XRPL_ASSERT(
-            ledger->header().seq < kXRP_LEDGER_EARLIEST_FEES || ledger->read(keylet::fees()),
+            ledger->header().seq < kXrpLedgerEarliestFees || ledger->read(keylet::fees()),
             "xrpl::ApplicationImp::getLastFullLedger : valid ledger fees");
         ledger->setImmutable();
 
@@ -1847,8 +1847,7 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
         loadLedger->stateMap().flushDirty(NodeObjectType::AccountNode);
 
         XRPL_ASSERT(
-            loadLedger->header().seq < kXRP_LEDGER_EARLIEST_FEES ||
-                loadLedger->read(keylet::fees()),
+            loadLedger->header().seq < kXrpLedgerEarliestFees || loadLedger->read(keylet::fees()),
             "xrpl::ApplicationImp::loadLedgerFromFile : valid ledger fees");
         loadLedger->setAccepted(closeTime, closeTimeResolution, !closeTimeEstimated);
 
@@ -1964,13 +1963,13 @@ ApplicationImp::loadOldLedger(
         }
         using namespace std::chrono_literals;
         using namespace date;
-        static constexpr NetClock::time_point kLEDGER_WARN_TIME_POINT{
+        static constexpr NetClock::time_point kLedgerWarnTimePoint{
             sys_days{January / 1 / 2018} - sys_days{January / 1 / 2000}};
-        if (loadLedger->header().closeTime < kLEDGER_WARN_TIME_POINT)
+        if (loadLedger->header().closeTime < kLedgerWarnTimePoint)
         {
             JLOG(journal_.fatal()) << "\n\n***  WARNING   ***\n"
                                       "You are replaying a ledger from before "
-                                   << to_string(kLEDGER_WARN_TIME_POINT)
+                                   << to_string(kLedgerWarnTimePoint)
                                    << " UTC.\n"
                                       "This replay will not handle your ledger as it was "
                                       "originally "
