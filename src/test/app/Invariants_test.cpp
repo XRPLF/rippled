@@ -302,6 +302,7 @@ class Invariants_test : public beast::unit_test::Suite
 
         doInvariantCheck(
             {{"account deletion left behind a non-zero balance"}},
+            // NOLINTNEXTLINE(readability-identifier-naming)
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 // A1 has a balance. Delete A1
                 auto const a1 = A1.id();
@@ -357,10 +358,10 @@ class Invariants_test : public beast::unit_test::Suite
             doInvariantCheck(
                 {{"account deletion left behind a "s + type.cStr() + " object"}},
                 // NOLINTNEXTLINE(readability-identifier-naming)
-                [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                    // Add an object to the ledger for account a1, then delete
-                    // a1
-                    auto const a1 = a1.id();
+                [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                    // Add an object to the ledger for account A1, then delete
+                    // A1
+                    auto const a1 = A1.id();
                     auto sleA1 = ac.view().peek(keylet::account(a1));
                     if (!sleA1)
                         return false;
