@@ -60,9 +60,13 @@ setCurrentTransactionRules(std::optional<Rules> r)
     // Declare the range this way to keep clang-tidy from complaining
     auto const range = [enableCuspRoundingFix, enableVaultNumbers]() {
         if (enableCuspRoundingFix)
+        {
             return MantissaRange::MantissaScale::Large;
+        }
         else if (enableVaultNumbers)
+        {
             return MantissaRange::MantissaScale::LargeLegacy;
+        }
         return MantissaRange::MantissaScale::Small;
     }();
     Number::setMantissaScale(range);
