@@ -443,7 +443,7 @@ checkAMMPrecisionLoss(
     STAmount const& newLPTokenBalance,
     beast::Journal j)
 {
-    if (newLPTokenBalance <= beast::kZERO)
+    if (newLPTokenBalance <= beast::kZero)
         return tesSUCCESS;
     auto const [amount, amount2] = ammPoolHolds(
         view,
