@@ -47,6 +47,7 @@ public:
         std::uint32_t crawlOptions = 0;
         std::optional<std::uint32_t> networkID;
         bool vlEnabled = true;
+        bool verifyEndpoints = true;
     };
 
     using PeerSequence = std::vector<std::shared_ptr<Peer>>;
