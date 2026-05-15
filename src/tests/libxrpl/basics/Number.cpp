@@ -19,12 +19,13 @@
 
 namespace xrpl {
 
-class NumberTest : public ::testing::Test
+TEST(NumberTest, zero)
 {
-public:
-    static void
-    testZero()
+    for (auto const mantissaScale :
+         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
     {
+        NumberMantissaScaleGuard const sg(mantissaScale);
+
         for (Number const& z : {Number{0, 0}, Number{0}})
         {
             EXPECT_EQ(z.mantissa(), 0);
@@ -35,10 +36,15 @@ public:
             EXPECT_EQ(z, -z);
         }
     }
+}
 
-    static void
-    testLimits()
+TEST(NumberTest, limits)
+{
+    for (auto const mantissaScale :
+         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
     {
+        NumberMantissaScaleGuard const sg(mantissaScale);
+
         auto const scale = Number::getMantissaScale();
         bool caught = false;
         auto const minMantissa = Number::minMantissa();
@@ -103,10 +109,15 @@ public:
         }
         EXPECT_TRUE(caught);
     }
+}
 
-    static void
-    testAdd()
+TEST(NumberTest, add)
+{
+    for (auto const mantissaScale :
+         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
     {
+        NumberMantissaScaleGuard const sg(mantissaScale);
+
         auto const scale = Number::getMantissaScale();
 
         using Case = std::tuple<Number, Number, Number>;
@@ -176,8 +187,8 @@ public:
                 {Number{true, 9'999'999'999'999'999'999ULL, -37, Number::Normalized{}},
                  Number{1'000'000'000'000'000'000, -18},
                  Number{false, 9'999'999'999'999'999'990ULL, -19, Number::Normalized{}}},
-                {Number{Number::kMAX_REP}, Number{6, -1}, Number{Number::kMAX_REP / 10, 1}},
-                {Number{Number::kMAX_REP - 1}, Number{1, 0}, Number{Number::kMAX_REP}},
+                {Number{Number::kMaxRep}, Number{6, -1}, Number{Number::kMaxRep / 10, 1}},
+                {Number{Number::kMaxRep - 1}, Number{1, 0}, Number{Number::kMaxRep}},
                 // Test extremes
                 {
                     // Each Number operand rounds up, so the actual mantissa is
@@ -228,10 +239,15 @@ public:
             EXPECT_TRUE(caught);
         }
     }
+}
 
-    static void
-    testSub()
+TEST(NumberTest, sub)
+{
+    for (auto const mantissaScale :
+         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
     {
+        NumberMantissaScaleGuard const sg(mantissaScale);
+
         auto const scale = Number::getMantissaScale();
 
         using Case = std::tuple<Number, Number, Number>;
@@ -283,14 +299,14 @@ public:
                 {Number{1'000'000'000'000'000'001, -18},
                  Number{1'000'000'000'000'000'000, -18},
                  Number{1'000'000'000'000'000'000, -36}},
-                {Number{Number::kMAX_REP}, Number{6, -1}, Number{Number::kMAX_REP - 1}},
-                {Number{false, Number::kMAX_REP + 1, 0, Number::Normalized{}},
+                {Number{Number::kMaxRep}, Number{6, -1}, Number{Number::kMaxRep - 1}},
+                {Number{false, Number::kMaxRep + 1, 0, Number::Normalized{}},
                  Number{1, 0},
-                 Number{(Number::kMAX_REP / 10) + 1, 1}},
-                {Number{false, Number::kMAX_REP + 1, 0, Number::Normalized{}},
+                 Number{(Number::kMaxRep / 10) + 1, 1}},
+                {Number{false, Number::kMaxRep + 1, 0, Number::Normalized{}},
                  Number{3, 0},
-                 Number{Number::kMAX_REP}},
-                {power(2, 63), Number{3, 0}, Number{Number::kMAX_REP}},
+                 Number{Number::kMaxRep}},
+                {power(2, 63), Number{3, 0}, Number{Number::kMaxRep}},
             });
         auto test = [](auto const& c) {
             for (auto const& [x, y, z] : c)
@@ -310,10 +326,15 @@ public:
             test(cLarge);
         }
     }
+}
 
-    static void
-    testMul()
+TEST(NumberTest, mul)
+{
+    for (auto const mantissaScale :
+         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
     {
+        NumberMantissaScaleGuard const sg(mantissaScale);
+
         auto const scale = Number::getMantissaScale();
 
         using Case = std::tuple<Number, Number, Number>;
@@ -398,8 +419,8 @@ public:
                  Number{false, maxMantissa, 0, Number::Normalized{}},
                  Number{1, 38}},
                 // Maximum int64 range
-                {Number{Number::kMAX_REP, 0},
-                 Number{Number::kMAX_REP, 0},
+                {Number{Number::kMaxRep, 0},
+                 Number{Number::kMaxRep, 0},
                  Number{85'070'591'730'234'615'85, 19}},
             });
             tests(cSmall, cLarge);
@@ -464,8 +485,8 @@ public:
                      Number{false, (maxMantissa / 10) - 1, 20, Number::Normalized{}}},
                     // Maximum int64 range
                     // 85'070'591'730'234'615'847'396'907'784'232'501'249
-                    {Number{Number::kMAX_REP, 0},
-                     Number{Number::kMAX_REP, 0},
+                    {Number{Number::kMaxRep, 0},
+                     Number{Number::kMaxRep, 0},
                      Number{85'070'591'730'234'615'84, 19}},
                 });
             tests(cSmall, cLarge);
@@ -530,8 +551,8 @@ public:
                      Number{false, (maxMantissa / 10) - 1, 20, Number::Normalized{}}},
                     // Maximum int64 range
                     // 85'070'591'730'234'615'847'396'907'784'232'501'249
-                    {Number{Number::kMAX_REP, 0},
-                     Number{Number::kMAX_REP, 0},
+                    {Number{Number::kMaxRep, 0},
+                     Number{Number::kMaxRep, 0},
                      Number{85'070'591'730'234'615'84, 19}},
                 });
             tests(cSmall, cLarge);
@@ -596,8 +617,8 @@ public:
                      Number{1, 38}},
                     // Maximum int64 range
                     // 85'070'591'730'234'615'847'396'907'784'232'501'249
-                    {Number{Number::kMAX_REP, 0},
-                     Number{Number::kMAX_REP, 0},
+                    {Number{Number::kMaxRep, 0},
+                     Number{Number::kMaxRep, 0},
                      Number{85'070'591'730'234'615'85, 19}},
                 });
             tests(cSmall, cLarge);
@@ -616,10 +637,15 @@ public:
             EXPECT_TRUE(caught);
         }
     }
+}
 
-    static void
-    testDiv()
+TEST(NumberTest, div)
+{
+    for (auto const mantissaScale :
+         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
     {
+        NumberMantissaScaleGuard const sg(mantissaScale);
+
         auto const scale = Number::getMantissaScale();
 
         using Case = std::tuple<Number, Number, Number>;
@@ -802,10 +828,15 @@ public:
         }
         EXPECT_TRUE(caught);
     }
+}
 
-    static void
-    testRoot()
+TEST(NumberTest, root)
+{
+    for (auto const mantissaScale :
+         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
     {
+        NumberMantissaScaleGuard const sg(mantissaScale);
+
         using Case = std::tuple<Number, unsigned, Number>;
         auto test = [](auto const& c) {
             for (auto const& [x, y, z] : c)
@@ -841,10 +872,10 @@ public:
             {Number{false, Number::maxMantissa() - 9, 0, Number::Normalized{}},
              2,
              Number{false, 3'162'277'660'168'379'330, -9, Number::Normalized{}}},
-            {Number{Number::kMAX_REP},
+            {Number{Number::kMaxRep},
              2,
              Number{false, 3'037'000'499'976049692, -9, Number::Normalized{}}},
-            {Number{Number::kMAX_REP},
+            {Number{Number::kMaxRep},
              4,
              Number{false, 55'108'98747006743627, -14, Number::Normalized{}}},
         });
@@ -875,10 +906,15 @@ public:
         }
         EXPECT_TRUE(caught);
     }
+}
 
-    static void
-    testRoot2()
+TEST(NumberTest, root2)
+{
+    for (auto const mantissaScale :
+         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
     {
+        NumberMantissaScaleGuard const sg(mantissaScale);
+
         auto test = [](auto const& c) {
             for (auto const& x : c)
             {
@@ -899,7 +935,7 @@ public:
             Number{5, -1},
             Number{0},
             Number{5625, -4},
-            Number{Number::kMAX_REP},
+            Number{Number::kMaxRep},
         });
         test(cSmall);
         bool caught = false;
@@ -913,10 +949,15 @@ public:
         }
         EXPECT_TRUE(caught);
     }
+}
 
-    static void
-    testPower1()
+TEST(NumberTest, power1)
+{
+    for (auto const mantissaScale :
+         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
     {
+        NumberMantissaScaleGuard const sg(mantissaScale);
+
         using Case = std::tuple<Number, unsigned, Number>;
         Case const c[]{
             {Number{64}, 0, Number{1}},
@@ -930,10 +971,15 @@ public:
         for (auto const& [x, y, z] : c)
             EXPECT_EQ(power(x, y), z);
     }
+}
 
-    static void
-    testPower2()
+TEST(NumberTest, power2)
+{
+    for (auto const mantissaScale :
+         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
     {
+        NumberMantissaScaleGuard const sg(mantissaScale);
+
         using Case = std::tuple<Number, unsigned, unsigned, Number>;
         Case const c[]{
             {Number{1}, 3, 7, Number{1}},
@@ -975,10 +1021,15 @@ public:
         }
         EXPECT_TRUE(caught);
     }
+}
 
-    static void
-    testConversions()
+TEST(NumberTest, conversions)
+{
+    for (auto const mantissaScale :
+         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
     {
+        NumberMantissaScaleGuard const sg(mantissaScale);
+
         IOUAmount const x{5, 6};
         Number const y = x;
         EXPECT_EQ(y, (Number{5, 6}));
@@ -999,10 +1050,15 @@ public:
         XRPAmount const xrp1{n0};
         EXPECT_EQ(xrp1, xrp0);
     }
+}
 
-    static void
-    testToInteger()
+TEST(NumberTest, to_integer)
+{
+    for (auto const mantissaScale :
+         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
     {
+        NumberMantissaScaleGuard const sg(mantissaScale);
+
         using Case = std::tuple<Number, std::int64_t>;
         SaveNumberRoundMode const save{Number::setround(Number::RoundingMode::ToNearest)};
         {
@@ -1166,10 +1222,15 @@ public:
         }
         EXPECT_TRUE(caught);
     }
+}
 
-    static void
-    testSquelch()
+TEST(NumberTest, squelch)
+{
+    for (auto const mantissaScale :
+         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
     {
+        NumberMantissaScaleGuard const sg(mantissaScale);
+
         Number const limit{1, -6};
         EXPECT_EQ(squelch(Number{2, -6}, limit), (Number{2, -6}));
         EXPECT_EQ(squelch(Number{1, -6}, limit), (Number{1, -6}));
@@ -1178,10 +1239,15 @@ public:
         EXPECT_EQ(squelch(Number{-1, -6}, limit), (Number{-1, -6}));
         EXPECT_EQ(squelch(Number{-9, -7}, limit), Number{0});
     }
+}
 
-    static void
-    testToString()
+TEST(NumberTest, to_string)
+{
+    for (auto const mantissaScale :
+         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
     {
+        NumberMantissaScaleGuard const sg(mantissaScale);
+
         auto const scale = Number::getMantissaScale();
 
         auto test = [](Number const& n, std::string const& expected) {
@@ -1283,28 +1349,43 @@ public:
                 EXPECT_TRUE(false);
         }
     }
+}
 
-    static void
-    testRelationals()
+TEST(NumberTest, relationals)
+{
+    for (auto const mantissaScale :
+         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
     {
+        NumberMantissaScaleGuard const sg(mantissaScale);
+
         EXPECT_TRUE(!(Number{100} < Number{10}));
         EXPECT_TRUE(Number{100} > Number{10});
         EXPECT_TRUE(Number{100} >= Number{10});
         EXPECT_TRUE(!(Number{100} <= Number{10}));
     }
+}
 
-    static void
-    testStream()
+TEST(NumberTest, stream)
+{
+    for (auto const mantissaScale :
+         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
     {
+        NumberMantissaScaleGuard const sg(mantissaScale);
+
         Number const x{100};
         std::ostringstream os;
         os << x;
         EXPECT_EQ((os.str()), (to_string(x)));
     }
+}
 
-    static void
-    testIncDec()
+TEST(NumberTest, inc_dec)
+{
+    for (auto const mantissaScale :
+         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
     {
+        NumberMantissaScaleGuard const sg(mantissaScale);
+
         Number x{100};
         Number const y = +x;
         EXPECT_EQ((x), (y));
@@ -1313,10 +1394,15 @@ public:
         EXPECT_EQ((x--), (Number{101}));
         EXPECT_EQ((x), (y));
     }
+}
 
-    static void
-    testToStAmount()
+TEST(NumberTest, to_st_amount)
+{
+    for (auto const mantissaScale :
+         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
     {
+        NumberMantissaScaleGuard const sg(mantissaScale);
+
         NumberSO const stNumberSO{true};
         Issue const issue;
         Number const n{7'518'783'80596, -5};
@@ -1336,10 +1422,15 @@ public:
         res2 = STAmount{issue, n};
         EXPECT_EQ((res2), (STAmount{7518784}));
     }
+}
 
-    static void
-    testTruncate()
+TEST(NumberTest, truncate)
+{
+    for (auto const mantissaScale :
+         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
     {
+        NumberMantissaScaleGuard const sg(mantissaScale);
+
         EXPECT_EQ((Number(25, +1).truncate()), (Number(250, 0)));
         EXPECT_EQ((Number(25, 0).truncate()), (Number(25, 0)));
         EXPECT_EQ((Number(25, -1).truncate()), (Number(2, 0)));
@@ -1360,10 +1451,15 @@ public:
         EXPECT_EQ((Number(-100, -30000).truncate()), (Number(0, 0)));
         EXPECT_EQ((Number(-100, -30000).truncate()), (Number(0, 0)));
     }
+}
 
-    static void
-    testRounding()
+TEST(NumberTest, rounding)
+{
+    for (auto const mantissaScale :
+         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
     {
+        NumberMantissaScaleGuard const sg(mantissaScale);
+
         // Test that rounding works as expected.
 
         using NumberRoundings = std::map<Number::RoundingMode, std::int64_t>;
@@ -1466,10 +1562,15 @@ public:
             }
         }
     }
+}
 
-    static void
-    testInt64()
+TEST(NumberTest, int64)
+{
+    for (auto const mantissaScale :
+         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
     {
+        NumberMantissaScaleGuard const sg(mantissaScale);
+
         auto const scale = Number::getMantissaScale();
 
         // Control case
@@ -1479,12 +1580,12 @@ public:
 
         if (scale == MantissaRange::MantissaScale::Small)
         {
-            EXPECT_GT((std::numeric_limits<std::int64_t>::max()), (kINITIAL_XRP.drops()));
-            EXPECT_LT((Number::maxMantissa()), (kINITIAL_XRP.drops()));
-            Number const initalXrp{kINITIAL_XRP};
+            EXPECT_GT((std::numeric_limits<std::int64_t>::max()), (kInitialXrp.drops()));
+            EXPECT_LT((Number::maxMantissa()), (kInitialXrp.drops()));
+            Number const initalXrp{kInitialXrp};
             EXPECT_GT((initalXrp.exponent()), (0));
 
-            Number const maxInt64{Number::kMAX_REP};
+            Number const maxInt64{Number::kMaxRep};
             EXPECT_GT((maxInt64.exponent()), (0));
             // 85'070'591'730'234'615'865'843'651'857'942'052'864 - 38 digits
             EXPECT_EQ((power(maxInt64, 2)), (Number{85'070'591'730'234'62, 22}));
@@ -1496,12 +1597,12 @@ public:
         }
         else
         {
-            EXPECT_GT((std::numeric_limits<std::int64_t>::max()), (kINITIAL_XRP.drops()));
-            EXPECT_GT((Number::maxMantissa()), (kINITIAL_XRP.drops()));
-            Number const initalXrp{kINITIAL_XRP};
+            EXPECT_GT((std::numeric_limits<std::int64_t>::max()), (kInitialXrp.drops()));
+            EXPECT_GT((Number::maxMantissa()), (kInitialXrp.drops()));
+            Number const initalXrp{kInitialXrp};
             EXPECT_LE((initalXrp.exponent()), (0));
 
-            Number const maxInt64{Number::kMAX_REP};
+            Number const maxInt64{Number::kMaxRep};
             EXPECT_LE((maxInt64.exponent()), (0));
             // 85'070'591'730'234'615'847'396'907'784'232'501'249 - 38 digits
             EXPECT_EQ((power(maxInt64, 2)), (Number{85'070'591'730'234'615'85, 19}));
@@ -1518,122 +1619,6 @@ public:
                 (power(max, 2)), (Number{false, (maxMantissa / 10) - 1, 20, Number::Normalized{}}));
         }
     }
-
-    static void
-    testWithMantissaScales(void (*test)())
-    {
-        for (auto const scale :
-             {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
-        {
-            NumberMantissaScaleGuard const sg(scale);
-            test();
-        }
-    }
-};
-
-TEST_F(NumberTest, zero)
-{
-    testWithMantissaScales(testZero);
-}
-
-TEST_F(NumberTest, limits)
-{
-    testWithMantissaScales(testLimits);
-}
-
-TEST_F(NumberTest, to_string)
-{
-    testWithMantissaScales(testToString);
-}
-
-TEST_F(NumberTest, add)
-{
-    testWithMantissaScales(testAdd);
-}
-
-TEST_F(NumberTest, sub)
-{
-    testWithMantissaScales(testSub);
-}
-
-TEST_F(NumberTest, mul)
-{
-    testWithMantissaScales(testMul);
-}
-
-TEST_F(NumberTest, div)
-{
-    testWithMantissaScales(testDiv);
-}
-
-TEST_F(NumberTest, root)
-{
-    testWithMantissaScales(testRoot);
-}
-
-TEST_F(NumberTest, root2)
-{
-    testWithMantissaScales(testRoot2);
-}
-
-TEST_F(NumberTest, power1)
-{
-    testWithMantissaScales(testPower1);
-}
-
-TEST_F(NumberTest, power2)
-{
-    testWithMantissaScales(testPower2);
-}
-
-TEST_F(NumberTest, conversions)
-{
-    testWithMantissaScales(testConversions);
-}
-
-TEST_F(NumberTest, to_integer)
-{
-    testWithMantissaScales(testToInteger);
-}
-
-TEST_F(NumberTest, squelch)
-{
-    testWithMantissaScales(testSquelch);
-}
-
-TEST_F(NumberTest, relationals)
-{
-    testWithMantissaScales(testRelationals);
-}
-
-TEST_F(NumberTest, stream)
-{
-    testWithMantissaScales(testStream);
-}
-
-TEST_F(NumberTest, inc_dec)
-{
-    testWithMantissaScales(testIncDec);
-}
-
-TEST_F(NumberTest, to_st_amount)
-{
-    testWithMantissaScales(testToStAmount);
-}
-
-TEST_F(NumberTest, truncate)
-{
-    testWithMantissaScales(testTruncate);
-}
-
-TEST_F(NumberTest, rounding)
-{
-    testWithMantissaScales(testRounding);
-}
-
-TEST_F(NumberTest, int64)
-{
-    testWithMantissaScales(testInt64);
 }
 
 }  // namespace xrpl

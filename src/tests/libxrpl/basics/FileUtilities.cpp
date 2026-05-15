@@ -55,50 +55,40 @@ private:
 
 }  // namespace
 
-class FileUtilitiesTest : public ::testing::Test
+TEST(FileUtilitiesTest, get_file_contents)
 {
-public:
-    static void
-    testGetFileContents()
+    using namespace boost::system;
+
+    constexpr char const* kExpectedContents = "This file is very short. That's all we need.";
+
+    TempFile const file("test_file", "This is temporary text that should get overwritten");
+
+    error_code ec;
+    auto const path = file.file();
+
+    writeFileContents(ec, path, kExpectedContents);
+    EXPECT_TRUE(!ec);
+
     {
-        using namespace boost::system;
-
-        constexpr char const* kEXPECTED_CONTENTS = "This file is very short. That's all we need.";
-
-        TempFile const file("test_file", "This is temporary text that should get overwritten");
-
-        error_code ec;
-        auto const path = file.file();
-
-        writeFileContents(ec, path, kEXPECTED_CONTENTS);
+        // Test with no max
+        auto const good = getFileContents(ec, path);
         EXPECT_TRUE(!ec);
-
-        {
-            // Test with no max
-            auto const good = getFileContents(ec, path);
-            EXPECT_TRUE(!ec);
-            EXPECT_EQ(good, kEXPECTED_CONTENTS);
-        }
-
-        {
-            // Test with large max
-            auto const good = getFileContents(ec, path, kilobytes(1));
-            EXPECT_TRUE(!ec);
-            EXPECT_EQ(good, kEXPECTED_CONTENTS);
-        }
-
-        {
-            // Test with small max
-            auto const bad = getFileContents(ec, path, 16);
-            EXPECT_TRUE(ec && ec.value() == boost::system::errc::file_too_large);
-            EXPECT_TRUE(bad.empty());
-        }
+        EXPECT_EQ(good, kExpectedContents);
     }
-};
 
-TEST_F(FileUtilitiesTest, get_file_contents)
-{
-    testGetFileContents();
+    {
+        // Test with large max
+        auto const good = getFileContents(ec, path, kilobytes(1));
+        EXPECT_TRUE(!ec);
+        EXPECT_EQ(good, kExpectedContents);
+    }
+
+    {
+        // Test with small max
+        auto const bad = getFileContents(ec, path, 16);
+        EXPECT_TRUE(ec && ec.value() == boost::system::errc::file_too_large);
+        EXPECT_TRUE(bad.empty());
+    }
 }
 
 }  // namespace xrpl
