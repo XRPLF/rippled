@@ -356,11 +356,11 @@ ValidMPTPayment::finalize(
 {
     if (isTesSuccess(result))
     {
-        bool const invariantPasses = view.rules().enabled(featureMPTokensV2);
+        bool const invariantPasses = !view.rules().enabled(featureMPTokensV2);
         if (overflow_)
         {
             JLOG(j.fatal()) << "Invariant failed: OutstandingAmount overflow";
-            return !invariantPasses;
+            return invariantPasses;
         }
 
         auto const signedMax = static_cast<std::int64_t>(kMAX_MP_TOKEN_AMOUNT);
@@ -379,7 +379,7 @@ ValidMPTPayment::finalize(
                 JLOG(j.fatal()) << "Invariant failed: invalid OutstandingAmount balance "
                                 << data.outstanding[kI_BEFORE] << " " << data.outstanding[kI_AFTER]
                                 << " " << data.mptAmount;
-                return !invariantPasses;
+                return invariantPasses;
             }
         }
     }
@@ -518,7 +518,7 @@ ValidMPTTransfer::finalize(
             receivers > 0)
         {
             JLOG(j.fatal()) << "Invariant failed: invalid MPToken transfer between holders";
-            return !invariantPasses;
+            return invariantPasses;
         }
     }
 
