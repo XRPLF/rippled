@@ -3059,6 +3059,158 @@ public:
     }
 
     void
+    testTransferRateOverflowOffer(FeatureBitset features)
+    {
+        testcase("Transfer Rate Overflow Offer");
+
+        using namespace jtx;
+
+        auto const issuer = Account("issuer");
+        auto const taker = Account("taker");
+
+        // Each scenario below targets a specific overflow path. The expected
+        // behavior is the same in all cases: remove the unusable book tip offer
+        // and let the taker's crossing offer remain rather than returning
+        // tecINTERNAL with the poison offer still on-ledger.
+        {
+            Env env{*this, features};
+            env.fund(XRP(10'000), issuer, taker);
+            env.close();
+
+            MPTTester const token{
+                {.env = env, .issuer = issuer, .holders = {taker}, .transferFee = 10'000}};
+
+            // Covers BookStep::forEachOffer() offer preparation, where
+            // ownerGives = mulRatio(ofrAmt.out, transferRateOut) overflowed
+            // for an oversized MPT output with a transfer fee.
+            std::int64_t const poisonAmount = 8'500'000'000'000'000'000LL;
+            auto const poisonSeq = env.seq(issuer);
+            env(offer(issuer, XRP(1), token(poisonAmount)));
+            env.close();
+
+            auto const poisonKeylet = keylet::offer(issuer.id(), poisonSeq);
+            BEAST_EXPECT(env.le(poisonKeylet) != nullptr);
+
+            auto const takerSeq = env.seq(taker);
+            env(offer(taker, token(100), XRP(100)));
+            env.close();
+
+            BEAST_EXPECT(env.le(poisonKeylet) == nullptr);
+            BEAST_EXPECT(env.le(keylet::offer(taker.id(), takerSeq)) != nullptr);
+        }
+
+        {
+            auto const gwA = Account("gatewayA");
+            auto const gwB = Account("gatewayB");
+            auto const alice = Account("alice");
+            auto const mallory = Account("mallory");
+
+            Env env{*this, features};
+            env.fund(XRP(10'000), gwA, gwB, alice, mallory);
+            env.close();
+
+            MPTTester const tokenA{
+                {.env = env, .issuer = gwA, .holders = {alice, mallory}, .transferFee = 50'000}};
+
+            MPTTester const tokenB{{.env = env, .issuer = gwB, .holders = {alice, mallory}}};
+
+            env(pay(gwA, alice, tokenA(1'000)));
+
+            // Covers BookStep::forEachOffer() offer preparation, where
+            // stpAmt.in = mulRatio(ofrAmt.in, transferRateIn) overflowed.
+            // The MPT/MPT amounts keep the offer quality reachable while
+            // applying tokenA's transfer rate overflows the input side.
+            std::int64_t const poisonPays = 6'148'914'691'236'517'205LL;
+            std::int64_t const poisonGets = 34'000'000'000'000'000LL;
+            env(pay(gwB, mallory, tokenB(poisonGets)));
+
+            auto const poisonSeq = env.seq(mallory);
+            env(offer(mallory, tokenA(poisonPays), tokenB(poisonGets)));
+            env.close();
+
+            auto const poisonKeylet = keylet::offer(mallory.id(), poisonSeq);
+            BEAST_EXPECT(env.le(poisonKeylet) != nullptr);
+
+            auto const aliceSeq = env.seq(alice);
+            env(offer(alice, tokenB(1), tokenA(100)));
+            env.close();
+
+            BEAST_EXPECT(env.le(poisonKeylet) == nullptr);
+            BEAST_EXPECT(env.le(keylet::offer(alice.id(), aliceSeq)) != nullptr);
+        }
+
+        {
+            Env env{*this, features};
+            env.fund(XRP(10'000), issuer, taker);
+            env.close();
+
+            MPTTester const token{
+                {.env = env, .issuer = issuer, .holders = {taker}, .maxAmt = kMAX_MP_TOKEN_AMOUNT}};
+
+            // Covers BookStep::revImp() output reduction. The issuer's offer
+            // is fully funded and has no transfer fee, so offer preparation
+            // succeeds. The taker asks for slightly less output, forcing
+            // limitStepOut() to reduce the offer; that strict reduction used
+            // to overflow and leave the poison offer on the book.
+            auto const funded = 1'844'674'407'370'955'162LL;
+            auto const offerOut = funded + 1;
+
+            auto const poisonSeq = env.seq(issuer);
+            env(offer(issuer, XRP(1), token(offerOut)));
+            env.close();
+
+            auto const poisonKeylet = keylet::offer(issuer.id(), poisonSeq);
+            BEAST_EXPECT(env.le(poisonKeylet) != nullptr);
+
+            auto const takerSeq = env.seq(taker);
+            env(offer(taker, token(funded), XRP(1)));
+            env.close();
+
+            BEAST_EXPECT(env.le(poisonKeylet) == nullptr);
+            BEAST_EXPECT(env.le(keylet::offer(taker.id(), takerSeq)) != nullptr);
+            BEAST_EXPECT(env.balance(taker, token) == token(0));
+        }
+
+        {
+            auto const poisonMaker = Account("poisonMaker");
+
+            Env env{*this, features};
+            env.fund(XRP(10'000), issuer, poisonMaker, taker);
+            env.close();
+
+            MPTTester const token{
+                {.env = env,
+                 .issuer = issuer,
+                 .holders = {poisonMaker, taker},
+                 .maxAmt = kMAX_MP_TOKEN_AMOUNT}};
+
+            // Covers OfferStream::step() filtering. The offer is mostly
+            // funded, but reducing it to the actual owner funds inside
+            // shouldRmSmallIncreasedQOffer() used to overflow before BookStep
+            // saw the offer.
+            auto const funded = 1'844'674'407'370'955'162LL;
+            auto const offerOut = funded + 1;
+            env(pay(issuer, poisonMaker, token(funded)));
+
+            auto const poisonSeq = env.seq(poisonMaker);
+            env(offer(poisonMaker, XRP(1), token(offerOut)));
+            env.close();
+
+            auto const poisonKeylet = keylet::offer(poisonMaker.id(), poisonSeq);
+            BEAST_EXPECT(env.le(poisonKeylet) != nullptr);
+
+            auto const takerSeq = env.seq(taker);
+            env(offer(taker, token(1), XRP(1)));
+            env.close();
+
+            BEAST_EXPECT(env.le(poisonKeylet) == nullptr);
+            BEAST_EXPECT(env.le(keylet::offer(taker.id(), takerSeq)) != nullptr);
+            BEAST_EXPECT(env.balance(poisonMaker, token) == token(funded));
+            BEAST_EXPECT(env.balance(taker, token) == token(0));
+        }
+    }
+
+    void
     testSelfCrossOffer1(FeatureBitset features)
     {
         // The following test verifies some correct but slightly surprising
@@ -4789,6 +4941,7 @@ public:
         testSellOffer(features);
         testSellWithFillOrKill(features);
         testTransferRateOffer(features);
+        testTransferRateOverflowOffer(features);
         testSelfCrossOffer(features);
         testSelfIssueOffer(features);
         testDirectToDirectPath(features);

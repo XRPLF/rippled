@@ -17,6 +17,7 @@
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Concepts.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTAmount.h>
@@ -29,6 +30,8 @@
 #include <algorithm>
 #include <memory>
 #include <optional>
+#include <stdexcept>
+#include <type_traits>
 
 namespace xrpl {
 
@@ -299,7 +302,28 @@ TOfferStreamBase<TIn, TOut>::step()
             continue;
         }
 
-        if (shouldRmSmallIncreasedQOffer<TIn, TOut>())
+        // Partially funded offers can be reduced before BookStep sees them.
+        // If that strict reduction overflows under MPTokensV2, remove the
+        // unusable offer instead of leaving it at the book tip.
+        bool shouldRemoveSmallIncreasedQOffer = false;
+        try
+        {
+            shouldRemoveSmallIncreasedQOffer = shouldRmSmallIncreasedQOffer<TIn, TOut>();
+        }
+        catch (std::overflow_error const&)
+        {
+            if (view_.rules().enabled(featureMPTokensV2))
+            {
+                permRmOffer(entry->key());
+                JLOG(j_.trace()) << "Removing offer with overflowing reduced quality "
+                                 << entry->key();
+                offer_ = TOffer<TIn, TOut>{};
+                continue;
+            }
+            throw;
+        }
+
+        if (shouldRemoveSmallIncreasedQOffer)
         {
             auto const originalFunds = accountFundsHelper(
                 cancelView_,
