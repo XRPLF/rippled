@@ -12,8 +12,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 
-#include <memory>
-
 namespace xrpl {
 
 void

@@ -7,7 +7,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
 
-#include <memory>
 #include <unordered_set>
 
 namespace xrpl {

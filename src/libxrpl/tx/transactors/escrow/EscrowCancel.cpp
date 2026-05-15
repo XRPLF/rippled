@@ -23,7 +23,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <memory>
 #include <variant>
 
 namespace xrpl {

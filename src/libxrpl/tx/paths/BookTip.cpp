@@ -8,8 +8,6 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 
-#include <memory>
-
 namespace xrpl {
 
 BookTip::BookTip(ApplyView& view, Book const& book)

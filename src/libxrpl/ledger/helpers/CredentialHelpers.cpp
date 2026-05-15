@@ -25,7 +25,6 @@
 
 #include <cstdint>
 #include <limits>
-#include <memory>
 #include <set>
 #include <unordered_set>
 #include <utility>

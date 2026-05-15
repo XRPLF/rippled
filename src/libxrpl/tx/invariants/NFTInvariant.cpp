@@ -20,7 +20,6 @@
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
 
 #include <cstddef>
-#include <memory>
 #include <optional>
 
 namespace xrpl {

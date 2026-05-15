@@ -31,7 +31,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <cstdint>
-#include <memory>
 #include <optional>
 #include <set>
 

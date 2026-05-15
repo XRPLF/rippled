@@ -27,7 +27,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <algorithm>
-#include <memory>
 #include <optional>
 
 namespace xrpl {

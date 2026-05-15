@@ -7,7 +7,6 @@
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 
-#include <memory>
 #include <mutex>
 #include <optional>
 

@@ -18,7 +18,6 @@
 #include <cstddef>
 #include <exception>
 #include <functional>
-#include <memory>
 #include <optional>
 #include <tuple>
 #include <utility>

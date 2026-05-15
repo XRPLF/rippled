@@ -9,7 +9,6 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 
-#include <memory>
 #include <optional>
 #include <vector>
 

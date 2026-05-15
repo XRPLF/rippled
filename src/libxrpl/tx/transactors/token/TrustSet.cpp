@@ -27,7 +27,6 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <cstdint>
-#include <memory>
 #include <unordered_set>
 
 namespace {

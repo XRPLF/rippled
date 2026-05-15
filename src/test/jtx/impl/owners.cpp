@@ -10,8 +10,6 @@
 #include <xrpl/protocol/SField.h>
 
 #include <cstdint>
-#include <memory>
-
 namespace xrpl {
 namespace detail {
 

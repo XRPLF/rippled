@@ -26,8 +26,6 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <memory>
-
 namespace xrpl {
 
 bool

@@ -13,8 +13,6 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <cstddef>
-#include <memory>
-
 namespace xrpl {
 
 NotTEC

@@ -8,8 +8,6 @@
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/XRPAmount.h>
 
-#include <memory>
-
 namespace xrpl::detail {
 
 // Helper class that buffers modifications

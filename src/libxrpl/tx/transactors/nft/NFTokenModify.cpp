@@ -14,8 +14,6 @@
 #include <xrpl/protocol/nft.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <memory>
-
 namespace xrpl {
 
 NotTEC

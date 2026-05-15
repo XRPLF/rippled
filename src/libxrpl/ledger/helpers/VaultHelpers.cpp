@@ -7,7 +7,6 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 
-#include <memory>
 #include <optional>
 
 namespace xrpl {

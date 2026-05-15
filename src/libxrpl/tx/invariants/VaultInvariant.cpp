@@ -23,7 +23,6 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <memory>
 #include <optional>
 #include <variant>
 #include <vector>

@@ -15,8 +15,6 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 
-#include <memory>
-
 namespace xrpl {
 
 void

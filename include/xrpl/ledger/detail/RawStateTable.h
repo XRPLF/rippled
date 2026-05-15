@@ -87,7 +87,7 @@ private:
         SLE::pointer sle;
 
         // Constructor needed for emplacement in std::map
-        SleAction(Action action, SLE::ref sle) : action(action), sle(sle)
+        SleAction(Action action, SLE::pointer sle) : action(action), sle(std::move(sle))
         {
         }
     };

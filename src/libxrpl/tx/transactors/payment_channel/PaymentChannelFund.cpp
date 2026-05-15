@@ -18,8 +18,6 @@
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
 
-#include <memory>
-
 namespace xrpl {
 
 TxConsequences

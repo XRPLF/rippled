@@ -12,8 +12,6 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 
-#include <memory>
-
 namespace xrpl {
 
 TER

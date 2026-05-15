@@ -16,7 +16,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
 
-#include <memory>
 #include <utility>
 
 namespace xrpl {

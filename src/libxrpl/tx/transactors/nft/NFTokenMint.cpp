@@ -27,7 +27,6 @@
 #include <cstdint>
 #include <cstring>
 #include <iterator>  // IWYU pragma: keep
-#include <memory>
 #include <utility>
 
 namespace xrpl {

@@ -27,7 +27,6 @@
 #include <xrpl/tx/transactors/dex/AMMWithdraw.h>
 
 #include <cstdint>
-#include <memory>
 #include <optional>
 #include <tuple>
 

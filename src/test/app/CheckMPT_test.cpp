@@ -42,7 +42,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <iostream>
-#include <memory>
 #include <ostream>
 #include <stdexcept>
 #include <string>

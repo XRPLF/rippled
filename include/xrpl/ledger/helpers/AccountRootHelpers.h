@@ -9,7 +9,6 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 
-#include <memory>
 #include <set>
 #include <vector>
 

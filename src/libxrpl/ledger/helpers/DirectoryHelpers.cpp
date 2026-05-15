@@ -13,8 +13,6 @@
 
 #include <cstdint>
 #include <functional>
-#include <memory>
-
 namespace xrpl {
 
 bool

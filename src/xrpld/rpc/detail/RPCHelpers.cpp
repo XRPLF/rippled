@@ -38,7 +38,6 @@
 #include <cstdint>
 #include <cstring>
 #include <functional>
-#include <memory>
 #include <optional>
 #include <tuple>
 #include <utility>

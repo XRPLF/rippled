@@ -16,8 +16,6 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <algorithm>
-#include <memory>
-
 namespace xrpl {
 
 NotTEC
