@@ -132,22 +132,22 @@ struct BaseUintTest : public ::testing::Test
         std::unordered_set<test96, HardenedHash<>> uset;
 
         Blob const raw{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
-        EXPECT_TRUE(test96::kBYTES == raw.size());
+        EXPECT_EQ(test96::kBYTES, raw.size());
 
         test96 u = test96::fromRaw(raw);
         uset.insert(u);
-        EXPECT_TRUE(raw.size() == u.size());
-        EXPECT_TRUE(to_string(u) == "0102030405060708090A0B0C");
-        EXPECT_TRUE(toShortString(u) == "01020304...");
-        EXPECT_TRUE(*u.data() == 1);
-        EXPECT_TRUE(u.signum() == 1);
+        EXPECT_EQ(raw.size(), u.size());
+        EXPECT_EQ(to_string(u), "0102030405060708090A0B0C");
+        EXPECT_EQ(toShortString(u), "01020304...");
+        EXPECT_EQ(*u.data(), 1);
+        EXPECT_EQ(u.signum(), 1);
         EXPECT_TRUE(!!u);
         EXPECT_TRUE(!u.isZero());
         EXPECT_TRUE(u.isNonZero());
         unsigned char t = 0;
         for (auto& d : u)
         {
-            EXPECT_TRUE(d == ++t);
+            EXPECT_EQ(d, ++t);
         }
 
         // Test hash_append by "hashing" with a no-op hasher (h)
@@ -156,56 +156,56 @@ struct BaseUintTest : public ::testing::Test
         Nonhash<96> h{};
         hash_append(h, u);
         test96 const w = test96::fromRaw(std::vector<std::uint8_t>(h.data.begin(), h.data.end()));
-        EXPECT_TRUE(w == u);
+        EXPECT_EQ(w, u);
 
         test96 v{~u};
         uset.insert(v);
-        EXPECT_TRUE(to_string(v) == "FEFDFCFBFAF9F8F7F6F5F4F3");
-        EXPECT_TRUE(toShortString(v) == "FEFDFCFB...");
-        EXPECT_TRUE(*v.data() == 0xfe);
-        EXPECT_TRUE(v.signum() == 1);
+        EXPECT_EQ(to_string(v), "FEFDFCFBFAF9F8F7F6F5F4F3");
+        EXPECT_EQ(toShortString(v), "FEFDFCFB...");
+        EXPECT_EQ(*v.data(), 0xfe);
+        EXPECT_EQ(v.signum(), 1);
         EXPECT_TRUE(!!v);
         EXPECT_TRUE(!v.isZero());
         EXPECT_TRUE(v.isNonZero());
         t = 0xff;
         for (auto& d : v)
         {
-            EXPECT_TRUE(d == --t);
+            EXPECT_EQ(d, --t);
         }
 
-        EXPECT_TRUE(u < v);
-        EXPECT_TRUE(v > u);
+        EXPECT_LT(u, v);
+        EXPECT_GT(v, u);
 
         v = u;
-        EXPECT_TRUE(v == u);
+        EXPECT_EQ(v, u);
 
         test96 z{beast::kZERO};
         uset.insert(z);
-        EXPECT_TRUE(to_string(z) == "000000000000000000000000");
-        EXPECT_TRUE(toShortString(z) == "00000000...");
-        EXPECT_TRUE(*z.data() == 0);
-        EXPECT_TRUE(*z.begin() == 0);
-        EXPECT_TRUE(*std::prev(z.end(), 1) == 0);
-        EXPECT_TRUE(z.signum() == 0);
+        EXPECT_EQ(to_string(z), "000000000000000000000000");
+        EXPECT_EQ(toShortString(z), "00000000...");
+        EXPECT_EQ(*z.data(), 0);
+        EXPECT_EQ(*z.begin(), 0);
+        EXPECT_EQ(*std::prev(z.end(), 1), 0);
+        EXPECT_EQ(z.signum(), 0);
         EXPECT_TRUE(!z);
         EXPECT_TRUE(z.isZero());
         EXPECT_TRUE(!z.isNonZero());
         for (auto& d : z)
         {
-            EXPECT_TRUE(d == 0);
+            EXPECT_EQ(d, 0);
         }
 
         test96 n{z};
         n++;
-        EXPECT_TRUE(n == test96(1));
+        EXPECT_EQ(n, test96(1));
         n--;
-        EXPECT_TRUE(n == beast::kZERO);
-        EXPECT_TRUE(n == z);
+        EXPECT_EQ(n, beast::kZERO);
+        EXPECT_EQ(n, z);
         n--;
-        EXPECT_TRUE(to_string(n) == "FFFFFFFFFFFFFFFFFFFFFFFF");
-        EXPECT_TRUE(toShortString(n) == "FFFFFFFF...");
+        EXPECT_EQ(to_string(n), "FFFFFFFFFFFFFFFFFFFFFFFF");
+        EXPECT_EQ(toShortString(n), "FFFFFFFF...");
         n = beast::kZERO;
-        EXPECT_TRUE(n == z);
+        EXPECT_EQ(n, z);
 
         test96 zp1{z};
         zp1++;
@@ -213,14 +213,14 @@ struct BaseUintTest : public ::testing::Test
         zm1--;
         test96 const x{zm1 ^ zp1};
         uset.insert(x);
-        EXPECT_TRUE(to_string(x) == "FFFFFFFFFFFFFFFFFFFFFFFE") << to_string(x);
-        EXPECT_TRUE(toShortString(x) == "FFFFFFFF...") << toShortString(x);
+        EXPECT_EQ(to_string(x), "FFFFFFFFFFFFFFFFFFFFFFFE") << to_string(x);
+        EXPECT_EQ(toShortString(x), "FFFFFFFF...") << toShortString(x);
 
-        EXPECT_TRUE(uset.size() == 4);
+        EXPECT_EQ(uset.size(), 4);
 
         test96 tmp;
         EXPECT_TRUE(tmp.parseHex(to_string(u)));
-        EXPECT_TRUE(tmp == u);
+        EXPECT_EQ(tmp, u);
         tmp = z;
 
         // fails with extra char
@@ -247,7 +247,7 @@ struct BaseUintTest : public ::testing::Test
             s1[i] = '1';
 
             EXPECT_TRUE(tmp.parseHex(s1));
-            EXPECT_TRUE(to_string(tmp) == s1);
+            EXPECT_EQ(to_string(tmp), s1);
         }
 
         // Walking 0s:
@@ -257,7 +257,7 @@ struct BaseUintTest : public ::testing::Test
             s1[i] = '0';
 
             EXPECT_TRUE(tmp.parseHex(s1));
-            EXPECT_TRUE(to_string(tmp) == s1);
+            EXPECT_EQ(to_string(tmp), s1);
         }
 
         // Constexpr constructors
@@ -301,7 +301,7 @@ struct BaseUintTest : public ::testing::Test
                 }
                 catch (std::invalid_argument const& e)
                 {
-                    EXPECT_TRUE(e.what() == std::string("invalid length for hex string"));
+                    EXPECT_EQ(e.what(), std::string("invalid length for hex string"));
                     caught = true;
                 }
                 EXPECT_TRUE(caught);
@@ -319,7 +319,7 @@ struct BaseUintTest : public ::testing::Test
                 }
                 catch (std::range_error const& e)
                 {
-                    EXPECT_TRUE(e.what() == std::string("invalid hex character"));
+                    EXPECT_EQ(e.what(), std::string("invalid hex character"));
                     caught = true;
                 }
                 EXPECT_TRUE(caught);
@@ -348,7 +348,7 @@ struct BaseUintTest : public ::testing::Test
             {
                 test96 t96;
                 EXPECT_TRUE(t96.parseHex(t.str));
-                EXPECT_TRUE(t96 == t.tst);
+                EXPECT_EQ(t96, t.tst);
             }
         }
     }

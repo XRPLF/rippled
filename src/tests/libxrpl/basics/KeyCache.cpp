@@ -30,17 +30,17 @@ public:
         {
             Cache c("test", LedgerIndex(1), 2s, clock, j);
 
-            EXPECT_TRUE(c.size() == 0);
+            EXPECT_EQ(c.size(), 0);
             EXPECT_TRUE(c.insert("one"));
             EXPECT_TRUE(!c.insert("one"));
-            EXPECT_TRUE(c.size() == 1);
+            EXPECT_EQ(c.size(), 1);
             EXPECT_TRUE(c.touchIfExists("one"));
             ++clock;
             c.sweep();
-            EXPECT_TRUE(c.size() == 1);
+            EXPECT_EQ(c.size(), 1);
             ++clock;
             c.sweep();
-            EXPECT_TRUE(c.size() == 0);
+            EXPECT_EQ(c.size(), 0);
             EXPECT_TRUE(!c.touchIfExists("one"));
         }
 
@@ -49,16 +49,16 @@ public:
             Cache c("test", LedgerIndex(2), 2s, clock, j);
 
             EXPECT_TRUE(c.insert("one"));
-            EXPECT_TRUE(c.size() == 1);
+            EXPECT_EQ(c.size(), 1);
             EXPECT_TRUE(c.insert("two"));
-            EXPECT_TRUE(c.size() == 2);
+            EXPECT_EQ(c.size(), 2);
             ++clock;
             c.sweep();
-            EXPECT_TRUE(c.size() == 2);
+            EXPECT_EQ(c.size(), 2);
             EXPECT_TRUE(c.touchIfExists("two"));
             ++clock;
             c.sweep();
-            EXPECT_TRUE(c.size() == 1);
+            EXPECT_EQ(c.size(), 1);
         }
 
         // Insert three items (1 over limit), sweep
@@ -71,9 +71,9 @@ public:
             ++clock;
             EXPECT_TRUE(c.insert("three"));
             ++clock;
-            EXPECT_TRUE(c.size() == 3);
+            EXPECT_EQ(c.size(), 3);
             c.sweep();
-            EXPECT_TRUE(c.size() < 3);
+            EXPECT_LT(c.size(), 3);
         }
     }
 };

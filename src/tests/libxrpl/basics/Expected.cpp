@@ -28,9 +28,9 @@ struct ExpectedTest : public ::testing::Test
             auto const expected = []() -> Expected<std::string, TER> { return "Valid value"; }();
             EXPECT_TRUE(expected);
             EXPECT_TRUE(expected.has_value());
-            EXPECT_TRUE(expected.value() == "Valid value");
-            EXPECT_TRUE(*expected == "Valid value");
-            EXPECT_TRUE(expected->at(0) == 'V');
+            EXPECT_EQ(expected.value(), "Valid value");
+            EXPECT_EQ(*expected, "Valid value");
+            EXPECT_EQ(expected->at(0), 'V');
 
             bool throwOccurred = false;
             try
@@ -40,7 +40,7 @@ struct ExpectedTest : public ::testing::Test
             }
             catch (std::runtime_error const& e)
             {
-                EXPECT_TRUE(e.what() == std::string("bad expected access"));
+                EXPECT_EQ(e.what(), std::string("bad expected access"));
                 throwOccurred = true;
             }
             EXPECT_TRUE(throwOccurred);
@@ -50,11 +50,11 @@ struct ExpectedTest : public ::testing::Test
             auto expected = []() -> Expected<std::string, TER> { return "Valid value"; }();
             EXPECT_TRUE(expected);
             EXPECT_TRUE(expected.has_value());
-            EXPECT_TRUE(expected.value() == "Valid value");
-            EXPECT_TRUE(*expected == "Valid value");
-            EXPECT_TRUE(expected->at(0) == 'V');
+            EXPECT_EQ(expected.value(), "Valid value");
+            EXPECT_EQ(*expected, "Valid value");
+            EXPECT_EQ(expected->at(0), 'V');
             std::string const mv = std::move(*expected);
-            EXPECT_TRUE(mv == "Valid value");
+            EXPECT_EQ(mv, "Valid value");
 
             bool throwOccurred = false;
             try
@@ -64,7 +64,7 @@ struct ExpectedTest : public ::testing::Test
             }
             catch (std::runtime_error const& e)
             {
-                EXPECT_TRUE(e.what() == std::string("bad expected access"));
+                EXPECT_EQ(e.what(), std::string("bad expected access"));
                 throwOccurred = true;
             }
             EXPECT_TRUE(throwOccurred);
@@ -74,8 +74,8 @@ struct ExpectedTest : public ::testing::Test
             auto expected = []() -> Expected<std::uint32_t, std::uint16_t> { return 1; }();
             EXPECT_TRUE(expected);
             EXPECT_TRUE(expected.has_value());
-            EXPECT_TRUE(expected.value() == 1);
-            EXPECT_TRUE(*expected == 1);
+            EXPECT_EQ(expected.value(), 1);
+            EXPECT_EQ(*expected, 1);
 
             bool throwOccurred = false;
             try
@@ -85,7 +85,7 @@ struct ExpectedTest : public ::testing::Test
             }
             catch (std::runtime_error const& e)
             {
-                EXPECT_TRUE(e.what() == std::string("bad expected access"));
+                EXPECT_EQ(e.what(), std::string("bad expected access"));
                 throwOccurred = true;
             }
             EXPECT_TRUE(throwOccurred);
@@ -97,7 +97,7 @@ struct ExpectedTest : public ::testing::Test
             }();
             EXPECT_TRUE(!expected);
             EXPECT_TRUE(!expected.has_value());
-            EXPECT_TRUE(expected.error() == telLOCAL_ERROR);
+            EXPECT_EQ(expected.error(), telLOCAL_ERROR);
 
             bool throwOccurred = false;
             try
@@ -107,7 +107,7 @@ struct ExpectedTest : public ::testing::Test
             }
             catch (std::runtime_error const& e)
             {
-                EXPECT_TRUE(e.what() == std::string("bad expected access"));
+                EXPECT_EQ(e.what(), std::string("bad expected access"));
                 throwOccurred = true;
             }
             EXPECT_TRUE(throwOccurred);
@@ -118,7 +118,7 @@ struct ExpectedTest : public ::testing::Test
             auto expected = [&err]() -> Expected<std::string, TER> { return Unexpected(err); }();
             EXPECT_TRUE(!expected);
             EXPECT_TRUE(!expected.has_value());
-            EXPECT_TRUE(expected.error() == telLOCAL_ERROR);
+            EXPECT_EQ(expected.error(), telLOCAL_ERROR);
 
             bool throwOccurred = false;
             try
@@ -128,7 +128,7 @@ struct ExpectedTest : public ::testing::Test
             }
             catch (std::runtime_error const& e)
             {
-                EXPECT_TRUE(e.what() == std::string("bad expected access"));
+                EXPECT_EQ(e.what(), std::string("bad expected access"));
                 throwOccurred = true;
             }
             EXPECT_TRUE(throwOccurred);
@@ -140,7 +140,7 @@ struct ExpectedTest : public ::testing::Test
             }();
             EXPECT_TRUE(!expected);
             EXPECT_TRUE(!expected.has_value());
-            EXPECT_TRUE(expected.error() == std::string("Not what is expected!"));
+            EXPECT_EQ(expected.error(), std::string("Not what is expected!"));
         }
         // Test error construction of string from const char*.
         {
@@ -149,9 +149,9 @@ struct ExpectedTest : public ::testing::Test
             }();
             EXPECT_TRUE(!expected);
             EXPECT_TRUE(!expected.has_value());
-            EXPECT_TRUE(expected.error() == "Not what is expected!");
+            EXPECT_EQ(expected.error(), "Not what is expected!");
             std::string const s(std::move(expected.error()));
-            EXPECT_TRUE(s == "Not what is expected!");
+            EXPECT_EQ(s, "Not what is expected!");
         }
         // Test non-error const construction of Expected<void, T>.
         {
@@ -165,7 +165,7 @@ struct ExpectedTest : public ::testing::Test
             }
             catch (std::runtime_error const& e)
             {
-                EXPECT_TRUE(e.what() == std::string("bad expected access"));
+                EXPECT_EQ(e.what(), std::string("bad expected access"));
                 throwOccurred = true;
             }
             EXPECT_TRUE(throwOccurred);
@@ -182,7 +182,7 @@ struct ExpectedTest : public ::testing::Test
             }
             catch (std::runtime_error const& e)
             {
-                EXPECT_TRUE(e.what() == std::string("bad expected access"));
+                EXPECT_EQ(e.what(), std::string("bad expected access"));
                 throwOccurred = true;
             }
             EXPECT_TRUE(throwOccurred);
@@ -193,7 +193,7 @@ struct ExpectedTest : public ::testing::Test
                 return Unexpected("Not what is expected!");
             }();
             EXPECT_TRUE(!expected);
-            EXPECT_TRUE(expected.error() == "Not what is expected!");
+            EXPECT_EQ(expected.error(), "Not what is expected!");
         }
         // Test error non-const construction of Expected<void, T>.
         {
@@ -201,9 +201,9 @@ struct ExpectedTest : public ::testing::Test
                 return Unexpected("Not what is expected!");
             }();
             EXPECT_TRUE(!expected);
-            EXPECT_TRUE(expected.error() == "Not what is expected!");
+            EXPECT_EQ(expected.error(), "Not what is expected!");
             std::string const s(std::move(expected.error()));
-            EXPECT_TRUE(s == "Not what is expected!");
+            EXPECT_EQ(s, "Not what is expected!");
         }
         // Test a case that previously unintentionally returned an array.
 #if BOOST_VERSION >= 107500

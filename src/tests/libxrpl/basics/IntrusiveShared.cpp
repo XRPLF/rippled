@@ -197,17 +197,17 @@ public:
             TIBase::ResetStatesGuard const rsg{true};
 
             TIBase const b;
-            EXPECT_TRUE(b.useCount() == 1);
+            EXPECT_EQ(b.useCount(), 1);
             b.addWeakRef();
-            EXPECT_TRUE(b.useCount() == 1);
+            EXPECT_EQ(b.useCount(), 1);
             auto s = b.releaseStrongRef();
-            EXPECT_TRUE(s == ReleaseStrongRefAction::PartialDestroy);
-            EXPECT_TRUE(b.useCount() == 0);
+            EXPECT_EQ(s, ReleaseStrongRefAction::PartialDestroy);
+            EXPECT_EQ(b.useCount(), 0);
             TIBase const* pb = &b;
             partialDestructorFinished(&pb);
             EXPECT_TRUE(!pb);
             auto w = b.releaseWeakRef();
-            EXPECT_TRUE(w == ReleaseWeakRefAction::Destroy);
+            EXPECT_EQ(w, ReleaseWeakRefAction::Destroy);
         }
 
         std::vector<SharedIntrusive<TIBase>> strong;
@@ -218,42 +218,42 @@ public:
             using enum TrackedState;
             auto b = makeSharedIntrusive<TIBase>();
             auto id = b->id;
-            EXPECT_TRUE(TIBase::getState(id) == Alive);
-            EXPECT_TRUE(b->useCount() == 1);
+            EXPECT_EQ(TIBase::getState(id), Alive);
+            EXPECT_EQ(b->useCount(), 1);
             for (int i = 0; i < 10; ++i)
             {
                 strong.push_back(b);
             }
             b.reset();
-            EXPECT_TRUE(TIBase::getState(id) == Alive);
+            EXPECT_EQ(TIBase::getState(id), Alive);
             strong.resize(strong.size() - 1);
-            EXPECT_TRUE(TIBase::getState(id) == Alive);
+            EXPECT_EQ(TIBase::getState(id), Alive);
             strong.clear();
-            EXPECT_TRUE(TIBase::getState(id) == Deleted);
+            EXPECT_EQ(TIBase::getState(id), Deleted);
 
             b = makeSharedIntrusive<TIBase>();
             id = b->id;
-            EXPECT_TRUE(TIBase::getState(id) == Alive);
-            EXPECT_TRUE(b->useCount() == 1);
+            EXPECT_EQ(TIBase::getState(id), Alive);
+            EXPECT_EQ(b->useCount(), 1);
             for (int i = 0; i < 10; ++i)
             {
                 weak.emplace_back(b);
-                EXPECT_TRUE(b->useCount() == 1);
+                EXPECT_EQ(b->useCount(), 1);
             }
-            EXPECT_TRUE(TIBase::getState(id) == Alive);
+            EXPECT_EQ(TIBase::getState(id), Alive);
             weak.resize(weak.size() - 1);
-            EXPECT_TRUE(TIBase::getState(id) == Alive);
+            EXPECT_EQ(TIBase::getState(id), Alive);
             b.reset();
-            EXPECT_TRUE(TIBase::getState(id) == PartiallyDeleted);
+            EXPECT_EQ(TIBase::getState(id), PartiallyDeleted);
             while (!weak.empty())
             {
                 weak.resize(weak.size() - 1);
                 if (!weak.empty())
                 {
-                    EXPECT_TRUE(TIBase::getState(id) == PartiallyDeleted);
+                    EXPECT_EQ(TIBase::getState(id), PartiallyDeleted);
                 }
             }
-            EXPECT_TRUE(TIBase::getState(id) == Deleted);
+            EXPECT_EQ(TIBase::getState(id), Deleted);
         }
         {
             TIBase::ResetStatesGuard const rsg{true};
@@ -261,23 +261,23 @@ public:
             using enum TrackedState;
             auto b = makeSharedIntrusive<TIBase>();
             auto id = b->id;
-            EXPECT_TRUE(TIBase::getState(id) == Alive);
+            EXPECT_EQ(TIBase::getState(id), Alive);
             WeakIntrusive<TIBase> w{b};
-            EXPECT_TRUE(TIBase::getState(id) == Alive);
+            EXPECT_EQ(TIBase::getState(id), Alive);
             auto s = w.lock();
             EXPECT_TRUE(s && s->useCount() == 2);
             b.reset();
             EXPECT_TRUE(TIBase::getState(id) == Alive);
             EXPECT_TRUE(s && s->useCount() == 1);
             s.reset();
-            EXPECT_TRUE(TIBase::getState(id) == PartiallyDeleted);
+            EXPECT_EQ(TIBase::getState(id), PartiallyDeleted);
             EXPECT_TRUE(w.expired());
             s = w.lock();
             // Cannot convert a weak pointer to a strong pointer if object is
             // already partially deleted
             EXPECT_TRUE(!s);
             w.reset();
-            EXPECT_TRUE(TIBase::getState(id) == Deleted);
+            EXPECT_EQ(TIBase::getState(id), Deleted);
         }
         {
             TIBase::ResetStatesGuard const rsg{true};
@@ -287,7 +287,7 @@ public:
             swu b = makeSharedIntrusive<TIBase>();
             EXPECT_TRUE(b.isStrong() && b.useCount() == 1);
             auto id = b.get()->id;
-            EXPECT_TRUE(TIBase::getState(id) == Alive);
+            EXPECT_EQ(TIBase::getState(id), Alive);
             swu w = b;
             EXPECT_TRUE(TIBase::getState(id) == Alive);
             EXPECT_TRUE(w.isStrong() && b.useCount() == 2);
@@ -298,18 +298,18 @@ public:
             s.convertToStrong();
             EXPECT_TRUE(s.isStrong() && b.useCount() == 2);
             b.reset();
-            EXPECT_TRUE(TIBase::getState(id) == Alive);
-            EXPECT_TRUE(s.useCount() == 1);
+            EXPECT_EQ(TIBase::getState(id), Alive);
+            EXPECT_EQ(s.useCount(), 1);
             EXPECT_TRUE(!w.expired());
             s.reset();
-            EXPECT_TRUE(TIBase::getState(id) == PartiallyDeleted);
+            EXPECT_EQ(TIBase::getState(id), PartiallyDeleted);
             EXPECT_TRUE(w.expired());
             w.convertToStrong();
             // Cannot convert a weak pointer to a strong pointer if object is
             // already partially deleted
             EXPECT_TRUE(w.isWeak());
             w.reset();
-            EXPECT_TRUE(TIBase::getState(id) == Deleted);
+            EXPECT_EQ(TIBase::getState(id), Deleted);
         }
         {
             // Testing SharedWeakUnion assignment operator
@@ -322,46 +322,46 @@ public:
             auto id1 = strong1->id;
             auto id2 = strong2->id;
 
-            EXPECT_TRUE(id1 != id2);
+            EXPECT_NE(id1, id2);
 
             SharedWeakUnion<TIBase> union1 = strong1;
             SharedWeakUnion<TIBase> union2 = strong2;
 
             EXPECT_TRUE(union1.isStrong());
             EXPECT_TRUE(union2.isStrong());
-            EXPECT_TRUE(union1.get() == strong1.get());
-            EXPECT_TRUE(union2.get() == strong2.get());
+            EXPECT_EQ(union1.get(), strong1.get());
+            EXPECT_EQ(union2.get(), strong2.get());
 
             // 1) Normal assignment: explicitly calls SharedWeakUnion assignment
             union1 = union2;
             EXPECT_TRUE(union1.isStrong());
             EXPECT_TRUE(union2.isStrong());
-            EXPECT_TRUE(union1.get() == union2.get());
-            EXPECT_TRUE(TIBase::getState(id1) == TrackedState::Alive);
-            EXPECT_TRUE(TIBase::getState(id2) == TrackedState::Alive);
+            EXPECT_EQ(union1.get(), union2.get());
+            EXPECT_EQ(TIBase::getState(id1), TrackedState::Alive);
+            EXPECT_EQ(TIBase::getState(id2), TrackedState::Alive);
 
             // 2) Test self-assignment
             EXPECT_TRUE(union1.isStrong());
-            EXPECT_TRUE(TIBase::getState(id1) == TrackedState::Alive);
+            EXPECT_EQ(TIBase::getState(id1), TrackedState::Alive);
             int const initialRefCount = strong1->useCount();
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wself-assign-overloaded"
             union1 = union1;  // Self-assignment
 #pragma clang diagnostic pop
             EXPECT_TRUE(union1.isStrong());
-            EXPECT_TRUE(TIBase::getState(id1) == TrackedState::Alive);
-            EXPECT_TRUE(strong1->useCount() == initialRefCount);
+            EXPECT_EQ(TIBase::getState(id1), TrackedState::Alive);
+            EXPECT_EQ(strong1->useCount(), initialRefCount);
 
             // 3) Test assignment from null union pointer
             union1 = SharedWeakUnion<TIBase>();
-            EXPECT_TRUE(union1.get() == nullptr);
+            EXPECT_EQ(union1.get(), nullptr);
 
             // 4) Test assignment to expired union pointer
             strong2.reset();
             union2.reset();
             union1 = union2;
-            EXPECT_TRUE(union1.get() == nullptr);
-            EXPECT_TRUE(TIBase::getState(id2) == TrackedState::Deleted);
+            EXPECT_EQ(union1.get(), nullptr);
+            EXPECT_EQ(TIBase::getState(id2), TrackedState::Deleted);
         }
     }
 
@@ -393,7 +393,7 @@ public:
                 // before the destructor is called. A sleep is inserted
                 // inside the partial delete to make sure the destructor is
                 // given an opportunity to run during partial delete.
-                EXPECT_TRUE(cur == PartiallyDeleted);
+                EXPECT_EQ(cur, PartiallyDeleted);
             }
             if (next == PartiallyDeletedStarted)
             {

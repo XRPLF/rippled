@@ -27,12 +27,12 @@ public:
     {
         for (Number const& z : {Number{0, 0}, Number{0}})
         {
-            EXPECT_TRUE(z.mantissa() == 0);
-            EXPECT_TRUE(z.exponent() == Number{}.exponent());
+            EXPECT_EQ(z.mantissa(), 0);
+            EXPECT_EQ(z.exponent(), Number{}.exponent());
 
-            EXPECT_TRUE((z + z) == z);
-            EXPECT_TRUE((z - z) == z);
-            EXPECT_TRUE(z == -z);
+            EXPECT_EQ((z + z), z);
+            EXPECT_EQ((z - z), z);
+            EXPECT_EQ(z, -z);
         }
     }
 
@@ -203,7 +203,7 @@ public:
                 auto const result = x + y;
                 std::stringstream ss;
                 ss << x << " + " << y << " = " << result << ". Expected: " << z;
-                EXPECT_TRUE(result == z) << ss.str();
+                EXPECT_EQ(result, z) << ss.str();
             }
         };
         if (scale == MantissaRange::MantissaScale::Small)
@@ -298,7 +298,7 @@ public:
                 auto const result = x - y;
                 std::stringstream ss;
                 ss << x << " - " << y << " = " << result << ". Expected: " << z;
-                EXPECT_TRUE(result == z) << ss.str();
+                EXPECT_EQ(result, z) << ss.str();
             }
         };
         if (scale == MantissaRange::MantissaScale::Small)
@@ -323,7 +323,7 @@ public:
                 auto const result = x * y;
                 std::stringstream ss;
                 ss << x << " * " << y << " = " << result << ". Expected: " << z;
-                EXPECT_TRUE(result == z) << ss.str();
+                EXPECT_EQ(result, z) << ss.str();
             }
         };
         auto tests = [&](auto const& cSmall, auto const& cLarge) {
@@ -629,7 +629,7 @@ public:
                 auto const result = x / y;
                 std::stringstream ss;
                 ss << x << " / " << y << " = " << result << ". Expected: " << z;
-                EXPECT_TRUE(result == z) << ss.str();
+                EXPECT_EQ(result, z) << ss.str();
             }
         };
         auto const maxMantissa = Number::maxMantissa();
@@ -813,7 +813,7 @@ public:
                 auto const result = root(x, y);
                 std::stringstream ss;
                 ss << "root(" << x << ", " << y << ") = " << result << ". Expected: " << z;
-                EXPECT_TRUE(result == z) << ss.str();
+                EXPECT_EQ(result, z) << ss.str();
             }
         };
         /*
@@ -886,7 +886,7 @@ public:
                 auto const result = root2(x);
                 std::stringstream ss;
                 ss << "root2(" << x << ") = " << result << ". Expected: " << expected;
-                EXPECT_TRUE(result == expected) << ss.str();
+                EXPECT_EQ(result, expected) << ss.str();
             }
         };
 
@@ -928,7 +928,7 @@ public:
             {Number{64}, 11, Number{false, 7378697629483820646ULL, 1, Number::Normalized{}}},
             {Number{-64}, 11, Number{true, 7378697629483820646ULL, 1, Number::Normalized{}}}};
         for (auto const& [x, y, z] : c)
-            EXPECT_TRUE((power(x, y) == z));
+            EXPECT_EQ(power(x, y), z);
     }
 
     static void
@@ -943,7 +943,7 @@ public:
             {Number{34}, 3, 3, Number{34}},
             {Number{4}, 3, 2, Number{8}}};
         for (auto const& [x, n, d, z] : c)
-            EXPECT_TRUE((power(x, n, d) == z));
+            EXPECT_EQ(power(x, n, d), z);
         bool caught = false;
         try
         {
@@ -981,23 +981,23 @@ public:
     {
         IOUAmount const x{5, 6};
         Number const y = x;
-        EXPECT_TRUE((y == Number{5, 6}));
+        EXPECT_EQ(y, (Number{5, 6}));
         IOUAmount const z{y};
-        EXPECT_TRUE(x == z);
+        EXPECT_EQ(x, z);
         XRPAmount const xrp{500};
         STAmount const st = xrp;
         Number const n = st;
-        EXPECT_TRUE(XRPAmount{n} == xrp);
+        EXPECT_EQ(XRPAmount{n}, xrp);
         IOUAmount const x0{0, 0};
         Number const y0 = x0;
-        EXPECT_TRUE((y0 == Number{0}));
+        EXPECT_EQ(y0, Number{0});
         IOUAmount const z0{y0};
-        EXPECT_TRUE(x0 == z0);
+        EXPECT_EQ(x0, z0);
         XRPAmount const xrp0{0};
         Number const n0 = xrp0;
-        EXPECT_TRUE(n0 == Number{0});
+        EXPECT_EQ(n0, Number{0});
         XRPAmount const xrp1{n0};
-        EXPECT_TRUE(xrp1 == xrp0);
+        EXPECT_EQ(xrp1, xrp0);
     }
 
     static void
@@ -1038,11 +1038,11 @@ public:
             for (auto const& [x, y] : c)
             {
                 auto j = static_cast<std::int64_t>(x);
-                EXPECT_TRUE(j == y);
+                EXPECT_EQ(j, y);
             }
         }
         auto prevMode = Number::setround(Number::RoundingMode::TowardsZero);
-        EXPECT_TRUE(prevMode == Number::RoundingMode::ToNearest);
+        EXPECT_EQ(prevMode, Number::RoundingMode::ToNearest);
         {
             Case const c[]{
                 {Number{0}, 0},
@@ -1076,11 +1076,11 @@ public:
             for (auto const& [x, y] : c)
             {
                 auto j = static_cast<std::int64_t>(x);
-                EXPECT_TRUE(j == y);
+                EXPECT_EQ(j, y);
             }
         }
         prevMode = Number::setround(Number::RoundingMode::Downward);
-        EXPECT_TRUE(prevMode == Number::RoundingMode::TowardsZero);
+        EXPECT_EQ(prevMode, Number::RoundingMode::TowardsZero);
         {
             Case const c[]{
                 {Number{0}, 0},
@@ -1114,11 +1114,11 @@ public:
             for (auto const& [x, y] : c)
             {
                 auto j = static_cast<std::int64_t>(x);
-                EXPECT_TRUE(j == y);
+                EXPECT_EQ(j, y);
             }
         }
         prevMode = Number::setround(Number::RoundingMode::Upward);
-        EXPECT_TRUE(prevMode == Number::RoundingMode::Downward);
+        EXPECT_EQ(prevMode, Number::RoundingMode::Downward);
         {
             Case const c[]{
                 {Number{0}, 0},
@@ -1152,7 +1152,7 @@ public:
             for (auto const& [x, y] : c)
             {
                 auto j = static_cast<std::int64_t>(x);
-                EXPECT_TRUE(j == y);
+                EXPECT_EQ(j, y);
             }
         }
         bool caught = false;
@@ -1171,12 +1171,12 @@ public:
     testSquelch()
     {
         Number const limit{1, -6};
-        EXPECT_TRUE((squelch(Number{2, -6}, limit) == Number{2, -6}));
-        EXPECT_TRUE((squelch(Number{1, -6}, limit) == Number{1, -6}));
-        EXPECT_TRUE((squelch(Number{9, -7}, limit) == Number{0}));
-        EXPECT_TRUE((squelch(Number{-2, -6}, limit) == Number{-2, -6}));
-        EXPECT_TRUE((squelch(Number{-1, -6}, limit) == Number{-1, -6}));
-        EXPECT_TRUE((squelch(Number{-9, -7}, limit) == Number{0}));
+        EXPECT_EQ(squelch(Number{2, -6}, limit), (Number{2, -6}));
+        EXPECT_EQ(squelch(Number{1, -6}, limit), (Number{1, -6}));
+        EXPECT_EQ(squelch(Number{9, -7}, limit), Number{0});
+        EXPECT_EQ(squelch(Number{-2, -6}, limit), (Number{-2, -6}));
+        EXPECT_EQ(squelch(Number{-1, -6}, limit), (Number{-1, -6}));
+        EXPECT_EQ(squelch(Number{-9, -7}, limit), Number{0});
     }
 
     static void
@@ -1188,7 +1188,7 @@ public:
             auto const result = to_string(n);
             std::stringstream ss;
             ss << "to_string(" << result << "). Expected: " << expected;
-            EXPECT_TRUE(result == expected) << ss.str();
+            EXPECT_EQ(result, expected) << ss.str();
         };
 
         test(Number(-2, 0), "-2");
@@ -1220,7 +1220,7 @@ public:
                     NumberRoundModeGuard const mg(Number::RoundingMode::TowardsZero);
 
                     auto const maxMantissa = Number::maxMantissa();
-                    EXPECT_TRUE(maxMantissa == 9'999'999'999'999'999);
+                    EXPECT_EQ(maxMantissa, (9'999'999'999'999'999));
                     test(
                         Number{false, (maxMantissa * 1000) + 999, -3, Number::Normalized()},
                         "9999999999999999");
@@ -1250,7 +1250,7 @@ public:
                     NumberRoundModeGuard const mg(Number::RoundingMode::TowardsZero);
 
                     auto const maxMantissa = Number::maxMantissa();
-                    EXPECT_TRUE(maxMantissa == 9'999'999'999'999'999'999ULL);
+                    EXPECT_EQ((maxMantissa), (9'999'999'999'999'999'999ULL));
                     test(
                         Number{false, maxMantissa, 0, Number::Normalized{}}, "9999999999999999990");
                     test(
@@ -1299,7 +1299,7 @@ public:
         Number const x{100};
         std::ostringstream os;
         os << x;
-        EXPECT_TRUE(os.str() == to_string(x));
+        EXPECT_EQ((os.str()), (to_string(x)));
     }
 
     static void
@@ -1307,11 +1307,11 @@ public:
     {
         Number x{100};
         Number const y = +x;
-        EXPECT_TRUE(x == y);
-        EXPECT_TRUE(x++ == y);
-        EXPECT_TRUE(x == Number{101});
-        EXPECT_TRUE(x-- == Number{101});
-        EXPECT_TRUE(x == y);
+        EXPECT_EQ((x), (y));
+        EXPECT_EQ((x++), (y));
+        EXPECT_EQ((x), (Number{101}));
+        EXPECT_EQ((x--), (Number{101}));
+        EXPECT_EQ((x), (y));
     }
 
     static void
@@ -1322,43 +1322,43 @@ public:
         Number const n{7'518'783'80596, -5};
         SaveNumberRoundMode const save{Number::setround(Number::RoundingMode::ToNearest)};
         auto res2 = STAmount{issue, n};
-        EXPECT_TRUE(res2 == STAmount{7518784});
+        EXPECT_EQ((res2), (STAmount{7518784}));
 
         Number::setround(Number::RoundingMode::TowardsZero);
         res2 = STAmount{issue, n};
-        EXPECT_TRUE(res2 == STAmount{7518783});
+        EXPECT_EQ((res2), (STAmount{7518783}));
 
         Number::setround(Number::RoundingMode::Downward);
         res2 = STAmount{issue, n};
-        EXPECT_TRUE(res2 == STAmount{7518783});
+        EXPECT_EQ((res2), (STAmount{7518783}));
 
         Number::setround(Number::RoundingMode::Upward);
         res2 = STAmount{issue, n};
-        EXPECT_TRUE(res2 == STAmount{7518784});
+        EXPECT_EQ((res2), (STAmount{7518784}));
     }
 
     static void
     testTruncate()
     {
-        EXPECT_TRUE(Number(25, +1).truncate() == Number(250, 0));
-        EXPECT_TRUE(Number(25, 0).truncate() == Number(25, 0));
-        EXPECT_TRUE(Number(25, -1).truncate() == Number(2, 0));
-        EXPECT_TRUE(Number(25, -2).truncate() == Number(0, 0));
-        EXPECT_TRUE(Number(99, -2).truncate() == Number(0, 0));
+        EXPECT_EQ((Number(25, +1).truncate()), (Number(250, 0)));
+        EXPECT_EQ((Number(25, 0).truncate()), (Number(25, 0)));
+        EXPECT_EQ((Number(25, -1).truncate()), (Number(2, 0)));
+        EXPECT_EQ((Number(25, -2).truncate()), (Number(0, 0)));
+        EXPECT_EQ((Number(99, -2).truncate()), (Number(0, 0)));
 
-        EXPECT_TRUE(Number(-25, +1).truncate() == Number(-250, 0));
-        EXPECT_TRUE(Number(-25, 0).truncate() == Number(-25, 0));
-        EXPECT_TRUE(Number(-25, -1).truncate() == Number(-2, 0));
-        EXPECT_TRUE(Number(-25, -2).truncate() == Number(0, 0));
-        EXPECT_TRUE(Number(-99, -2).truncate() == Number(0, 0));
+        EXPECT_EQ((Number(-25, +1).truncate()), (Number(-250, 0)));
+        EXPECT_EQ((Number(-25, 0).truncate()), (Number(-25, 0)));
+        EXPECT_EQ((Number(-25, -1).truncate()), (Number(-2, 0)));
+        EXPECT_EQ((Number(-25, -2).truncate()), (Number(0, 0)));
+        EXPECT_EQ((Number(-99, -2).truncate()), (Number(0, 0)));
 
-        EXPECT_TRUE(Number(0, 0).truncate() == Number(0, 0));
-        EXPECT_TRUE(Number(0, 30000).truncate() == Number(0, 0));
-        EXPECT_TRUE(Number(0, -30000).truncate() == Number(0, 0));
-        EXPECT_TRUE(Number(100, -30000).truncate() == Number(0, 0));
-        EXPECT_TRUE(Number(100, -30000).truncate() == Number(0, 0));
-        EXPECT_TRUE(Number(-100, -30000).truncate() == Number(0, 0));
-        EXPECT_TRUE(Number(-100, -30000).truncate() == Number(0, 0));
+        EXPECT_EQ((Number(0, 0).truncate()), (Number(0, 0)));
+        EXPECT_EQ((Number(0, 30000).truncate()), (Number(0, 0)));
+        EXPECT_EQ((Number(0, -30000).truncate()), (Number(0, 0)));
+        EXPECT_EQ((Number(100, -30000).truncate()), (Number(0, 0)));
+        EXPECT_EQ((Number(100, -30000).truncate()), (Number(0, 0)));
+        EXPECT_EQ((Number(-100, -30000).truncate()), (Number(0, 0)));
+        EXPECT_EQ((Number(-100, -30000).truncate()), (Number(0, 0)));
     }
 
     static void
@@ -1460,7 +1460,7 @@ public:
             {
                 NumberRoundModeGuard const g{mode};
                 auto const res = static_cast<std::int64_t>(num);
-                EXPECT_TRUE(res == val) << to_string(num) + " with mode " +
+                EXPECT_EQ((res), (val)) << to_string(num) + " with mode " +
                         std::to_string(static_cast<int>(mode)) + " expected " +
                         std::to_string(val) + " got " + std::to_string(res);
             }
@@ -1473,49 +1473,49 @@ public:
         auto const scale = Number::getMantissaScale();
 
         // Control case
-        EXPECT_TRUE(Number::maxMantissa() > 10);
+        EXPECT_GT((Number::maxMantissa()), (10));
         Number const ten{10};
-        EXPECT_TRUE(ten.exponent() <= 0);
+        EXPECT_LE((ten.exponent()), (0));
 
         if (scale == MantissaRange::MantissaScale::Small)
         {
-            EXPECT_TRUE(std::numeric_limits<std::int64_t>::max() > kINITIAL_XRP.drops());
-            EXPECT_TRUE(Number::maxMantissa() < kINITIAL_XRP.drops());
+            EXPECT_GT((std::numeric_limits<std::int64_t>::max()), (kINITIAL_XRP.drops()));
+            EXPECT_LT((Number::maxMantissa()), (kINITIAL_XRP.drops()));
             Number const initalXrp{kINITIAL_XRP};
-            EXPECT_TRUE(initalXrp.exponent() > 0);
+            EXPECT_GT((initalXrp.exponent()), (0));
 
             Number const maxInt64{Number::kMAX_REP};
-            EXPECT_TRUE(maxInt64.exponent() > 0);
+            EXPECT_GT((maxInt64.exponent()), (0));
             // 85'070'591'730'234'615'865'843'651'857'942'052'864 - 38 digits
-            EXPECT_TRUE((power(maxInt64, 2) == Number{85'070'591'730'234'62, 22}));
+            EXPECT_EQ((power(maxInt64, 2)), (Number{85'070'591'730'234'62, 22}));
 
             Number const max = Number{false, Number::maxMantissa(), 0, Number::Normalized{}};
-            EXPECT_TRUE(max.exponent() <= 0);
+            EXPECT_LE(max.exponent(), 0);
             // 99'999'999'999'999'980'000'000'000'000'001 - 32 digits
-            EXPECT_TRUE((power(max, 2) == Number{99'999'999'999'999'98, 16}));
+            EXPECT_EQ(power(max, 2), (Number{99'999'999'999'999'98, 16}));
         }
         else
         {
-            EXPECT_TRUE(std::numeric_limits<std::int64_t>::max() > kINITIAL_XRP.drops());
-            EXPECT_TRUE(Number::maxMantissa() > kINITIAL_XRP.drops());
+            EXPECT_GT((std::numeric_limits<std::int64_t>::max()), (kINITIAL_XRP.drops()));
+            EXPECT_GT((Number::maxMantissa()), (kINITIAL_XRP.drops()));
             Number const initalXrp{kINITIAL_XRP};
-            EXPECT_TRUE(initalXrp.exponent() <= 0);
+            EXPECT_LE((initalXrp.exponent()), (0));
 
             Number const maxInt64{Number::kMAX_REP};
-            EXPECT_TRUE(maxInt64.exponent() <= 0);
+            EXPECT_LE((maxInt64.exponent()), (0));
             // 85'070'591'730'234'615'847'396'907'784'232'501'249 - 38 digits
-            EXPECT_TRUE((power(maxInt64, 2) == Number{85'070'591'730'234'615'85, 19}));
+            EXPECT_EQ((power(maxInt64, 2)), (Number{85'070'591'730'234'615'85, 19}));
 
             NumberRoundModeGuard const mg(Number::RoundingMode::TowardsZero);
 
             auto const maxMantissa = Number::maxMantissa();
             Number const max = Number{false, maxMantissa, 0, Number::Normalized{}};
-            EXPECT_TRUE(max.mantissa() == maxMantissa / 10);
-            EXPECT_TRUE(max.exponent() == 1);
+            EXPECT_EQ((max.mantissa()), (maxMantissa / 10));
+            EXPECT_EQ((max.exponent()), (1));
             // 99'999'999'999'999'999'800'000'000'000'000'000'100 - also 38
             // digits
-            EXPECT_TRUE(
-                (power(max, 2) == Number{false, (maxMantissa / 10) - 1, 20, Number::Normalized{}}));
+            EXPECT_EQ(
+                (power(max, 2)), (Number{false, (maxMantissa / 10) - 1, 20, Number::Normalized{}}));
         }
     }
 

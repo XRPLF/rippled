@@ -24,9 +24,9 @@ struct JoinTest : public ::testing::Test
             // the << operator returns the stream correctly.
             ss << "(" << collectionanddelimiter << ")";
             auto const str = ss.str();
-            EXPECT_TRUE(str.substr(1, str.length() - 2) == expected);
-            EXPECT_TRUE(str.front() == '(');
-            EXPECT_TRUE(str.back() == ')');
+            EXPECT_EQ(str.substr(1, str.length() - 2), expected);
+            EXPECT_EQ(str.front(), '(');
+            EXPECT_EQ(str.back(), ')');
         };
 
         // C++ array

@@ -41,19 +41,19 @@ struct BufferTest : public ::testing::Test
         std::memcpy(b1.alloc(16), data, 16);
         EXPECT_TRUE(sane(b1));
         EXPECT_TRUE(!b1.empty());
-        EXPECT_TRUE(b1.size() == 16);
+        EXPECT_EQ(b1.size(), 16);
 
         Buffer b2{b1.size()};
         EXPECT_TRUE(sane(b2));
         EXPECT_TRUE(!b2.empty());
-        EXPECT_TRUE(b2.size() == b1.size());
+        EXPECT_EQ(b2.size(), b1.size());
         std::memcpy(b2.data(), data + 16, 16);
 
         Buffer b3{data, sizeof(data)};
         EXPECT_TRUE(sane(b3));
         EXPECT_TRUE(!b3.empty());
-        EXPECT_TRUE(b3.size() == sizeof(data));
-        EXPECT_TRUE(std::memcmp(b3.data(), data, b3.size()) == 0);
+        EXPECT_EQ(b3.size(), sizeof(data));
+        EXPECT_EQ(std::memcmp(b3.data(), data, b3.size()), 0);
 
         // Check equality and inequality comparisons
         EXPECT_TRUE(b0 == b0);
@@ -65,22 +65,22 @@ struct BufferTest : public ::testing::Test
         // Check copy constructors and copy assignments:
         {
             Buffer x{b0};
-            EXPECT_TRUE(x == b0);
+            EXPECT_EQ(x, b0);
             EXPECT_TRUE(sane(x));
             Buffer y{b1};
-            EXPECT_TRUE(y == b1);
+            EXPECT_EQ(y, b1);
             EXPECT_TRUE(sane(y));
             x = b2;
-            EXPECT_TRUE(x == b2);
+            EXPECT_EQ(x, b2);
             EXPECT_TRUE(sane(x));
             x = y;
-            EXPECT_TRUE(x == y);
+            EXPECT_EQ(x, y);
             EXPECT_TRUE(sane(x));
             y = b3;
-            EXPECT_TRUE(y == b3);
+            EXPECT_EQ(y, b3);
             EXPECT_TRUE(sane(y));
             x = b0;
-            EXPECT_TRUE(x == b0);
+            EXPECT_EQ(x, b0);
             EXPECT_TRUE(sane(x));
 #if defined(__clang__)
 #pragma clang diagnostic push
@@ -88,10 +88,10 @@ struct BufferTest : public ::testing::Test
 #endif
 
             x = x;
-            EXPECT_TRUE(x == b0);
+            EXPECT_EQ(x, b0);
             EXPECT_TRUE(sane(x));
             y = y;
-            EXPECT_TRUE(y == b3);
+            EXPECT_EQ(y, b3);
             EXPECT_TRUE(sane(y));
 
 #if defined(__clang__)
@@ -111,7 +111,7 @@ struct BufferTest : public ::testing::Test
                 EXPECT_TRUE(x.empty());  // NOLINT(bugprone-use-after-move)
                 EXPECT_TRUE(sane(y));
                 EXPECT_TRUE(y.empty());
-                EXPECT_TRUE(x == y);  // NOLINT(bugprone-use-after-move)
+                EXPECT_EQ(x, y);  // NOLINT(bugprone-use-after-move)
             }
 
             {  // Move-construct from non-empty buf
@@ -120,7 +120,7 @@ struct BufferTest : public ::testing::Test
                 EXPECT_TRUE(sane(x));    // NOLINT(bugprone-use-after-move)
                 EXPECT_TRUE(x.empty());  // NOLINT(bugprone-use-after-move)
                 EXPECT_TRUE(sane(y));
-                EXPECT_TRUE(y == b1);
+                EXPECT_EQ(y, b1);
             }
 
             {  // Move assign empty buf to empty buf
@@ -140,7 +140,7 @@ struct BufferTest : public ::testing::Test
 
                 x = std::move(y);
                 EXPECT_TRUE(sane(x));
-                EXPECT_TRUE(x == b1);
+                EXPECT_EQ(x, b1);
                 EXPECT_TRUE(sane(y));    // NOLINT(bugprone-use-after-move)
                 EXPECT_TRUE(y.empty());  // NOLINT(bugprone-use-after-move)
             }
@@ -178,44 +178,44 @@ struct BufferTest : public ::testing::Test
         {
             Buffer w{static_cast<Slice>(b0)};
             EXPECT_TRUE(sane(w));
-            EXPECT_TRUE(w == b0);
+            EXPECT_EQ(w, b0);
 
             Buffer x{static_cast<Slice>(b1)};
             EXPECT_TRUE(sane(x));
-            EXPECT_TRUE(x == b1);
+            EXPECT_EQ(x, b1);
 
             Buffer y{static_cast<Slice>(b2)};
             EXPECT_TRUE(sane(y));
-            EXPECT_TRUE(y == b2);
+            EXPECT_EQ(y, b2);
 
             Buffer z{static_cast<Slice>(b3)};
             EXPECT_TRUE(sane(z));
-            EXPECT_TRUE(z == b3);
+            EXPECT_EQ(z, b3);
 
             // Assign empty slice to empty buffer
             w = static_cast<Slice>(b0);
             EXPECT_TRUE(sane(w));
-            EXPECT_TRUE(w == b0);
+            EXPECT_EQ(w, b0);
 
             // Assign non-empty slice to empty buffer
             w = static_cast<Slice>(b1);
             EXPECT_TRUE(sane(w));
-            EXPECT_TRUE(w == b1);
+            EXPECT_EQ(w, b1);
 
             // Assign non-empty slice to non-empty buffer
             x = static_cast<Slice>(b2);
             EXPECT_TRUE(sane(x));
-            EXPECT_TRUE(x == b2);
+            EXPECT_EQ(x, b2);
 
             // Assign non-empty slice to non-empty buffer
             y = static_cast<Slice>(z);
             EXPECT_TRUE(sane(y));
-            EXPECT_TRUE(y == z);
+            EXPECT_EQ(y, z);
 
             // Assign empty slice to non-empty buffer:
             z = static_cast<Slice>(b0);
             EXPECT_TRUE(sane(z));
-            EXPECT_TRUE(z == b0);
+            EXPECT_EQ(z, b0);
         }
 
         {
@@ -226,26 +226,26 @@ struct BufferTest : public ::testing::Test
                 // zero (which means clear) and sanity check
                 x(i);
                 EXPECT_TRUE(sane(x));
-                EXPECT_TRUE(x.size() == i);
-                EXPECT_TRUE((x.data() == nullptr) == (i == 0));
+                EXPECT_EQ(x.size(), i);
+                EXPECT_EQ((x.data() == nullptr), (i == 0));
 
                 // Try to allocate some more data (always non-zero)
                 x(i + 1);
                 EXPECT_TRUE(sane(x));
-                EXPECT_TRUE(x.size() == i + 1);
-                EXPECT_TRUE(x.data() != nullptr);
+                EXPECT_EQ(x.size(), i + 1);
+                EXPECT_NE(x.data(), nullptr);
 
                 // Try to clear:
                 x.clear();
                 EXPECT_TRUE(sane(x));
                 EXPECT_TRUE(x.empty());
-                EXPECT_TRUE(x.data() == nullptr);
+                EXPECT_EQ(x.data(), nullptr);
 
                 // Try to clear again:
                 x.clear();
                 EXPECT_TRUE(sane(x));
                 EXPECT_TRUE(x.empty());
-                EXPECT_TRUE(x.data() == nullptr);
+                EXPECT_EQ(x.data(), nullptr);
             };
 
             for (std::size_t i = 0; i < 16; ++i)

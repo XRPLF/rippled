@@ -185,8 +185,8 @@ public:
             auto const mod = b58_fast::detail::inplaceBigintDivRem(
                 std::span<uint64_t>(bigInt.data(), bigInt.size()), d);
             auto const foundDiv = multiprecision_utils::toBoostMP(bigInt);
-            EXPECT_TRUE(refMod.convert_to<std::uint64_t>() == mod);
-            EXPECT_TRUE(foundDiv == refDiv);
+            EXPECT_EQ(refMod.convert_to<std::uint64_t>(), mod);
+            EXPECT_EQ(foundDiv, refDiv);
         }
         for (int i = 0; i < kITERS; ++i)
         {
@@ -203,9 +203,9 @@ public:
 
             auto const result = b58_fast::detail::inplaceBigintAdd(
                 std::span<uint64_t>(bigInt.data(), bigInt.size()), d);
-            EXPECT_TRUE(result == TokenCodecErrc::Success);
+            EXPECT_EQ(result, TokenCodecErrc::Success);
             auto const foundAdd = multiprecision_utils::toBoostMP(bigInt);
-            EXPECT_TRUE(refAdd == foundAdd);
+            EXPECT_EQ(refAdd, foundAdd);
         }
         for (int i = 0; i < kITERS; ++i)
         {
@@ -220,9 +220,9 @@ public:
 
             auto const result = b58_fast::detail::inplaceBigintAdd(
                 std::span<uint64_t>(bigInt.data(), bigInt.size()), d);
-            EXPECT_TRUE(result == TokenCodecErrc::OverflowAdd);
+            EXPECT_EQ(result, TokenCodecErrc::OverflowAdd);
             auto const foundAdd = multiprecision_utils::toBoostMP(bigInt);
-            EXPECT_TRUE(refAdd != foundAdd);
+            EXPECT_NE(refAdd, foundAdd);
         }
         for (int i = 0; i < kITERS; ++i)
         {
@@ -238,9 +238,9 @@ public:
 
             auto const result = b58_fast::detail::inplaceBigintMul(
                 std::span<uint64_t>(bigInt.data(), bigInt.size()), d);
-            EXPECT_TRUE(result == TokenCodecErrc::Success);
+            EXPECT_EQ(result, TokenCodecErrc::Success);
             auto const foundMul = multiprecision_utils::toBoostMP(bigInt);
-            EXPECT_TRUE(refMul == foundMul);
+            EXPECT_EQ(refMul, foundMul);
         }
         for (int i = 0; i < kITERS; ++i)
         {
@@ -254,9 +254,9 @@ public:
 
             auto const result = b58_fast::detail::inplaceBigintMul(
                 std::span<uint64_t>(bigInt.data(), bigInt.size()), d);
-            EXPECT_TRUE(result == TokenCodecErrc::InputTooLarge);
+            EXPECT_EQ(result, TokenCodecErrc::InputTooLarge);
             auto const foundMul = multiprecision_utils::toBoostMP(bigInt);
-            EXPECT_TRUE(refMul != foundMul);
+            EXPECT_NE(refMul, foundMul);
         }
     }
 

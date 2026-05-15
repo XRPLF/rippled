@@ -77,14 +77,14 @@ public:
             // Test with no max
             auto const good = getFileContents(ec, path);
             EXPECT_TRUE(!ec);
-            EXPECT_TRUE(good == kEXPECTED_CONTENTS);
+            EXPECT_EQ(good, kEXPECTED_CONTENTS);
         }
 
         {
             // Test with large max
             auto const good = getFileContents(ec, path, kilobytes(1));
             EXPECT_TRUE(!ec);
-            EXPECT_TRUE(good == kEXPECTED_CONTENTS);
+            EXPECT_EQ(good, kEXPECTED_CONTENTS);
         }
 
         {

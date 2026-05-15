@@ -20,36 +20,36 @@ public:
     {
         IOUAmount const z(0, 0);
 
-        EXPECT_TRUE(z.mantissa() == 0);
-        EXPECT_TRUE(z.exponent() == -100);
+        EXPECT_EQ(z.mantissa(), 0);
+        EXPECT_EQ(z.exponent(), -100);
         EXPECT_TRUE(!z);
-        EXPECT_TRUE(z.signum() == 0);
-        EXPECT_TRUE(z == beast::kZERO);
+        EXPECT_EQ(z.signum(), 0);
+        EXPECT_EQ(z, beast::kZERO);
 
-        EXPECT_TRUE((z + z) == z);
-        EXPECT_TRUE((z - z) == z);
-        EXPECT_TRUE(z == -z);
+        EXPECT_EQ((z + z), z);
+        EXPECT_EQ((z - z), z);
+        EXPECT_EQ(z, -z);
 
         IOUAmount const zz(beast::kZERO);
-        EXPECT_TRUE(z == zz);
+        EXPECT_EQ(z, zz);
 
         // https://github.com/XRPLF/rippled/issues/5170
         IOUAmount const zzz{};
-        EXPECT_TRUE(zzz == beast::kZERO);
-        // EXPECT_TRUE(zzz == zz);
+        EXPECT_EQ(zzz, beast::kZERO);
+        // EXPECT_EQ(zzz, zz);
     }
 
     static void
     testSigNum()
     {
         IOUAmount const neg(-1, 0);
-        EXPECT_TRUE(neg.signum() < 0);
+        EXPECT_LT(neg.signum(), 0);
 
         IOUAmount const zer(0, 0);
-        EXPECT_TRUE(zer.signum() == 0);
+        EXPECT_EQ(zer.signum(), 0);
 
         IOUAmount const pos(1, 0);
-        EXPECT_TRUE(pos.signum() > 0);
+        EXPECT_GT(pos.signum(), 0);
     }
 
     static void
@@ -146,7 +146,7 @@ public:
             auto const result = to_string(n);
             std::stringstream ss;
             ss << "to_string(" << result << "). Expected: " << expected;
-            EXPECT_TRUE(result == expected) << ss.str();
+            EXPECT_EQ(result, expected) << ss.str();
         };
 
         for (auto const mantissaSize :
@@ -182,36 +182,36 @@ public:
             // multiply by a number that would overflow the mantissa, then
             // divide by the same number, and check we didn't lose any value
             IOUAmount const bigMan(kMAX_MANTISSA, 0);
-            EXPECT_TRUE(bigMan == mulRatio(bigMan, kMAX_UINT, kMAX_UINT, true));
+            EXPECT_EQ(bigMan, mulRatio(bigMan, kMAX_UINT, kMAX_UINT, true));
             // rounding mode shouldn't matter as the result is exact
-            EXPECT_TRUE(bigMan == mulRatio(bigMan, kMAX_UINT, kMAX_UINT, false));
+            EXPECT_EQ(bigMan, mulRatio(bigMan, kMAX_UINT, kMAX_UINT, false));
         }
         {
             // Similar test as above, but for negative values
             IOUAmount const bigMan(-kMAX_MANTISSA, 0);
-            EXPECT_TRUE(bigMan == mulRatio(bigMan, kMAX_UINT, kMAX_UINT, true));
+            EXPECT_EQ(bigMan, mulRatio(bigMan, kMAX_UINT, kMAX_UINT, true));
             // rounding mode shouldn't matter as the result is exact
-            EXPECT_TRUE(bigMan == mulRatio(bigMan, kMAX_UINT, kMAX_UINT, false));
+            EXPECT_EQ(bigMan, mulRatio(bigMan, kMAX_UINT, kMAX_UINT, false));
         }
 
         {
             // small amounts
             IOUAmount const tiny(kMIN_MANTISSA, kMIN_EXPONENT);
             // Round up should give the smallest allowable number
-            EXPECT_TRUE(tiny == mulRatio(tiny, 1, kMAX_UINT, true));
-            EXPECT_TRUE(tiny == mulRatio(tiny, kMAX_UINT - 1, kMAX_UINT, true));
+            EXPECT_EQ(tiny, mulRatio(tiny, 1, kMAX_UINT, true));
+            EXPECT_EQ(tiny, mulRatio(tiny, kMAX_UINT - 1, kMAX_UINT, true));
             // rounding down should be zero
-            EXPECT_TRUE(beast::kZERO == mulRatio(tiny, 1, kMAX_UINT, false));
-            EXPECT_TRUE(beast::kZERO == mulRatio(tiny, kMAX_UINT - 1, kMAX_UINT, false));
+            EXPECT_EQ(beast::kZERO, mulRatio(tiny, 1, kMAX_UINT, false));
+            EXPECT_EQ(beast::kZERO, mulRatio(tiny, kMAX_UINT - 1, kMAX_UINT, false));
 
             // tiny negative numbers
             IOUAmount const tinyNeg(-kMIN_MANTISSA, kMIN_EXPONENT);
             // Round up should give zero
-            EXPECT_TRUE(beast::kZERO == mulRatio(tinyNeg, 1, kMAX_UINT, true));
-            EXPECT_TRUE(beast::kZERO == mulRatio(tinyNeg, kMAX_UINT - 1, kMAX_UINT, true));
+            EXPECT_EQ(beast::kZERO, mulRatio(tinyNeg, 1, kMAX_UINT, true));
+            EXPECT_EQ(beast::kZERO, mulRatio(tinyNeg, kMAX_UINT - 1, kMAX_UINT, true));
             // rounding down should be tiny
-            EXPECT_TRUE(tinyNeg == mulRatio(tinyNeg, 1, kMAX_UINT, false));
-            EXPECT_TRUE(tinyNeg == mulRatio(tinyNeg, kMAX_UINT - 1, kMAX_UINT, false));
+            EXPECT_EQ(tinyNeg, mulRatio(tinyNeg, 1, kMAX_UINT, false));
+            EXPECT_EQ(tinyNeg, mulRatio(tinyNeg, kMAX_UINT - 1, kMAX_UINT, false));
         }
 
         {  // rounding
@@ -219,20 +219,20 @@ public:
                 IOUAmount const one(1, 0);
                 auto const rup = mulRatio(one, kMAX_UINT - 1, kMAX_UINT, true);
                 auto const rdown = mulRatio(one, kMAX_UINT - 1, kMAX_UINT, false);
-                EXPECT_TRUE(rup.mantissa() - rdown.mantissa() == 1);
+                EXPECT_EQ(rup.mantissa() - rdown.mantissa(), 1);
             }
             {
                 IOUAmount const big(kMAX_MANTISSA, kMAX_EXPONENT);
                 auto const rup = mulRatio(big, kMAX_UINT - 1, kMAX_UINT, true);
                 auto const rdown = mulRatio(big, kMAX_UINT - 1, kMAX_UINT, false);
-                EXPECT_TRUE(rup.mantissa() - rdown.mantissa() == 1);
+                EXPECT_EQ(rup.mantissa() - rdown.mantissa(), 1);
             }
 
             {
                 IOUAmount const negOne(-1, 0);
                 auto const rup = mulRatio(negOne, kMAX_UINT - 1, kMAX_UINT, true);
                 auto const rdown = mulRatio(negOne, kMAX_UINT - 1, kMAX_UINT, false);
-                EXPECT_TRUE(rup.mantissa() - rdown.mantissa() == 1);
+                EXPECT_EQ(rup.mantissa() - rdown.mantissa(), 1);
             }
         }
 

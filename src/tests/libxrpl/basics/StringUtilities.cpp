@@ -19,7 +19,7 @@ public:
         EXPECT_TRUE(rv);
 
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-        EXPECT_TRUE(makeSlice(*rv) == makeSlice(strExpected));
+        EXPECT_EQ(makeSlice(*rv), makeSlice(strExpected));
     }
 
     static void
@@ -53,7 +53,7 @@ public:
         {
             ParsedUrl pUrl;
             EXPECT_TRUE(parseUrl(pUrl, "scheme://"));
-            EXPECT_TRUE(pUrl.scheme == "scheme");
+            EXPECT_EQ(pUrl.scheme, "scheme");
             EXPECT_TRUE(pUrl.username.empty());
             EXPECT_TRUE(pUrl.password.empty());
             EXPECT_TRUE(pUrl.domain.empty());
@@ -68,21 +68,21 @@ public:
         {
             ParsedUrl pUrl;
             EXPECT_TRUE(parseUrl(pUrl, "scheme:///"));
-            EXPECT_TRUE(pUrl.scheme == "scheme");
+            EXPECT_EQ(pUrl.scheme, "scheme");
             EXPECT_TRUE(pUrl.username.empty());
             EXPECT_TRUE(pUrl.password.empty());
             EXPECT_TRUE(pUrl.domain.empty());
             EXPECT_TRUE(!pUrl.port);
-            EXPECT_TRUE(pUrl.path == "/");
+            EXPECT_EQ(pUrl.path, "/");
         }
 
         {
             ParsedUrl pUrl;
             EXPECT_TRUE(parseUrl(pUrl, "lower://domain"));
-            EXPECT_TRUE(pUrl.scheme == "lower");
+            EXPECT_EQ(pUrl.scheme, "lower");
             EXPECT_TRUE(pUrl.username.empty());
             EXPECT_TRUE(pUrl.password.empty());
-            EXPECT_TRUE(pUrl.domain == "domain");
+            EXPECT_EQ(pUrl.domain, "domain");
             EXPECT_TRUE(!pUrl.port);
             EXPECT_TRUE(pUrl.path.empty());
         }
@@ -90,177 +90,177 @@ public:
         {
             ParsedUrl pUrl;
             EXPECT_TRUE(parseUrl(pUrl, "UPPER://domain:234/"));
-            EXPECT_TRUE(pUrl.scheme == "upper");
+            EXPECT_EQ(pUrl.scheme, "upper");
             EXPECT_TRUE(pUrl.username.empty());
             EXPECT_TRUE(pUrl.password.empty());
-            EXPECT_TRUE(pUrl.domain == "domain");
-            EXPECT_TRUE(*pUrl.port == 234);  // NOLINT(bugprone-unchecked-optional-access)
-            EXPECT_TRUE(pUrl.path == "/");
+            EXPECT_EQ(pUrl.domain, "domain");
+            EXPECT_EQ(*pUrl.port, 234);  // NOLINT(bugprone-unchecked-optional-access)
+            EXPECT_EQ(pUrl.path, "/");
         }
 
         {
             ParsedUrl pUrl;
             EXPECT_TRUE(parseUrl(pUrl, "Mixed://domain/path"));
-            EXPECT_TRUE(pUrl.scheme == "mixed");
+            EXPECT_EQ(pUrl.scheme, "mixed");
             EXPECT_TRUE(pUrl.username.empty());
             EXPECT_TRUE(pUrl.password.empty());
-            EXPECT_TRUE(pUrl.domain == "domain");
+            EXPECT_EQ(pUrl.domain, "domain");
             EXPECT_TRUE(!pUrl.port);
-            EXPECT_TRUE(pUrl.path == "/path");
+            EXPECT_EQ(pUrl.path, "/path");
         }
 
         {
             ParsedUrl pUrl;
             EXPECT_TRUE(parseUrl(pUrl, "scheme://[::1]:123/path"));
-            EXPECT_TRUE(pUrl.scheme == "scheme");
+            EXPECT_EQ(pUrl.scheme, "scheme");
             EXPECT_TRUE(pUrl.username.empty());
             EXPECT_TRUE(pUrl.password.empty());
-            EXPECT_TRUE(pUrl.domain == "::1");
-            EXPECT_TRUE(*pUrl.port == 123);  // NOLINT(bugprone-unchecked-optional-access)
-            EXPECT_TRUE(pUrl.path == "/path");
+            EXPECT_EQ(pUrl.domain, "::1");
+            EXPECT_EQ(*pUrl.port, 123);  // NOLINT(bugprone-unchecked-optional-access)
+            EXPECT_EQ(pUrl.path, "/path");
         }
 
         {
             ParsedUrl pUrl;
             EXPECT_TRUE(parseUrl(pUrl, "scheme://user:pass@domain:123/abc:321"));
-            EXPECT_TRUE(pUrl.scheme == "scheme");
-            EXPECT_TRUE(pUrl.username == "user");
-            EXPECT_TRUE(pUrl.password == "pass");
-            EXPECT_TRUE(pUrl.domain == "domain");
-            EXPECT_TRUE(*pUrl.port == 123);  // NOLINT(bugprone-unchecked-optional-access)
-            EXPECT_TRUE(pUrl.path == "/abc:321");
+            EXPECT_EQ(pUrl.scheme, "scheme");
+            EXPECT_EQ(pUrl.username, "user");
+            EXPECT_EQ(pUrl.password, "pass");
+            EXPECT_EQ(pUrl.domain, "domain");
+            EXPECT_EQ(*pUrl.port, 123);  // NOLINT(bugprone-unchecked-optional-access)
+            EXPECT_EQ(pUrl.path, "/abc:321");
         }
 
         {
             ParsedUrl pUrl;
             EXPECT_TRUE(parseUrl(pUrl, "scheme://user@domain:123/abc:321"));
-            EXPECT_TRUE(pUrl.scheme == "scheme");
-            EXPECT_TRUE(pUrl.username == "user");
+            EXPECT_EQ(pUrl.scheme, "scheme");
+            EXPECT_EQ(pUrl.username, "user");
             EXPECT_TRUE(pUrl.password.empty());
-            EXPECT_TRUE(pUrl.domain == "domain");
-            EXPECT_TRUE(*pUrl.port == 123);  // NOLINT(bugprone-unchecked-optional-access)
-            EXPECT_TRUE(pUrl.path == "/abc:321");
+            EXPECT_EQ(pUrl.domain, "domain");
+            EXPECT_EQ(*pUrl.port, 123);  // NOLINT(bugprone-unchecked-optional-access)
+            EXPECT_EQ(pUrl.path, "/abc:321");
         }
 
         {
             ParsedUrl pUrl;
             EXPECT_TRUE(parseUrl(pUrl, "scheme://:pass@domain:123/abc:321"));
-            EXPECT_TRUE(pUrl.scheme == "scheme");
+            EXPECT_EQ(pUrl.scheme, "scheme");
             EXPECT_TRUE(pUrl.username.empty());
-            EXPECT_TRUE(pUrl.password == "pass");
-            EXPECT_TRUE(pUrl.domain == "domain");
-            EXPECT_TRUE(*pUrl.port == 123);  // NOLINT(bugprone-unchecked-optional-access)
-            EXPECT_TRUE(pUrl.path == "/abc:321");
+            EXPECT_EQ(pUrl.password, "pass");
+            EXPECT_EQ(pUrl.domain, "domain");
+            EXPECT_EQ(*pUrl.port, 123);  // NOLINT(bugprone-unchecked-optional-access)
+            EXPECT_EQ(pUrl.path, "/abc:321");
         }
 
         {
             ParsedUrl pUrl;
             EXPECT_TRUE(parseUrl(pUrl, "scheme://domain:123/abc:321"));
-            EXPECT_TRUE(pUrl.scheme == "scheme");
+            EXPECT_EQ(pUrl.scheme, "scheme");
             EXPECT_TRUE(pUrl.username.empty());
             EXPECT_TRUE(pUrl.password.empty());
-            EXPECT_TRUE(pUrl.domain == "domain");
-            EXPECT_TRUE(*pUrl.port == 123);  // NOLINT(bugprone-unchecked-optional-access)
-            EXPECT_TRUE(pUrl.path == "/abc:321");
+            EXPECT_EQ(pUrl.domain, "domain");
+            EXPECT_EQ(*pUrl.port, 123);  // NOLINT(bugprone-unchecked-optional-access)
+            EXPECT_EQ(pUrl.path, "/abc:321");
         }
 
         {
             ParsedUrl pUrl;
             EXPECT_TRUE(parseUrl(pUrl, "scheme://user:pass@domain/abc:321"));
-            EXPECT_TRUE(pUrl.scheme == "scheme");
-            EXPECT_TRUE(pUrl.username == "user");
-            EXPECT_TRUE(pUrl.password == "pass");
-            EXPECT_TRUE(pUrl.domain == "domain");
+            EXPECT_EQ(pUrl.scheme, "scheme");
+            EXPECT_EQ(pUrl.username, "user");
+            EXPECT_EQ(pUrl.password, "pass");
+            EXPECT_EQ(pUrl.domain, "domain");
             EXPECT_TRUE(!pUrl.port);
-            EXPECT_TRUE(pUrl.path == "/abc:321");
+            EXPECT_EQ(pUrl.path, "/abc:321");
         }
 
         {
             ParsedUrl pUrl;
             EXPECT_TRUE(parseUrl(pUrl, "scheme://user@domain/abc:321"));
-            EXPECT_TRUE(pUrl.scheme == "scheme");
-            EXPECT_TRUE(pUrl.username == "user");
+            EXPECT_EQ(pUrl.scheme, "scheme");
+            EXPECT_EQ(pUrl.username, "user");
             EXPECT_TRUE(pUrl.password.empty());
-            EXPECT_TRUE(pUrl.domain == "domain");
+            EXPECT_EQ(pUrl.domain, "domain");
             EXPECT_TRUE(!pUrl.port);
-            EXPECT_TRUE(pUrl.path == "/abc:321");
+            EXPECT_EQ(pUrl.path, "/abc:321");
         }
 
         {
             ParsedUrl pUrl;
             EXPECT_TRUE(parseUrl(pUrl, "scheme://:pass@domain/abc:321"));
-            EXPECT_TRUE(pUrl.scheme == "scheme");
+            EXPECT_EQ(pUrl.scheme, "scheme");
             EXPECT_TRUE(pUrl.username.empty());
-            EXPECT_TRUE(pUrl.password == "pass");
-            EXPECT_TRUE(pUrl.domain == "domain");
+            EXPECT_EQ(pUrl.password, "pass");
+            EXPECT_EQ(pUrl.domain, "domain");
             EXPECT_TRUE(!pUrl.port);
-            EXPECT_TRUE(pUrl.path == "/abc:321");
+            EXPECT_EQ(pUrl.path, "/abc:321");
         }
 
         {
             ParsedUrl pUrl;
             EXPECT_TRUE(parseUrl(pUrl, "scheme://domain/abc:321"));
-            EXPECT_TRUE(pUrl.scheme == "scheme");
+            EXPECT_EQ(pUrl.scheme, "scheme");
             EXPECT_TRUE(pUrl.username.empty());
             EXPECT_TRUE(pUrl.password.empty());
-            EXPECT_TRUE(pUrl.domain == "domain");
+            EXPECT_EQ(pUrl.domain, "domain");
             EXPECT_TRUE(!pUrl.port);
-            EXPECT_TRUE(pUrl.path == "/abc:321");
+            EXPECT_EQ(pUrl.path, "/abc:321");
         }
 
         {
             ParsedUrl pUrl;
             EXPECT_TRUE(parseUrl(pUrl, "scheme:///path/to/file"));
-            EXPECT_TRUE(pUrl.scheme == "scheme");
+            EXPECT_EQ(pUrl.scheme, "scheme");
             EXPECT_TRUE(pUrl.username.empty());
             EXPECT_TRUE(pUrl.password.empty());
             EXPECT_TRUE(pUrl.domain.empty());
             EXPECT_TRUE(!pUrl.port);
-            EXPECT_TRUE(pUrl.path == "/path/to/file");
+            EXPECT_EQ(pUrl.path, "/path/to/file");
         }
 
         {
             ParsedUrl pUrl;
             EXPECT_TRUE(parseUrl(pUrl, "scheme://user:pass@domain/path/with/an@sign"));
-            EXPECT_TRUE(pUrl.scheme == "scheme");
-            EXPECT_TRUE(pUrl.username == "user");
-            EXPECT_TRUE(pUrl.password == "pass");
-            EXPECT_TRUE(pUrl.domain == "domain");
+            EXPECT_EQ(pUrl.scheme, "scheme");
+            EXPECT_EQ(pUrl.username, "user");
+            EXPECT_EQ(pUrl.password, "pass");
+            EXPECT_EQ(pUrl.domain, "domain");
             EXPECT_TRUE(!pUrl.port);
-            EXPECT_TRUE(pUrl.path == "/path/with/an@sign");
+            EXPECT_EQ(pUrl.path, "/path/with/an@sign");
         }
 
         {
             ParsedUrl pUrl;
             EXPECT_TRUE(parseUrl(pUrl, "scheme://domain/path/with/an@sign"));
-            EXPECT_TRUE(pUrl.scheme == "scheme");
+            EXPECT_EQ(pUrl.scheme, "scheme");
             EXPECT_TRUE(pUrl.username.empty());
             EXPECT_TRUE(pUrl.password.empty());
-            EXPECT_TRUE(pUrl.domain == "domain");
+            EXPECT_EQ(pUrl.domain, "domain");
             EXPECT_TRUE(!pUrl.port);
-            EXPECT_TRUE(pUrl.path == "/path/with/an@sign");
+            EXPECT_EQ(pUrl.path, "/path/with/an@sign");
         }
 
         {
             ParsedUrl pUrl;
             EXPECT_TRUE(parseUrl(pUrl, "scheme://:999/"));
-            EXPECT_TRUE(pUrl.scheme == "scheme");
+            EXPECT_EQ(pUrl.scheme, "scheme");
             EXPECT_TRUE(pUrl.username.empty());
             EXPECT_TRUE(pUrl.password.empty());
-            EXPECT_TRUE(pUrl.domain == ":999");
+            EXPECT_EQ(pUrl.domain, ":999");
             EXPECT_TRUE(!pUrl.port);
-            EXPECT_TRUE(pUrl.path == "/");
+            EXPECT_EQ(pUrl.path, "/");
         }
 
         {
             ParsedUrl pUrl;
             EXPECT_TRUE(parseUrl(pUrl, "http://::1:1234/validators"));
-            EXPECT_TRUE(pUrl.scheme == "http");
+            EXPECT_EQ(pUrl.scheme, "http");
             EXPECT_TRUE(pUrl.username.empty());
             EXPECT_TRUE(pUrl.password.empty());
-            EXPECT_TRUE(pUrl.domain == "::0.1.18.52");
+            EXPECT_EQ(pUrl.domain, "::0.1.18.52");
             EXPECT_TRUE(!pUrl.port);
-            EXPECT_TRUE(pUrl.path == "/validators");
+            EXPECT_EQ(pUrl.path, "/validators");
         }
 
         // Expected fails.
@@ -289,7 +289,7 @@ public:
     testToString()
     {
         auto result = to_string("hello");
-        EXPECT_TRUE(result == "hello");
+        EXPECT_EQ(result, "hello");
     }
 
     static void
