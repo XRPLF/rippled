@@ -202,7 +202,7 @@ struct Regression_test : public beast::unit_test::Suite
         auto const alice = Account("alice");
         env.fund(XRP(100000), alice);
 
-        auto params = json::Value(json::ObjectValue);
+        auto params = json::Value(json::ValueType::Object);
         // Max fee = 50k drops
         params[jss::fee_mult_max] = 5000;
         std::vector<int> const expectedFees({10, 10, 8889, 13889, 20000});
@@ -299,7 +299,7 @@ struct Regression_test : public beast::unit_test::Suite
                 SHAMapHash digest;
                 if (!state.peekItem(bobIndex, digest))
                     return std::nullopt;
-                return digest.asUint256();
+                return digest.asUInt256();
             }();
 
             auto const mapCounts = [&](CountedObjects::List const& list) {

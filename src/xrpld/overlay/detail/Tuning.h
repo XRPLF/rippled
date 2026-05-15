@@ -1,45 +1,38 @@
 #pragma once
 
-#include <chrono>
-
 namespace xrpl::Tuning {
 
-// Need to be named before converting
-// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-enum {
-    /** How many ledgers off a server can be and we will
-        still consider it converged */
-    ConvergedLedgerLimit = 24,
+/** How many ledgers off a server can be and we will
+    still consider it converged */
+static constexpr auto kCONVERGED_LEDGER_LIMIT = 24;
 
-    /** How many ledgers off a server has to be before we
-        consider it diverged */
-    DivergedLedgerLimit = 128,
+/** How many ledgers off a server has to be before we
+    consider it diverged */
+static constexpr auto kDIVERGED_LEDGER_LIMIT = 128;
 
-    /** The soft cap on the number of ledger entries in a single reply. */
-    SoftMaxReplyNodes = 8192,
+/** The soft cap on the number of ledger entries in a single reply. */
+static constexpr auto kSOFT_MAX_REPLY_NODES = 8192;
 
-    /** The hard cap on the number of ledger entries in a single reply. */
-    HardMaxReplyNodes = 12288,
+/** The hard cap on the number of ledger entries in a single reply. */
+static constexpr auto kHARD_MAX_REPLY_NODES = 12288;
 
-    /** How many timer intervals a sendq has to stay large before we disconnect
-     */
-    SendqIntervals = 4,
+/** How many timer intervals a sendq has to stay large before we disconnect */
+static constexpr auto kSENDQ_INTERVALS = 4;
 
-    /** How many messages on a send queue before we refuse queries */
-    DropSendQueue = 192,
+/** How many messages on a send queue before we refuse queries */
+static constexpr auto kDROP_SEND_QUEUE = 192;
 
-    /** How many messages we consider reasonable sustained on a send queue */
-    TargetSendQueue = 128,
+/** How many messages we consider reasonable sustained on a send queue */
+static constexpr auto kTARGET_SEND_QUEUE = 128;
 
-    /** How often to log send queue size */
-    SendQueueLogFreq = 64,
+/** How often to log send queue size */
+static constexpr auto kSEND_QUEUE_LOG_FREQ = 64;
 
-    /** How often we check for idle peers (seconds) */
-    CheckIdlePeers = 4,
+/** How often we check for idle peers (seconds) */
+static constexpr auto kCHECK_IDLE_PEERS = 4;
 
-    /** The maximum number of levels to search */
-    MaxQueryDepth = 3,
-};
+/** The maximum number of levels to search */
+static constexpr auto kMAX_QUERY_DEPTH = 3;
 
 /** Size of buffer used to read from the socket. */
 std::size_t constexpr kREAD_BUFFER_BYTES = 16384;

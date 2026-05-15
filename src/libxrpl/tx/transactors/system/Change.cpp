@@ -177,10 +177,8 @@ Change::applyAmendment()
     if (std::ranges::find(amendments, amendment) != amendments.end())
         return tefALREADY;
 
-    auto flags = ctx_.tx.getFlags();
-
-    bool const gotMajority = (flags & tfGotMajority) != 0;
-    bool const lostMajority = (flags & tfLostMajority) != 0;
+    bool const gotMajority = ctx_.tx.isFlag(tfGotMajority);
+    bool const lostMajority = ctx_.tx.isFlag(tfLostMajority);
 
     if (gotMajority && lostMajority)
         return temINVALID_FLAG;
@@ -416,11 +414,13 @@ Change::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
 Change::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

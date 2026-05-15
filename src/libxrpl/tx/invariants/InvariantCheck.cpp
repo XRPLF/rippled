@@ -341,7 +341,7 @@ NoZeroEscrow::visitEntry(
             bad_ |= true;
     };
 
-    bool const overwriteFixEnabled = isFeatureEnabled(fixSecurity3_1_3, true);
+    bool const overwriteFixEnabled = isFeatureEnabled(fixCleanup3_1_3, true);
 
     if (after && after->getType() == ltMPTOKEN_ISSUANCE)
     {
@@ -467,7 +467,7 @@ AccountRootsDeletedClean::finalize(
     // transaction processing results, however unlikely, only fail if the
     // feature is enabled. Enabled, or not, though, a fatal-level message will
     // be logged
-    [[maybe_unused]] bool const enforce = view.rules().enabled(featureInvariantsV1_1) ||
+    [[maybe_unused]] bool const enforce = view.rules().enabled(fixCleanup3_2_0) ||
         view.rules().enabled(featureSingleAssetVault) ||
         view.rules().enabled(featureLendingProtocol);
 
@@ -628,7 +628,7 @@ NoXRPTrustLines::visitEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const& after)
 {
-    bool const overwriteFixEnabled = isFeatureEnabled(fixSecurity3_1_3, true);
+    bool const overwriteFixEnabled = isFeatureEnabled(fixCleanup3_1_3, true);
 
     if (after && after->getType() == ltRIPPLE_STATE)
     {
@@ -673,14 +673,13 @@ NoDeepFreezeTrustLinesWithoutFreeze::visitEntry(
 {
     if (after && after->getType() == ltRIPPLE_STATE)
     {
-        bool const overwriteFixEnabled = isFeatureEnabled(fixSecurity3_1_3, true);
+        bool const overwriteFixEnabled = isFeatureEnabled(fixCleanup3_1_3, true);
 
-        std::uint32_t const uFlags = after->getFieldU32(sfFlags);
-        bool const lowFreeze = (uFlags & lsfLowFreeze) != 0u;
-        bool const lowDeepFreeze = (uFlags & lsfLowDeepFreeze) != 0u;
+        bool const lowFreeze = after->isFlag(lsfLowFreeze);
+        bool const lowDeepFreeze = after->isFlag(lsfLowDeepFreeze);
 
-        bool const highFreeze = (uFlags & lsfHighFreeze) != 0u;
-        bool const highDeepFreeze = (uFlags & lsfHighDeepFreeze) != 0u;
+        bool const highFreeze = after->isFlag(lsfHighFreeze);
+        bool const highDeepFreeze = after->isFlag(lsfHighDeepFreeze);
 
         bool const bad = (lowDeepFreeze && !lowFreeze) || (highDeepFreeze && !highFreeze);
         if (overwriteFixEnabled)

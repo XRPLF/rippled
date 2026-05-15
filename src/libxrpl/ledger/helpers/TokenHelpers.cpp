@@ -585,8 +585,12 @@ directSendNoFeeIOU(
                         << " amount=" << saAmount.getFullText()
                         << " after=" << saBalance.getFullText();
 
-        std::uint32_t const uFlags(sleRippleState->getFieldU32(sfFlags));
         bool bDelete = false;
+
+        auto const senderReserveFlag = bSenderHigh ? lsfHighReserve : lsfLowReserve;
+        auto const senderNoRippleFlag = bSenderHigh ? lsfHighNoRipple : lsfLowNoRipple;
+        auto const senderFreezeFlag = bSenderHigh ? lsfHighFreeze : lsfLowFreeze;
+        auto const receiverReserveFlag = bSenderHigh ? lsfLowReserve : lsfHighReserve;
 
         // FIXME This NEEDS to be cleaned up and simplified. It's impossible
         //       for anyone to understand.
@@ -594,30 +598,28 @@ directSendNoFeeIOU(
             // Sender balance was positive.
             && saBalance <= beast::kZERO
             // Sender is zero or negative.
-            && ((uFlags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve)) != 0u)
+            && sleRippleState->isFlag(senderReserveFlag)
             // Sender reserve is set.
-            && static_cast<bool>(uFlags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)) !=
-                static_cast<bool>(
-                    view.read(keylet::account(uSenderID))->getFlags() & lsfDefaultRipple) &&
-            ((uFlags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze)) == 0u) &&
-            !sleRippleState->getFieldAmount(!bSenderHigh ? sfLowLimit : sfHighLimit)
+            && sleRippleState->isFlag(senderNoRippleFlag) !=
+                view.read(keylet::account(uSenderID))->isFlag(lsfDefaultRipple) &&
+            !sleRippleState->isFlag(senderFreezeFlag) &&
+            !sleRippleState->getFieldAmount(bSenderHigh ? sfHighLimit : sfLowLimit)
             // Sender trust limit is 0.
-            && (sleRippleState->getFieldU32(!bSenderHigh ? sfLowQualityIn : sfHighQualityIn) == 0u)
+            && (sleRippleState->getFieldU32(bSenderHigh ? sfHighQualityIn : sfLowQualityIn) == 0u)
             // Sender quality in is 0.
             &&
-            (sleRippleState->getFieldU32(!bSenderHigh ? sfLowQualityOut : sfHighQualityOut) == 0u))
+            (sleRippleState->getFieldU32(bSenderHigh ? sfHighQualityOut : sfLowQualityOut) == 0u))
         // Sender quality out is 0.
         {
             // Clear the reserve of the sender, possibly delete the line!
             adjustOwnerCount(view, view.peek(keylet::account(uSenderID)), -1, j);
 
             // Clear reserve flag.
-            sleRippleState->setFieldU32(
-                sfFlags, uFlags & (!bSenderHigh ? ~lsfLowReserve : ~lsfHighReserve));
+            sleRippleState->clearFlag(senderReserveFlag);
 
             // Balance is zero, receiver reserve is clear.
             bDelete = !saBalance  // Balance is zero.
-                && ((uFlags & (bSenderHigh ? lsfLowReserve : lsfHighReserve)) == 0u);
+                && !sleRippleState->isFlag(receiverReserveFlag);
             // Receiver reserve is clear.
         }
 
@@ -634,7 +636,7 @@ directSendNoFeeIOU(
                 view,
                 sleRippleState,
                 bSenderHigh ? uReceiverID : uSenderID,
-                !bSenderHigh ? uReceiverID : uSenderID,
+                bSenderHigh ? uSenderID : uReceiverID,
                 j);
         }
 
@@ -656,7 +658,7 @@ directSendNoFeeIOU(
     if (!sleAccount)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    bool const noRipple = (sleAccount->getFlags() & lsfDefaultRipple) == 0;
+    bool const noRipple = !sleAccount->isFlag(lsfDefaultRipple);
 
     return trustCreate(
         view,
@@ -1238,9 +1240,9 @@ directSendNoLimitMultiMPT(
 
                 std::uint64_t const sendAmount = amount.mpt().value();
 
-                if (view.rules().enabled(fixSecurity3_1_3))
+                if (view.rules().enabled(fixCleanup3_1_3))
                 {
-                    // Post-fixSecurity3_1_3: aggregate MaximumAmount
+                    // Post-fixCleanup3_1_3: aggregate MaximumAmount
                     // check. WARNING: the order of conditions is
                     // critical — each guards the subtraction in the
                     // next against unsigned underflow. Do not reorder.
@@ -1258,7 +1260,7 @@ directSendNoLimitMultiMPT(
                 }
                 else
                 {
-                    // Pre-fixSecurity3_1_3: per-iteration MaximumAmount
+                    // Pre-fixCleanup3_1_3: per-iteration MaximumAmount
                     // check. Reads sfOutstandingAmount from a stale
                     // view.read() snapshot — incorrect for multi-destination
                     // sends but retained for ledger replay compatibility.

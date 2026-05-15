@@ -81,37 +81,37 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
         JLOG(ctx.j.debug()) << "AMM Withdraw: invalid flags.";
         return temMALFORMED;
     }
-    if ((flags & tfLPToken) != 0u)
+    if (ctx.tx.isFlag(tfLPToken))
     {
         if (!lpTokens || amount || amount2 || ePrice)
             return temMALFORMED;
     }
-    else if ((flags & tfWithdrawAll) != 0u)
+    else if (ctx.tx.isFlag(tfWithdrawAll))
     {
         if (lpTokens || amount || amount2 || ePrice)
             return temMALFORMED;
     }
-    else if ((flags & tfOneAssetWithdrawAll) != 0u)
+    else if (ctx.tx.isFlag(tfOneAssetWithdrawAll))
     {
         if (!amount || lpTokens || amount2 || ePrice)
             return temMALFORMED;
     }
-    else if ((flags & tfSingleAsset) != 0u)
+    else if (ctx.tx.isFlag(tfSingleAsset))
     {
         if (!amount || lpTokens || amount2 || ePrice)
             return temMALFORMED;
     }
-    else if ((flags & tfTwoAsset) != 0u)
+    else if (ctx.tx.isFlag(tfTwoAsset))
     {
         if (!amount || !amount2 || lpTokens || ePrice)
             return temMALFORMED;
     }
-    else if ((flags & tfOneAssetLPToken) != 0u)
+    else if (ctx.tx.isFlag(tfOneAssetLPToken))
     {
         if (!amount || !lpTokens || amount2 || ePrice)
             return temMALFORMED;
     }
-    else if ((flags & tfLimitLPToken) != 0u)
+    else if (ctx.tx.isFlag(tfLimitLPToken))
     {
         if (!amount || !ePrice || lpTokens || amount2)
             return temMALFORMED;
@@ -1147,11 +1147,13 @@ AMMWithdraw::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
 AMMWithdraw::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

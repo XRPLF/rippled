@@ -18,20 +18,20 @@ struct JsonOptions
     using underlying_t = unsigned int;
     underlying_t value;
 
-    // Bitwise flags with operator~
-    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-    enum Values : underlying_t {
-        // clang-format off
-        KNone                       = 0b0000'0000,
-        KIncludeDate               = 0b0000'0001,
-        KDisableApiPriorV2       = 0b0000'0010,
+    enum class Values : underlying_t {
+        None = 0b0000'0000,
+        IncludeDate = 0b0000'0001,
+        DisableApiPriorV2 = 0b0000'0010,
 
-        // IMPORTANT `kALL` must be union of all of the above; see also operator~
-        KAll                        = 0b0000'0011
-        // clang-format on
+        // IMPORTANT `All` must be union of all of the above; see also operator~
+        All = IncludeDate | DisableApiPriorV2  // 0b0000'0011
     };
 
     constexpr JsonOptions(underlying_t v) noexcept : value(v)
+    {
+    }
+
+    constexpr JsonOptions(Values v) noexcept : value(static_cast<JsonOptions::underlying_t>(v))
     {
     }
 
@@ -69,18 +69,18 @@ struct JsonOptions
     [[nodiscard]] constexpr JsonOptions friend
     operator~(JsonOptions v) noexcept
     {
-        return {~v.value & static_cast<underlying_t>(KAll)};
+        return {~v.value & static_cast<underlying_t>(Values::All)};
     }
 };
 
 template <typename T>
     requires requires(T const& t) {
-        { t.getJson(JsonOptions::KNone) } -> std::convertible_to<json::Value>;
+        { t.getJson(JsonOptions::Values::None) } -> std::convertible_to<json::Value>;
     }
 json::Value
 toJson(T const& t)
 {
-    return t.getJson(JsonOptions::KNone);
+    return t.getJson(JsonOptions::Values::None);
 }
 
 namespace detail {
@@ -148,7 +148,7 @@ public:
     [[nodiscard]] virtual std::string
     getText() const;
 
-    [[nodiscard]] virtual json::Value getJson(JsonOptions = JsonOptions::KNone) const;
+    [[nodiscard]] virtual json::Value getJson(JsonOptions = JsonOptions::Values::None) const;
 
     virtual void
     add(Serializer& s) const;

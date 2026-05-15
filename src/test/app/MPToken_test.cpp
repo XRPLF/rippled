@@ -217,7 +217,8 @@ class MPToken_test : public beast::unit_test::Suite
                      tfMPTCanTransfer | tfMPTCanClawback});
 
             // Get the hash for the most recent transaction.
-            std::string const txHash{env.tx()->getJson(JsonOptions::KNone)[jss::hash].asString()};
+            std::string const txHash{
+                env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString()};
 
             json::Value const result = env.rpc("tx", txHash)[jss::result];
             BEAST_EXPECT(result[sfMaximumAmount.getJsonName()] == "9223372036854775807");
@@ -237,7 +238,7 @@ class MPToken_test : public beast::unit_test::Suite
 
                 env(pdomain::setTx(credIssuer1, credentials1));
                 auto const domainId1 = [&]() {
-                    auto tx = env.tx()->getJson(JsonOptions::KNone);
+                    auto tx = env.tx()->getJson(JsonOptions::Values::None);
                     return pdomain::getNewDomain(env.meta());
                 }();
 
@@ -255,7 +256,7 @@ class MPToken_test : public beast::unit_test::Suite
 
                 // Get the hash for the most recent transaction.
                 std::string const txHash{
-                    env.tx()->getJson(JsonOptions::KNone)[jss::hash].asString()};
+                    env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString()};
 
                 json::Value const result = env.rpc("tx", txHash)[jss::result];
                 BEAST_EXPECT(result[sfMaximumAmount.getJsonName()] == "9223372036854775807");
@@ -819,7 +820,7 @@ class MPToken_test : public beast::unit_test::Suite
 
                 env(pdomain::setTx(credIssuer1, credentials1));
                 return [&]() {
-                    auto tx = env.tx()->getJson(JsonOptions::KNone);
+                    auto tx = env.tx()->getJson(JsonOptions::Values::None);
                     return pdomain::getNewDomain(env.meta());
                 }();
             }();
@@ -833,7 +834,7 @@ class MPToken_test : public beast::unit_test::Suite
 
                 env(pdomain::setTx(credIssuer2, credentials2));
                 return [&]() {
-                    auto tx = env.tx()->getJson(JsonOptions::KNone);
+                    auto tx = env.tx()->getJson(JsonOptions::Values::None);
                     return pdomain::getNewDomain(env.meta());
                 }();
             }();
@@ -1096,7 +1097,7 @@ class MPToken_test : public beast::unit_test::Suite
 
                     env(pdomain::setTx(credIssuer1, credentials1));
                     return [&]() {
-                        auto tx = env.tx()->getJson(JsonOptions::KNone);
+                        auto tx = env.tx()->getJson(JsonOptions::Values::None);
                         return pdomain::getNewDomain(env.meta());
                     }();
                 }();
@@ -1138,7 +1139,7 @@ class MPToken_test : public beast::unit_test::Suite
 
                     env(pdomain::setTx(credIssuer1, credentials1));
                     return [&]() {
-                        auto tx = env.tx()->getJson(JsonOptions::KNone);
+                        auto tx = env.tx()->getJson(JsonOptions::Values::None);
                         return pdomain::getNewDomain(env.meta());
                     }();
                 }();
@@ -1195,7 +1196,7 @@ class MPToken_test : public beast::unit_test::Suite
 
                     env(pdomain::setTx(credIssuer1, credentials));
                     return [&]() {
-                        auto tx = env.tx()->getJson(JsonOptions::KNone);
+                        auto tx = env.tx()->getJson(JsonOptions::Values::None);
                         return pdomain::getNewDomain(env.meta());
                     }();
                 }();
@@ -1207,7 +1208,7 @@ class MPToken_test : public beast::unit_test::Suite
 
                     env(pdomain::setTx(credIssuer2, credentials));
                     return [&]() {
-                        auto tx = env.tx()->getJson(JsonOptions::KNone);
+                        auto tx = env.tx()->getJson(JsonOptions::Values::None);
                         return pdomain::getNewDomain(env.meta());
                     }();
                 }();
@@ -1562,7 +1563,8 @@ class MPToken_test : public beast::unit_test::Suite
             // payment between the holders
             env(pay(bob, carol, mpt(10'000)), Sendmax(mpt(10'000)), Txflags(tfPartialPayment));
             // Verify the metadata
-            auto const meta = env.meta()->getJson(JsonOptions::KNone)[sfAffectedNodes.fieldName];
+            auto const meta =
+                env.meta()->getJson(JsonOptions::Values::None)[sfAffectedNodes.fieldName];
             // Issuer got 10 in the transfer fees
             BEAST_EXPECT(
                 meta[0u][sfModifiedNode.fieldName][sfFinalFields.fieldName]
@@ -1912,7 +1914,7 @@ class MPToken_test : public beast::unit_test::Suite
                 jv[jss::Asset] = toJson(xrpIssue());
                 jv[jss::Asset2] = toJson(usd.issue());
                 if (withAmount)
-                    jv[field.fieldName] = usd(10).value().getJson(JsonOptions::KNone);
+                    jv[field.fieldName] = usd(10).value().getJson(JsonOptions::Values::None);
                 if (field == sfAsset)
                 {
                     jv[jss::Asset] = toJson(mpt.get<MPTIssue>());
@@ -1923,7 +1925,7 @@ class MPToken_test : public beast::unit_test::Suite
                 }
                 else
                 {
-                    jv[field.fieldName] = mpt.getJson(JsonOptions::KNone);
+                    jv[field.fieldName] = mpt.getJson(JsonOptions::Values::None);
                 }
             };
             // All transactions with sfAmount, which don't support MPT.
@@ -1970,7 +1972,7 @@ class MPToken_test : public beast::unit_test::Suite
                 jv[jss::Destination] = carol.human();
                 jv[jss::SettleDelay] = 1;
                 jv[sfPublicKey.fieldName] = strHex(alice.pk().slice());
-                jv[jss::Amount] = mpt.getJson(JsonOptions::KNone);
+                jv[jss::Amount] = mpt.getJson(JsonOptions::Values::None);
                 test(jv, jss::Amount.cStr());
             }
             // PaymentChannelFund
@@ -1979,7 +1981,7 @@ class MPToken_test : public beast::unit_test::Suite
                 jv[jss::TransactionType] = jss::PaymentChannelFund;
                 jv[jss::Account] = alice.human();
                 jv[sfChannel.fieldName] = to_string(uint256{1});
-                jv[jss::Amount] = mpt.getJson(JsonOptions::KNone);
+                jv[jss::Amount] = mpt.getJson(JsonOptions::Values::None);
                 test(jv, jss::Amount.cStr());
             }
             // PaymentChannelClaim
@@ -1988,7 +1990,7 @@ class MPToken_test : public beast::unit_test::Suite
                 jv[jss::TransactionType] = jss::PaymentChannelClaim;
                 jv[jss::Account] = alice.human();
                 jv[sfChannel.fieldName] = to_string(uint256{1});
-                jv[jss::Amount] = mpt.getJson(JsonOptions::KNone);
+                jv[jss::Amount] = mpt.getJson(JsonOptions::Values::None);
                 test(jv, jss::Amount.cStr());
             }
             // NFTokenCreateOffer
@@ -1997,7 +1999,7 @@ class MPToken_test : public beast::unit_test::Suite
                 jv[jss::TransactionType] = jss::NFTokenCreateOffer;
                 jv[jss::Account] = alice.human();
                 jv[sfNFTokenID.fieldName] = to_string(uint256{1});
-                jv[jss::Amount] = mpt.getJson(JsonOptions::KNone);
+                jv[jss::Amount] = mpt.getJson(JsonOptions::Values::None);
                 test(jv, jss::Amount.cStr());
             }
             // NFTokenAcceptOffer
@@ -2005,7 +2007,7 @@ class MPToken_test : public beast::unit_test::Suite
                 json::Value jv;
                 jv[jss::TransactionType] = jss::NFTokenAcceptOffer;
                 jv[jss::Account] = alice.human();
-                jv[sfNFTokenBrokerFee.fieldName] = mpt.getJson(JsonOptions::KNone);
+                jv[sfNFTokenBrokerFee.fieldName] = mpt.getJson(JsonOptions::Values::None);
                 test(jv, sfNFTokenBrokerFee.fieldName);
             }
             // NFTokenMint
@@ -2014,7 +2016,7 @@ class MPToken_test : public beast::unit_test::Suite
                 jv[jss::TransactionType] = jss::NFTokenMint;
                 jv[jss::Account] = alice.human();
                 jv[sfNFTokenTaxon.fieldName] = 1;
-                jv[jss::Amount] = mpt.getJson(JsonOptions::KNone);
+                jv[jss::Amount] = mpt.getJson(JsonOptions::Values::None);
                 test(jv, jss::Amount.cStr());
             }
             // TrustSet
@@ -2023,7 +2025,7 @@ class MPToken_test : public beast::unit_test::Suite
                 jv[jss::TransactionType] = jss::TrustSet;
                 jv[jss::Account] = alice.human();
                 jv[jss::Flags] = 0;
-                jv[field.fieldName] = mpt.getJson(JsonOptions::KNone);
+                jv[field.fieldName] = mpt.getJson(JsonOptions::Values::None);
                 test(jv, field.fieldName);
             };
             trustSet(sfLimitAmount);
@@ -2055,7 +2057,7 @@ class MPToken_test : public beast::unit_test::Suite
                     alice, jvb, alice, mpt, XRP(10), alice, false, 1, alice, Signer(alice));
                 for (auto const& field : {sfAmount.fieldName, sfSignatureReward.fieldName})
                 {
-                    jv[field] = mpt.getJson(JsonOptions::KNone);
+                    jv[field] = mpt.getJson(JsonOptions::Values::None);
                     test(jv, field);
                 }
             }
@@ -2064,7 +2066,7 @@ class MPToken_test : public beast::unit_test::Suite
                 json::Value jv = sidechainXchainAccountCreate(alice, jvb, alice, mpt, XRP(10));
                 for (auto const& field : {sfAmount.fieldName, sfSignatureReward.fieldName})
                 {
-                    jv[field] = mpt.getJson(JsonOptions::KNone);
+                    jv[field] = mpt.getJson(JsonOptions::Values::None);
                     test(jv, field);
                 }
             }
@@ -2077,9 +2079,9 @@ class MPToken_test : public beast::unit_test::Suite
                 jv[jss::TransactionType] = tt;
                 jv[jss::Account] = alice.human();
                 jv[sfXChainBridge.fieldName] = jvb;
-                jv[sfSignatureReward.fieldName] = rewardAmount.getJson(JsonOptions::KNone);
+                jv[sfSignatureReward.fieldName] = rewardAmount.getJson(JsonOptions::Values::None);
                 jv[sfMinAccountCreateAmount.fieldName] =
-                    minAccountAmount.getJson(JsonOptions::KNone);
+                    minAccountAmount.getJson(JsonOptions::Values::None);
                 test(jv, field);
             };
             auto reward = STAmount{sfSignatureReward, mpt};
@@ -2113,7 +2115,8 @@ class MPToken_test : public beast::unit_test::Suite
 
         mptAlice.create();
 
-        std::string const txHash{env.tx()->getJson(JsonOptions::KNone)[jss::hash].asString()};
+        std::string const txHash{
+            env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString()};
         BEAST_EXPECTS(
             txHash ==
                 "E11F0E0CA14219922B7881F060B9CEE67CFBC87E4049A441ED2AE348FF8FAC"
@@ -3308,7 +3311,7 @@ class MPToken_test : public beast::unit_test::Suite
     testMultiSendMaximumAmount(FeatureBitset features)
     {
         // Verify that directSendNoLimitMultiMPT correctly enforces MaximumAmount
-        // when the issuer sends to multiple receivers. Pre-fixSecurity3_1_3,
+        // when the issuer sends to multiple receivers. Pre-fixCleanup3_1_3,
         // a stale view.read() snapshot caused per-iteration checks to miss
         // aggregate overflows. Post-fix, a running total is used instead.
         testcase("Multi-send MaximumAmount enforcement");
@@ -3410,14 +3413,14 @@ class MPToken_test : public beast::unit_test::Suite
         // individual send (100 <= 150) even though the aggregate (200)
         // exceeds MaximumAmount. Preserved for ledger replay.
         {
-            // KNOWN BUG (pre-fixSecurity3_1_3): preserved for ledger replay only
-            env.disableFeature(fixSecurity3_1_3);
+            // KNOWN BUG (pre-fixCleanup3_1_3): preserved for ledger replay only
+            env.disableFeature(fixCleanup3_1_3);
             runTest(
                 R{{alice.id(), 100}, {bob.id(), 100}},
                 tesSUCCESS,
                 250,
                 "pre-amendment allows over-send");
-            env.enableFeature(fixSecurity3_1_3);
+            env.enableFeature(fixCleanup3_1_3);
         }
     }
 
