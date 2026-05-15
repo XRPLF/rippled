@@ -97,7 +97,7 @@ STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
             }
 
             if (hasCurrency)
-                asset = static_cast<Currency>(sit.get160());
+                asset = Currency::fromRaw(sit.get160());
 
             if (hasMPT)
                 asset = sit.get192();
@@ -171,11 +171,11 @@ STPath::hasSeen(AccountID const& account, PathAsset const& asset, AccountID cons
 json::Value
 STPath::getJson(JsonOptions) const
 {
-    json::Value ret(json::ArrayValue);
+    json::Value ret(json::ValueType::Array);
 
     for (auto const& it : path_)
     {
-        json::Value elem(json::ObjectValue);
+        json::Value elem(json::ValueType::Object);
         auto const iType = it.getNodeType();
 
         elem[jss::type] = iType;
@@ -205,7 +205,7 @@ STPath::getJson(JsonOptions) const
 json::Value
 STPathSet::getJson(JsonOptions options) const
 {
-    json::Value ret(json::ArrayValue);
+    json::Value ret(json::ValueType::Array);
     for (auto const& it : value_)
         ret.append(it.getJson(options));
 

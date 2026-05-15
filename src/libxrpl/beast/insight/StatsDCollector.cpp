@@ -204,12 +204,7 @@ class StatsDCollectorImp : public StatsDCollector,
                            public std::enable_shared_from_this<StatsDCollectorImp>
 {
 private:
-    // Need to be named before converting
-    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-    enum {
-        // MaxPacketSize = 484
-        MaxPacketSize = 1472
-    };
+    static constexpr auto kMAX_PACKET_SIZE = 1472;
 
     Journal journal_;
     IP::Endpoint address_;
@@ -392,7 +387,7 @@ public:
                 !s.empty(),
                 "beast::insight::detail::StatsDCollectorImp::sendBuffers : "
                 "non-empty payload");
-            if (!buffers.empty() && (size + length) > MaxPacketSize)
+            if (!buffers.empty() && (size + length) > kMAX_PACKET_SIZE)
             {
                 log(buffers);
                 socket_.async_send(

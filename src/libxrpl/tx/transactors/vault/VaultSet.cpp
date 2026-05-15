@@ -103,7 +103,7 @@ VaultSet::preclaim(PreclaimContext const& ctx)
         }
 
         // Sanity check only, this should be enforced by VaultCreate
-        if ((sleIssuance->getFlags() & lsfMPTRequireAuth) == 0)
+        if (!sleIssuance->isFlag(lsfMPTRequireAuth))
         {
             // LCOV_EXCL_START
             JLOG(ctx.j.error()) << "VaultSet: issuance of vault shares is not private.";
@@ -185,11 +185,13 @@ VaultSet::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
 VaultSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

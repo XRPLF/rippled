@@ -101,7 +101,7 @@ public:
     }
 };
 
-struct Uint256Field : public JTxField<SF_UINT256, uint256, std::string>
+struct UInt256Field : public JTxField<SF_UINT256, uint256, std::string>
 {
     using SF = SF_UINT256;
     using SV = uint256;
@@ -112,7 +112,7 @@ protected:
     using base::value_;
 
 public:
-    explicit Uint256Field(SF const& sfield, SV const& value) : JTxField(sfield, value)
+    explicit UInt256Field(SF const& sfield, SV const& value) : JTxField(sfield, value)
     {
     }
 
@@ -163,7 +163,7 @@ public:
     [[nodiscard]] OV
     value() const override
     {
-        return value_.getJson(JsonOptions::KNone);
+        return value_.getJson(JsonOptions::Values::None);
     }
 };
 
@@ -714,7 +714,7 @@ create(A const& account, A const& dest, STAmount const& sendMax)
 {
     json::Value jv;
     jv[sfAccount.jsonName] = to_string(account);
-    jv[sfSendMax.jsonName] = sendMax.getJson(JsonOptions::KNone);
+    jv[sfSendMax.jsonName] = sendMax.getJson(JsonOptions::Values::None);
     jv[sfDestination.jsonName] = to_string(dest);
     jv[sfTransactionType.jsonName] = jss::CheckCreate;
     return jv;
@@ -856,7 +856,7 @@ coverWithdraw(
 json::Value
 coverClawback(AccountID const& account, std::uint32_t flags = 0);
 
-auto const kLOAN_BROKER_ID = JTxFieldWrapper<Uint256Field>(sfLoanBrokerID);
+auto const kLOAN_BROKER_ID = JTxFieldWrapper<UInt256Field>(sfLoanBrokerID);
 
 auto const kMANAGEMENT_FEE_RATE =
     valueUnitWrapper<SF_UINT16, unit::TenthBipsTag>(sfManagementFeeRate);

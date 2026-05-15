@@ -80,9 +80,9 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    if (ctx.view.rules().enabled(fixSecurity3_1_3) && amount.asset() == vaultShare)
+    if (ctx.view.rules().enabled(fixCleanup3_1_3) && amount.asset() == vaultShare)
     {
-        // Post-fixSecurity3_1_3: if the user specified shares, convert
+        // Post-fixCleanup3_1_3: if the user specified shares, convert
         // to the equivalent asset amount before checking withdrawal
         // limits. Pre-amendment the limit check was skipped for
         // share-denominated withdrawals.
@@ -297,6 +297,7 @@ VaultWithdraw::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -307,6 +308,7 @@ VaultWithdraw::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

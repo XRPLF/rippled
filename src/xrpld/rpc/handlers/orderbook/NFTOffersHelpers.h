@@ -22,7 +22,7 @@ appendNftOfferJson(
     std::shared_ptr<SLE const> const& offer,
     json::Value& offers)
 {
-    json::Value& obj(offers.append(json::ObjectValue));
+    json::Value& obj(offers.append(json::ValueType::Object));
 
     obj[jss::nft_offer_index] = to_string(offer->key());
     obj[jss::flags] = (*offer)[sfFlags];
@@ -62,7 +62,7 @@ enumerateNFTOffers(RPC::JsonContext& context, uint256 const& nftId, Keylet const
     json::Value result;
     result[jss::nft_id] = to_string(nftId);
 
-    json::Value& jsonOffers(result[jss::offers] = json::ArrayValue);
+    json::Value& jsonOffers(result[jss::offers] = json::ValueType::Array);
 
     std::vector<std::shared_ptr<SLE const>> offers;
     unsigned int reserve(limit);

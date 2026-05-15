@@ -197,7 +197,7 @@ removeSignersFromLedger(
     // If the lsfOneOwnerCount bit is set then remove just one owner count.
     // Otherwise use the pre-MultiSignReserve amendment calculation.
     int removeFromOwnerCount = -1;
-    if ((signers->getFlags() & lsfOneOwnerCount) == 0)
+    if (!signers->isFlag(lsfOneOwnerCount))
     {
         STArray const& actualList = signers->getFieldArray(sfSignerEntries);
         removeFromOwnerCount =
@@ -411,6 +411,7 @@ SignerListSet::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -421,6 +422,7 @@ SignerListSet::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

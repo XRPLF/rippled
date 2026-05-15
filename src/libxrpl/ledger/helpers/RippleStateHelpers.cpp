@@ -274,7 +274,7 @@ trustCreate(
         uFlags |= (bSetHigh ? lsfHighDeepFreeze : lsfLowDeepFreeze);
     }
 
-    if ((slePeer->getFlags() & lsfDefaultRipple) == 0)
+    if (!slePeer->isFlag(lsfDefaultRipple))
     {
         // The other side's default is no rippling
         uFlags |= (bSetHigh ? lsfLowNoRipple : lsfHighNoRipple);
@@ -341,22 +341,25 @@ updateTrustLine(
 {
     if (!state)
         return false;
-    std::uint32_t const flags(state->getFieldU32(sfFlags));
 
     auto sle = view.peek(keylet::account(sender));
     if (!sle)
         return false;
+
+    auto const senderReserveFlag = bSenderHigh ? lsfHighReserve : lsfLowReserve;
+    auto const senderNoRippleFlag = bSenderHigh ? lsfHighNoRipple : lsfLowNoRipple;
+    auto const senderFreezeFlag = bSenderHigh ? lsfHighFreeze : lsfLowFreeze;
+    auto const receiverReserveFlag = bSenderHigh ? lsfLowReserve : lsfHighReserve;
 
     // YYY Could skip this if rippling in reverse.
     if (before > beast::kZERO
         // Sender balance was positive.
         && after <= beast::kZERO
         // Sender is zero or negative.
-        && ((flags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve)) != 0u)
+        && state->isFlag(senderReserveFlag)
         // Sender reserve is set.
-        && static_cast<bool>(flags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)) !=
-            static_cast<bool>(sle->getFlags() & lsfDefaultRipple) &&
-        ((flags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze)) == 0u) &&
+        && state->isFlag(senderNoRippleFlag) != sle->isFlag(lsfDefaultRipple) &&
+        !state->isFlag(senderFreezeFlag) &&
         !state->getFieldAmount(!bSenderHigh ? sfLowLimit : sfHighLimit)
         // Sender trust limit is 0.
         && (state->getFieldU32(!bSenderHigh ? sfLowQualityIn : sfHighQualityIn) == 0u)
@@ -369,11 +372,10 @@ updateTrustLine(
         adjustOwnerCount(view, sle, -1, j);
 
         // Clear reserve flag.
-        state->setFieldU32(sfFlags, flags & (!bSenderHigh ? ~lsfLowReserve : ~lsfHighReserve));
+        state->clearFlag(senderReserveFlag);
 
         // Balance is zero, receiver reserve is clear.
-        if (!after  // Balance is zero.
-            && ((flags & (bSenderHigh ? lsfLowReserve : lsfHighReserve)) == 0u))
+        if (!after && !state->isFlag(receiverReserveFlag))
             return true;
     }
     return false;
@@ -453,7 +455,7 @@ issueIOU(
     if (!receiverAccount)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    bool const noRipple = (receiverAccount->getFlags() & lsfDefaultRipple) == 0;
+    bool const noRipple = !receiverAccount->isFlag(lsfDefaultRipple);
 
     return trustCreate(
         view,
@@ -564,12 +566,11 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account, 
     // If this is a weak or legacy check, or if the account has a line, fail if
     // auth is required and not set on the line
     if (auto const issuerAccount = view.read(keylet::account(issue.account));
-        issuerAccount && (((*issuerAccount)[sfFlags] & lsfRequireAuth) != 0u))
+        issuerAccount && issuerAccount->isFlag(lsfRequireAuth))
     {
         if (trustLine)
         {
-            return (((*trustLine)[sfFlags] &
-                     ((account > issue.account) ? lsfLowAuth : lsfHighAuth)) != 0u)
+            return trustLine->isFlag((account > issue.account) ? lsfLowAuth : lsfHighAuth)
                 ? tesSUCCESS
                 : TER{tecNO_AUTH};
         }
@@ -774,7 +775,7 @@ deleteAMMTrustLine(
     }
 
     auto const uFlags = !ammLow ? lsfLowReserve : lsfHighReserve;
-    if ((sleState->getFlags() & uFlags) == 0u)
+    if (!sleState->isFlag(uFlags))
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     adjustOwnerCount(view, !ammLow ? sleLow : sleHigh, -1, j);

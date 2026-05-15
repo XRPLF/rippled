@@ -697,7 +697,7 @@ class Transaction_test : public beast::unit_test::Suite
 
             json::Value params;
             params[jss::id] = 1;
-            auto const hash = env.tx()->getJson(JsonOptions::KNone)[jss::hash];
+            auto const hash = env.tx()->getJson(JsonOptions::Values::None)[jss::hash];
             params[jss::transaction] = hash;
             auto const jrr = env.rpc("json", "tx", to_string(params))[jss::result];
             BEAST_EXPECT(jrr[jss::hash] == hash);
@@ -771,7 +771,7 @@ class Transaction_test : public beast::unit_test::Suite
         std::shared_ptr<STObject const> const meta =
             env.closed()->txRead(env.tx()->getTransactionID()).second;
 
-        json::Value expected = txn->getJson(JsonOptions::KNone);
+        json::Value expected = txn->getJson(JsonOptions::Values::None);
         expected[jss::DeliverMax] = expected[jss::Amount];
         if (apiVersion > 1)
         {
@@ -780,7 +780,7 @@ class Transaction_test : public beast::unit_test::Suite
         }
 
         json::Value const result = {[&env, txn, apiVersion]() {
-            json::Value params{json::ObjectValue};
+            json::Value params{json::ValueType::Object};
             params[jss::transaction] = to_string(txn->getTransactionID());
             params[jss::binary] = false;
             params[jss::api_version] = apiVersion;
@@ -847,7 +847,7 @@ class Transaction_test : public beast::unit_test::Suite
         std::string const expectedMetaBlob = serializeHex(*meta);
 
         json::Value const result = [&env, txn, apiVersion]() {
-            json::Value params{json::ObjectValue};
+            json::Value params{json::ValueType::Object};
             params[jss::transaction] = to_string(txn->getTransactionID());
             params[jss::binary] = true;
             params[jss::api_version] = apiVersion;

@@ -30,21 +30,21 @@ public:
 
 /** Directory is an index into the directory of offer books.
     The last 64 bits of this are the quality. */
-using Directory = BaseUint<256, detail::DirectoryTag>;
+using Directory = BaseUInt<256, detail::DirectoryTag>;
 
 /** Currency is a hash representing a specific currency. */
-using Currency = BaseUint<160, detail::CurrencyTag>;
+using Currency = BaseUInt<160, detail::CurrencyTag>;
 
 /** NodeID is a 160-bit hash representing one node. */
-using NodeID = BaseUint<160, detail::NodeIDTag>;
+using NodeID = BaseUInt<160, detail::NodeIDTag>;
 
 /** MPTID is a 192-bit value representing MPT Issuance ID,
  * which is a concatenation of a 32-bit sequence (big endian)
  * and a 160-bit account */
-using MPTID = BaseUint<192>;
+using MPTID = BaseUInt<192>;
 
 /** Domain is a 256-bit hash representing a specific domain. */
-using Domain = BaseUint<256>;
+using Domain = BaseUInt<256>;
 
 /** XRP currency. */
 Currency const&

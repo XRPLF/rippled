@@ -136,7 +136,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
             return false;
 
         if (auto const issuerAccount = view.read(keylet::account(asset.getIssuer())))
-            return (issuerAccount->getFlags() & lsfDefaultRipple) == 0;
+            return !issuerAccount->isFlag(lsfDefaultRipple);
 
         return false;
     };
@@ -394,11 +394,13 @@ AMMCreate::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
 AMMCreate::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 
