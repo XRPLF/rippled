@@ -63,7 +63,7 @@ setCurrentTransactionRules(std::optional<Rules> r)
         {
             return MantissaRange::MantissaScale::Large;
         }
-        else if (enableVaultNumbers)
+        if (enableVaultNumbers)
         {
             return MantissaRange::MantissaScale::LargeLegacy;
         }
