@@ -486,7 +486,7 @@ public:
 void
 registerRocksDBFactory(Manager& manager)
 {
-    static RocksDBFactory const kINSTANCE{manager};
+    static RocksDBFactory const kInstance{manager};
 }
 
 }  // namespace xrpl::NodeStore

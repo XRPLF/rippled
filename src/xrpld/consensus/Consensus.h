@@ -549,7 +549,7 @@ private:
     // How long has this round been open
     ConsensusTimer openTime_;
 
-    NetClock::duration closeResolution_ = kLEDGER_DEFAULT_TIME_RESOLUTION;
+    NetClock::duration closeResolution_ = kLedgerDefaultTimeResolution;
 
     ConsensusParms::AvalancheState closeTimeAvalancheState_ = ConsensusParms::AvalancheState::Init;
 
@@ -1249,7 +1249,7 @@ Consensus<Adaptor>::shouldPause(std::unique_ptr<std::stringstream> const& clog) 
      *  3: >=95%
      *  4: =100%
      */
-    constexpr static std::size_t kMAX_PAUSE_PHASE = 4;
+    static constexpr std::size_t kMaxPausePhase = 4;
 
     /**
      * No particular threshold guarantees consensus. Lower thresholds
@@ -1270,7 +1270,7 @@ Consensus<Adaptor>::shouldPause(std::unique_ptr<std::stringstream> const& clog) 
      * else out of the scope of this delay mechanism is wrong with the
      * network.
      */
-    std::size_t const phase = (ahead - 1) % (kMAX_PAUSE_PHASE + 1);
+    std::size_t const phase = (ahead - 1) % (kMaxPausePhase + 1);
 
     // validators that remain after the laggards() function are considered
     // offline, and should be considered as laggards for purposes of
@@ -1282,7 +1282,7 @@ Consensus<Adaptor>::shouldPause(std::unique_ptr<std::stringstream> const& clog) 
             if (laggards + offline > totalValidators - quorum)
                 willPause = true;
             break;
-        case kMAX_PAUSE_PHASE:
+        case kMaxPausePhase:
             // No tolerance.
             willPause = true;
             break;
@@ -1297,7 +1297,7 @@ Consensus<Adaptor>::shouldPause(std::unique_ptr<std::stringstream> const& clog) 
             float const nonLaggards = totalValidators - (laggards + offline);
             float const quorumRatio = static_cast<float>(quorum) / totalValidators;
             float const allowedDissent = 1.0f - quorumRatio;
-            float const phaseFactor = static_cast<float>(phase) / kMAX_PAUSE_PHASE;
+            float const phaseFactor = static_cast<float>(phase) / kMaxPausePhase;
 
             if (nonLaggards / totalValidators < quorumRatio + (allowedDissent * phaseFactor))
             {
@@ -1696,9 +1696,9 @@ Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog
     // Consensus has taken far too long. Drop out of the round.
     if (result_->state == ConsensusState::Expired)
     {
-        static auto const kMINIMUM_COUNTER = parms.avalancheCutoffs.size() * parms.avMIN_ROUNDS;
+        static auto const kMinimumCounter = parms.avalancheCutoffs.size() * parms.avMIN_ROUNDS;
         std::stringstream ss;
-        if (establishCounter_ < kMINIMUM_COUNTER)
+        if (establishCounter_ < kMinimumCounter)
         {
             // If each round of phaseEstablish takes a very long time, we may
             // "expire" before we've given consensus enough time at each
@@ -1708,7 +1708,7 @@ Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog
             // amount of time.
 
             ss << "Consensus time has expired in round " << establishCounter_
-               << "; continue until round " << kMINIMUM_COUNTER << ". "
+               << "; continue until round " << kMinimumCounter << ". "
                << json::Compact{getJson(false)};
             JLOG(j_.error()) << ss.str();
             CLOG(clog) << ss.str() << ". ";

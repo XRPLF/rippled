@@ -27,11 +27,11 @@ LoanBrokerCoverDeposit::checkExtraFeatures(PreflightContext const& ctx)
 NotTEC
 LoanBrokerCoverDeposit::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfLoanBrokerID] == beast::kZERO)
+    if (ctx.tx[sfLoanBrokerID] == beast::kZero)
         return temINVALID;
 
     auto const dstAmount = ctx.tx[sfAmount];
-    if (dstAmount <= beast::kZERO)
+    if (dstAmount <= beast::kZero)
         return temBAD_AMOUNT;
 
     if (!isLegalNet(dstAmount))

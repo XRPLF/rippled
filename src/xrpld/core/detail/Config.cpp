@@ -114,7 +114,7 @@ namespace xrpl {
 // clang-format off
 // The configurable node sizes are "tiny", "small", "medium", "large", "huge"
 inline constexpr std::array<std::pair<SizedItem, std::array<int, 5>>, 13>
-kSIZED_ITEMS
+kSizedItems
 {{
     // FIXME: We should document each of these items, explaining exactly
     //        what they control and whether there exists an explicit
@@ -143,7 +143,7 @@ static_assert(
     []() constexpr -> bool {
         std::underlying_type_t<SizedItem> idx = 0;
 
-        for (auto const& i : kSIZED_ITEMS)
+        for (auto const& i : kSizedItems)
         {
             if (static_cast<std::underlying_type_t<SizedItem>>(i.first) != idx)
                 return false;
@@ -248,10 +248,10 @@ getSingleSection(
 //
 //------------------------------------------------------------------------------
 
-char const* const Config::kCONFIG_FILE_NAME = "xrpld.cfg";
-char const* const Config::kCONFIG_LEGACY_NAME = "rippled.cfg";
-char const* const Config::kDATABASE_DIR_NAME = "db";
-char const* const Config::kVALIDATORS_FILE_NAME = "validators.txt";
+char const* const Config::kConfigFileName = "xrpld.cfg";
+char const* const Config::kConfigLegacyName = "rippled.cfg";
+char const* const Config::kDatabaseDirName = "db";
+char const* const Config::kValidatorsFileName = "validators.txt";
 
 [[nodiscard]] static std::string
 getEnvVar(char const* name)
@@ -284,7 +284,7 @@ Config::setupControl(bool bQuiet, bool bSilent, bool bStandalone)
     {
         // First, check against 'minimum' RAM requirements per node size:
         auto const& threshold =
-            kSIZED_ITEMS[std::underlying_type_t<SizedItem>(SizedItem::RamSizeGb)];
+            kSizedItems[std::underlying_type_t<SizedItem>(SizedItem::RamSizeGb)];
 
         auto ns = std::ranges::find_if(threshold.second, [this](std::size_t limit) {
             return (limit == 0) || (ramSize_ < limit);
@@ -322,7 +322,7 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
         CONFIG_FILE_ = strConf;
         CONFIG_DIR = boost::filesystem::absolute(CONFIG_FILE_);
         CONFIG_DIR.remove_filename();
-        dataDir = CONFIG_DIR / kDATABASE_DIR_NAME;
+        dataDir = CONFIG_DIR / kDatabaseDirName;
     }
     else
     {
@@ -332,11 +332,11 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
             // directory, in which case the databases will be stored in a
             // subdirectory.
             CONFIG_DIR = boost::filesystem::current_path();
-            dataDir = CONFIG_DIR / kDATABASE_DIR_NAME;
-            CONFIG_FILE_ = CONFIG_DIR / kCONFIG_FILE_NAME;
+            dataDir = CONFIG_DIR / kDatabaseDirName;
+            CONFIG_FILE_ = CONFIG_DIR / kConfigFileName;
             if (boost::filesystem::exists(CONFIG_FILE_))
                 break;
-            CONFIG_FILE_ = CONFIG_DIR / kCONFIG_LEGACY_NAME;
+            CONFIG_FILE_ = CONFIG_DIR / kConfigLegacyName;
             if (boost::filesystem::exists(CONFIG_FILE_))
                 break;
 
@@ -363,10 +363,10 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
                 // dir.
                 dataDir = strXdgDataHome + "/" + systemName();
                 CONFIG_DIR = strXdgConfigHome + "/" + systemName();
-                CONFIG_FILE_ = CONFIG_DIR / kCONFIG_FILE_NAME;
+                CONFIG_FILE_ = CONFIG_DIR / kConfigFileName;
                 if (boost::filesystem::exists(CONFIG_FILE_))
                     break;
-                CONFIG_FILE_ = CONFIG_DIR / kCONFIG_LEGACY_NAME;
+                CONFIG_FILE_ = CONFIG_DIR / kConfigLegacyName;
                 if (boost::filesystem::exists(CONFIG_FILE_))
                     break;
             }
@@ -374,10 +374,10 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
             // As a last resort, check the system config directory.
             dataDir = "/var/opt/" + systemName();
             CONFIG_DIR = "/etc/opt/" + systemName();
-            CONFIG_FILE_ = CONFIG_DIR / kCONFIG_FILE_NAME;
+            CONFIG_FILE_ = CONFIG_DIR / kConfigFileName;
             if (boost::filesystem::exists(CONFIG_FILE_))
                 break;
-            CONFIG_FILE_ = CONFIG_DIR / kCONFIG_LEGACY_NAME;
+            CONFIG_FILE_ = CONFIG_DIR / kConfigLegacyName;
         } while (false);
     }
 
@@ -845,7 +845,7 @@ Config::loadFromString(std::string const& fileContents)
     if (getSingleSection(secConfig, SECTION_MAX_TRANSACTIONS, strTemp, j_))
     {
         MAX_TRANSACTIONS =
-            std::clamp(beast::lexicalCastThrow<int>(strTemp), kMIN_JOB_QUEUE_TX, kMAX_JOB_QUEUE_TX);
+            std::clamp(beast::lexicalCastThrow<int>(strTemp), kMinJobQueueTx, kMaxJobQueueTx);
     }
 
     if (getSingleSection(secConfig, SECTION_SERVER_DOMAIN, strTemp, j_))
@@ -988,7 +988,7 @@ Config::loadFromString(std::string const& fileContents)
         }
         else if (!CONFIG_DIR.empty())
         {
-            validatorsFile = CONFIG_DIR / kVALIDATORS_FILE_NAME;
+            validatorsFile = CONFIG_DIR / kValidatorsFileName;
 
             if (!validatorsFile.empty())
             {
@@ -1173,9 +1173,9 @@ int
 Config::getValueFor(SizedItem item, std::optional<std::size_t> node) const
 {
     auto const index = static_cast<std::underlying_type_t<SizedItem>>(item);
-    XRPL_ASSERT(index < kSIZED_ITEMS.size(), "xrpl::Config::getValueFor : valid index input");
+    XRPL_ASSERT(index < kSizedItems.size(), "xrpl::Config::getValueFor : valid index input");
     XRPL_ASSERT(!node || *node <= 4, "xrpl::Config::getValueFor : unset or valid node");
-    return kSIZED_ITEMS.at(index).second.at(node.value_or(NODE_SIZE));
+    return kSizedItems.at(index).second.at(node.value_or(NODE_SIZE));
 }
 
 FeeSetup
@@ -1257,7 +1257,7 @@ setupDatabaseCon(Config const& c, std::optional<beast::Journal> j)
                 boost::iequals(journalMode, "wal"))
             {
                 result->emplace_back(
-                    boost::str(boost::format(kCOMMON_DB_PRAGMA_JOURNAL) % journalMode));
+                    boost::str(boost::format(kCommonDbPragmaJournal) % journalMode));
             }
             else
             {
@@ -1278,8 +1278,7 @@ setupDatabaseCon(Config const& c, std::optional<beast::Journal> j)
             if (higherRisk || boost::iequals(synchronous, "normal") ||
                 boost::iequals(synchronous, "full") || boost::iequals(synchronous, "extra"))
             {
-                result->emplace_back(
-                    boost::str(boost::format(kCOMMON_DB_PRAGMA_SYNC) % synchronous));
+                result->emplace_back(boost::str(boost::format(kCommonDbPragmaSync) % synchronous));
             }
             else
             {
@@ -1300,7 +1299,7 @@ setupDatabaseCon(Config const& c, std::optional<beast::Journal> j)
             if (higherRisk || boost::iequals(tempStore, "default") ||
                 boost::iequals(tempStore, "file"))
             {
-                result->emplace_back(boost::str(boost::format(kCOMMON_DB_PRAGMA_TEMP) % tempStore));
+                result->emplace_back(boost::str(boost::format(kCommonDbPragmaTemp) % tempStore));
             }
             else
             {
@@ -1308,7 +1307,7 @@ setupDatabaseCon(Config const& c, std::optional<beast::Journal> j)
             }
         }
 
-        if (showRiskWarning && j && c.LEDGER_HISTORY > kSQLITE_TUNING_CUTOFF)
+        if (showRiskWarning && j && c.LEDGER_HISTORY > kSqliteTuningCutoff)
         {
             JLOG(j->warn()) << "reducing the data integrity guarantees from the "
                                "default [sqlite] behavior is not recommended for "
