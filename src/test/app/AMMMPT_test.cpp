@@ -128,7 +128,7 @@ private:
                  .issuer = gw_,
                  .holders = {alice_},
                  .pay = 30'000,
-                 .flags = tfMPTRequireAuth | kMPT_DEX_FLAGS,
+                 .flags = tfMPTRequireAuth | kMptDexFlags,
                  .authHolder = true});
             AMM const ammAlice(env, alice_, USD(10'000), btc(10'000));
         }
@@ -142,7 +142,7 @@ private:
                  .issuer = gw_,
                  .holders = {alice_},
                  .pay = 30'000,
-                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+                 .flags = tfMPTCanLock | kMptDexFlags});
             usd.set({.flags = tfMPTLock});
             AMM const ammAliceFail(env, alice_, XRP(10'000), usd(10'000), Ter(tecLOCKED));
             usd.set({.flags = tfMPTUnlock});
@@ -346,7 +346,7 @@ private:
                  .issuer = gw_,
                  .holders = {alice_},
                  .pay = 30'000,
-                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+                 .flags = tfMPTCanLock | kMptDexFlags});
             btc.set({.flags = tfMPTLock});
             AMM const ammAlice(env, alice_, USD(10'000), btc(10'000), Ter(tecLOCKED));
             BEAST_EXPECT(!ammAlice.ammExists());
@@ -361,7 +361,7 @@ private:
                  .issuer = gw_,
                  .holders = {alice_, bob_},
                  .pay = 30'000,
-                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+                 .flags = tfMPTCanLock | kMptDexFlags});
             btc.set({.holder = alice_, .flags = tfMPTLock});
 
             // alice's token is locked
@@ -496,7 +496,7 @@ private:
                     {.env = env,
                      .issuer = gw_,
                      .holders = {alice_, carol_},
-                     .flags = tfMPTCanLock | kMPT_DEX_FLAGS,
+                     .flags = tfMPTCanLock | kMptDexFlags,
                      .authHolder = true});
 
                 // Depositing mismatched token, invalid Asset1In.issue
@@ -687,7 +687,7 @@ private:
                  .issuer = gw_,
                  .holders = {alice_, carol_},
                  .pay = 30'000,
-                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+                 .flags = tfMPTCanLock | kMptDexFlags});
 
             AMM ammAlice(env, alice_, USD(10'000), btc(10'000));
             btc.set({.flags = tfMPTLock});
@@ -713,7 +713,7 @@ private:
                  .issuer = gw_,
                  .holders = {alice_, carol_},
                  .pay = 30'000,
-                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+                 .flags = tfMPTCanLock | kMptDexFlags});
 
             AMM ammAlice(env, alice_, USD(10'000), btc(10'000));
 
@@ -798,13 +798,13 @@ private:
                  .issuer = gw_,
                  .holders = {alice_, carol_},
                  .pay = 30'000,
-                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+                 .flags = tfMPTCanLock | kMptDexFlags});
             MPTTester usd(
                 {.env = env,
                  .issuer = gw_,
                  .holders = {alice_, carol_},
                  .pay = 40'000,
-                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+                 .flags = tfMPTCanLock | kMptDexFlags});
 
             AMM ammAlice(env, alice_, usd(10'000), btc(10'000));
 
@@ -870,7 +870,7 @@ private:
                 {.maxAmt = 1'000'000,
                  .authorize = {{alice}},
                  .pay = {{{alice}, 10'000}},
-                 .flags = tfMPTRequireAuth | kMPT_DEX_FLAGS,
+                 .flags = tfMPTRequireAuth | kMptDexFlags,
                  .authHolder = true});
 
             AMM amm(env, alice, XRP(10'000), btc(10'000));
@@ -2035,7 +2035,7 @@ private:
                  .issuer = gw_,
                  .holders = {alice_},
                  .pay = 30'000,
-                 .flags = tfMPTRequireAuth | kMPT_DEX_FLAGS,
+                 .flags = tfMPTRequireAuth | kMptDexFlags,
                  .authHolder = true});
             AMM ammAlice(env, alice_, XRP(10'000), btc(10'000));
             WithdrawArg const args{
@@ -2053,7 +2053,7 @@ private:
                      .issuer = gw_,
                      .holders = {alice_, carol_},
                      .pay = 2'000,
-                     .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+                     .flags = tfMPTCanLock | kMptDexFlags});
 
                 // Invalid tokens
                 ammAlice.withdraw(alice_, 0, std::nullopt, std::nullopt, Ter(temBAD_AMM_TOKENS));
@@ -2224,7 +2224,7 @@ private:
                  .issuer = gw_,
                  .holders = {alice_},
                  .pay = 30'000,
-                 .flags = tfMPTRequireAuth | kMPT_DEX_FLAGS,
+                 .flags = tfMPTRequireAuth | kMptDexFlags,
                  .authHolder = true});
             MPT const btc = btcm;
 
@@ -2274,7 +2274,7 @@ private:
                  .issuer = gw_,
                  .holders = {alice_},
                  .pay = 30'000,
-                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS,
+                 .flags = tfMPTCanLock | kMptDexFlags,
                  .authHolder = true});
 
             AMM ammAlice(env, alice_, XRP(10'000), btc(10'000));
@@ -2298,13 +2298,13 @@ private:
                  .issuer = gw_,
                  .holders = {alice_},
                  .pay = 30'000,
-                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+                 .flags = tfMPTCanLock | kMptDexFlags});
             MPTTester const usd(
                 {.env = env,
                  .issuer = gw_,
                  .holders = {alice_},
                  .pay = 40'000,
-                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+                 .flags = tfMPTCanLock | kMptDexFlags});
 
             AMM ammAlice(env, alice_, usd(10'000), btc(10'000));
 
@@ -2332,7 +2332,7 @@ private:
                  .issuer = gw_,
                  .holders = {alice_},
                  .pay = 30'000,
-                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+                 .flags = tfMPTCanLock | kMptDexFlags});
 
             AMM ammAlice(env, alice_, USD(10'000), btc(10'000));
 
@@ -3475,7 +3475,7 @@ private:
                  .issuer = gw_,
                  .holders = {alice_},
                  .pay = 2'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             AMM amm(env, gw_, XRP(1'000), btc(1'000), false, 1'000);
 
             // auction slot is owned by the creator of the AMM i.e. gw
@@ -3500,7 +3500,7 @@ private:
                  .issuer = gw_,
                  .holders = {alice_},
                  .pay = 2'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             AMM amm(env, gw_, XRP(1'000), btc(1'000), false, 1'000);
 
             // auction slot is owned by the creator of the AMM i.e. gw
@@ -3608,7 +3608,7 @@ private:
                  .issuer = gw_,
                  .holders = {alice_, carol_, bob_},
                  .pay = 30'000'000'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
 
             AMM ammAlice(env, alice_, btc(10'000'000'000), USD(10'000));
             ammAlice.deposit(carol_, 1'000'000);
@@ -3644,7 +3644,7 @@ private:
                  .issuer = gw_,
                  .holders = {alice_, bob_},
                  .pay = 1'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             AMM amm(env, gw_, XRP(10), btc(1'000));
             auto const lpIssue = amm.lptIssue();
             env.trust(STAmount{lpIssue, 100}, alice_);
@@ -3709,7 +3709,7 @@ private:
                  .issuer = gw_,
                  .holders = {alice_, carol_, bob_},
                  .pay = 30'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             AMM ammAlice(env, alice_, XRP(10'000), btc(10'000));
 
             ammAlice.deposit(carol_, 1'000'000);
@@ -3754,7 +3754,7 @@ private:
                  .issuer = gw_,
                  .holders = {alice_, carol_, bob_},
                  .pay = 30'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             AMM ammAlice(env, alice_, XRP(10'000), btc(10'000));
 
             ammAlice.deposit(carol_, 1'000'000);
@@ -3768,18 +3768,17 @@ private:
 
             // 1st Interval after close, price for 0th interval.
             env(ammAlice.bid({.account = bob_}));
-            env.close(seconds(kAUCTION_SLOT_INTERVAL_DURATION + 1));
+            env.close(seconds(kAuctionSlotIntervalDuration + 1));
             BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 1, IOUAmount{1'155, -1}));
 
             // 10th Interval after close, price for 1st interval.
             env(ammAlice.bid({.account = carol_}));
-            env.close(seconds((10 * kAUCTION_SLOT_INTERVAL_DURATION) + 1));
+            env.close(seconds((10 * kAuctionSlotIntervalDuration) + 1));
             BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 10, IOUAmount{121'275, -3}));
 
             // 20th Interval (expired) after close, price for 10th interval.
             env(ammAlice.bid({.account = bob_}));
-            env.close(
-                seconds((kAUCTION_SLOT_TIME_INTERVALS * kAUCTION_SLOT_INTERVAL_DURATION) + 1));
+            env.close(seconds((kAuctionSlotTimeIntervals * kAuctionSlotIntervalDuration) + 1));
             BEAST_EXPECT(ammAlice.expectAuctionSlot(0, std::nullopt, IOUAmount{127'33875, -5}));
 
             // 0 Interval.
@@ -3882,7 +3881,7 @@ private:
                 btc(13'000'000'671), STAmount{USD, UINT64_C(13'114'03663044931), -11}, ammTokens));
 
             // Auction slot expired, no discounted fee
-            env.close(seconds(kTOTAL_TIME_SLOT_SECS + 1));
+            env.close(seconds(kTotalTimeSlotSecs + 1));
             // clock is parent's based
             env.close();
 
@@ -3915,7 +3914,7 @@ private:
         testAMM(
             [&](AMM& ammAlice, Env& env) {
                 // Bid a tiny amount
-                auto const tiny = Number{STAmount::kMIN_VALUE, STAmount::kMIN_OFFSET};
+                auto const tiny = Number{STAmount::kMinValue, STAmount::kMinOffset};
                 env(ammAlice.bid({.account = alice_, .bidMin = IOUAmount{tiny}}));
                 // Auction slot purchase price is equal to the tiny amount
                 // since the minSlotPrice is 0 with no trading fee.
@@ -3926,7 +3925,7 @@ private:
                 // Bid the tiny amount
                 env(ammAlice.bid({
                     .account = alice_,
-                    .bidMin = IOUAmount{STAmount::kMIN_VALUE, STAmount::kMIN_OFFSET},
+                    .bidMin = IOUAmount{STAmount::kMinValue, STAmount::kMinOffset},
                 }));
                 // Pay slightly higher price
                 BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{tiny * Number{105, -2}}));
@@ -3969,7 +3968,7 @@ private:
                  .issuer = gw_,
                  .holders = {alice_, bob_},
                  .pay = 2'000'000'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             fund(env, gw_, {alice_, bob_}, {USD(2'000)}, Fund::TokenOnly);
             AMM amm(env, gw_, btc(1'000'000'000), USD(1'010), false, 1'000);
             auto const lpIssue = amm.lptIssue();
@@ -4005,7 +4004,7 @@ private:
                  .issuer = gw_,
                  .holders = {alice_, bob_},
                  .pay = 2'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             AMM amm(env, gw_, XRP(1'000), btc(1'010), false, 1'000);
             json::Value const tx = amm.bid({.account = alice_, .bidMin = 500});
 
@@ -4066,7 +4065,7 @@ private:
              .issuer = gw_,
              .holders = {alice_},
              .pay = 30'000,
-             .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+             .flags = tfMPTCanLock | kMptDexFlags});
 
         // to clawback from AMM account, must use AMMClawback instead of
         // Clawback
@@ -4101,7 +4100,7 @@ private:
                      .issuer = gw_,
                      .holders = {alice_, carol_},
                      .pay = 100,
-                     .flags = kMPT_DEX_FLAGS});
+                     .flags = kMptDexFlags});
                 // XRP balance is below reserve
                 AMM const ammAlice(env, acct, XRP(10), btc(10));
                 // Pay below reserve
@@ -4120,7 +4119,7 @@ private:
                      .issuer = gw_,
                      .holders = {alice_, carol_},
                      .pay = 20'000,
-                     .flags = kMPT_DEX_FLAGS});
+                     .flags = kMptDexFlags});
                 // XRP balance is above reserve
                 AMM const ammAlice(env, acct, XRP(1'000'000), btc(10'000));
                 // Pay below reserve
@@ -4136,16 +4135,16 @@ private:
         testAMM(
             [&](AMM& ammAlice, Env& env) {
                 env(escrow::create(carol_, ammAlice.ammAccount(), MPT(ammAlice[1])(1)),
-                    escrow::kCONDITION(escrow::kCB1),
-                    escrow::kFINISH_TIME(env.now() + 1s),
-                    escrow::kCANCEL_TIME(env.now() + 2s),
+                    escrow::kCondition(escrow::kCb1),
+                    escrow::kFinishTime(env.now() + 1s),
+                    escrow::kCancelTime(env.now() + 2s),
                     Fee(1'500),
                     Ter(tecNO_PERMISSION));
 
                 env(escrow::create(carol_, ammAlice.ammAccount(), XRP(1)),
-                    escrow::kCONDITION(escrow::kCB1),
-                    escrow::kFINISH_TIME(env.now() + 1s),
-                    escrow::kCANCEL_TIME(env.now() + 2s),
+                    escrow::kCondition(escrow::kCb1),
+                    escrow::kFinishTime(env.now() + 1s),
+                    escrow::kCancelTime(env.now() + 2s),
                     Fee(1'500),
                     Ter(tecNO_PERMISSION));
             },
@@ -4230,7 +4229,7 @@ private:
                  .issuer = gw_,
                  .holders = {alice_, carol_},
                  .pay = 30'000,
-                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+                 .flags = tfMPTCanLock | kMptDexFlags});
 
             AMM const ammAlice(env, alice_, XRP(10'000), btc(10'000));
             btc.set({.flags = tfMPTLock});
@@ -4256,7 +4255,7 @@ private:
                  .issuer = gw_,
                  .holders = {alice_, carol_},
                  .pay = 30'000,
-                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+                 .flags = tfMPTCanLock | kMptDexFlags});
 
             AMM const ammAlice(env, alice_, XRP(10'000), btc(10'000));
             btc.set({.holder = carol_, .flags = tfMPTLock});
@@ -4277,7 +4276,7 @@ private:
                  .issuer = gw_,
                  .holders = {alice_, carol_},
                  .pay = 30'000,
-                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+                 .flags = tfMPTCanLock | kMptDexFlags});
 
             AMM const ammAlice(env, alice_, XRP(10'000), btc(10'000));
             btc.set({.holder = alice_, .flags = tfMPTLock});
@@ -4298,13 +4297,13 @@ private:
                  .issuer = gw_,
                  .holders = {alice_, carol_},
                  .pay = 30'000,
-                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+                 .flags = tfMPTCanLock | kMptDexFlags});
             MPTTester eth(
                 {.env = env,
                  .issuer = gw_,
                  .holders = {alice_, carol_},
                  .pay = 30'000,
-                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+                 .flags = tfMPTCanLock | kMptDexFlags});
 
             AMM const ammAlice(env, alice_, eth(10'000), btc(10'000));
             btc.set({.holder = carol_, .flags = tfMPTLock});
@@ -4334,7 +4333,7 @@ private:
                  .issuer = gw_,
                  .holders = {alice_, carol_},
                  .pay = 30'000,
-                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+                 .flags = tfMPTCanLock | kMptDexFlags});
 
             AMM const ammAlice(env, alice_, XRP(10'000), btc(10'000));
             btc.set({.holder = ammAlice.ammAccount(), .flags = tfMPTLock});
@@ -4633,7 +4632,7 @@ private:
                  .holders = {alice_, carol_},
                  .transferFee = 10'000,
                  .pay = 30'000'000'000'000'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             auto ammAlice = AMM(env, alice_, XRP(10'000), btc(10'010'000'000'000'000));
             env.close();
             auto carolMPT = env.balance(carol_, MPT(btc));
@@ -4761,13 +4760,13 @@ private:
                  .issuer = gw_,
                  .holders = {alice_, carol_},
                  .pay = 3'000'000'000'000'000'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             MPTTester const eth(
                 {.env = env,
                  .issuer = gw_,
                  .holders = {alice_, carol_},
                  .pay = 3'000'000'000'000'000'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             env.fund(XRP(1'000), bob_);
             env.close();
             auto ammEthXrp = AMM(env, alice_, XRP(10'000), eth(1'000'000'000'000'000'000));
@@ -4811,13 +4810,13 @@ private:
                  .issuer = gw_,
                  .holders = {alice_, carol_},
                  .pay = 3'000'000'000'000'000'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             MPTTester const eth(
                 {.env = env,
                  .issuer = gw_,
                  .holders = {alice_},
                  .pay = 1'000'000'000'000'000'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             auto ammAlice = AMM(env, alice_, XRP(10'000), btc(1'000'000'000'000'000'000));
             env.fund(XRP(1'000), bob_);
             env.close();
@@ -4859,7 +4858,7 @@ private:
                  .issuer = gw_,
                  .holders = {alice_, bob_, carol_},
                  .pay = 30'000'000'000'000'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             AMM ammAlice(env, alice_, XRP(10'000), btc(10'100'000'000'000'000));
             env(offer(bob_, XRP(100), MPT(ammAlice[1])(100'000'000'000'000)), Txflags(tfPassive));
             env.close();
@@ -4894,7 +4893,7 @@ private:
                  .issuer = gw_,
                  .holders = {alice_, bob_, carol_},
                  .pay = 2'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             env(offer(bob_, XRP(50), btc(150)), Txflags(tfPassive));
             env.close();
             AMM const ammAlice(env, alice_, XRP(1'000), btc(1'050));
@@ -4913,7 +4912,7 @@ private:
                  .issuer = gw_,
                  .holders = {alice_, bob_, carol_},
                  .pay = 30'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             AMM ammAlice(env, alice_, XRP(10'000), btc(10'100));
             env(offer(bob_, MPT(ammAlice[1])(100), XRP(100)));
             env.close();
@@ -4939,14 +4938,14 @@ private:
                  .holders = {alice_, carol_},
                  .transferFee = 25'000,
                  .pay = 30'000'000'000'000'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             MPTTester const eth(
                 {.env = env,
                  .issuer = gw_,
                  .holders = {alice_, carol_},
                  .transferFee = 25'000,
                  .pay = 30'000'000'000'000'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             AMM const ammAlice(env, alice_, btc(1'000'000'000'000'000), eth(1'100'000'000'000'000));
             // This offer succeeds to cross pre- and post-amendment
             // because the strand's out amount is small enough to match
@@ -4975,7 +4974,7 @@ private:
                  .holders = {alice_, carol_},
                  .transferFee = 100,
                  .pay = 30'000'000'000'000'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             AMM const amm(env, alice_, XRP(1'000), btc(500'000'000'000'000));
             env(offer(carol_, XRP(100), btc(55'000'000'000'000)));
             env.close();
@@ -4998,7 +4997,7 @@ private:
                  .holders = {alice_, carol_},
                  .transferFee = 100,
                  .pay = 3'000'000'000'000'000'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             AMM const amm(env, alice_, XRP(1'000), btc(50'000'000'000'000'000));
             env(offer(carol_, XRP(10), btc(5'500'000'000'000'000)));
             env.close();
@@ -5018,14 +5017,14 @@ private:
                  .holders = {alice_, bob_, carol_, ed},
                  .transferFee = 25'000,
                  .pay = 20'000'000'000'000'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             MPTTester const eth(
                 {.env = env,
                  .issuer = gw_,
                  .holders = {alice_, bob_, carol_, ed},
                  .transferFee = 25'000,
                  .pay = 20'000'000'000'000'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             AMM const ammAlice(
                 env, alice_, btc(10'000'000'000'000'000), eth(11'000'000'000'000'000));
 
@@ -5065,14 +5064,14 @@ private:
                  .holders = {alice_, bob_, carol_},
                  .transferFee = 25'000,
                  .pay = 30'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             MPTTester const eth(
                 {.env = env,
                  .issuer = gw_,
                  .holders = {alice_, bob_, carol_},
                  .transferFee = 25'000,
                  .pay = 30'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             AMM const ammAlice(env, alice_, btc(1'000), eth(1'100));
             env(rate(gw_, 1.25));
             env.close();
@@ -5108,28 +5107,28 @@ private:
                  .holders = {alice_, bob_, carol_, dan, ed},
                  .transferFee = 25'000,
                  .pay = 30'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             MPTTester const eth(
                 {.env = env,
                  .issuer = gw_,
                  .holders = {alice_, bob_, carol_, dan, ed},
                  .transferFee = 25'000,
                  .pay = 30'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             MPTTester const can(
                 {.env = env,
                  .issuer = gw_,
                  .holders = {alice_, bob_, carol_, dan, ed},
                  .transferFee = 25'000,
                  .pay = 2'000'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             MPTTester const gbp(
                 {.env = env,
                  .issuer = gw_,
                  .holders = {alice_, bob_, carol_, dan, ed},
                  .transferFee = 25'000,
                  .pay = 3'000'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             AMM const ammAlice(env, alice_, gbp(1'000'000), eth(10'125));
             env(pay(gw_, bob_, can(1'953'125)));
             env.close();
@@ -5188,25 +5187,25 @@ private:
                  .issuer = gw_,
                  .holders = {alice_, bob_, carol_},
                  .pay = 500'000'000'000'000'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             MPTTester const eth(
                 {.env = env,
                  .issuer = gw_,
                  .holders = {alice_, bob_, carol_},
                  .pay = 500'000'000'000'000'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             MPTTester const usd(
                 {.env = env,
                  .issuer = gw_,
                  .holders = {alice_, bob_, carol_},
                  .pay = 500'000'000'000'000'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             MPTTester const eur(
                 {.env = env,
                  .issuer = gw_,
                  .holders = {alice_, bob_, carol_},
                  .pay = 500'000'000'000'000'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             AMM const xrpEur(env, alice_, XRP(10'100), eur(100'000'000'000'000'000));
             AMM const eurBtc(
                 env, alice_, eur(100'000'000'000'000'000), btc(102'000'000'000'000'000));
@@ -5261,25 +5260,25 @@ private:
                  .issuer = gw_,
                  .holders = {alice_, bob_, carol_},
                  .pay = 50'000'000'000'000'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             MPTTester const eth(
                 {.env = env,
                  .issuer = gw_,
                  .holders = {alice_, bob_, carol_},
                  .pay = 50'000'000'000'000'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             MPTTester const usd(
                 {.env = env,
                  .issuer = gw_,
                  .holders = {alice_, bob_, carol_},
                  .pay = 50'000'000'000'000'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             MPTTester const eur(
                 {.env = env,
                  .issuer = gw_,
                  .holders = {alice_, bob_, carol_},
                  .pay = 50'000'000'000'000'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             AMM const xrpEur(env, alice_, XRP(10'100), eur(10'000'000'000'000'000));
             AMM const eurBtc(env, alice_, eur(10'000'000'000'000'000), btc(10'200'000'000'000'000));
             AMM const btcUsd(env, alice_, btc(10'100'000'000'000'000), usd(10'000'000'000'000'000));
@@ -5314,13 +5313,13 @@ private:
                  .issuer = gw_,
                  .holders = {alice_, bob_, carol_},
                  .pay = 30'000'000'000'000'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             MPTTester const eth(
                 {.env = env,
                  .issuer = gw_,
                  .holders = {alice_, bob_, carol_},
                  .pay = 400'000'000'000'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             AMM const ammAlice(env, alice_, XRP(10'000), btc(10'000'000'000'000'000));
 
             for (int i = 0; i < 30; ++i)
@@ -5350,13 +5349,13 @@ private:
                  .issuer = gw_,
                  .holders = {alice_, bob_, carol_},
                  .pay = 30'000'000'000'000'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             MPTTester const eth(
                 {.env = env,
                  .issuer = gw_,
                  .holders = {alice_, bob_, carol_},
                  .pay = 400'000'000'000'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             AMM const ammAlice(env, alice_, XRP(10'000), btc(10'000'000'000'000'000));
 
             for (int i = 0; i < 29; ++i)
@@ -5387,7 +5386,7 @@ private:
                  .issuer = gw_,
                  .holders = {alice_, bob_, carol_},
                  .pay = 30'000'000'000'000'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
 
             env(offer(bob_, XRP(100), btc(100'001'000'000'000)));
             AMM const ammAlice(env, alice_, XRP(10'000), btc(10'100'000'000'000'000));
@@ -5410,7 +5409,7 @@ private:
                  .issuer = gw_,
                  .holders = {alice_, carol_},
                  .pay = 30'000,
-                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+                 .flags = tfMPTCanLock | kMptDexFlags});
             AMM const ammAlice(env, alice_, XRP(10'000), btc(10'000));
 
             btc.set({.holder = carol_, .flags = tfMPTLock});
@@ -5431,7 +5430,7 @@ private:
                  .issuer = gw_,
                  .holders = {alice_, carol_},
                  .pay = 30'000,
-                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+                 .flags = tfMPTCanLock | kMptDexFlags});
             AMM const ammAlice(env, alice_, XRP(10'000), btc(10'000));
 
             btc.set({.holder = alice_, .flags = tfMPTLock});
@@ -5602,7 +5601,7 @@ private:
             env.fund(XRP(10'000), lP1);
             env.fund(XRP(10'000), lP2);
             MPTTester const tst(
-                {.env = env, .issuer = gw, .holders = {lP1, lP2}, .flags = kMPT_DEX_FLAGS});
+                {.env = env, .issuer = gw, .holders = {lP1, lP2}, .flags = kMptDexFlags});
 
             env(offer(gw, XRP(11'500'000'000), tst(1'000'000'000'000'000)));
 
@@ -5818,7 +5817,7 @@ private:
                  .issuer = gw_,
                  .holders = {alice_, bob_, carol_},
                  .pay = 30'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
 
             auto const usd = gw_["USD"];
             env.trust(usd(30'000), alice_);
@@ -5941,7 +5940,7 @@ private:
                  .issuer = gw_,
                  .holders = {alice_, bob_, carol_, ed},
                  .pay = 30'000'000000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
 
             env(offer(carol_, btc(5'000000), USD(5)));
             AMM const ammAlice(env, alice_, USD(1'005), btc(1'000'000000));
@@ -5970,7 +5969,7 @@ private:
                  .issuer = gw_,
                  .holders = {alice_, bob_, carol_, ed},
                  .pay = 30'000'000000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
 
             env(offer(carol_, btc(5'000000), USD(5)));
             // Set 0.25% fee
@@ -5997,7 +5996,7 @@ private:
                  .issuer = gw_,
                  .holders = {alice_, bob_, carol_, ed},
                  .pay = 30'000'000000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
 
             env(offer(carol_, btc(10'000000), USD(10)));
             // Set 1% fee
@@ -6025,7 +6024,7 @@ private:
                  .issuer = gw_,
                  .holders = {alice_, bob_, carol_, ed},
                  .pay = 30'000'000000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
 
             env(offer(carol_, btc(9'000000), USD(9)));
             // Set 1% fee
@@ -6071,7 +6070,7 @@ private:
                  .issuer = gw,
                  .holders = holders,
                  .pay = 40'000'000000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
 
             auto const usd = gw["USD"];
             for (auto const& holder : holders)
@@ -6162,7 +6161,7 @@ private:
                  .issuer = gw,
                  .holders = holders,
                  .pay = 40'000'000000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
 
             auto const usd = gw["USD"];
             for (auto const& holder : holders)
@@ -6311,21 +6310,21 @@ private:
                  .holders = {alice_, bob_, carol_, ed},
                  .transferFee = gwTransferFee,
                  .pay = 2'000'000'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             MPTTester eth(
                 {.env = env,
                  .issuer = gw1,
                  .holders = {alice_, bob_, carol_, ed},
                  .transferFee = gw1TransferFee,
                  .pay = 2'000'000'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             MPTTester can(
                 {.env = env,
                  .issuer = gw1,
                  .holders = {alice_, bob_, carol_, ed},
                  .transferFee = gw1TransferFee,
                  .pay = 2'000'000'000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
             env.close();
 
             return MPTList{
@@ -6335,10 +6334,10 @@ private:
             };
         };
 
-        std::uint32_t constexpr kLOW_RATE = 10'000;
-        std::uint32_t constexpr kHIGH_RATE = 50'000;
+        static constexpr std::uint32_t kLowRate = 10'000;
+        static constexpr std::uint32_t kHighRate = 50'000;
         for (auto const& rates :
-             {std::make_pair(kLOW_RATE, kHIGH_RATE), std::make_pair(kHIGH_RATE, kLOW_RATE)})
+             {std::make_pair(kLowRate, kHighRate), std::make_pair(kHighRate, kLowRate)})
         {
             // Offer Selection
 
@@ -6472,7 +6471,7 @@ private:
 
                     if (i == 2)
                     {
-                        if (rates.first == kLOW_RATE)
+                        if (rates.first == kLowRate)
                         {
                             BEAST_EXPECT(expectOffers(
                                 env,
@@ -6537,7 +6536,7 @@ private:
                 // limitQuality
                 if (i == 2)
                 {
-                    if (rates.first == kLOW_RATE)
+                    if (rates.first == kLowRate)
                     {
                         // Ed offer is partially crossed.
                         // The updated rounding makes limitQuality
@@ -6616,7 +6615,7 @@ private:
                     {
                         // NOLINTBEGIN(bugprone-unchecked-optional-access) i==2 implies amm is
                         // emplaced (i>0)
-                        if (rates.first == kLOW_RATE)
+                        if (rates.first == kLowRate)
                         {
                             // Liquidity is consumed from AMM strand only
                             BEAST_EXPECT(amm->expectBalances(
@@ -6706,7 +6705,7 @@ private:
                      .issuer = gw_,
                      .holders = {alice_, carol_},
                      .pay = 2'000,
-                     .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+                     .flags = tfMPTCanLock | kMptDexFlags});
                 WithdrawArg const args{
                     .asset1Out = XRP(100),
                     .asset2Out = btc(100),
@@ -6729,7 +6728,7 @@ private:
                      .issuer = gw_,
                      .holders = {alice_, carol_},
                      .pay = 2'000,
-                     .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+                     .flags = tfMPTCanLock | kMptDexFlags});
                 btc(100).value().setJson(jv[jss::EPrice]);
                 env(jv, Ter(telENV_RPC_FAILED));
             },
@@ -6754,7 +6753,7 @@ private:
                  .issuer = gw_,
                  .holders = {alice_, carol_},
                  .pay = 40'000'000000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
 
             env(offer(alice_, btc(1), USD(0.01)));
             env.close();
@@ -6788,7 +6787,7 @@ private:
                  .issuer = gw_,
                  .holders = {alice_, carol_},
                  .pay = 40'000'000000,
-                 .flags = kMPT_DEX_FLAGS});
+                 .flags = kMptDexFlags});
 
             env(offer(alice_, btc(1), XRP(0.01)));
             env.close();
@@ -6838,7 +6837,7 @@ private:
              .issuer = gw,
              .holders = {alice, bob},
              .pay = 40'000'000000,
-             .flags = tfMPTCanClawback | tfMPTCanLock | kMPT_DEX_FLAGS});
+             .flags = tfMPTCanClawback | tfMPTCanLock | kMptDexFlags});
 
         AMM amm(env, alice, btc(2), usd(1));
         amm.deposit(alice, IOUAmount{1'876123487565916, -15});
@@ -6877,7 +6876,7 @@ private:
                  .issuer = gw_,
                  .holders = {alice_},
                  .pay = 30'000,
-                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+                 .flags = tfMPTCanLock | kMptDexFlags});
 
             AMM amm(env, alice_, btc(100), XRP(100));
             env.close();
@@ -6936,7 +6935,7 @@ private:
             MPTTester const usd({.env = env, .issuer = gw_, .holders = {alice_}, .pay = 20'000});
             MPTTester const btc({.env = env, .issuer = gw_, .holders = {alice_}, .pay = 20'000});
             AMM amm(env, gw_, usd(10'000), btc(10'000));
-            for (auto i = 0; i < kMAX_DELETABLE_AMM_TRUST_LINES + 10; ++i)
+            for (auto i = 0; i < kMaxDeletableAmmTrustLines + 10; ++i)
             {
                 Account const a{std::to_string(i)};
                 env.fund(XRP(1'000), a);
@@ -6990,7 +6989,7 @@ private:
             MPTTester const usd({.env = env, .issuer = gw_, .holders = {alice_}, .pay = 20'000});
             MPTTester const btc({.env = env, .issuer = gw_, .holders = {alice_}, .pay = 20'000});
             AMM amm(env, gw_, usd(10'000), btc(10'000));
-            for (auto i = 0; i < (kMAX_DELETABLE_AMM_TRUST_LINES * 2) + 10; ++i)
+            for (auto i = 0; i < (kMaxDeletableAmmTrustLines * 2) + 10; ++i)
             {
                 Account const a{std::to_string(i)};
                 env.fund(XRP(1'000), a);
@@ -7054,7 +7053,7 @@ private:
 
             // MPT/MPT pool with MANY trustlines
             AMM amm(env, gw_, usd(10'000), btc(10'000));
-            for (auto i = 0; i < (kMAX_DELETABLE_AMM_TRUST_LINES * 2) + 10; ++i)
+            for (auto i = 0; i < (kMaxDeletableAmmTrustLines * 2) + 10; ++i)
             {
                 Account const a{std::to_string(i)};
                 env.fund(XRP(1'000), a);

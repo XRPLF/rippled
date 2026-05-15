@@ -125,9 +125,9 @@ class RandomAccountParams
     std::uint32_t const initialBalance_;
 
     // probability of changing a value from its default
-    constexpr static double kPROB_CHANGE_DEFAULT = 0.75;
+    static constexpr double kProbChangeDefault = 0.75;
     // probability that an account redeems into another account
-    constexpr static double kPROB_REDEEM = 0.5;
+    static constexpr double kProbRedeem = 0.5;
     std::uniform_real_distribution<> zeroOneDist_{0.0, 1.0};
     std::uniform_real_distribution<> transferRateDist_{1.0, 2.0};
     std::uniform_real_distribution<> qualityPercentDist_{80, 120};
@@ -135,7 +135,7 @@ class RandomAccountParams
     bool
     shouldSet()
     {
-        return zeroOneDist_(engine_) <= kPROB_CHANGE_DEFAULT;
+        return zeroOneDist_(engine_) <= kProbChangeDefault;
     };
 
     void
@@ -206,7 +206,7 @@ public:
         Currency const& currency)
     {
         using namespace jtx;
-        if (zeroOneDist_(engine_) > kPROB_REDEEM)
+        if (zeroOneDist_(engine_) > kProbRedeem)
             return;
         setInitialBalance(env, acc, peer, currency);
     }
@@ -290,8 +290,8 @@ class TheoreticalQuality_test : public beast::unit_test::Suite
         auto compareClose = [](Quality const& q1, Quality const& q2) {
             // relative diff is fabs(a-b)/min(a,b)
             // can't get access to internal value. Use the rate
-            constexpr double kTOLERANCE = 0.0000001;
-            return relativeDistance(q1, q2) <= kTOLERANCE;
+            static constexpr double kTolerance = 0.0000001;
+            return relativeDistance(q1, q2) <= kTolerance;
         };
 
         for (auto const& strand : sr.second)
@@ -339,7 +339,7 @@ public:
 
         auto const currency = toCurrency("USD");
 
-        constexpr std::size_t const kNUM_ACCOUNTS = 4;
+        static constexpr std::size_t kNumAccounts = 4;
 
         // There are three relevant trust lines: `alice->bob`, `bob->carol`, and
         // `carol->dan`. There are four accounts. If we count the number of
@@ -355,7 +355,7 @@ public:
         // randomly sample the test space.
         int const numTestIterations = reqNumIterations.value_or(250);
 
-        constexpr std::uint32_t kPAYMENT_AMOUNT = 1;
+        static constexpr std::uint32_t kPaymentAmount = 1;
 
         // Class to randomly set account transfer rates, qualities, and other
         // params.
@@ -373,15 +373,15 @@ public:
             auto const bob = Account("bob" + iterAsStr);
             auto const carol = Account("carol" + iterAsStr);
             auto const dan = Account("dan" + iterAsStr);
-            std::array<Account, kNUM_ACCOUNTS> accounts{{alice, bob, carol, dan}};
-            static_assert(kNUM_ACCOUNTS == 4, "Path is only correct for four accounts");
+            std::array<Account, kNumAccounts> accounts{{alice, bob, carol, dan}};
+            static_assert(kNumAccounts == 4, "Path is only correct for four accounts");
             Path const accountsPath(accounts[1], accounts[2]);
             env.fund(XRP(10000), alice, bob, carol, dan);
             env.close();
 
             // iterate through all pairs of accounts, randomly set the transfer
             // rate, qIn, qOut, and if the account issues or redeems
-            for (std::size_t ii = 0; ii < kNUM_ACCOUNTS; ++ii)
+            for (std::size_t ii = 0; ii < kNumAccounts; ++ii)
             {
                 rndAccParams.maybeSetTransferRate(env, accounts[ii]);
                 // The payment is from:
@@ -389,7 +389,7 @@ public:
                 // set the trust lines and initial balances for each pair of
                 // neighboring accounts
                 std::size_t const j = ii + 1;
-                if (j == kNUM_ACCOUNTS)
+                if (j == kNumAccounts)
                     continue;
 
                 rndAccParams.setupTrustLines(env, accounts[ii], accounts[j], currency);
@@ -399,7 +399,7 @@ public:
             // Accounts are set up, make the payment
             IOU const iou{accounts.back(), currency};
             RippleCalcTestParams const rcp{env.json(
-                pay(accounts.front(), accounts.back(), iou(kPAYMENT_AMOUNT)),
+                pay(accounts.front(), accounts.back(), iou(kPaymentAmount)),
                 accountsPath,
                 Txflags(tfNoRippleDirect))};
 
@@ -422,7 +422,7 @@ public:
 
         int const numTestIterations = reqNumIterations.value_or(100);
 
-        constexpr std::uint32_t kPAYMENT_AMOUNT = 1;
+        static constexpr std::uint32_t kPaymentAmount = 1;
 
         Currency const eurCurrency = toCurrency("EUR");
         Currency const usdCurrency = toCurrency("USD");
@@ -444,8 +444,8 @@ public:
             auto const oscar = Account("oscar" + iterAsStr);  // offer owner
             auto const usdb = bob["USD"];
             auto const eurc = carol["EUR"];
-            constexpr std::size_t const kNUM_ACCOUNTS = 5;
-            std::array<Account, kNUM_ACCOUNTS> const accounts{{alice, bob, carol, dan, oscar}};
+            static constexpr std::size_t kNumAccounts = 5;
+            std::array<Account, kNumAccounts> const accounts{{alice, bob, carol, dan, oscar}};
 
             // sendmax should be in USDB and delivered amount should be in EURC
             // normalized path should be:
@@ -478,8 +478,8 @@ public:
             IOU const srcIOU{bob, usdCurrency};
             IOU const dstIOU{carol, eurCurrency};
             RippleCalcTestParams const rcp{env.json(
-                pay(alice, dan, dstIOU(kPAYMENT_AMOUNT)),
-                Sendmax(srcIOU(100 * kPAYMENT_AMOUNT)),
+                pay(alice, dan, dstIOU(kPaymentAmount)),
+                Sendmax(srcIOU(100 * kPaymentAmount)),
                 bookPath,
                 Txflags(tfNoRippleDirect))};
 

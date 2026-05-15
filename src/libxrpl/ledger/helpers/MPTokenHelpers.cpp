@@ -95,11 +95,11 @@ transferRate(ReadView const& view, MPTID const& issuanceID)
         sle && sle->isFieldPresent(sfTransferFee))
     {
         auto const fee = sle->getFieldU16(sfTransferFee);
-        XRPL_ASSERT(fee <= kMAX_TRANSFER_FEE, "xrpl::transferRate : fee is too large");
+        XRPL_ASSERT(fee <= kMaxTransferFee, "xrpl::transferRate : fee is too large");
         return Rate{1'000'000'000u + (10'000 * fee)};
     }
 
-    return kPARITY_RATE;
+    return kParityRate;
 }
 
 [[nodiscard]] TER
@@ -193,7 +193,7 @@ authorizeMPToken(
         // items. This is similar to the reserve requirements of trust lines.
         std::uint32_t const uOwnerCount = sleAcct->getFieldU32(sfOwnerCount);
         XRPAmount const reserveCreate(
-            (uOwnerCount < 2) ? XRPAmount(beast::kZERO)
+            (uOwnerCount < 2) ? XRPAmount(beast::kZero)
                               : view.fees().accountReserve(uOwnerCount + 1));
 
         if (priorBalance < reserveCreate)
@@ -319,7 +319,7 @@ requireAuth(
 
     if (featureSAVEnabled)
     {
-        if (depth >= kMAX_ASSET_CHECK_DEPTH)
+        if (depth >= kMaxAssetCheckDepth)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         // requireAuth is recursive if the issuer is a vault pseudo-account
@@ -855,7 +855,7 @@ checkCreateMPT(
 std::int64_t
 maxMPTAmount(SLE const& sleIssuance)
 {
-    return sleIssuance[~sfMaximumAmount].value_or(kMAX_MP_TOKEN_AMOUNT);
+    return sleIssuance[~sfMaximumAmount].value_or(kMaxMpTokenAmount);
 }
 
 std::int64_t

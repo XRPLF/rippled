@@ -117,7 +117,7 @@ Reader::readValue(unsigned depth)
 {
     Token token{};
     skipCommentTokens(token);
-    if (depth > kNEST_LIMIT)
+    if (depth > kNestLimit)
         return addError("Syntax error: maximum nesting depth exceeded", token);
     bool successful = true;
 
@@ -352,7 +352,7 @@ Reader::readCppStyleComment()
 Reader::TokenType
 Reader::readNumber()
 {
-    static char const kEXTENDED_TOKENS[] = {'.', 'e', 'E', '+', '-'};
+    static char const kExtendedTokens[] = {'.', 'e', 'E', '+', '-'};
 
     TokenType type = TokenType::Integer;
 
@@ -365,9 +365,9 @@ Reader::readNumber()
         {
             if (std::isdigit(static_cast<unsigned char>(*current_)) == 0)
             {
-                auto ret = std::ranges::find(kEXTENDED_TOKENS, *current_);
+                auto ret = std::ranges::find(kExtendedTokens, *current_);
 
-                if (ret == std::end(kEXTENDED_TOKENS))
+                if (ret == std::end(kExtendedTokens))
                     break;
 
                 type = TokenType::Double;
@@ -542,10 +542,10 @@ Reader::decodeNumber(Token& token)
     std::int64_t value = 0;
 
     static_assert(
-        sizeof(value) > sizeof(Value::kMAX_UINT),
+        sizeof(value) > sizeof(Value::kMaxUInt),
         "The JSON integer overflow logic will need to be reworked.");
 
-    while (current < token.end && (value <= Value::kMAX_UINT))
+    while (current < token.end && (value <= Value::kMaxUInt))
     {
         Char const c = *current++;
 
@@ -569,7 +569,7 @@ Reader::decodeNumber(Token& token)
     {
         value = -value;
 
-        if (value < Value::kMIN_INT || value > Value::kMAX_INT)
+        if (value < Value::kMinInt || value > Value::kMaxInt)
         {
             return addError(
                 "'" + std::string(token.start, token.end) + "' exceeds the allowable range.",
@@ -580,7 +580,7 @@ Reader::decodeNumber(Token& token)
     }
     else
     {
-        if (value > Value::kMAX_UINT)
+        if (value > Value::kMaxUInt)
         {
             return addError(
                 "'" + std::string(token.start, token.end) + "' exceeds the allowable range.",
@@ -588,7 +588,7 @@ Reader::decodeNumber(Token& token)
         }
 
         // If it's representable as a signed integer, construct it as one.
-        if (value <= Value::kMAX_INT)
+        if (value <= Value::kMaxInt)
         {
             currentValue() = static_cast<Value::Int>(value);
         }
