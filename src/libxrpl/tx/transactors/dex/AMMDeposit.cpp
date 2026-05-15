@@ -75,35 +75,35 @@ AMMDeposit::preflight(PreflightContext const& ctx)
         JLOG(ctx.j.debug()) << "AMM Deposit: invalid flags.";
         return temMALFORMED;
     }
-    if ((flags & tfLPToken) != 0u)
+    if (ctx.tx.isFlag(tfLPToken))
     {
         // if included then both amount and amount2 are deposit min
         if (!lpTokens || ePrice || (amount && !amount2) || (!amount && amount2) || tradingFee)
             return temMALFORMED;
     }
-    else if ((flags & tfSingleAsset) != 0u)
+    else if (ctx.tx.isFlag(tfSingleAsset))
     {
         // if included then lpTokens is deposit min
         if (!amount || amount2 || ePrice || tradingFee)
             return temMALFORMED;
     }
-    else if ((flags & tfTwoAsset) != 0u)
+    else if (ctx.tx.isFlag(tfTwoAsset))
     {
         // if included then lpTokens is deposit min
         if (!amount || !amount2 || ePrice || tradingFee)
             return temMALFORMED;
     }
-    else if ((flags & tfOneAssetLPToken) != 0u)
+    else if (ctx.tx.isFlag(tfOneAssetLPToken))
     {
         if (!amount || !lpTokens || amount2 || ePrice || tradingFee)
             return temMALFORMED;
     }
-    else if ((flags & tfLimitLPToken) != 0u)
+    else if (ctx.tx.isFlag(tfLimitLPToken))
     {
         if (!amount || !ePrice || lpTokens || amount2 || tradingFee)
             return temMALFORMED;
     }
-    else if ((flags & tfTwoAssetIfEmpty) != 0u)
+    else if (ctx.tx.isFlag(tfTwoAssetIfEmpty))
     {
         if (!amount || !amount2 || ePrice || lpTokens)
             return temMALFORMED;
@@ -198,7 +198,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     if (!expected)
         return expected.error();  // LCOV_EXCL_LINE
     auto const [amountBalance, amount2Balance, lptAMMBalance] = *expected;
-    if ((ctx.tx.getFlags() & tfTwoAssetIfEmpty) != 0u)
+    if (ctx.tx.isFlag(tfTwoAssetIfEmpty))
     {
         if (lptAMMBalance != beast::kZERO)
             return tecAMM_NOT_EMPTY;
@@ -331,7 +331,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     };
 
     // amount and amount2 are deposit min in case of tfLPToken
-    if ((ctx.tx.getFlags() & tfLPToken) == 0u)
+    if (!ctx.tx.isFlag(tfLPToken))
     {
         if (auto const ter = checkAmount(amount, true))
             return ter;

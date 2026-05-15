@@ -122,14 +122,12 @@ Payment::preflight(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureMPTokensV1) && isDstMPT)
         return temDISABLED;
 
-    std::uint32_t const txFlags = tx.getFlags();
-
     if (!mpTokensV2 && isDstMPT && ctx.tx.isFieldPresent(sfPaths))
         return temMALFORMED;
 
-    bool const partialPaymentAllowed = (txFlags & tfPartialPayment) != 0u;
-    bool const limitQuality = (txFlags & tfLimitQuality) != 0u;
-    bool const defaultPathsAllowed = (txFlags & tfNoRippleDirect) == 0u;
+    bool const partialPaymentAllowed = tx.isFlag(tfPartialPayment);
+    bool const limitQuality = tx.isFlag(tfLimitQuality);
+    bool const defaultPathsAllowed = !tx.isFlag(tfNoRippleDirect);
     bool const hasPaths = tx.isFieldPresent(sfPaths);
     bool const hasMax = tx.isFieldPresent(sfSendMax);
 
@@ -311,8 +309,7 @@ TER
 Payment::preclaim(PreclaimContext const& ctx)
 {
     // Ripple if source or destination is non-native or if there are paths.
-    std::uint32_t const txFlags = ctx.tx.getFlags();
-    bool const partialPaymentAllowed = (txFlags & tfPartialPayment) != 0u;
+    bool const partialPaymentAllowed = ctx.tx.isFlag(tfPartialPayment);
     auto const hasPaths = ctx.tx.isFieldPresent(sfPaths);
     auto const sendMax = ctx.tx[~sfSendMax];
 
@@ -357,9 +354,7 @@ Payment::preclaim(PreclaimContext const& ctx)
             return tecNO_DST_INSUF_XRP;
         }
     }
-    else if (
-        ((sleDst->getFlags() & lsfRequireDestTag) != 0u) &&
-        !ctx.tx.isFieldPresent(sfDestinationTag))
+    else if (sleDst->isFlag(lsfRequireDestTag) && !ctx.tx.isFieldPresent(sfDestinationTag))
     {
         // The tag is basically account-specific information we don't
         // understand, but we can require someone to fill it in.
@@ -406,10 +401,9 @@ Payment::doApply()
     auto const deliverMin = ctx_.tx[~sfDeliverMin];
 
     // Ripple if source or destination is non-native or if there are paths.
-    std::uint32_t const txFlags = ctx_.tx.getFlags();
-    bool const partialPaymentAllowed = (txFlags & tfPartialPayment) != 0u;
-    bool const limitQuality = (txFlags & tfLimitQuality) != 0u;
-    bool const defaultPathsAllowed = (txFlags & tfNoRippleDirect) == 0u;
+    bool const partialPaymentAllowed = ctx_.tx.isFlag(tfPartialPayment);
+    bool const limitQuality = ctx_.tx.isFlag(tfLimitQuality);
+    bool const defaultPathsAllowed = !ctx_.tx.isFlag(tfNoRippleDirect);
     auto const hasPaths = ctx_.tx.isFieldPresent(sfPaths);
     auto const sendMax = ctx_.tx[~sfSendMax];
 
@@ -672,7 +666,7 @@ Payment::doApply()
     sleDst->setFieldAmount(sfBalance, sleDst->getFieldAmount(sfBalance) + dstAmount);
 
     // Re-arm the password change fee if we can and need to.
-    if ((sleDst->getFlags() & lsfPasswordSpent) != 0u)
+    if (sleDst->isFlag(lsfPasswordSpent))
         sleDst->clearFlag(lsfPasswordSpent);
 
     return tesSUCCESS;
