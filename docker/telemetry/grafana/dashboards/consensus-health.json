@@ -654,6 +654,128 @@
           "refId": "A"
         }
       ]
+    },
+    {
+      "title": "Ledger Total Processing Time (Round Open -> Next Round Start)",
+      "description": "Per-node duration of the consensus.round span — covers the full local round (open phase, establish/proposal exchange, accept request) and ends only when the next round's startRoundTracing() resets it. Spans multiple consensus retries when MovedOn or Expired forces another round before a ledger is fully accepted. Series: Total = every consensus.round; Accepted Apply = consensus.accept.apply with consensus_state=finished (apply-phase duration only, plotted as a marker for accepted ledgers); Rejected Apply = consensus.accept.apply with consensus_state in (moved_on, expired). NOTE: accept.apply and consensus.round currently land in separate Tempo traces (jtACCEPT thread context propagation), so descendant joins return empty — queries are kept single-span.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 64
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "drawStyle": "points",
+            "pointSize": 6,
+            "showPoints": "always",
+            "axisLabel": "Total Processing Time (ms)",
+            "spanNulls": false
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "A"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Round Total"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "blue"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Accepted (apply)"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "C"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Rejected (apply)"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["mean", "max", "count"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "tempo",
+            "uid": "tempo"
+          },
+          "queryType": "traceql",
+          "query": "{ resource.service.instance.id=~\"$node\" && name=\"consensus.round\" } | select(span:duration)",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "tempo",
+            "uid": "tempo"
+          },
+          "queryType": "traceql",
+          "query": "{ resource.service.instance.id=~\"$node\" && name=\"consensus.accept.apply\" && span.consensus_state=\"finished\" } | select(span:duration)",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "tempo",
+            "uid": "tempo"
+          },
+          "queryType": "traceql",
+          "query": "{ resource.service.instance.id=~\"$node\" && name=\"consensus.accept.apply\" && span.consensus_state!=\"finished\" } | select(span:duration)",
+          "refId": "C"
+        }
+      ]
     }
   ],
   "schemaVersion": 39,
