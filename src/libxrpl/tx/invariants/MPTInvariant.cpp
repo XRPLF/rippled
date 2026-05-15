@@ -32,33 +32,36 @@ namespace xrpl {
 namespace {
 
 bool
-hasInvalidMPTAmount(Rules const& rules, STBase const& field);
+hasInvalidMPTAmount(Rules const& rules, STBase const& field, int depth = 0);
 
 bool
-hasInvalidMPTAmount(Rules const& rules, STObject const& object)
+hasInvalidMPTAmount(Rules const& rules, STObject const& object, int depth)
 {
     return std::ranges::any_of(
-        object, [&](STBase const& field) { return hasInvalidMPTAmount(rules, field); });
+        object, [&](STBase const& field) { return hasInvalidMPTAmount(rules, field, depth); });
 }
 
 bool
-hasInvalidMPTAmount(Rules const& rules, STArray const& array)
+hasInvalidMPTAmount(Rules const& rules, STArray const& array, int depth)
 {
     return std::ranges::any_of(
-        array, [&](STObject const& object) { return hasInvalidMPTAmount(rules, object); });
+        array, [&](STObject const& object) { return hasInvalidMPTAmount(rules, object, depth); });
 }
 
 bool
-hasInvalidMPTAmount(Rules const& rules, STBase const& field)
+hasInvalidMPTAmount(Rules const& rules, STBase const& field, int depth)
 {
+    if (depth > 10)
+        return false;  // LCOV_EXCL_LINE
+
     if (auto const amount = dynamic_cast<STAmount const*>(&field))
         return !isLegalMPTAmount(rules, *amount);
 
     if (auto const object = dynamic_cast<STObject const*>(&field))
-        return hasInvalidMPTAmount(rules, *object);
+        return hasInvalidMPTAmount(rules, *object, depth + 1);
 
     if (auto const array = dynamic_cast<STArray const*>(&field))
-        return hasInvalidMPTAmount(rules, *array);
+        return hasInvalidMPTAmount(rules, *array, depth + 1);
 
     return false;
 }
