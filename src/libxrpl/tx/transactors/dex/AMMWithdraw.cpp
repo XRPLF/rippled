@@ -649,11 +649,21 @@ AMMWithdraw::withdraw(
         if (mptokenKey && account != asset.getIssuer())
         {
             auto const& mptIssue = asset.get<MPTIssue>();
+            std::uint32_t createFlags = 0;
             if (auto const err = requireAuth(view, mptIssue, account, AuthType::WeakAuth);
                 !isTesSuccess(err))
-                return err;
+            {
+                if (authHandling != AuthHandling::IgnoreAuth || err != tecNO_AUTH)
+                    return err;
 
-            if (auto const err = checkCreateMPT(view, mptIssue, account, journal);
+                // AMMClawback ignores authorization so the issuer can recover
+                // MPT locked in the pool even if the holder deleted their
+                // MPToken. Recreate that MPToken as authorized for the
+                // clawback withdrawal path only.
+                createFlags = lsfMPTAuthorized;
+            }
+
+            if (auto const err = checkCreateMPT(view, mptIssue, account, createFlags, journal);
                 !isTesSuccess(err))
             {
                 return err;

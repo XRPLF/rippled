@@ -1336,6 +1336,60 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
     }
 
     void
+    testClawbackCreatesMissingMPToken(FeatureBitset features)
+    {
+        testcase("test AMMClawback creates missing MPToken");
+        using namespace jtx;
+
+        auto test = [&](std::optional<std::uint64_t> const clawAmount) {
+            Env env{*this, features};
+            Account const gw{"gateway"};
+            Account const alice{"alice"};
+            env.fund(XRP(1'000'000), gw, alice);
+            env.close();
+
+            MPTTester token(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice},
+                 .pay = 1'000,
+                 .flags = tfMPTCanClawback | tfMPTRequireAuth | kMPT_DEX_FLAGS,
+                 .authHolder = true});
+
+            AMM ammAlice(env, alice, token(1'000), XRP(1'000));
+            env.close();
+            BEAST_EXPECT(env.balance(alice, token) == token(0));
+
+            // The holder can delete the zero-balance MPToken while still
+            // holding LP tokens. A regular AMMWithdraw remains subject to
+            // RequireAuth and cannot recreate the missing token.
+            token.authorize({.account = alice, .flags = tfMPTUnauthorize});
+            env.close();
+            BEAST_EXPECT(!env.le(keylet::mptoken(token.issuanceID(), alice.id())));
+            ammAlice.withdrawAll(alice, std::nullopt, Ter(tecNO_AUTH));
+            env.close();
+            BEAST_EXPECT(!env.le(keylet::mptoken(token.issuanceID(), alice.id())));
+
+            // AMMClawback ignores authorization and must be able to recreate
+            // the holder MPToken so the issuer can recover MPT from the pool.
+            std::optional<STAmount> amount;
+            if (clawAmount)
+                amount = token(*clawAmount);
+            env(amm::ammClawback(gw, alice, token, XRP, amount));
+            env.close();
+
+            auto const sleMpt = env.le(keylet::mptoken(token.issuanceID(), alice.id()));
+            BEAST_EXPECT(sleMpt && sleMpt->isFlag(lsfMPTAuthorized));
+            env.require(Balance(alice, token(0)));
+
+            BEAST_EXPECT(clawAmount ? ammAlice.ammExists() : !ammAlice.ammExists());
+        };
+
+        test(std::nullopt);
+        test(400);
+    }
+
+    void
     testSingleDepositAndClawback(FeatureBitset features)
     {
         testcase("test single depoit and clawback");
@@ -1824,6 +1878,7 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
         testAMMClawbackAllSameIssuer(all);
         testAMMClawbackIssuesEachOther(all);
         testAssetFrozenOrLocked(all);
+        testClawbackCreatesMissingMPToken(all);
         testSingleDepositAndClawback(all);
         testLastHolderLPTokenBalance(all);
         testLastHolderLPTokenBalance(all - fixAMMv1_3 - fixAMMClawbackRounding);

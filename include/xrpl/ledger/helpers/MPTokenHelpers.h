@@ -176,6 +176,14 @@ checkCreateMPT(
     xrpl::ApplyView& view,
     xrpl::MPTIssue const& mptIssue,
     xrpl::AccountID const& holder,
+    std::uint32_t flags,
+    beast::Journal j);
+
+TER
+checkCreateMPT(
+    xrpl::ApplyView& view,
+    xrpl::MPTIssue const& mptIssue,
+    xrpl::AccountID const& holder,
     beast::Journal j);
 
 //------------------------------------------------------------------------------
