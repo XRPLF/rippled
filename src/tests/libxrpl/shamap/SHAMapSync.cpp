@@ -80,102 +80,95 @@ protected:
 
         return true;
     }
-
-    void
-    runSync()
-    {
-        TestNodeFamily f(j_), f2(j_);
-        SHAMap source(SHAMapType::FREE, f);
-        SHAMap destination(SHAMapType::FREE, f2);
-
-        int const items = 10000;
-        for (int i = 0; i < items; ++i)
-        {
-            source.addItem(SHAMapNodeType::TnAccountState, makeRandomAS());
-            if (i % 100 == 0)
-                source.invariants();
-        }
-
-        source.invariants();
-        ASSERT_TRUE(confuseMap(source, 500));
-        source.invariants();
-
-        source.setImmutable();
-
-        int count = 0;
-        source.visitLeaves([&count](auto const& item) {
-            (void)item;
-            ++count;
-        });
-        EXPECT_EQ(count, items);
-
-        std::vector<SHAMapMissingNode> missingNodes;
-        source.walkMap(missingNodes, 2048);
-        EXPECT_TRUE(missingNodes.empty());
-
-        destination.setSynching();
-
-        {
-            std::vector<std::pair<SHAMapNodeID, Blob>> a;
-
-            ASSERT_TRUE(source.getNodeFat(SHAMapNodeID(), a, randBool(eng_), randInt(eng_, 2)));
-
-            ASSERT_FALSE(a.empty()) << "NodeSize";
-
-            ASSERT_TRUE(destination.addRootNode(source.getHash(), makeSlice(a[0].second), nullptr)
-                            .isGood());
-        }
-
-        do
-        {
-            f.clock().advance(std::chrono::seconds(1));
-
-            // get the list of nodes we know we need
-            auto nodesMissing = destination.getMissingNodes(2048, nullptr);
-
-            if (nodesMissing.empty())
-                break;
-
-            // get as many nodes as possible based on this information
-            std::vector<std::pair<SHAMapNodeID, Blob>> b;
-
-            for (auto& it : nodesMissing)
-            {
-                // Keep failures fatal here because this loop is data-dependent.
-                // non-deterministic number of times and the number of tests run
-                // should be deterministic
-                if (!source.getNodeFat(it.first, b, randBool(eng_), randInt(eng_, 2)))
-                    FAIL() << "Unable to fetch node";
-            }
-
-            // Keep failures fatal here because this loop is data-dependent.
-            // non-deterministic number of times and the number of tests run
-            // should be deterministic
-            if (b.empty())
-                FAIL() << "No nodes returned";
-
-            for (std::size_t i = 0; i < b.size(); ++i)
-            {
-                // Keep failures fatal here because this loop is data-dependent.
-                // non-deterministic number of times and the number of tests run
-                // should be deterministic
-                if (!destination.addKnownNode(b[i].first, makeSlice(b[i].second), nullptr)
-                         .isUseful())
-                    FAIL() << "Known node was not useful";
-            }
-        } while (true);
-
-        destination.clearSynching();
-
-        EXPECT_TRUE(source.deepCompare(destination));
-
-        destination.invariants();
-    }
 };
 
 TEST_F(SHAMapSyncTest, sync)
 {
-    runSync();
+    TestNodeFamily f(j_), f2(j_);
+    SHAMap source(SHAMapType::FREE, f);
+    SHAMap destination(SHAMapType::FREE, f2);
+
+    int const items = 10000;
+    for (int i = 0; i < items; ++i)
+    {
+        source.addItem(SHAMapNodeType::TnAccountState, makeRandomAS());
+        if (i % 100 == 0)
+            source.invariants();
+    }
+
+    source.invariants();
+    ASSERT_TRUE(confuseMap(source, 500));
+    source.invariants();
+
+    source.setImmutable();
+
+    int count = 0;
+    source.visitLeaves([&count](auto const& item) {
+        (void)item;
+        ++count;
+    });
+    EXPECT_EQ(count, items);
+
+    std::vector<SHAMapMissingNode> missingNodes;
+    source.walkMap(missingNodes, 2048);
+    EXPECT_TRUE(missingNodes.empty());
+
+    destination.setSynching();
+
+    {
+        std::vector<std::pair<SHAMapNodeID, Blob>> a;
+
+        ASSERT_TRUE(source.getNodeFat(SHAMapNodeID(), a, randBool(eng_), randInt(eng_, 2)));
+
+        ASSERT_FALSE(a.empty()) << "NodeSize";
+
+        ASSERT_TRUE(
+            destination.addRootNode(source.getHash(), makeSlice(a[0].second), nullptr).isGood());
+    }
+
+    do
+    {
+        f.clock().advance(std::chrono::seconds(1));
+
+        // get the list of nodes we know we need
+        auto nodesMissing = destination.getMissingNodes(2048, nullptr);
+
+        if (nodesMissing.empty())
+            break;
+
+        // get as many nodes as possible based on this information
+        std::vector<std::pair<SHAMapNodeID, Blob>> b;
+
+        for (auto& it : nodesMissing)
+        {
+            // Keep failures fatal here because this loop is data-dependent.
+            // non-deterministic number of times and the number of tests run
+            // should be deterministic
+            if (!source.getNodeFat(it.first, b, randBool(eng_), randInt(eng_, 2)))
+                FAIL() << "Unable to fetch node";
+        }
+
+        // Keep failures fatal here because this loop is data-dependent.
+        // non-deterministic number of times and the number of tests run
+        // should be deterministic
+        if (b.empty())
+            FAIL() << "No nodes returned";
+
+        for (std::size_t i = 0; i < b.size(); ++i)
+        {
+            // Keep failures fatal here because this loop is data-dependent.
+            // non-deterministic number of times and the number of tests run
+            // should be deterministic
+            if (!destination.addKnownNode(b[i].first, makeSlice(b[i].second), nullptr).isUseful())
+                FAIL() << "Known node was not useful";
+        }
+    } while (true);
+
+    destination.clearSynching();
+
+    EXPECT_TRUE(source.deepCompare(destination));
+
+    destination.invariants();
 }
 
 }  // namespace xrpl::tests
