@@ -72,7 +72,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
             return temMALFORMED;
 
         // Domain present implies that MPTokenIssuance is not public
-        if ((ctx.tx.getFlags() & tfMPTRequireAuth) == 0)
+        if (!ctx.tx.isFlag(tfMPTRequireAuth))
             return temMALFORMED;
     }
 

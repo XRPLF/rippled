@@ -571,8 +571,12 @@ directSendNoFeeIOU(
                         << " amount=" << saAmount.getFullText()
                         << " after=" << saBalance.getFullText();
 
-        std::uint32_t const uFlags(sleRippleState->getFieldU32(sfFlags));
         bool bDelete = false;
+
+        auto const senderReserveFlag = bSenderHigh ? lsfHighReserve : lsfLowReserve;
+        auto const senderNoRippleFlag = bSenderHigh ? lsfHighNoRipple : lsfLowNoRipple;
+        auto const senderFreezeFlag = bSenderHigh ? lsfHighFreeze : lsfLowFreeze;
+        auto const receiverReserveFlag = bSenderHigh ? lsfLowReserve : lsfHighReserve;
 
         // FIXME This NEEDS to be cleaned up and simplified. It's impossible
         //       for anyone to understand.
@@ -580,17 +584,17 @@ directSendNoFeeIOU(
             // Sender balance was positive.
             && saBalance <= beast::kZERO
             // Sender is zero or negative.
-            && ((uFlags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve)) != 0u)
+            && sleRippleState->isFlag(senderReserveFlag)
             // Sender reserve is set.
-            && static_cast<bool>(uFlags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)) !=
+            && sleRippleState->isFlag(senderNoRippleFlag) !=
                 AccountRoot(uSenderID, view, j)->isFlag(lsfDefaultRipple) &&
-            ((uFlags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze)) == 0u) &&
+            !sleRippleState->isFlag(senderFreezeFlag) &&
             !sleRippleState->getFieldAmount(!bSenderHigh ? sfLowLimit : sfHighLimit)
             // Sender trust limit is 0.
-            && (sleRippleState->getFieldU32(!bSenderHigh ? sfLowQualityIn : sfHighQualityIn) == 0u)
+            && (sleRippleState->getFieldU32(bSenderHigh ? sfHighQualityIn : sfLowQualityIn) == 0u)
             // Sender quality in is 0.
             &&
-            (sleRippleState->getFieldU32(!bSenderHigh ? sfLowQualityOut : sfHighQualityOut) == 0u))
+            (sleRippleState->getFieldU32(bSenderHigh ? sfHighQualityOut : sfLowQualityOut) == 0u))
         // Sender quality out is 0.
         {
             // Clear the reserve of the sender, possibly delete the line!
@@ -598,12 +602,11 @@ directSendNoFeeIOU(
             wrappedSender.adjustOwnerCount(-1);
 
             // Clear reserve flag.
-            sleRippleState->setFieldU32(
-                sfFlags, uFlags & (!bSenderHigh ? ~lsfLowReserve : ~lsfHighReserve));
+            sleRippleState->clearFlag(senderReserveFlag);
 
             // Balance is zero, receiver reserve is clear.
             bDelete = !saBalance  // Balance is zero.
-                && ((uFlags & (bSenderHigh ? lsfLowReserve : lsfHighReserve)) == 0u);
+                && !sleRippleState->isFlag(receiverReserveFlag);
             // Receiver reserve is clear.
         }
 
@@ -620,7 +623,7 @@ directSendNoFeeIOU(
                 view,
                 sleRippleState,
                 bSenderHigh ? uReceiverID : uSenderID,
-                !bSenderHigh ? uReceiverID : uSenderID,
+                bSenderHigh ? uSenderID : uReceiverID,
                 j);
         }
 

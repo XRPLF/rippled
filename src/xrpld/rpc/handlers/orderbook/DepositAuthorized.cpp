@@ -136,7 +136,7 @@ doDepositAuthorized(RPC::JsonContext& context)
                 return result;
             }
 
-            if ((sleCred->getFlags() & lsfAccepted) == 0u)
+            if (!sleCred->isFlag(lsfAccepted))
             {
                 RPC::injectError(RpcBadCredentials, "credentials aren't accepted", result);
                 return result;

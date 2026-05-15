@@ -938,7 +938,7 @@ Pathfinder::isNoRipple(
 
     auto const flag((toAccount > fromAccount) ? lsfHighNoRipple : lsfLowNoRipple);
 
-    return sleRipple && ((sleRipple->getFieldU32(sfFlags) & flag) != 0u);
+    return sleRipple && sleRipple->isFlag(flag);
 }
 
 // Does this path end on an account-to-account link whose last account has

@@ -143,7 +143,7 @@ struct Credentials_test : public beast::unit_test::Suite
 
                 BEAST_EXPECT(sleCred->getAccountID(sfSubject) == issuer.id());
                 BEAST_EXPECT(sleCred->getAccountID(sfIssuer) == issuer.id());
-                BEAST_EXPECT((sleCred->getFieldU32(sfFlags) & lsfAccepted));
+                BEAST_EXPECT(sleCred->isFlag(lsfAccepted));
                 BEAST_EXPECT(
                     sleCred->getFieldU64(sfIssuerNode) == sleCred->getFieldU64(sfSubjectNode));
                 BEAST_EXPECT(ownerCount(env, issuer) == 1);
@@ -1075,7 +1075,7 @@ struct Credentials_test : public beast::unit_test::Suite
         // Verify credential exists and is accepted
         {
             auto const sleCred = env.current()->read(credKeylet);
-            BEAST_EXPECT(sleCred && sleCred->getFlags() & lsfAccepted);
+            BEAST_EXPECT(sleCred && sleCred->isFlag(lsfAccepted));
         }
 
         // Create DepositPreauth
@@ -1129,11 +1129,11 @@ struct Credentials_test : public beast::unit_test::Suite
         RAccountRoot const dst(becky.id(), av, j);
         auto const dpTer = xrpl::verifyDepositPreauth(*stx, av, subject, dst, j);
         auto sleCredAfter = av.read(credKeylet);
-        BEAST_EXPECT(sleCredAfter && (sleCredAfter->getFlags() & lsfAccepted));
+        BEAST_EXPECT(sleCredAfter && sleCredAfter->isFlag(lsfAccepted));
 
         auto const domTer = xrpl::verifyValidDomain(av, subject.id(), domain, j);
         sleCredAfter = av.read(credKeylet);
-        BEAST_EXPECT(sleCredAfter && (sleCredAfter->getFlags() & lsfAccepted));
+        BEAST_EXPECT(sleCredAfter && sleCredAfter->isFlag(lsfAccepted));
 
         if (fixEnabled)
         {

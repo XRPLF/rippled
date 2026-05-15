@@ -341,22 +341,25 @@ updateTrustLine(
 {
     if (!state)
         return false;
-    std::uint32_t const flags(state->getFieldU32(sfFlags));
 
     WAccountRoot wrappedAcct(sender, view, j);
     if (!wrappedAcct)
         return false;
+
+    auto const senderReserveFlag = bSenderHigh ? lsfHighReserve : lsfLowReserve;
+    auto const senderNoRippleFlag = bSenderHigh ? lsfHighNoRipple : lsfLowNoRipple;
+    auto const senderFreezeFlag = bSenderHigh ? lsfHighFreeze : lsfLowFreeze;
+    auto const receiverReserveFlag = bSenderHigh ? lsfLowReserve : lsfHighReserve;
 
     // YYY Could skip this if rippling in reverse.
     if (before > beast::kZERO
         // Sender balance was positive.
         && after <= beast::kZERO
         // Sender is zero or negative.
-        && ((flags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve)) != 0u)
+        && state->isFlag(senderReserveFlag)
         // Sender reserve is set.
-        && static_cast<bool>(flags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)) !=
-            wrappedAcct->isFlag(lsfDefaultRipple) &&
-        ((flags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze)) == 0u) &&
+        && state->isFlag(senderNoRippleFlag) != wrappedAcct->isFlag(lsfDefaultRipple) &&
+        !state->isFlag(senderFreezeFlag) &&
         !state->getFieldAmount(!bSenderHigh ? sfLowLimit : sfHighLimit)
         // Sender trust limit is 0.
         && (state->getFieldU32(!bSenderHigh ? sfLowQualityIn : sfHighQualityIn) == 0u)
@@ -369,11 +372,10 @@ updateTrustLine(
         wrappedAcct.adjustOwnerCount(-1);
 
         // Clear reserve flag.
-        state->setFieldU32(sfFlags, flags & (!bSenderHigh ? ~lsfLowReserve : ~lsfHighReserve));
+        state->clearFlag(senderReserveFlag);
 
         // Balance is zero, receiver reserve is clear.
-        if (!after  // Balance is zero.
-            && ((flags & (bSenderHigh ? lsfLowReserve : lsfHighReserve)) == 0u))
+        if (!after && !state->isFlag(receiverReserveFlag))
             return true;
     }
     return false;
@@ -453,7 +455,7 @@ issueIOU(
     if (!receiverAccount)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    bool const noRipple = (receiverAccount->getFlags() & lsfDefaultRipple) == 0;
+    bool const noRipple = !receiverAccount->isFlag(lsfDefaultRipple);
 
     return trustCreate(
         view,
@@ -569,8 +571,7 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account, 
     {
         if (trustLine)
         {
-            return (((*trustLine)[sfFlags] &
-                     ((account > issue.account) ? lsfLowAuth : lsfHighAuth)) != 0u)
+            return trustLine->isFlag((account > issue.account) ? lsfLowAuth : lsfHighAuth)
                 ? tesSUCCESS
                 : TER{tecNO_AUTH};
         }
@@ -776,7 +777,7 @@ deleteAMMTrustLine(
     }
 
     auto const uFlags = !ammLow ? lsfLowReserve : lsfHighReserve;
-    if ((sleState->getFlags() & uFlags) == 0u)
+    if (!sleState->isFlag(uFlags))
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     WAccountRoot wrappedHolder = !ammLow ? wrappedLow : wrappedHigh;

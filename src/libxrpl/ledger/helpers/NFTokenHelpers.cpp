@@ -625,8 +625,8 @@ deleteTokenOffer(ApplyView& view, std::shared_ptr<SLE> const& offer)
     auto const nftokenID = (*offer)[sfNFTokenID];
 
     if (!view.dirRemove(
-            (((*offer)[sfFlags] & lsfSellNFToken) != 0u) ? keylet::nftSells(nftokenID)
-                                                         : keylet::nftBuys(nftokenID),
+            offer->isFlag(lsfSellNFToken) ? keylet::nftSells(nftokenID)
+                                          : keylet::nftBuys(nftokenID),
             (*offer)[sfNFTokenOfferNode],
             offer->key(),
             false))

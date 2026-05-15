@@ -70,8 +70,6 @@ AccountSet::preflight(PreflightContext const& ctx)
     auto& tx = ctx.tx;
     auto& j = ctx.j;
 
-    std::uint32_t const uTxFlags = tx.getFlags();
-
     std::uint32_t const uSetFlag = tx.getFieldU32(sfSetFlag);
     std::uint32_t const uClearFlag = tx.getFieldU32(sfClearFlag);
 
@@ -84,9 +82,8 @@ AccountSet::preflight(PreflightContext const& ctx)
     //
     // RequireAuth
     //
-    bool const bSetRequireAuth = ((uTxFlags & tfRequireAuth) != 0u) || (uSetFlag == asfRequireAuth);
-    bool const bClearRequireAuth =
-        ((uTxFlags & tfOptionalAuth) != 0u) || (uClearFlag == asfRequireAuth);
+    bool const bSetRequireAuth = tx.isFlag(tfRequireAuth) || (uSetFlag == asfRequireAuth);
+    bool const bClearRequireAuth = tx.isFlag(tfOptionalAuth) || (uClearFlag == asfRequireAuth);
 
     if (bSetRequireAuth && bClearRequireAuth)
     {
@@ -97,10 +94,8 @@ AccountSet::preflight(PreflightContext const& ctx)
     //
     // RequireDestTag
     //
-    bool const bSetRequireDest =
-        ((uTxFlags & tfRequireDestTag) != 0u) || (uSetFlag == asfRequireDest);
-    bool const bClearRequireDest =
-        ((uTxFlags & tfOptionalDestTag) != 0u) || (uClearFlag == asfRequireDest);
+    bool const bSetRequireDest = tx.isFlag(tfRequireDestTag) || (uSetFlag == asfRequireDest);
+    bool const bClearRequireDest = tx.isFlag(tfOptionalDestTag) || (uClearFlag == asfRequireDest);
 
     if (bSetRequireDest && bClearRequireDest)
     {
@@ -111,9 +106,8 @@ AccountSet::preflight(PreflightContext const& ctx)
     //
     // DisallowXRP
     //
-    bool const bSetDisallowXRP = ((uTxFlags & tfDisallowXRP) != 0u) || (uSetFlag == asfDisallowXRP);
-    bool const bClearDisallowXRP =
-        ((uTxFlags & tfAllowXRP) != 0u) || (uClearFlag == asfDisallowXRP);
+    bool const bSetDisallowXRP = tx.isFlag(tfDisallowXRP) || (uSetFlag == asfDisallowXRP);
+    bool const bClearDisallowXRP = tx.isFlag(tfAllowXRP) || (uClearFlag == asfDisallowXRP);
 
     if (bSetDisallowXRP && bClearDisallowXRP)
     {
@@ -196,12 +190,11 @@ AccountSet::checkPermission(ReadView const& view, STTx const& tx)
 
     auto const uSetFlag = tx.getFieldU32(sfSetFlag);
     auto const uClearFlag = tx.getFieldU32(sfClearFlag);
-    auto const uTxFlags = tx.getFlags();
     // We don't support any flag based granular permission under
     // AccountSet transaction. If any delegated account is trying to
     // update the flag on behalf of another account, it is not
     // authorized.
-    if (uSetFlag != 0 || uClearFlag != 0 || ((uTxFlags & tfUniversalMask) != 0u))
+    if (uSetFlag != 0 || uClearFlag != 0 || ((tx.getFlags() & tfUniversalMask) != 0u))
         return terNO_DELEGATE_PERMISSION;
 
     if (tx.isFieldPresent(sfEmailHash) && !granularPermissions.contains(AccountEmailHashSet))
@@ -230,8 +223,6 @@ AccountSet::preclaim(PreclaimContext const& ctx)
 {
     auto const id = ctx.tx[sfAccount];
 
-    std::uint32_t const uTxFlags = ctx.tx.getFlags();
-
     AccountRoot const acctRoot(id, ctx.view);
     if (!acctRoot)
         return terNO_ACCOUNT;
@@ -241,7 +232,7 @@ AccountSet::preclaim(PreclaimContext const& ctx)
     std::uint32_t const uSetFlag = ctx.tx.getFieldU32(sfSetFlag);
 
     // legacy AccountSet flags
-    bool const bSetRequireAuth = ((uTxFlags & tfRequireAuth) != 0u) || (uSetFlag == asfRequireAuth);
+    bool const bSetRequireAuth = ctx.tx.isFlag(tfRequireAuth) || (uSetFlag == asfRequireAuth);
 
     //
     // RequireAuth
@@ -303,16 +294,12 @@ AccountSet::doApply()
     std::uint32_t const uClearFlag{tx.getFieldU32(sfClearFlag)};
 
     // legacy AccountSet flags
-    std::uint32_t const uTxFlags{tx.getFlags()};
-    bool const bSetRequireDest{
-        ((uTxFlags & tfRequireDestTag) != 0u) || (uSetFlag == asfRequireDest)};
-    bool const bClearRequireDest{
-        ((uTxFlags & tfOptionalDestTag) != 0u) || (uClearFlag == asfRequireDest)};
-    bool const bSetRequireAuth{((uTxFlags & tfRequireAuth) != 0u) || (uSetFlag == asfRequireAuth)};
-    bool const bClearRequireAuth{
-        ((uTxFlags & tfOptionalAuth) != 0u) || (uClearFlag == asfRequireAuth)};
-    bool const bSetDisallowXRP{((uTxFlags & tfDisallowXRP) != 0u) || (uSetFlag == asfDisallowXRP)};
-    bool const bClearDisallowXRP{((uTxFlags & tfAllowXRP) != 0u) || (uClearFlag == asfDisallowXRP)};
+    bool const bSetRequireDest{tx.isFlag(tfRequireDestTag) || (uSetFlag == asfRequireDest)};
+    bool const bClearRequireDest{tx.isFlag(tfOptionalDestTag) || (uClearFlag == asfRequireDest)};
+    bool const bSetRequireAuth{tx.isFlag(tfRequireAuth) || (uSetFlag == asfRequireAuth)};
+    bool const bClearRequireAuth{tx.isFlag(tfOptionalAuth) || (uClearFlag == asfRequireAuth)};
+    bool const bSetDisallowXRP{tx.isFlag(tfDisallowXRP) || (uSetFlag == asfDisallowXRP)};
+    bool const bClearDisallowXRP{tx.isFlag(tfAllowXRP) || (uClearFlag == asfDisallowXRP)};
 
     bool const sigWithMaster{[&tx, &acct = accountID_]() {
         auto const spk = tx.getSigningPubKey();

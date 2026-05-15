@@ -143,8 +143,7 @@ doNoRippleCheck(RPC::JsonContext& context)
             {
                 bool const bLow = accountID == ownedItem->getFieldAmount(sfLowLimit).getIssuer();
 
-                bool const bNoRipple =
-                    ownedItem->getFieldU32(sfFlags) & (bLow ? lsfLowNoRipple : lsfHighNoRipple);
+                bool const bNoRipple = ownedItem->isFlag(bLow ? lsfLowNoRipple : lsfHighNoRipple);
 
                 std::string problem;
                 bool needFix = false;

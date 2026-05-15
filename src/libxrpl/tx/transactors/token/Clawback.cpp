@@ -23,7 +23,6 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <algorithm>
-#include <cstdint>
 #include <memory>
 #include <variant>
 
@@ -105,12 +104,9 @@ preclaimHelper<Issue>(
     AccountID const& holder,
     STAmount const& clawAmount)
 {
-    std::uint32_t const issuerFlagsIn = sleIssuer.getFieldU32(sfFlags);
-
     // If AllowTrustLineClawback is not set or NoFreeze is set, return no
     // permission
-    if (((issuerFlagsIn & lsfAllowTrustLineClawback) == 0u) ||
-        ((issuerFlagsIn & lsfNoFreeze) != 0u))
+    if (!sleIssuer.isFlag(lsfAllowTrustLineClawback) || sleIssuer.isFlag(lsfNoFreeze))
         return tecNO_PERMISSION;
 
     auto const sleRippleState =
@@ -163,7 +159,7 @@ preclaimHelper<MPTIssue>(
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    if (((*sleIssuance)[sfFlags] & lsfMPTCanClawback) == 0u)
+    if (!sleIssuance->isFlag(lsfMPTCanClawback))
         return tecNO_PERMISSION;
 
     if (sleIssuance->getAccountID(sfIssuer) != issuer)

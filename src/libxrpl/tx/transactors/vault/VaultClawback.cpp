@@ -26,7 +26,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <cstdint>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -186,8 +185,7 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
                 if (mptIssue == nullptr)
                     return tecOBJECT_NOT_FOUND;
 
-                std::uint32_t const issueFlags = mptIssue->getFieldU32(sfFlags);
-                if ((issueFlags & lsfMPTCanClawback) == 0u)
+                if (!mptIssue->isFlag(lsfMPTCanClawback))
                 {
                     JLOG(ctx.j.debug()) << "VaultClawback: cannot clawback "
                                            "MPT vault asset.";
@@ -206,9 +204,7 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
                     // LCOV_EXCL_STOP
                 }
 
-                std::uint32_t const issuerFlags = issuerSle->getFieldU32(sfFlags);
-                if (((issuerFlags & lsfAllowTrustLineClawback) == 0u) ||
-                    ((issuerFlags & lsfNoFreeze) != 0u))
+                if (!issuerSle->isFlag(lsfAllowTrustLineClawback) || issuerSle->isFlag(lsfNoFreeze))
                 {
                     JLOG(ctx.j.debug()) << "VaultClawback: cannot clawback "
                                            "IOU vault asset.";

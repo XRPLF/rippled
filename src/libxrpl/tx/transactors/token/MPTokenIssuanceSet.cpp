@@ -86,10 +86,8 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     if (ctx.tx.isFieldPresent(sfDomainID) && ctx.tx.isFieldPresent(sfHolder))
         return temMALFORMED;
 
-    auto const txFlags = ctx.tx.getFlags();
-
     // fails if both flags are set
-    if (((txFlags & tfMPTLock) != 0u) && ((txFlags & tfMPTUnlock) != 0u))
+    if (ctx.tx.isFlag(tfMPTLock) && ctx.tx.isFlag(tfMPTUnlock))
         return temINVALID_FLAG;
 
     auto const accountID = ctx.tx[sfAccount];
@@ -100,7 +98,7 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     if (ctx.rules.enabled(featureSingleAssetVault) || ctx.rules.enabled(featureDynamicMPT))
     {
         // Is this transaction actually changing anything ?
-        if (txFlags == 0 && !ctx.tx.isFieldPresent(sfDomainID) && !isMutate)
+        if (ctx.tx.getFlags() == 0 && !ctx.tx.isFieldPresent(sfDomainID) && !isMutate)
             return temMALFORMED;
     }
 
@@ -111,7 +109,7 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
             return temMALFORMED;
 
         // Can not set flags when mutating MPTokenIssuance
-        if (isMutate && ((txFlags & tfUniversalMask) != 0u))
+        if (isMutate && ((ctx.tx.getFlags() & tfUniversalMask) != 0u))
             return temMALFORMED;
 
         if (transferFee && *transferFee > kMAX_TRANSFER_FEE)
@@ -157,20 +155,18 @@ MPTokenIssuanceSet::checkPermission(ReadView const& view, STTx const& tx)
     if (isTesSuccess(checkTxPermission(sle, tx)))
         return tesSUCCESS;
 
-    auto const txFlags = tx.getFlags();
-
     // this is added in case more flags will be added for MPTokenIssuanceSet
     // in the future. Currently unreachable.
-    if ((txFlags & tfMPTokenIssuanceSetMask) != 0u)
+    if ((tx.getFlags() & tfMPTokenIssuanceSetMask) != 0u)
         return terNO_DELEGATE_PERMISSION;  // LCOV_EXCL_LINE
 
     std::unordered_set<GranularPermissionType> granularPermissions;
     loadGranularPermission(sle, ttMPTOKEN_ISSUANCE_SET, granularPermissions);
 
-    if (((txFlags & tfMPTLock) != 0u) && !granularPermissions.contains(MPTokenIssuanceLock))
+    if (tx.isFlag(tfMPTLock) && !granularPermissions.contains(MPTokenIssuanceLock))
         return terNO_DELEGATE_PERMISSION;
 
-    if (((txFlags & tfMPTUnlock) != 0u) && !granularPermissions.contains(MPTokenIssuanceUnlock))
+    if (tx.isFlag(tfMPTUnlock) && !granularPermissions.contains(MPTokenIssuanceUnlock))
         return terNO_DELEGATE_PERMISSION;
 
     return tesSUCCESS;
@@ -273,7 +269,6 @@ TER
 MPTokenIssuanceSet::doApply()
 {
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
-    auto const txFlags = ctx_.tx.getFlags();
     auto const holderID = ctx_.tx[~sfHolder];
     auto const domainID = ctx_.tx[~sfDomainID];
     std::shared_ptr<SLE> sle;
@@ -293,11 +288,11 @@ MPTokenIssuanceSet::doApply()
     std::uint32_t const flagsIn = sle->getFieldU32(sfFlags);
     std::uint32_t flagsOut = flagsIn;
 
-    if ((txFlags & tfMPTLock) != 0u)
+    if (ctx_.tx.isFlag(tfMPTLock))
     {
         flagsOut |= lsfMPTLocked;
     }
-    else if ((txFlags & tfMPTUnlock) != 0u)
+    else if (ctx_.tx.isFlag(tfMPTUnlock))
     {
         flagsOut &= ~lsfMPTLocked;
     }

@@ -1501,7 +1501,7 @@ BridgeModify::preflight(PreflightContext const& ctx)
     auto const reward = ctx.tx[~sfSignatureReward];
     auto const minAccountCreate = ctx.tx[~sfMinAccountCreateAmount];
     auto const bridgeSpec = ctx.tx[sfXChainBridge];
-    bool const clearAccountCreate = (ctx.tx.getFlags() & tfClearAccountCreateAmount) != 0u;
+    bool const clearAccountCreate = ctx.tx.isFlag(tfClearAccountCreateAmount);
 
     if (!reward && !minAccountCreate && !clearAccountCreate)
     {
@@ -1559,7 +1559,7 @@ BridgeModify::doApply()
     auto const bridgeSpec = ctx_.tx[sfXChainBridge];
     auto const reward = ctx_.tx[~sfSignatureReward];
     auto const minAccountCreate = ctx_.tx[~sfMinAccountCreateAmount];
-    bool const clearAccountCreate = (ctx_.tx.getFlags() & tfClearAccountCreateAmount) != 0u;
+    bool const clearAccountCreate = ctx_.tx.isFlag(tfClearAccountCreateAmount);
 
     if (!AccountRoot(account, ctx_.view(), j_))
         return tecINTERNAL;  // LCOV_EXCL_LINE

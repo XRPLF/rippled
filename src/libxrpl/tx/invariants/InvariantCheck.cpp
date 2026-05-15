@@ -675,12 +675,11 @@ NoDeepFreezeTrustLinesWithoutFreeze::visitEntry(
     {
         bool const overwriteFixEnabled = isFeatureEnabled(fixCleanup3_1_3, true);
 
-        std::uint32_t const uFlags = after->getFieldU32(sfFlags);
-        bool const lowFreeze = (uFlags & lsfLowFreeze) != 0u;
-        bool const lowDeepFreeze = (uFlags & lsfLowDeepFreeze) != 0u;
+        bool const lowFreeze = after->isFlag(lsfLowFreeze);
+        bool const lowDeepFreeze = after->isFlag(lsfLowDeepFreeze);
 
-        bool const highFreeze = (uFlags & lsfHighFreeze) != 0u;
-        bool const highDeepFreeze = (uFlags & lsfHighDeepFreeze) != 0u;
+        bool const highFreeze = after->isFlag(lsfHighFreeze);
+        bool const highDeepFreeze = after->isFlag(lsfHighDeepFreeze);
 
         bool const bad = (lowDeepFreeze && !lowFreeze) || (highDeepFreeze && !highFreeze);
         if (overwriteFixEnabled)

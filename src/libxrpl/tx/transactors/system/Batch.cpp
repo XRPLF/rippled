@@ -287,7 +287,7 @@ Batch::preflight(PreflightContext const& ctx)
             return temINVALID_INNER_BATCH;
         }
 
-        if ((stx.getFlags() & tfInnerBatchTxn) == 0u)
+        if (!stx.isFlag(tfInnerBatchTxn))
         {
             JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
                                 << "inner txn must have the tfInnerBatchTxn flag. "

@@ -72,9 +72,7 @@ AMMClawback::preflight(PreflightContext const& ctx)
     if (isXRP(asset))
         return temMALFORMED;
 
-    auto const flags = ctx.tx.getFlags();
-
-    if (((flags & tfClawTwoAssets) != 0u) && asset.getIssuer() != asset2.getIssuer())
+    if (ctx.tx.isFlag(tfClawTwoAssets) && asset.getIssuer() != asset2.getIssuer())
     {
         JLOG(ctx.j.trace()) << "AMMClawback: tfClawTwoAssets can only be enabled when two "
                                "assets in the AMM pool are both issued by the issuer";
@@ -284,8 +282,7 @@ AMMClawback::applyGuts(Sandbox& sb)
     if (!amount2Withdraw)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const flags = ctx_.tx.getFlags();
-    if ((flags & tfClawTwoAssets) != 0u)
+    if (ctx_.tx.isFlag(tfClawTwoAssets))
         return sendAmount(*amount2Withdraw);
 
     return tesSUCCESS;
