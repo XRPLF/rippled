@@ -26,6 +26,10 @@ This version is supported by all `rippled` versions. For WebSocket and HTTP JSON
 
 This section contains changes targeting a future version.
 
+### Breaking changes
+
+- `feature`: In admin-mode responses, the `vetoed` field is now always a boolean. Disabled obsolete amendments now have `"vetoed": true` and a new `"obsolete": true` field, instead of the previous `"vetoed": "Obsolete"` string value. This change improves type safety for API clients. Both `vetoed` and `obsolete` fields are only present in admin-mode responses for disabled amendments.
+
 ### Additions
 
 - `server_definitions`: Added the following new sections to the response ([#6321](https://github.com/XRPLF/rippled/pull/6321)):
@@ -91,10 +95,6 @@ This release contains bug fixes only and no API changes.
 ## XRP Ledger server version 2.5.0
 
 [Version 2.5.0](https://github.com/XRPLF/rippled/releases/tag/2.5.0) was released on Jun 24, 2025.
-
-### Breaking changes in 2.5.0
-
-- `feature`: The `vetoed` field in admin-mode responses is now always a boolean. Disabled obsolete amendments now have `"vetoed": true` instead of the previous `"vetoed": "Obsolete"` string value, which was not type-safe. A new `"obsolete"` boolean field is now included in all responses (both admin and non-admin), indicating whether an amendment is obsolete.
 
 ### Additions and bugfixes in 2.5.0
 
