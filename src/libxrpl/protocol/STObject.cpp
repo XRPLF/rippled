@@ -646,22 +646,22 @@ STObject::getFieldVL(SField const& field) const
 STAmount const&
 STObject::getFieldAmount(SField const& field) const
 {
-    static STAmount const kEMPTY{};
-    return getFieldByConstRef<STAmount>(field, kEMPTY);
+    static STAmount const kEmpty{};
+    return getFieldByConstRef<STAmount>(field, kEmpty);
 }
 
 STPathSet const&
 STObject::getFieldPathSet(SField const& field) const
 {
-    static STPathSet const kEMPTY{};
-    return getFieldByConstRef<STPathSet>(field, kEMPTY);
+    static STPathSet const kEmpty{};
+    return getFieldByConstRef<STPathSet>(field, kEmpty);
 }
 
 STVector256 const&
 STObject::getFieldV256(SField const& field) const
 {
-    static STVector256 const kEMPTY{};
-    return getFieldByConstRef<STVector256>(field, kEMPTY);
+    static STVector256 const kEmpty{};
+    return getFieldByConstRef<STVector256>(field, kEmpty);
 }
 
 STObject
@@ -677,22 +677,22 @@ STObject::getFieldObject(SField const& field) const
 STArray const&
 STObject::getFieldArray(SField const& field) const
 {
-    static STArray const kEMPTY{};
-    return getFieldByConstRef<STArray>(field, kEMPTY);
+    static STArray const kEmpty{};
+    return getFieldByConstRef<STArray>(field, kEmpty);
 }
 
 STCurrency const&
 STObject::getFieldCurrency(SField const& field) const
 {
-    static STCurrency const kEMPTY{};
-    return getFieldByConstRef<STCurrency>(field, kEMPTY);
+    static STCurrency const kEmpty{};
+    return getFieldByConstRef<STCurrency>(field, kEmpty);
 }
 
 STNumber const&
 STObject::getFieldNumber(SField const& field) const
 {
-    static STNumber const kEMPTY{};
-    return getFieldByConstRef<STNumber>(field, kEMPTY);
+    static STNumber const kEmpty{};
+    return getFieldByConstRef<STNumber>(field, kEmpty);
 }
 
 void

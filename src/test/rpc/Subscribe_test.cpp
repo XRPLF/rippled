@@ -474,7 +474,7 @@ public:
                 if (jv[jss::ledger_index] != std::to_string(env.closed()->header().seq))
                     return false;
 
-                if (jv[jss::flags] != (kVF_FULLY_CANONICAL_SIG | kVF_FULL_VALIDATION))
+                if (jv[jss::flags] != (kVfFullyCanonicalSig | kVfFullValidation))
                     return false;
 
                 if (jv[jss::full] != true)
@@ -932,9 +932,9 @@ public:
                 auto& from = (i % 2 == 0) ? a : b;
                 auto& to = (i % 2 == 0) ? b : a;
                 env(pay(from, to, jtx::XRP(numXRP)),
-                    jtx::Seq(jtx::kAUTOFILL),
-                    jtx::Fee(jtx::kAUTOFILL),
-                    jtx::Sig(jtx::kAUTOFILL));
+                    jtx::Seq(jtx::kAutofill),
+                    jtx::Fee(jtx::kAutofill),
+                    jtx::Sig(jtx::kAutofill));
             }
             for (int i = 0; i < ledgersToClose; ++i)
                 BEAST_EXPECT(env.syncClose());

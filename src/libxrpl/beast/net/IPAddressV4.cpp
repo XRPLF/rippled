@@ -58,8 +58,8 @@ isPublic(AddressV4 const& addr)
 char
 getClass(AddressV4 const& addr)
 {
-    static char const* kTABLE = "AAAABBCD";  // cspell:disable-line
-    return kTABLE[(addr.to_uint() & 0xE0000000) >> 29];
+    static char const* kTable = "AAAABBCD";  // cspell:disable-line
+    return kTable[(addr.to_uint() & 0xE0000000) >> 29];
 }
 
 }  // namespace beast::IP

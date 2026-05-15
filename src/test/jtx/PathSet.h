@@ -109,7 +109,7 @@ TestPath::pushBack(Issue const& iss)
 {
     path.emplaceBack(
         STPathElement::TypeCurrency | STPathElement::TypeIssuer,
-        beast::kZERO,
+        beast::kZero,
         iss.currency,
         iss.account);
     return *this;
@@ -120,7 +120,7 @@ TestPath::pushBack(MPTIssue const& iss)
 {
     path.emplaceBack(
         STPathElement::TypeMpt | STPathElement::TypeIssuer,
-        beast::kZERO,
+        beast::kZero,
         iss.getMptID(),
         iss.getIssuer());
     return *this;
@@ -129,7 +129,7 @@ TestPath::pushBack(MPTIssue const& iss)
 inline TestPath&
 TestPath::pushBack(jtx::Account const& account)
 {
-    path.emplaceBack(account.id(), Currency{beast::kZERO}, beast::kZERO);
+    path.emplaceBack(account.id(), Currency{beast::kZero}, beast::kZero);
     return *this;
 }
 
