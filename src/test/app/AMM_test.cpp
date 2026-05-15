@@ -2232,8 +2232,8 @@ private:
 
         // singleWithdrawEPrice: crafted ePrice = lptAMMBalance*f/amountBalance
         // makes the denominator (T*f - A*E) exactly zero.
-        // Pre-fixCleanup3_2_0: std::overflow_error escapes as tefEXCEPTION
-        // (fee-free); the try-catch backstop converts it to tecINTERNAL.
+        // Pre-fixCleanup3_2_0: std::overflow_error escapes to the
+        // transactor backstop and is returned as tefEXCEPTION.
         // Post-fixCleanup3_2_0: denominator check returns tecAMM_FAILED.
         //
         // Pool: USD(100)/EUR(100), baseFee=1000 (1%).
@@ -2242,7 +2242,7 @@ private:
         testAMM(
             [&](AMM& ammAlice, Env& env) {
                 auto const err =
-                    env.enabled(fixCleanup3_2_0) ? Ter(tecAMM_FAILED) : Ter(tecINTERNAL);
+                    env.enabled(fixCleanup3_2_0) ? Ter(tecAMM_FAILED) : Ter(tefEXCEPTION);
                 ammAlice.withdraw(
                     WithdrawArg{
                         .account = alice_,
