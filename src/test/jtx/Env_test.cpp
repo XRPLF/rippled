@@ -163,7 +163,7 @@ public:
 
         auto const get = [](AnyAmount a) { return a; };
         BEAST_EXPECT(!get(usd(10)).isAny);
-        BEAST_EXPECT(get(kANY(usd(10))).isAny);
+        BEAST_EXPECT(get(kAny(usd(10))).isAny);
     }
 
     // Test Env
@@ -240,13 +240,13 @@ public:
             env.fund(n, "alice");
             env.require(Balance("alice", n));
             env(noop("alice"), Fee(1), Ter(telINSUF_FEE_P));
-            env(noop("alice"), Seq(kNONE), Ter(temMALFORMED));
-            env(noop("alice"), Seq(kNONE), Fee(10), Ter(temMALFORMED));
-            env(noop("alice"), Fee(kNONE), Ter(temMALFORMED));
-            env(noop("alice"), Sig(kNONE), Ter(temMALFORMED));
-            env(noop("alice"), Fee(kAUTOFILL));
-            env(noop("alice"), Fee(kAUTOFILL), Seq(kAUTOFILL));
-            env(noop("alice"), Fee(kAUTOFILL), Seq(kAUTOFILL), Sig(kAUTOFILL));
+            env(noop("alice"), Seq(kNone), Ter(temMALFORMED));
+            env(noop("alice"), Seq(kNone), Fee(10), Ter(temMALFORMED));
+            env(noop("alice"), Fee(kNone), Ter(temMALFORMED));
+            env(noop("alice"), Sig(kNone), Ter(temMALFORMED));
+            env(noop("alice"), Fee(kAutofill));
+            env(noop("alice"), Fee(kAutofill), Seq(kAutofill));
+            env(noop("alice"), Fee(kAutofill), Seq(kAutofill), Sig(kAutofill));
         }
     }
 
@@ -258,11 +258,11 @@ public:
         Env env(*this);
         auto const gw = Account("gw");
         auto const usd = gw["USD"];
-        env.require(Balance("alice", kNONE));
-        env.require(Balance("alice", XRP(kNONE)));
+        env.require(Balance("alice", kNone));
+        env.require(Balance("alice", XRP(kNone)));
         env.fund(XRP(10000), "alice", gw);
         env.close();
-        env.require(Balance("alice", usd(kNONE)));
+        env.require(Balance("alice", usd(kNone)));
         env.trust(usd(100), "alice");
         env.require(Balance("alice", XRP(10000)));  // fee refunded
         env.require(Balance("alice", usd(0)));
@@ -324,11 +324,11 @@ public:
         env.require(Balance("carol", XRP(10000)));
         env.require(Balance(gw, XRP(10000)));
 
-        env(pay(env.master, "alice", XRP(1000)), Fee(kNONE), Ter(temMALFORMED));
+        env(pay(env.master, "alice", XRP(1000)), Fee(kNone), Ter(temMALFORMED));
         env(pay(env.master, "alice", XRP(1000)), Fee(1), Ter(telINSUF_FEE_P));
-        env(pay(env.master, "alice", XRP(1000)), Seq(kNONE), Ter(temMALFORMED));
+        env(pay(env.master, "alice", XRP(1000)), Seq(kNone), Ter(temMALFORMED));
         env(pay(env.master, "alice", XRP(1000)), Seq(20), Ter(terPRE_SEQ));
-        env(pay(env.master, "alice", XRP(1000)), Sig(kNONE), Ter(temMALFORMED));
+        env(pay(env.master, "alice", XRP(1000)), Sig(kNone), Ter(temMALFORMED));
         env(pay(env.master, "alice", XRP(1000)), Sig("bob"), Ter(tefBAD_AUTH));
 
         env(pay(env.master, "dilbert", XRP(1000)), Sig(env.master));
@@ -342,9 +342,9 @@ public:
         env.require(Balance(gw, Account("carol")["USD"](-50)));
 
         env(offer("carol", XRP(50), usd(50)), Require(Owners("carol", 2)));
-        env(pay("alice", "bob", kANY(usd(10))), Ter(tecPATH_DRY));
-        env(pay("alice", "bob", kANY(usd(10))), Paths(XRP), Sendmax(XRP(10)), Ter(tecPATH_PARTIAL));
-        env(pay("alice", "bob", kANY(usd(10))), Paths(XRP), Sendmax(XRP(20)));
+        env(pay("alice", "bob", kAny(usd(10))), Ter(tecPATH_DRY));
+        env(pay("alice", "bob", kAny(usd(10))), Paths(XRP), Sendmax(XRP(10)), Ter(tecPATH_PARTIAL));
+        env(pay("alice", "bob", kAny(usd(10))), Paths(XRP), Sendmax(XRP(20)));
         env.require(Balance("bob", usd(10)));
         env.require(Balance("carol", usd(39.5)));
 
@@ -359,7 +359,7 @@ public:
         env.require(Nflags("alice", asfDisableMaster));
         env(fset("alice", asfDisableMaster), Sig("alice"));
         env.require(Flags("alice", asfDisableMaster));
-        env(regkey("alice", kDISABLED), Ter(tecNO_ALTERNATIVE_KEY));
+        env(regkey("alice", kDisabled), Ter(tecNO_ALTERNATIVE_KEY));
         env(noop("alice"));
         env(noop("alice"), Sig("alice"), Ter(tefMASTER_DISABLED));
         env(noop("alice"), Sig("eric"));
@@ -368,7 +368,7 @@ public:
         env(fclear("alice", asfDisableMaster), Sig("alice"), Ter(tefMASTER_DISABLED));
         env(fclear("alice", asfDisableMaster));
         env.require(Nflags("alice", asfDisableMaster));
-        env(regkey("alice", kDISABLED));
+        env(regkey("alice", kDisabled));
         env(noop("alice"), Sig("eric"), Ter(tefBAD_AUTH));
         env(noop("alice"));
     }
@@ -468,7 +468,7 @@ public:
             Fee(4 * baseFee),
             Ter(tefBAD_SIGNATURE));
 
-        env(signers("alice", kNONE));
+        env(signers("alice", kNone));
     }
 
     void
@@ -703,7 +703,7 @@ public:
         env.fund(XRP(10000), alice);
 
         {
-            envs(noop(alice), Fee(kNONE), Seq(kNONE))();
+            envs(noop(alice), Fee(kNone), Seq(kNone))();
 
             // Make sure we get the right account back.
             auto tx = env.tx();
@@ -716,7 +716,7 @@ public:
 
         {
             auto params = json::Value(json::ValueType::Null);
-            envs(noop(alice), Fee(kNONE), Seq(kNONE))(params);
+            envs(noop(alice), Fee(kNone), Seq(kNone))(params);
 
             // Make sure we get the right account back.
             auto tx = env.tx();
@@ -735,7 +735,7 @@ public:
 
             auto const expectedErrorString = "Fee of " + std::to_string(baseFee.drops()) +
                 " exceeds the requested tx limit of " + std::to_string(baseFee.drops() / 2);
-            envs(noop(alice), Fee(kNONE), Seq(kNONE), Rpc(RpcHighFee, expectedErrorString))(params);
+            envs(noop(alice), Fee(kNone), Seq(kNone), Rpc(RpcHighFee, expectedErrorString))(params);
 
             auto tx = env.tx();
             BEAST_EXPECT(!tx);

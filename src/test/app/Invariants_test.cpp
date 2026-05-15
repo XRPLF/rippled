@@ -255,7 +255,7 @@ class Invariants_test : public beast::unit_test::Suite
                 // Clear the balance so the "account deletion left behind a
                 // non-zero balance" check doesn't trip earlier than the desired
                 // check.
-                sle->at(sfBalance) = beast::kZERO;
+                sle->at(sfBalance) = beast::kZero;
                 ac.view().erase(sle);
                 return true;
             });
@@ -284,8 +284,8 @@ class Invariants_test : public beast::unit_test::Suite
                 // Clear the balance so the "account deletion left behind a
                 // non-zero balance" check doesn't trip earlier than the desired
                 // check.
-                sleA1->at(sfBalance) = beast::kZERO;
-                sleA2->at(sfBalance) = beast::kZERO;
+                sleA1->at(sfBalance) = beast::kZero;
+                sleA2->at(sfBalance) = beast::kZero;
                 ac.view().erase(sleA1);
                 ac.view().erase(sleA2);
                 return true;
@@ -309,7 +309,7 @@ class Invariants_test : public beast::unit_test::Suite
                 auto const sleA1 = ac.view().peek(keylet::account(a1));
                 if (!sleA1)
                     return false;
-                if (!BEAST_EXPECT(*sleA1->at(sfBalance) != beast::kZERO))
+                if (!BEAST_EXPECT(*sleA1->at(sfBalance) != beast::kZero))
                     return false;
 
                 ac.view().erase(sleA1);
@@ -331,7 +331,7 @@ class Invariants_test : public beast::unit_test::Suite
                 // Clear the balance so the "account deletion left behind a
                 // non-zero balance" check doesn't trip earlier than the desired
                 // check.
-                sleA1->at(sfBalance) = beast::kZERO;
+                sleA1->at(sfBalance) = beast::kZero;
                 BEAST_EXPECT(sleA1->at(sfOwnerCount) == 0);
                 adjustOwnerCount(ac.view(), sleA1, 1, ac.journal);
 
@@ -342,7 +342,7 @@ class Invariants_test : public beast::unit_test::Suite
             XRPAmount{},
             STTx{ttACCOUNT_DELETE, [](STObject& tx) {}});
 
-        for (auto const& keyletInfo : kDIRECT_ACCOUNT_KEYLETS)
+        for (auto const& keyletInfo : kDirectAccountKeylets)
         {
             // TODO: Use structured binding once LLVM 16 is the minimum
             // supported version. See also:
@@ -372,7 +372,7 @@ class Invariants_test : public beast::unit_test::Suite
                     // Clear the balance so the "account deletion left behind a
                     // non-zero balance" check doesn't trip earlier than the
                     // desired check.
-                    sleA1->at(sfBalance) = beast::kZERO;
+                    sleA1->at(sfBalance) = beast::kZero;
                     ac.view().erase(sleA1);
 
                     return true;
@@ -392,7 +392,7 @@ class Invariants_test : public beast::unit_test::Suite
                 // Clear the balance so the "account deletion left behind a
                 // non-zero balance" check doesn't trip earlier than the desired
                 // check.
-                sle->at(sfBalance) = beast::kZERO;
+                sle->at(sfBalance) = beast::kZero;
                 sle->at(sfOwnerCount) = 0;
                 ac.view().erase(sle);
                 return true;
@@ -427,7 +427,7 @@ class Invariants_test : public beast::unit_test::Suite
                 // Clear the balance so the "account deletion left behind a
                 // non-zero balance" check doesn't trip earlier than the desired
                 // check.
-                sle->at(sfBalance) = beast::kZERO;
+                sle->at(sfBalance) = beast::kZero;
                 sle->at(sfOwnerCount) = 0;
                 ac.view().erase(sle);
 
@@ -491,7 +491,7 @@ class Invariants_test : public beast::unit_test::Suite
                 // Clear the balance so the "account deletion left behind a
                 // non-zero balance" check doesn't trip earlier than the desired
                 // check.
-                sle->at(sfBalance) = beast::kZERO;
+                sle->at(sfBalance) = beast::kZero;
                 sle->at(sfOwnerCount) = 0;
                 ac.view().erase(sle);
 
@@ -763,7 +763,7 @@ class Invariants_test : public beast::unit_test::Suite
                     return false;
                 // Use `drops(1)` to bypass a call to STAmount::canonicalize
                 // with an invalid value
-                sle->setFieldAmount(sfBalance, kINITIAL_XRP + drops(1));
+                sle->setFieldAmount(sfBalance, kInitialXrp + drops(1));
                 BEAST_EXPECT(!sle->getFieldAmount(sfBalance).negative());
                 ac.view().update(sle);
                 return true;
@@ -797,10 +797,10 @@ class Invariants_test : public beast::unit_test::Suite
             XRPAmount{-1});
 
         doInvariantCheck(
-            {{"fee paid exceeds system limit: "s + to_string(kINITIAL_XRP)},
-             {"XRP net change of 0 doesn't match fee "s + to_string(kINITIAL_XRP)}},
+            {{"fee paid exceeds system limit: "s + to_string(kInitialXrp)},
+             {"XRP net change of 0 doesn't match fee "s + to_string(kInitialXrp)}},
             [](Account const&, Account const&, ApplyContext&) { return true; },
-            XRPAmount{kINITIAL_XRP});
+            XRPAmount{kInitialXrp});
 
         doInvariantCheck(
             {{"fee paid is 20 exceeds fee specified in transaction."},
@@ -892,7 +892,7 @@ class Invariants_test : public beast::unit_test::Suite
                 auto sleNew = std::make_shared<SLE>(keylet::escrow(a1, (*sle)[sfSequence] + 2));
                 // Use `drops(1)` to bypass a call to STAmount::canonicalize
                 // with an invalid value
-                sleNew->setFieldAmount(sfAmount, kINITIAL_XRP + drops(1));
+                sleNew->setFieldAmount(sfAmount, kInitialXrp + drops(1));
                 ac.view().insert(sleNew);
                 return true;
             });
@@ -1332,12 +1332,12 @@ class Invariants_test : public beast::unit_test::Suite
 
         testcase << "PermissionedDomain 2";
 
-        auto constexpr kTOO_BIG = kMAX_PERMISSIONED_DOMAIN_CREDENTIALS_ARRAY_SIZE + 1;
+        static constexpr auto kTooBig = kMaxPermissionedDomainCredentialsArraySize + 1;
         doInvariantCheck(
             Env(*this, features),
-            {{"permissioned domain bad credentials size " + std::to_string(kTOO_BIG)}},
+            {{"permissioned domain bad credentials size " + std::to_string(kTooBig)}},
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
-                return !!createPermissionedDomain(ac, a1, a2, kTOO_BIG);
+                return !!createPermissionedDomain(ac, a1, a2, kTooBig);
             },
             XRPAmount{},
             STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
@@ -1414,16 +1414,16 @@ class Invariants_test : public beast::unit_test::Suite
         testcase << "PermissionedDomain Set 2";
         doInvariantCheck(
             Env(*this, features),
-            {{"permissioned domain bad credentials size " + std::to_string(kTOO_BIG)}},
+            {{"permissioned domain bad credentials size " + std::to_string(kTooBig)}},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 // create PD
                 auto slePd = createPermissionedDomain(ac, a1, a2);
 
                 // update PD
                 {
-                    STArray credentials(sfAcceptedCredentials, kTOO_BIG);
+                    STArray credentials(sfAcceptedCredentials, kTooBig);
 
-                    for (std::size_t n = 0; n < kTOO_BIG; ++n)
+                    for (std::size_t n = 0; n < kTooBig; ++n)
                     {
                         auto cred = STObject::makeInnerObject(sfCredential);
                         cred.setAccountID(sfIssuer, a2);
@@ -2056,7 +2056,7 @@ class Invariants_test : public beast::unit_test::Suite
 
         auto const loanBrokerKeylet = keylet::loanbroker(a.id(), env.seq(a));
         // Create a Loan Broker with all default values.
-        env(set(a, vaultID), Fee(kINCREMENT));
+        env(set(a, vaultID), Fee(kIncrement));
 
         return loanBrokerKeylet;
     };
@@ -2160,7 +2160,7 @@ class Invariants_test : public beast::unit_test::Suite
                         return iouAsset;
                     }
                     case Asset::MPT: {
-                        MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+                        MPTTester mptt{env, issuer, kMptInitNoFund};
                         mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
                         PrettyAsset const mptAsset = mptt.issuanceID();
                         mptt.authorize({.account = alice});
@@ -2427,7 +2427,7 @@ class Invariants_test : public beast::unit_test::Suite
             std::optional<AccountAmount> accountShares = std::nullopt;
             // NOLINTEND(readability-redundant-member-init)
         };
-        auto constexpr kADJUST = [&](ApplyView& ac, xrpl::Keylet keylet, Adjustments args) {
+        constexpr auto kAdjust = [&](ApplyView& ac, xrpl::Keylet keylet, Adjustments args) {
             auto sleVault = ac.peek(keylet);
             if (!sleVault)
                 return false;
@@ -2526,7 +2526,7 @@ class Invariants_test : public beast::unit_test::Suite
             return true;
         };
 
-        constexpr auto kARGS = [](AccountID id, int adjustment, auto fn) -> Adjustments {
+        static constexpr auto kArgs = [](AccountID id, int adjustment, auto fn) -> Adjustments {
             Adjustments sample = {
                 .assetsTotal = adjustment,
                 .assetsAvailable = adjustment,
@@ -2915,9 +2915,9 @@ class Invariants_test : public beast::unit_test::Suite
                 (*sleA4)[sfBalance] = *(*sleA4)[sfBalance] + 10;
                 ac.view().update(sleA4);
 
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), 0, [&](Adjustments& sample) {
-                                   sample.assetsAvailable = (kDROPS_PER_XRP * -100).value();
-                                   sample.assetsTotal = (kDROPS_PER_XRP * -200).value();
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [&](Adjustments& sample) {
+                                   sample.assetsAvailable = (kDropsPerXrp * -100).value();
+                                   sample.assetsTotal = (kDropsPerXrp * -200).value();
                                    sample.sharesTotal = -1;
                                }));
             },
@@ -2980,7 +2980,7 @@ class Invariants_test : public beast::unit_test::Suite
              "set must not change assets outstanding"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), 0, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [&](Adjustments& sample) {
                                    sample.lossUnrealized = 13;
                                    sample.assetsTotal = 20;
                                }));
@@ -2997,7 +2997,7 @@ class Invariants_test : public beast::unit_test::Suite
              "vault transaction must not change loss unrealized"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), 100, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 100, [&](Adjustments& sample) {
                                    sample.lossUnrealized = 13;
                                }));
             },
@@ -3012,7 +3012,7 @@ class Invariants_test : public beast::unit_test::Suite
             {"set assets outstanding must not exceed assets maximum"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), 0, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [&](Adjustments& sample) {
                                    sample.assetsMaximum = 1;
                                }));
             },
@@ -3026,7 +3026,7 @@ class Invariants_test : public beast::unit_test::Suite
             {"assets maximum must be positive"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), 0, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [&](Adjustments& sample) {
                                    sample.assetsMaximum = -1;
                                }));
             },
@@ -3072,7 +3072,7 @@ class Invariants_test : public beast::unit_test::Suite
                 (*sleShares)[sfMaximumAmount] = 10;
                 ac.view().update(sleShares);
 
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), 10, [](Adjustments&) {}));
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [](Adjustments&) {}));
             },
             XRPAmount{},
             STTx{ttVAULT_DEPOSIT, [](STObject&) {}},
@@ -3084,7 +3084,7 @@ class Invariants_test : public beast::unit_test::Suite
             {"updated shares must not exceed maximum"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                kADJUST(ac.view(), keylet, kARGS(a2.id(), 10, [](Adjustments&) {}));
+                kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [](Adjustments&) {}));
 
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
@@ -3092,7 +3092,7 @@ class Invariants_test : public beast::unit_test::Suite
                 auto sleShares = ac.view().peek(keylet::mptIssuance((*sleVault)[sfShareMPTID]));
                 if (!sleShares)
                     return false;
-                (*sleShares)[sfOutstandingAmount] = kMAX_MP_TOKEN_AMOUNT + 1;
+                (*sleShares)[sfOutstandingAmount] = kMaxMpTokenAmount + 1;
                 ac.view().update(sleShares);
                 return true;
             },
@@ -3309,7 +3309,7 @@ class Invariants_test : public beast::unit_test::Suite
                 sleVault->at(sfAssetsAvailable) = Number(0);
                 sleVault->at(sfLossUnrealized) = Number(0);
                 sleVault->at(sfShareMPTID) = sharesMptId;
-                sleVault->at(sfWithdrawalPolicy) = kVAULT_STRATEGY_FIRST_COME_FIRST_SERVE;
+                sleVault->at(sfWithdrawalPolicy) = kVaultStrategyFirstComeFirstServe;
 
                 ac.view().insert(sleVault);
                 ac.view().insert(sleShares);
@@ -3369,7 +3369,7 @@ class Invariants_test : public beast::unit_test::Suite
                 sleVault->at(sfAssetsAvailable) = Number(0);
                 sleVault->at(sfLossUnrealized) = Number(0);
                 sleVault->at(sfShareMPTID) = sharesMptId;
-                sleVault->at(sfWithdrawalPolicy) = kVAULT_STRATEGY_FIRST_COME_FIRST_SERVE;
+                sleVault->at(sfWithdrawalPolicy) = kVaultStrategyFirstComeFirstServe;
 
                 ac.view().insert(sleVault);
                 ac.view().insert(sleShares);
@@ -3410,7 +3410,7 @@ class Invariants_test : public beast::unit_test::Suite
                 sleVault->at(sfAssetsAvailable) = Number(0);
                 sleVault->at(sfLossUnrealized) = Number(0);
                 sleVault->at(sfShareMPTID) = sharesMptId;
-                sleVault->at(sfWithdrawalPolicy) = kVAULT_STRATEGY_FIRST_COME_FIRST_SERVE;
+                sleVault->at(sfWithdrawalPolicy) = kVaultStrategyFirstComeFirstServe;
 
                 ac.view().insert(sleVault);
                 ac.view().insert(sleShares);
@@ -3425,7 +3425,7 @@ class Invariants_test : public beast::unit_test::Suite
             {"deposit must change vault balance"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), 0, [](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [](Adjustments& sample) {
                                    sample.vaultAssets.reset();
                                }));
             },
@@ -3438,7 +3438,7 @@ class Invariants_test : public beast::unit_test::Suite
             {"deposit assets outstanding must not exceed assets maximum"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), 200, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 200, [&](Adjustments& sample) {
                                    sample.assetsMaximum = 1;
                                }));
             },
@@ -3465,7 +3465,7 @@ class Invariants_test : public beast::unit_test::Suite
                 (*sleA4)[sfBalance] = *(*sleA4)[sfBalance] + 10;
                 ac.view().update(sleA4);
 
-                return kADJUST(ac.view(), keylet, kARGS(a3.id(), -10, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a3.id(), -10, [&](Adjustments& sample) {
                                    sample.accountAssets->amount = -100;
                                }));
             },
@@ -3495,7 +3495,7 @@ class Invariants_test : public beast::unit_test::Suite
                 (*sleA3)[sfBalance] = *(*sleA3)[sfBalance] + 10;
                 ac.view().update(sleA3);
 
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), 10, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [&](Adjustments& sample) {
                                    sample.vaultAssets = -20;
                                    sample.accountAssets->amount = 10;
                                }));
@@ -3518,7 +3518,7 @@ class Invariants_test : public beast::unit_test::Suite
                 (*sleA3)[sfBalance] = *(*sleA3)[sfBalance] - 10;
                 ac.view().update(sleA3);
 
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), 10, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [&](Adjustments& sample) {
                                    sample.accountAssets->amount = 0;
                                }));
             },
@@ -3532,7 +3532,7 @@ class Invariants_test : public beast::unit_test::Suite
             {"deposit must change depositor shares"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), 10, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [&](Adjustments& sample) {
                                    sample.accountShares.reset();
                                }));
             },
@@ -3547,7 +3547,7 @@ class Invariants_test : public beast::unit_test::Suite
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
 
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), 10, [](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [](Adjustments& sample) {
                                    sample.sharesTotal = 0;
                                }));
             },
@@ -3564,7 +3564,7 @@ class Invariants_test : public beast::unit_test::Suite
              "amount"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), 10, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [&](Adjustments& sample) {
                                    sample.accountShares->amount = -5;
                                    sample.sharesTotal = -10;
                                }));
@@ -3583,7 +3583,7 @@ class Invariants_test : public beast::unit_test::Suite
                 ac.view().update(sleA3);
 
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), 10, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [&](Adjustments& sample) {
                                    sample.assetsTotal = 11;
                                }));
             },
@@ -3604,7 +3604,7 @@ class Invariants_test : public beast::unit_test::Suite
              "deposit and assets available must add up"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), 10, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [&](Adjustments& sample) {
                                    sample.assetsTotal = 7;
                                    sample.assetsAvailable = 7;
                                }));
@@ -3620,7 +3620,7 @@ class Invariants_test : public beast::unit_test::Suite
             {"withdrawal must change vault balance"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), 0, [](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [](Adjustments& sample) {
                                    sample.vaultAssets.reset();
                                }));
             },
@@ -3645,7 +3645,7 @@ class Invariants_test : public beast::unit_test::Suite
                 (*sleA4)[sfBalance] = *(*sleA4)[sfBalance] + 10;
                 ac.view().update(sleA4);
 
-                return kADJUST(ac.view(), keylet, kARGS(a3.id(), -10, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a3.id(), -10, [&](Adjustments& sample) {
                                    sample.accountAssets->amount = -100;
                                }));
             },
@@ -3679,7 +3679,7 @@ class Invariants_test : public beast::unit_test::Suite
                 (*sleA3)[sfBalance] = *(*sleA3)[sfBalance] + 10;
                 ac.view().update(sleA3);
 
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), -10, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), -10, [&](Adjustments& sample) {
                                    sample.vaultAssets = 10;
                                    sample.accountAssets->amount = -20;
                                }));
@@ -3694,7 +3694,7 @@ class Invariants_test : public beast::unit_test::Suite
             {"withdrawal must change one destination balance"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                if (!kADJUST(ac.view(), keylet, kARGS(a2.id(), -10, [&](Adjustments& sample) {
+                if (!kAdjust(ac.view(), keylet, kArgs(a2.id(), -10, [&](Adjustments& sample) {
                                  *sample.vaultAssets -= 5;
                              })))
                     return false;
@@ -3715,7 +3715,7 @@ class Invariants_test : public beast::unit_test::Suite
             {"withdrawal must change depositor shares"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), -10, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), -10, [&](Adjustments& sample) {
                                    sample.accountShares.reset();
                                }));
             },
@@ -3729,7 +3729,7 @@ class Invariants_test : public beast::unit_test::Suite
             {"withdrawal must change vault shares"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), -10, [](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), -10, [](Adjustments& sample) {
                                    sample.sharesTotal = 0;
                                }));
             },
@@ -3745,7 +3745,7 @@ class Invariants_test : public beast::unit_test::Suite
              "amount"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), -10, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), -10, [&](Adjustments& sample) {
                                    sample.accountShares->amount = 5;
                                    sample.sharesTotal = 10;
                                }));
@@ -3761,7 +3761,7 @@ class Invariants_test : public beast::unit_test::Suite
              "withdrawal and assets available must add up"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), -10, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), -10, [&](Adjustments& sample) {
                                    sample.assetsTotal = -15;
                                    sample.assetsAvailable = -15;
                                }));
@@ -3780,7 +3780,7 @@ class Invariants_test : public beast::unit_test::Suite
                 ac.view().update(sleA3);
 
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), -10, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), -10, [&](Adjustments& sample) {
                                    sample.assetsTotal = -7;
                                }));
             },
@@ -3848,7 +3848,7 @@ class Invariants_test : public beast::unit_test::Suite
              "amount"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq() - 2);
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), -10, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), -10, [&](Adjustments& sample) {
                                    sample.accountShares->amount = 5;
                                }));
             },
@@ -3863,7 +3863,7 @@ class Invariants_test : public beast::unit_test::Suite
             {"clawback must change vault balance"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq() - 2);
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), -1, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), -1, [&](Adjustments& sample) {
                                    sample.vaultAssets.reset();
                                }));
             },
@@ -3877,7 +3877,7 @@ class Invariants_test : public beast::unit_test::Suite
             {"clawback may only be performed by the asset issuer"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), 0, [&](Adjustments& sample) {}));
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [&](Adjustments& sample) {}));
             },
             XRPAmount{},
             STTx{ttVAULT_CLAWBACK, [](STObject&) {}},
@@ -3889,7 +3889,7 @@ class Invariants_test : public beast::unit_test::Suite
             {"clawback may only be performed by the asset issuer"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq() - 2);
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), 0, [&](Adjustments& sample) {}));
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [&](Adjustments& sample) {}));
             },
             XRPAmount{},
             STTx{ttVAULT_CLAWBACK, [&](STObject& tx) { tx[sfAccount] = a4.id(); }},
@@ -3902,7 +3902,7 @@ class Invariants_test : public beast::unit_test::Suite
              "clawback must change vault shares"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq() - 2);
-                return kADJUST(ac.view(), keylet, kARGS(a4.id(), 10, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a4.id(), 10, [&](Adjustments& sample) {
                                    sample.sharesTotal = 0;
                                }));
             },
@@ -3920,7 +3920,7 @@ class Invariants_test : public beast::unit_test::Suite
             {"clawback must change holder shares"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq() - 2);
-                return kADJUST(ac.view(), keylet, kARGS(a4.id(), -10, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a4.id(), -10, [&](Adjustments& sample) {
                                    sample.accountShares.reset();
                                }));
             },
@@ -3940,7 +3940,7 @@ class Invariants_test : public beast::unit_test::Suite
              "clawback and assets available must add up"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq() - 2);
-                return kADJUST(ac.view(), keylet, kARGS(a4.id(), -10, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a4.id(), -10, [&](Adjustments& sample) {
                                    sample.accountShares->amount = -8;
                                    sample.assetsTotal = -7;
                                    sample.assetsAvailable = -7;
@@ -4226,8 +4226,8 @@ class Invariants_test : public beast::unit_test::Suite
 
                 MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
                 auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
-                // outstanding exceeds kMAX_MP_TOKEN_AMOUNT -> checkAmount sets bad_
-                sleNew->setFieldU64(sfOutstandingAmount, kMAX_MP_TOKEN_AMOUNT + 1);
+                // outstanding exceeds kMaxMpTokenAmount -> checkAmount sets bad_
+                sleNew->setFieldU64(sfOutstandingAmount, kMaxMpTokenAmount + 1);
                 // locked is valid and <= outstanding -> must NOT clear bad_
                 sleNew->setFieldU64(sfLockedAmount, 10);
                 ac.view().insert(sleNew);

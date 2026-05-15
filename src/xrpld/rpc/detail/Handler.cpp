@@ -75,7 +75,7 @@ handlerFrom()
         HandlerImpl::maxApiVer};
 }
 
-Handler const kHANDLER_ARRAY[]{
+Handler const kHandlerArray[]{
     // Some handlers not specified here are added to the table via addHandler()
     // Request-response methods
     {.name = "account_info",
@@ -382,7 +382,7 @@ private:
     {
         XRPL_ASSERT(minVer <= maxVer, "xrpl::RPC::HandlerTable : valid API version range");
         XRPL_ASSERT(
-            maxVer <= RPC::kAPI_MAXIMUM_VALID_VERSION,
+            maxVer <= RPC::kApiMaximumValidVersion,
             "xrpl::RPC::HandlerTable : valid max API version");
 
         return std::any_of(
@@ -418,15 +418,15 @@ public:
     static HandlerTable const&
     instance()
     {
-        static HandlerTable const kHANDLER_TABLE(kHANDLER_ARRAY);
-        return kHANDLER_TABLE;
+        static HandlerTable const kHandlerTable(kHandlerArray);
+        return kHandlerTable;
     }
 
     [[nodiscard]] Handler const*
     getHandler(unsigned version, bool betaEnabled, std::string const& name) const
     {
-        if (version < RPC::kAPI_MINIMUM_SUPPORTED_VERSION ||
-            version > (betaEnabled ? RPC::kAPI_BETA_VERSION : RPC::kAPI_MAXIMUM_SUPPORTED_VERSION))
+        if (version < RPC::kApiMinimumSupportedVersion ||
+            version > (betaEnabled ? RPC::kApiBetaVersion : RPC::kApiMaximumSupportedVersion))
             return nullptr;
 
         auto const range = table_.equal_range(name);
@@ -455,8 +455,8 @@ private:
     addHandler()
     {
         static_assert(HandlerImpl::minApiVer <= HandlerImpl::maxApiVer);
-        static_assert(HandlerImpl::maxApiVer <= RPC::kAPI_MAXIMUM_VALID_VERSION);
-        static_assert(RPC::kAPI_MINIMUM_SUPPORTED_VERSION <= HandlerImpl::minApiVer);
+        static_assert(HandlerImpl::maxApiVer <= RPC::kApiMaximumValidVersion);
+        static_assert(RPC::kApiMinimumSupportedVersion <= HandlerImpl::minApiVer);
 
         if (overlappingApiVersion(
                 table_.equal_range(HandlerImpl::name),

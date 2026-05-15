@@ -51,10 +51,10 @@ struct FeeSetup
     XRPAmount reference_fee{10};
 
     /** The account reserve requirement in drops. */
-    XRPAmount account_reserve{1'000'000};  // 1 XRP
+    XRPAmount account_reserve{10 * kDropsPerXrp};
 
     /** The per-owned item reserve requirement in drops. */
-    XRPAmount owner_reserve{200'000};  // 0.2 XRP
+    XRPAmount owner_reserve{2 * kDropsPerXrp};
 
     /* (Remember to update the example cfg files when changing any of these
      * values.) */
@@ -76,10 +76,10 @@ class Config : public BasicConfig
 {
 public:
     // Settings related to the configuration file location and directories
-    static char const* const kCONFIG_FILE_NAME;
-    static char const* const kCONFIG_LEGACY_NAME;
-    static char const* const kDATABASE_DIR_NAME;
-    static char const* const kVALIDATORS_FILE_NAME;
+    static char const* const kConfigFileName;
+    static char const* const kConfigLegacyName;
+    static char const* const kDatabaseDirName;
+    static char const* const kValidatorsFileName;
 
     /** Returns the full path and filename of the debug log file. */
     [[nodiscard]] boost::filesystem::path
@@ -209,11 +209,11 @@ public:
 
     // Work queue limits
     int MAX_TRANSACTIONS = 250;
-    static constexpr int kMAX_JOB_QUEUE_TX = 1000;
-    static constexpr int kMIN_JOB_QUEUE_TX = 100;
+    static constexpr int kMaxJobQueueTx = 1000;
+    static constexpr int kMinJobQueueTx = 100;
 
     // Amendment majority time
-    std::chrono::seconds AMENDMENT_MAJORITY_TIME = kDEFAULT_AMENDMENT_MAJORITY_TIME;
+    std::chrono::seconds AMENDMENT_MAJORITY_TIME = kDefaultAmendmentMajorityTime;
 
     // Thread pool configuration (0 = choose for me)
     int WORKERS = 0;           // jobqueue thread count. default: upto 6

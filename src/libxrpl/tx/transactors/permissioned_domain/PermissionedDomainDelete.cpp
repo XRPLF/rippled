@@ -20,7 +20,7 @@ NotTEC
 PermissionedDomainDelete::preflight(PreflightContext const& ctx)
 {
     auto const domain = ctx.tx.getFieldH256(sfDomainID);
-    if (domain == beast::kZERO)
+    if (domain == beast::kZero)
         return temMALFORMED;
 
     return tesSUCCESS;

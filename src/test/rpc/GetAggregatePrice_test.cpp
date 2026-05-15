@@ -25,22 +25,22 @@ public:
         using namespace jtx;
         Account const owner{"owner"};
         Account const some{"some"};
-        static OraclesData kORACLES = {{owner, 1}};
+        static OraclesData kOracles = {{owner, 1}};
 
         {
             Env env(*this);
             auto const baseFee = env.current()->fees().base;
             // missing base_asset
-            auto ret = Oracle::aggregatePrice(env, std::nullopt, "USD", kORACLES);
+            auto ret = Oracle::aggregatePrice(env, std::nullopt, "USD", kOracles);
             BEAST_EXPECT(ret[jss::error_message].asString() == "Missing field 'base_asset'.");
 
             // missing quote_asset
-            ret = Oracle::aggregatePrice(env, "XRP", std::nullopt, kORACLES);
+            ret = Oracle::aggregatePrice(env, "XRP", std::nullopt, kOracles);
             BEAST_EXPECT(ret[jss::error_message].asString() == "Missing field 'quote_asset'.");
 
             // invalid base_asset, quote_asset
             std::vector<AnyValue> const invalidAsset = {
-                kNONE_TAG,
+                kNoneTag,
                 1,
                 -1,
                 1.2,
@@ -56,11 +56,11 @@ public:
                 "012345678901234567890123456789012345678G"};
             for (auto const& v : invalidAsset)
             {
-                ret = Oracle::aggregatePrice(env, "USD", v, kORACLES);
+                ret = Oracle::aggregatePrice(env, "USD", v, kOracles);
                 BEAST_EXPECT(ret[jss::error].asString() == "invalidParams");
-                ret = Oracle::aggregatePrice(env, v, "USD", kORACLES);
+                ret = Oracle::aggregatePrice(env, v, "USD", kOracles);
                 BEAST_EXPECT(ret[jss::error].asString() == "invalidParams");
-                ret = Oracle::aggregatePrice(env, v, v, kORACLES);
+                ret = Oracle::aggregatePrice(env, v, v, kOracles);
                 BEAST_EXPECT(ret[jss::error].asString() == "invalidParams");
             }
 
@@ -73,7 +73,7 @@ public:
             BEAST_EXPECT(ret[jss::error].asString() == "oracleMalformed");
 
             // no token pairs found
-            ret = Oracle::aggregatePrice(env, "YAN", "USD", kORACLES);
+            ret = Oracle::aggregatePrice(env, "YAN", "USD", kOracles);
             BEAST_EXPECT(ret[jss::error].asString() == "objectNotFound");
 
             // invalid oracle document id
@@ -81,7 +81,7 @@ public:
             ret = Oracle::aggregatePrice(env, "XRP", "USD", {{{owner, 2}}});
             BEAST_EXPECT(ret[jss::error].asString() == "objectNotFound");
             // invalid values
-            std::vector<AnyValue> const invalidDocument = {kNONE_TAG, 1.2, -1, "", "none", "1.2"};
+            std::vector<AnyValue> const invalidDocument = {kNoneTag, 1.2, -1, "", "none", "1.2"};
             for (auto const& v : invalidDocument)
             {
                 ret = Oracle::aggregatePrice(env, "XRP", "USD", {{{owner, v}}});
@@ -111,8 +111,7 @@ public:
             BEAST_EXPECT(ret[jss::error].asString() == "objectNotFound");
 
             // invalid trim value
-            std::vector<AnyValue> const invalidTrim = {
-                kNONE_TAG, 0, 26, -1, 1.2, "", "none", "1.2"};
+            std::vector<AnyValue> const invalidTrim = {kNoneTag, 0, 26, -1, 1.2, "", "none", "1.2"};
             for (auto const& v : invalidTrim)
             {
                 ret =
@@ -121,7 +120,7 @@ public:
             }
 
             // invalid time threshold value
-            std::vector<AnyValue> const invalidTime = {kNONE_TAG, -1, 1.2, "", "none", "1.2"};
+            std::vector<AnyValue> const invalidTime = {kNoneTag, -1, 1.2, "", "none", "1.2"};
             for (auto const& v : invalidTime)
             {
                 ret = Oracle::aggregatePrice(

@@ -77,7 +77,7 @@ getFeeLevelPaid(ReadView const& view, STTx const& tx)
         return FeeLevel64(0);
     }
 
-    return mulDiv(effectiveFeePaid, TxQ::kBASE_LEVEL, baseFee)
+    return mulDiv(effectiveFeePaid, TxQ::kBaseLevel, baseFee)
         .value_or(FeeLevel64(std::numeric_limits<std::uint64_t>::max()));
 }
 
@@ -93,7 +93,7 @@ static FeeLevel64
 increase(FeeLevel64 level, std::uint32_t increasePercent)
 {
     return mulDiv(level, 100 + increasePercent, 100)
-        .value_or(static_cast<FeeLevel64>(xrpl::kMULDIV_MAX));
+        .value_or(static_cast<FeeLevel64>(xrpl::kMuldivMax));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -130,15 +130,15 @@ TxQ::FeeMetrics::update(
         // upperLimit must be >= minimumTxnCount_ or std::clamp can give
         // unexpected results
         auto const upperLimit = std::max<std::uint64_t>(
-            mulDiv(txnsExpected_, cutPct, 100).value_or(xrpl::kMULDIV_MAX), minimumTxnCount_);
+            mulDiv(txnsExpected_, cutPct, 100).value_or(xrpl::kMuldivMax), minimumTxnCount_);
         txnsExpected_ = std::clamp<std::uint64_t>(
-            mulDiv(size, cutPct, 100).value_or(xrpl::kMULDIV_MAX), minimumTxnCount_, upperLimit);
+            mulDiv(size, cutPct, 100).value_or(xrpl::kMuldivMax), minimumTxnCount_, upperLimit);
         recentTxnCounts_.clear();
     }
     else if (size > txnsExpected_ || size > targetTxnCount_)
     {
         recentTxnCounts_.push_back(mulDiv(size, 100 + setup.normalConsensusIncreasePercent, 100)
-                                       .value_or(xrpl::kMULDIV_MAX));
+                                       .value_or(xrpl::kMuldivMax));
         auto const iter = std::ranges::max_element(recentTxnCounts_);
         BOOST_ASSERT(iter != recentTxnCounts_.end());
         auto const next = [&] {
@@ -194,15 +194,15 @@ TxQ::FeeMetrics::scaleFeeLevel(Snapshot const& snapshot, OpenView const& view)
         // Compute escalated fee level
         // Don't care about the overflow flag
         return mulDiv(multiplier, current * current, target * target)
-            .value_or(static_cast<FeeLevel64>(xrpl::kMULDIV_MAX));
+            .value_or(static_cast<FeeLevel64>(xrpl::kMuldivMax));
     }
 
-    return kBASE_LEVEL;
+    return kBaseLevel;
 }
 
 namespace detail {
 
-constexpr static std::pair<bool, std::uint64_t>
+static constexpr std::pair<bool, std::uint64_t>
 sumOfFirstSquares(std::size_t xIn)
 {
     // sum(n = 1->x) : n * n = x(x + 1)(2x + 1) / 6
@@ -764,7 +764,7 @@ TxQ::apply(
     // If the transaction needs a Ticket is that Ticket in the ledger?
     SeqProxy const acctSeqProx = SeqProxy::sequence((*sleAccount)[sfSequence]);
     SeqProxy const txSeqProx = tx->getSeqProxy();
-    if (txSeqProx.isTicket() && !view.exists(keylet::kTICKET(account, txSeqProx)))
+    if (txSeqProx.isTicket() && !view.exists(keylet::kTicket(account, txSeqProx)))
     {
         if (txSeqProx.value() < acctSeqProx.value())
         {
@@ -1030,8 +1030,8 @@ TxQ::apply(
             // Sum fees and spending for all of the queued transactions
             // so we know how much to remove from the account balance
             // for the trial preclaim.
-            XRPAmount potentialSpend = beast::kZERO;
-            XRPAmount totalFee = beast::kZERO;
+            XRPAmount potentialSpend = beast::kZero;
+            XRPAmount totalFee = beast::kZero;
             for (auto iter = txIter->first; iter != txIter->end; ++iter)
             {
                 // If we're replacing this transaction don't include
@@ -1154,7 +1154,7 @@ TxQ::apply(
         return {pcresult.ter, false};
 
     // Too low of a fee should get caught by preclaim
-    XRPL_ASSERT(feeLevelPaid >= kBASE_LEVEL, "xrpl::TxQ::apply : minimum fee");
+    XRPL_ASSERT(feeLevelPaid >= kBaseLevel, "xrpl::TxQ::apply : minimum fee");
 
     JLOG(j_.trace()) << "Transaction " << transactionID << " from account " << account
                      << " has fee level of " << feeLevelPaid << " needs at least "
@@ -1179,10 +1179,10 @@ TxQ::apply(
             conditions change, but don't waste the effort to clear).
     */
     if (txSeqProx.isSeq() && txIter && multiTxn.has_value() &&
-        txIter->first->second.retriesRemaining == MaybeTx::kRETRIES_ALLOWED &&
-        feeLevelPaid > requiredFeeLevel && requiredFeeLevel > kBASE_LEVEL)
+        txIter->first->second.retriesRemaining == MaybeTx::kRetriesAllowed &&
+        feeLevelPaid > requiredFeeLevel && requiredFeeLevel > kBaseLevel)
     {
-        OpenView sandbox(kOPEN_LEDGER, &view, view.rules());
+        OpenView sandbox(kOpenLedger, &view, view.rules());
 
         auto result = tryClearAccountQueueUpThruTx(
             app,
@@ -1249,7 +1249,7 @@ TxQ::apply(
             if (lastRIter->feeLevel > feeLevelPaid || endAccount.transactions.size() == 1)
                 return lastRIter->feeLevel;
 
-            constexpr FeeLevel64 kMAX{std::numeric_limits<std::uint64_t>::max()};
+            constexpr FeeLevel64 kMax{std::numeric_limits<std::uint64_t>::max()};
             auto endTotal = std::accumulate(
                 endAccount.transactions.begin(),
                 endAccount.transactions.end(),
@@ -1258,8 +1258,8 @@ TxQ::apply(
                     // Check for overflow.
                     auto next = txn.second.feeLevel / endAccount.transactions.size();
                     auto mod = txn.second.feeLevel % endAccount.transactions.size();
-                    if (total.first >= kMAX - next || total.second >= kMAX - mod)
-                        return {kMAX, FeeLevel64{0}};
+                    if (total.first >= kMax - next || total.second >= kMax - mod)
+                        return {kMax, FeeLevel64{0}};
 
                     return {total.first + next, total.second + mod};
                 });
@@ -1750,9 +1750,9 @@ TxQ::getMetrics(OpenView const& view) const
     result.txQMaxSize = maxSize_;
     result.txInLedger = view.txCount();
     result.txPerLedger = snapshot.txnsExpected;
-    result.referenceFeeLevel = kBASE_LEVEL;
+    result.referenceFeeLevel = kBaseLevel;
     result.minProcessingFeeLevel =
-        isFull() ? byFee_.rbegin()->feeLevel + FeeLevel64{1} : kBASE_LEVEL;
+        isFull() ? byFee_.rbegin()->feeLevel + FeeLevel64{1} : kBaseLevel;
     result.medFeeLevel = snapshot.escalationMultiplier;
     result.openLedgerFeeLevel = FeeMetrics::scaleFeeLevel(snapshot, view);
 
@@ -1775,7 +1775,7 @@ TxQ::getTxRequiredFeeAndSeq(OpenView const& view, std::shared_ptr<STTx const> co
     std::uint32_t const accountSeq = sle ? (*sle)[sfSequence] : 0;
     std::uint32_t const availableSeq = nextQueuableSeqImpl(sle, lock).value();
     return {
-        .fee = mulDiv(fee, baseFee, kBASE_LEVEL)
+        .fee = mulDiv(fee, baseFee, kBaseLevel)
                    .value_or(XRPAmount(std::numeric_limits<std::int64_t>::max())),
         .accountSeq = accountSeq,
         .availableSeq = availableSeq};

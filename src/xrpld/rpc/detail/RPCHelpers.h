@@ -152,7 +152,7 @@ std::optional<std::pair<PublicKey, SecretKey>>
 keypairForSignature(
     json::Value const& params,
     json::Value& error,
-    unsigned int apiVersion = kAPI_VERSION_IF_UNSPECIFIED);
+    unsigned int apiVersion = kApiVersionIfUnspecified);
 
 /** Parse subscribe/unsubscribe parameters
  */

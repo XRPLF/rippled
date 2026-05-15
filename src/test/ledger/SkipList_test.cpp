@@ -23,7 +23,7 @@ class SkipList_test : public beast::unit_test::Suite
         {
             Config const config;
             auto prev = std::make_shared<Ledger>(
-                kCREATE_GENESIS,
+                kCreateGenesis,
                 Rules{config.features},
                 config.FEES.toFees(),
                 std::vector<uint256>{},
