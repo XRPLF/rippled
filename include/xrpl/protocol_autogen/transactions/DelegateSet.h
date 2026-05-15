@@ -19,9 +19,9 @@ class DelegateSetBuilder;
  * @brief Transaction: DelegateSet
  *
  * Type: ttDELEGATE_SET (64)
- * Delegable: Delegation::notDelegable
+ * Delegable: Delegation::NotDelegable
  * Amendment: featurePermissionDelegationV1_1
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use DelegateSetBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfAuthorize (soeREQUIRED)
+     * @brief Get sfAuthorize (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -58,7 +58,7 @@ public:
         return this->tx_->at(sfAuthorize);
     }
     /**
-     * @brief Get sfPermissions (soeREQUIRED)
+     * @brief Get sfPermissions (SoeRequired)
      * @note This is an untyped field.
      * @return The field value.
      */
@@ -74,7 +74,7 @@ public:
  * @brief Builder for DelegateSet transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class DelegateSetBuilder : public TransactionBuilderBase<DelegateSetBuilder>
@@ -115,7 +115,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfAuthorize (soeREQUIRED)
+     * @brief Set sfAuthorize (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     DelegateSetBuilder&
@@ -126,7 +126,7 @@ public:
     }
 
     /**
-     * @brief Set sfPermissions (soeREQUIRED)
+     * @brief Set sfPermissions (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     DelegateSetBuilder&

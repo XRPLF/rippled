@@ -35,15 +35,15 @@ namespace xrpl {
  */
 class ValidVault
 {
-    Number static constexpr zero{};
+    static constexpr Number kZero{};
 
     struct Vault final
     {
-        uint256 key = beast::zero;
+        uint256 key = beast::kZero;
         Asset asset;
         AccountID pseudoId;
         AccountID owner;
-        uint192 shareMPTID = beast::zero;
+        uint192 shareMPTID = beast::kZero;
         Number assetsTotal = 0;
         Number assetsAvailable = 0;
         Number assetsMaximum = 0;
@@ -64,7 +64,7 @@ class ValidVault
 public:
     struct DeltaInfo final
     {
-        Number delta = numZero;
+        Number delta = kNumZero;
         std::optional<int> scale;
 
         // Compute the delta between two Numbers, taking the coarsest scale

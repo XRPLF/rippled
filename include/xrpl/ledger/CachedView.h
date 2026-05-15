@@ -17,7 +17,7 @@ private:
     DigestAwareReadView const& base_;
     CachedSLEs& cache_;
     std::mutex mutable mutex_;
-    std::unordered_map<key_type, uint256, hardened_hash<>> mutable map_;
+    std::unordered_map<key_type, uint256, HardenedHash<>> mutable map_;
 
 public:
     CachedViewImpl() = delete;
@@ -69,31 +69,31 @@ public:
         return base_.succ(key, last);
     }
 
-    std::unique_ptr<sles_type::iter_base>
+    std::unique_ptr<SlesType::iter_base>
     slesBegin() const override
     {
         return base_.slesBegin();
     }
 
-    std::unique_ptr<sles_type::iter_base>
+    std::unique_ptr<SlesType::iter_base>
     slesEnd() const override
     {
         return base_.slesEnd();
     }
 
-    std::unique_ptr<sles_type::iter_base>
+    std::unique_ptr<SlesType::iter_base>
     slesUpperBound(uint256 const& key) const override
     {
         return base_.slesUpperBound(key);
     }
 
-    std::unique_ptr<txs_type::iter_base>
+    std::unique_ptr<TxsType::iter_base>
     txsBegin() const override
     {
         return base_.txsBegin();
     }
 
-    std::unique_ptr<txs_type::iter_base>
+    std::unique_ptr<TxsType::iter_base>
     txsEnd() const override
     {
         return base_.txsEnd();

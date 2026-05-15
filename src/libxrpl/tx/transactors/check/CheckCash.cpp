@@ -115,8 +115,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
             return tecNO_ENTRY;
         }
 
-        if (((sleDst->getFlags() & lsfRequireDestTag) != 0u) &&
-            !sleCheck->isFieldPresent(sfDestinationTag))
+        if (sleDst->isFlag(lsfRequireDestTag) && !sleCheck->isFieldPresent(sfDestinationTag))
         {
             // The tag is basically account-specific information we don't
             // understand, but we can require someone to fill it in.
@@ -164,8 +163,8 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                 ctx.view,
                 sleCheck->at(sfAccount),
                 value,
-                FreezeHandling::fhZERO_IF_FROZEN,
-                AuthHandling::ahZERO_IF_UNAUTHORIZED,
+                FreezeHandling::ZeroIfFrozen,
+                AuthHandling::ZeroIfUnauthorized,
                 ctx.j)};
 
             // Note that src will have one reserve's worth of additional XRP
@@ -200,7 +199,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                         return tecNO_ISSUER;
                     }
 
-                    if ((sleIssuer->at(sfFlags) & lsfRequireAuth) != 0u)
+                    if (sleIssuer->isFlag(lsfRequireAuth))
                     {
                         if (!sleTrustLine)
                         {
@@ -213,13 +212,13 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                         // determined by a lexicographical "greater than"
                         // comparison employing strict weak ordering.
                         // Determine which entry we need to access.
-                        bool const canonical_gt(dstId > issuerId);
+                        bool const canonicalGt(dstId > issuerId);
 
-                        bool const is_authorized(
+                        bool const isAuthorized(
                             (sleTrustLine->at(sfFlags) &
-                             (canonical_gt ? lsfLowAuth : lsfHighAuth)) != 0u);
+                             (canonicalGt ? lsfLowAuth : lsfHighAuth)) != 0u);
 
-                        if (!is_authorized)
+                        if (!isAuthorized)
                         {
                             JLOG(ctx.j.warn()) << "Can't receive IOUs from "
                                                   "issuer without auth.";
@@ -372,10 +371,10 @@ CheckCash::doApply()
                 return optDeliverMin->asset().visit(
                     [&](Issue const&) {
                         return STAmount(
-                            optDeliverMin->asset(), STAmount::cMaxValue / 2, STAmount::cMaxOffset);
+                            optDeliverMin->asset(), STAmount::kMaxValue / 2, STAmount::kMaxOffset);
                     },
                     [&](MPTIssue const&) {
-                        return STAmount(optDeliverMin->asset(), maxMPTokenAmount / 2);
+                        return STAmount(optDeliverMin->asset(), kMaxMpTokenAmount / 2);
                     });
             };
             STAmount const flowDeliver{
@@ -431,21 +430,21 @@ CheckCash::doApply()
                         initialBalance.get<Issue>().account = noAccount();
 
                         if (TER const ter = trustCreate(
-                                psb,                                           // payment sandbox
-                                destLow,                                       // is dest low?
-                                deliverIssuer,                                 // source
-                                account_,                                      // destination
-                                trustLineKey->key,                             // ledger index
-                                sleDst,                                        // Account to add to
-                                false,                                         // authorize account
-                                (sleDst->getFlags() & lsfDefaultRipple) == 0,  //
-                                false,                                         // freeze trust line
-                                false,                      // deep freeze trust line
-                                initialBalance,             // zero initial balance
-                                Issue(currency, account_),  // limit of zero
-                                0,                          // quality in
-                                0,                          // quality out
-                                viewJ);                     // journal
+                                psb,                                // payment sandbox
+                                destLow,                            // is dest low?
+                                deliverIssuer,                      // source
+                                account_,                           // destination
+                                trustLineKey->key,                  // ledger index
+                                sleDst,                             // Account to add to
+                                false,                              // authorize account
+                                !sleDst->isFlag(lsfDefaultRipple),  //
+                                false,                              // freeze trust line
+                                false,                              // deep freeze trust line
+                                initialBalance,                     // zero initial balance
+                                Issue(currency, account_),          // limit of zero
+                                0,                                  // quality in
+                                0,                                  // quality out
+                                viewJ);                             // journal
                             !isTesSuccess(ter))
                         {
                             return ter;
@@ -474,7 +473,7 @@ CheckCash::doApply()
                     // Set the trust line limit to the highest possible
                     // value while flow runs.
                     STAmount const bigAmount(
-                        trustLineIssue, STAmount::cMaxValue, STAmount::cMaxOffset);
+                        trustLineIssue, STAmount::kMaxValue, STAmount::kMaxOffset);
                     sleTrustLine->at(tweakedLimit) = bigAmount;
 
                     return std::nullopt;
@@ -505,7 +504,7 @@ CheckCash::doApply()
                 return *err;
             // Make sure the tweaked limits are restored when we leave
             // scope.
-            scope_exit const fixup([&psb, &trustLineKey, destLow, &savedLimit]() {
+            ScopeExit const fixup([&psb, &trustLineKey, destLow, &savedLimit]() {
                 if (trustLineKey)
                 {
                     SF_AMOUNT const& tweakedLimit = destLow ? sfLowLimit : sfHighLimit;
@@ -524,7 +523,7 @@ CheckCash::doApply()
                 true,                              // default path
                 static_cast<bool>(optDeliverMin),  // partial payment
                 true,                              // owner pays transfer fee
-                OfferCrossing::no,
+                OfferCrossing::No,
                 std::nullopt,
                 sleCheck->getFieldAmount(sfSendMax),
                 std::nullopt,  // check does not support domain
@@ -592,11 +591,13 @@ CheckCash::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
 CheckCash::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

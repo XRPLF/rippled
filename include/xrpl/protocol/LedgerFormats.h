@@ -1,5 +1,7 @@
 #pragma once
 
+// NOLINTBEGIN(readability-identifier-naming)
+
 #include <xrpl/protocol/KnownFormats.h>
 
 #include <map>
@@ -298,3 +300,5 @@ public:
 };
 
 }  // namespace xrpl
+
+// NOLINTEND(readability-identifier-naming)

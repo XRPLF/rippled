@@ -52,23 +52,23 @@ VaultCreate::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 VaultCreate::preflight(PreflightContext const& ctx)
 {
-    if (!validDataLength(ctx.tx[~sfData], maxDataPayloadLength))
+    if (!validDataLength(ctx.tx[~sfData], kMaxDataPayloadLength))
         return temMALFORMED;
 
     if (auto const withdrawalPolicy = ctx.tx[~sfWithdrawalPolicy])
     {
         // Enforce valid withdrawal policy
-        if (*withdrawalPolicy != vaultStrategyFirstComeFirstServe)
+        if (*withdrawalPolicy != kVaultStrategyFirstComeFirstServe)
             return temMALFORMED;
     }
 
     if (auto const domain = ctx.tx[~sfDomainID])
     {
-        if (*domain == beast::zero)
+        if (*domain == beast::kZero)
         {
             return temMALFORMED;
         }
-        if ((ctx.tx.getFlags() & tfVaultPrivate) == 0)
+        if (!ctx.tx.isFlag(tfVaultPrivate))
         {
             return temMALFORMED;  // DomainID only allowed on private vaults
         }
@@ -76,13 +76,13 @@ VaultCreate::preflight(PreflightContext const& ctx)
 
     if (auto const assetMax = ctx.tx[~sfAssetsMaximum])
     {
-        if (*assetMax < beast::zero)
+        if (*assetMax < beast::kZero)
             return temMALFORMED;
     }
 
     if (auto const metadata = ctx.tx[~sfMPTokenMetadata])
     {
-        if (metadata->empty() || metadata->length() > maxMPTokenMetadataLength)
+        if (metadata->empty() || metadata->length() > kMaxMpTokenMetadataLength)
             return temMALFORMED;
     }
 
@@ -92,7 +92,7 @@ VaultCreate::preflight(PreflightContext const& ctx)
         if (vaultAsset.holds<MPTIssue>() || vaultAsset.native())
             return temMALFORMED;
 
-        if (scale > vaultMaximumIOUScale)
+        if (scale > kVaultMaximumIouScale)
             return temMALFORMED;
     }
 
@@ -130,7 +130,7 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
 
     auto const sequence = ctx.tx.getSeqValue();
     if (auto const accountId = pseudoAccountAddress(ctx.view, keylet::vault(account, sequence).key);
-        accountId == beast::zero)
+        accountId == beast::kZero)
         return terADDRESS_COLLISION;
 
     return tesSUCCESS;
@@ -171,13 +171,12 @@ VaultCreate::doApply()
 
     std::uint8_t const scale = (asset.holds<MPTIssue>() || asset.native())
         ? 0
-        : ctx_.tx[~sfScale].value_or(vaultDefaultIOUScale);
+        : ctx_.tx[~sfScale].value_or(kVaultDefaultIouScale);
 
-    auto txFlags = tx.getFlags();
     std::uint32_t mptFlags = 0;
-    if ((txFlags & tfVaultShareNonTransferable) == 0)
+    if (!tx.isFlag(tfVaultShareNonTransferable))
         mptFlags |= (lsfMPTCanEscrow | lsfMPTCanTrade | lsfMPTCanTransfer);
-    if ((txFlags & tfVaultPrivate) != 0u)
+    if (tx.isFlag(tfVaultPrivate))
         mptFlags |= lsfMPTRequireAuth;
 
     // Note, here we are **not** creating an MPToken for the assets held in
@@ -203,7 +202,7 @@ VaultCreate::doApply()
     auto const& mptIssuanceID = *maybeShare;
 
     vault->setFieldIssue(sfAsset, STIssue{sfAsset, asset});
-    vault->at(sfFlags) = txFlags & tfVaultPrivate;
+    vault->at(sfFlags) = tx.getFlags() & tfVaultPrivate;
     vault->at(sfSequence) = sequence;
     vault->at(sfOwner) = account_;
     vault->at(sfAccount) = pseudoId;
@@ -223,7 +222,7 @@ VaultCreate::doApply()
     }
     else
     {
-        vault->at(sfWithdrawalPolicy) = vaultStrategyFirstComeFirstServe;
+        vault->at(sfWithdrawalPolicy) = kVaultStrategyFirstComeFirstServe;
     }
     if (scale != 0u)
         vault->at(sfScale) = scale;
@@ -236,7 +235,7 @@ VaultCreate::doApply()
         return err;
 
     // If the vault is private, set the authorized flag for the vault owner
-    if ((txFlags & tfVaultPrivate) != 0u)
+    if (tx.isFlag(tfVaultPrivate))
     {
         if (auto const err = authorizeMPToken(
                 view(), preFeeBalance_, mptIssuanceID, pseudoId, ctx_.journal, {}, account_);
@@ -255,11 +254,13 @@ VaultCreate::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
 VaultCreate::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

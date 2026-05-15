@@ -15,7 +15,7 @@
 namespace beast {
 
 std::string
-print_identifiers(SemanticVersion::identifier_list const& list)
+printIdentifiers(SemanticVersion::identifier_list const& list)
 {
     std::string ret;
 
@@ -61,10 +61,10 @@ chopUInt(int& value, int limit, std::string& input)
     if (input.empty())
         return false;
 
-    auto left_iter = std::ranges::find_if_not(
+    auto leftIter = std::ranges::find_if_not(
         input, [](std::string::value_type c) { return std::isdigit(c, std::locale::classic()); });
 
-    std::string const item(input.begin(), left_iter);
+    std::string const item(input.begin(), leftIter);
 
     // Must not be empty
     if (item.empty())
@@ -84,14 +84,14 @@ chopUInt(int& value, int limit, std::string& input)
     if (n < 0 || n > limit)
         return false;
 
-    input.erase(input.begin(), left_iter);
+    input.erase(input.begin(), leftIter);
     value = n;
 
     return true;
 }
 
 bool
-extract_identifier(std::string& value, bool allowLeadingZeroes, std::string& input)
+extractIdentifier(std::string& value, bool allowLeadingZeroes, std::string& input)
 {
     // Must not be empty
     if (input.empty())
@@ -114,7 +114,7 @@ extract_identifier(std::string& value, bool allowLeadingZeroes, std::string& inp
 }
 
 bool
-extract_identifiers(
+extractIdentifiers(
     SemanticVersion::identifier_list& identifiers,
     bool allowLeadingZeroes,
     std::string& input)
@@ -126,7 +126,7 @@ extract_identifiers(
     {
         std::string s;
 
-        if (!extract_identifier(s, allowLeadingZeroes, input))
+        if (!extractIdentifier(s, allowLeadingZeroes, input))
             return false;
         identifiers.push_back(s);
     } while (chop(".", input));
@@ -150,19 +150,19 @@ bool
 SemanticVersion::parse(std::string_view input)
 {
     // May not have leading or trailing whitespace
-    auto left_iter = std::ranges::find_if_not(
+    auto leftIter = std::ranges::find_if_not(
         input, [](std::string::value_type c) { return std::isspace(c, std::locale::classic()); });
 
-    auto right_iter =
+    auto rightIter =
         std::ranges::find_if_not(std::ranges::reverse_view(input), [](std::string::value_type c) {
             return std::isspace(c, std::locale::classic());
         }).base();
 
     // Must not be empty!
-    if (left_iter >= right_iter)
+    if (leftIter >= rightIter)
         return false;
 
-    std::string version(left_iter, right_iter);
+    std::string version(leftIter, rightIter);
 
     // May not have leading or trailing whitespace
     if (version != input)
@@ -187,7 +187,7 @@ SemanticVersion::parse(std::string_view input)
     // May have pre-release identifier list
     if (chop("-", version))
     {
-        if (!extract_identifiers(preReleaseIdentifiers, false, version))
+        if (!extractIdentifiers(preReleaseIdentifiers, false, version))
             return false;
 
         // Must not be empty
@@ -198,7 +198,7 @@ SemanticVersion::parse(std::string_view input)
     // May have metadata identifier list
     if (chop("+", version))
     {
-        if (!extract_identifiers(metaData, true, version))
+        if (!extractIdentifiers(metaData, true, version))
             return false;
 
         // Must not be empty
@@ -220,13 +220,13 @@ SemanticVersion::print() const
     if (!preReleaseIdentifiers.empty())
     {
         s += "-";
-        s += print_identifiers(preReleaseIdentifiers);
+        s += printIdentifiers(preReleaseIdentifiers);
     }
 
     if (!metaData.empty())
     {
         s += "+";
-        s += print_identifiers(metaData);
+        s += printIdentifiers(metaData);
     }
 
     return s;

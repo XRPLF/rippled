@@ -21,13 +21,13 @@ public:
     {
         testcase("batch");
 
-        auto batch1 = createPredictableBatch(numObjectsToTest, seedValue);
+        auto batch1 = createPredictableBatch(kNumObjectsToTest, seedValue);
 
-        auto batch2 = createPredictableBatch(numObjectsToTest, seedValue);
+        auto batch2 = createPredictableBatch(kNumObjectsToTest, seedValue);
 
         BEAST_EXPECT(areBatchesEqual(batch1, batch2));
 
-        auto batch3 = createPredictableBatch(numObjectsToTest, seedValue + 1);
+        auto batch3 = createPredictableBatch(kNumObjectsToTest, seedValue + 1);
 
         BEAST_EXPECT(!areBatchesEqual(batch1, batch3));
     }
@@ -38,7 +38,7 @@ public:
     {
         testcase("encoding");
 
-        auto batch = createPredictableBatch(numObjectsToTest, seedValue);
+        auto batch = createPredictableBatch(kNumObjectsToTest, seedValue);
 
         for (int i = 0; i < batch.size(); ++i)
         {

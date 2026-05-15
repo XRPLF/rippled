@@ -24,7 +24,7 @@ namespace xrpl::test {
 
 /** In progress simulations for diversifying and distributing validators
  */
-class DistributedValidators_test : public beast::unit_test::suite
+class DistributedValidators_test : public beast::unit_test::Suite
 {
     void
     completeTrustCompleteConnectFixedDelay(
