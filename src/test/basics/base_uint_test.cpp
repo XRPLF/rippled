@@ -26,7 +26,7 @@ namespace xrpl::test {
 template <std::size_t Bits>
 struct Nonhash
 {
-    static constexpr auto const kEndian = boost::endian::order::big;
+    static constexpr auto kEndian = boost::endian::order::big;
     static constexpr std::size_t kWidth = Bits / 8;
 
     std::array<std::uint8_t, kWidth> data;

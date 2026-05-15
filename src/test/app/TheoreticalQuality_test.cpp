@@ -339,7 +339,7 @@ public:
 
         auto const currency = toCurrency("USD");
 
-        static constexpr std::size_t const kNumAccounts = 4;
+        static constexpr std::size_t kNumAccounts = 4;
 
         // There are three relevant trust lines: `alice->bob`, `bob->carol`, and
         // `carol->dan`. There are four accounts. If we count the number of
@@ -444,7 +444,7 @@ public:
             auto const oscar = Account("oscar" + iterAsStr);  // offer owner
             auto const usdb = bob["USD"];
             auto const eurc = carol["EUR"];
-            static constexpr std::size_t const kNumAccounts = 5;
+            static constexpr std::size_t kNumAccounts = 5;
             std::array<Account, kNumAccounts> const accounts{{alice, bob, carol, dan, oscar}};
 
             // sendmax should be in USDB and delivered amount should be in EURC

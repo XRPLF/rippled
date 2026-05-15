@@ -60,7 +60,7 @@ int gDefaultRsaKeyBits = 2048;
     @note If you increase the number of bits you need to update
           defaultRSAKeyBits accordingly.
  */
-static constexpr char const kDefaultDh[] =
+static constexpr char kDefaultDh[] =
     "-----BEGIN DH PARAMETERS-----\n"
     "MIIBCAKCAQEApKSWfR7LKy0VoZ/SDCObCvJ5HKX2J93RJ+QN8kJwHh+uuA8G+t8Q\n"
     "MDRjL5HanlV/sKN9HXqBc7eqHmmbqYwIXKUt9MUZTLNheguddxVlc2IjdP5i9Ps8\n"

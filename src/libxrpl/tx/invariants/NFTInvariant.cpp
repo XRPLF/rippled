@@ -32,7 +32,7 @@ ValidNFTokenPage::visitEntry(
     std::shared_ptr<SLE const> const& after)
 {
     static constexpr uint256 const& kPageBits = nft::kPageMask;
-    static constexpr uint256 const kAccountBits = ~kPageBits;
+    static constexpr uint256 kAccountBits = ~kPageBits;
 
     if ((before && before->getType() != ltNFTOKEN_PAGE) ||
         (after && after->getType() != ltNFTOKEN_PAGE))

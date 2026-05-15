@@ -138,8 +138,8 @@ TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
     // Consider removing the offer if:
     //  o `TakerPays` is XRP (because of XRP drops granularity) or
     //  o `TakerPays` and `TakerGets` are both IOU and `TakerPays`<`TakerGets`
-    static constexpr bool const kInIsXrp = std::is_same_v<TTakerPays, XRPAmount>;
-    static constexpr bool const kOutIsXrp = std::is_same_v<TTakerGets, XRPAmount>;
+    static constexpr bool kInIsXrp = std::is_same_v<TTakerPays, XRPAmount>;
+    static constexpr bool kOutIsXrp = std::is_same_v<TTakerGets, XRPAmount>;
 
     if constexpr (kOutIsXrp)
     {

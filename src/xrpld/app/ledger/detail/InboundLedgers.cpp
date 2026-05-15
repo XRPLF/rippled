@@ -53,7 +53,7 @@ private:
 
 public:
     // How long before we try again to acquire the same ledger
-    static constexpr std::chrono::minutes const kReacquireInterval{5};
+    static constexpr std::chrono::minutes kReacquireInterval{5};
 
     InboundLedgersImp(
         Application& app,

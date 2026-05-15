@@ -205,7 +205,7 @@ popcnt16(std::uint16_t a)
     return __builtin_popcount(a);
 #else
     // fallback to table lookup
-    static constexpr auto const tbl = []() {
+    static constexpr auto tbl = []() {
         std::array<std::uint8_t, 256> ret{};
         for (int i = 0; i != 256; ++i)
         {

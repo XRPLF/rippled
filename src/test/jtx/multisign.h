@@ -46,7 +46,7 @@ public:
     SField const* const subField = nullptr;
     /// Used solely as a convenience placeholder for ctors that do _not_ specify
     /// a subfield.
-    static constexpr SField* const kTopLevel = nullptr;
+    static constexpr SField const* kTopLevel = nullptr;
 
     Msig(SField const* subField, std::vector<Reg> signers)
         : signers(std::move(signers)), subField(subField)
