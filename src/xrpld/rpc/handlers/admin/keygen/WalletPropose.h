@@ -4,7 +4,7 @@
 
 namespace xrpl {
 
-Json::Value
-walletPropose(Json::Value const& params);
+json::Value
+walletPropose(json::Value const& params);
 
 }  // namespace xrpl

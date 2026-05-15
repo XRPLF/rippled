@@ -23,7 +23,7 @@ public:
         While future versions of this code will never lower
         this limit, they may opt to raise it.
     */
-    static constexpr std::size_t maxPreimageLength = 128;
+    static constexpr std::size_t kMAX_PREIMAGE_LENGTH = 128;
 
     /** Parse the payload for a PreimageSha256 condition
 
@@ -49,25 +49,25 @@ public:
 
         if (!isPrimitive(p) || !isContextSpecific(p))
         {
-            ec = error::incorrect_encoding;
+            ec = Error::IncorrectEncoding;
             return {};
         }
 
         if (p.tag != 0)
         {
-            ec = error::unexpected_tag;
+            ec = Error::UnexpectedTag;
             return {};
         }
 
         if (s.size() != p.length)
         {
-            ec = error::trailing_garbage;
+            ec = Error::TrailingGarbage;
             return {};
         }
 
-        if (s.size() > maxPreimageLength)
+        if (s.size() > kMAX_PREIMAGE_LENGTH)
         {
-            ec = error::preimage_too_long;
+            ec = Error::PreimageTooLong;
             return {};
         }
 
@@ -90,13 +90,13 @@ public:
     {
     }
 
-    Type
+    [[nodiscard]] Type
     type() const override
     {
-        return Type::preimageSha256;
+        return Type::PreimageSha256;
     }
 
-    Buffer
+    [[nodiscard]] Buffer
     fingerprint() const override
     {
         sha256_hasher h;
@@ -105,19 +105,19 @@ public:
         return {d.data(), d.size()};
     }
 
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     cost() const override
     {
         return static_cast<std::uint32_t>(payload_.size());
     }
 
-    Condition
+    [[nodiscard]] Condition
     condition() const override
     {
         return {type(), cost(), fingerprint()};
     }
 
-    bool
+    [[nodiscard]] bool
     validate(Slice) const override
     {
         // Perhaps counterintuitively, the message isn't

@@ -68,14 +68,14 @@ public:
     }
 
     /** Return the sign of the amount */
-    constexpr int
+    [[nodiscard]] constexpr int
     signum() const noexcept;
 
     /** Returns the underlying value. Code SHOULD NOT call this
         function unless the type has been abstracted away,
         e.g. in a templated function.
     */
-    constexpr value_type
+    [[nodiscard]] constexpr value_type
     value() const;
 
     static MPTAmount
@@ -88,7 +88,7 @@ constexpr MPTAmount::MPTAmount(value_type value) : value_(value)
 
 constexpr MPTAmount::MPTAmount(beast::Zero)
 {
-    *this = beast::zero;
+    *this = beast::kZERO;
 }
 
 constexpr MPTAmount&

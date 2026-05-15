@@ -34,7 +34,7 @@
 
 namespace xrpl::test {
 
-struct PayStrandMPT_test : public beast::unit_test::suite
+struct PayStrandMPT_test : public beast::unit_test::Suite
 {
     static jtx::DirectStepInfo
     makeEndpointStep(jtx::Account const& src, jtx::Account const& dst, jtx::IOU const& iou)
@@ -81,7 +81,7 @@ struct PayStrandMPT_test : public beast::unit_test::suite
                 sendMaxIssue,
                 path,
                 true,
-                OfferCrossing::no,
+                OfferCrossing::No,
                 ammContext,
                 std::nullopt,
                 env.app().getLogs().journal("Flow"));
@@ -94,7 +94,7 @@ struct PayStrandMPT_test : public beast::unit_test::suite
             auto testMultiToken = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this, features);
                 env.fund(XRP(10'000), alice, bob, gw);
-                MPT const USD =
+                MPT const usd =
                     MPTTester({.env = env, .issuer = gw, .holders = {alice, bob}, .maxAmt = 1'000});
                 auto const bobUSD = issue1(
                     {.env = env,
@@ -102,7 +102,7 @@ struct PayStrandMPT_test : public beast::unit_test::suite
                      .issuer = bob,
                      .holders = {alice},
                      .limit = 1'000});
-                MPT const EUR =
+                MPT const eur =
                     MPTTester({.env = env, .issuer = gw, .holders = {alice, bob}, .maxAmt = 1'000});
                 auto const bobEUR = issue2(
                     {.env = env,
@@ -110,7 +110,7 @@ struct PayStrandMPT_test : public beast::unit_test::suite
                      .issuer = bob,
                      .holders = {alice},
                      .limit = 1'000});
-                env(pay(gw, alice, EUR(100)));
+                env(pay(gw, alice, eur(100)));
 
                 {
                     // Original test is
@@ -130,10 +130,10 @@ struct PayStrandMPT_test : public beast::unit_test::suite
                         alice,
                         /*deliver*/ xrpIssue(),
                         /*limitQuality*/ std::nullopt,
-                        /*sendMaxIssue*/ EUR,
+                        /*sendMaxIssue*/ eur,
                         path,
                         true,
-                        OfferCrossing::no,
+                        OfferCrossing::No,
                         ammContext,
                         std::nullopt,
                         env.app().getLogs().journal("Flow"));
@@ -141,17 +141,17 @@ struct PayStrandMPT_test : public beast::unit_test::suite
                     BEAST_EXPECT(ter == tesSUCCESS);
                 }
                 {
-                    STPath const path = STPath({ipe(USD), cpe(xrpCurrency())});
+                    STPath const path = STPath({ipe(usd), cpe(xrpCurrency())});
                     auto [ter, _] = toStrand(
                         *env.current(),
                         alice,
                         alice,
                         /*deliver*/ xrpIssue(),
                         /*limitQuality*/ std::nullopt,
-                        /*sendMaxIssue*/ EUR,
+                        /*sendMaxIssue*/ eur,
                         path,
                         true,
-                        OfferCrossing::no,
+                        OfferCrossing::No,
                         ammContext,
                         std::nullopt,
                         env.app().getLogs().journal("Flow"));
@@ -165,10 +165,10 @@ struct PayStrandMPT_test : public beast::unit_test::suite
             auto testMultiToken = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this, features);
                 env.fund(XRP(10'000), alice, bob, carol, gw);
-                auto USD = issue1({.env = env, .token = "USD", .issuer = gw, .limit = 1'000});
-                using tUSD = std::decay_t<decltype(USD)>;
-                auto EUR = issue2({.env = env, .token = "EUR", .issuer = gw, .limit = 1'000});
-                using tEUR = std::decay_t<decltype(EUR)>;
+                auto usd = issue1({.env = env, .token = "USD", .issuer = gw, .limit = 1'000});
+                using tUSD = std::decay_t<decltype(usd)>;
+                auto eur = issue2({.env = env, .token = "EUR", .issuer = gw, .limit = 1'000});
+                using tEUR = std::decay_t<decltype(eur)>;
 
                 auto const err = [&]() {
                     if constexpr (std::is_same_v<tUSD, MPT>)
@@ -180,102 +180,102 @@ struct PayStrandMPT_test : public beast::unit_test::suite
                         return terNO_LINE;
                     }
                 }();
-                test(env, USD, std::nullopt, STPath(), err);
+                test(env, usd, std::nullopt, STPath(), err);
 
                 if constexpr (std::is_same_v<tUSD, MPT>)
                 {
-                    MPTTester(env, gw, USD).authorizeHolders({alice, bob, carol});
+                    MPTTester(env, gw, usd).authorizeHolders({alice, bob, carol});
                 }
                 else
                 {
-                    env.trust(USD(1'000), alice, bob, carol);
+                    env.trust(usd(1'000), alice, bob, carol);
                 }
 
-                test(env, USD, std::nullopt, STPath(), tecPATH_DRY);
+                test(env, usd, std::nullopt, STPath(), tecPATH_DRY);
 
-                env(pay(gw, alice, USD(100)));
-                env(pay(gw, carol, USD(100)));
+                env(pay(gw, alice, usd(100)));
+                env(pay(gw, carol, usd(100)));
 
                 // Insert implied account
                 test(
                     env,
-                    USD,
+                    usd,
                     std::nullopt,
                     STPath(),
                     tesSUCCESS,
-                    makeEndpointStep(alice, gw, USD),
-                    makeEndpointStep(gw, bob, USD));
+                    makeEndpointStep(alice, gw, usd),
+                    makeEndpointStep(gw, bob, usd));
                 if constexpr (std::is_same_v<tEUR, MPT>)
                 {
-                    MPTTester(env, gw, EUR).authorizeHolders({alice, bob});
+                    MPTTester(env, gw, eur).authorizeHolders({alice, bob});
                 }
                 else
                 {
-                    env.trust(EUR(1'000), alice, bob);
+                    env.trust(eur(1'000), alice, bob);
                 }
 
                 // Insert implied offer
                 test(
                     env,
-                    EUR,
-                    USD,
+                    eur,
+                    usd,
                     STPath(),
                     tesSUCCESS,
-                    makeEndpointStep(alice, gw, USD),
-                    B{USD, EUR, std::nullopt},
-                    makeEndpointStep(gw, bob, EUR));
+                    makeEndpointStep(alice, gw, usd),
+                    B{usd, eur, std::nullopt},
+                    makeEndpointStep(gw, bob, eur));
 
                 // Path with explicit offer
                 test(
                     env,
-                    EUR,
-                    USD,
-                    STPath({ipe(EUR)}),
+                    eur,
+                    usd,
+                    STPath({ipe(eur)}),
                     tesSUCCESS,
-                    makeEndpointStep(alice, gw, USD),
-                    B{USD, EUR, std::nullopt},
-                    makeEndpointStep(gw, bob, EUR));
+                    makeEndpointStep(alice, gw, usd),
+                    B{usd, eur, std::nullopt},
+                    makeEndpointStep(gw, bob, eur));
 
                 // Path with XRP src currency
                 test(
                     env,
-                    USD,
+                    usd,
                     xrpIssue(),
-                    STPath({ipe(USD)}),
+                    STPath({ipe(usd)}),
                     tesSUCCESS,
                     XRPS{alice},
-                    B{XRP, USD, std::nullopt},
-                    makeEndpointStep(gw, bob, USD));
+                    B{XRP, usd, std::nullopt},
+                    makeEndpointStep(gw, bob, usd));
 
                 // Path with XRP dst currency.
                 test(
                     env,
                     xrpIssue(),
-                    USD,
+                    usd,
                     STPath({STPathElement{
-                        STPathElement::typeCurrency, xrpAccount(), xrpCurrency(), xrpAccount()}}),
+                        STPathElement::TypeCurrency, xrpAccount(), xrpCurrency(), xrpAccount()}}),
                     tesSUCCESS,
-                    makeEndpointStep(alice, gw, USD),
-                    B{USD, XRP, std::nullopt},
+                    makeEndpointStep(alice, gw, usd),
+                    B{usd, XRP, std::nullopt},
                     XRPS{bob});
 
                 // Path with XRP cross currency bridged payment
                 test(
                     env,
-                    EUR,
-                    USD,
+                    eur,
+                    usd,
                     STPath({cpe(xrpCurrency())}),
                     tesSUCCESS,
-                    makeEndpointStep(alice, gw, USD),
-                    B{USD, XRP, std::nullopt},
-                    B{XRP, EUR, std::nullopt},
-                    makeEndpointStep(gw, bob, EUR));
+                    makeEndpointStep(alice, gw, usd),
+                    B{usd, XRP, std::nullopt},
+                    B{XRP, eur, std::nullopt},
+                    makeEndpointStep(gw, bob, eur));
 
                 // Create an offer with the same in/out issue
-                test(env, EUR, USD, STPath({ipe(USD), ipe(EUR)}), temBAD_PATH);
+                test(env, eur, usd, STPath({ipe(usd), ipe(eur)}), temBAD_PATH);
 
                 // The same offer can't appear more than once on a path
-                test(env, EUR, USD, STPath({ipe(EUR), ipe(USD), ipe(EUR)}), temBAD_PATH_LOOP);
+                test(env, eur, usd, STPath({ipe(eur), ipe(usd), ipe(eur)}), temBAD_PATH_LOOP);
             };
             testHelper2TokensMix(testMultiToken);
         }
@@ -290,32 +290,32 @@ struct PayStrandMPT_test : public beast::unit_test::suite
 
                 env.fund(XRP(10'000), alice, bob, carol, gw);
 
-                auto const USD = issue1(
+                auto const usd = issue1(
                     {.env = env,
                      .token = "USD",
                      .issuer = gw,
                      .holders = {alice, bob, carol},
                      .limit = 10'000});
-                auto const EUR = issue2(
+                auto const eur = issue2(
                     {.env = env,
                      .token = "EUR",
                      .issuer = gw,
                      .holders = {alice, bob, carol},
                      .limit = 10'000});
 
-                env(pay(gw, bob, USD(100)));
-                env(pay(gw, bob, EUR(100)));
+                env(pay(gw, bob, usd(100)));
+                env(pay(gw, bob, eur(100)));
 
-                env(offer(bob, XRP(100), USD(100)));
-                env(offer(bob, USD(100), EUR(100)), txflags(tfPassive));
-                env(offer(bob, EUR(100), USD(100)), txflags(tfPassive));
+                env(offer(bob, XRP(100), usd(100)));
+                env(offer(bob, usd(100), eur(100)), Txflags(tfPassive));
+                env(offer(bob, eur(100), usd(100)), Txflags(tfPassive));
 
                 // payment path: XRP -> XRP/USD -> USD/EUR -> EUR/USD
-                env(pay(alice, carol, USD(100)),
-                    path(~USD, ~EUR, ~USD),
-                    sendmax(XRP(200)),
-                    txflags(tfNoRippleDirect),
-                    ter(temBAD_PATH_LOOP));
+                env(pay(alice, carol, usd(100)),
+                    Path(~usd, ~eur, ~usd),
+                    Sendmax(XRP(200)),
+                    Txflags(tfNoRippleDirect),
+                    Ter(temBAD_PATH_LOOP));
             };
             testHelper2TokensMix(testMultiToken);
         }
@@ -324,32 +324,32 @@ struct PayStrandMPT_test : public beast::unit_test::suite
             // check global freeze
             Env env(*this, features);
             env.fund(XRP(10000), alice, bob, gw);
-            auto USDM = MPTTester(
+            auto usdm = MPTTester(
                 {.env = env,
                  .issuer = gw,
                  .holders = {alice, bob},
-                 .flags = MPTDEXFlags | tfMPTCanLock,
+                 .flags = kMPT_DEX_FLAGS | tfMPTCanLock,
                  .maxAmt = 1'000});
-            MPT const USD = USDM;
-            env(pay(gw, alice, USD(100)));
+            MPT const usd = usdm;
+            env(pay(gw, alice, usd(100)));
 
             // Account can't issue payments
-            USDM.set({.holder = alice, .flags = tfMPTLock});
-            test(env, USD, std::nullopt, STPath(), terLOCKED);
-            USDM.set({.holder = alice, .flags = tfMPTUnlock});
-            test(env, USD, std::nullopt, STPath(), tesSUCCESS);
+            usdm.set({.holder = alice, .flags = tfMPTLock});
+            test(env, usd, std::nullopt, STPath(), terLOCKED);
+            usdm.set({.holder = alice, .flags = tfMPTUnlock});
+            test(env, usd, std::nullopt, STPath(), tesSUCCESS);
 
             // Account can not issue funds
-            USDM.set({.flags = tfMPTLock});
-            test(env, USD, std::nullopt, STPath(), terLOCKED);
-            USDM.set({.flags = tfMPTUnlock});
-            test(env, USD, std::nullopt, STPath(), tesSUCCESS);
+            usdm.set({.flags = tfMPTLock});
+            test(env, usd, std::nullopt, STPath(), terLOCKED);
+            usdm.set({.flags = tfMPTUnlock});
+            test(env, usd, std::nullopt, STPath(), tesSUCCESS);
 
             // Account can not receive funds
-            USDM.set({.holder = bob, .flags = tfMPTLock});
-            test(env, USD, std::nullopt, STPath(), terLOCKED);
-            USDM.set({.holder = bob, .flags = tfMPTUnlock});
-            test(env, USD, std::nullopt, STPath(), tesSUCCESS);
+            usdm.set({.holder = bob, .flags = tfMPTLock});
+            test(env, usd, std::nullopt, STPath(), terLOCKED);
+            usdm.set({.holder = bob, .flags = tfMPTUnlock});
+            test(env, usd, std::nullopt, STPath(), tesSUCCESS);
         }
 
         {
@@ -358,49 +358,49 @@ struct PayStrandMPT_test : public beast::unit_test::suite
             // issuer
             Env env(*this, features);
             env.fund(XRP(10'000), alice, bob, gw);
-            auto USDM = MPTTester(
+            auto usdm = MPTTester(
                 {.env = env,
                  .issuer = gw,
-                 .flags = MPTDEXFlags | tfMPTRequireAuth,
+                 .flags = kMPT_DEX_FLAGS | tfMPTRequireAuth,
                  .maxAmt = 1'000});
-            MPT const USD = USDM;
+            MPT const usd = usdm;
 
             // Authorize alice but not bob
-            USDM.authorize({.account = alice});
-            USDM.authorize({.holder = alice});
-            env(pay(gw, alice, USD(100)));
-            env.require(balance(alice, USD(100)));
-            test(env, USD, std::nullopt, STPath(), tecNO_AUTH);
+            usdm.authorize({.account = alice});
+            usdm.authorize({.holder = alice});
+            env(pay(gw, alice, usd(100)));
+            env.require(Balance(alice, usd(100)));
+            test(env, usd, std::nullopt, STPath(), tecNO_AUTH);
 
             // Check pure issue redeem still works
             auto [ter, strand] = toStrand(
                 *env.current(),
                 alice,
                 gw,
-                USD,
+                usd,
                 std::nullopt,
                 std::nullopt,
                 STPath(),
                 true,
-                OfferCrossing::no,
+                OfferCrossing::No,
                 ammContext,
                 std::nullopt,
                 env.app().getLogs().journal("Flow"));
             BEAST_EXPECT(ter == tesSUCCESS);
-            BEAST_EXPECT(equal(strand, M{alice, gw, USD}));
+            BEAST_EXPECT(equal(strand, M{alice, gw, usd}));
         }
 
         {
             // last step xrp from offer
             Env env(*this, features);
             env.fund(XRP(10'000), alice, bob, gw);
-            MPT const USD =
+            MPT const usd =
                 MPTTester({.env = env, .issuer = gw, .holders = {alice, bob}, .maxAmt = 1'000});
-            env(pay(gw, alice, USD(100)));
+            env(pay(gw, alice, usd(100)));
 
             // alice -> USD/XRP -> bob
             STPath path;
-            path.emplace_back(std::nullopt, xrpCurrency(), std::nullopt);
+            path.emplaceBack(std::nullopt, xrpCurrency(), std::nullopt);
 
             auto [ter, strand] = toStrand(
                 *env.current(),
@@ -408,16 +408,16 @@ struct PayStrandMPT_test : public beast::unit_test::suite
                 bob,
                 XRP,
                 std::nullopt,
-                USD,
+                usd,
                 path,
                 false,
-                OfferCrossing::no,
+                OfferCrossing::No,
                 ammContext,
                 std::nullopt,
                 env.app().getLogs().journal("Flow"));
             BEAST_EXPECT(ter == tesSUCCESS);
             BEAST_EXPECT(
-                equal(strand, M{alice, gw, USD}, B{USD, xrpIssue(), std::nullopt}, XRPS{bob}));
+                equal(strand, M{alice, gw, usd}, B{usd, xrpIssue(), std::nullopt}, XRPS{bob}));
         }
     }
 
@@ -436,39 +436,39 @@ struct PayStrandMPT_test : public beast::unit_test::suite
             Env env(*this, features);
 
             env.fund(XRP(10000), alice, bob, carol, gw);
-            MPT const USD = MPTTester(
+            MPT const usd = MPTTester(
                 {.env = env, .issuer = gw, .holders = {alice, bob, carol}, .maxAmt = 10'000});
 
-            env(pay(gw, bob, USD(100)));
+            env(pay(gw, bob, usd(100)));
 
-            env(offer(bob, XRP(100), USD(100)), txflags(tfPassive));
-            env(offer(bob, USD(100), XRP(100)), txflags(tfPassive));
+            env(offer(bob, XRP(100), usd(100)), Txflags(tfPassive));
+            env(offer(bob, usd(100), XRP(100)), Txflags(tfPassive));
 
             // payment path: XRP -> XRP/USD -> USD/XRP
             env(pay(alice, carol, XRP(100)),
-                path(~USD, ~XRP),
-                txflags(tfNoRippleDirect),
-                ter(temBAD_SEND_XRP_PATHS));
+                Path(~usd, ~XRP),
+                Txflags(tfNoRippleDirect),
+                Ter(temBAD_SEND_XRP_PATHS));
         }
 
         {
             Env env(*this, features);
 
             env.fund(XRP(10000), alice, bob, carol, gw);
-            MPT const USD = MPTTester(
+            MPT const usd = MPTTester(
                 {.env = env, .issuer = gw, .holders = {alice, bob, carol}, .maxAmt = 10'000});
 
-            env(pay(gw, bob, USD(100)));
+            env(pay(gw, bob, usd(100)));
 
-            env(offer(bob, XRP(100), USD(100)), txflags(tfPassive));
-            env(offer(bob, USD(100), XRP(100)), txflags(tfPassive));
+            env(offer(bob, XRP(100), usd(100)), Txflags(tfPassive));
+            env(offer(bob, usd(100), XRP(100)), Txflags(tfPassive));
 
             // payment path: XRP -> XRP/USD -> USD/XRP
             env(pay(alice, carol, XRP(100)),
-                path(~USD, ~XRP),
-                sendmax(XRP(200)),
-                txflags(tfNoRippleDirect),
-                ter(temBAD_SEND_XRP_MAX));
+                Path(~usd, ~XRP),
+                Sendmax(XRP(200)),
+                Txflags(tfNoRippleDirect),
+                Ter(temBAD_SEND_XRP_MAX));
         }
     }
 
@@ -482,67 +482,67 @@ struct PayStrandMPT_test : public beast::unit_test::suite
         auto const bob = Account("bob");
         auto const carol = Account("carol");
         auto const gw = Account("gw");
-        auto const EUR = gw["EUR"];
-        auto const CNY = gw["CNY"];
+        auto const eur = gw["EUR"];
+        auto const cny = gw["CNY"];
 
         {
             Env env(*this, features);
 
             env.fund(XRP(10'000), alice, bob, carol, gw);
-            MPT const USD = MPTTester(
+            MPT const usd = MPTTester(
                 {.env = env, .issuer = gw, .holders = {alice, bob, carol}, .maxAmt = 10'000});
 
-            env(pay(gw, bob, USD(100)));
-            env(pay(gw, alice, USD(100)));
+            env(pay(gw, bob, usd(100)));
+            env(pay(gw, alice, usd(100)));
 
-            env(offer(bob, XRP(100), USD(100)), txflags(tfPassive));
-            env(offer(bob, USD(100), XRP(100)), txflags(tfPassive));
+            env(offer(bob, XRP(100), usd(100)), Txflags(tfPassive));
+            env(offer(bob, usd(100), XRP(100)), Txflags(tfPassive));
 
             // payment path: USD -> USD/XRP -> XRP/USD
-            env(pay(alice, carol, USD(100)),
-                sendmax(USD(100)),
-                path(~XRP, ~USD),
-                txflags(tfNoRippleDirect),
-                ter(temBAD_PATH_LOOP));
+            env(pay(alice, carol, usd(100)),
+                Sendmax(usd(100)),
+                Path(~XRP, ~usd),
+                Txflags(tfNoRippleDirect),
+                Ter(temBAD_PATH_LOOP));
         }
         {
             auto testMultiToken = [&](auto&& issue1, auto&& issue2, auto&& issue3) {
                 Env env(*this, features);
 
                 env.fund(XRP(10'000), alice, bob, carol, gw);
-                auto const USD = issue1(
+                auto const usd = issue1(
                     {.env = env,
                      .token = "USD",
                      .issuer = gw,
                      .holders = {alice, bob, carol},
                      .limit = 10'000});
-                auto const EUR = issue2(
+                auto const eur = issue2(
                     {.env = env,
                      .token = "EUR",
                      .issuer = gw,
                      .holders = {alice, bob, carol},
                      .limit = 10'000});
-                auto const CNY = issue3(
+                auto const cny = issue3(
                     {.env = env,
                      .token = "CNY",
                      .issuer = gw,
                      .holders = {alice, bob, carol},
                      .limit = 10'000});
 
-                env(pay(gw, bob, USD(100)));
-                env(pay(gw, bob, EUR(100)));
-                env(pay(gw, bob, CNY(100)));
+                env(pay(gw, bob, usd(100)));
+                env(pay(gw, bob, eur(100)));
+                env(pay(gw, bob, cny(100)));
 
-                env(offer(bob, XRP(100), USD(100)), txflags(tfPassive));
-                env(offer(bob, USD(100), EUR(100)), txflags(tfPassive));
-                env(offer(bob, EUR(100), CNY(100)), txflags(tfPassive));
+                env(offer(bob, XRP(100), usd(100)), Txflags(tfPassive));
+                env(offer(bob, usd(100), eur(100)), Txflags(tfPassive));
+                env(offer(bob, eur(100), cny(100)), Txflags(tfPassive));
 
                 // payment path: XRP->XRP/USD->USD/EUR->USD/CNY
-                env(pay(alice, carol, CNY(100)),
-                    sendmax(XRP(100)),
-                    path(~USD, ~EUR, ~USD, ~CNY),
-                    txflags(tfNoRippleDirect),
-                    ter(temBAD_PATH_LOOP));
+                env(pay(alice, carol, cny(100)),
+                    Sendmax(XRP(100)),
+                    Path(~usd, ~eur, ~usd, ~cny),
+                    Txflags(tfNoRippleDirect),
+                    Ter(temBAD_PATH_LOOP));
             };
             testHelper3TokensMix(testMultiToken);
         }
@@ -560,9 +560,9 @@ struct PayStrandMPT_test : public beast::unit_test::suite
 
         Env env(*this, features);
         env.fund(XRP(10'000), alice, bob, gw);
-        MPT const USD = MPTTester({.env = env, .issuer = gw, .holders = {alice, bob}});
+        MPT const usd = MPTTester({.env = env, .issuer = gw, .holders = {alice, bob}});
 
-        STAmount const sendMax{USD, 100, 1};
+        STAmount const sendMax{usd, 100, 1};
         STAmount const noAccountAmount{MPTIssue{0, noAccount()}, 100, 1};
         STAmount const deliver;
         AccountID const srcAcc = alice.id();
@@ -572,7 +572,7 @@ struct PayStrandMPT_test : public beast::unit_test::suite
         inputs.defaultPathsAllowed = true;
         try
         {
-            PaymentSandbox sb{env.current().get(), tapNONE};
+            PaymentSandbox sb{env.current().get(), TapNone};
             {
                 auto const r = ::xrpl::path::RippleCalc::rippleCalculate(
                     sb,
@@ -636,7 +636,7 @@ struct PayStrandMPT_test : public beast::unit_test::suite
     run() override
     {
         using namespace jtx;
-        auto const sa = testable_amendments();
+        auto const sa = testableAmendments();
         testToStrand(sa);
 
         testRIPD1373(sa);

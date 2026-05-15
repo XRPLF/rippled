@@ -44,20 +44,18 @@ NotTEC
 PaymentChannelClaim::preflight(PreflightContext const& ctx)
 {
     auto const bal = ctx.tx[~sfBalance];
-    if (bal && (!isXRP(*bal) || *bal <= beast::zero))
+    if (bal && (!isXRP(*bal) || *bal <= beast::kZERO))
         return temBAD_AMOUNT;
 
     auto const amt = ctx.tx[~sfAmount];
-    if (amt && (!isXRP(*amt) || *amt <= beast::zero))
+    if (amt && (!isXRP(*amt) || *amt <= beast::kZERO))
         return temBAD_AMOUNT;
 
     if (bal && amt && *bal > *amt)
         return temBAD_AMOUNT;
 
     {
-        auto const flags = ctx.tx.getFlags();
-
-        if (((flags & tfClose) != 0u) && ((flags & tfRenew) != 0u))
+        if (ctx.tx.isFlag(tfClose) && ctx.tx.isFlag(tfRenew))
             return temMALFORMED;
     }
 
@@ -167,13 +165,13 @@ PaymentChannelClaim::doApply()
         (*slep)[sfBalance] = ctx_.tx[sfBalance];
         XRPAmount const reqDelta = reqBalance - chanBalance;
         XRPL_ASSERT(
-            reqDelta >= beast::zero, "xrpl::PaymentChannelClaim::doApply : minimum balance delta");
+            reqDelta >= beast::kZERO, "xrpl::PaymentChannelClaim::doApply : minimum balance delta");
         (*sled)[sfBalance] = (*sled)[sfBalance] + reqDelta;
         ctx_.view().update(sled);
         ctx_.view().update(slep);
     }
 
-    if ((ctx_.tx.getFlags() & tfRenew) != 0u)
+    if (ctx_.tx.isFlag(tfRenew))
     {
         if (src != txAccount)
             return tecNO_PERMISSION;
@@ -181,7 +179,7 @@ PaymentChannelClaim::doApply()
         ctx_.view().update(slep);
     }
 
-    if ((ctx_.tx.getFlags() & tfClose) != 0u)
+    if (ctx_.tx.isFlag(tfClose))
     {
         // Channel will close immediately if dry or the receiver closes
         if (dst == txAccount || (*slep)[sfBalance] == (*slep)[sfAmount])
@@ -207,6 +205,7 @@ PaymentChannelClaim::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -217,6 +216,7 @@ PaymentChannelClaim::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 }  // namespace xrpl

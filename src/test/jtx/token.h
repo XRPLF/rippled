@@ -11,17 +11,17 @@
 namespace xrpl::test::jtx::token {
 
 /** Mint an NFToken. */
-Json::Value
+json::Value
 mint(jtx::Account const& account, std::uint32_t tokenTaxon = 0);
 
 /** Sets the optional TransferFee on an NFTokenMint. */
-class xferFee
+class XferFee
 {
 private:
     std::uint16_t xferFee_;
 
 public:
-    explicit xferFee(std::uint16_t fee) : xferFee_(fee)
+    explicit XferFee(std::uint16_t fee) : xferFee_(fee)
     {
     }
 
@@ -30,13 +30,13 @@ public:
 };
 
 /** Sets the optional Issuer on an NFTokenMint. */
-class issuer
+class Issuer
 {
 private:
     std::string issuer_;
 
 public:
-    explicit issuer(jtx::Account const& issue) : issuer_(issue.human())
+    explicit Issuer(jtx::Account const& issue) : issuer_(issue.human())
     {
     }
 
@@ -45,13 +45,13 @@ public:
 };
 
 /** Sets the optional URI on an NFTokenMint. */
-class uri
+class Uri
 {
 private:
     std::string uri_;
 
 public:
-    explicit uri(std::string const& u) : uri_(strHex(u))
+    explicit Uri(std::string const& u) : uri_(strHex(u))
     {
     }
 
@@ -60,13 +60,13 @@ public:
 };
 
 /** Sets the optional amount field on an NFTokenMint. */
-class amount
+class Amount
 {
 private:
     STAmount const amount_;
 
 public:
-    explicit amount(STAmount const amount) : amount_(amount)
+    explicit Amount(STAmount const amount) : amount_(amount)
     {
     }
 
@@ -94,21 +94,21 @@ getID(
     std::uint16_t xferFee = 0);
 
 /** Burn an NFToken. */
-Json::Value
+json::Value
 burn(jtx::Account const& account, uint256 const& nftokenID);
 
 /** Create an NFTokenOffer. */
-Json::Value
+json::Value
 createOffer(jtx::Account const& account, uint256 const& nftokenID, STAmount const& amount);
 
 /** Sets the optional Owner on an NFTokenOffer. */
-class owner
+class Owner
 {
 private:
     std::string owner_;
 
 public:
-    explicit owner(jtx::Account const& ownedBy) : owner_(ownedBy.human())
+    explicit Owner(jtx::Account const& ownedBy) : owner_(ownedBy.human())
     {
     }
 
@@ -117,13 +117,13 @@ public:
 };
 
 /** Sets the optional Expiration field on an NFTokenOffer. */
-class expiration
+class Expiration
 {
 private:
     std::uint32_t expires_;
 
 public:
-    explicit expiration(std::uint32_t const& expires) : expires_(expires)
+    explicit Expiration(std::uint32_t const& expires) : expires_(expires)
     {
     }
 
@@ -132,13 +132,13 @@ public:
 };
 
 /** Sets the optional Destination field on an NFTokenOffer. */
-class destination
+class Destination
 {
 private:
     std::string dest_;
 
 public:
-    explicit destination(jtx::Account const& dest) : dest_(dest.human())
+    explicit Destination(jtx::Account const& dest) : dest_(dest.human())
     {
     }
 
@@ -147,20 +147,20 @@ public:
 };
 
 /** Cancel NFTokenOffers. */
-Json::Value
+json::Value
 cancelOffer(jtx::Account const& account, std::initializer_list<uint256> const& nftokenOffers = {});
 
-Json::Value
+json::Value
 cancelOffer(jtx::Account const& account, std::vector<uint256> const& nftokenOffers);
 
 /** Sets the optional RootIndex field when canceling NFTokenOffers. */
-class rootIndex
+class RootIndex
 {
 private:
     std::string rootIndex_;
 
 public:
-    explicit rootIndex(uint256 const& index) : rootIndex_(to_string(index))
+    explicit RootIndex(uint256 const& index) : rootIndex_(to_string(index))
     {
     }
 
@@ -169,28 +169,28 @@ public:
 };
 
 /** Accept an NFToken buy offer. */
-Json::Value
+json::Value
 acceptBuyOffer(jtx::Account const& account, uint256 const& offerIndex);
 
 /** Accept an NFToken sell offer. */
-Json::Value
+json::Value
 acceptSellOffer(jtx::Account const& account, uint256 const& offerIndex);
 
 /** Broker two NFToken offers. */
-Json::Value
+json::Value
 brokerOffers(
     jtx::Account const& account,
     uint256 const& buyOfferIndex,
     uint256 const& sellOfferIndex);
 
 /** Sets the optional NFTokenBrokerFee field in a brokerOffer transaction. */
-class brokerFee
+class BrokerFee
 {
 private:
     STAmount const brokerFee_;
 
 public:
-    explicit brokerFee(STAmount const fee) : brokerFee_(fee)
+    explicit BrokerFee(STAmount const fee) : brokerFee_(fee)
     {
     }
 
@@ -199,15 +199,15 @@ public:
 };
 
 /** Set the authorized minter on an account root. */
-Json::Value
+json::Value
 setMinter(jtx::Account const& account, jtx::Account const& minter);
 
 /** Clear any authorized minter from an account root. */
-Json::Value
+json::Value
 clearMinter(jtx::Account const& account);
 
 /** Modify an NFToken. */
-Json::Value
+json::Value
 modify(jtx::Account const& account, uint256 const& nftokenID);
 
 }  // namespace xrpl::test::jtx::token

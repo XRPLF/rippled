@@ -24,33 +24,33 @@ public:
     STBlob(SField const& f, void const* data, std::size_t size);
     STBlob(SField const& f, Buffer&& b);
     STBlob(SField const& n);
-    STBlob(SerialIter&, SField const& name = sfGeneric);
+    STBlob(SerialIter&, SField const& name = kSF_GENERIC);
 
-    std::size_t
+    [[nodiscard]] std::size_t
     size() const;
 
-    std::uint8_t const*
+    [[nodiscard]] std::uint8_t const*
     data() const;
 
-    SerializedTypeID
+    [[nodiscard]] SerializedTypeID
     getSType() const override;
 
-    std::string
+    [[nodiscard]] std::string
     getText() const override;
 
     void
     add(Serializer& s) const override;
 
-    bool
+    [[nodiscard]] bool
     isEquivalent(STBase const& t) const override;
 
-    bool
+    [[nodiscard]] bool
     isDefault() const override;
 
     STBlob&
     operator=(Slice const& slice);
 
-    value_type
+    [[nodiscard]] value_type
     value() const noexcept;
 
     STBlob&

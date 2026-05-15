@@ -116,7 +116,7 @@ jobs:
         run: echo "CCACHE_LOGFILE=${{ runner.temp }}/ccache.log" >> "${GITHUB_ENV}"
 
       - name: Print build environment
-        uses: ./.github/actions/print-env
+        uses: XRPLF/actions/print-build-env@59dec886e4afb05a1724443af08baccbc045b574
 
       - name: Get number of processors
         uses: XRPLF/actions/get-nproc@cf0433aa74563aead044a1e395610c96d65a37cf
@@ -143,7 +143,6 @@ jobs:
         working-directory: ${{ env.BUILD_DIR }}
         env:
           BUILD_TYPE: ${{ inputs.build_type }}
-          SANITIZERS: ${{ inputs.sanitizers }}
           CMAKE_ARGS: ${{ inputs.cmake_args }}
         run: |
           cmake \
@@ -182,7 +181,7 @@ jobs:
       - name: Build the binary
         working-directory: ${{ env.BUILD_DIR }}
         env:
-          BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
+          BUILD_NPROC: ${{ runner.os == 'Linux' && '16' || steps.nproc.outputs.nproc }}
           BUILD_TYPE: ${{ inputs.build_type }}
           CMAKE_TARGET: ${{ inputs.cmake_target }}
         run: |
@@ -284,8 +283,16 @@ jobs:
 
       - name: Show test failure summary
         if: ${{ failure() && !inputs.build_only }}
-        working-directory: ${{ runner.os == 'Windows' && format('{0}/{1}', env.BUILD_DIR, inputs.build_type) || env.BUILD_DIR }}
+        env:
+          WORKING_DIR: ${{ runner.os == 'Windows' && format('{0}\{1}', env.BUILD_DIR, inputs.build_type) || env.BUILD_DIR }}
         run: |
+          if [ ! -d "${WORKING_DIR}" ]; then
+            echo "Working directory '${WORKING_DIR}' does not exist."
+            exit 0
+          fi
+
+          cd "${WORKING_DIR}"
+
           if [ ! -f unittest.log ]; then
             echo "unittest.log not found; embedded tests may not have run."
             exit 0

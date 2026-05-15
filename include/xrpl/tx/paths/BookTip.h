@@ -16,40 +16,40 @@ class BookTip
 {
 private:
     ApplyView& view_;
-    bool m_valid{false};
-    uint256 m_book;
-    uint256 m_end;
-    uint256 m_dir;
-    uint256 m_index;
-    std::shared_ptr<SLE> m_entry;
-    Quality m_quality{};
+    bool valid_{false};
+    uint256 book_;
+    uint256 end_;
+    uint256 dir_;
+    uint256 index_;
+    std::shared_ptr<SLE> entry_;
+    Quality quality_{};
 
 public:
     /** Create the iterator. */
     BookTip(ApplyView& view, Book const& book);
 
-    uint256 const&
+    [[nodiscard]] uint256 const&
     dir() const noexcept
     {
-        return m_dir;
+        return dir_;
     }
 
-    uint256 const&
+    [[nodiscard]] uint256 const&
     index() const noexcept
     {
-        return m_index;
+        return index_;
     }
 
-    Quality const&
+    [[nodiscard]] Quality const&
     quality() const noexcept
     {
-        return m_quality;
+        return quality_;
     }
 
-    SLE::pointer const&
+    [[nodiscard]] SLE::pointer const&
     entry() const noexcept
     {
-        return m_entry;
+        return entry_;
     }
 
     /** Erases the current offer and advance to the next offer.

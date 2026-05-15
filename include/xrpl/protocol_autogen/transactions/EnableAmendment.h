@@ -19,9 +19,9 @@ class EnableAmendmentBuilder;
  * @brief Transaction: EnableAmendment
  *
  * Type: ttAMENDMENT (100)
- * Delegable: Delegation::notDelegable
+ * Delegable: Delegation::NotDelegable
  * Amendment: uint256{}
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use EnableAmendmentBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfLedgerSequence (soeREQUIRED)
+     * @brief Get sfLedgerSequence (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -59,7 +59,7 @@ public:
     }
 
     /**
-     * @brief Get sfAmendment (soeREQUIRED)
+     * @brief Get sfAmendment (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -74,7 +74,7 @@ public:
  * @brief Builder for EnableAmendment transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class EnableAmendmentBuilder : public TransactionBuilderBase<EnableAmendmentBuilder>
@@ -115,7 +115,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfLedgerSequence (soeREQUIRED)
+     * @brief Set sfLedgerSequence (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     EnableAmendmentBuilder&
@@ -126,7 +126,7 @@ public:
     }
 
     /**
-     * @brief Set sfAmendment (soeREQUIRED)
+     * @brief Set sfAmendment (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     EnableAmendmentBuilder&

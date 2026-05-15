@@ -71,13 +71,13 @@ public:
     operator bool() const noexcept;
 
     /** Return the sign of the amount */
-    int
+    [[nodiscard]] int
     signum() const noexcept;
 
-    exponent_type
+    [[nodiscard]] exponent_type
     exponent() const noexcept;
 
-    mantissa_type
+    [[nodiscard]] mantissa_type
     mantissa() const noexcept;
 
     static IOUAmount
@@ -92,7 +92,7 @@ public:
 
 inline IOUAmount::IOUAmount(beast::Zero)
 {
-    *this = beast::zero;
+    *this = beast::kZERO;
 }
 
 inline IOUAmount::IOUAmount(mantissa_type mantissa, exponent_type exponent)
