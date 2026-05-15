@@ -2048,7 +2048,7 @@ class Invariants_test : public beast::unit_test::Suite
         auto const checkDeletedHybridOffer = [this](
                                                  FeatureBitset features,
                                                  bool const expectInvariantFailure) {
-            Env env(*this, features);
+            Env const env(*this, features);
             Account const offerOwner{"offerOwner"};
             auto const sleOffer = std::make_shared<SLE>(keylet::offer(offerOwner.id(), 1));
             sleOffer->setFlag(lsfHybrid);
@@ -2065,9 +2065,13 @@ class Invariants_test : public beast::unit_test::Suite
 
             auto const messages = sink.messages().str();
             if (expectInvariantFailure)
+            {
                 BEAST_EXPECT(messages.find("hybrid offer was fully consumed") != std::string::npos);
+            }
             else
+            {
                 BEAST_EXPECT(messages.empty());
+            }
         };
 
         checkDeletedHybridOffer(defaultAmendments() - fixCleanup3_2_0, true);
