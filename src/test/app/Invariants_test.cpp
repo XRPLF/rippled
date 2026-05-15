@@ -302,7 +302,6 @@ class Invariants_test : public beast::unit_test::Suite
 
         doInvariantCheck(
             {{"account deletion left behind a non-zero balance"}},
-            // NOLINTNEXTLINE(readability-identifier-naming)
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 // A1 has a balance. Delete A1
                 auto const a1 = A1.id();
