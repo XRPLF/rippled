@@ -47,9 +47,9 @@ private:
     */
     std::uintptr_t tp_ = 0;
     /** bit-and with this mask to get the tag bits (lowest two bits) */
-    static constexpr std::uintptr_t kTAG_MASK = 3;
+    static constexpr std::uintptr_t kTagMask = 3;
     /** bit-and with this mask to get the pointer bits (mask out the tag) */
-    static constexpr std::uintptr_t kPTR_MASK = ~kTAG_MASK;
+    static constexpr std::uintptr_t kPtrMask = ~kTagMask;
 
     /** Deallocate memory and run destructors */
     void
@@ -205,7 +205,7 @@ popcnt16(std::uint16_t a)
     return __builtin_popcount(a);
 #else
     // fallback to table lookup
-    static auto constexpr const tbl = []() {
+    static constexpr auto tbl = []() {
         std::array<std::uint8_t, 256> ret{};
         for (int i = 0; i != 256; ++i)
         {

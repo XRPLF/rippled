@@ -260,7 +260,7 @@ public:
         for (int i = 0; i < 101; ++i)
             env(offer(carol, usd(1), eur(2)));
 
-        env(pay(alice, bob, eur(kEPSILON)), Path(~eur), Sendmax(usd(100)));
+        env(pay(alice, bob, eur(kEpsilon)), Path(~eur), Sendmax(usd(100)));
     }
 
     void
@@ -818,7 +818,7 @@ public:
                 Owners(alice, 1),
                 offers(alice, 0),
                 Balance(bob, startBalance - (f * 2)),
-                Balance(bob, usd(kNONE)),
+                Balance(bob, usd(kNone)),
                 Owners(bob, 1),
                 offers(bob, 1));
 
@@ -1128,7 +1128,7 @@ public:
             offers(alice, 0),
             Owners(alice, 1),
             Balance(bob, startBalance - f),
-            Balance(bob, usd(kNONE)),
+            Balance(bob, usd(kNone)),
             offers(bob, 1),
             Owners(bob, 1));
     }
@@ -1239,7 +1239,7 @@ public:
         BEAST_EXPECT(isOffer(env, accountToTest, XRP(1000), usd(50)));
 
         // now make an offer that will cross and auto-bridge, meaning
-        // the outstanding offers will be taken leaving us with kNONE
+        // the outstanding offers will be taken leaving us with kNone
         env(offer(accountToTest, usd(50), btc(250)));
 
         auto jrr = getBookOffers(env, usd, btc);
@@ -1907,7 +1907,7 @@ public:
         env.require(Owners(alice, 2));
 
         env.require(Balance(carol, usd(0)));
-        env.require(Balance(carol, eur(kNONE)));
+        env.require(Balance(carol, eur(kNone)));
 
         env.require(offers(carol, 0));
         env.require(Owners(carol, 1));
@@ -2535,8 +2535,8 @@ public:
         env.close();
 
         env.require(Balance(alice, usd(1000)));
-        env.require(Balance(alice, eur(kNONE)));
-        env.require(Balance(bob, usd(kNONE)));
+        env.require(Balance(alice, eur(kNone)));
+        env.require(Balance(bob, usd(kNone)));
         env.require(Balance(bob, eur(1000)));
         env.require(offers(alice, 0));
         env.require(offers(bob, 0));
@@ -2881,7 +2881,7 @@ public:
             // alice submits a tfSell | tfFillOrKill offer that does not cross.
             env(offer(alice, usd(21), XRP(2100), tfSell | tfFillOrKill), Ter(killedCode));
             env.close();
-            env.require(Balance(alice, usd(kNONE)));
+            env.require(Balance(alice, usd(kNone)));
             env.require(offers(alice, 0));
             env.require(Balance(bob, usd(100)));
         }
@@ -3156,14 +3156,14 @@ public:
             env(pay(kim, meg, nBux(60)), Path(lex, ned), Sendmax(kBux(200)));
             env.close();
 
-            env.require(Balance(kim, kBux(kNONE)));
-            env.require(Balance(kim, nBux(kNONE)));
+            env.require(Balance(kim, kBux(kNone)));
+            env.require(Balance(kim, nBux(kNone)));
             env.require(Balance(lex, kBux(72)));
             env.require(Balance(lex, nBux(40)));
-            env.require(Balance(meg, kBux(kNONE)));
+            env.require(Balance(meg, kBux(kNone)));
             env.require(Balance(meg, nBux(60)));
-            env.require(Balance(ned, kBux(kNONE)));
-            env.require(Balance(ned, nBux(kNONE)));
+            env.require(Balance(ned, kBux(kNone)));
+            env.require(Balance(ned, nBux(kNone)));
 
             // Now verify that offer crossing is unaffected by QualityOut.
             env(offer(lex, kBux(30), nBux(30)));
@@ -3172,14 +3172,14 @@ public:
             env(offer(kim, nBux(30), kBux(30)));
             env.close();
 
-            env.require(Balance(kim, kBux(kNONE)));
+            env.require(Balance(kim, kBux(kNone)));
             env.require(Balance(kim, nBux(30)));
             env.require(Balance(lex, kBux(102)));
             env.require(Balance(lex, nBux(10)));
-            env.require(Balance(meg, kBux(kNONE)));
+            env.require(Balance(meg, kBux(kNone)));
             env.require(Balance(meg, nBux(60)));
             env.require(Balance(ned, kBux(-30)));
-            env.require(Balance(ned, nBux(kNONE)));
+            env.require(Balance(ned, nBux(kNone)));
         }
         {
             // Make sure things work right when we're auto-bridging as well.
@@ -3512,14 +3512,14 @@ public:
             env(pay(ann, cam, dBux(60)), Path(bob, dan), Sendmax(aBux(200)));
             env.close();
 
-            env.require(Balance(ann, aBux(kNONE)));
-            env.require(Balance(ann, dBux(kNONE)));
+            env.require(Balance(ann, aBux(kNone)));
+            env.require(Balance(ann, dBux(kNone)));
             env.require(Balance(bob, aBux(72)));
             env.require(Balance(bob, dBux(40)));
-            env.require(Balance(cam, aBux(kNONE)));
+            env.require(Balance(cam, aBux(kNone)));
             env.require(Balance(cam, dBux(60)));
-            env.require(Balance(dan, aBux(kNONE)));
-            env.require(Balance(dan, dBux(kNONE)));
+            env.require(Balance(dan, aBux(kNone)));
+            env.require(Balance(dan, dBux(kNone)));
 
             env(offer(bob, aBux(30), dBux(30)));
             env.close();
@@ -3534,14 +3534,14 @@ public:
                 Ter(temBAD_PATH));
             env.close();
 
-            env.require(Balance(ann, aBux(kNONE)));
+            env.require(Balance(ann, aBux(kNone)));
             env.require(Balance(ann, dBux(0)));
             env.require(Balance(bob, aBux(72)));
             env.require(Balance(bob, dBux(40)));
-            env.require(Balance(cam, aBux(kNONE)));
+            env.require(Balance(cam, aBux(kNone)));
             env.require(Balance(cam, dBux(60)));
             env.require(Balance(dan, aBux(0)));
-            env.require(Balance(dan, dBux(kNONE)));
+            env.require(Balance(dan, dBux(kNone)));
         }
     }
 
@@ -4237,7 +4237,7 @@ public:
         env.close();
 
         env.require(offers(alice, 1));
-        env.require(Balance(alice, gwUSD(kNONE)));
+        env.require(Balance(alice, gwUSD(kNone)));
         env(fset(gw, asfRequireAuth));
         env.close();
 
@@ -4261,7 +4261,7 @@ public:
 
         env.require(offers(alice, 0));
         // alice's unauthorized offer is deleted & bob's offer not crossed.
-        env.require(Balance(alice, gwUSD(kNONE)));
+        env.require(Balance(alice, gwUSD(kNone)));
         env.require(offers(bob, 1));
         env.require(Balance(bob, gwUSD(50)));
 
@@ -4272,7 +4272,7 @@ public:
         env.close();
 
         env.require(offers(alice, 0));
-        env.require(Balance(alice, gwUSD(kNONE)));
+        env.require(Balance(alice, gwUSD(kNone)));
 
         env.require(offers(bob, 1));
         env.require(Balance(bob, gwUSD(50)));
@@ -4586,25 +4586,25 @@ public:
             env.close();
 
             auto txn = noop(gw);
-            txn[sfTickSize.fieldName] = Quality::kMIN_TICK_SIZE - 1;
+            txn[sfTickSize.fieldName] = Quality::kMinTickSize - 1;
             env(txn, Ter(temBAD_TICK_SIZE));
 
-            txn[sfTickSize.fieldName] = Quality::kMIN_TICK_SIZE;
+            txn[sfTickSize.fieldName] = Quality::kMinTickSize;
             env(txn);
-            BEAST_EXPECT((*env.le(gw))[sfTickSize] == Quality::kMIN_TICK_SIZE);
+            BEAST_EXPECT((*env.le(gw))[sfTickSize] == Quality::kMinTickSize);
 
             txn = noop(gw);
-            txn[sfTickSize.fieldName] = Quality::kMAX_TICK_SIZE;
+            txn[sfTickSize.fieldName] = Quality::kMaxTickSize;
             env(txn);
             BEAST_EXPECT(!env.le(gw)->isFieldPresent(sfTickSize));
 
             txn = noop(gw);
-            txn[sfTickSize.fieldName] = Quality::kMAX_TICK_SIZE - 1;
+            txn[sfTickSize.fieldName] = Quality::kMaxTickSize - 1;
             env(txn);
-            BEAST_EXPECT((*env.le(gw))[sfTickSize] == Quality::kMAX_TICK_SIZE - 1);
+            BEAST_EXPECT((*env.le(gw))[sfTickSize] == Quality::kMaxTickSize - 1);
 
             txn = noop(gw);
-            txn[sfTickSize.fieldName] = Quality::kMAX_TICK_SIZE + 1;
+            txn[sfTickSize.fieldName] = Quality::kMaxTickSize + 1;
             env(txn, Ter(temBAD_TICK_SIZE));
 
             txn[sfTickSize.fieldName] = 0;

@@ -153,7 +153,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::Suite
         {
             protocol::TMLedgerNode node;
             node.set_nodedata("test_data");
-            node.set_depth(SHAMap::kLEAF_DEPTH);
+            node.set_depth(SHAMap::kLeafDepth);
             BEAST_EXPECT(validateLedgerNode(node));
         }
 
@@ -161,7 +161,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::Suite
         {
             protocol::TMLedgerNode node;
             node.set_nodedata("test_data");
-            node.set_depth(SHAMap::kLEAF_DEPTH + 1);
+            node.set_depth(SHAMap::kLeafDepth + 1);
             BEAST_EXPECT(!validateLedgerNode(node));
         }
     }
@@ -209,7 +209,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::Suite
             // Truncate the data to trigger an exception in SHAMapTreeNode::makeAccountState when
             // the data is used to deserialize the node.
             uint256 const tag;
-            auto const leafData = serializeNode(leafNode).substr(0, tag.kBYTES - 1);
+            auto const leafData = serializeNode(leafNode).substr(0, tag.kBytes - 1);
             auto const result = getTreeNode(leafData);
             BEAST_EXPECT(!result);
         }
@@ -321,7 +321,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::Suite
             // message is assumed to have been validated by the time the getSHAMapNodeID function is
             // called.
             {
-                auto const kLeafDepth = SHAMap::kLEAF_DEPTH;
+                auto const kLeafDepth = SHAMap::kLeafDepth;
                 auto const leafID = SHAMapNodeID::createID(kLeafDepth, leafKey);
 
                 protocol::TMLedgerNode node;

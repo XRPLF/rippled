@@ -23,7 +23,7 @@ namespace xrpl {
  * - If the new `id` or `depth` fields are present (it is a oneof field, so only one of the two can
  *   be set) then the legacy `nodeid` must not be present.
  * - If the `id` field is present then it must be a valid serialized SHAMapNodeID.
- * - If the `depth` field is present then it must be between 0 and SHAMap::kLEAF_DEPTH (inclusive).
+ * - If the `depth` field is present then it must be between 0 and SHAMap::kLeafDepth (inclusive).
  *
  * @param ledgerNode The ledger node to validate.
  * @return true if the ledger node has the expected fields, false otherwise.

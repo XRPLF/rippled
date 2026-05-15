@@ -293,15 +293,15 @@ class NoRippleCheckLimits_test : public beast::unit_test::Suite
                 Endpoint::fromString(test::getEnvLocalhostAddr()));
 
             // if we go above the warning threshold, reset
-            if (c.balance() > kWARNING_THRESHOLD)
+            if (c.balance() > kWarningThreshold)
             {
                 using ct = beast::AbstractClock<steady_clock>;
                 c.entry().local_balance =
-                    DecayingSample<kDECAY_WINDOW_SECONDS, ct>{steady_clock::now()};
+                    DecayingSample<kDecayWindowSeconds, ct>{steady_clock::now()};
             }
         };
 
-        for (auto i = 0; i < xrpl::RPC::Tuning::kNO_RIPPLE_CHECK.rmax + 5; ++i)
+        for (auto i = 0; i < xrpl::RPC::Tuning::kNoRippleCheck.rmax + 5; ++i)
         {
             if (!admin)
                 checkBalance();
@@ -311,13 +311,13 @@ class NoRippleCheckLimits_test : public beast::unit_test::Suite
             env.memoize(gw);
             auto const baseFee = env.current()->fees().base;
             env(pay(env.master, gw, XRP(1000)),
-                Seq(kAUTOFILL),
+                Seq(kAutofill),
                 Fee(toDrops(txq.getMetrics(*env.current()).openLedgerFeeLevel, baseFee) + 1),
-                Sig(kAUTOFILL));
+                Sig(kAutofill));
             env(fset(gw, asfDefaultRipple),
-                Seq(kAUTOFILL),
+                Seq(kAutofill),
                 Fee(toDrops(txq.getMetrics(*env.current()).openLedgerFeeLevel, baseFee) + 1),
-                Sig(kAUTOFILL));
+                Sig(kAutofill));
             env(trust(alice, gw["USD"](10)),
                 Fee(toDrops(txq.getMetrics(*env.current()).openLedgerFeeLevel, baseFee) + 1));
             env.close();

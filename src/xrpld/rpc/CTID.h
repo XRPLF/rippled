@@ -30,11 +30,11 @@ namespace xrpl::RPC {
 inline std::optional<std::string>
 encodeCTID(uint32_t ledgerSeq, uint32_t txnIndex, uint32_t networkID) noexcept
 {
-    constexpr uint32_t kMAX_LEDGER_SEQ = 0x0FFF'FFFF;
-    constexpr uint32_t kMAX_TXN_INDEX = 0xFFFF;
-    constexpr uint32_t kMAX_NETWORK_ID = 0xFFFF;
+    static constexpr uint32_t kMaxLedgerSeq = 0x0FFF'FFFF;
+    static constexpr uint32_t kMaxTxnIndex = 0xFFFF;
+    static constexpr uint32_t kMaxNetworkId = 0xFFFF;
 
-    if (ledgerSeq > kMAX_LEDGER_SEQ || txnIndex > kMAX_TXN_INDEX || networkID > kMAX_NETWORK_ID)
+    if (ledgerSeq > kMaxLedgerSeq || txnIndex > kMaxTxnIndex || networkID > kMaxNetworkId)
         return std::nullopt;
 
     uint64_t const ctidValue = ((0xC000'0000ULL + static_cast<uint64_t>(ledgerSeq)) << 32) |
@@ -68,8 +68,8 @@ decodeCTID(T const ctid) noexcept
         if (ctidString.size() != 16)
             return std::nullopt;
 
-        static boost::regex const kHEX_REGEX("^[0-9A-Fa-f]{16}$");
-        if (!boost::regex_match(ctidString, kHEX_REGEX))
+        static boost::regex const kHexRegex("^[0-9A-Fa-f]{16}$");
+        if (!boost::regex_match(ctidString, kHexRegex))
             return std::nullopt;
 
         try
@@ -94,9 +94,9 @@ decodeCTID(T const ctid) noexcept
     }
 
     // Validate CTID prefix.
-    constexpr uint64_t kCTID_PREFIX_MASK = 0xF000'0000'0000'0000ULL;
-    constexpr uint64_t kCTID_PREFIX = 0xC000'0000'0000'0000ULL;
-    if ((ctidValue & kCTID_PREFIX_MASK) != kCTID_PREFIX)
+    static constexpr uint64_t kCtidPrefixMask = 0xF000'0000'0000'0000ULL;
+    static constexpr uint64_t kCtidPrefix = 0xC000'0000'0000'0000ULL;
+    if ((ctidValue & kCtidPrefixMask) != kCtidPrefix)
         return std::nullopt;
 
     uint32_t const ledgerSeq = static_cast<uint32_t>((ctidValue >> 32) & 0x0FFF'FFFF);

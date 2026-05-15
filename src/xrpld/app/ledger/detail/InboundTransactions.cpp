@@ -29,8 +29,8 @@
 namespace xrpl {
 
 // Need to be named before converting
-static constexpr auto kSTART_PEERS = 2;      // ideal number of peers to start with
-static constexpr auto kSET_KEEP_ROUNDS = 3;  // how many rounds to keep a set
+static constexpr auto kStartPeers = 2;     // ideal number of peers to start with
+static constexpr auto kSetKeepRounds = 3;  // how many rounds to keep a set
 
 class InboundTransactionSet
 {
@@ -115,7 +115,7 @@ public:
             obj.seq = seq_;
         }
 
-        ta->init(kSTART_PEERS);
+        ta->init(kStartPeers);
 
         return {};
     }
@@ -137,7 +137,7 @@ public:
 
         if (ta == nullptr)
         {
-            peer->charge(Resource::kFEE_USELESS_DATA, "ledger_data");
+            peer->charge(Resource::kFeeUselessData, "ledger_data");
             return;
         }
 
@@ -149,7 +149,7 @@ public:
             if (!validateLedgerNode(ledgerNode))
             {
                 JLOG(j_.warn()) << "Got malformed ledger node";
-                peer->charge(Resource::kFEE_MALFORMED_REQUEST, "ledger_node");
+                peer->charge(Resource::kFeeMalformedRequest, "ledger_node");
                 return;
             }
 
@@ -157,7 +157,7 @@ public:
             if (!treeNode)
             {
                 JLOG(j_.warn()) << "Got invalid node data";
-                peer->charge(Resource::kFEE_INVALID_DATA, "node_data");
+                peer->charge(Resource::kFeeInvalidData, "node_data");
                 return;
             }
 
@@ -165,7 +165,7 @@ public:
             if (!nodeID)
             {
                 JLOG(j_.warn()) << "Got invalid node id";
-                peer->charge(Resource::kFEE_INVALID_DATA, "node_id");
+                peer->charge(Resource::kFeeInvalidData, "node_id");
                 return;
             }
 
@@ -173,7 +173,7 @@ public:
         }
 
         if (!ta->takeNodes(std::move(data), peer).isUseful())
-            peer->charge(Resource::kFEE_USELESS_DATA, "ledger_data not useful");
+            peer->charge(Resource::kFeeUselessData, "ledger_data not useful");
     }
 
     void
@@ -218,8 +218,8 @@ public:
 
             auto it = map_.begin();
 
-            std::uint32_t const minSeq = (seq < kSET_KEEP_ROUNDS) ? 0 : (seq - kSET_KEEP_ROUNDS);
-            std::uint32_t const maxSeq = seq + kSET_KEEP_ROUNDS;
+            std::uint32_t const minSeq = (seq < kSetKeepRounds) ? 0 : (seq - kSetKeepRounds);
+            std::uint32_t const maxSeq = seq + kSetKeepRounds;
 
             while (it != map_.end())
             {

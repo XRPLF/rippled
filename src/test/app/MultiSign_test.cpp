@@ -143,7 +143,7 @@ public:
             env.require(Owners(alice, 1));
         }
         // Remove alice's signer list and get the owner count back.
-        env(signers(alice, jtx::kNONE));
+        env(signers(alice, jtx::kNone));
         env.close();
         env.require(Owners(alice, 0));
     }
@@ -826,7 +826,7 @@ public:
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
         // Remove alice's signer list and get the owner count back.
-        env(signers(alice, jtx::kNONE), Sig(alie));
+        env(signers(alice, jtx::kNone), Sig(alie));
         env.close();
         env.require(Owners(alice, 0));
     }
@@ -871,23 +871,23 @@ public:
         env(fset(alice, asfDisableMaster), Sig(alice));
 
         // R0: A lone regular key cannot be removed.
-        env(regkey(alice, kDISABLED), Sig(alie), Ter(tecNO_ALTERNATIVE_KEY));
+        env(regkey(alice, kDisabled), Sig(alie), Ter(tecNO_ALTERNATIVE_KEY));
 
         // Add a signer list.
         env(signers(alice, 1, {{bogie_, 1}}), Sig(alie));
 
         // R1: The regular key can be removed if there's a signer list.
-        env(regkey(alice, kDISABLED), Sig(alie));
+        env(regkey(alice, kDisabled), Sig(alie));
 
         // L0: A lone signer list cannot be removed.
         auto const baseFee = env.current()->fees().base;
-        env(signers(alice, jtx::kNONE), Msig(bogie_), Fee(2 * baseFee), Ter(tecNO_ALTERNATIVE_KEY));
+        env(signers(alice, jtx::kNone), Msig(bogie_), Fee(2 * baseFee), Ter(tecNO_ALTERNATIVE_KEY));
 
         // Enable the master key.
         env(fclear(alice, asfDisableMaster), Msig(bogie_), Fee(2 * baseFee));
 
         // L1: The signer list can be removed if the master key is enabled.
-        env(signers(alice, jtx::kNONE), Msig(bogie_), Fee(2 * baseFee));
+        env(signers(alice, jtx::kNone), Msig(bogie_), Fee(2 * baseFee));
 
         // Add a signer list.
         env(signers(alice, 1, {{bogie_, 1}}), Sig(alice));
@@ -899,13 +899,13 @@ public:
         env(regkey(alice, alie), Msig(bogie_), Fee(2 * baseFee));
 
         // L2: The signer list can be removed if there's a regular key.
-        env(signers(alice, jtx::kNONE), Sig(alie));
+        env(signers(alice, jtx::kNone), Sig(alie));
 
         // Enable the master key.
         env(fclear(alice, asfDisableMaster), Sig(alie));
 
         // R2: The regular key can be removed if the master key is enabled.
-        env(regkey(alice, kDISABLED), Sig(alie));
+        env(regkey(alice, kDisabled), Sig(alie));
     }
 
     // Verify that the first regular key can be made for free using the
@@ -1398,7 +1398,7 @@ public:
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
         // Should also be able to remove the signer list using a ticket.
-        env(signers(alice, jtx::kNONE), ticket::Use(aliceTicketSeq++));
+        env(signers(alice, jtx::kNone), ticket::Use(aliceTicketSeq++));
         env.close();
         env.require(tickets(alice, env.seq(alice) - aliceTicketSeq));
         BEAST_EXPECT(env.seq(alice) == aliceSeq);

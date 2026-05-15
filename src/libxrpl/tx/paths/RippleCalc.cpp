@@ -59,13 +59,13 @@ RippleCalc::rippleCalculate(
         bool const partialPayment = (pInputs == nullptr) ? false : pInputs->partialPaymentAllowed;
 
         auto const limitQuality = [&]() -> std::optional<Quality> {
-            if (pInputs && pInputs->limitQuality && saMaxAmountReq > beast::kZERO)
+            if (pInputs && pInputs->limitQuality && saMaxAmountReq > beast::kZero)
                 return Quality{Amounts(saMaxAmountReq, saDstAmountReq)};
             return std::nullopt;
         }();
 
         auto const sendMax = [&]() -> std::optional<STAmount> {
-            if (saMaxAmountReq >= beast::kZERO ||
+            if (saMaxAmountReq >= beast::kZero ||
                 !equalTokens(saMaxAmountReq.asset(), saDstAmountReq.asset()) ||
                 saMaxAmountReq.getIssuer() != uSrcAccountID)
             {

@@ -31,7 +31,7 @@ validateLedgerNode(protocol::TMLedgerNode const& ledgerNode)
     if (ledgerNode.has_id())
         return deserializeSHAMapNodeID(ledgerNode.id()).has_value();
 
-    return ledgerNode.has_depth() && ledgerNode.depth() <= SHAMap::kLEAF_DEPTH;
+    return ledgerNode.has_depth() && ledgerNode.depth() <= SHAMap::kLeafDepth;
 }
 
 SHAMapTreeNodePtr
