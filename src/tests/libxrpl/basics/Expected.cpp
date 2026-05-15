@@ -32,18 +32,7 @@ struct ExpectedTest : public ::testing::Test
             EXPECT_EQ(*expected, "Valid value");
             EXPECT_EQ(expected->at(0), 'V');
 
-            bool throwOccurred = false;
-            try
-            {
-                // There's no error, so should throw.
-                [[maybe_unused]] TER const t = expected.error();
-            }
-            catch (std::runtime_error const& e)
-            {
-                EXPECT_EQ(e.what(), std::string("bad expected access"));
-                throwOccurred = true;
-            }
-            EXPECT_TRUE(throwOccurred);
+            EXPECT_THROW({ [[maybe_unused]] TER const t = expected.error(); }, std::runtime_error);
         }
         // Test non-error non-const construction.
         {
@@ -56,18 +45,7 @@ struct ExpectedTest : public ::testing::Test
             std::string const mv = std::move(*expected);
             EXPECT_EQ(mv, "Valid value");
 
-            bool throwOccurred = false;
-            try
-            {
-                // There's no error, so should throw.
-                [[maybe_unused]] TER const t = expected.error();
-            }
-            catch (std::runtime_error const& e)
-            {
-                EXPECT_EQ(e.what(), std::string("bad expected access"));
-                throwOccurred = true;
-            }
-            EXPECT_TRUE(throwOccurred);
+            EXPECT_THROW({ [[maybe_unused]] TER const t = expected.error(); }, std::runtime_error);
         }
         // Test non-error overlapping type construction.
         {
@@ -76,19 +54,8 @@ struct ExpectedTest : public ::testing::Test
             EXPECT_TRUE(expected.has_value());
             EXPECT_EQ(expected.value(), 1);
             EXPECT_EQ(*expected, 1);
-
-            bool throwOccurred = false;
-            try
-            {
-                // There's no error, so should throw.
-                [[maybe_unused]] std::uint16_t const t = expected.error();
-            }
-            catch (std::runtime_error const& e)
-            {
-                EXPECT_EQ(e.what(), std::string("bad expected access"));
-                throwOccurred = true;
-            }
-            EXPECT_TRUE(throwOccurred);
+            EXPECT_THROW(
+                { [[maybe_unused]] std::uint16_t const t = expected.error(); }, std::runtime_error);
         }
         // Test error construction from rvalue.
         {
@@ -99,18 +66,7 @@ struct ExpectedTest : public ::testing::Test
             EXPECT_TRUE(!expected.has_value());
             EXPECT_EQ(expected.error(), telLOCAL_ERROR);
 
-            bool throwOccurred = false;
-            try
-            {
-                // There's no result, so should throw.
-                [[maybe_unused]] std::string const s = *expected;
-            }
-            catch (std::runtime_error const& e)
-            {
-                EXPECT_EQ(e.what(), std::string("bad expected access"));
-                throwOccurred = true;
-            }
-            EXPECT_TRUE(throwOccurred);
+            EXPECT_THROW({ [[maybe_unused]] std::string const s = *expected; }, std::runtime_error);
         }
         // Test error construction from lvalue.
         {
@@ -119,19 +75,8 @@ struct ExpectedTest : public ::testing::Test
             EXPECT_TRUE(!expected);
             EXPECT_TRUE(!expected.has_value());
             EXPECT_EQ(expected.error(), telLOCAL_ERROR);
-
-            bool throwOccurred = false;
-            try
-            {
-                // There's no result, so should throw.
-                [[maybe_unused]] std::size_t const s = expected->size();
-            }
-            catch (std::runtime_error const& e)
-            {
-                EXPECT_EQ(e.what(), std::string("bad expected access"));
-                throwOccurred = true;
-            }
-            EXPECT_TRUE(throwOccurred);
+            EXPECT_THROW(
+                { [[maybe_unused]] std::size_t const s = expected->size(); }, std::runtime_error);
         }
         // Test error construction from const char*.
         {
@@ -157,35 +102,19 @@ struct ExpectedTest : public ::testing::Test
         {
             auto const expected = []() -> Expected<void, std::string> { return {}; }();
             EXPECT_TRUE(expected);
-            bool throwOccurred = false;
-            try
-            {
-                // There's no error, so should throw.
-                [[maybe_unused]] std::size_t const s = expected.error().size();
-            }
-            catch (std::runtime_error const& e)
-            {
-                EXPECT_EQ(e.what(), std::string("bad expected access"));
-                throwOccurred = true;
-            }
-            EXPECT_TRUE(throwOccurred);
+
+            EXPECT_THROW(
+                { [[maybe_unused]] std::size_t const s = expected.error().size(); },
+                std::runtime_error);
         }
         // Test non-error non-const construction of Expected<void, T>.
         {
             auto expected = []() -> Expected<void, std::string> { return {}; }();
             EXPECT_TRUE(expected);
-            bool throwOccurred = false;
-            try
-            {
-                // There's no error, so should throw.
-                [[maybe_unused]] std::size_t const s = expected.error().size();
-            }
-            catch (std::runtime_error const& e)
-            {
-                EXPECT_EQ(e.what(), std::string("bad expected access"));
-                throwOccurred = true;
-            }
-            EXPECT_TRUE(throwOccurred);
+
+            EXPECT_THROW(
+                { [[maybe_unused]] std::size_t const s = expected.error().size(); },
+                std::runtime_error);
         }
         // Test error const construction of Expected<void, T>.
         {
