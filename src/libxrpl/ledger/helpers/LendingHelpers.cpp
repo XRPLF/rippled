@@ -39,9 +39,14 @@ canApplyToBrokerCover(
     beast::Journal j,
     std::string_view logPrefix)
 {
+    XRPL_ASSERT(
+        sleBroker && sleBroker->getType() == ltLOAN_BROKER,
+        "xrpl::canApplyToBrokerCover : valid LoanBroker sle");
+    XRPL_ASSERT(
+        vaultAsset.getIssuer() == amount.getIssuer() && amount > beast::kZERO,
+        "xrpl::canApplyToBrokerCover : valid LoanBroker sle");
+
     if (!view.rules().enabled(fixCleanup3_2_0))
-        return tesSUCCESS;
-    if (amount == beast::kZERO)
         return tesSUCCESS;
 
     int const coverScale = scale(sleBroker->at(sfCoverAvailable), vaultAsset);

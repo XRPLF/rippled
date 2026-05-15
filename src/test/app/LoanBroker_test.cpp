@@ -1897,6 +1897,29 @@ class LoanBroker_test : public beast::unit_test::Suite
             }
 
             {
+                testcase("Cover precision guard: Deposit");
+                // Both cases succeed; post-fix the amount is rounded DOWN to
+                // cover scale first, so the delta differs from pre-fix
+                // Input: 1.8e-14 IOU (sub-scale at cover scale -14)
+                //   Pre-fix:  10 + 1.8e-14 → round-to-nearest →
+                //             10.00000000000002 → delta 2e-14
+                //   Post-fix: roundToScale(1.8e-14, -14, Downward) = 1e-14;
+                //             10 + 1e-14 = 10.00000000000001 → delta 1e-14
+                Env env{*this, features};
+                auto const [brokerKeylet, iou] = setup(env);
+                PrettyAmount const subUlpAmt = iou(Number{18, -15});
+                auto const coverBefore = env.le(brokerKeylet)->at(sfCoverAvailable);
+                env(coverDeposit(alice, brokerKeylet.key, subUlpAmt), Ter(tesSUCCESS));
+                env.close();
+                auto const brokerAfter = env.le(brokerKeylet);
+                if (!BEAST_EXPECT(brokerAfter))
+                    return;
+
+                Number const delta = features[fixCleanup3_2_0] ? Number{1, -14} : Number{2, -14};
+                BEAST_EXPECT(brokerAfter->at(sfCoverAvailable) - coverBefore == delta);
+            }
+
+            {
                 testcase("Cover precision guard: Withdraw");
                 Env env{*this, features};
                 auto const [brokerKeylet, iou] = setup(env);

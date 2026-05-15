@@ -73,11 +73,6 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
     if (amount.asset() != vaultAsset)
         return tecWRONG_ASSET;
 
-    // Helper handles both IOU and MPT correctly without explicit branching.
-    if (auto const ret = canApplyToBrokerCover(
-            ctx.view, sleBroker, vaultAsset, amount, ctx.j, "LoanBrokerCoverDeposit"))
-        return ret;
-
     auto const pseudoAccountID = sleBroker->at(sfAccount);
     // Cannot transfer a non-transferable Asset
     if (auto const ret = canTransfer(ctx.view, vaultAsset, account, pseudoAccountID))
@@ -111,8 +106,6 @@ LoanBrokerCoverDeposit::doApply()
     auto const& tx = ctx_.tx;
 
     auto const brokerID = tx[sfLoanBrokerID];
-    auto const amount = tx[sfAmount];
-
     auto broker = view().peek(keylet::loanbroker(brokerID));
     if (!broker)
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -122,9 +115,25 @@ LoanBrokerCoverDeposit::doApply()
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const vaultAsset = vault->at(sfAsset);
-
     auto const brokerPseudoID = broker->at(sfAccount);
 
+    bool const fix320Enabled = view().rules().enabled(fixCleanup3_2_0);
+    auto const amount = [&]() -> STAmount {
+        if (!fix320Enabled)
+            return tx[sfAmount];
+
+        return roundToScale(
+            tx[sfAmount],
+            scale(broker->at(sfCoverAvailable), vaultAsset),
+            Number::RoundingMode::Downward);
+    }();
+
+    if (fix320Enabled && amount == beast::kZERO)
+    {
+        JLOG(ctx_.journal.warn()) << "LoanBrokerCoverDeposit: deposit amount: " << tx[sfAmount]
+                                  << "is zero at loan broker scale";
+        return tecPRECISION_LOSS;
+    }
     // Transfer assets from depositor to pseudo-account.
     if (auto ter = accountSend(view(), account_, brokerPseudoID, amount, j_, WaiveTransferFee::Yes))
         return ter;
