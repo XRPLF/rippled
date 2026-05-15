@@ -98,10 +98,7 @@ NFTokenCancelOffer::doApply()
 }
 
 void
-NFTokenCancelOffer::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+NFTokenCancelOffer::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

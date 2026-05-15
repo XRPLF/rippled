@@ -531,13 +531,13 @@ public:
     /** Return an account root.
         @return empty if the account does not exist.
     */
-    [[nodiscard]] std::shared_ptr<SLE const>
+    [[nodiscard]] SLE::const_pointer
     le(Account const& account) const;
 
     /** Return a ledger entry.
         @return empty if the ledger entry does not exist
     */
-    [[nodiscard]] std::shared_ptr<SLE const>
+    [[nodiscard]] SLE::const_pointer
     le(Keylet const& k) const;
 
     /** Create a JTx from parameters. */

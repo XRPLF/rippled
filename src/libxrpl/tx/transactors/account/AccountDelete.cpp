@@ -72,7 +72,7 @@ using DeleterFuncPtr = TER (*)(
     ApplyView& view,
     AccountID const& account,
     uint256 const& delIndex,
-    std::shared_ptr<SLE> const& sleDel,
+    SLE::ref sleDel,
     beast::Journal j);
 
 // Local function definitions that provides signature compatibility.
@@ -82,7 +82,7 @@ offerDelete(
     ApplyView& view,
     AccountID const& account,
     uint256 const& delIndex,
-    std::shared_ptr<SLE> const& sleDel,
+    SLE::ref sleDel,
     beast::Journal j)
 {
     return offerDelete(view, sleDel, j);
@@ -94,7 +94,7 @@ removeSignersFromLedger(
     ApplyView& view,
     AccountID const& account,
     uint256 const& delIndex,
-    std::shared_ptr<SLE> const& sleDel,
+    SLE::ref sleDel,
     beast::Journal j)
 {
     return SignerListSet::removeFromLedger(registry, view, account, j);
@@ -106,7 +106,7 @@ removeTicketFromLedger(
     ApplyView& view,
     AccountID const& account,
     uint256 const& delIndex,
-    std::shared_ptr<SLE> const&,
+    SLE::ref,
     beast::Journal j)
 {
     return Transactor::ticketDelete(view, account, delIndex, j);
@@ -118,7 +118,7 @@ removeDepositPreauthFromLedger(
     ApplyView& view,
     AccountID const&,
     uint256 const& delIndex,
-    std::shared_ptr<SLE> const&,
+    SLE::ref,
     beast::Journal j)
 {
     return DepositPreauth::removeFromLedger(view, delIndex, j);
@@ -130,7 +130,7 @@ removeNFTokenOfferFromLedger(
     ApplyView& view,
     AccountID const& account,
     uint256 const& delIndex,
-    std::shared_ptr<SLE> const& sleDel,
+    SLE::ref sleDel,
     beast::Journal)
 {
     if (!nft::deleteTokenOffer(view, sleDel))
@@ -145,7 +145,7 @@ removeDIDFromLedger(
     ApplyView& view,
     AccountID const& account,
     uint256 const& delIndex,
-    std::shared_ptr<SLE> const& sleDel,
+    SLE::ref sleDel,
     beast::Journal j)
 {
     return DIDDelete::deleteSLE(view, sleDel, account, j);
@@ -157,7 +157,7 @@ removeOracleFromLedger(
     ApplyView& view,
     AccountID const& account,
     uint256 const&,
-    std::shared_ptr<SLE> const& sleDel,
+    SLE::ref sleDel,
     beast::Journal j)
 {
     return OracleDelete::deleteOracle(view, sleDel, account, j);
@@ -169,7 +169,7 @@ removeCredentialFromLedger(
     ApplyView& view,
     AccountID const&,
     uint256 const&,
-    std::shared_ptr<SLE> const& sleDel,
+    SLE::ref sleDel,
     beast::Journal j)
 {
     return credentials::deleteSLE(view, sleDel, j);
@@ -181,7 +181,7 @@ removeDelegateFromLedger(
     ApplyView& view,
     AccountID const&,
     uint256 const&,
-    std::shared_ptr<SLE> const& sleDel,
+    SLE::ref sleDel,
     beast::Journal j)
 {
     return DelegateSet::deleteDelegate(view, sleDel, j);
@@ -301,7 +301,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     if (dirIsEmpty(ctx.view, ownerDirKeylet))
         return tesSUCCESS;
 
-    std::shared_ptr<SLE const> sleDirNode{};
+    SLE::const_pointer sleDirNode{};
     unsigned int uDirEntry{0};
     uint256 dirEntry{beast::kZERO};
 
@@ -368,7 +368,7 @@ AccountDelete::doApply()
         ownerDirKeylet,
         [&](LedgerEntryType nodeType,
             uint256 const& dirEntry,
-            std::shared_ptr<SLE>& sleItem) -> std::pair<TER, SkipEntry> {
+            SLE::pointer& sleItem) -> std::pair<TER, SkipEntry> {
             if (auto deleter = nonObligationDeleter(nodeType))
             {
                 TER const result{deleter(ctx_.registry, view(), account_, dirEntry, sleItem, j_)};
@@ -417,10 +417,7 @@ AccountDelete::doApply()
 }
 
 void
-AccountDelete::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+AccountDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

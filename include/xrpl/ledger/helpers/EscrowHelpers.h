@@ -18,7 +18,7 @@ TER
 escrowUnlockApplyHelper(
     ApplyView& view,
     Rate lockedRate,
-    std::shared_ptr<SLE> const& sleDest,
+    SLE::ref sleDest,
     STAmount const& xrpBalance,
     STAmount const& amount,
     AccountID const& issuer,
@@ -32,7 +32,7 @@ inline TER
 escrowUnlockApplyHelper<Issue>(
     ApplyView& view,
     Rate lockedRate,
-    std::shared_ptr<SLE> const& sleDest,
+    SLE::ref sleDest,
     STAmount const& xrpBalance,
     STAmount const& amount,
     AccountID const& issuer,
@@ -162,7 +162,7 @@ inline TER
 escrowUnlockApplyHelper<MPTIssue>(
     ApplyView& view,
     Rate lockedRate,
-    std::shared_ptr<SLE> const& sleDest,
+    SLE::ref sleDest,
     STAmount const& xrpBalance,
     STAmount const& amount,
     AccountID const& issuer,

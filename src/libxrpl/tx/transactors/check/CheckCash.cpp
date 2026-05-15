@@ -384,7 +384,7 @@ CheckCash::doApply()
 
             // Check reserve. Return destination account SLE if enough reserve,
             // otherwise return nullptr.
-            auto checkReserve = [&]() -> std::shared_ptr<SLE> {
+            auto checkReserve = [&]() -> SLE::pointer {
                 auto sleDst = psb.peek(keylet::account(account_));
 
                 // Can the account cover the trust line's or MPT reserve?
@@ -588,10 +588,7 @@ CheckCash::doApply()
 }
 
 void
-CheckCash::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+CheckCash::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

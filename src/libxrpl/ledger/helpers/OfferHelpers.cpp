@@ -17,7 +17,7 @@
 namespace xrpl {
 
 TER
-offerDelete(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
+offerDelete(ApplyView& view, SLE::ref sle, beast::Journal j)
 {
     if (!sle)
         return tesSUCCESS;

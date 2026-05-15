@@ -51,7 +51,7 @@ OracleDelete::preclaim(PreclaimContext const& ctx)
 TER
 OracleDelete::deleteOracle(
     ApplyView& view,
-    std::shared_ptr<SLE> const& sle,
+    SLE::ref sle,
     AccountID const& account,
     beast::Journal j)
 {
@@ -89,10 +89,7 @@ OracleDelete::doApply()
 }
 
 void
-OracleDelete::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+OracleDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

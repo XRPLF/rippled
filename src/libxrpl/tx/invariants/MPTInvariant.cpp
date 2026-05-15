@@ -25,10 +25,7 @@
 namespace xrpl {
 
 void
-ValidMPTIssuance::visitEntry(
-    bool isDelete,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+ValidMPTIssuance::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
     if (after && after->getType() == ltMPTOKEN_ISSUANCE)
     {
@@ -280,10 +277,7 @@ ValidMPTIssuance::finalize(
 }
 
 void
-ValidMPTPayment::visitEntry(
-    bool,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+ValidMPTPayment::visitEntry(bool, SLE::const_ref before, SLE::const_ref after)
 {
     if (overflow_)
         return;

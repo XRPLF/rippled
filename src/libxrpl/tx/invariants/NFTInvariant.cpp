@@ -26,10 +26,7 @@
 namespace xrpl {
 
 void
-ValidNFTokenPage::visitEntry(
-    bool isDelete,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+ValidNFTokenPage::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
     static constexpr uint256 const& kPAGE_BITS = nft::kPAGE_MASK;
     static constexpr uint256 const kACCOUNT_BITS = ~kPAGE_BITS;
@@ -38,7 +35,7 @@ ValidNFTokenPage::visitEntry(
         (after && after->getType() != ltNFTOKEN_PAGE))
         return;
 
-    auto check = [this, isDelete](std::shared_ptr<SLE const> const& sle) {
+    auto check = [this, isDelete](SLE::const_ref sle) {
         uint256 const account = sle->key() & kACCOUNT_BITS;
         uint256 const hiLimit = sle->key() & kPAGE_BITS;
         std::optional<uint256> const prev = (*sle)[~sfPreviousPageMin];
@@ -187,10 +184,7 @@ ValidNFTokenPage::finalize(
 
 //------------------------------------------------------------------------------
 void
-NFTokenCountTracking::visitEntry(
-    bool,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+NFTokenCountTracking::visitEntry(bool, SLE::const_ref before, SLE::const_ref after)
 {
     if (before && before->getType() == ltACCOUNT_ROOT)
     {

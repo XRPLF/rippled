@@ -48,7 +48,7 @@ using Prices =
 static void
 iteratePriceData(
     RPC::JsonContext& context,
-    std::shared_ptr<SLE const> const& sle,
+    SLE::const_ref sle,
     std::function<bool(STObject const&)> const& f)
 {
     using Meta = std::shared_ptr<STObject const>;

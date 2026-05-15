@@ -1275,7 +1275,7 @@ class Invariants_test : public beast::unit_test::Suite
             });
     }
 
-    static std::shared_ptr<SLE>
+    static SLE::pointer
     createPermissionedDomain(
         ApplyContext& ac,
         test::jtx::Account const& a1,

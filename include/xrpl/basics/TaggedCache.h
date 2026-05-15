@@ -157,7 +157,7 @@ public:
     /** Fetch an item from the cache.
         If the digest was not found, Handler
         will be called with this signature:
-            std::shared_ptr<SLE const>(void)
+            SLE::const_pointer(void)
     */
     template <class Handler>
     SharedPointerType

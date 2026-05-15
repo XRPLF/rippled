@@ -19,7 +19,7 @@ CachedViewImpl::exists(Keylet const& k) const
     return read(k) != nullptr;
 }
 
-std::shared_ptr<SLE const>
+SLE::const_pointer
 CachedViewImpl::read(Keylet const& k) const
 {
     static CountedObjects::Counter kHITS{"CachedView::hit"};

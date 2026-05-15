@@ -4316,7 +4316,7 @@ NetworkOPsImp::getBookPage(
     bool bDone = false;
     bool bDirectAdvance = true;
 
-    std::shared_ptr<SLE const> sleOfferDir;
+    SLE::const_pointer sleOfferDir;
     uint256 offerIndex;
     unsigned int uBookEntry = 0;
     STAmount saDirRate;

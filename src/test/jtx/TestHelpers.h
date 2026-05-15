@@ -356,7 +356,7 @@ checkVL(Slice const& result, std::string const& expected)
 
 [[nodiscard]]
 inline bool
-checkVL(std::shared_ptr<SLE const> const& sle, SField const& field, std::string const& expected)
+checkVL(SLE::const_ref sle, SField const& field, std::string const& expected)
 {
     return strHex(expected) == strHex(sle->getFieldVL(field));
 }

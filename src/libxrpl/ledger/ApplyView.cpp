@@ -31,7 +31,7 @@ createRoot(
     ApplyView& view,
     Keylet const& directory,
     uint256 const& key,
-    std::function<void(std::shared_ptr<SLE> const&)> const& describe)
+    std::function<void(SLE::ref)> const& describe)
 {
     auto newRoot = std::make_shared<SLE>(directory);
     newRoot->setFieldH256(sfRootIndex, directory.key);
@@ -110,7 +110,7 @@ insertPage(
     SLE::ref next,
     uint256 const& key,
     Keylet const& directory,
-    std::function<void(std::shared_ptr<SLE> const&)> const& describe)
+    std::function<void(SLE::ref)> const& describe)
 {
     // We rely on modulo arithmetic of unsigned integers (guaranteed in
     // [basic.fundamental] paragraph 2) to detect page representation overflow.
@@ -166,7 +166,7 @@ ApplyView::dirAdd(
     bool preserveOrder,
     Keylet const& directory,
     uint256 const& key,
-    std::function<void(std::shared_ptr<SLE> const&)> const& describe)
+    std::function<void(SLE::ref)> const& describe)
 {
     auto root = peek(directory);
 

@@ -132,7 +132,7 @@ DelegateSet::doApply()
 }
 
 TER
-DelegateSet::deleteDelegate(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
+DelegateSet::deleteDelegate(ApplyView& view, SLE::ref sle, beast::Journal j)
 {
     if (!sle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -174,10 +174,7 @@ DelegateSet::deleteDelegate(ApplyView& view, std::shared_ptr<SLE> const& sle, be
 }
 
 void
-DelegateSet::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+DelegateSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

@@ -19,10 +19,7 @@ namespace xrpl {
     @return The number of shares, or nullopt on error.
 */
 [[nodiscard]] std::optional<STAmount>
-assetsToSharesDeposit(
-    std::shared_ptr<SLE const> const& vault,
-    std::shared_ptr<SLE const> const& issuance,
-    STAmount const& assets);
+assetsToSharesDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& assets);
 
 /** From the perspective of a vault, return the number of assets to take from
     depositor when they receive a fixed amount of shares. Note, since shares are
@@ -35,10 +32,7 @@ assetsToSharesDeposit(
     @return The number of assets, or nullopt on error.
 */
 [[nodiscard]] std::optional<STAmount>
-sharesToAssetsDeposit(
-    std::shared_ptr<SLE const> const& vault,
-    std::shared_ptr<SLE const> const& issuance,
-    STAmount const& shares);
+sharesToAssetsDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& shares);
 
 /** Controls whether to truncate shares instead of rounding. */
 enum class TruncateShares : bool { No = false, Yes = true };
@@ -57,8 +51,8 @@ enum class TruncateShares : bool { No = false, Yes = true };
 */
 [[nodiscard]] std::optional<STAmount>
 assetsToSharesWithdraw(
-    std::shared_ptr<SLE const> const& vault,
-    std::shared_ptr<SLE const> const& issuance,
+    SLE::const_ref vault,
+    SLE::const_ref issuance,
     STAmount const& assets,
     TruncateShares truncate = TruncateShares::No);
 
@@ -73,9 +67,6 @@ assetsToSharesWithdraw(
     @return The number of assets, or nullopt on error.
 */
 [[nodiscard]] std::optional<STAmount>
-sharesToAssetsWithdraw(
-    std::shared_ptr<SLE const> const& vault,
-    std::shared_ptr<SLE const> const& issuance,
-    STAmount const& shares);
+sharesToAssetsWithdraw(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& shares);
 
 }  // namespace xrpl

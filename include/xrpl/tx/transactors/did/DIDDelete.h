@@ -20,16 +20,13 @@ public:
     deleteSLE(ApplyContext& ctx, Keylet sleKeylet, AccountID const owner);
 
     static TER
-    deleteSLE(ApplyView& view, std::shared_ptr<SLE> sle, AccountID const owner, beast::Journal j);
+    deleteSLE(ApplyView& view, SLE::pointer sle, AccountID const owner, beast::Journal j);
 
     TER
     doApply() override;
 
     void
-    visitInvariantEntry(
-        bool isDelete,
-        std::shared_ptr<SLE const> const& before,
-        std::shared_ptr<SLE const> const& after) override;
+    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(

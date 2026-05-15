@@ -17,10 +17,7 @@
 namespace xrpl {
 
 inline void
-appendNftOfferJson(
-    Application const& app,
-    std::shared_ptr<SLE const> const& offer,
-    json::Value& offers)
+appendNftOfferJson(Application const& app, SLE::const_ref offer, json::Value& offers)
 {
     json::Value& obj(offers.append(json::ValueType::Object));
 
@@ -64,7 +61,7 @@ enumerateNFTOffers(RPC::JsonContext& context, uint256 const& nftId, Keylet const
 
     json::Value& jsonOffers(result[jss::offers] = json::ValueType::Array);
 
-    std::vector<std::shared_ptr<SLE const>> offers;
+    std::vector<SLE::const_pointer> offers;
     unsigned int reserve(limit);
     uint256 startAfter;
     std::uint64_t startHint = 0;
@@ -97,12 +94,7 @@ enumerateNFTOffers(RPC::JsonContext& context, uint256 const& nftId, Keylet const
     }
 
     if (!forEachItemAfter(
-            *ledger,
-            directory,
-            startAfter,
-            startHint,
-            reserve,
-            [&offers](std::shared_ptr<SLE const> const& offer) {
+            *ledger, directory, startAfter, startHint, reserve, [&offers](SLE::const_ref offer) {
                 if (offer->getType() == ltNFTOKEN_OFFER)
                 {
                     offers.emplace_back(offer);

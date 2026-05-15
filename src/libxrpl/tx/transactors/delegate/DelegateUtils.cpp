@@ -12,7 +12,7 @@
 
 namespace xrpl {
 NotTEC
-checkTxPermission(std::shared_ptr<SLE const> const& delegate, STTx const& tx)
+checkTxPermission(SLE::const_ref delegate, STTx const& tx)
 {
     if (!delegate)
         return terNO_DELEGATE_PERMISSION;
@@ -32,7 +32,7 @@ checkTxPermission(std::shared_ptr<SLE const> const& delegate, STTx const& tx)
 
 void
 loadGranularPermission(
-    std::shared_ptr<SLE const> const& delegate,
+    SLE::const_ref delegate,
     TxType const& txType,
     std::unordered_set<GranularPermissionType>& granularPermissions)
 {

@@ -20,10 +20,7 @@
 namespace xrpl {
 
 void
-ValidLoanBroker::visitEntry(
-    bool isDelete,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+ValidLoanBroker::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
     if (after)
     {

@@ -40,7 +40,7 @@ BookTip::step(beast::Journal j)
             return false;
 
         unsigned int di = 0;
-        std::shared_ptr<SLE> dir;
+        SLE::pointer dir;
 
         if (dirFirst(view_, *firstPage, dir, di, index_))
         {
