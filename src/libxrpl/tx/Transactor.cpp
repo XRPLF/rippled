@@ -1238,7 +1238,7 @@ Transactor::operator()()
 
     if (isTecClaim(result) && ((view().flags() & TapFailHard) != 0u))
     {
-        // If the tapFAIL_HARD flag is set, a tec result
+        // If the TapFailHard flag is set, a tec result
         // must not do anything
         ctx_.discard();
         applied = false;
