@@ -4549,7 +4549,7 @@ NetworkOPsImp::getBookPage(
                         uOfferOwnerID,
                         book.out.currency,
                         book.out.account,
-                        FreezeHandling::fhZERO_IF_FROZEN);
+                        FreezeHandling::ZeroIfFrozen);
 
                     if (saOwnerFunds.isNegative())
                     {
