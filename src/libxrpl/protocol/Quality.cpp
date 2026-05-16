@@ -114,10 +114,10 @@ Quality
 composedQuality(Quality const& lhs, Quality const& rhs)
 {
     STAmount const lhsRate(lhs.rate());
-    XRPL_ASSERT(lhsRate != beast::kZERO, "xrpl::composedQuality : nonzero left input");
+    XRPL_ASSERT(lhsRate != beast::kZero, "xrpl::composedQuality : nonzero left input");
 
     STAmount const rhsRate(rhs.rate());
-    XRPL_ASSERT(rhsRate != beast::kZERO, "xrpl::composedQuality : nonzero right input");
+    XRPL_ASSERT(rhsRate != beast::kZero, "xrpl::composedQuality : nonzero right input");
 
     STAmount const rate(mulRound(lhsRate, rhsRate, lhsRate.asset(), true));
 
@@ -134,7 +134,7 @@ Quality
 Quality::round(int digits) const
 {
     // Modulus for mantissa
-    static std::uint64_t const kMOD[17] = {
+    static std::uint64_t const kMod[17] = {
         /* 0 */ 10000000000000000,
         /* 1 */ 1000000000000000,
         /* 2 */ 100000000000000,
@@ -156,8 +156,8 @@ Quality::round(int digits) const
 
     auto exponent = value_ >> (64 - 8);
     auto mantissa = value_ & 0x00ffffffffffffffULL;
-    mantissa += kMOD[digits] - 1;
-    mantissa -= (mantissa % kMOD[digits]);
+    mantissa += kMod[digits] - 1;
+    mantissa -= (mantissa % kMod[digits]);
 
     return Quality{(exponent << (64 - 8)) | mantissa};
 }
