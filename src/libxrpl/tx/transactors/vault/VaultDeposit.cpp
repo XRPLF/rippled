@@ -28,13 +28,13 @@ namespace xrpl {
 NotTEC
 VaultDeposit::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfVaultID] == beast::kZERO)
+    if (ctx.tx[sfVaultID] == beast::kZero)
     {
         JLOG(ctx.j.debug()) << "VaultDeposit: zero/empty vault ID.";
         return temMALFORMED;
     }
 
-    if (ctx.tx[sfAmount] <= beast::kZERO)
+    if (ctx.tx[sfAmount] <= beast::kZero)
         return temBAD_AMOUNT;
 
     return tesSUCCESS;
@@ -204,7 +204,7 @@ VaultDeposit::doApply()
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             sharesCreated = *maybeShares;
         }
-        if (sharesCreated == beast::kZERO)
+        if (sharesCreated == beast::kZero)
             return tecPRECISION_LOSS;
 
         auto const maybeAssets = sharesToAssetsDeposit(vault, sleIssuance, sharesCreated);
@@ -259,7 +259,7 @@ VaultDeposit::doApply()
             assetsDeposited.asset(),
             FreezeHandling::IgnoreFreeze,
             AuthHandling::IgnoreAuth,
-            j_) < beast::kZERO)
+            j_) < beast::kZero)
     {
         // LCOV_EXCL_START
         JLOG(j_.error()) << "VaultDeposit: negative balance of account assets.";

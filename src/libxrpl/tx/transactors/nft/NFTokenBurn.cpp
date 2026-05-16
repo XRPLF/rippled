@@ -40,7 +40,7 @@ NFTokenBurn::preclaim(PreclaimContext const& ctx)
     // do so if the token is marked as burnable.
     if (auto const account = ctx.tx[sfAccount]; owner != account)
     {
-        if ((nft::getFlags(ctx.tx[sfNFTokenID]) & nft::kFLAG_BURNABLE) == 0)
+        if ((nft::getFlags(ctx.tx[sfNFTokenID]) & nft::kFlagBurnable) == 0)
             return tecNO_PERMISSION;
 
         if (auto const issuer = nft::getIssuer(ctx.tx[sfNFTokenID]); issuer != account)
@@ -81,14 +81,14 @@ NFTokenBurn::doApply()
     // the number of buy offers, we prioritize the deletion of sell
     // offers in order to clean up sell offer directory
     std::size_t const deletedSellOffers = nft::removeTokenOffersWithLimit(
-        view(), keylet::nftSells(ctx_.tx[sfNFTokenID]), kMAX_DELETABLE_TOKEN_OFFER_ENTRIES);
+        view(), keylet::nftSells(ctx_.tx[sfNFTokenID]), kMaxDeletableTokenOfferEntries);
 
-    if (kMAX_DELETABLE_TOKEN_OFFER_ENTRIES > deletedSellOffers)
+    if (kMaxDeletableTokenOfferEntries > deletedSellOffers)
     {
         nft::removeTokenOffersWithLimit(
             view(),
             keylet::nftBuys(ctx_.tx[sfNFTokenID]),
-            kMAX_DELETABLE_TOKEN_OFFER_ENTRIES - deletedSellOffers);
+            kMaxDeletableTokenOfferEntries - deletedSellOffers);
     }
 
     return tesSUCCESS;

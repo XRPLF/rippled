@@ -633,7 +633,7 @@ public:
                 result.emplace_back(slot, list);
             }
 
-            whenBroadcast = now + Tuning::kSECONDS_PER_MESSAGE;
+            whenBroadcast = now + Tuning::kSecondsPerMessage;
         }
 
         return result;
@@ -652,7 +652,7 @@ public:
             entry.second->expire();
 
         // Expire the recent attempts table
-        beast::expire(squelches, Tuning::kRECENT_ATTEMPT_DURATION);
+        beast::expire(squelches, Tuning::kRecentAttemptDuration);
 
         bootcache.periodicActivity();
     }
@@ -669,7 +669,7 @@ public:
             Endpoint& ep(*iter);
 
             // Enforce hop limit
-            if (ep.hops > Tuning::kMAX_HOPS)
+            if (ep.hops > Tuning::kMaxHops)
             {
                 JLOG(journal.debug()) << beast::Leftw(18) << "Endpoints drop " << ep.address
                                       << " for excess hops " << ep.hops;
@@ -696,7 +696,7 @@ public:
             }
 
             // Discard invalid addresses
-            if (!isValidAddress(ep.address))
+            if (config_.verifyEndpoints && !isValidAddress(ep.address))
             {
                 JLOG(journal.debug())
                     << beast::Leftw(18) << "Endpoints drop " << ep.address << " as invalid";
@@ -731,10 +731,10 @@ public:
         beast::Journal const journal{sink};
 
         // If we're sent too many endpoints, sample them at random:
-        if (list.size() > Tuning::kNUMBER_OF_ENDPOINTS_MAX)
+        if (list.size() > Tuning::kNumberOfEndpointsMax)
         {
             std::shuffle(list.begin(), list.end(), defaultPrng());
-            list.resize(Tuning::kNUMBER_OF_ENDPOINTS_MAX);
+            list.resize(Tuning::kNumberOfEndpointsMax);
         }
 
         JLOG(journal.trace()) << "Endpoints contained " << list.size()
@@ -816,7 +816,7 @@ public:
             bootcache.insert(ep.address);
         }
 
-        slot->whenAcceptEndpoints = now + Tuning::kSECONDS_PER_MESSAGE;
+        slot->whenAcceptEndpoints = now + Tuning::kSecondsPerMessage;
     }
 
     //--------------------------------------------------------------------------
@@ -1088,6 +1088,8 @@ public:
     {
         if (isUnspecified(address))
             return false;
+        if (isLoopback(address))
+            return false;
         if (!isPublic(address))
             return false;
         if (address.port() == 0)
@@ -1205,7 +1207,7 @@ Logic<Checker>::onRedirects(
 {
     std::scoped_lock const _(lock);
     std::size_t n = 0;
-    for (; first != last && n < Tuning::kMAX_REDIRECTS; ++first, ++n)
+    for (; first != last && n < Tuning::kMaxRedirects; ++first, ++n)
         bootcache.insert(beast::IPAddressConversion::fromAsio(*first));
     if (n > 0)
     {

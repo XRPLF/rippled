@@ -22,7 +22,7 @@ private:
     using CacheType = KeyCache;
 
 public:
-    static constexpr auto kDEFAULT_CACHE_TARGET_SIZE = 0;
+    static constexpr auto kDefaultCacheTargetSize = 0;
 
     using key_type = uint256;
     using clock_type = typename CacheType::clock_type;
@@ -39,7 +39,7 @@ public:
         clock_type& clock,
         beast::Journal j,
         beast::insight::Collector::ptr const& collector = beast::insight::NullCollector::make(),
-        std::size_t targetSize = kDEFAULT_CACHE_TARGET_SIZE,
+        std::size_t targetSize = kDefaultCacheTargetSize,
         std::chrono::seconds expiration = std::chrono::minutes{2})
         : cache_(name, targetSize, expiration, clock, j, collector), gen_(1)
     {
