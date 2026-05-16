@@ -5646,6 +5646,87 @@ private:
     }
 
     void
+    testAMMOfferGenerationPolicy(FeatureBitset features)
+    {
+        testcase("AMM payment offer generation picks economically coarser integral side");
+
+        using namespace jtx;
+
+        enum class GeneratedFirst { TakerPays, TakerGets };
+
+        auto const check = [&](std::uint64_t mptUnitsPerXRP, GeneratedFirst generatedFirst) {
+            TAmounts<XRPAmount, MPTAmount> const pool{
+                XRPAmount{1'000'000}, MPTAmount{1'000'000'125}};
+            TAmounts<XRPAmount, MPTAmount> const clobOffer{
+                kDROPS_PER_XRP, MPTAmount{static_cast<std::int64_t>(mptUnitsPerXRP)}};
+            Quality const clobQuality{clobOffer};
+
+            auto const expectedAmounts = generatedFirst == GeneratedFirst::TakerGets
+                ? getAMMOfferStartWithTakerGets(pool, clobQuality, 0)
+                : getAMMOfferStartWithTakerPays(pool, clobQuality, 0);
+            auto const otherAmounts = generatedFirst == GeneratedFirst::TakerGets
+                ? getAMMOfferStartWithTakerPays(pool, clobQuality, 0)
+                : getAMMOfferStartWithTakerGets(pool, clobQuality, 0);
+            BEAST_EXPECT(expectedAmounts);
+            BEAST_EXPECT(otherAmounts);
+            if (!expectedAmounts || !otherAmounts)
+                return;
+
+            // Make the tested branch observable: these cases are chosen so the
+            // payment consumes different AMM amounts depending on which side
+            // is generated first.
+            BEAST_EXPECT(*expectedAmounts != *otherAmounts);
+
+            Env env(*this, features);
+            auto const gw = Account("gw");
+            auto const lp = Account("lp");
+            auto const maker = Account("maker");
+            auto const taker = Account("taker");
+            auto const dst = Account("dst");
+
+            env.fund(XRP(10'000), gw, lp, maker, taker, dst);
+            env.close();
+
+            MPTTester const token(
+                {.env = env, .issuer = gw, .holders = {lp, maker, dst}, .flags = kMPT_DEX_FLAGS});
+            env(pay(gw, lp, token(pool.out.value())));
+            env(pay(gw, maker, token(10'000'000)));
+            env.close();
+
+            AMM const amm(env, lp, drops(pool.in), token(pool.out.value()));
+            auto const makerOfferSeq = env.seq(maker);
+            env(offer(maker, XRP(1), token(mptUnitsPerXRP)), Txflags(tfPassive));
+            env.close();
+
+            env(pay(taker, dst, token(expectedAmounts->out.value())),
+                Sendmax(drops(expectedAmounts->in)));
+            env.close();
+
+            BEAST_EXPECT(amm.expectBalances(
+                drops(pool.in + expectedAmounts->in),
+                token((pool.out - expectedAmounts->out).value()),
+                amm.tokens()));
+            env.require(Balance(dst, token(expectedAmounts->out.value())));
+            BEAST_EXPECT(env.le(keylet::offer(maker.id(), makerOfferSeq)));
+        };
+
+        // CLOB price: 10'000'000 MPT per 1 XRP, so one raw MPT unit is worth
+        // 0.1 drops. One drop is the economically coarser unit and the AMM
+        // offer is generated from takerPays.
+        check(10 * kDROPS_PER_XRP.drops(), GeneratedFirst::TakerPays);
+
+        // CLOB price: 1'000'000 MPT per 1 XRP, so one raw MPT unit is worth
+        // one drop. Ties use takerGets to preserve the historical XRP-output
+        // behavior.
+        check(kDROPS_PER_XRP.drops(), GeneratedFirst::TakerGets);
+
+        // CLOB price: 100'000 MPT per 1 XRP, so one raw MPT unit is worth
+        // 10 drops. MPT is the economically coarser unit and the AMM offer is
+        // generated from takerGets.
+        check(kDROPS_PER_XRP.drops() / 10, GeneratedFirst::TakerGets);
+    }
+
+    void
     testTradingFee(FeatureBitset features)
     {
         testcase("Trading Fee");
@@ -7101,6 +7182,7 @@ private:
         testAMMTokens();
         testAmendment();
         testAMMAndCLOB(all);
+        testAMMOfferGenerationPolicy(all);
         testTradingFee(all);
         testTradingFee(all - fixAMMv1_3);
         testAdjustedTokens(all);
