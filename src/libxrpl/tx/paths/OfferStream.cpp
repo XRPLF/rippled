@@ -139,17 +139,17 @@ template <class TTakerPays, class TTakerGets>
 TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
 {
     // Consider removing the offer if:
-    //  o `TakerPays` is XRP (because of XRP drops granularity) or
+    //  o `TakerPays` is integral (because XRP/MPT have indivisible units) or
     //  o `TakerPays` and `TakerGets` are both IOU and `TakerPays`<`TakerGets`
-    constexpr bool const kIN_IS_XRP = std::is_same_v<TTakerPays, XRPAmount>;
-    constexpr bool const kOUT_IS_XRP = std::is_same_v<TTakerGets, XRPAmount>;
+    constexpr bool const kIN_IS_INTEGRAL = !std::is_same_v<TTakerPays, IOUAmount>;
+    constexpr bool const kOUT_IS_INTEGRAL = !std::is_same_v<TTakerGets, IOUAmount>;
 
-    if constexpr (kOUT_IS_XRP)
+    if constexpr (!kIN_IS_INTEGRAL && kOUT_IS_INTEGRAL)
     {
-        // If `TakerGets` is XRP, the worst this offer's quality can change is
-        // to about 10^-81 `TakerPays` and 1 drop `TakerGets`. This will be
-        // remarkably good quality for any realistic asset, so these offers
-        // don't need this extra check.
+        // If only `TakerGets` is integral, the worst this offer's quality can
+        // change is to about 10^-81 `TakerPays` and 1 unit `TakerGets`. This
+        // will be perfect quality for any realistic asset, so these
+        // offers don't need this extra check.
         return false;
     }
 
@@ -159,7 +159,7 @@ TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
     TAmounts<TTakerPays, TTakerGets> const ofrAmts{
         toAmount<TTakerPays>(offer_.amount().in), toAmount<TTakerGets>(offer_.amount().out)};
 
-    if constexpr (!kIN_IS_XRP && !kOUT_IS_XRP)
+    if constexpr (!kIN_IS_INTEGRAL && !kOUT_IS_INTEGRAL)
     {
         if (Number(ofrAmts.in) >= Number(ofrAmts.out))
             return false;

@@ -609,6 +609,115 @@ public:
     }
 
     void
+    testPartiallyFundedMPTInputOfferZeroInput(FeatureBitset features)
+    {
+        using namespace jtx;
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+
+        {
+            testcase("Partially funded MPT/XRP input offer cannot be consumed for free");
+
+            Env env{*this, features};
+            auto const gw = Account{"gw"};
+
+            env.fund(XRP(10'000), gw, alice, bob);
+            env.close();
+
+            MPTTester const usd({.env = env, .issuer = gw, .holders = {alice}});
+
+            env(offer(alice, usd(1), drops(1'000'000)));
+            env.close();
+
+            auto const targetBalance = reserve(env, 2) + drops(999'999);
+            auto const drain = env.balance(alice).value().xrp() - targetBalance.value().xrp() -
+                env.current()->fees().base;
+            env(pay(alice, gw, drops(drain)));
+            env.close();
+
+            auto const aliceXRPBefore = env.balance(alice);
+            auto const bobXRPBefore = env.balance(bob);
+
+            env(pay(gw, bob, drops(1'000'000)),
+                Sendmax(usd(1)),
+                Path(~XRP),
+                Txflags(tfNoRippleDirect | tfPartialPayment),
+                Ter(tecPATH_DRY));
+            env.close();
+
+            BEAST_EXPECT(env.balance(alice) == aliceXRPBefore);
+            BEAST_EXPECT(env.balance(bob) == bobXRPBefore);
+        }
+
+        {
+            testcase("Partially funded MPT/IOU input offer cannot be consumed for free");
+
+            Env env{*this, features};
+            auto const mptIssuer = Account{"mptIssuer"};
+            auto const iouIssuer = Account{"iouIssuer"};
+
+            env.fund(XRP(10'000), mptIssuer, iouIssuer, alice, bob);
+            env.close();
+
+            auto const eur = iouIssuer["EUR"];
+            env.trust(eur(100), alice, bob);
+            env(pay(iouIssuer, alice, eur(0.5)));
+            env.close();
+
+            MPTTester const usd({.env = env, .issuer = mptIssuer, .holders = {alice}});
+
+            env(offer(alice, usd(1), eur(1)));
+            env.close();
+
+            auto const aliceEURBefore = env.balance(alice, eur);
+            auto const bobEURBefore = env.balance(bob, eur);
+
+            env(pay(mptIssuer, bob, eur(1)),
+                Sendmax(usd(1)),
+                Path(~eur),
+                Txflags(tfNoRippleDirect | tfPartialPayment),
+                Ter(tecPATH_DRY));
+            env.close();
+
+            BEAST_EXPECT(env.balance(alice, eur) == aliceEURBefore);
+            BEAST_EXPECT(env.balance(bob, eur) == bobEURBefore);
+        }
+
+        {
+            testcase("Partially funded MPT/MPT input offer cannot be consumed for free");
+
+            Env env{*this, features};
+            auto const issuerA = Account{"issuerA"};
+            auto const issuerB = Account{"issuerB"};
+
+            env.fund(XRP(10'000), issuerA, issuerB, alice, bob);
+            env.close();
+
+            MPTTester const usd({.env = env, .issuer = issuerA, .holders = {alice}});
+            MPTTester const eur({.env = env, .issuer = issuerB, .holders = {alice, bob}});
+
+            env(pay(issuerB, alice, eur(999'999)));
+            env.close();
+
+            env(offer(alice, usd(1), eur(1'000'000)));
+            env.close();
+
+            auto const aliceEURBefore = eur.getBalance(alice);
+            auto const bobEURBefore = eur.getBalance(bob);
+
+            env(pay(issuerA, bob, eur(1'000'000)),
+                Sendmax(usd(1)),
+                Path(~eur),
+                Txflags(tfNoRippleDirect | tfPartialPayment),
+                Ter(tecPATH_DRY));
+            env.close();
+
+            BEAST_EXPECT(env.balance(alice, eur) == eur(aliceEURBefore));
+            BEAST_EXPECT(env.balance(bob, eur) == eur(bobEURBefore));
+        }
+    }
+
+    void
     testInsufficientReserve(FeatureBitset features)
     {
         testcase("Insufficient Reserve");
@@ -4958,6 +5067,7 @@ public:
         testTicketCancelOffer(features);
         testRmSmallIncreasedQOffersXRP(features);
         testRmSmallIncreasedQOffersMPT(features);
+        testPartiallyFundedMPTInputOfferZeroInput(features);
         testFillOrKill(features);
         testTickSize(features);
     }
