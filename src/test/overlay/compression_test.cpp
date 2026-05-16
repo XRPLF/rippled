@@ -128,7 +128,7 @@ public:
         auto uncompressed = m.getBuffer(Compressed::Off);
         BEAST_EXPECT(
             std::equal(
-                uncompressed.begin() + xrpl::compression::kHEADER_BYTES,
+                uncompressed.begin() + xrpl::compression::kHeaderBytes,
                 uncompressed.end(),
                 decompressed.begin()));
     }
@@ -142,7 +142,7 @@ public:
         {
             auto master = randomKeyPair(KeyType::Ed25519);
             auto signing = randomKeyPair(KeyType::Ed25519);
-            STObject st(kSF_GENERIC);
+            STObject st(kSfGeneric);
             st[sfSequence] = i;
             st[sfPublicKey] = std::get<0>(master);
             st[sfSigningPubKey] = std::get<0>(signing);
@@ -299,7 +299,7 @@ public:
 
         auto master = randomKeyPair(KeyType::Ed25519);
         auto signing = randomKeyPair(KeyType::Ed25519);
-        STObject st(kSF_GENERIC);
+        STObject st(kSfGeneric);
         st[sfSequence] = 0;
         st[sfPublicKey] = std::get<0>(master);
         st[sfSigningPubKey] = std::get<0>(signing);
@@ -326,7 +326,7 @@ public:
 
         auto master = randomKeyPair(KeyType::Ed25519);
         auto signing = randomKeyPair(KeyType::Ed25519);
-        STObject st(kSF_GENERIC);
+        STObject st(kSfGeneric);
         st[sfSequence] = 0;
         st[sfPublicKey] = std::get<0>(master);
         st[sfSigningPubKey] = std::get<0>(signing);
@@ -432,7 +432,7 @@ public:
             // inbound is enabled if the request's header has the feature
             // enabled and the peer's configuration is enabled
             auto const inboundEnabled =
-                peerFeatureEnabled(httpRequest, kFEATURE_COMPR, "lz4", inboundEnable);
+                peerFeatureEnabled(httpRequest, kFeatureCompr, "lz4", inboundEnable);
             BEAST_EXPECT(!(peerEnabled ^ inboundEnabled));
 
             env.reset();
@@ -442,7 +442,7 @@ public:
             // outbound is enabled if the response's header has the feature
             // enabled and the peer's configuration is enabled
             auto const outboundEnabled =
-                peerFeatureEnabled(httpResp, kFEATURE_COMPR, "lz4", outboundEnable);
+                peerFeatureEnabled(httpResp, kFeatureCompr, "lz4", outboundEnable);
             BEAST_EXPECT(!(peerEnabled ^ outboundEnabled));
         };
         handshake(1, 1);

@@ -8,21 +8,21 @@
 
 namespace xrpl {
 
-std::uint16_t constexpr kTRADING_FEE_THRESHOLD = 1000;  // 1%
+constexpr std::uint16_t kTradingFeeThreshold = 1000;  // 1%
 
 // Auction slot
-std::uint32_t constexpr kTOTAL_TIME_SLOT_SECS = 24 * 3600;
-std::uint16_t constexpr kAUCTION_SLOT_TIME_INTERVALS = 20;
-std::uint16_t constexpr kAUCTION_SLOT_MAX_AUTH_ACCOUNTS = 4;
-std::uint32_t constexpr kAUCTION_SLOT_FEE_SCALE_FACTOR = 100000;
-std::uint32_t constexpr kAUCTION_SLOT_DISCOUNTED_FEE_FRACTION = 10;
-std::uint32_t constexpr kAUCTION_SLOT_MIN_FEE_FRACTION = 25;
-std::uint32_t constexpr kAUCTION_SLOT_INTERVAL_DURATION =
-    kTOTAL_TIME_SLOT_SECS / kAUCTION_SLOT_TIME_INTERVALS;
+constexpr std::uint32_t kTotalTimeSlotSecs = 24 * 3600;
+constexpr std::uint16_t kAuctionSlotTimeIntervals = 20;
+constexpr std::uint16_t kAuctionSlotMaxAuthAccounts = 4;
+constexpr std::uint32_t kAuctionSlotFeeScaleFactor = 100000;
+constexpr std::uint32_t kAuctionSlotDiscountedFeeFraction = 10;
+constexpr std::uint32_t kAuctionSlotMinFeeFraction = 25;
+constexpr std::uint32_t kAuctionSlotIntervalDuration =
+    kTotalTimeSlotSecs / kAuctionSlotTimeIntervals;
 
 // Votes
-std::uint16_t constexpr kVOTE_MAX_SLOTS = 8;
-std::uint32_t constexpr kVOTE_WEIGHT_SCALE_FACTOR = 100000;
+constexpr std::uint16_t kVoteMaxSlots = 8;
+constexpr std::uint32_t kVoteWeightScaleFactor = 100000;
 
 class STObject;
 class STAmount;
@@ -77,7 +77,7 @@ ammEnabled(Rules const&);
 inline Number
 getFee(std::uint16_t tfee)
 {
-    return Number{tfee} / kAUCTION_SLOT_FEE_SCALE_FACTOR;
+    return Number{tfee} / kAuctionSlotFeeScaleFactor;
 }
 
 /** Get fee multiplier (1 - tfee)
