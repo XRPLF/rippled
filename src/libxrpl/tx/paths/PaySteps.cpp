@@ -189,9 +189,9 @@ toStrand(
         (dst == noAccount()) || (deliver.getIssuer() == noAccount()))
         return {temBAD_PATH, Strand{}};
 
-    if ((deliver.holds<MPTIssue>() && deliver.getIssuer() == beast::kZERO) ||
+    if ((deliver.holds<MPTIssue>() && deliver.getIssuer() == beast::kZero) ||
         (sendMaxAsset && sendMaxAsset->holds<MPTIssue>() &&
-         sendMaxAsset->getIssuer() == beast::kZERO))
+         sendMaxAsset->getIssuer() == beast::kZero))
         return {temBAD_PATH, Strand{}};
 
     for (std::size_t i = 0; i < path.size(); ++i)

@@ -53,7 +53,7 @@ Payment::makeTxConsequences(PreflightContext const& ctx)
 
         // If there's no sfSendMax in XRP, and the sfAmount isn't
         // in XRP, then the transaction does not spend XRP.
-        return maxAmount.native() ? maxAmount.xrp() : beast::kZERO;
+        return maxAmount.native() ? maxAmount.xrp() : beast::kZero;
     };
 
     return TxConsequences{ctx.tx, calculateMaxXRPSpend(ctx.tx)};
@@ -78,7 +78,7 @@ getMaxSourceAmount(
                 Issue{issue.currency, account},
                 dstAmount.mantissa(),
                 dstAmount.exponent(),
-                dstAmount < beast::kZERO);
+                dstAmount < beast::kZero);
         });
 }
 
@@ -102,9 +102,9 @@ Payment::getFlagsMask(PreflightContext const& ctx)
     bool const isDstMPT = dstAmount.holds<MPTIssue>();
     bool const mpTokensV2 = ctx.rules.enabled(featureMPTokensV2);
 
-    constexpr std::uint32_t kTF_MPT_PAYMENT_MASK_V1 = ~(tfUniversal | tfPartialPayment);
+    static constexpr std::uint32_t kTfMptPaymentMaskV1 = ~(tfUniversal | tfPartialPayment);
     std::uint32_t const paymentMask =
-        (isDstMPT && !mpTokensV2) ? kTF_MPT_PAYMENT_MASK_V1 : tfPaymentMask;
+        (isDstMPT && !mpTokensV2) ? kTfMptPaymentMaskV1 : tfPaymentMask;
 
     return paymentMask;
 }
@@ -122,14 +122,12 @@ Payment::preflight(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureMPTokensV1) && isDstMPT)
         return temDISABLED;
 
-    std::uint32_t const txFlags = tx.getFlags();
-
     if (!mpTokensV2 && isDstMPT && ctx.tx.isFieldPresent(sfPaths))
         return temMALFORMED;
 
-    bool const partialPaymentAllowed = (txFlags & tfPartialPayment) != 0u;
-    bool const limitQuality = (txFlags & tfLimitQuality) != 0u;
-    bool const defaultPathsAllowed = (txFlags & tfNoRippleDirect) == 0u;
+    bool const partialPaymentAllowed = tx.isFlag(tfPartialPayment);
+    bool const limitQuality = tx.isFlag(tfLimitQuality);
+    bool const defaultPathsAllowed = !tx.isFlag(tfNoRippleDirect);
     bool const hasPaths = tx.isFieldPresent(sfPaths);
     bool const hasMax = tx.isFieldPresent(sfSendMax);
 
@@ -164,13 +162,13 @@ Payment::preflight(PreflightContext const& ctx)
                         << "Payment destination account not specified.";
         return temDST_NEEDED;
     }
-    if (hasMax && maxSourceAmount <= beast::kZERO)
+    if (hasMax && maxSourceAmount <= beast::kZero)
     {
         JLOG(j.trace()) << "Malformed transaction: bad max amount: "
                         << maxSourceAmount.getFullText();
         return temBAD_AMOUNT;
     }
-    if (dstAmount <= beast::kZERO)
+    if (dstAmount <= beast::kZero)
     {
         JLOG(j.trace()) << "Malformed transaction: bad dst amount: " << dstAmount.getFullText();
         return temBAD_AMOUNT;
@@ -241,7 +239,7 @@ Payment::preflight(PreflightContext const& ctx)
         }
 
         auto const dMin = *deliverMin;
-        if (!isLegalNet(dMin) || dMin <= beast::kZERO)
+        if (!isLegalNet(dMin) || dMin <= beast::kZero)
         {
             JLOG(j.trace()) << "Malformed transaction: Invalid " << jss::DeliverMin.cStr()
                             << " amount. " << dMin.getFullText();
@@ -311,8 +309,7 @@ TER
 Payment::preclaim(PreclaimContext const& ctx)
 {
     // Ripple if source or destination is non-native or if there are paths.
-    std::uint32_t const txFlags = ctx.tx.getFlags();
-    bool const partialPaymentAllowed = (txFlags & tfPartialPayment) != 0u;
+    bool const partialPaymentAllowed = ctx.tx.isFlag(tfPartialPayment);
     auto const hasPaths = ctx.tx.isFieldPresent(sfPaths);
     auto const sendMax = ctx.tx[~sfSendMax];
 
@@ -357,9 +354,7 @@ Payment::preclaim(PreclaimContext const& ctx)
             return tecNO_DST_INSUF_XRP;
         }
     }
-    else if (
-        ((sleDst->getFlags() & lsfRequireDestTag) != 0u) &&
-        !ctx.tx.isFieldPresent(sfDestinationTag))
+    else if (sleDst->isFlag(lsfRequireDestTag) && !ctx.tx.isFieldPresent(sfDestinationTag))
     {
         // The tag is basically account-specific information we don't
         // understand, but we can require someone to fill it in.
@@ -376,8 +371,8 @@ Payment::preclaim(PreclaimContext const& ctx)
     {
         STPathSet const& paths = ctx.tx.getFieldPathSet(sfPaths);
 
-        if (paths.size() > kMAX_PATH_SIZE || std::ranges::any_of(paths, [](STPath const& path) {
-                return path.size() > kMAX_PATH_LENGTH;
+        if (paths.size() > kMaxPathSize || std::ranges::any_of(paths, [](STPath const& path) {
+                return path.size() > kMaxPathLength;
             }))
         {
             return telBAD_PATH_COUNT;
@@ -406,10 +401,9 @@ Payment::doApply()
     auto const deliverMin = ctx_.tx[~sfDeliverMin];
 
     // Ripple if source or destination is non-native or if there are paths.
-    std::uint32_t const txFlags = ctx_.tx.getFlags();
-    bool const partialPaymentAllowed = (txFlags & tfPartialPayment) != 0u;
-    bool const limitQuality = (txFlags & tfLimitQuality) != 0u;
-    bool const defaultPathsAllowed = (txFlags & tfNoRippleDirect) == 0u;
+    bool const partialPaymentAllowed = ctx_.tx.isFlag(tfPartialPayment);
+    bool const limitQuality = ctx_.tx.isFlag(tfLimitQuality);
+    bool const defaultPathsAllowed = !ctx_.tx.isFlag(tfNoRippleDirect);
     auto const hasPaths = ctx_.tx.isFieldPresent(sfPaths);
     auto const sendMax = ctx_.tx[~sfSendMax];
 
@@ -431,7 +425,7 @@ Payment::doApply()
         sleDst = std::make_shared<SLE>(k);
         sleDst->setAccountID(sfAccount, dstAccountID);
         sleDst->setFieldU32(sfSequence, view().seq());
-        sleDst->setFieldAmount(sfBalance, XRPAmount(beast::kZERO));
+        sleDst->setFieldAmount(sfBalance, XRPAmount(beast::kZero));
 
         view().insert(sleDst);
     }
@@ -672,7 +666,7 @@ Payment::doApply()
     sleDst->setFieldAmount(sfBalance, sleDst->getFieldAmount(sfBalance) + dstAmount);
 
     // Re-arm the password change fee if we can and need to.
-    if ((sleDst->getFlags() & lsfPasswordSpent) != 0u)
+    if (sleDst->isFlag(lsfPasswordSpent))
         sleDst->clearFlag(lsfPasswordSpent);
 
     return tesSUCCESS;

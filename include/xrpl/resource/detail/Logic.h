@@ -180,7 +180,7 @@ public:
     json::Value
     getJson()
     {
-        return getJson(kWARNING_THRESHOLD);
+        return getJson(kWarningThreshold);
     }
 
     /** Returns a json::ValueType::Object. */
@@ -243,7 +243,7 @@ public:
         {
             Gossip::Item item;
             item.balance = inboundEntry.local_balance.value(now);
-            if (item.balance >= kMINIMUM_GOSSIP_BALANCE)
+            if (item.balance >= kMinimumGossipBalance)
             {
                 item.address = inboundEntry.key->address;
                 gossip.items.push_back(item);
@@ -270,7 +270,7 @@ public:
             {
                 // This is a new import
                 Import& next(resultIt->second);
-                next.whenExpires = elapsed + kGOSSIP_EXPIRATION_SECONDS;
+                next.whenExpires = elapsed + kGossipExpirationSeconds;
                 next.items.reserve(gossip.items.size());
 
                 for (auto const& gossipItem : gossip.items)
@@ -288,7 +288,7 @@ public:
                 // balances and then deduct the old remote balances.
 
                 Import next;
-                next.whenExpires = elapsed + kGOSSIP_EXPIRATION_SECONDS;
+                next.whenExpires = elapsed + kGossipExpirationSeconds;
                 next.items.reserve(gossip.items.size());
                 for (auto const& gossipItem : gossip.items)
                 {
@@ -363,10 +363,10 @@ public:
     static Disposition
     disposition(int balance)
     {
-        if (balance >= kDROP_THRESHOLD)
+        if (balance >= kDropThreshold)
             return Disposition::Drop;
 
-        if (balance >= kWARNING_THRESHOLD)
+        if (balance >= kWarningThreshold)
             return Disposition::Warn;
 
         return Disposition::Ok;
@@ -417,26 +417,25 @@ public:
                     // LCOV_EXCL_STOP
             }
             inactive_.pushBack(entry);
-            entry.whenExpires = clock_.now() + kSECONDS_UNTIL_EXPIRATION;
+            entry.whenExpires = clock_.now() + kSecondsUntilExpiration;
         }
     }
 
     Disposition
     charge(Entry& entry, Charge const& fee, std::string context = {})
     {
-        static constexpr Charge::value_type kFEE_LOG_AS_WARN = 3000;
-        static constexpr Charge::value_type kFEE_LOG_AS_INFO = 1000;
-        static constexpr Charge::value_type kFEE_LOG_AS_DEBUG = 100;
+        static constexpr Charge::value_type kFeeLogAsWarn = 3000;
+        static constexpr Charge::value_type kFeeLogAsInfo = 1000;
+        static constexpr Charge::value_type kFeeLogAsDebug = 100;
         static_assert(
-            kFEE_LOG_AS_WARN > kFEE_LOG_AS_INFO && kFEE_LOG_AS_INFO > kFEE_LOG_AS_DEBUG &&
-            kFEE_LOG_AS_DEBUG > 10);
+            kFeeLogAsWarn > kFeeLogAsInfo && kFeeLogAsInfo > kFeeLogAsDebug && kFeeLogAsDebug > 10);
 
-        static auto kGET_STREAM = [](Resource::Charge::value_type cost, beast::Journal& journal) {
-            if (cost >= kFEE_LOG_AS_WARN)
+        static auto kGetStream = [](Resource::Charge::value_type cost, beast::Journal& journal) {
+            if (cost >= kFeeLogAsWarn)
                 return journal.warn();
-            if (cost >= kFEE_LOG_AS_INFO)
+            if (cost >= kFeeLogAsInfo)
                 return journal.info();
-            if (cost >= kFEE_LOG_AS_DEBUG)
+            if (cost >= kFeeLogAsDebug)
                 return journal.debug();
             return journal.trace();
         };
@@ -447,8 +446,7 @@ public:
         std::scoped_lock const _(lock_);
         clock_type::time_point const now(clock_.now());
         int const balance(entry.add(fee.cost(), now));
-        JLOG(kGET_STREAM(fee.cost(), journal_))
-            << "Charging " << entry << " for " << fee << context;
+        JLOG(kGetStream(fee.cost(), journal_)) << "Charging " << entry << " for " << fee << context;
         return disposition(balance);
     }
 
@@ -461,9 +459,9 @@ public:
         std::scoped_lock const _(lock_);
         bool notify(false);
         auto const elapsed = clock_.now();
-        if (entry.balance(clock_.now()) >= kWARNING_THRESHOLD && elapsed != entry.lastWarningTime)
+        if (entry.balance(clock_.now()) >= kWarningThreshold && elapsed != entry.lastWarningTime)
         {
-            charge(entry, kFEE_WARNING);
+            charge(entry, kFeeWarning);
             notify = true;
             entry.lastWarningTime = elapsed;
         }
@@ -485,15 +483,15 @@ public:
         bool drop(false);
         clock_type::time_point const now(clock_.now());
         int const balance(entry.balance(now));
-        if (balance >= kDROP_THRESHOLD)
+        if (balance >= kDropThreshold)
         {
             JLOG(journal_.warn()) << "Consumer entry " << entry << " dropped with balance "
-                                  << balance << " at or above drop threshold " << kDROP_THRESHOLD;
+                                  << balance << " at or above drop threshold " << kDropThreshold;
 
             // Adding feeDrop at this point keeps the dropped connection
             // from re-connecting for at least a little while after it is
             // dropped.
-            charge(entry, kFEE_DROP);
+            charge(entry, kFeeDrop);
             ++stats_.drop;
             drop = true;
         }

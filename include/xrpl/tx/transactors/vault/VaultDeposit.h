@@ -7,7 +7,7 @@ namespace xrpl {
 class VaultDeposit : public Transactor
 {
 public:
-    static constexpr auto kCONSEQUENCES_FACTORY = ConsequencesFactoryType::Normal;
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 
     explicit VaultDeposit(ApplyContext& ctx) : Transactor(ctx)
     {

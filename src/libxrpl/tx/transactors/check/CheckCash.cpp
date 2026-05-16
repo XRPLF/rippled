@@ -115,8 +115,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
             return tecNO_ENTRY;
         }
 
-        if (((sleDst->getFlags() & lsfRequireDestTag) != 0u) &&
-            !sleCheck->isFieldPresent(sfDestinationTag))
+        if (sleDst->isFlag(lsfRequireDestTag) && !sleCheck->isFieldPresent(sfDestinationTag))
         {
             // The tag is basically account-specific information we don't
             // understand, but we can require someone to fill it in.
@@ -200,7 +199,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                         return tecNO_ISSUER;
                     }
 
-                    if ((sleIssuer->at(sfFlags) & lsfRequireAuth) != 0u)
+                    if (sleIssuer->isFlag(lsfRequireAuth))
                     {
                         if (!sleTrustLine)
                         {
@@ -372,12 +371,10 @@ CheckCash::doApply()
                 return optDeliverMin->asset().visit(
                     [&](Issue const&) {
                         return STAmount(
-                            optDeliverMin->asset(),
-                            STAmount::kMAX_VALUE / 2,
-                            STAmount::kMAX_OFFSET);
+                            optDeliverMin->asset(), STAmount::kMaxValue / 2, STAmount::kMaxOffset);
                     },
                     [&](MPTIssue const&) {
-                        return STAmount(optDeliverMin->asset(), kMAX_MP_TOKEN_AMOUNT / 2);
+                        return STAmount(optDeliverMin->asset(), kMaxMpTokenAmount / 2);
                     });
             };
             STAmount const flowDeliver{
@@ -433,21 +430,21 @@ CheckCash::doApply()
                         initialBalance.get<Issue>().account = noAccount();
 
                         if (TER const ter = trustCreate(
-                                psb,                                           // payment sandbox
-                                destLow,                                       // is dest low?
-                                deliverIssuer,                                 // source
-                                account_,                                      // destination
-                                trustLineKey->key,                             // ledger index
-                                sleDst,                                        // Account to add to
-                                false,                                         // authorize account
-                                (sleDst->getFlags() & lsfDefaultRipple) == 0,  //
-                                false,                                         // freeze trust line
-                                false,                      // deep freeze trust line
-                                initialBalance,             // zero initial balance
-                                Issue(currency, account_),  // limit of zero
-                                0,                          // quality in
-                                0,                          // quality out
-                                viewJ);                     // journal
+                                psb,                                // payment sandbox
+                                destLow,                            // is dest low?
+                                deliverIssuer,                      // source
+                                account_,                           // destination
+                                trustLineKey->key,                  // ledger index
+                                sleDst,                             // Account to add to
+                                false,                              // authorize account
+                                !sleDst->isFlag(lsfDefaultRipple),  //
+                                false,                              // freeze trust line
+                                false,                              // deep freeze trust line
+                                initialBalance,                     // zero initial balance
+                                Issue(currency, account_),          // limit of zero
+                                0,                                  // quality in
+                                0,                                  // quality out
+                                viewJ);                             // journal
                             !isTesSuccess(ter))
                         {
                             return ter;
@@ -476,7 +473,7 @@ CheckCash::doApply()
                     // Set the trust line limit to the highest possible
                     // value while flow runs.
                     STAmount const bigAmount(
-                        trustLineIssue, STAmount::kMAX_VALUE, STAmount::kMAX_OFFSET);
+                        trustLineIssue, STAmount::kMaxValue, STAmount::kMaxOffset);
                     sleTrustLine->at(tweakedLimit) = bigAmount;
 
                     return std::nullopt;

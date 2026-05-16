@@ -65,11 +65,11 @@
 namespace xrpl {
 
 // Feature names must not exceed this length (in characters, excluding the null terminator).
-static constexpr std::size_t kMAX_FEATURE_NAME_SIZE = 63;
+static constexpr std::size_t kMaxFeatureNameSize = 63;
 // Reserve this exact feature-name length (in characters/bytes, excluding the null terminator)
 // so that a 32-byte uint256 (for example, in WASM or other interop contexts) can be used
 // as a compact, fixed-size feature selector without conflicting with human-readable names.
-static constexpr std::size_t kRESERVED_FEATURE_NAME_SIZE = 32;
+static constexpr std::size_t kReservedFeatureNameSize = 32;
 
 // Both validFeatureNameSize and validFeatureName are consteval functions that can be used in
 // static_asserts to validate feature names at compile time. They are only used inside
@@ -81,14 +81,14 @@ validFeatureNameSize(auto fn) -> bool
 {
     constexpr char const* kN = fn();
     // Note, std::strlen is not constexpr, we need to implement our own here.
-    constexpr std::size_t kLEN = [](auto n) {
+    constexpr std::size_t kLen = [](auto n) {
         std::size_t ret = 0;
         for (auto ptr = n; *ptr != '\0'; ret++, ++ptr)
             ;
         return ret;
     }(kN);
-    return kLEN != kRESERVED_FEATURE_NAME_SIZE &&  //
-        kLEN <= kMAX_FEATURE_NAME_SIZE;
+    return kLen != kReservedFeatureNameSize &&  //
+        kLen <= kMaxFeatureNameSize;
 }
 
 consteval auto
@@ -136,7 +136,7 @@ namespace detail {
 // Feature.cpp. Because it's only used to reserve storage, and determine how
 // large to make the FeatureBitset, it MAY be larger. It MUST NOT be less than
 // the actual number of amendments. A LogicError on startup will verify this.
-static constexpr std::size_t kNUM_FEATURES =
+static constexpr std::size_t kNumFeatures =
     (0 +
 #include <xrpl/protocol/detail/features.macro>
     );
@@ -184,9 +184,9 @@ bitsetIndexToFeature(size_t i);
 std::string
 featureToName(uint256 const& f);
 
-class FeatureBitset : private std::bitset<detail::kNUM_FEATURES>
+class FeatureBitset : private std::bitset<detail::kNumFeatures>
 {
-    using base = std::bitset<detail::kNUM_FEATURES>;
+    using base = std::bitset<detail::kNumFeatures>;
 
     template <class... Fs>
     void

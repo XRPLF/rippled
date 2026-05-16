@@ -67,7 +67,7 @@ public:
     [[nodiscard]] std::string
     getFormattedErrorMessages() const;
 
-    static constexpr unsigned kNEST_LIMIT{25};
+    static constexpr unsigned kNestLimit{25};
 
 private:
     enum class TokenType {

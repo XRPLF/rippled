@@ -12,8 +12,8 @@ namespace xrpl::test::jtx {
 
 using JValueVec = std::vector<json::Value>;
 
-constexpr std::size_t kUT_XCHAIN_DEFAULT_NUM_SIGNERS = 5;
-constexpr std::size_t kUT_XCHAIN_DEFAULT_QUORUM = 4;
+constexpr std::size_t kUtXchainDefaultNumSigners = 5;
+constexpr std::size_t kUtXchainDefaultQuorum = 4;
 
 json::Value
 bridge(
@@ -110,7 +110,7 @@ claimAttestations(
     std::uint64_t claimID,
     std::optional<jtx::Account> const& dst,
     std::vector<jtx::Signer> const& signers,
-    std::size_t const numAtts = kUT_XCHAIN_DEFAULT_QUORUM,
+    std::size_t const numAtts = kUtXchainDefaultQuorum,
     std::size_t const fromIdx = 0);
 
 JValueVec
@@ -125,7 +125,7 @@ createAccountAttestations(
     std::uint64_t createCount,
     jtx::Account const& dst,
     std::vector<jtx::Signer> const& signers,
-    std::size_t const numAtts = kUT_XCHAIN_DEFAULT_QUORUM,
+    std::size_t const numAtts = kUtXchainDefaultQuorum,
     std::size_t const fromIdx = 0);
 
 struct XChainBridgeObjects
@@ -168,7 +168,7 @@ struct XChainBridgeObjects
     std::vector<Signer> const alt_signers;
     std::vector<Account> const payee;
     std::vector<Account> const payees;
-    std::uint32_t const quorum{kUT_XCHAIN_DEFAULT_QUORUM};
+    std::uint32_t const quorum{kUtXchainDefaultQuorum};
 
     STAmount const reward;                 // 1 xrp
     STAmount const split_reward_quorum;    // 250,000 drops
@@ -181,7 +181,7 @@ struct XChainBridgeObjects
     STAmount const one_xrp;
     STAmount const xrp_dust;
 
-    static constexpr int kDROP_PER_XRP = 1000000;
+    static constexpr int kDropPerXrp = 1000000;
 
     XChainBridgeObjects();
 
