@@ -357,7 +357,7 @@ private:
     // Set a max number of allowed attestations to limit the amount of memory
     // allocated and processing time. This number is much larger than the actual
     // number of attestation a server would ever expect.
-    static constexpr std::uint32_t kMAX_ATTESTATIONS = 256;
+    static constexpr std::uint32_t kMaxAttestations = 256;
     AttCollection attestations_;
 
 protected:

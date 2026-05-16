@@ -86,7 +86,7 @@ NFTokenMint::preflight(PreflightContext const& ctx)
 {
     if (auto const f = ctx.tx[~sfTransferFee])
     {
-        if (f > kMAX_TRANSFER_FEE)
+        if (f > kMaxTransferFee)
             return temBAD_NFTOKEN_TRANSFER_FEE;
 
         // If a non-zero TransferFee is set then the tfTransferable flag
@@ -101,7 +101,7 @@ NFTokenMint::preflight(PreflightContext const& ctx)
 
     if (auto uri = ctx.tx[~sfURI])
     {
-        if (uri->empty() || uri->length() > kMAX_TOKEN_URI_LENGTH)
+        if (uri->empty() || uri->length() > kMaxTokenUriLength)
             return temMALFORMED;
     }
 

@@ -7,7 +7,7 @@ namespace xrpl {
 class EscrowCancel : public Transactor
 {
 public:
-    static constexpr auto kCONSEQUENCES_FACTORY = ConsequencesFactoryType::Normal;
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 
     explicit EscrowCancel(ApplyContext& ctx) : Transactor(ctx)
     {

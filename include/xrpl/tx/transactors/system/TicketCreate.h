@@ -7,9 +7,9 @@ namespace xrpl {
 class TicketCreate : public Transactor
 {
 public:
-    static constexpr auto kCONSEQUENCES_FACTORY = ConsequencesFactoryType::Custom;
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Custom;
 
-    constexpr static std::uint32_t kMIN_VALID_COUNT = 1;
+    static constexpr std::uint32_t kMinValidCount = 1;
 
     // A note on how the maxValidCount was determined.  The goal is for
     // a single TicketCreate transaction to not use more compute power than
@@ -31,7 +31,7 @@ public:
     // about the same compute time as a single compute-intensive payment.
     //
     // October 2018.
-    constexpr static std::uint32_t kMAX_VALID_COUNT = 250;
+    static constexpr std::uint32_t kMaxValidCount = 250;
 
     // The maximum number of Tickets an account may hold.  If a
     // TicketCreate would cause an account to own more than this many
@@ -39,7 +39,7 @@ public:
     //
     // The number was chosen arbitrarily and is an effort toward avoiding
     // ledger-stuffing with Tickets.
-    constexpr static std::uint32_t kMAX_TICKET_THRESHOLD = 250;
+    static constexpr std::uint32_t kMaxTicketThreshold = 250;
 
     explicit TicketCreate(ApplyContext& ctx) : Transactor(ctx)
     {

@@ -18,8 +18,8 @@ public:
             Fees const fees = [&]() {
                 Fees f;
                 f.base = d.FEES.reference_fee;
-                f.reserve = 200 * kDROPS_PER_XRP;
-                f.increment = 50 * kDROPS_PER_XRP;
+                f.reserve = 200 * kDropsPerXrp;
+                f.increment = 50 * kDropsPerXrp;
                 return f;
             }();
 
@@ -31,8 +31,8 @@ public:
             Fees const fees = [&]() {
                 Fees f;
                 f.base = d.FEES.reference_fee * 10;
-                f.reserve = 200 * kDROPS_PER_XRP;
-                f.increment = 50 * kDROPS_PER_XRP;
+                f.reserve = 200 * kDropsPerXrp;
+                f.increment = 50 * kDropsPerXrp;
                 return f;
             }();
 
@@ -44,8 +44,8 @@ public:
             Fees const fees = [&]() {
                 Fees f;
                 f.base = d.FEES.reference_fee;
-                f.reserve = 200 * kDROPS_PER_XRP;
-                f.increment = 50 * kDROPS_PER_XRP;
+                f.reserve = 200 * kDropsPerXrp;
+                f.increment = 50 * kDropsPerXrp;
                 return f;
             }();
 

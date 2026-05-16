@@ -385,7 +385,7 @@ MPTEndpointPaymentStep::check(StrandContext const& ctx, std::shared_ptr<const SL
         auto const owed = accountFunds(
             ctx.view, src_, mptIssue_, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth, j_);
         // Already at MaximumAmount
-        if (owed <= beast::kZERO)
+        if (owed <= beast::kZero)
             return tecPATH_DRY;
     }
 
@@ -487,12 +487,12 @@ MPTEndpointStep<TDerived>::revImp(
     {
         JLOG(j_.trace()) << "MPTEndpointStep::rev: dry";
         resetCache(srcDebtDir);
-        return {beast::kZERO, beast::kZERO};
+        return {beast::kZero, beast::kZero};
     }
 
     if (auto const err = static_cast<TDerived*>(this)->checkCreateMPT(sb, srcDebtDir);
         !isTesSuccess(err))
-        return {beast::kZERO, beast::kZERO};
+        return {beast::kZero, beast::kZero};
 
     // Don't have to factor in dstQIn since it is always QUALITY_ONE
     MPTAmount const srcToDst = out;
@@ -512,7 +512,7 @@ MPTEndpointStep<TDerived>::revImp(
         {
             JLOG(j_.trace()) << "MPTEndpointStep::rev: error " << ter;
             resetCache(srcDebtDir);
-            return {beast::kZERO, beast::kZERO};
+            return {beast::kZero, beast::kZero};
         }
         JLOG(j_.trace()) << "MPTEndpointStep::rev: Non-limiting"
                          << " srcRedeems: " << redeems(srcDebtDir) << " in: " << to_string(in)
@@ -537,7 +537,7 @@ MPTEndpointStep<TDerived>::revImp(
     {
         JLOG(j_.trace()) << "MPTEndpointStep::rev: error " << ter;
         resetCache(srcDebtDir);
-        return {beast::kZERO, beast::kZERO};
+        return {beast::kZero, beast::kZero};
     }
     JLOG(j_.trace()) << "MPTEndpointStep::rev: Limiting"
                      << " srcRedeems: " << redeems(srcDebtDir) << " in: " << to_string(in)
@@ -618,12 +618,12 @@ MPTEndpointStep<TDerived>::fwdImp(
     {
         JLOG(j_.trace()) << "MPTEndpointStep::fwd: dry";
         resetCache(srcDebtDir);
-        return {beast::kZERO, beast::kZERO};
+        return {beast::kZero, beast::kZero};
     }
 
     if (auto const err = static_cast<TDerived*>(this)->checkCreateMPT(sb, srcDebtDir);
         !isTesSuccess(err))
-        return {beast::kZERO, beast::kZERO};
+        return {beast::kZero, beast::kZero};
 
     MPTAmount const srcToDst = mulRatio(in, QUALITY_ONE, srcQOut, /*roundUp*/ false);
 
@@ -643,7 +643,7 @@ MPTEndpointStep<TDerived>::fwdImp(
         {
             JLOG(j_.trace()) << "MPTEndpointStep::fwd: error " << ter;
             resetCache(srcDebtDir);
-            return {beast::kZERO, beast::kZERO};
+            return {beast::kZero, beast::kZero};
         }
         JLOG(j_.trace()) << "MPTEndpointStep::fwd: Non-limiting"
                          << " srcRedeems: " << redeems(srcDebtDir) << " in: " << to_string(in)
@@ -667,7 +667,7 @@ MPTEndpointStep<TDerived>::fwdImp(
         {
             JLOG(j_.trace()) << "MPTEndpointStep::fwd: error " << ter;
             resetCache(srcDebtDir);
-            return {beast::kZERO, beast::kZERO};
+            return {beast::kZero, beast::kZero};
         }
         JLOG(j_.trace()) << "MPTEndpointStep::fwd: Limiting"
                          << " srcRedeems: " << redeems(srcDebtDir) << " in: " << to_string(actualIn)
@@ -684,7 +684,7 @@ MPTEndpointStep<TDerived>::validFwd(PaymentSandbox& sb, ApplyView& afView, Eithe
     if (!cache_)
     {
         JLOG(j_.trace()) << "Expected valid cache in validFwd";
-        return {false, EitherAmount(MPTAmount(beast::kZERO))};
+        return {false, EitherAmount(MPTAmount(beast::kZero))};
     }
 
     auto const savCache = *cache_;
@@ -701,7 +701,7 @@ MPTEndpointStep<TDerived>::validFwd(PaymentSandbox& sb, ApplyView& afView, Eithe
     }
     catch (FlowException const&)
     {
-        return {false, EitherAmount(MPTAmount(beast::kZERO))};
+        return {false, EitherAmount(MPTAmount(beast::kZero))};
     }
 
     // NOLINTBEGIN(bugprone-unchecked-optional-access) fwdImp sets cache_ on success
@@ -893,7 +893,7 @@ template <class TDerived>
 void
 MPTEndpointStep<TDerived>::resetCache(xrpl::DebtDirection dir)
 {
-    cache_.emplace(MPTAmount(beast::kZERO), MPTAmount(beast::kZERO), MPTAmount(beast::kZERO), dir);
+    cache_.emplace(MPTAmount(beast::kZero), MPTAmount(beast::kZero), MPTAmount(beast::kZero), dir);
 }
 
 //------------------------------------------------------------------------------

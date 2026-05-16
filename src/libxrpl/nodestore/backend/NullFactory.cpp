@@ -128,7 +128,7 @@ public:
 void
 registerNullFactory(Manager& manager)
 {
-    static NullFactory const kINSTANCE{manager};
+    static NullFactory const kInstance{manager};
 }
 
 }  // namespace xrpl::NodeStore
