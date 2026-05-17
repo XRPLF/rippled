@@ -33,7 +33,7 @@ public:
  *    - OutstandingAmount after = OutstandingAmount before +
  *         sum (MPT after - MPT before) - this is total MPT credit/debit
  */
-class ValidMPTPayment
+class ValidMPTBalanceChanges
 {
     enum class Order { Before = 0, After = 1 };
     struct MPTData

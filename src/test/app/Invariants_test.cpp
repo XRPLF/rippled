@@ -4042,6 +4042,208 @@ class Invariants_test : public beast::unit_test::Suite
                 return true;
             });
 
+        // Invalid IOU clawback delta must fail once MPTokensV2 enforces before/after validation.
+        {
+            Env env(*this, defaultAmendments());
+            Account const issuer{"issuer"};
+            Account const holder{"holder"};
+            Account const other{"other"};
+            env.fund(XRP(1'000), issuer, holder, other);
+            auto const usd = issuer["USD"];
+            env.trust(usd(100), holder);
+            env(pay(issuer, holder, usd(100)));
+            env.close();
+
+            doInvariantCheck(
+                std::move(env),
+                holder,
+                other,
+                {{"Invariant failed: trustline clawback balance change is invalid"}},
+                [issuer, usd](Account const& holder, Account const&, ApplyContext& ac) {
+                    auto sle = ac.view().peek(keylet::line(holder.id(), issuer.id(), usd.currency));
+                    if (!sle)
+                        return false;
+
+                    STAmount balance{Issue{usd.currency, issuer.id()}, 80};
+                    if (holder.id() > issuer.id())
+                        balance.negate();
+                    sle->setFieldAmount(sfBalance, balance);
+                    ac.view().update(sle);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{
+                    ttCLAWBACK,
+                    [&](STObject& tx) {
+                        tx[sfAccount] = issuer.id();
+                        tx[sfAmount] = STAmount{Issue{usd.currency, holder.id()}, 10};
+                    }},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
+        }
+
+        // Full IOU clawback may delete the trustline; missing after-SLE represents zero balance.
+        {
+            Env env(*this, defaultAmendments());
+            Account const issuer{"issuer"};
+            Account const holder{"holder"};
+            Account const other{"other"};
+            env.fund(XRP(1'000), issuer, holder, other);
+            auto const usd = issuer["USD"];
+            env.trust(usd(100), holder);
+            env(pay(issuer, holder, usd(100)));
+            env.close();
+
+            doInvariantCheck(
+                std::move(env),
+                holder,
+                other,
+                {},
+                [issuer, usd](Account const& holder, Account const&, ApplyContext& ac) {
+                    auto const sle =
+                        ac.view().peek(keylet::line(holder.id(), issuer.id(), usd.currency));
+                    if (!sle)
+                        return false;
+
+                    ac.view().erase(sle);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{
+                    ttCLAWBACK,
+                    [&](STObject& tx) {
+                        tx[sfAccount] = issuer.id();
+                        tx[sfAmount] = STAmount{Issue{usd.currency, holder.id()}, 100};
+                    }},
+                {tesSUCCESS, tesSUCCESS});
+        }
+
+        // Pre-MPTokensV2 invalid IOU clawback delta logs but remains non-enforcing.
+        {
+            Env env(*this, defaultAmendments() - featureMPTokensV2);
+            Account const issuer{"issuer"};
+            Account const holder{"holder"};
+            Account const other{"other"};
+            env.fund(XRP(1'000), issuer, holder, other);
+            auto const usd = issuer["USD"];
+            env.trust(usd(100), holder);
+            env(pay(issuer, holder, usd(100)));
+            env.close();
+
+            doInvariantCheck(
+                std::move(env),
+                holder,
+                other,
+                {{"Invariant failed: trustline clawback balance change is invalid"}},
+                [issuer, usd](Account const& holder, Account const&, ApplyContext& ac) {
+                    auto sle = ac.view().peek(keylet::line(holder.id(), issuer.id(), usd.currency));
+                    if (!sle)
+                        return false;
+
+                    STAmount balance{Issue{usd.currency, issuer.id()}, 80};
+                    if (holder.id() > issuer.id())
+                        balance.negate();
+                    sle->setFieldAmount(sfBalance, balance);
+                    ac.view().update(sle);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{
+                    ttCLAWBACK,
+                    [&](STObject& tx) {
+                        tx[sfAccount] = issuer.id();
+                        tx[sfAmount] = STAmount{Issue{usd.currency, holder.id()}, 10};
+                    }},
+                {tesSUCCESS, tesSUCCESS});
+        }
+
+        // Invalid MPT clawback delta must fail when raw MPToken debit mismatches sfAmount.
+        {
+            Env env(*this, defaultAmendments());
+            Account const issuer{"issuer"};
+            Account const holder{"holder"};
+            Account const other{"other"};
+            env.fund(XRP(1'000), issuer, holder, other);
+            MPTTester const mpt(
+                {.env = env, .issuer = issuer, .holders = {holder}, .pay = 100, .maxAmt = 100});
+            auto const id = mpt.issuanceID();
+
+            doInvariantCheck(
+                std::move(env),
+                holder,
+                other,
+                {{"Invariant failed: MPT clawback balance change is invalid"}},
+                [id](Account const& holder, Account const&, ApplyContext& ac) {
+                    auto const sleToken = ac.view().peek(keylet::mptoken(id, holder));
+                    auto const sleIssuance = ac.view().peek(keylet::mptIssuance(id));
+                    if (!sleToken || !sleIssuance)
+                        return false;
+
+                    sleToken->setFieldU64(sfMPTAmount, 80);
+                    sleIssuance->setFieldU64(sfOutstandingAmount, 80);
+                    ac.view().update(sleToken);
+                    ac.view().update(sleIssuance);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{
+                    ttCLAWBACK,
+                    [&](STObject& tx) {
+                        tx[sfAccount] = issuer.id();
+                        tx[sfHolder] = holder.id();
+                        tx[sfAmount] = STAmount{MPTIssue{id}, 10};
+                    }},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
+        }
+
+        // A clawback that mutates both IOU and MPT entries must fail under MPTokensV2.
+        {
+            Env env(*this, defaultAmendments());
+            Account const issuer{"issuer"};
+            Account const holder{"holder"};
+            Account const other{"other"};
+            env.fund(XRP(1'000), issuer, holder, other);
+            auto const usd = issuer["USD"];
+            env.trust(usd(100), holder);
+            env(pay(issuer, holder, usd(100)));
+            MPTTester const mpt(
+                {.env = env, .issuer = issuer, .holders = {holder}, .pay = 100, .maxAmt = 100});
+            auto const id = mpt.issuanceID();
+
+            doInvariantCheck(
+                std::move(env),
+                holder,
+                other,
+                {{"Invariant failed: trustline and MPToken both changed"}},
+                [issuer, usd, id](Account const& holder, Account const&, ApplyContext& ac) {
+                    auto const sleLine =
+                        ac.view().peek(keylet::line(holder.id(), issuer.id(), usd.currency));
+                    auto const sleToken = ac.view().peek(keylet::mptoken(id, holder.id()));
+                    auto const sleIssuance = ac.view().peek(keylet::mptIssuance(id));
+                    if (!sleLine || !sleToken || !sleIssuance)
+                        return false;
+
+                    STAmount balance{Issue{usd.currency, issuer.id()}, 90};
+                    if (holder.id() > issuer.id())
+                        balance.negate();
+                    sleLine->setFieldAmount(sfBalance, balance);
+                    sleToken->setFieldU64(sfMPTAmount, 90);
+                    sleIssuance->setFieldU64(sfOutstandingAmount, 90);
+                    ac.view().update(sleLine);
+                    ac.view().update(sleToken);
+                    ac.view().update(sleIssuance);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{
+                    ttCLAWBACK,
+                    [&](STObject& tx) {
+                        tx[sfAccount] = issuer.id();
+                        tx[sfHolder] = holder.id();
+                        tx[sfAmount] = STAmount{MPTIssue{id}, 10};
+                    }},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
+        }
+
         // More MPTokens created than expected
         std::array<std::pair<xrpl::TxType, std::uint8_t>, 4> const tests = {
             std::make_pair(ttAMM_WITHDRAW, 2),

@@ -280,7 +280,7 @@ ValidMPTIssuance::finalize(
 }
 
 void
-ValidMPTPayment::visitEntry(
+ValidMPTBalanceChanges::visitEntry(
     bool,
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
@@ -345,7 +345,7 @@ ValidMPTPayment::visitEntry(
 }
 
 bool
-ValidMPTPayment::finalize(
+ValidMPTBalanceChanges::finalize(
     STTx const& tx,
     TER const result,
     XRPAmount const,
