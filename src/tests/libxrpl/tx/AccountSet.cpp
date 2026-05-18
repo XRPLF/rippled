@@ -382,7 +382,7 @@ TEST(AccountSet, WalletID)
 
     // Clear the wallet locator by setting to zero
     EXPECT_EQ(
-        env.submit(transactions::AccountSetBuilder{alice}.setWalletLocator(beast::kZERO), alice)
+        env.submit(transactions::AccountSetBuilder{alice}.setWalletLocator(beast::kZero), alice)
             .ter,
         tesSUCCESS);
     env.close();
@@ -414,7 +414,7 @@ TEST(AccountSet, EmailHash)
 
     // Clear the email hash by setting to zero
     EXPECT_EQ(
-        env.submit(transactions::AccountSetBuilder{alice}.setEmailHash(beast::kZERO), alice).ter,
+        env.submit(transactions::AccountSetBuilder{alice}.setEmailHash(beast::kZero), alice).ter,
         tesSUCCESS);
     env.close();
 
@@ -619,7 +619,7 @@ TEST(AccountSet, Ticket)
     // Verify alice has 1 owner object (the ticket)
     EXPECT_EQ(env.getAccountRoot(alice.id()).getOwnerCount(), 1u);
     // Verify ticket exists
-    EXPECT_TRUE(env.getClosedLedger().exists(keylet::kTICKET(alice.id(), ticketSeq)));
+    EXPECT_TRUE(env.getClosedLedger().exists(keylet::kTicket(alice.id(), ticketSeq)));
 
     // Try using a ticket that alice doesn't have
     EXPECT_EQ(
@@ -629,7 +629,7 @@ TEST(AccountSet, Ticket)
     env.close();
 
     // Verify ticket still exists
-    EXPECT_TRUE(env.getClosedLedger().exists(keylet::kTICKET(alice.id(), ticketSeq)));
+    EXPECT_TRUE(env.getClosedLedger().exists(keylet::kTicket(alice.id(), ticketSeq)));
 
     // Get alice's sequence before using the ticket
     std::uint32_t const aliceSeq = env.getAccountRoot(alice.id()).getSequence();
@@ -642,7 +642,7 @@ TEST(AccountSet, Ticket)
 
     // Verify ticket is consumed (no owner objects)
     EXPECT_EQ(env.getAccountRoot(alice.id()).getOwnerCount(), 0u);
-    EXPECT_FALSE(env.getClosedLedger().exists(keylet::kTICKET(alice.id(), ticketSeq)));
+    EXPECT_FALSE(env.getClosedLedger().exists(keylet::kTicket(alice.id(), ticketSeq)));
 
     // Verify alice's sequence did NOT advance (ticket use doesn't increment seq)
     EXPECT_EQ(env.getAccountRoot(alice.id()).getSequence(), aliceSeq);

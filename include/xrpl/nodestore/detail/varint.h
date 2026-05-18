@@ -25,7 +25,7 @@ struct varint_traits<T, true>
 {
     explicit varint_traits() = default;
 
-    static std::size_t constexpr kMAX = (8 * sizeof(T) + 6) / 7;
+    static constexpr std::size_t kMax = (8 * sizeof(T) + 6) / 7;
 };
 
 // Returns: Number of bytes consumed or 0 on error,

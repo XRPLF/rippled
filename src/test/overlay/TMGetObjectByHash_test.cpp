@@ -213,7 +213,7 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
     void
     run() override
     {
-        int const limit = static_cast<int>(Tuning::kHARD_MAX_REPLY_NODES);
+        int const limit = static_cast<int>(Tuning::kHardMaxReplyNodes);
         testReplyLimit(limit + 1, limit);
         testReplyLimit(limit, limit);
         testReplyLimit(limit - 1, limit - 1);

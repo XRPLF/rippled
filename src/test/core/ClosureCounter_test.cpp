@@ -205,7 +205,7 @@ class ClosureCounter_test : public beast::unit_test::Suite
             BEAST_EXPECT(strCounter.count() == 0);
 
             auto wrapped = strCounter.wrap([](TrackedString&& in) {
-                // Note that kNONE of the compilers noticed that in was
+                // Note that kNone of the compilers noticed that in was
                 // leaving scope.  So, without intervention, they would
                 // do a copy for the return (June 2017).  An explicit
                 // std::move() was required.

@@ -37,7 +37,7 @@ static char const* gMasterSeed = "snMwVWs2hZzfDUF3p2tHZ3EgmyhFs";
 static char const* gMasterSeedHex = "BE6A670A19B209E112146D0A7ED2AAD7";
 }  // namespace common
 
-static KeyStrings const kSECP256K1_STRINGS = {
+static KeyStrings const kSecP256K1Strings = {
     .account_id = "r4Vtj2jrfmTVZGfSP3gH9hQPMqFPQFin8f",
     .master_key = common::gMasterKey,
     .master_seed = common::gMasterSeed,
@@ -52,7 +52,7 @@ static KeyStrings const kSECP256K1_STRINGS = {
         "to brute-force attacks.",
 };
 
-static KeyStrings const kED25519_STRINGS = {
+static KeyStrings const kED25519Strings = {
     .account_id = "r4qV6xTXerqaZav3MJfSY79ynmc1BSBev1",
     .master_key = common::gMasterKey,
     .master_seed = common::gMasterSeed,
@@ -67,7 +67,7 @@ static KeyStrings const kED25519_STRINGS = {
         "to brute-force attacks.",
 };
 
-static KeyStrings const kSTRONG_BRAIN_STRINGS = {
+static KeyStrings const kStrongBrainStrings = {
     .account_id = "rBcvXmNb7KPkNdMkpckdWPpbvkWgcV3nir",
     .master_key = "TED AVON CAVE HOUR BRAG JEFF RIFT NEAL TOLD FAT SEW SAN",
     .master_seed = "shKdhWka8hS7Es3bpctCZXBiAwfUN",
@@ -781,16 +781,16 @@ public:
     void
     run() override
     {
-        testKeyType(std::nullopt, kSECP256K1_STRINGS);
-        testKeyType(std::string("secp256k1"), kSECP256K1_STRINGS);
-        testKeyType(std::string("ed25519"), kED25519_STRINGS);
-        testKeyType(std::string("secp256k1"), kSTRONG_BRAIN_STRINGS);
+        testKeyType(std::nullopt, kSecP256K1Strings);
+        testKeyType(std::string("secp256k1"), kSecP256K1Strings);
+        testKeyType(std::string("ed25519"), kED25519Strings);
+        testKeyType(std::string("secp256k1"), kStrongBrainStrings);
         testBadInput();
 
-        testKeypairForSignature(std::nullopt, kSECP256K1_STRINGS);
-        testKeypairForSignature(std::string("secp256k1"), kSECP256K1_STRINGS);
-        testKeypairForSignature(std::string("ed25519"), kED25519_STRINGS);
-        testKeypairForSignature(std::string("secp256k1"), kSTRONG_BRAIN_STRINGS);
+        testKeypairForSignature(std::nullopt, kSecP256K1Strings);
+        testKeypairForSignature(std::string("secp256k1"), kSecP256K1Strings);
+        testKeypairForSignature(std::string("ed25519"), kED25519Strings);
+        testKeypairForSignature(std::string("secp256k1"), kStrongBrainStrings);
 
         testXrplLibEd25519();
 
