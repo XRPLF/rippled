@@ -140,7 +140,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     if (ctx.view.rules().enabled(fixCleanup3_2_0) && amount.holds<Issue>())
     {
         // reject deposits that would canonicalize to a no-op at the depositor's trustline scale.
-        // Skipped for issuer-as-depositor: accountHolds returns (kMAX_VALUE @ kMAX_OFFSET) which
+        // Skipped for issuer-as-depositor: accountHolds returns (kMaxValue @ kMaxOffset) which
         // would always trip the predicate.
         if (account != amount.getIssuer() &&
             amount.isZeroAtScale(scale(accountBalance, vaultAsset)))
