@@ -7,6 +7,7 @@
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -111,10 +112,6 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
         if (coverAvailable > beast::kZERO)
         {
             auto const brokerPseudo = sleBroker->at(sfAccount);
-            if (auto const ter = requireAuth(ctx.view, asset, brokerOwner, AuthType::WeakAuth))
-            {
-                return ter;
-            }
             if (auto const ret = checkFrozen(ctx.view, brokerPseudo, asset))
             {
                 return ret;
