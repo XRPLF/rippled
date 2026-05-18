@@ -186,6 +186,93 @@ ValidVault::visitEntry(
     }
 }
 
+std::optional<ValidVault::DeltaInfo>
+ValidVault::deltaAssets(AccountID const& id) const
+{
+    auto const& vaultAsset = afterVault_[0].asset;
+    auto const get = [&](auto const& it, std::int8_t sign = 1) -> std::optional<DeltaInfo> {
+        if (it == deltas_.end())
+            return std::nullopt;
+        return DeltaInfo{it->second.delta * sign, it->second.scale};
+    };
+
+    return std::visit(
+        [&]<typename TIss>(TIss const& issue) -> std::optional<DeltaInfo> {
+            if constexpr (std::is_same_v<TIss, Issue>)
+            {
+                if (isXRP(issue))
+                    return get(deltas_.find(keylet::account(id).key));
+                return get(
+                    deltas_.find(keylet::line(id, issue).key), id > issue.getIssuer() ? -1 : 1);
+            }
+            else if constexpr (std::is_same_v<TIss, MPTIssue>)
+            {
+                return get(deltas_.find(keylet::mptoken(issue.getMptID(), id).key));
+            }
+        },
+        vaultAsset.value());
+}
+
+std::optional<ValidVault::DeltaInfo>
+ValidVault::deltaAssetsTxAccount(STTx const& tx, XRPAmount fee) const
+{
+    auto const& vaultAsset = afterVault_[0].asset;
+    auto ret = deltaAssets(tx[sfAccount]);
+    if (!ret.has_value() || !vaultAsset.native())
+        return ret;
+
+    if (auto const delegate = tx[~sfDelegate]; delegate.has_value() && *delegate != tx[sfAccount])
+        return ret;
+
+    ret->delta += fee.drops();
+    if (ret->delta == kZero)
+        return std::nullopt;
+
+    return ret;
+}
+
+std::optional<ValidVault::DeltaInfo>
+ValidVault::deltaShares(AccountID const& id) const
+{
+    auto const& afterVault = afterVault_[0];
+    auto const it = [&]() {
+        if (id == afterVault.pseudoId)
+            return deltas_.find(keylet::mptIssuance(afterVault.shareMPTID).key);
+        return deltas_.find(keylet::mptoken(afterVault.shareMPTID, id).key);
+    }();
+
+    return it != deltas_.end() ? std::optional<DeltaInfo>(it->second) : std::nullopt;
+}
+
+bool
+ValidVault::vaultHoldsNoAssets(Vault const& vault)
+{
+    return vault.assetsAvailable == 0 && vault.assetsTotal == 0;
+}
+
+std::int32_t
+ValidVault::computeVaultMinScale(DeltaInfo const& vaultDelta, Rules const& rules) const
+{
+    // Returns the posterior `assetsTotal` scale.
+    //
+    // 1. Because STAmounts are normalized, `assetsTotal` (being >= `assetsAvailable`)
+    // safely represents the coarsest exponent needed for both fields.
+    //
+    // 2. The scale may decrease (withdraw/clawback) or increase (deposit). In both cases
+    // we ensure the vault is in a legitimate state in the post-transaction scale.
+    auto const& afterVault = afterVault_[0];
+    auto const& vaultAsset = afterVault.asset;
+    if (rules.enabled(fixCleanup3_2_0))
+        return scale(afterVault.assetsTotal, vaultAsset);
+
+    auto const& beforeVault = beforeVault_[0];
+    auto const totalDelta =
+        DeltaInfo::makeDelta(beforeVault.assetsTotal, afterVault.assetsTotal, vaultAsset);
+    auto const availableDelta =
+        DeltaInfo::makeDelta(beforeVault.assetsAvailable, afterVault.assetsAvailable, vaultAsset);
+    return computeCoarsestScale({vaultDelta, totalDelta, availableDelta});
+}
+
 bool
 ValidVault::finalize(
     STTx const& tx,
@@ -446,82 +533,6 @@ ValidVault::finalize(
 
     auto const& vaultAsset = afterVault.asset;
 
-    auto const computeVaultMinScale = [&](DeltaInfo const& vaultDelta,
-                                          Rules const& rules) -> std::int32_t {
-        // Returns the posterior `assetsTotal` scale.
-        //
-        // 1. Because STAmounts are normalized, `assetsTotal` (being >= `assetsAvailable`)
-        // safely represents the coarsest exponent needed for both fields.
-        //
-        // 2. The scale may decrease (withdraw/clawback) or increase (deposit). In both cases
-        // we ensure the vault is in a legitimate state in the post-transaction scale.
-        if (rules.enabled(fixCleanup3_2_0))
-            return scale(afterVault.assetsTotal, vaultAsset);
-
-        auto const& beforeVault = beforeVault_[0];
-        auto const totalDelta =
-            DeltaInfo::makeDelta(beforeVault.assetsTotal, afterVault.assetsTotal, vaultAsset);
-        auto const availableDelta = DeltaInfo::makeDelta(
-            beforeVault.assetsAvailable, afterVault.assetsAvailable, vaultAsset);
-        return computeCoarsestScale({vaultDelta, totalDelta, availableDelta});
-    };
-
-    auto const deltaAssets = [&](AccountID const& id) -> std::optional<DeltaInfo> {
-        auto const get =  //
-            [&](auto const& it, std::int8_t sign = 1) -> std::optional<DeltaInfo> {
-            if (it == deltas_.end())
-                return std::nullopt;
-
-            return DeltaInfo{it->second.delta * sign, it->second.scale};
-        };
-
-        return std::visit(
-            [&]<typename TIss>(TIss const& issue) {
-                if constexpr (std::is_same_v<TIss, Issue>)
-                {
-                    if (isXRP(issue))
-                        return get(deltas_.find(keylet::account(id).key));
-                    return get(
-                        deltas_.find(keylet::line(id, issue).key), id > issue.getIssuer() ? -1 : 1);
-                }
-                else if constexpr (std::is_same_v<TIss, MPTIssue>)
-                {
-                    return get(deltas_.find(keylet::mptoken(issue.getMptID(), id).key));
-                }
-            },
-            vaultAsset.value());
-    };
-    auto const deltaAssetsTxAccount = [&]() -> std::optional<DeltaInfo> {
-        auto ret = deltaAssets(tx[sfAccount]);
-        // Nothing returned or not XRP transaction
-        if (!ret.has_value() || !vaultAsset.native())
-            return ret;
-
-        // Delegated transaction; no need to compensate for fees
-        if (auto const delegate = tx[~sfDelegate];
-            delegate.has_value() && *delegate != tx[sfAccount])
-            return ret;
-
-        ret->delta += fee.drops();
-        if (ret->delta == kZero)
-            return std::nullopt;
-
-        return ret;
-    };
-    auto const deltaShares = [&](AccountID const& id) -> std::optional<DeltaInfo> {
-        auto const it = [&]() {
-            if (id == afterVault.pseudoId)
-                return deltas_.find(keylet::mptIssuance(afterVault.shareMPTID).key);
-            return deltas_.find(keylet::mptoken(afterVault.shareMPTID, id).key);
-        }();
-
-        return it != deltas_.end() ? std::optional<DeltaInfo>(it->second) : std::nullopt;
-    };
-
-    auto const vaultHoldsNoAssets = [&](Vault const& vault) {
-        return vault.assetsAvailable == 0 && vault.assetsTotal == 0;
-    };
-
     // Technically this does not need to be a lambda, but it's more
     // convenient thanks to early "return false"; the not-so-nice
     // alternatives are several layers of nested if/else or more complex
@@ -682,7 +693,7 @@ ValidVault::finalize(
 
                 if (!issuerDeposit)
                 {
-                    auto const maybeAccDeltaAssets = deltaAssetsTxAccount();
+                    auto const maybeAccDeltaAssets = deltaAssetsTxAccount(tx, fee);
                     if (!maybeAccDeltaAssets)
                     {
                         JLOG(j.fatal())
@@ -810,7 +821,7 @@ ValidVault::finalize(
 
                 if (!issuerWithdrawal)
                 {
-                    auto const maybeAccDelta = deltaAssetsTxAccount();
+                    auto const maybeAccDelta = deltaAssetsTxAccount(tx, fee);
                     auto const maybeOtherAccDelta = [&]() -> std::optional<DeltaInfo> {
                         if (auto const destination = tx[~sfDestination];
                             destination && *destination != tx[sfAccount])

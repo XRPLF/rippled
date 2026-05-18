@@ -4,9 +4,11 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 
 #include <optional>
 #include <unordered_map>
@@ -89,6 +91,21 @@ public:
     // Compute the coarsest scale required to represent all numbers
     [[nodiscard]] static std::int32_t
     computeCoarsestScale(std::vector<DeltaInfo> const& numbers);
+
+    [[nodiscard]] std::int32_t
+    computeVaultMinScale(DeltaInfo const& vaultDelta, Rules const& rules) const;
+
+    [[nodiscard]] std::optional<DeltaInfo>
+    deltaAssets(AccountID const& id) const;
+
+    [[nodiscard]] std::optional<DeltaInfo>
+    deltaAssetsTxAccount(STTx const& tx, XRPAmount fee) const;
+
+    [[nodiscard]] std::optional<DeltaInfo>
+    deltaShares(AccountID const& id) const;
+
+    [[nodiscard]] static bool
+    vaultHoldsNoAssets(Vault const& vault);
 };
 
 }  // namespace xrpl
