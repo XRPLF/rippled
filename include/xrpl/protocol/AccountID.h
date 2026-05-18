@@ -69,7 +69,7 @@ toIssuer(AccountID&, std::string const&);
 inline bool
 isXRP(AccountID const& c)
 {
-    return c == beast::kZERO;
+    return c == beast::kZero;
 }
 
 // DEPRECATED

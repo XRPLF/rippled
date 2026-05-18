@@ -135,7 +135,7 @@ class PermissionedDomains_test : public beast::unit_test::Suite
             {alice10, "credential9"},
             {alice11, "credential10"},
             {alice12, "credential11"}};
-        BEAST_EXPECT(credentials11.size() == kMAX_PERMISSIONED_DOMAIN_CREDENTIALS_ARRAY_SIZE + 1);
+        BEAST_EXPECT(credentials11.size() == kMaxPermissionedDomainCredentialsArraySize + 1);
         env(pdomain::setTx(account, credentials11, domain), Ter(temARRAY_TOO_LARGE));
 
         // Test credentials including non-existent issuer.
@@ -172,12 +172,12 @@ class PermissionedDomains_test : public beast::unit_test::Suite
         env(txJsonMutable, Ter(temMALFORMED));
 
         // Make too long CredentialType.
-        constexpr std::string_view kLONG_CREDENTIAL_TYPE =
+        static constexpr std::string_view kLongCredentialType =
             "Cred0123456789012345678901234567890123456789012345678901234567890";
-        static_assert(kLONG_CREDENTIAL_TYPE.size() == kMAX_CREDENTIAL_TYPE_LENGTH + 1);
+        static_assert(kLongCredentialType.size() == kMaxCredentialTypeLength + 1);
         txJsonMutable["AcceptedCredentials"][2u] = credentialOrig;
         txJsonMutable["AcceptedCredentials"][2u][jss::Credential]["CredentialType"] =
-            std::string(kLONG_CREDENTIAL_TYPE);
+            std::string(kLongCredentialType);
         BEAST_EXPECT(exceptionExpected(env, txJsonMutable).starts_with("invalidParams"));
 
         // Remove Credentialtype from a credential and apply.
@@ -309,12 +309,12 @@ class PermissionedDomains_test : public beast::unit_test::Suite
 
         // Make longest possible CredentialType.
         {
-            constexpr std::string_view kLONG_CREDENTIAL_TYPE =
+            static constexpr std::string_view kLongCredentialType =
                 "Cred0123456789012345678901234567890123456789012345678901234567"
                 "89";
-            static_assert(kLONG_CREDENTIAL_TYPE.size() == kMAX_CREDENTIAL_TYPE_LENGTH);
+            static_assert(kLongCredentialType.size() == kMaxCredentialTypeLength);
             pdomain::Credentials const longCredentials{
-                {alice[1], std::string(kLONG_CREDENTIAL_TYPE)}};
+                {alice[1], std::string(kLongCredentialType)}};
 
             env(pdomain::setTx(alice[0], longCredentials));
 
@@ -358,7 +358,7 @@ class PermissionedDomains_test : public beast::unit_test::Suite
         };
         uint256 domain2;
         {
-            BEAST_EXPECT(credentials10.size() == kMAX_PERMISSIONED_DOMAIN_CREDENTIALS_ARRAY_SIZE);
+            BEAST_EXPECT(credentials10.size() == kMaxPermissionedDomainCredentialsArraySize);
             BEAST_EXPECT(credentials10 != pdomain::sortCredentials(credentials10));
             env(pdomain::setTx(alice[0], credentials10));
             auto tx = env.tx()->getJson(JsonOptions::Values::None);
@@ -402,11 +402,11 @@ class PermissionedDomains_test : public beast::unit_test::Suite
 
         // Try to delete the account with domains.
         auto const acctDelFee(drops(env.current()->fees().increment));
-        constexpr std::size_t kDELETE_DELTA = 255;
+        static constexpr std::size_t kDeleteDelta = 255;
         {
             // Close enough ledgers to make it potentially deletable if empty.
             std::size_t const ownerSeq = env.seq(alice[0]);
-            while (kDELETE_DELTA + ownerSeq > env.current()->seq())
+            while (kDeleteDelta + ownerSeq > env.current()->seq())
                 env.close();
             env(acctdelete(alice[0], alice[2]), Fee(acctDelFee), Ter(tecHAS_OBLIGATIONS));
         }
@@ -417,7 +417,7 @@ class PermissionedDomains_test : public beast::unit_test::Suite
                 env(pdomain::deleteTx(alice[0], objs.first));
             env.close();
             std::size_t const ownerSeq = env.seq(alice[0]);
-            while (kDELETE_DELTA + ownerSeq > env.current()->seq())
+            while (kDeleteDelta + ownerSeq > env.current()->seq())
                 env.close();
             env(acctdelete(alice[0], alice[2]), Fee(acctDelFee));
         }

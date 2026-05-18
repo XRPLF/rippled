@@ -111,16 +111,16 @@ LoadManager::run()
         using namespace std::chrono;
         auto const timeSpentStalled = duration_cast<seconds>(steady_clock::now() - lastHeartbeat);
 
-        constexpr auto kREPORTING_INTERVAL_SECONDS = 10s;
-        constexpr auto kSTALL_FATAL_LOG_MESSAGE_TIME_LIMIT = 90s;
-        constexpr auto kSTALL_LOGIC_ERROR_TIME_LIMIT = 600s;
+        static constexpr auto kReportingIntervalSeconds = 10s;
+        static constexpr auto kStallFatalLogMessageTimeLimit = 90s;
+        static constexpr auto kStallLogicErrorTimeLimit = 600s;
 
-        if (armed && (timeSpentStalled >= kREPORTING_INTERVAL_SECONDS))
+        if (armed && (timeSpentStalled >= kReportingIntervalSeconds))
         {
             // Report the stalled condition every reportingIntervalSeconds
-            if ((timeSpentStalled % kREPORTING_INTERVAL_SECONDS) == 0s)
+            if ((timeSpentStalled % kReportingIntervalSeconds) == 0s)
             {
-                if (timeSpentStalled < kSTALL_FATAL_LOG_MESSAGE_TIME_LIMIT)
+                if (timeSpentStalled < kStallFatalLogMessageTimeLimit)
                 {
                     JLOG(journal_.warn())
                         << "Server stalled for " << timeSpentStalled.count() << " seconds.";
@@ -141,7 +141,7 @@ LoadManager::run()
             // If we go over the stallLogicErrorTimeLimit spent stalled, it
             // means that the stall resolution code has failed, which qualifies
             // as a LogicError
-            if (timeSpentStalled >= kSTALL_LOGIC_ERROR_TIME_LIMIT)
+            if (timeSpentStalled >= kStallLogicErrorTimeLimit)
             {
                 JLOG(journal_.fatal()) << "LogicError: Fatal server stall detected. Stalled time: "
                                        << timeSpentStalled.count() << "s";

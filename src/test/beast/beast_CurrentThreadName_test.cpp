@@ -52,7 +52,7 @@ private:
             beast::setCurrentThreadName(nameToSet);
 
             // Initialize buffer to be safe.
-            char actualName[beast::kMAX_THREAD_NAME_LENGTH + 1] = {};
+            char actualName[beast::kMaxThreadNameLength + 1] = {};
             pthread_getname_np(pthread_self(), actualName, sizeof(actualName));
 
             BEAST_EXPECT(std::string(actualName) == expectedName);

@@ -23,7 +23,6 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <algorithm>
-#include <cstdint>
 #include <memory>
 #include <variant>
 
@@ -46,7 +45,7 @@ preflightHelper<Issue>(PreflightContext const& ctx)
     // The issuer field is used for the token holder instead
     AccountID const& holder = clawAmount.getIssuer();
 
-    if (issuer == holder || isXRP(clawAmount) || clawAmount <= beast::kZERO)
+    if (issuer == holder || isXRP(clawAmount) || clawAmount <= beast::kZero)
         return temBAD_AMOUNT;
 
     return tesSUCCESS;
@@ -71,8 +70,8 @@ preflightHelper<MPTIssue>(PreflightContext const& ctx)
 
     bool const invalidMPTAmount = ctx.rules.enabled(fixCleanup3_2_0)
         ? !isLegalMPTAmount(ctx.rules, clawAmount)
-        : clawAmount.mpt() > MPTAmount{kMAX_MP_TOKEN_AMOUNT};
-    if (invalidMPTAmount || clawAmount <= beast::kZERO)
+        : clawAmount.mpt() > MPTAmount{kMaxMpTokenAmount};
+    if (invalidMPTAmount || clawAmount <= beast::kZero)
         return temBAD_AMOUNT;
 
     return tesSUCCESS;
@@ -108,12 +107,9 @@ preclaimHelper<Issue>(
     AccountID const& holder,
     STAmount const& clawAmount)
 {
-    std::uint32_t const issuerFlagsIn = sleIssuer.getFieldU32(sfFlags);
-
     // If AllowTrustLineClawback is not set or NoFreeze is set, return no
     // permission
-    if (((issuerFlagsIn & lsfAllowTrustLineClawback) == 0u) ||
-        ((issuerFlagsIn & lsfNoFreeze) != 0u))
+    if (!sleIssuer.isFlag(lsfAllowTrustLineClawback) || sleIssuer.isFlag(lsfNoFreeze))
         return tecNO_PERMISSION;
 
     auto const sleRippleState =
@@ -124,11 +120,11 @@ preclaimHelper<Issue>(
     STAmount const balance = (*sleRippleState)[sfBalance];
 
     // If balance is positive, issuer must have higher address than holder
-    if (balance > beast::kZERO && issuer < holder)
+    if (balance > beast::kZero && issuer < holder)
         return tecNO_PERMISSION;
 
     // If balance is negative, issuer must have lower address than holder
-    if (balance < beast::kZERO && issuer > holder)
+    if (balance < beast::kZero && issuer > holder)
         return tecNO_PERMISSION;
 
     // At this point, we know that issuer and holder accounts
@@ -146,7 +142,7 @@ preclaimHelper<Issue>(
             clawAmount.get<Issue>().currency,
             issuer,
             FreezeHandling::IgnoreFreeze,
-            ctx.j) <= beast::kZERO)
+            ctx.j) <= beast::kZero)
         return tecINSUFFICIENT_FUNDS;
 
     return tesSUCCESS;
@@ -166,7 +162,7 @@ preclaimHelper<MPTIssue>(
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    if (((*sleIssuance)[sfFlags] & lsfMPTCanClawback) == 0u)
+    if (!sleIssuance->isFlag(lsfMPTCanClawback))
         return tecNO_PERMISSION;
 
     if (sleIssuance->getAccountID(sfIssuer) != issuer)
@@ -181,7 +177,7 @@ preclaimHelper<MPTIssue>(
             clawAmount.get<MPTIssue>(),
             FreezeHandling::IgnoreFreeze,
             AuthHandling::IgnoreAuth,
-            ctx.j) <= beast::kZERO)
+            ctx.j) <= beast::kZero)
         return tecINSUFFICIENT_FUNDS;
 
     return tesSUCCESS;

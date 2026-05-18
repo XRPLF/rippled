@@ -180,12 +180,12 @@ EscrowCancel::doApply()
             return temDISABLED;  // LCOV_EXCL_LINE
 
         auto const issuer = amount.getIssuer();
-        bool const createAsset = account == account_;
+        bool const createAsset = account == accountID_;
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
                     return escrowUnlockApplyHelper<T>(
                         ctx_.view(),
-                        kPARITY_RATE,
+                        kParityRate,
                         slep,
                         preFeeBalance_,
                         amount,

@@ -30,19 +30,19 @@ namespace xrpl {
 NotTEC
 VaultWithdraw::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfVaultID] == beast::kZERO)
+    if (ctx.tx[sfVaultID] == beast::kZero)
     {
         JLOG(ctx.j.debug()) << "VaultWithdraw: zero/empty vault ID.";
         return temMALFORMED;
     }
 
     auto const amount = ctx.tx[sfAmount];
-    if (amount <= beast::kZERO || !isLegalMPTAmount(ctx.rules, amount))
+    if (amount <= beast::kZero || !isLegalMPTAmount(ctx.rules, amount))
         return temBAD_AMOUNT;
 
     if (auto const destination = ctx.tx[~sfDestination])
     {
-        if (*destination == beast::kZERO)
+        if (*destination == beast::kZero)
         {
             return temMALFORMED;
         }
@@ -74,7 +74,7 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     }
 
     // Enforce valid withdrawal policy
-    if (vault->at(sfWithdrawalPolicy) != kVAULT_STRATEGY_FIRST_COME_FIRST_SERVE)
+    if (vault->at(sfWithdrawalPolicy) != kVaultStrategyFirstComeFirstServe)
     {
         // LCOV_EXCL_START
         JLOG(ctx.j.error()) << "VaultWithdraw: invalid withdrawal policy.";
@@ -189,7 +189,7 @@ VaultWithdraw::doApply()
                 sharesRedeemed = *maybeShares;
             }
 
-            if (sharesRedeemed == beast::kZERO)
+            if (sharesRedeemed == beast::kZero)
                 return tecPRECISION_LOSS;
             auto const maybeAssets = sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed);
             if (!maybeAssets)
@@ -224,7 +224,7 @@ VaultWithdraw::doApply()
     }
 
     if (accountHolds(
-            view(), account_, share, FreezeHandling::ZeroIfFrozen, AuthHandling::IgnoreAuth, j_) <
+            view(), accountID_, share, FreezeHandling::ZeroIfFrozen, AuthHandling::IgnoreAuth, j_) <
         sharesRedeemed)
     {
         JLOG(j_.debug()) << "VaultWithdraw: account doesn't hold enough shares";
@@ -253,23 +253,23 @@ VaultWithdraw::doApply()
 
     auto const& vaultAccount = vault->at(sfAccount);
     // Transfer shares from depositor to vault.
-    if (auto const ter =
-            accountSend(view(), account_, vaultAccount, sharesRedeemed, j_, WaiveTransferFee::Yes);
+    if (auto const ter = accountSend(
+            view(), accountID_, vaultAccount, sharesRedeemed, j_, WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
 
     // Try to remove MPToken for shares, if the account balance is zero. Vault
     // pseudo-account will never set lsfMPTAuthorized, so we ignore flags.
     // Keep MPToken if holder is the vault owner.
-    if (account_ != vault->at(sfOwner))
+    if (accountID_ != vault->at(sfOwner))
     {
-        if (auto const ter = removeEmptyHolding(view(), account_, sharesRedeemed.asset(), j_);
+        if (auto const ter = removeEmptyHolding(view(), accountID_, sharesRedeemed.asset(), j_);
             isTesSuccess(ter))
         {
             JLOG(j_.debug())  //
                 << "VaultWithdraw: removed empty MPToken for vault shares"
                 << " MPTID=" << to_string(mptIssuanceID)  //
-                << " account=" << toBase58(account_);
+                << " account=" << toBase58(accountID_);
         }
         else if (ter != tecHAS_OBLIGATIONS)
         {
@@ -277,7 +277,7 @@ VaultWithdraw::doApply()
             JLOG(j_.error())  //
                 << "VaultWithdraw: failed to remove MPToken for vault shares"
                 << " MPTID=" << to_string(mptIssuanceID)  //
-                << " account=" << toBase58(account_)      //
+                << " account=" << toBase58(accountID_)    //
                 << " with result: " << transToken(ter);
             return ter;
             // LCOV_EXCL_STOP
@@ -285,12 +285,12 @@ VaultWithdraw::doApply()
         // else quietly ignore, account balance is not zero
     }
 
-    auto const dstAcct = ctx_.tx[~sfDestination].value_or(account_);
+    auto const dstAcct = ctx_.tx[~sfDestination].value_or(accountID_);
 
     associateAsset(*vault, vaultAsset);
 
     return doWithdraw(
-        view(), ctx_.tx, account_, dstAcct, vaultAccount, preFeeBalance_, assetsWithdrawn, j_);
+        view(), ctx_.tx, accountID_, dstAcct, vaultAccount, preFeeBalance_, assetsWithdrawn, j_);
 }
 
 void

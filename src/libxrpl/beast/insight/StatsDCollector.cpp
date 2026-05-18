@@ -204,7 +204,7 @@ class StatsDCollectorImp : public StatsDCollector,
                            public std::enable_shared_from_this<StatsDCollectorImp>
 {
 private:
-    static constexpr auto kMAX_PACKET_SIZE = 1472;
+    static constexpr auto kMaxPacketSize = 1472;
 
     Journal journal_;
     IP::Endpoint address_;
@@ -387,7 +387,7 @@ public:
                 !s.empty(),
                 "beast::insight::detail::StatsDCollectorImp::sendBuffers : "
                 "non-empty payload");
-            if (!buffers.empty() && (size + length) > kMAX_PACKET_SIZE)
+            if (!buffers.empty() && (size + length) > kMaxPacketSize)
             {
                 log(buffers);
                 socket_.async_send(
