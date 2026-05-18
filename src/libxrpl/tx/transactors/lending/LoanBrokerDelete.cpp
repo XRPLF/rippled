@@ -114,6 +114,7 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
             auto const brokerPseudo = sleBroker->at(sfAccount);
             if (auto const ret = checkFrozen(ctx.view, brokerPseudo, asset))
             {
+                JLOG(ctx.j.warn()) << "Broker owner account is deep-frozen.";
                 return ret;
             }
         }
