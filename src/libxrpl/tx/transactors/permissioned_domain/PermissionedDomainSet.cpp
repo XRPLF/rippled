@@ -33,13 +33,13 @@ PermissionedDomainSet::preflight(PreflightContext const& ctx)
 {
     if (auto err = credentials::checkArray(
             ctx.tx.getFieldArray(sfAcceptedCredentials),
-            kMAX_PERMISSIONED_DOMAIN_CREDENTIALS_ARRAY_SIZE,
+            kMaxPermissionedDomainCredentialsArraySize,
             ctx.j);
         !isTesSuccess(err))
         return err;
 
     auto const domain = ctx.tx.at(~sfDomainID);
-    if (domain && *domain == beast::kZERO)
+    if (domain && *domain == beast::kZero)
         return temMALFORMED;
 
     return tesSUCCESS;

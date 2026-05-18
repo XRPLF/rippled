@@ -461,17 +461,17 @@ struct Credentials_test : public beast::unit_test::Suite
                 testcase(
                     "Credentials fail, credentialType length > "
                     "maxCredentialTypeLength.");
-                constexpr std::string_view kLONG_CRED_TYPE =
+                static constexpr std::string_view kLongCredType =
                     "abcdefghijklmnopqrstuvwxyz01234567890qwertyuiop[]"
                     "asdfghjkl;'zxcvbnm8237tr28weufwldebvfv8734t07p";
-                static_assert(kLONG_CRED_TYPE.size() > kMAX_CREDENTIAL_TYPE_LENGTH);
-                auto jv = credentials::create(subject, issuer, kLONG_CRED_TYPE);
+                static_assert(kLongCredType.size() > kMaxCredentialTypeLength);
+                auto jv = credentials::create(subject, issuer, kLongCredType);
                 env(jv, Ter(temMALFORMED));
             }
 
             {
                 testcase("Credentials fail, URI length > 256.");
-                constexpr std::string_view kLONG_URI =
+                static constexpr std::string_view kLongUri =
                     "abcdefghijklmnopqrstuvwxyz01234567890qwertyuiop[]"
                     "asdfghjkl;'zxcvbnm8237tr28weufwldebvfv8734t07p   "
                     "9hfup;wDJFBVSD8f72  "
@@ -480,9 +480,9 @@ struct Credentials_test : public beast::unit_test::Suite
                     "vujhgWQIE7F6WEUYFGWUKEYFVQW87FGWOEFWEFUYWVEF8723GFWEFB"
                     "WULE"
                     "fv28o37gfwEFB3872TFO8GSDSDVD";
-                static_assert(kLONG_URI.size() > kMAX_CREDENTIAL_URI_LENGTH);
+                static_assert(kLongUri.size() > kMaxCredentialUriLength);
                 env(credentials::create(subject, issuer, credType),
-                    credentials::Uri(kLONG_URI),
+                    credentials::Uri(kLongUri),
                     Ter(temMALFORMED));
             }
 

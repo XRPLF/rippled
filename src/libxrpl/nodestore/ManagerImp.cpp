@@ -26,8 +26,8 @@ namespace xrpl::NodeStore {
 ManagerImp&
 ManagerImp::instance()
 {
-    static ManagerImp k_;
-    return k_;
+    static ManagerImp kInst;
+    return kInst;
 }
 
 void
@@ -77,7 +77,7 @@ ManagerImp::makeBackend(
     }
 
     return factory->createInstance(
-        NodeObject::kKEY_BYTES, parameters, burstSize, scheduler, journal);
+        NodeObject::kKeyBytes, parameters, burstSize, scheduler, journal);
 }
 
 std::unique_ptr<Database>

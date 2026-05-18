@@ -371,12 +371,10 @@ CheckCash::doApply()
                 return optDeliverMin->asset().visit(
                     [&](Issue const&) {
                         return STAmount(
-                            optDeliverMin->asset(),
-                            STAmount::kMAX_VALUE / 2,
-                            STAmount::kMAX_OFFSET);
+                            optDeliverMin->asset(), STAmount::kMaxValue / 2, STAmount::kMaxOffset);
                     },
                     [&](MPTIssue const&) {
-                        return STAmount(optDeliverMin->asset(), kMAX_MP_TOKEN_AMOUNT / 2);
+                        return STAmount(optDeliverMin->asset(), kMaxMpTokenAmount / 2);
                     });
             };
             STAmount const flowDeliver{
@@ -475,7 +473,7 @@ CheckCash::doApply()
                     // Set the trust line limit to the highest possible
                     // value while flow runs.
                     STAmount const bigAmount(
-                        trustLineIssue, STAmount::kMAX_VALUE, STAmount::kMAX_OFFSET);
+                        trustLineIssue, STAmount::kMaxValue, STAmount::kMaxOffset);
                     sleTrustLine->at(tweakedLimit) = bigAmount;
 
                     return std::nullopt;

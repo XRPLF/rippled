@@ -203,7 +203,7 @@ parseCredential(
         return Unexpected(issuer.error());
 
     auto const credType = LedgerEntryHelpers::requiredHexBlob(
-        cred, jss::credential_type, kMAX_CREDENTIAL_TYPE_LENGTH, "malformedRequest");
+        cred, jss::credential_type, kMaxCredentialTypeLength, "malformedRequest");
     if (!credType)
         return Unexpected(credType.error());
 
@@ -244,7 +244,7 @@ parseAuthorizeCredentials(json::Value const& jv)
     }
 
     std::uint32_t const n = jv.size();
-    if (n > kMAX_CREDENTIALS_ARRAY_SIZE)
+    if (n > kMaxCredentialsArraySize)
     {
         return Unexpected(
             LedgerEntryHelpers::malformedError(
@@ -283,10 +283,7 @@ parseAuthorizeCredentials(json::Value const& jv)
             return Unexpected(issuer.error());
 
         auto const credentialType = LedgerEntryHelpers::requiredHexBlob(
-            jo,
-            jss::credential_type,
-            kMAX_CREDENTIAL_TYPE_LENGTH,
-            "malformedAuthorizedCredentials");
+            jo, jss::credential_type, kMaxCredentialTypeLength, "malformedAuthorizedCredentials");
         if (!credentialType)
             return Unexpected(credentialType.error());
 
@@ -836,7 +833,7 @@ struct LedgerEntry
 json::Value
 doLedgerEntry(RPC::JsonContext& context)
 {
-    static auto kLEDGER_ENTRY_PARSERS = std::to_array<LedgerEntry>({
+    static auto kLedgerEntryParsers = std::to_array<LedgerEntry>({
 #pragma push_macro("LEDGER_ENTRY")
 #undef LEDGER_ENTRY
 
@@ -859,7 +856,7 @@ doLedgerEntry(RPC::JsonContext& context)
     auto const hasMoreThanOneMember = [&]() {
         int count = 0;
 
-        for (auto const& ledgerEntry : kLEDGER_ENTRY_PARSERS)
+        for (auto const& ledgerEntry : kLedgerEntryParsers)
         {
             if (context.params.isMember(ledgerEntry.fieldName))
             {
@@ -888,7 +885,7 @@ doLedgerEntry(RPC::JsonContext& context)
     try
     {
         bool found = false;
-        for (auto const& ledgerEntry : kLEDGER_ENTRY_PARSERS)
+        for (auto const& ledgerEntry : kLedgerEntryParsers)
         {
             if (context.params.isMember(ledgerEntry.fieldName))
             {

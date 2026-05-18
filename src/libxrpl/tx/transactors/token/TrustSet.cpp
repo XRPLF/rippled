@@ -106,7 +106,7 @@ TrustSet::preflight(PreflightContext const& ctx)
         return temBAD_CURRENCY;
     }
 
-    if (saLimitAmount < beast::kZERO)
+    if (saLimitAmount < beast::kZero)
     {
         JLOG(j.trace()) << "Malformed transaction: Negative credit limit.";
         return temBAD_LIMIT;
@@ -252,7 +252,7 @@ TrustSet::preclaim(PreclaimContext const& ctx)
             else if (auto const ammSle = ctx.view.read({ltAMM, sleDst->getFieldH256(sfAMMID)}))
             {
                 auto const lpTokens = ammSle->getFieldAmount(sfLPTokenBalance);
-                if (lpTokens == beast::kZERO)
+                if (lpTokens == beast::kZero)
                 {
                     return tecAMM_EMPTY;
                 }
@@ -363,7 +363,7 @@ TrustSet::doApply()
     // could use the extra XRP for their own purposes.
 
     XRPAmount const reserveCreate(
-        (uOwnerCount < 2) ? XRPAmount(beast::kZERO)
+        (uOwnerCount < 2) ? XRPAmount(beast::kZero)
                           : view().fees().accountReserve(uOwnerCount + 1));
 
     std::uint32_t const uQualityIn(bQualityIn ? ctx_.tx.getFieldU32(sfQualityIn) : 0);
@@ -498,7 +498,7 @@ TrustSet::doApply()
 
         if (bSetNoRipple && !bClearNoRipple)
         {
-            if ((bHigh ? saHighBalance : saLowBalance) >= beast::kZERO)
+            if ((bHigh ? saHighBalance : saLowBalance) >= beast::kZero)
             {
                 uFlagsOut |= (bHigh ? lsfHighNoRipple : lsfLowNoRipple);
             }
@@ -535,12 +535,12 @@ TrustSet::doApply()
 
         bool const bLowReserveSet = (uLowQualityIn != 0u) || (uLowQualityOut != 0u) ||
             ((uFlagsOut & lsfLowNoRipple) == 0) != bLowDefRipple ||
-            ((uFlagsOut & lsfLowFreeze) != 0u) || saLowLimit || saLowBalance > beast::kZERO;
+            ((uFlagsOut & lsfLowFreeze) != 0u) || saLowLimit || saLowBalance > beast::kZero;
         bool const bLowReserveClear = !bLowReserveSet;
 
         bool const bHighReserveSet = (uHighQualityIn != 0u) || (uHighQualityOut != 0u) ||
             ((uFlagsOut & lsfHighNoRipple) == 0) != bHighDefRipple ||
-            ((uFlagsOut & lsfHighFreeze) != 0u) || saHighLimit || saHighBalance > beast::kZERO;
+            ((uFlagsOut & lsfHighFreeze) != 0u) || saHighLimit || saHighBalance > beast::kZero;
         bool const bHighReserveClear = !bHighReserveSet;
 
         bool const bDefault = bLowReserveClear && bHighReserveClear;

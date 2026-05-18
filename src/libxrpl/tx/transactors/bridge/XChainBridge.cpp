@@ -981,7 +981,7 @@ applyCreateAccountAttestations(
     {
         return tecXCHAIN_ACCOUNT_CREATE_PAST;
     }
-    if (attBegin->createCount >= claimCount + kXBRIDGE_MAX_ACCOUNT_CREATE_CLAIMS)
+    if (attBegin->createCount >= claimCount + kXbridgeMaxAccountCreateClaims)
     {
         // Limit the number of claims on the account
         return tecXCHAIN_ACCOUNT_CREATE_TOO_MANY;
@@ -1369,9 +1369,9 @@ XChainCreateBridge::preflight(PreflightContext const& ctx)
         // Issuing account must be the root account for XRP (which presumably
         // owns all the XRP). This is done so the issuing account can't "run
         // out" of wrapped tokens.
-        static auto const kROOT_ACCOUNT = calcAccountID(
+        static auto const kRootAccount = calcAccountID(
             generateKeyPair(KeyType::Secp256k1, generateSeed("masterpassphrase")).first);
-        if (bridgeSpec.issuingChainDoor() != kROOT_ACCOUNT)
+        if (bridgeSpec.issuingChainDoor() != kRootAccount)
         {
             return temXCHAIN_BRIDGE_BAD_ISSUES;
         }
@@ -1826,7 +1826,7 @@ XChainCommit::makeTxConsequences(PreflightContext const& ctx)
         auto const amount = ctx.tx[sfAmount];
         if (amount.native() && amount.signum() > 0)
             return amount.xrp();
-        return XRPAmount{beast::kZERO};
+        return XRPAmount{beast::kZero};
     }();
 
     return TxConsequences{ctx.tx, maxSpend};

@@ -124,7 +124,7 @@ AMMDeposit::preflight(PreflightContext const& ctx)
         return temBAD_AMM_TOKENS;
     }
 
-    if (lpTokens && *lpTokens <= beast::kZERO)
+    if (lpTokens && *lpTokens <= beast::kZero)
     {
         JLOG(ctx.j.debug()) << "AMM Deposit: invalid LPTokens";
         return temBAD_AMM_TOKENS;
@@ -166,7 +166,7 @@ AMMDeposit::preflight(PreflightContext const& ctx)
         }
     }
 
-    if (tradingFee > kTRADING_FEE_THRESHOLD)
+    if (tradingFee > kTradingFeeThreshold)
     {
         JLOG(ctx.j.debug()) << "AMM Deposit: invalid trading fee.";
         return temBAD_FEE;
@@ -200,9 +200,9 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     auto const [amountBalance, amount2Balance, lptAMMBalance] = *expected;
     if (ctx.tx.isFlag(tfTwoAssetIfEmpty))
     {
-        if (lptAMMBalance != beast::kZERO)
+        if (lptAMMBalance != beast::kZero)
             return tecAMM_NOT_EMPTY;
-        if (amountBalance != beast::kZERO || amount2Balance != beast::kZERO)
+        if (amountBalance != beast::kZero || amount2Balance != beast::kZero)
         {
             // LCOV_EXCL_START
             JLOG(ctx.j.debug()) << "AMM Deposit: tokens balance is not zero.";
@@ -212,10 +212,10 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     }
     else
     {
-        if (lptAMMBalance == beast::kZERO)
+        if (lptAMMBalance == beast::kZero)
             return tecAMM_EMPTY;
-        if (amountBalance <= beast::kZERO || amount2Balance <= beast::kZERO ||
-            lptAMMBalance < beast::kZERO)
+        if (amountBalance <= beast::kZero || amount2Balance <= beast::kZero ||
+            lptAMMBalance < beast::kZero)
         {
             // LCOV_EXCL_START
             JLOG(ctx.j.debug()) << "AMM Deposit: reserves or tokens balance is zero.";
@@ -357,11 +357,11 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
 
     // Check the reserve for LPToken trustline if not LP.
     // We checked above but need to check again if depositing IOU only.
-    if (ammLPHolds(ctx.view, *ammSle, accountID, ctx.j) == beast::kZERO)
+    if (ammLPHolds(ctx.view, *ammSle, accountID, ctx.j) == beast::kZero)
     {
         STAmount const xrpBalance = xrpLiquid(ctx.view, accountID, 1, ctx.j);
         // Insufficient reserve
-        if (xrpBalance <= beast::kZERO)
+        if (xrpBalance <= beast::kZero)
         {
             JLOG(ctx.j.debug()) << "AMM Instance: insufficient reserves";
             return tecINSUF_RESERVE_LINE;
@@ -401,7 +401,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
     if (!expected)
         return {expected.error(), false};  // LCOV_EXCL_LINE
     auto const [amountBalance, amount2Balance, lptAMMBalance] = *expected;
-    auto const tfee = (lptAMMBalance == beast::kZERO)
+    auto const tfee = (lptAMMBalance == beast::kZero)
         ? ctx_.tx[~sfTradingFee].value_or(0)
         : getTradingFee(ctx_.view(), *ammSle, account_);
 
@@ -468,12 +468,12 @@ AMMDeposit::applyGuts(Sandbox& sb)
     if (isTesSuccess(result))
     {
         XRPL_ASSERT(
-            newLPTokenBalance > beast::kZERO,
+            newLPTokenBalance > beast::kZero,
             "xrpl::AMMDeposit::applyGuts : valid new LP token balance");
         ammSle->setFieldAmount(sfLPTokenBalance, newLPTokenBalance);
         // LP depositing into AMM empty state gets the auction slot
         // and the voting
-        if (lptAMMBalance == beast::kZERO)
+        if (lptAMMBalance == beast::kZero)
             initializeFeeAuctionVote(sb, ammSle, account_, lptAMMBalance.asset(), tfee);
 
         sb.update(ammSle);
@@ -513,7 +513,7 @@ AMMDeposit::deposit(
     // Check account has sufficient funds.
     // Return true if it does, false otherwise.
     auto checkBalance = [&](auto const& depositAmount) -> TER {
-        if (depositAmount <= beast::kZERO)
+        if (depositAmount <= beast::kZero)
             return temBAD_AMOUNT;
         if (isXRP(depositAmount))
         {
@@ -547,7 +547,7 @@ AMMDeposit::deposit(
             tfee,
             IsDeposit::Yes);
 
-    if (lpTokensDepositActual <= beast::kZERO)
+    if (lpTokensDepositActual <= beast::kZero)
     {
         JLOG(ctx_.journal.debug()) << "AMM Deposit: adjusted tokens zero";
         return {tecAMM_INVALID_TOKENS, STAmount{}};
@@ -642,7 +642,7 @@ AMMDeposit::equalDepositTokens(
     try
     {
         auto const tokensAdj = adjustLPTokensOut(view.rules(), lptAMMBalance, lpTokensDeposit);
-        if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::kZERO)
+        if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::kZero)
             return {tecAMM_INVALID_TOKENS, STAmount{}};
         auto const frac = divide(tokensAdj, lptAMMBalance, lptAMMBalance.asset());
         // amounts factor in the adjusted tokens
@@ -714,7 +714,7 @@ AMMDeposit::equalDepositLimit(
 {
     auto frac = Number{amount} / amountBalance;
     auto tokensAdj = getRoundedLPTokens(view.rules(), lptAMMBalance, frac, IsDeposit::Yes);
-    if (tokensAdj == beast::kZERO)
+    if (tokensAdj == beast::kZero)
     {
         if (!view.rules().enabled(fixAMMv1_3))
         {
@@ -743,7 +743,7 @@ AMMDeposit::equalDepositLimit(
     }
     frac = Number{amount2} / amount2Balance;
     tokensAdj = getRoundedLPTokens(view.rules(), lptAMMBalance, frac, IsDeposit::Yes);
-    if (tokensAdj == beast::kZERO)
+    if (tokensAdj == beast::kZero)
     {
         if (!view.rules().enabled(fixAMMv1_3))
         {
@@ -793,7 +793,7 @@ AMMDeposit::singleDeposit(
 {
     auto const tokens = adjustLPTokensOut(
         view.rules(), lptAMMBalance, lpTokensOut(amountBalance, amount, lptAMMBalance, tfee));
-    if (tokens == beast::kZERO)
+    if (tokens == beast::kZero)
     {
         if (!view.rules().enabled(fixAMMv1_3))
         {
@@ -805,7 +805,7 @@ AMMDeposit::singleDeposit(
     // factor in the adjusted tokens
     auto const [tokensAdj, amountDepositAdj] =
         adjustAssetInByTokens(view.rules(), amountBalance, amount, lptAMMBalance, tokens, tfee);
-    if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::kZERO)
+    if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::kZero)
         return {tecAMM_INVALID_TOKENS, STAmount{}};  // LCOV_EXCL_LINE
     return deposit(
         view,
@@ -839,7 +839,7 @@ AMMDeposit::singleDepositTokens(
     std::uint16_t tfee)
 {
     auto const tokensAdj = adjustLPTokensOut(view.rules(), lptAMMBalance, lpTokensDeposit);
-    if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::kZERO)
+    if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::kZero)
         return {tecAMM_INVALID_TOKENS, STAmount{}};
     // the adjusted tokens are factored in
     auto const amountDeposit = ammAssetIn(amountBalance, lptAMMBalance, tokensAdj, tfee);
@@ -894,11 +894,11 @@ AMMDeposit::singleDepositEPrice(
     STAmount const& ePrice,
     std::uint16_t tfee)
 {
-    if (amount != beast::kZERO)
+    if (amount != beast::kZero)
     {
         auto const tokens = adjustLPTokensOut(
             view.rules(), lptAMMBalance, lpTokensOut(amountBalance, amount, lptAMMBalance, tfee));
-        if (tokens <= beast::kZERO)
+        if (tokens <= beast::kZero)
         {
             if (!view.rules().enabled(fixAMMv1_3))
             {
@@ -910,7 +910,7 @@ AMMDeposit::singleDepositEPrice(
         // factor in the adjusted tokens
         auto const [tokensAdj, amountDepositAdj] =
             adjustAssetInByTokens(view.rules(), amountBalance, amount, lptAMMBalance, tokens, tfee);
-        if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::kZERO)
+        if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::kZero)
             return {tecAMM_INVALID_TOKENS, STAmount{}};  // LCOV_EXCL_LINE
         auto const ep = Number{amountDepositAdj} / tokensAdj;
         if (ep <= ePrice)
@@ -958,7 +958,7 @@ AMMDeposit::singleDepositEPrice(
     auto amtProdCb = [&] { return f1 * solveQuadraticEq(a1, b1, c1); };
     auto const amountDeposit =
         getRoundedAsset(view.rules(), amtNoRoundCb, amountBalance, amtProdCb, IsDeposit::Yes);
-    if (amountDeposit <= beast::kZERO)
+    if (amountDeposit <= beast::kZero)
         return {tecAMM_FAILED, STAmount{}};
     auto tokNoRoundCb = [&] { return amountDeposit / ePrice; };
     auto tokProdCb = [&] { return amountDeposit / ePrice; };
@@ -967,7 +967,7 @@ AMMDeposit::singleDepositEPrice(
     // factor in the adjusted tokens
     auto const [tokensAdj, amountDepositAdj] = adjustAssetInByTokens(
         view.rules(), amountBalance, amountDeposit, lptAMMBalance, tokens, tfee);
-    if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::kZERO)
+    if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::kZero)
         return {tecAMM_INVALID_TOKENS, STAmount{}};  // LCOV_EXCL_LINE
 
     return deposit(
