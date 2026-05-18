@@ -2408,6 +2408,45 @@ public:
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
         }
 
+        {
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(10000), alice, bob, sponsor);
+            env.close();
+
+            STAmount const checkAmount{XRP(100).value()};
+            uint32_t const seq = env.seq(alice);
+            if (cosigning)
+            {
+                env(check::create(alice, bob, checkAmount),
+                    sponsor::as(sponsor, spfSponsorReserve),
+                    sig(sfSponsorSignature, sponsor));
+            }
+            else
+            {
+                env(sponsor::set_reserve(sponsor, 0, 1), sponsor::sponseeAcc(alice));
+                env.close();
+                env(check::create(alice, bob, checkAmount),
+                    sponsor::as(sponsor, spfSponsorReserve));
+            }
+            env.close();
+
+            auto const checkId = keylet::check(alice, seq).key;
+            auto const sleCheck = env.le(keylet::check(alice, seq));
+            BEAST_EXPECT(sleCheck);
+            BEAST_EXPECT(sleCheck->getAccountID(sfSponsor) == sponsor.id());
+
+            // The check's reserve is sponsored, so it does not increase Alice's
+            // liquid XRP when the check is cashed.
+            adjustAccountXRPBalance(env, alice, reserve(env, 0) + checkAmount - drops(1));
+            env(check::cash(bob, checkId, checkAmount), ter(tecPATH_PARTIAL));
+            env.close();
+
+            BEAST_EXPECT(env.le(keylet::check(alice, seq)));
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+        }
+
         // RippleState sponsor (CheckCashMakesTrustLine)
         {
             Env env{*this, testable_amendments()};
