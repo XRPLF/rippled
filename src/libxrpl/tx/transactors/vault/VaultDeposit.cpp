@@ -269,10 +269,8 @@ VaultDeposit::doApply()
                 AuthHandling::IgnoreAuth,
                 j_) < beast::kZero)
         {
-            // LCOV_EXCL_START
             JLOG(j_.error()) << "VaultDeposit: negative balance of account assets.";
             return tefINTERNAL;
-            // LCOV_EXCL_STOP
         }
     }
 
