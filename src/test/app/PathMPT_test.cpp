@@ -112,7 +112,7 @@ public:
             MPTTester({.env = env, .issuer = gw, .holders = {alice, bob}, .maxAmt = 100});
 
         auto& app = env.app();
-        Resource::Charge loadType = Resource::kFEE_REFERENCE_RPC;
+        Resource::Charge loadType = Resource::kFeeReferenceRpc;
         Resource::Consumer c;
 
         RPC::JsonContext context{
@@ -125,15 +125,15 @@ public:
              .role = Role::USER,
              .coro = {},
              .infoSub = {},
-             .apiVersion = RPC::kAPI_VERSION_IF_UNSPECIFIED},
+             .apiVersion = RPC::kApiVersionIfUnspecified},
             {},
             {}};
         json::Value result;
         Gate g;
         // Test RPC::Tuning::max_src_cur source currencies.
         std::vector<MPTID> numSrc;
-        numSrc.reserve(RPC::Tuning::kMAX_SRC_CUR);
-        for (std::uint8_t i = 0; i < RPC::Tuning::kMAX_SRC_CUR; ++i)
+        numSrc.reserve(RPC::Tuning::kMaxSrcCur);
+        for (std::uint8_t i = 0; i < RPC::Tuning::kMaxSrcCur; ++i)
             numSrc.push_back(makeMptID(i, bob));
         app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
             context.params = xrpl::test::detail::rpf(alice, bob, usd, numSrc);
@@ -145,7 +145,7 @@ public:
         BEAST_EXPECT(!result.isMember(jss::error));
 
         // Test more than RPC::Tuning::max_src_cur source currencies.
-        numSrc.push_back(makeMptID(RPC::Tuning::kMAX_SRC_CUR, bob));
+        numSrc.push_back(makeMptID(RPC::Tuning::kMaxSrcCur, bob));
         app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
             context.params = xrpl::test::detail::rpf(alice, bob, usd, numSrc);
             context.coro = coro;
@@ -157,7 +157,7 @@ public:
 
         // Test RPC::Tuning::max_auto_src_cur source currencies.
         numSrc.clear();
-        for (auto i = 0; i < (RPC::Tuning::kMAX_AUTO_SRC_CUR - 1); ++i)
+        for (auto i = 0; i < (RPC::Tuning::kMaxAutoSrcCur - 1); ++i)
         {
             auto curm = MPTTester({.env = env, .issuer = alice, .holders = {bob}});
             numSrc.push_back(curm.issuanceID());

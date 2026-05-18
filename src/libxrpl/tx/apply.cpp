@@ -27,10 +27,10 @@ namespace xrpl {
 
 // These are the same flags defined as HashRouterFlags::PRIVATE1-4 in
 // HashRouter.h
-constexpr HashRouterFlags kSF_SIGBAD = HashRouterFlags::PRIVATE1;     // Signature is bad
-constexpr HashRouterFlags kSF_SIGGOOD = HashRouterFlags::PRIVATE2;    // Signature is good
-constexpr HashRouterFlags kSF_LOCALBAD = HashRouterFlags::PRIVATE3;   // Local checks failed
-constexpr HashRouterFlags kSF_LOCALGOOD = HashRouterFlags::PRIVATE4;  // Local checks passed
+constexpr HashRouterFlags kSfSigbad = HashRouterFlags::PRIVATE1;     // Signature is bad
+constexpr HashRouterFlags kSfSiggood = HashRouterFlags::PRIVATE2;    // Signature is good
+constexpr HashRouterFlags kSfLocalbad = HashRouterFlags::PRIVATE3;   // Local checks failed
+constexpr HashRouterFlags kSfLocalgood = HashRouterFlags::PRIVATE4;  // Local checks passed
 
 //------------------------------------------------------------------------------
 
@@ -57,41 +57,41 @@ checkValidity(HashRouter& router, STTx const& tx, Rules const& rules)
             std::string reason;
             if (!passesLocalChecks(tx, reason))
             {
-                router.setFlags(id, kSF_LOCALBAD);
+                router.setFlags(id, kSfLocalbad);
                 return {Validity::SigGoodOnly, reason};
             }
 
-            router.setFlags(id, kSF_SIGGOOD);
+            router.setFlags(id, kSfSiggood);
             return {Validity::Valid, ""};
         }
     }
 
-    if (any(flags & kSF_SIGBAD))
+    if (any(flags & kSfSigbad))
     {
         // Signature is known bad
         return {Validity::SigBad, "Transaction has bad signature."};
     }
 
-    if (!any(flags & kSF_SIGGOOD))
+    if (!any(flags & kSfSiggood))
     {
         auto const sigVerify = tx.checkSign(rules);
         if (!sigVerify)
         {
-            router.setFlags(id, kSF_SIGBAD);
+            router.setFlags(id, kSfSigbad);
             return {Validity::SigBad, sigVerify.error()};
         }
-        router.setFlags(id, kSF_SIGGOOD);
+        router.setFlags(id, kSfSiggood);
     }
 
     // Signature is now known good
-    if (any(flags & kSF_LOCALBAD))
+    if (any(flags & kSfLocalbad))
     {
         // ...but the local checks
         // are known bad.
         return {Validity::SigGoodOnly, "Local checks failed."};
     }
 
-    if (any(flags & kSF_LOCALGOOD))
+    if (any(flags & kSfLocalgood))
     {
         // ...and the local checks
         // are known good.
@@ -102,10 +102,10 @@ checkValidity(HashRouter& router, STTx const& tx, Rules const& rules)
     std::string reason;
     if (!passesLocalChecks(tx, reason))
     {
-        router.setFlags(id, kSF_LOCALBAD);
+        router.setFlags(id, kSfLocalbad);
         return {Validity::SigGoodOnly, reason};
     }
-    router.setFlags(id, kSF_LOCALGOOD);
+    router.setFlags(id, kSfLocalgood);
     return {Validity::Valid, ""};
 }
 
@@ -116,10 +116,10 @@ forceValidity(HashRouter& router, uint256 const& txid, Validity validity)
     switch (validity)
     {
         case Validity::Valid:
-            flags |= kSF_LOCALGOOD;
+            flags |= kSfLocalgood;
             [[fallthrough]];
         case Validity::SigGoodOnly:
-            flags |= kSF_SIGGOOD;
+            flags |= kSfSiggood;
             [[fallthrough]];
         case Validity::SigBad:
             // would be silly to call directly
@@ -173,7 +173,7 @@ applyBatchTransactions(
     auto const mode = batchTxn.getFlags();
 
     auto applyOneTransaction = [&registry, &j, &parentBatchId, &batchView](STTx const& tx) {
-        OpenView perTxBatchView(kBATCH_VIEW, batchView);
+        OpenView perTxBatchView(kBatchView, batchView);
 
         auto const ret = apply(registry, perTxBatchView, parentBatchId, tx, TapBatch, j);
         XRPL_ASSERT(
@@ -247,7 +247,7 @@ applyTransaction(
             // its inner transactions as necessary.
             if (isTesSuccess(result.ter) && txn.getTxnType() == ttBATCH)
             {
-                OpenView wholeBatchView(kBATCH_VIEW, view);
+                OpenView wholeBatchView(kBatchView, view);
 
                 if (applyBatchTransactions(registry, wholeBatchView, txn, j))
                     wholeBatchView.apply(view);

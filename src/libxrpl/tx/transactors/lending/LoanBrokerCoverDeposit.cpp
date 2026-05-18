@@ -28,11 +28,11 @@ LoanBrokerCoverDeposit::checkExtraFeatures(PreflightContext const& ctx)
 NotTEC
 LoanBrokerCoverDeposit::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfLoanBrokerID] == beast::kZERO)
+    if (ctx.tx[sfLoanBrokerID] == beast::kZero)
         return temINVALID;
 
     auto const dstAmount = ctx.tx[sfAmount];
-    if (dstAmount <= beast::kZERO)
+    if (dstAmount <= beast::kZero)
         return temBAD_AMOUNT;
 
     if (!isLegalNet(dstAmount))
@@ -136,7 +136,8 @@ LoanBrokerCoverDeposit::doApply()
         return tecPRECISION_LOSS;
     }
     // Transfer assets from depositor to pseudo-account.
-    if (auto ter = accountSend(view(), account_, brokerPseudoID, amount, j_, WaiveTransferFee::Yes))
+    if (auto ter =
+            accountSend(view(), accountID_, brokerPseudoID, amount, j_, WaiveTransferFee::Yes))
         return ter;
 
     // Increase the LoanBroker's CoverAvailable by Amount
