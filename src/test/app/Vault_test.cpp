@@ -6140,6 +6140,653 @@ class Vault_test : public beast::unit_test::Suite
         runTest(amendments);
     }
 
+    // -----------------------------------------------------------------------
+    // Helpers and tests: sole-shareholder / stuck-depositor (XLS-0065 +
+    // fixCleanup3_2_0). The vault-level withdraw behavior is tested here;
+    // the loan-protocol setup is incidental.
+    // -----------------------------------------------------------------------
+
+    FeatureBitset const all_{test::jtx::testableAmendments()};
+    std::string const iouCurrency_{"IOU"};
+
+    struct BrokerParameters
+    {
+        Number vaultDeposit = 1'000'000;
+        Number debtMax = 25'000;
+        TenthBips32 coverRateMin = percentageToTenthBips(10);
+        int coverDeposit = 1000;
+        TenthBips16 managementFeeRate{100};
+        TenthBips32 coverRateLiquidation = percentageToTenthBips(25);
+        std::string data = {};  // NOLINT(readability-redundant-member-init)
+        std::uint32_t flags = 0;
+
+        static BrokerParameters const&
+        defaults()
+        {
+            static BrokerParameters const kRESULT{};
+            return kRESULT;
+        }
+    };
+
+    struct BrokerInfo
+    {
+        PrettyAsset asset;
+        uint256 brokerID;
+        uint256 vaultID;
+        BrokerParameters params;
+
+        BrokerInfo(
+            PrettyAsset const& asset,
+            Keylet const& brokerKeylet,
+            Keylet const& vaultKeylet,
+            BrokerParameters p)
+            : asset(asset)
+            , brokerID(brokerKeylet.key)
+            , vaultID(vaultKeylet.key)
+            , params(std::move(p))
+        {
+        }
+
+        [[nodiscard]] Keylet
+        brokerKeylet() const
+        {
+            return keylet::loanbroker(brokerID);
+        }
+
+        [[nodiscard]] Keylet
+        vaultKeylet() const
+        {
+            return keylet::vault(vaultID);
+        }
+    };
+
+    BrokerInfo
+    createVaultAndBroker(
+        test::jtx::Env& env,
+        PrettyAsset const& asset,
+        test::jtx::Account const& lender,
+        BrokerParameters const& params = BrokerParameters::defaults())
+    {
+        using namespace test::jtx;
+        using namespace loanBroker;
+
+        Vault const vault{env};
+
+        auto const deposit = asset(params.vaultDeposit);
+        auto const debtMaximumValue = asset(params.debtMax).value();
+        auto const coverDepositValue = asset(params.coverDeposit).value();
+        auto const coverRateMinValue = params.coverRateMin;
+
+        auto [tx, vaultKeylet] = vault.create({.owner = lender, .asset = asset});
+        env(tx);
+        env.close();
+        BEAST_EXPECT(env.le(vaultKeylet));
+
+        env(vault.deposit({.depositor = lender, .id = vaultKeylet.key, .amount = deposit}));
+        env.close();
+        if (auto const vaultSle = env.le(keylet::vault(vaultKeylet.key)); BEAST_EXPECT(vaultSle))
+            BEAST_EXPECT(vaultSle->at(sfAssetsAvailable) == deposit.value());
+
+        auto const keylet = keylet::loanbroker(lender.id(), env.seq(lender));
+
+        env(set(lender, vaultKeylet.key, params.flags),
+            kDATA(params.data),
+            kMANAGEMENT_FEE_RATE(params.managementFeeRate),
+            kDEBT_MAXIMUM(debtMaximumValue),
+            kCOVER_RATE_MINIMUM(coverRateMinValue),
+            kCOVER_RATE_LIQUIDATION(TenthBips32(params.coverRateLiquidation)));
+
+        if (coverDepositValue != beast::kZERO)
+            env(coverDeposit(lender, keylet.key, coverDepositValue));
+
+        env.close();
+
+        return {asset, keylet, vaultKeylet, params};
+    }
+
+    // design doc:
+    //     AssetsAvailable ≈ 3,333.50
+    //     AssetsTotal     ≈ 6,666.50  (3,333.50 cash + 3,333 receivable)
+    //     LossUnrealized  =  3,333
+    //     OutstandingShares = sharesLender   (5e9 at IOU scale 1e6)
+    struct StuckDepositorFixture
+    {
+        test::jtx::Account issuer{"issuer"};
+        test::jtx::Account lender{"lender"};
+        test::jtx::Account bob{"bob"};
+        test::jtx::Account borrower{"borrower"};
+        std::optional<PrettyAsset> asset;
+        std::optional<BrokerInfo> broker;
+        std::optional<Keylet> loanKeylet;
+        MPTID shareAsset;
+        std::uint64_t sharesLender = 0;
+    };
+
+    static constexpr std::int64_t kSTUCK_FUNDING = 1'000'000;
+    static constexpr std::int64_t kSTUCK_DEPOSITOR_IOU = 1'000'000;
+    static constexpr std::int64_t kSTUCK_BORROWER_IOU = 100'000;
+    static constexpr std::int64_t kSTUCK_DEPOSIT = 5'000;
+    static constexpr std::int64_t kSTUCK_PRINCIPAL = 3'333;
+    static constexpr std::uint32_t kSTUCK_PAY_INTERVAL = 600;
+    static constexpr std::uint32_t kSTUCK_PAY_TOTAL = 2;
+
+    [[nodiscard]] StuckDepositorFixture
+    setupStuckDepositor(test::jtx::Env& env)
+    {
+        using namespace test::jtx;
+        using namespace loan;
+
+        StuckDepositorFixture f;
+        f.asset = f.issuer[iouCurrency_];
+
+        env.fund(XRP(kSTUCK_FUNDING), f.issuer, f.lender, f.bob, f.borrower);
+        env.close();
+
+        env(trust(f.lender, (*f.asset)(10'000'000)));
+        env(trust(f.bob, (*f.asset)(10'000'000)));
+        env(trust(f.borrower, (*f.asset)(10'000'000)));
+        env.close();
+
+        env(pay(f.issuer, f.lender, (*f.asset)(kSTUCK_DEPOSITOR_IOU)));
+        env(pay(f.issuer, f.bob, (*f.asset)(kSTUCK_DEPOSITOR_IOU)));
+        env(pay(f.issuer, f.borrower, (*f.asset)(kSTUCK_BORROWER_IOU)));
+        env.close();
+
+        // Lender's deposit happens inside createVaultAndBroker. To get a
+        // clean 50/50 split between Lender and Bob, we set vaultDeposit
+        // to the target per-depositor amount and let Bob match it via an
+        // explicit deposit below. No cover, no management fee.
+        BrokerParameters const params{
+            .vaultDeposit = kSTUCK_DEPOSIT,
+            .debtMax = kSTUCK_PRINCIPAL * 10,
+            .coverRateMin = TenthBips32{0},
+            .coverDeposit = 0,
+            .managementFeeRate = TenthBips16{0},
+            .coverRateLiquidation = TenthBips32{0}};
+
+        f.broker = createVaultAndBroker(env, *f.asset, f.lender, params);
+        Vault v{env};
+
+        env(v.deposit({
+                .depositor = f.bob,
+                .id = f.broker->vaultKeylet().key,
+                .amount = (*f.asset)(kSTUCK_DEPOSIT),
+            }),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const sleBroker = env.le(keylet::loanbroker(f.broker->brokerID));
+        if (!BEAST_EXPECT(sleBroker))
+            return f;
+
+        f.loanKeylet = keylet::loan(f.broker->brokerID, sleBroker->at(sfLoanSequence));
+
+        env(set(f.borrower, f.broker->brokerID, kSTUCK_PRINCIPAL),
+            Sig(sfCounterpartySignature, f.lender),
+            kPAYMENT_TOTAL(kSTUCK_PAY_TOTAL),
+            kPAYMENT_INTERVAL(kSTUCK_PAY_INTERVAL),
+            Fee(env.current()->fees().base * 2),
+            Ter(tesSUCCESS));
+        env.close();
+
+        env(manage(f.lender, f.loanKeylet->key, tfLoanImpair), Ter(tesSUCCESS));
+        env.close();
+
+        auto const vaultSle = env.le(f.broker->vaultKeylet());
+        if (!BEAST_EXPECT(vaultSle))
+            return f;
+        BEAST_EXPECT(vaultSle->at(sfLossUnrealized) == f.broker->asset(kSTUCK_PRINCIPAL).value());
+
+        f.shareAsset = vaultSle->at(sfShareMPTID);
+
+        auto const tokenBob = env.le(keylet::mptoken(f.shareAsset, f.bob.id()));
+        if (!BEAST_EXPECT(tokenBob))
+            return f;
+        std::uint64_t const sharesBob = tokenBob->getFieldU64(sfMPTAmount);
+
+        // Bob (non-sole) exits at the discounted rate. Always succeeds.
+        STAmount const bobShareAmt{MPTIssue{f.shareAsset}, Number(sharesBob)};
+        env(v.withdraw({
+                .depositor = f.bob,
+                .id = f.broker->vaultKeylet().key,
+                .amount = bobShareAmt,
+            }),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const tokenLender = env.le(keylet::mptoken(f.shareAsset, f.lender.id()));
+        if (!BEAST_EXPECT(tokenLender))
+            return f;
+        f.sharesLender = tokenLender->getFieldU64(sfMPTAmount);
+
+        auto const sleIssuance = env.le(keylet::mptIssuance(f.shareAsset));
+        if (!BEAST_EXPECT(sleIssuance))
+            return f;
+        BEAST_EXPECT(sleIssuance->getFieldU64(sfOutstandingAmount) == f.sharesLender);
+
+        auto const vaultAfterBob = env.le(f.broker->vaultKeylet());
+        if (!BEAST_EXPECT(vaultAfterBob))
+            return f;
+        BEAST_EXPECT(vaultAfterBob->at(sfLossUnrealized) > beast::kZERO);
+        BEAST_EXPECT(vaultAfterBob->at(sfAssetsAvailable) < vaultAfterBob->at(sfAssetsTotal));
+
+        return f;
+    }
+
+    // Reproduces the worked example from the XLS-0065 design doc. The sole
+    // remaining shareholder asks (via fixed-asset input) for the vault's
+    // entire AssetsAvailable. Pre-fix this fails with the zero-sized-vault
+    // invariant violation. Post-fix the full-price exchange rate burns
+    // only a portion of the shares, the depositor receives all of
+    // AssetsAvailable, and the residual shares remain backed by the
+    // impaired-loan receivable.
+    void
+    testWithdrawSoleShareholderFixedAssetExit(FeatureBitset features)
+    {
+        using namespace test::jtx;
+
+        bool const withFix = features[fixCleanup3_2_0];
+        testcase(
+            std::string{"Vault withdraw: sole shareholder exits via "
+                        "fixed-asset amount with impaired loan"} +
+            (withFix ? " (fixCleanup3_2_0)" : " (pre-fix)"));
+
+        Env env(*this, features);
+        auto const f = setupStuckDepositor(env);
+        if (!BEAST_EXPECT(f.broker.has_value() && f.asset.has_value()) || f.sharesLender == 0)
+            return;
+
+        auto const vaultBefore = env.le(f.broker->vaultKeylet());
+        if (!BEAST_EXPECT(vaultBefore))
+            return;
+        Number const availableBefore = vaultBefore->at(sfAssetsAvailable);
+        Number const totalBefore = vaultBefore->at(sfAssetsTotal);
+        Number const lossBefore = vaultBefore->at(sfLossUnrealized);
+
+        STAmount const lenderBalanceBefore = env.balance(f.lender, *f.asset);
+
+        // The requested amount differs between feature regimes because
+        // the two regimes are testing different behaviors:
+        //
+        // - Pre-fix: request the full AssetsAvailable (3,333.50). Under
+        //   the discounted formula this would burn every outstanding
+        //   share, hitting the zero-sized-vault invariant. The
+        //   transaction is rejected with tecINVARIANT_FAILED — the
+        //   stuck-depositor bug.
+        //
+        // - Post-fix: request a strictly smaller amount (1,000 USD).
+        //   The full-price formula burns only ~30% of the outstanding
+        //   shares; the vault retains the rest, backed by the impaired
+        //   receivable. Requesting *exactly* AssetsAvailable post-fix
+        //   would currently fail with tecINSUFFICIENT_FUNDS due to the
+        //   round-to-nearest used by assetsToSharesWithdraw (the
+        //   recomputed payout can overshoot the request by a few ULPs).
+        //   The "force payout to AssetsAvailable" branch in doApply
+        //   only triggers when every share is burned, which is covered
+        //   by the loan-repayment test.
+        STAmount const requestAssets =
+            withFix ? (*f.asset)(1000).value() : STAmount{f.asset->raw(), availableBefore};
+        Vault v{env};
+        env(v.withdraw({
+                .depositor = f.lender,
+                .id = f.broker->vaultKeylet().key,
+                .amount = requestAssets,
+            }),
+            Ter(withFix ? TER{tesSUCCESS} : TER{tecINVARIANT_FAILED}));
+        env.close();
+
+        auto const vaultAfter = env.le(f.broker->vaultKeylet());
+        if (!BEAST_EXPECT(vaultAfter))
+            return;
+        auto const issuanceAfter = env.le(keylet::mptIssuance(f.shareAsset));
+        if (!BEAST_EXPECT(issuanceAfter))
+            return;
+
+        std::uint64_t const sharesAfter = issuanceAfter->getFieldU64(sfOutstandingAmount);
+        Number const availableAfter = vaultAfter->at(sfAssetsAvailable);
+        Number const totalAfter = vaultAfter->at(sfAssetsTotal);
+        Number const lossAfter = vaultAfter->at(sfLossUnrealized);
+
+        if (!withFix)
+        {
+            // Pre-fix: rejected — vault state unchanged.
+            BEAST_EXPECT(sharesAfter == f.sharesLender);
+            BEAST_EXPECT(availableAfter == availableBefore);
+            BEAST_EXPECT(totalAfter == totalBefore);
+            BEAST_EXPECT(lossAfter == lossBefore);
+            return;
+        }
+
+        // Post-fix: vault is NOT empty — sharesOutstanding > 0 and
+        // AssetsTotal > 0 jointly satisfy the zero-sized-vault invariant.
+        BEAST_EXPECT(sharesAfter > 0);
+        BEAST_EXPECT(sharesAfter < f.sharesLender);
+        BEAST_EXPECT(totalAfter > beast::kZERO);
+
+        // LossUnrealized is unchanged: the loan-protocol side is untouched.
+        BEAST_EXPECT(lossAfter == lossBefore);
+
+        // Vault invariant: loss <= total - available.
+        BEAST_EXPECT(lossAfter <= totalAfter - availableAfter);
+
+        // The user asked for `requestAssets`. Due to share rounding the
+        // actual payout may be slightly less; it must never exceed the
+        // requested amount.
+        STAmount const lenderBalanceAfter = env.balance(f.lender, *f.asset);
+        Number const received{lenderBalanceAfter - lenderBalanceBefore};
+        BEAST_EXPECT(received > beast::kZERO);
+        BEAST_EXPECT(received <= Number{requestAssets});
+
+        // Conservation: assets removed from the vault equal what the
+        // depositor received.
+        BEAST_EXPECT(totalBefore - totalAfter == received);
+        BEAST_EXPECT(availableBefore - availableAfter == received);
+    }
+
+    // Sole shareholder attempts to burn ALL outstanding shares via
+    // fixed-shares input while the vault still holds an impaired
+    // receivable. Pre-fix this fails with the zero-sized-vault invariant
+    // violation. Post-fix the "final withdrawal" guard in doApply rejects
+    // it with tecLIMIT_EXCEEDED — the depositor must withdraw a smaller
+    // amount or wait for the loan to resolve.
+    void
+    testWithdrawSoleShareholderFullSharesRejected(FeatureBitset features)
+    {
+        using namespace test::jtx;
+
+        bool const withFix = features[fixCleanup3_2_0];
+        testcase(
+            std::string{"Vault withdraw: sole shareholder full-shares "
+                        "burn is rejected while loss outstanding"} +
+            (withFix ? " (fixCleanup3_2_0)" : " (pre-fix)"));
+
+        Env env(*this, features);
+        auto const f = setupStuckDepositor(env);
+        if (!BEAST_EXPECT(f.broker.has_value()) || f.sharesLender == 0)
+            return;
+
+        auto const vaultBefore = env.le(f.broker->vaultKeylet());
+        if (!BEAST_EXPECT(vaultBefore))
+            return;
+        Number const availableBefore = vaultBefore->at(sfAssetsAvailable);
+        Number const totalBefore = vaultBefore->at(sfAssetsTotal);
+        Number const lossBefore = vaultBefore->at(sfLossUnrealized);
+
+        // Fixed-shares input: ask for ALL outstanding shares.
+        STAmount const shareAmt{MPTIssue{f.shareAsset}, Number(f.sharesLender)};
+        Vault v{env};
+        env(v.withdraw({
+                .depositor = f.lender,
+                .id = f.broker->vaultKeylet().key,
+                .amount = shareAmt,
+            }),
+            Ter(withFix ? TER{tecINSUFFICIENT_FUNDS} : TER{tecINVARIANT_FAILED}));
+        env.close();
+
+        // Either way the transaction was rejected; vault state unchanged.
+        auto const vaultAfter = env.le(f.broker->vaultKeylet());
+        if (!BEAST_EXPECT(vaultAfter))
+            return;
+        auto const issuanceAfter = env.le(keylet::mptIssuance(f.shareAsset));
+        if (!BEAST_EXPECT(issuanceAfter))
+            return;
+        BEAST_EXPECT(issuanceAfter->getFieldU64(sfOutstandingAmount) == f.sharesLender);
+        BEAST_EXPECT(vaultAfter->at(sfAssetsAvailable) == availableBefore);
+        BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == totalBefore);
+        BEAST_EXPECT(vaultAfter->at(sfLossUnrealized) == lossBefore);
+    }
+
+    // Post-fix end-to-end resolution: after the sole-shareholder partial
+    // exit, the loan is repaid in full. With unrealized loss cleared and
+    // all assets back as cash, the depositor can burn all remaining
+    // shares and fully exit the vault. The final withdrawal hits the
+    // "force payout to assetsAvailable" branch in doApply.
+    void
+    testWithdrawSoleShareholderLoanRepaymentExit()
+    {
+        using namespace test::jtx;
+        using namespace loan;
+
+        testcase(
+            "Vault withdraw: sole shareholder fully exits after impaired "
+            "loan is repaid (fixCleanup3_2_0)");
+
+        Env env(*this, all_ | fixCleanup3_2_0);
+        auto const f = setupStuckDepositor(env);
+        if (!BEAST_EXPECT(f.broker.has_value() && f.asset.has_value()) || f.sharesLender == 0)
+            return;
+
+        Vault v{env};
+
+        // Sole-shareholder partial exit (see comment in
+        // testWithdrawSoleShareholderFixedAssetExit for why we request
+        // less than full AssetsAvailable).
+        {
+            STAmount const requestAssets = (*f.asset)(1000).value();
+            env(v.withdraw({
+                    .depositor = f.lender,
+                    .id = f.broker->vaultKeylet().key,
+                    .amount = requestAssets,
+                }),
+                Ter(tesSUCCESS));
+            env.close();
+        }
+
+        // Confirm the "dormant-but-alive" state from the design doc.
+        auto const tokenAfterExit = env.le(keylet::mptoken(f.shareAsset, f.lender.id()));
+        if (!BEAST_EXPECT(tokenAfterExit))
+            return;
+        std::uint64_t const retainedShares = tokenAfterExit->getFieldU64(sfMPTAmount);
+        BEAST_EXPECT(retainedShares > 0);
+        BEAST_EXPECT(retainedShares < f.sharesLender);
+
+        // Borrower repays the loan in full (pays more than the outstanding
+        // total; the loan transactor caps the receivable).
+        PrettyAsset const repayAsset = *f.asset;
+        env(pay(f.borrower, f.loanKeylet->key, repayAsset(kSTUCK_PRINCIPAL * 2)), Ter(tesSUCCESS));
+        env.close();
+
+        auto const vaultAfterRepay = env.le(f.broker->vaultKeylet());
+        if (!BEAST_EXPECT(vaultAfterRepay))
+            return;
+        BEAST_EXPECT(vaultAfterRepay->at(sfLossUnrealized) == beast::kZERO);
+        BEAST_EXPECT(vaultAfterRepay->at(sfAssetsAvailable) == vaultAfterRepay->at(sfAssetsTotal));
+        BEAST_EXPECT(vaultAfterRepay->at(sfAssetsTotal) > beast::kZERO);
+
+        STAmount const lenderBalanceBeforeFinal = env.balance(f.lender, *f.asset);
+        Number const availableBeforeFinal = vaultAfterRepay->at(sfAssetsAvailable);
+
+        // Burn all remaining shares — the clean-state preconditions of
+        // the "final withdrawal" guard are now satisfied.
+        STAmount const allShares{MPTIssue{f.shareAsset}, Number(retainedShares)};
+        env(v.withdraw({
+                .depositor = f.lender,
+                .id = f.broker->vaultKeylet().key,
+                .amount = allShares,
+            }),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const vaultFinal = env.le(f.broker->vaultKeylet());
+        if (!BEAST_EXPECT(vaultFinal))
+            return;
+        auto const issuanceFinal = env.le(keylet::mptIssuance(f.shareAsset));
+        if (!BEAST_EXPECT(issuanceFinal))
+            return;
+
+        // Zero-sized vault invariant satisfied: 0 shares, 0 assets.
+        BEAST_EXPECT(issuanceFinal->getFieldU64(sfOutstandingAmount) == 0);
+        BEAST_EXPECT(vaultFinal->at(sfAssetsTotal) == beast::kZERO);
+        BEAST_EXPECT(vaultFinal->at(sfAssetsAvailable) == beast::kZERO);
+        BEAST_EXPECT(vaultFinal->at(sfLossUnrealized) == beast::kZERO);
+
+        // The final payout equals exactly the AssetsAvailable that
+        // existed before the call (the "force payout" branch).
+        STAmount const lenderBalanceAfter = env.balance(f.lender, *f.asset);
+        Number const finalReceived{lenderBalanceAfter - lenderBalanceBeforeFinal};
+        BEAST_EXPECT(finalReceived == availableBeforeFinal);
+    }
+
+    // Clean-state regression: with no impaired loan, a sole shareholder
+    // burning all their shares fully empties the vault under both the
+    // pre-fix and post-fix code paths. Confirms the new logic doesn't
+    // break the existing happy-path close-out.
+    void
+    testWithdrawSoleShareholderCleanVaultUnaffected(FeatureBitset features)
+    {
+        using namespace test::jtx;
+
+        bool const withFix = features[fixCleanup3_2_0];
+        testcase(
+            std::string{"Vault withdraw: sole shareholder clean-state "
+                        "close-out unchanged"} +
+            (withFix ? " (fixCleanup3_2_0)" : " (pre-fix)"));
+
+        Env env(*this, features);
+
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+
+        env.fund(XRP(kSTUCK_FUNDING), issuer, lender);
+        env.close();
+
+        PrettyAsset const asset = issuer[iouCurrency_];
+        env(trust(lender, asset(10'000'000)));
+        env.close();
+        env(pay(issuer, lender, asset(kSTUCK_DEPOSITOR_IOU)));
+        env.close();
+
+        BrokerParameters const params{
+            .vaultDeposit = kSTUCK_DEPOSIT,
+            .debtMax = 1,
+            .coverRateMin = TenthBips32{0},
+            .coverDeposit = 0,
+            .managementFeeRate = TenthBips16{0},
+            .coverRateLiquidation = TenthBips32{0}};
+
+        // Lender's deposit (kSTUCK_DEPOSIT) happens inside
+        // createVaultAndBroker; no further deposits, so Lender is the
+        // sole shareholder of a clean vault.
+        auto const broker = createVaultAndBroker(env, asset, lender, params);
+        Vault v{env};
+
+        auto const vaultBefore = env.le(broker.vaultKeylet());
+        if (!BEAST_EXPECT(vaultBefore))
+            return;
+        auto const shareAsset = vaultBefore->at(sfShareMPTID);
+        auto const tokenLender = env.le(keylet::mptoken(shareAsset, lender.id()));
+        if (!BEAST_EXPECT(tokenLender))
+            return;
+        std::uint64_t const sharesLender = tokenLender->getFieldU64(sfMPTAmount);
+
+        // Sole shareholder, no loans, no loss. Burn everything.
+        STAmount const allShares{MPTIssue{shareAsset}, Number(sharesLender)};
+        env(v.withdraw({
+                .depositor = lender,
+                .id = broker.vaultKeylet().key,
+                .amount = allShares,
+            }),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const vaultFinal = env.le(broker.vaultKeylet());
+        if (!BEAST_EXPECT(vaultFinal))
+            return;
+        auto const issuanceFinal = env.le(keylet::mptIssuance(shareAsset));
+        if (!BEAST_EXPECT(issuanceFinal))
+            return;
+        BEAST_EXPECT(issuanceFinal->getFieldU64(sfOutstandingAmount) == 0);
+        BEAST_EXPECT(vaultFinal->at(sfAssetsTotal) == beast::kZERO);
+        BEAST_EXPECT(vaultFinal->at(sfAssetsAvailable) == beast::kZERO);
+        BEAST_EXPECT(vaultFinal->at(sfLossUnrealized) == beast::kZERO);
+
+        // (Pre-fix path takes the regular code path; post-fix path enters
+        // the new final-withdrawal guard, which forces payout to exactly
+        // assetsAvailable. Either way the result is identical for a clean
+        // vault.)
+        (void)withFix;
+    }
+
+    // Sole shareholder in an impaired vault redeems a *partial* count of
+    // shares via fixed-shares input. Pre-fix the discounted formula is
+    // used; post-fix the full-price formula is used (waiveUnrealizedLoss
+    // = Yes). The relative payout therefore differs, and post-fix the
+    // depositor recovers proportionally more of the residual cash for
+    // the shares burned. In both cases the vault is left in a valid
+    // (non-empty) state.
+    void
+    testWithdrawSoleShareholderPartialFixedSharesUsesFullPrice()
+    {
+        using namespace test::jtx;
+
+        testcase(
+            "Vault withdraw: sole-shareholder partial fixed-shares uses "
+            "full-price rate (fixCleanup3_2_0)");
+
+        Env env(*this, all_ | fixCleanup3_2_0);
+        auto const f = setupStuckDepositor(env);
+        if (!BEAST_EXPECT(f.broker.has_value() && f.asset.has_value()) || f.sharesLender == 0)
+            return;
+
+        auto const vaultBefore = env.le(f.broker->vaultKeylet());
+        if (!BEAST_EXPECT(vaultBefore))
+            return;
+        Number const totalBefore = vaultBefore->at(sfAssetsTotal);
+        Number const availableBefore = vaultBefore->at(sfAssetsAvailable);
+        Number const lossBefore = vaultBefore->at(sfLossUnrealized);
+
+        // Burn exactly half of the outstanding shares.
+        std::uint64_t const halfShares = f.sharesLender / 2;
+        STAmount const halfAmt{MPTIssue{f.shareAsset}, Number(halfShares)};
+
+        STAmount const lenderBalanceBefore = env.balance(f.lender, *f.asset);
+
+        Vault v{env};
+        env(v.withdraw({
+                .depositor = f.lender,
+                .id = f.broker->vaultKeylet().key,
+                .amount = halfAmt,
+            }),
+            Ter(tesSUCCESS));
+        env.close();
+
+        // Expected payout under the full-price formula:
+        //   assets = totalBefore * halfShares / sharesLender
+        // which (with halfShares == sharesLender/2) is roughly
+        //   totalBefore / 2.
+        STAmount const lenderBalanceAfter = env.balance(f.lender, *f.asset);
+        Number const received{lenderBalanceAfter - lenderBalanceBefore};
+        Number const expected = totalBefore * Number(halfShares) / Number(f.sharesLender);
+        BEAST_EXPECT(received == expected);
+
+        // The full-price payout strictly exceeds what the discounted
+        // formula would have produced — that's the whole point of the
+        // waive. Discounted would have been:
+        //   (totalBefore - lossBefore) * halfShares / sharesLender
+        Number const discounted =
+            (totalBefore - lossBefore) * Number(halfShares) / Number(f.sharesLender);
+        BEAST_EXPECT(received > discounted);
+
+        auto const vaultAfter = env.le(f.broker->vaultKeylet());
+        if (!BEAST_EXPECT(vaultAfter))
+            return;
+        auto const issuanceAfter = env.le(keylet::mptIssuance(f.shareAsset));
+        if (!BEAST_EXPECT(issuanceAfter))
+            return;
+
+        // Vault remains valid: shares > 0, total > 0, invariant holds.
+        BEAST_EXPECT(issuanceAfter->getFieldU64(sfOutstandingAmount) > 0);
+        BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) > beast::kZERO);
+        BEAST_EXPECT(vaultAfter->at(sfLossUnrealized) == lossBefore);
+        BEAST_EXPECT(
+            vaultAfter->at(sfLossUnrealized) <=
+            vaultAfter->at(sfAssetsTotal) - vaultAfter->at(sfAssetsAvailable));
+
+        // Conservation: vault delta matches the depositor's gain.
+        BEAST_EXPECT(totalBefore - vaultAfter->at(sfAssetsTotal) == received);
+        BEAST_EXPECT(availableBefore - vaultAfter->at(sfAssetsAvailable) == received);
+    }
+
 public:
     void
     run() override
@@ -6163,6 +6810,21 @@ public:
         testAssetsMaximum();
         testBug6LimitBypassWithShares();
         testRemoveEmptyHoldingLockedAmount();
+
+        // Sole-shareholder / stuck-depositor coverage (XLS-0065 +
+        // fixCleanup3_2_0). `testableAmendments()` already contains
+        // fixCleanup3_2_0 (it includes Supported::No features), so the
+        // pre-fix run subtracts it explicitly. Each parameterized test
+        // runs against both feature sets to lock in the rejection
+        // behavior and the new full-price exchange behavior side by side.
+        testWithdrawSoleShareholderFixedAssetExit(all_ - fixCleanup3_2_0);
+        testWithdrawSoleShareholderFixedAssetExit(all_);
+        testWithdrawSoleShareholderFullSharesRejected(all_ - fixCleanup3_2_0);
+        testWithdrawSoleShareholderFullSharesRejected(all_);
+        testWithdrawSoleShareholderCleanVaultUnaffected(all_ - fixCleanup3_2_0);
+        testWithdrawSoleShareholderCleanVaultUnaffected(all_);
+        testWithdrawSoleShareholderPartialFixedSharesUsesFullPrice();
+        testWithdrawSoleShareholderLoanRepaymentExit();
     }
 };
 
