@@ -1937,8 +1937,8 @@ class LoanBroker_test : public beast::unit_test::Suite
                 PrettyAmount const subUlpAmt = iou(Number{1, -16});
                 auto const coverBefore = env.le(brokerKeylet)->at(sfCoverAvailable);
                 env(coverClawback(issuer),
-                    kLOAN_BROKER_ID(brokerKeylet.key),
-                    kAMOUNT(subUlpAmt),
+                    kLoanBrokerId(brokerKeylet.key),
+                    kAmount(subUlpAmt),
                     Ter(expected));
                 env.close();
                 if (expected == tesSUCCESS)
@@ -1991,8 +1991,8 @@ class LoanBroker_test : public beast::unit_test::Suite
             env.close();
 
             env(coverClawback(issuer),
-                kLOAN_BROKER_ID(brokerKeylet.key),
-                kAMOUNT(mptAsset(1)),
+                kLoanBrokerId(brokerKeylet.key),
+                kAmount(mptAsset(1)),
                 Ter(tesSUCCESS));
             env.close();
         }
