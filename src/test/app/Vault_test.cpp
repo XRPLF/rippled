@@ -2286,7 +2286,7 @@ class Vault_test : public beast::unit_test::Suite
             env.close();
             Vault const vault{env};
 
-            MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+            MPTTester mptt{env, issuer, kMptInitNoFund};
             mptt.create(
                 {.flags = tfMPTCanTransfer | tfMPTCanLock,
                  .mutableFlags = tmfMPTCanMutateCanTransfer});
@@ -2330,7 +2330,7 @@ class Vault_test : public beast::unit_test::Suite
             env.close();
             Vault const vault{env};
 
-            MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+            MPTTester mptt{env, issuer, kMptInitNoFund};
             mptt.create(
                 {.flags = tfMPTCanTransfer | tfMPTCanLock,
                  .mutableFlags = tmfMPTCanMutateCanTransfer});
@@ -2393,7 +2393,7 @@ class Vault_test : public beast::unit_test::Suite
             env.close();
             Vault const vault{env};
 
-            MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+            MPTTester mptt{env, issuer, kMptInitNoFund};
             mptt.create(
                 {.flags = tfMPTCanTransfer | tfMPTCanLock,
                  .mutableFlags = tmfMPTCanMutateCanTransfer});
@@ -2439,7 +2439,7 @@ class Vault_test : public beast::unit_test::Suite
             env.close();
             Vault const vault{env};
 
-            MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+            MPTTester mptt{env, issuer, kMptInitNoFund};
             mptt.create(
                 {.flags = tfMPTCanTransfer | tfMPTCanTrade | tfMPTCanLock,
                  .mutableFlags = tmfMPTCanMutateCanTrade});
@@ -6405,7 +6405,7 @@ class Vault_test : public beast::unit_test::Suite
             env.fund(XRP(10'000), issuer, owner);
             env.close();
 
-            MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+            MPTTester mptt{env, issuer, kMptInitNoFund};
             mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
             PrettyAsset const asset = mptt.issuanceID();
             mptt.authorize({.account = owner});
@@ -6485,7 +6485,7 @@ class Vault_test : public beast::unit_test::Suite
             env.fund(XRP(10'000), issuer, owner);
             env.close();
 
-            MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+            MPTTester mptt{env, issuer, kMptInitNoFund};
             mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
             PrettyAsset const asset = mptt.issuanceID();
             mptt.authorize({.account = owner});
@@ -6508,7 +6508,7 @@ class Vault_test : public beast::unit_test::Suite
             env.fund(XRP(10'000), issuer);
             env.close();
 
-            MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+            MPTTester mptt{env, issuer, kMptInitNoFund};
             mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
             env.close();
 
@@ -6555,7 +6555,7 @@ class Vault_test : public beast::unit_test::Suite
             env.fund(XRP(10'000), issuer, owner, depositor);
             env.close();
 
-            MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+            MPTTester mptt{env, issuer, kMptInitNoFund};
             mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanClawback});
             PrettyAsset const asset = mptt.issuanceID();
             mptt.authorize({.account = owner});
@@ -6596,7 +6596,7 @@ class Vault_test : public beast::unit_test::Suite
             env.fund(XRP(10'000), issuer, owner);
             env.close();
 
-            MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+            MPTTester mptt{env, issuer, kMptInitNoFund};
             mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTRequireAuth});
             PrettyAsset const asset = mptt.issuanceID();
             mptt.authorize({.account = owner});
@@ -6637,7 +6637,7 @@ class Vault_test : public beast::unit_test::Suite
             env.fund(XRP(10'000), issuer, owner, depositor);
             env.close();
 
-            MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+            MPTTester mptt{env, issuer, kMptInitNoFund};
             mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
             PrettyAsset const asset = mptt.issuanceID();
             mptt.authorize({.account = owner});
@@ -6751,7 +6751,7 @@ class Vault_test : public beast::unit_test::Suite
             env.fund(XRP(10'000), issuer, owner);
             env.close();
 
-            MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+            MPTTester mptt{env, issuer, kMptInitNoFund};
             mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
             PrettyAsset const asset = mptt.issuanceID();
             mptt.authorize({.account = owner});

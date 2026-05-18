@@ -4152,7 +4152,7 @@ class Invariants_test : public beast::unit_test::Suite
                     Account const issuer{"issuer"};
                     env.fund(XRP(10'000), issuer);
                     env.close();
-                    MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+                    MPTTester mptt{env, issuer, kMptInitNoFund};
                     mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
                     PrettyAsset const asset = mptt.issuanceID();
                     mptt.authorize({.account = a1});
@@ -4197,7 +4197,7 @@ class Invariants_test : public beast::unit_test::Suite
                     Account const issuer{"issuer"};
                     env.fund(XRP(10'000), issuer);
                     env.close();
-                    MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+                    MPTTester mptt{env, issuer, kMptInitNoFund};
                     mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
                     PrettyAsset const asset = mptt.issuanceID();
                     mptt.authorize({.account = a1});
