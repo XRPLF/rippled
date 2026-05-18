@@ -77,7 +77,7 @@ AMMBid::preflight(PreflightContext const& ctx)
     if (ctx.tx.isFieldPresent(sfAuthAccounts))
     {
         auto const authAccounts = ctx.tx.getFieldArray(sfAuthAccounts);
-        if (authAccounts.size() > kAUCTION_SLOT_MAX_AUTH_ACCOUNTS)
+        if (authAccounts.size() > kAuctionSlotMaxAuthAccounts)
         {
             JLOG(ctx.j.debug()) << "AMM Bid: Invalid number of AuthAccounts.";
             return temMALFORMED;
@@ -113,7 +113,7 @@ AMMBid::preclaim(PreclaimContext const& ctx)
     }
 
     auto const lpTokensBalance = (*ammSle)[sfLPTokenBalance];
-    if (lpTokensBalance == beast::kZERO)
+    if (lpTokensBalance == beast::kZero)
         return tecAMM_EMPTY;
 
     if (ctx.tx.isFieldPresent(sfAuthAccounts))
@@ -130,7 +130,7 @@ AMMBid::preclaim(PreclaimContext const& ctx)
 
     auto const lpTokens = ammLPHolds(ctx.view, *ammSle, ctx.tx[sfAccount], ctx.j);
     // Not LP
-    if (lpTokens == beast::kZERO)
+    if (lpTokens == beast::kZero)
     {
         JLOG(ctx.j.debug()) << "AMM Bid: account is not LP.";
         return tecAMM_INVALID_TOKENS;
@@ -201,12 +201,12 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
     auto const current =
         duration_cast<seconds>(ctx.view().header().parentCloseTime.time_since_epoch()).count();
     // Auction slot discounted fee
-    auto const discountedFee = (*ammSle)[sfTradingFee] / kAUCTION_SLOT_DISCOUNTED_FEE_FRACTION;
+    auto const discountedFee = (*ammSle)[sfTradingFee] / kAuctionSlotDiscountedFeeFraction;
     auto const tradingFee = getFee((*ammSle)[sfTradingFee]);
     // Min price
-    auto const minSlotPrice = lptAMMBalance * tradingFee / kAUCTION_SLOT_MIN_FEE_FRACTION;
+    auto const minSlotPrice = lptAMMBalance * tradingFee / kAuctionSlotMinFeeFraction;
 
-    std::uint32_t constexpr kTAILING_SLOT = kAUCTION_SLOT_TIME_INTERVALS - 1;
+    static constexpr std::uint32_t kTailingSlot = kAuctionSlotTimeIntervals - 1;
 
     // If seated then it is the current slot-holder time slot, otherwise
     // the auction slot is not owned. Slot range is in {0-19}
@@ -216,12 +216,12 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
     auto validOwner = [&](AccountID const& account) {
         // Valid range is 0-19 but the tailing slot pays MinSlotPrice
         // and doesn't refund so the check is < instead of <= to optimize.
-        return timeSlot && *timeSlot < kTAILING_SLOT && sb.read(keylet::account(account));
+        return timeSlot && *timeSlot < kTailingSlot && sb.read(keylet::account(account));
     };
 
     auto updateSlot = [&](std::uint32_t fee, Number const& minPrice, Number const& burn) -> TER {
         auctionSlot.setAccountID(sfAccount, account);
-        auctionSlot.setFieldU32(sfExpiration, current + kTOTAL_TIME_SLOT_SECS);
+        auctionSlot.setFieldU32(sfExpiration, current + kTotalTimeSlotSecs);
         if (fee != 0)
         {
             auctionSlot.setFieldU16(sfDiscountedFee, fee);
@@ -322,7 +322,7 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
         STAmount const pricePurchased = auctionSlot[sfPrice];
         XRPL_ASSERT(timeSlot, "xrpl::applyBid : timeSlot is set");
         // NOLINTBEGIN(bugprone-unchecked-optional-access)
-        auto const fractionUsed = (Number(*timeSlot) + 1) / kAUCTION_SLOT_TIME_INTERVALS;
+        auto const fractionUsed = (Number(*timeSlot) + 1) / kAuctionSlotTimeIntervals;
         auto const fractionRemaining = Number(1) - fractionUsed;
         auto const computedPrice = [&]() -> Number {
             auto const p105 = Number(105, -2);

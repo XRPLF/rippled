@@ -37,7 +37,7 @@ public:
         s.add(ser);
 
         SerialIter sit(ser.slice());
-        return STAmount(sit, kSF_GENERIC);
+        return STAmount(sit, kSfGeneric);
     }
 
     //--------------------------------------------------------------------------
@@ -54,7 +54,7 @@ public:
         {
             mantissa--;
 
-            if (mantissa < STAmount::kMIN_VALUE)
+            if (mantissa < STAmount::kMinValue)
                 return {amount.asset(), mantissa, amount.exponent(), amount.negative()};
 
             return {
@@ -69,7 +69,7 @@ public:
         {
             mantissa++;
 
-            if (mantissa > STAmount::kMAX_VALUE)
+            if (mantissa > STAmount::kMaxValue)
                 return {amount.asset(), mantissa, amount.exponent(), amount.negative()};
 
             return {
@@ -228,9 +228,9 @@ public:
         unexpected(serializeAndDeserialize(hundred) != hundred, "STAmount fail");
         unexpected(!zeroSt.native(), "STAmount fail");
         unexpected(!hundred.native(), "STAmount fail");
-        unexpected(zeroSt != beast::kZERO, "STAmount fail");
-        unexpected(one == beast::kZERO, "STAmount fail");
-        unexpected(hundred == beast::kZERO, "STAmount fail");
+        unexpected(zeroSt != beast::kZero, "STAmount fail");
+        unexpected(one == beast::kZero, "STAmount fail");
+        unexpected(hundred == beast::kZero, "STAmount fail");
         unexpected((zeroSt < zeroSt), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected(!(zeroSt < one), "STAmount fail");
         unexpected(!(zeroSt < hundred), "STAmount fail");
@@ -314,9 +314,9 @@ public:
         unexpected(serializeAndDeserialize(hundred) != hundred, "STAmount fail");
         unexpected(zeroSt.native(), "STAmount fail");
         unexpected(hundred.native(), "STAmount fail");
-        unexpected(zeroSt != beast::kZERO, "STAmount fail");
-        unexpected(one == beast::kZERO, "STAmount fail");
-        unexpected(hundred == beast::kZERO, "STAmount fail");
+        unexpected(zeroSt != beast::kZero, "STAmount fail");
+        unexpected(one == beast::kZero, "STAmount fail");
+        unexpected(hundred == beast::kZero, "STAmount fail");
         unexpected((zeroSt < zeroSt), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected(!(zeroSt < one), "STAmount fail");
         unexpected(!(zeroSt < hundred), "STAmount fail");
@@ -494,34 +494,30 @@ public:
     {
         testcase("underflow");
 
-        STAmount const bigNative(STAmount::kMAX_NATIVE / 2);
+        STAmount const bigNative(STAmount::kMaxNative / 2);
         STAmount const bigValue(
-            noIssue(),
-            (STAmount::kMIN_VALUE + STAmount::kMAX_VALUE) / 2,
-            STAmount::kMAX_OFFSET - 1);
+            noIssue(), (STAmount::kMinValue + STAmount::kMaxValue) / 2, STAmount::kMaxOffset - 1);
         STAmount const smallValue(
-            noIssue(),
-            (STAmount::kMIN_VALUE + STAmount::kMAX_VALUE) / 2,
-            STAmount::kMIN_OFFSET + 1);
+            noIssue(), (STAmount::kMinValue + STAmount::kMaxValue) / 2, STAmount::kMinOffset + 1);
         STAmount const zeroSt(noIssue(), 0);
 
         STAmount const smallXSmall = multiply(smallValue, smallValue, noIssue());
 
-        BEAST_EXPECT(smallXSmall == beast::kZERO);
+        BEAST_EXPECT(smallXSmall == beast::kZero);
 
         STAmount bigDsmall = divide(smallValue, bigValue, noIssue());
 
-        BEAST_EXPECT(bigDsmall == beast::kZERO);
+        BEAST_EXPECT(bigDsmall == beast::kZero);
 
-        BEAST_EXPECT(bigDsmall == beast::kZERO);
+        BEAST_EXPECT(bigDsmall == beast::kZero);
 
         bigDsmall = divide(smallValue, bigValue, xrpIssue());
 
-        BEAST_EXPECT(bigDsmall == beast::kZERO);
+        BEAST_EXPECT(bigDsmall == beast::kZero);
 
         bigDsmall = divide(smallValue, bigNative, xrpIssue());
 
-        BEAST_EXPECT(bigDsmall == beast::kZERO);
+        BEAST_EXPECT(bigDsmall == beast::kZero);
 
         // very bad offer
         std::uint64_t r = getRate(smallValue, bigValue);
@@ -618,17 +614,17 @@ public:
             BEAST_EXPECT(amountFromJson(sfNumber, "0") == XRPAmount(0));
             BEAST_EXPECT(amountFromJson(sfNumber, "-0") == XRPAmount(0));
 
-            constexpr auto kIMIN = std::numeric_limits<int>::min();
-            BEAST_EXPECT(amountFromJson(sfNumber, kIMIN) == XRPAmount(kIMIN));
-            BEAST_EXPECT(amountFromJson(sfNumber, std::to_string(kIMIN)) == XRPAmount(kIMIN));
+            constexpr auto kIMin = std::numeric_limits<int>::min();
+            BEAST_EXPECT(amountFromJson(sfNumber, kIMin) == XRPAmount(kIMin));
+            BEAST_EXPECT(amountFromJson(sfNumber, std::to_string(kIMin)) == XRPAmount(kIMin));
 
-            constexpr auto kIMAX = std::numeric_limits<int>::max();
-            BEAST_EXPECT(amountFromJson(sfNumber, kIMAX) == XRPAmount(kIMAX));
-            BEAST_EXPECT(amountFromJson(sfNumber, std::to_string(kIMAX)) == XRPAmount(kIMAX));
+            constexpr auto kIMax = std::numeric_limits<int>::max();
+            BEAST_EXPECT(amountFromJson(sfNumber, kIMax) == XRPAmount(kIMax));
+            BEAST_EXPECT(amountFromJson(sfNumber, std::to_string(kIMax)) == XRPAmount(kIMax));
 
-            constexpr auto kUMAX = std::numeric_limits<unsigned int>::max();
-            BEAST_EXPECT(amountFromJson(sfNumber, kUMAX) == XRPAmount(kUMAX));
-            BEAST_EXPECT(amountFromJson(sfNumber, std::to_string(kUMAX)) == XRPAmount(kUMAX));
+            constexpr auto kUMax = std::numeric_limits<unsigned int>::max();
+            BEAST_EXPECT(amountFromJson(sfNumber, kUMax) == XRPAmount(kUMax));
+            BEAST_EXPECT(amountFromJson(sfNumber, std::to_string(kUMax)) == XRPAmount(kUMax));
 
             // XRP does not handle fractional part
             try

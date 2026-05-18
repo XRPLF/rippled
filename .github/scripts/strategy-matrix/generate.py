@@ -32,7 +32,32 @@ We will further set additional CMake arguments as follows:
 """
 
 
-def generate_strategy_matrix(all: bool, config: Config) -> list:
+def build_config_name(os_entry: dict[str, str], platform: str, build_type: str) -> str:
+    parts = [os_entry["distro_name"]]
+    for key in ("distro_version", "compiler_name", "compiler_version"):
+        if value := os_entry[key]:
+            parts.append(value)
+    parts.append("arm64" if "arm64" in platform else "amd64")
+    parts.append(build_type.lower())
+    return "-".join(parts)
+
+
+def generate_packaging_matrix(config: Config) -> list[dict]:
+    """Emit one entry per os entry with `package: true`. Architecture is
+    hardcoded to linux/amd64 here (and the runner is hardcoded at the
+    workflow level) until arm64 packaging is ready.
+    """
+    return [
+        {
+            "artifact_name": f"xrpld-{build_config_name(os, 'linux/amd64', 'Release')}",
+            "os": os,
+        }
+        for os in config.os
+        if os.get("package", False)
+    ]
+
+
+def generate_strategy_matrix(all: bool, config: Config) -> list[dict]:
     configurations = []
     for architecture, os, build_type, cmake_args in itertools.product(
         config.architecture, config.os, config.build_type, config.cmake_args
@@ -101,14 +126,15 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
                     continue
 
             # RHEL:
-            # - 9 using GCC 12: Debug on linux/amd64.
+            # - 9 using GCC 12: Debug and Release on linux/amd64
+            #   (Release is required for RPM packaging).
             # - 10 using Clang: Release on linux/amd64.
             if os["distro_name"] == "rhel":
                 skip = True
                 if os["distro_version"] == "9":
                     if (
                         f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-12"
-                        and build_type == "Debug"
+                        and build_type in ["Debug", "Release"]
                         and architecture["platform"] == "linux/amd64"
                     ):
                         skip = False
@@ -123,7 +149,8 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
                     continue
 
             # Ubuntu:
-            # - Jammy using GCC 12: Debug on linux/arm64.
+            # - Jammy using GCC 12: Debug on linux/arm64, Release on
+            #   linux/amd64 (Release is required for DEB packaging).
             # - Noble using GCC 14: Release on linux/amd64.
             # - Noble using Clang 18: Debug on linux/amd64.
             # - Noble using Clang 19: Release on linux/arm64.
@@ -134,6 +161,12 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
                         f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-12"
                         and build_type == "Debug"
                         and architecture["platform"] == "linux/arm64"
+                    ):
+                        skip = False
+                    if (
+                        f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-12"
+                        and build_type == "Release"
+                        and architecture["platform"] == "linux/amd64"
                     ):
                         skip = False
                 elif os["distro_version"] == "noble":
@@ -218,17 +251,7 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
 
         # Generate a unique name for the configuration, e.g. macos-arm64-debug
         # or debian-bookworm-gcc-12-amd64-release.
-        config_name = os["distro_name"]
-        if (n := os["distro_version"]) != "":
-            config_name += f"-{n}"
-        if (n := os["compiler_name"]) != "":
-            config_name += f"-{n}"
-        if (n := os["compiler_version"]) != "":
-            config_name += f"-{n}"
-        config_name += (
-            f"-{architecture['platform'][architecture['platform'].find('/')+1:]}"
-        )
-        config_name += f"-{build_type.lower()}"
+        config_name = build_config_name(os, architecture["platform"], build_type)
         if "-Dcoverage=ON" in cmake_args:
             config_name += "-coverage"
         if "-Dunity=ON" in cmake_args:
@@ -332,10 +355,19 @@ if __name__ == "__main__":
         required=False,
         type=Path,
     )
+    parser.add_argument(
+        "-p",
+        "--packaging",
+        help="Emit the packaging matrix (derived from the 'package' field on os entries) instead of the build/test matrix.",
+        action="store_true",
+    )
     args = parser.parse_args()
 
     matrix = []
-    if args.config is None or args.config == "":
+    if args.packaging:
+        config_path = args.config if args.config else THIS_DIR / "linux.json"
+        matrix += generate_packaging_matrix(read_config(config_path))
+    elif args.config is None or args.config == "":
         matrix += generate_strategy_matrix(
             args.all, read_config(THIS_DIR / "linux.json")
         )
