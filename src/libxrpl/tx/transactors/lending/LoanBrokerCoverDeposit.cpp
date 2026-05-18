@@ -1,6 +1,7 @@
 #include <xrpl/tx/transactors/lending/LoanBrokerCoverDeposit.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -131,7 +132,7 @@ LoanBrokerCoverDeposit::doApply()
     if (fix320Enabled && amount == beast::kZERO)
     {
         JLOG(ctx_.journal.warn()) << "LoanBrokerCoverDeposit: deposit amount: " << tx[sfAmount]
-                                  << "is zero at loan broker scale";
+                                  << " is zero at loan broker scale";
         return tecPRECISION_LOSS;
     }
     // Transfer assets from depositor to pseudo-account.
