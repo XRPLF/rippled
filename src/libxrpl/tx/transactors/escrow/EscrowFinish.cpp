@@ -310,7 +310,8 @@ EscrowFinish::doApply()
     if (!sled)
         return tecNO_DST;
 
-    if (auto err = verifyDepositPreauth(ctx_.tx, ctx_.view(), account_, destID, sled, ctx_.journal);
+    if (auto err =
+            verifyDepositPreauth(ctx_.tx, ctx_.view(), accountID_, destID, sled, ctx_.journal);
         !isTesSuccess(err))
         return err;
 
@@ -355,7 +356,7 @@ EscrowFinish::doApply()
             ? xrpl::Rate(slep->getFieldU32(sfTransferRate))
             : kParityRate;
         auto const issuer = amount.getIssuer();
-        bool const createAsset = destID == account_;
+        bool const createAsset = destID == accountID_;
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
                     return escrowUnlockApplyHelper<T>(

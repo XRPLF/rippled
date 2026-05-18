@@ -385,7 +385,7 @@ AMMCreate::doApply()
     // as we go on processing transactions.
     Sandbox sb(&ctx_.view());
 
-    auto const result = applyCreate(ctx_, sb, account_, j_);
+    auto const result = applyCreate(ctx_, sb, accountID_, j_);
     if (result.second)
         sb.apply(ctx_.rawView());
 
