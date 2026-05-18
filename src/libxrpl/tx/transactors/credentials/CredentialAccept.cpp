@@ -43,7 +43,7 @@ CredentialAccept::preflight(PreflightContext const& ctx)
     }
 
     auto const credType = ctx.tx[sfCredentialType];
-    if (credType.empty() || (credType.size() > kMAX_CREDENTIAL_TYPE_LENGTH))
+    if (credType.empty() || (credType.size() > kMaxCredentialTypeLength))
     {
         JLOG(ctx.j.trace()) << "Malformed transaction: invalid size of CredentialType.";
         return temMALFORMED;
@@ -73,7 +73,7 @@ CredentialAccept::preclaim(PreclaimContext const& ctx)
         return tecNO_ENTRY;
     }
 
-    if ((sleCred->getFieldU32(sfFlags) & lsfAccepted) != 0u)
+    if (sleCred->isFlag(lsfAccepted))
     {
         JLOG(ctx.j.warn()) << "Credential already accepted: " << to_string(subject) << ", "
                            << to_string(issuer) << ", " << credType;

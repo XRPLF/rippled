@@ -101,7 +101,7 @@ TxMetrics::json() const
 {
     std::scoped_lock const l(mutex);
 
-    json::Value ret(json::ObjectValue);
+    json::Value ret(json::ValueType::Object);
 
     ret[jss::txr_tx_cnt] = std::to_string(tx.m1.rollingAvg);
     ret[jss::txr_tx_sz] = std::to_string(tx.m2.rollingAvg);

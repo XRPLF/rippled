@@ -21,13 +21,13 @@ LegacyPathFind::LegacyPathFind(bool isAdmin, Application& app)
     }
 
     auto const& jobCount = app.getJobQueue().getJobCountGE(JtClient);
-    if (jobCount > Tuning::kMAX_PATHFIND_JOB_COUNT || app.getFeeTrack().isLoadedLocal())
+    if (jobCount > Tuning::kMaxPathfindJobCount || app.getFeeTrack().isLoadedLocal())
         return;
 
     while (true)
     {
         int prevVal = inProgress.load();
-        if (prevVal >= Tuning::kMAX_PATHFINDS_IN_PROGRESS)
+        if (prevVal >= Tuning::kMaxPathfindsInProgress)
             return;
 
         if (inProgress.compare_exchange_strong(

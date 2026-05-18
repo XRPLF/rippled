@@ -47,7 +47,7 @@ public:
     void
     operator()(jtx::Env&, jtx::JTx& jtx) const
     {
-        auto& arr(jtx.jv[sfCredentialIDs.jsonName] = json::ArrayValue);
+        auto& arr(jtx.jv[sfCredentialIDs.jsonName] = json::ValueType::Array);
         for (auto const& hash : credentials_)
             arr.append(hash);
     }

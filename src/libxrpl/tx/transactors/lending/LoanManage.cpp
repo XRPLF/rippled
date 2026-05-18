@@ -45,7 +45,7 @@ LoanManage::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 LoanManage::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfLoanID] == beast::kZERO)
+    if (ctx.tx[sfLoanID] == beast::kZero)
         return temINVALID;
 
     // Flags are mutually exclusive
@@ -424,7 +424,7 @@ LoanManage::doApply()
 
     // Pre-amendment, associateAsset was only called on the noop (no flags)
     // path. Post-amendment, we call associateAsset on all successful paths.
-    if (view.rules().enabled(fixSecurity3_1_3) && isTesSuccess(result))
+    if (view.rules().enabled(fixCleanup3_1_3) && isTesSuccess(result))
     {
         associateAsset(*loanSle, vaultAsset);
         associateAsset(*brokerSle, vaultAsset);

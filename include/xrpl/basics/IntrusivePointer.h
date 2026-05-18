@@ -406,8 +406,8 @@ private:
     // pointer. The low bit must be masked to zero when converting back to a
     // pointer. If the low bit is '1', this is a weak pointer.
     std::uintptr_t tp_{0};
-    static constexpr std::uintptr_t kTAG_MASK = 1;
-    static constexpr std::uintptr_t kPTR_MASK = ~kTAG_MASK;
+    static constexpr std::uintptr_t kTagMask = 1;
+    static constexpr std::uintptr_t kPtrMask = ~kTagMask;
 
 private:
     /** Return the raw pointer held by this object.

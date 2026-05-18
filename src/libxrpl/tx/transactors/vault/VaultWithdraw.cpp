@@ -29,18 +29,18 @@ namespace xrpl {
 NotTEC
 VaultWithdraw::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfVaultID] == beast::kZERO)
+    if (ctx.tx[sfVaultID] == beast::kZero)
     {
         JLOG(ctx.j.debug()) << "VaultWithdraw: zero/empty vault ID.";
         return temMALFORMED;
     }
 
-    if (ctx.tx[sfAmount] <= beast::kZERO)
+    if (ctx.tx[sfAmount] <= beast::kZero)
         return temBAD_AMOUNT;
 
     if (auto const destination = ctx.tx[~sfDestination])
     {
-        if (*destination == beast::kZERO)
+        if (*destination == beast::kZero)
         {
             return temMALFORMED;
         }
@@ -72,7 +72,7 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     }
 
     // Enforce valid withdrawal policy
-    if (vault->at(sfWithdrawalPolicy) != kVAULT_STRATEGY_FIRST_COME_FIRST_SERVE)
+    if (vault->at(sfWithdrawalPolicy) != kVaultStrategyFirstComeFirstServe)
     {
         // LCOV_EXCL_START
         JLOG(ctx.j.error()) << "VaultWithdraw: invalid withdrawal policy.";
@@ -80,9 +80,9 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    if (ctx.view.rules().enabled(fixSecurity3_1_3) && amount.asset() == vaultShare)
+    if (ctx.view.rules().enabled(fixCleanup3_1_3) && amount.asset() == vaultShare)
     {
-        // Post-fixSecurity3_1_3: if the user specified shares, convert
+        // Post-fixCleanup3_1_3: if the user specified shares, convert
         // to the equivalent asset amount before checking withdrawal
         // limits. Pre-amendment the limit check was skipped for
         // share-denominated withdrawals.
@@ -187,7 +187,7 @@ VaultWithdraw::doApply()
                 sharesRedeemed = *maybeShares;
             }
 
-            if (sharesRedeemed == beast::kZERO)
+            if (sharesRedeemed == beast::kZero)
                 return tecPRECISION_LOSS;
             auto const maybeAssets = sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed);
             if (!maybeAssets)

@@ -32,7 +32,7 @@ doConnect(RPC::JsonContext& context)
         return RPC::missingFieldError(jss::ip);
 
     if (context.params.isMember(jss::port) &&
-        !context.params[jss::port].isConvertibleTo(json::IntValue))
+        !context.params[jss::port].isConvertibleTo(json::ValueType::Int))
     {
         return rpcError(RpcInvalidParams);
     }
@@ -45,7 +45,7 @@ doConnect(RPC::JsonContext& context)
     }
     else
     {
-        iPort = kDEFAULT_PEER_PORT;
+        iPort = kDefaultPeerPort;
     }
 
     auto const ipStr = context.params[jss::ip].asString();
