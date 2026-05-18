@@ -48,7 +48,7 @@ enum class TruncateShares : bool { No = false, Yes = true };
 /** Controls whether sharesToAssetsWithdraw subtracts sfLossUnrealized from
     sfAssetsTotal before computing the exchange rate. The default (No)
     applies the standard discounted rate; Yes is used when the redeemer is
-    the sole remaining shareholder,
+    the sole remaining shareholder.
 */
 enum class WaiveUnrealizedLoss : bool { No = false, Yes = true };
 
@@ -61,6 +61,8 @@ enum class WaiveUnrealizedLoss : bool { No = false, Yes = true };
     @param issuance The MPTokenIssuance SLE for the vault's shares.
     @param assets The amount of assets to convert.
     @param truncate Whether to truncate instead of rounding.
+    @param waive Whether to waive the unrealized-loss discount when computing
+                 the exchange rate.
 
     @return The number of shares, or nullopt on error.
 */
@@ -70,7 +72,7 @@ assetsToSharesWithdraw(
     std::shared_ptr<SLE const> const& issuance,
     STAmount const& assets,
     TruncateShares truncate = TruncateShares::No,
-    WaiveUnrealizedLoss wave = WaiveUnrealizedLoss::No);
+    WaiveUnrealizedLoss waive = WaiveUnrealizedLoss::No);
 
 /** From the perspective of a vault, return the number of assets to give the
     depositor when they redeem a fixed amount of shares. Note, since shares are

@@ -6486,9 +6486,9 @@ class Vault_test : public beast::unit_test::Suite
     // Sole shareholder attempts to burn ALL outstanding shares via
     // fixed-shares input while the vault still holds an impaired
     // receivable. Pre-fix this fails with the zero-sized-vault invariant
-    // violation. Post-fix the "final withdrawal" guard in doApply rejects
-    // it with tecLIMIT_EXCEEDED — the depositor must withdraw a smaller
-    // amount or wait for the loan to resolve.
+    // violation. Post-fix the full-price rate causes assetsWithdrawn to
+    // equal assetsTotal, which exceeds assetsAvailable, so the transaction
+    // is rejected with tecINSUFFICIENT_FUNDS.
     void
     testWithdrawSoleShareholderFullSharesRejected(FeatureBitset features)
     {
@@ -6811,12 +6811,6 @@ public:
         testBug6LimitBypassWithShares();
         testRemoveEmptyHoldingLockedAmount();
 
-        // Sole-shareholder / stuck-depositor coverage (XLS-0065 +
-        // fixCleanup3_2_0). `testableAmendments()` already contains
-        // fixCleanup3_2_0 (it includes Supported::No features), so the
-        // pre-fix run subtracts it explicitly. Each parameterized test
-        // runs against both feature sets to lock in the rejection
-        // behavior and the new full-price exchange behavior side by side.
         testWithdrawSoleShareholderFixedAssetExit(all_ - fixCleanup3_2_0);
         testWithdrawSoleShareholderFixedAssetExit(all_);
         testWithdrawSoleShareholderFullSharesRejected(all_ - fixCleanup3_2_0);

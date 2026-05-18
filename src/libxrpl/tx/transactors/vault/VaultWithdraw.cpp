@@ -191,9 +191,9 @@ VaultWithdraw::doApply()
     // We waive the unrealized-loss subtraction in this case to avoid user withdrawing all of their
     // shares but keep future value in the vault.
 
-    auto waiveUnrealizedLoss = fix320Enabled && isSoleShareholder(view(), account_, sleIssuance)
-        ? WaiveUnrealizedLoss::Yes
-        : WaiveUnrealizedLoss::No;
+    auto const waiveUnrealizedLoss =
+        fix320Enabled && isSoleShareholder(view(), account_, sleIssuance) ? WaiveUnrealizedLoss::Yes
+                                                                          : WaiveUnrealizedLoss::No;
 
     try
     {
@@ -298,11 +298,8 @@ VaultWithdraw::doApply()
                 << " assetsAvailable=" << allAvailable.getText();
         }
         assetsWithdrawn = allAvailable;
-    }
 
-    // Do not let dust accumulate in the Vault
-    if (fix320Enabled && isFinalWithdrawal)
-    {
+        // Do not let dust accumulate in the Vault.
         assetsTotal = 0;
         assetsAvailable = 0;
     }
