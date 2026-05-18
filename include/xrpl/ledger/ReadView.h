@@ -36,25 +36,25 @@ public:
 
     using mapped_type = std::shared_ptr<SLE const>;
 
-    struct sles_type : detail::ReadViewFwdRange<std::shared_ptr<SLE const>>
+    struct SlesType : detail::ReadViewFwdRange<std::shared_ptr<SLE const>>
     {
-        explicit sles_type(ReadView const& view);
-        [[nodiscard]] iterator
+        explicit SlesType(ReadView const& view);
+        [[nodiscard]] Iterator
         begin() const;
-        [[nodiscard]] iterator
+        [[nodiscard]] Iterator
         end() const;
-        [[nodiscard]] iterator
-        upper_bound(key_type const& key) const;
+        [[nodiscard]] Iterator
+        upperBound(key_type const& key) const;
     };
 
-    struct txs_type : detail::ReadViewFwdRange<tx_type>
+    struct TxsType : detail::ReadViewFwdRange<tx_type>
     {
-        explicit txs_type(ReadView const& view);
+        explicit TxsType(ReadView const& view);
         [[nodiscard]] bool
         empty() const;
-        [[nodiscard]] iterator
+        [[nodiscard]] Iterator
         begin() const;
-        [[nodiscard]] iterator
+        [[nodiscard]] Iterator
         end() const;
     };
 
@@ -189,23 +189,23 @@ public:
     }
 
     // used by the implementation
-    [[nodiscard]] virtual std::unique_ptr<sles_type::iter_base>
+    [[nodiscard]] virtual std::unique_ptr<SlesType::iter_base>
     slesBegin() const = 0;
 
     // used by the implementation
-    [[nodiscard]] virtual std::unique_ptr<sles_type::iter_base>
+    [[nodiscard]] virtual std::unique_ptr<SlesType::iter_base>
     slesEnd() const = 0;
 
     // used by the implementation
-    [[nodiscard]] virtual std::unique_ptr<sles_type::iter_base>
+    [[nodiscard]] virtual std::unique_ptr<SlesType::iter_base>
     slesUpperBound(key_type const& key) const = 0;
 
     // used by the implementation
-    [[nodiscard]] virtual std::unique_ptr<txs_type::iter_base>
+    [[nodiscard]] virtual std::unique_ptr<TxsType::iter_base>
     txsBegin() const = 0;
 
     // used by the implementation
-    [[nodiscard]] virtual std::unique_ptr<txs_type::iter_base>
+    [[nodiscard]] virtual std::unique_ptr<TxsType::iter_base>
     txsEnd() const = 0;
 
     /** Returns `true` if a tx exists in the tx map.
@@ -236,10 +236,10 @@ public:
         @note Visiting each state entry in the ledger can
               become quite expensive as the ledger grows.
     */
-    sles_type sles;
+    SlesType sles;
 
     // The range of transactions
-    txs_type txs;
+    TxsType txs;
 };
 
 //------------------------------------------------------------------------------
@@ -269,7 +269,7 @@ makeRulesGivenLedger(DigestAwareReadView const& ledger, Rules const& current);
 Rules
 makeRulesGivenLedger(
     DigestAwareReadView const& ledger,
-    std::unordered_set<uint256, beast::uhash<>> const& presets);
+    std::unordered_set<uint256, beast::Uhash<>> const& presets);
 
 }  // namespace xrpl
 

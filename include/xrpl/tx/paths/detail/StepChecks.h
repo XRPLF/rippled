@@ -77,8 +77,8 @@ checkNoRipple(
     if (!sleIn || !sleOut)
         return terNO_LINE;
 
-    if ((((*sleIn)[sfFlags] & ((cur > prev) ? lsfHighNoRipple : lsfLowNoRipple)) != 0u) &&
-        (((*sleOut)[sfFlags] & ((cur > next) ? lsfHighNoRipple : lsfLowNoRipple)) != 0u))
+    if (sleIn->isFlag((cur > prev) ? lsfHighNoRipple : lsfLowNoRipple) &&
+        sleOut->isFlag((cur > next) ? lsfHighNoRipple : lsfLowNoRipple))
     {
         JLOG(j.info()) << "Path violates noRipple constraint between " << prev << ", " << cur
                        << " and " << next;

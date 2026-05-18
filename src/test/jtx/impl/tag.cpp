@@ -6,13 +6,13 @@
 namespace xrpl::test::jtx {
 
 void
-dtag::operator()(Env&, JTx& jt) const
+Dtag::operator()(Env&, JTx& jt) const
 {
     jt.jv["DestinationTag"] = value_;
 }
 
 void
-stag::operator()(Env&, JTx& jt) const
+Stag::operator()(Env&, JTx& jt) const
 {
     jt.jv["SourceTag"] = value_;
 }

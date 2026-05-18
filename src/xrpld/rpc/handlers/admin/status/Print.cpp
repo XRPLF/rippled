@@ -7,7 +7,7 @@
 
 namespace xrpl {
 
-Json::Value
+json::Value
 doPrint(RPC::JsonContext& context)
 {
     JsonPropertyStream stream;

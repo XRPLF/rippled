@@ -15,7 +15,7 @@ namespace xrpl::nft {
 struct TaxonTag
 {
 };
-using Taxon = tagged_integer<std::uint32_t, TaxonTag>;
+using Taxon = TaggedInteger<std::uint32_t, TaxonTag>;
 
 inline Taxon
 toTaxon(std::uint32_t i)
@@ -29,11 +29,11 @@ toUInt32(Taxon t)
     return static_cast<std::uint32_t>(t);
 }
 
-constexpr std::uint16_t const flagBurnable = 0x0001;
-constexpr std::uint16_t const flagOnlyXRP = 0x0002;
-constexpr std::uint16_t const flagCreateTrustLines = 0x0004;
-constexpr std::uint16_t const flagTransferable = 0x0008;
-constexpr std::uint16_t const flagMutable = 0x0010;
+constexpr std::uint16_t const kFlagBurnable = 0x0001;
+constexpr std::uint16_t const kFlagOnlyXrp = 0x0002;
+constexpr std::uint16_t const kFlagCreateTrustLines = 0x0004;
+constexpr std::uint16_t const kFlagTransferable = 0x0008;
+constexpr std::uint16_t const kFlagMutable = 0x0010;
 
 inline std::uint16_t
 getFlags(uint256 const& id)

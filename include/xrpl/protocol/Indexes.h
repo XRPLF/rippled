@@ -75,14 +75,14 @@ Keylet const&
 negativeUNL() noexcept;
 
 /** The beginning of an order book */
-struct book_t
+struct BookT
 {
-    explicit book_t() = default;
+    explicit BookT() = default;
 
     Keylet
     operator()(Book const& b) const;
 };
-static book_t const book{};
+static BookT const kBook{};
 
 /** The index of a trust line for a given currency
 
@@ -119,19 +119,19 @@ Keylet
 quality(Keylet const& k, std::uint64_t q) noexcept;
 
 /** The directory for the next lower quality */
-struct next_t
+struct NextT
 {
-    explicit next_t() = default;
+    explicit NextT() = default;
 
     Keylet
     operator()(Keylet const& k) const;
 };
-static next_t const next{};
+static NextT const kNext{};
 
 /** A ticket belonging to an account */
-struct ticket_t
+struct TicketT
 {
-    explicit ticket_t() = default;
+    explicit TicketT() = default;
 
     Keylet
     operator()(AccountID const& id, std::uint32_t ticketSeq) const;
@@ -145,7 +145,7 @@ struct ticket_t
         return {ltTICKET, key};
     }
 };
-static ticket_t const ticket{};
+static TicketT const kTicket{};
 
 /** A SignerList */
 Keylet
@@ -221,11 +221,11 @@ payChannel(AccountID const& src, AccountID const& dst, std::uint32_t seq) noexce
 /** @{ */
 /** A keylet for the owner's first possible NFT page. */
 Keylet
-nftokenPage_min(AccountID const& owner);
+nftokenPageMin(AccountID const& owner);
 
 /** A keylet for the owner's last possible NFT page. */
 Keylet
-nftokenPage_max(AccountID const& owner);
+nftokenPageMax(AccountID const& owner);
 
 Keylet
 nftokenPage(Keylet const& k, uint256 const& token);
@@ -243,11 +243,11 @@ nftokenOffer(uint256 const& offer)
 
 /** The directory of buy offers for the specified NFT */
 Keylet
-nft_buys(uint256 const& id) noexcept;
+nftBuys(uint256 const& id) noexcept;
 
 /** The directory of sell offers for the specified NFT */
 Keylet
-nft_sells(uint256 const& id) noexcept;
+nftSells(uint256 const& id) noexcept;
 
 /** AMM entry */
 Keylet
@@ -362,27 +362,27 @@ getTicketIndex(AccountID const& account, std::uint32_t uSequence);
 uint256
 getTicketIndex(AccountID const& account, SeqProxy ticketSeq);
 
-template <class... keyletParams>
+template <class... KeyletParams>
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
-struct keyletDesc
+struct KeyletDesc
 {
-    std::function<Keylet(keyletParams...)> function;
-    Json::StaticString expectedLEName;
+    std::function<Keylet(KeyletParams...)> function;
+    json::StaticString expectedLEName;
     bool includeInTests{};
 };
 
 // This list should include all of the keylet functions that take a single
 // AccountID parameter.
-std::array<keyletDesc<AccountID const&>, 6> const directAccountKeylets{
+std::array<KeyletDesc<AccountID const&>, 6> const kDirectAccountKeylets{
     {{.function = &keylet::account, .expectedLEName = jss::AccountRoot, .includeInTests = false},
      {.function = &keylet::ownerDir, .expectedLEName = jss::DirectoryNode, .includeInTests = true},
      {.function = &keylet::signerList, .expectedLEName = jss::SignerList, .includeInTests = true},
      // It's normally impossible to create an item at nftpage_min, but
      // test it anyway, since the invariant checks for it.
-     {.function = &keylet::nftokenPage_min,
+     {.function = &keylet::nftokenPageMin,
       .expectedLEName = jss::NFTokenPage,
       .includeInTests = true},
-     {.function = &keylet::nftokenPage_max,
+     {.function = &keylet::nftokenPageMax,
       .expectedLEName = jss::NFTokenPage,
       .includeInTests = true},
      {.function = &keylet::did, .expectedLEName = jss::DID, .includeInTests = true}}};

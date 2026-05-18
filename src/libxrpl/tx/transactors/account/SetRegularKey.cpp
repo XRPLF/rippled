@@ -29,7 +29,7 @@ SetRegularKey::calculateBaseFee(ReadView const& view, STTx const& tx)
         {
             auto const sle = view.read(keylet::account(id));
 
-            if (sle && ((sle->getFlags() & lsfPasswordSpent) == 0u))
+            if (sle && !sle->isFlag(lsfPasswordSpent))
             {
                 // flag is armed and they signed with the right account
                 return XRPAmount{0};
@@ -55,7 +55,7 @@ SetRegularKey::preflight(PreflightContext const& ctx)
 TER
 SetRegularKey::doApply()
 {
-    auto const sle = view().peek(keylet::account(account_));
+    auto const sle = view().peek(keylet::account(accountID_));
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -69,7 +69,7 @@ SetRegularKey::doApply()
     else
     {
         // Account has disabled master key and no multi-signer signer list.
-        if (sle->isFlag(lsfDisableMaster) && !view().peek(keylet::signerList(account_)))
+        if (sle->isFlag(lsfDisableMaster) && !view().peek(keylet::signerList(accountID_)))
             return tecNO_ALTERNATIVE_KEY;
 
         sle->makeFieldAbsent(sfRegularKey);
@@ -86,6 +86,7 @@ SetRegularKey::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -96,6 +97,7 @@ SetRegularKey::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

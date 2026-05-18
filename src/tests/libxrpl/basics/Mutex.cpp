@@ -186,8 +186,8 @@ TEST_F(MutexConstCorrectnessTest, non_const_allows_modification)
 TEST_F(MutexConstCorrectnessTest, const_reference_provides_const_access)
 {
     Mutex<std::vector<int>> const m({1, 2, 3, 4, 5, 6});
-    Mutex<std::vector<int>> const& const_ref = m;
-    auto lock = const_ref.lock();
+    Mutex<std::vector<int>> const& constRef = m;
+    auto lock = constRef.lock();
     static_assert(std::is_const_v<std::remove_reference_t<decltype(*lock)>>);
     EXPECT_EQ(lock->size(), 6);
     EXPECT_EQ(lock->at(5), 6);
@@ -228,8 +228,8 @@ struct MutexSharedMutexTest : ::testing::Test
 TEST_F(MutexSharedMutexTest, shared_lock_for_const_access)
 {
     Mutex<int, std::shared_mutex> const m(100);
-    Mutex<int, std::shared_mutex> const& const_ref = m;
-    auto lock = const_ref.lock<std::shared_lock>();
+    Mutex<int, std::shared_mutex> const& constRef = m;
+    auto lock = constRef.lock<std::shared_lock>();
     EXPECT_EQ(*lock, 100);
 }
 
@@ -251,7 +251,7 @@ struct MutexComplexTypeTest : ::testing::Test
         int x;
         std::string y;
 
-        Data(int x_, std::string y_) : x(x_), y(std::move(y_))
+        Data(int x, std::string y) : x(x), y(std::move(y))
         {
         }
     };
