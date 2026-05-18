@@ -72,7 +72,11 @@ isIndividualFrozen(ReadView const& view, AccountID const& account, Asset const& 
  *   purely defensive, as we currently do not allow such vaults to be created.
  */
 [[nodiscard]] bool
-isFrozen(ReadView const& view, AccountID const& account, Asset const& asset, int depth = 0);
+isFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Asset const& asset,
+    std::uint8_t depth = 0);
 
 [[nodiscard]] TER
 checkFrozen(ReadView const& view, AccountID const& account, Issue const& issue);
@@ -94,14 +98,14 @@ isAnyFrozen(
     ReadView const& view,
     std::initializer_list<AccountID> const& accounts,
     Asset const& asset,
-    int depth = 0);
+    std::uint8_t depth = 0);
 
 [[nodiscard]] bool
 isDeepFrozen(
     ReadView const& view,
     AccountID const& account,
     MPTIssue const& mptIssue,
-    int depth = 0);
+    std::uint8_t depth = 0);
 
 /**
  *   isFrozen check is recursive for MPT shares in a vault, descending to
@@ -109,7 +113,11 @@ isDeepFrozen(
  *   purely defensive, as we currently do not allow such vaults to be created.
  */
 [[nodiscard]] bool
-isDeepFrozen(ReadView const& view, AccountID const& account, Asset const& asset, int depth = 0);
+isDeepFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Asset const& asset,
+    std::uint8_t depth = 0);
 
 [[nodiscard]] TER
 checkDeepFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue);
@@ -249,7 +257,7 @@ canTransfer(
     AccountID const& from,
     AccountID const& to,
     WaiveMPTCanTransfer waive = WaiveMPTCanTransfer::No,
-    int depth = 0);
+    std::uint8_t depth = 0);
 
 //------------------------------------------------------------------------------
 //

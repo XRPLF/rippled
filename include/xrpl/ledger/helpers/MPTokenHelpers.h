@@ -27,14 +27,18 @@ isGlobalFrozen(ReadView const& view, MPTIssue const& mptIssue);
 isIndividualFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue);
 
 [[nodiscard]] bool
-isFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue, int depth = 0);
+isFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    MPTIssue const& mptIssue,
+    std::uint8_t depth = 0);
 
 [[nodiscard]] bool
 isAnyFrozen(
     ReadView const& view,
     std::initializer_list<AccountID> const& accounts,
     MPTIssue const& mptIssue,
-    int depth = 0);
+    std::uint8_t depth = 0);
 
 //------------------------------------------------------------------------------
 //
@@ -88,7 +92,7 @@ requireAuth(
     MPTIssue const& mptIssue,
     AccountID const& account,
     AuthType authType = AuthType::Legacy,
-    int depth = 0);
+    std::uint8_t depth = 0);
 
 /** Enforce account has MPToken to match its authorization.
  *
@@ -133,7 +137,7 @@ canTransfer(
     AccountID const& from,
     AccountID const& to,
     WaiveMPTCanTransfer waive = WaiveMPTCanTransfer::No,
-    int depth = 0);
+    std::uint8_t depth = 0);
 
 /** Check if Asset can be traded on DEX. return tecNO_PERMISSION
  * if it doesn't and tesSUCCESS otherwise. For vault shares the check
@@ -141,7 +145,7 @@ canTransfer(
  * @p depth bounds that recursion at kMaxAssetCheckDepth.
  */
 [[nodiscard]] TER
-canTrade(ReadView const& view, Asset const& asset, int depth = 0);
+canTrade(ReadView const& view, Asset const& asset, std::uint8_t depth = 0);
 
 //------------------------------------------------------------------------------
 //

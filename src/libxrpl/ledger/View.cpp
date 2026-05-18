@@ -58,7 +58,7 @@ isVaultPseudoAccountFrozen(
     ReadView const& view,
     AccountID const& account,
     MPTIssue const& mptShare,
-    int depth)
+    std::uint8_t depth)
 {
     if (!view.rules().enabled(featureSingleAssetVault))
         return false;

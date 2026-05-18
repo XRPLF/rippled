@@ -93,7 +93,7 @@ isFrozen(ReadView const& view, AccountID const& account, Issue const& issue)
 // Overload with depth parameter for uniformity with MPTIssue version.
 // The depth parameter is ignored for IOUs since they don't have vault recursion.
 [[nodiscard]] inline bool
-isFrozen(ReadView const& view, AccountID const& account, Issue const& issue, int /*depth*/)
+isFrozen(ReadView const& view, AccountID const& account, Issue const& issue, std::uint8_t /*depth*/)
 {
     return isFrozen(view, account, issue);
 }

@@ -55,7 +55,11 @@ isIndividualFrozen(ReadView const& view, AccountID const& account, MPTIssue cons
 }
 
 bool
-isFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue, int depth)
+isFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    MPTIssue const& mptIssue,
+    std::uint8_t depth)
 {
     return isGlobalFrozen(view, mptIssue) || isIndividualFrozen(view, account, mptIssue) ||
         isVaultPseudoAccountFrozen(view, account, mptIssue, depth);
@@ -66,7 +70,7 @@ isAnyFrozen(
     ReadView const& view,
     std::initializer_list<AccountID> const& accounts,
     MPTIssue const& mptIssue,
-    int depth)
+    std::uint8_t depth)
 {
     if (isGlobalFrozen(view, mptIssue))
         return true;
@@ -303,7 +307,7 @@ requireAuth(
     MPTIssue const& mptIssue,
     AccountID const& account,
     AuthType authType,
-    int depth)
+    std::uint8_t depth)
 {
     auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
     auto const sleIssuance = view.read(mptID);
@@ -533,7 +537,7 @@ canTransfer(
     AccountID const& from,
     AccountID const& to,
     WaiveMPTCanTransfer waive,
-    int depth)
+    std::uint8_t depth)
 {
     auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
     auto const sleIssuance = view.read(mptID);
@@ -584,7 +588,7 @@ canTransfer(
 }
 
 TER
-canTrade(ReadView const& view, Asset const& asset, int depth)
+canTrade(ReadView const& view, Asset const& asset, std::uint8_t depth)
 {
     return asset.visit(
         [&](Issue const&) -> TER { return tesSUCCESS; },
@@ -996,7 +1000,7 @@ checkMPTAllowed(
     TxType txType,
     Asset const& asset,
     AccountID const& accountID,
-    int depth = 0)
+    std::uint8_t depth = 0)
 {
     if (!asset.holds<MPTIssue>())
         return tesSUCCESS;
