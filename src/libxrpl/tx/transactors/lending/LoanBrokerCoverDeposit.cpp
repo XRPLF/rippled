@@ -129,7 +129,7 @@ LoanBrokerCoverDeposit::doApply()
             Number::RoundingMode::Downward);
     }();
 
-    if (fix320Enabled && amount == beast::kZERO)
+    if (fix320Enabled && amount == beast::kZero)
     {
         JLOG(ctx_.journal.warn()) << "LoanBrokerCoverDeposit: deposit amount: " << tx[sfAmount]
                                   << " is zero at loan broker scale";

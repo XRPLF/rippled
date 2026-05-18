@@ -43,7 +43,7 @@ canApplyToBrokerCover(
         sleBroker && sleBroker->getType() == ltLOAN_BROKER,
         "xrpl::canApplyToBrokerCover : valid LoanBroker sle");
     XRPL_ASSERT(
-        vaultAsset.getIssuer() == amount.getIssuer() && amount > beast::kZERO,
+        vaultAsset.getIssuer() == amount.getIssuer() && amount > beast::kZero,
         "xrpl::canApplyToBrokerCover : valid amount for asset");
 
     if (!view.rules().enabled(fixCleanup3_2_0))
