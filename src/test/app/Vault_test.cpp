@@ -6147,7 +6147,7 @@ class Vault_test : public beast::unit_test::Suite
     // withdrawal of 5 USD brings it to 9.999...995e15 (IOU exponent 0,
     // ULP = 1), all three computations pick the anterior coarser scale 1.
     // roundToAsset(-5, scale=1) collapses to 0, so the invariant check
-    // vaultPseudoDeltaAssets >= kZERO fires even though the state change is
+    // vaultPseudoDeltaAssets >= kZero fires even though the state change is
     // valid and fully consistent at IOU precision.
     //
     // Fix (fixCleanup3_2_0): finalize compares the vault pseudo-account and

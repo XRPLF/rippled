@@ -175,7 +175,7 @@ VaultDeposit::doApply()
             Number::RoundingMode::Downward);
     }();
 
-    if (amount == beast::kZERO)
+    if (amount == beast::kZero)
     {
         JLOG(j_.warn()) << "VaultDeposit: amount " << ctx_.tx[sfAmount]
                         << " rounds to zero at vault scale";
