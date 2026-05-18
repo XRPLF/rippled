@@ -25,6 +25,7 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/post.hpp>
+#include <boost/asio/ssl/error.hpp>
 #include <boost/asio/ssl/stream_base.hpp>
 #include <boost/asio/ssl/verify_mode.hpp>
 #include <boost/asio/strand.hpp>
@@ -33,6 +34,9 @@
 #include <boost/beast/http/impl/write.hpp>
 #include <boost/beast/http/status.hpp>
 #include <boost/system/system_error.hpp>
+
+#include <openssl/err.h>
+#include <openssl/sslerr.h>
 
 #include <chrono>
 #include <cstdint>
@@ -179,10 +183,14 @@ ConnectAttempt::onShutdown(error_code ec)
         // - stream_truncated: the tcp connection closed (no handshake) it could
         // occur if a peer does not perform a graceful disconnect
         // - broken_pipe: the peer is gone
-        // - application data after close notify: benign SSL shutdown condition
+        // - SSL_R_APPLICATION_DATA_AFTER_CLOSE_NOTIFY: benign SSL shutdown
+        //   condition where the peer sent data after we sent close_notify
+        bool const isAppDataAfterCloseNotify =
+            ec.category() == boost::asio::error::get_ssl_category() &&
+            ERR_GET_REASON(ec.value()) == SSL_R_APPLICATION_DATA_AFTER_CLOSE_NOTIFY;
         bool const shouldLog =
             (ec != boost::asio::error::eof && ec != boost::asio::error::operation_aborted &&
-             ec.message().find("application data after close notify") == std::string::npos);
+             !isAppDataAfterCloseNotify);
 
         if (shouldLog)
         {

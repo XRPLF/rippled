@@ -3,6 +3,7 @@
 #include <xrpld/overlay/detail/OverlayImpl.h>
 
 #include <chrono>
+#include <string_view>
 
 namespace xrpl {
 
@@ -24,7 +25,7 @@ namespace xrpl {
  * 5. **Complete**: Connection successfully established
  *
  * Uses a hybrid timeout approach:
- * - **Global Timer**: Hard limit (20s) for entire connection process
+ * - **Global Timer**: Hard limit (25s) for entire connection process
  * - **Step Timers**: Individual timeouts for each connection phase
  *
  * - All errors result in connection termination
@@ -229,7 +230,7 @@ private:
     void
     processResponse();
 
-    static std::string
+    static std::string_view
     stepToString(ConnectionStep step)
     {
         switch (step)
@@ -250,7 +251,7 @@ private:
                 return "ShutdownStarted";
         }
         return "Unknown";
-    };
+    }
 
     template <class = void>
     static boost::asio::ip::tcp::endpoint

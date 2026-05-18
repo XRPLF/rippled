@@ -33,9 +33,8 @@ class SHAMap;
 /**
  * @class PeerImp
  * @brief This class manages established peer-to-peer connections, handles
- message exchange, monitors connection health, and graceful shutdown.
+ * message exchange, monitors connection health, and graceful shutdown.
  *
-
  * The PeerImp shutdown mechanism is a multi-stage process
  * designed to ensure graceful connection termination while handling ongoing
  * I/O operations safely. The shutdown can be initiated from multiple points

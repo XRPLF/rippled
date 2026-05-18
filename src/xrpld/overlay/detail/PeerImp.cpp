@@ -70,6 +70,7 @@
 #include <boost/asio/completion_condition.hpp>
 #include <boost/asio/error.hpp>
 #include <boost/asio/post.hpp>
+#include <boost/asio/ssl/error.hpp>
 #include <boost/asio/strand.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/beast/core/multi_buffer.hpp>
@@ -77,6 +78,8 @@
 #include <boost/beast/core/stream_traits.hpp>
 
 #include <google/protobuf/message.h>
+#include <openssl/err.h>
+#include <openssl/sslerr.h>
 
 #include <xrpl.pb.h>
 
@@ -272,10 +275,7 @@ PeerImp::stop()
     if (!socket_.is_open())
         return;
 
-    // The rationale for using different severity levels is that
-    // outbound connections are under our control and may be logged
-    // at a higher level, but inbound connections are more numerous and
-    // uncontrolled so to prevent log flooding the severity is reduced.
+    // Log peer stop at debug severity to avoid excessive log noise.
     JLOG(journal_.debug()) << "stop: Stop";
 
     shutdown();
@@ -675,9 +675,9 @@ PeerImp::tryAsyncShutdown()
 
     shutdownStarted_ = true;
 
-    setTimer(kShutdownTimerInterval);
-
-    // gracefully shutdown the SSL socket, performing a shutdown handshake
+    // gracefully shutdown the SSL socket, performing a shutdown handshake.
+    // The safety timer was armed in shutdown(); it bounds the whole shutdown
+    // lifecycle (I/O drain + SSL handshake), not just this async_shutdown.
     stream_.async_shutdown(bind_executor(
         strand_, std::bind(&PeerImp::onShutdown, shared_from_this(), std::placeholders::_1)));
 }
@@ -694,6 +694,14 @@ PeerImp::shutdown()
 
     boost::beast::get_lowest_layer(stream_).cancel();
 
+    // Arm the shutdown safety timer at request time, replacing any pending
+    // peer-health timer. Otherwise, if I/O is still pending, the existing
+    // kPeerTimerInterval (60s) timer could be the one to fire and onTimer()
+    // would treat its expiry as a shutdown timeout — delaying forced close
+    // far beyond kShutdownTimerInterval.
+    cancelTimer();
+    setTimer(kShutdownTimerInterval);
+
     tryAsyncShutdown();
 }
 
@@ -708,9 +716,14 @@ PeerImp::onShutdown(error_code ec)
         // - stream_truncated: the tcp connection closed (no handshake) it could
         // occur if a peer does not perform a graceful disconnect
         // - broken_pipe: the peer is gone
+        // - SSL_R_APPLICATION_DATA_AFTER_CLOSE_NOTIFY: benign SSL shutdown
+        //   condition where the peer sent data after we sent close_notify
+        bool const isAppDataAfterCloseNotify =
+            ec.category() == boost::asio::error::get_ssl_category() &&
+            ERR_GET_REASON(ec.value()) == SSL_R_APPLICATION_DATA_AFTER_CLOSE_NOTIFY;
         bool const shouldLog =
             (ec != boost::asio::error::eof && ec != boost::asio::error::operation_aborted &&
-             ec.message().find("application data after close notify") == std::string::npos);
+             !isAppDataAfterCloseNotify);
 
         if (shouldLog)
         {
@@ -913,6 +926,9 @@ PeerImp::doAccept()
         app_);
 
     // Write the whole buffer and only start protocol when that's done.
+    // Track the write via writePending_ so a concurrent shutdown() doesn't
+    // launch async_shutdown while this write is still in flight.
+    writePending_ = true;
     boost::asio::async_write(
         stream_,
         writeBuffer->data(),
@@ -921,6 +937,7 @@ PeerImp::doAccept()
             strand_,
             [this, writeBuffer, self = shared_from_this()](
                 error_code ec, std::size_t bytesTransferred) {
+                writePending_ = false;
                 if (!socket_.is_open())
                     return;
                 if (ec == boost::asio::error::operation_aborted)
@@ -963,7 +980,7 @@ PeerImp::domain() const
 void
 PeerImp::doProtocolStart()
 {
-    // a shutdown was initiated before the handshare, there is nothing to do
+    // a shutdown was initiated before the handshake, there is nothing to do
     if (shutdown_)
     {
         tryAsyncShutdown();
