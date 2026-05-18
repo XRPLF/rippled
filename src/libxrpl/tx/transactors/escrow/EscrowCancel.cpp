@@ -179,12 +179,18 @@ EscrowCancel::doApply()
 
         auto const issuer = amount.getIssuer();
         bool const createAsset = account == accountID_;
+        // TODO: can be simplified to remove the variant when fixCleanup3_2_0 is retired
+        using ReceiverAccount = std::variant<std::shared_ptr<SLE>, WAccountRoot>;
+        auto const receiverAccount = ctx_.view().rules().enabled(fixCleanup3_2_0)
+            ? ReceiverAccount{std::in_place_type<WAccountRoot>, wrappedAcct}
+            : ReceiverAccount{std::in_place_type<std::shared_ptr<SLE>>, slep};
+
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
                     return escrowUnlockApplyHelper<T>(
                         ctx_.view(),
                         kParityRate,
-                        slep,  // Bug: should be wrappedAcct, will be fixed by amendment in #6171
+                        receiverAccount,
                         preFeeBalance_,
                         amount,
                         issuer,
