@@ -6149,101 +6149,6 @@ class Vault_test : public beast::unit_test::Suite
     FeatureBitset const all_{test::jtx::testableAmendments()};
     std::string const iouCurrency_{"IOU"};
 
-    struct BrokerParameters
-    {
-        Number vaultDeposit = 1'000'000;
-        Number debtMax = 25'000;
-        TenthBips32 coverRateMin = percentageToTenthBips(10);
-        int coverDeposit = 1000;
-        TenthBips16 managementFeeRate{100};
-        TenthBips32 coverRateLiquidation = percentageToTenthBips(25);
-        std::string data = {};  // NOLINT(readability-redundant-member-init)
-        std::uint32_t flags = 0;
-
-        static BrokerParameters const&
-        defaults()
-        {
-            static BrokerParameters const kRESULT{};
-            return kRESULT;
-        }
-    };
-
-    struct BrokerInfo
-    {
-        PrettyAsset asset;
-        uint256 brokerID;
-        uint256 vaultID;
-        BrokerParameters params;
-
-        BrokerInfo(
-            PrettyAsset const& asset,
-            Keylet const& brokerKeylet,
-            Keylet const& vaultKeylet,
-            BrokerParameters p)
-            : asset(asset)
-            , brokerID(brokerKeylet.key)
-            , vaultID(vaultKeylet.key)
-            , params(std::move(p))
-        {
-        }
-
-        [[nodiscard]] Keylet
-        brokerKeylet() const
-        {
-            return keylet::loanbroker(brokerID);
-        }
-
-        [[nodiscard]] Keylet
-        vaultKeylet() const
-        {
-            return keylet::vault(vaultID);
-        }
-    };
-
-    BrokerInfo
-    createVaultAndBroker(
-        test::jtx::Env& env,
-        PrettyAsset const& asset,
-        test::jtx::Account const& lender,
-        BrokerParameters const& params = BrokerParameters::defaults())
-    {
-        using namespace test::jtx;
-        using namespace loanBroker;
-
-        Vault const vault{env};
-
-        auto const deposit = asset(params.vaultDeposit);
-        auto const debtMaximumValue = asset(params.debtMax).value();
-        auto const coverDepositValue = asset(params.coverDeposit).value();
-        auto const coverRateMinValue = params.coverRateMin;
-
-        auto [tx, vaultKeylet] = vault.create({.owner = lender, .asset = asset});
-        env(tx);
-        env.close();
-        BEAST_EXPECT(env.le(vaultKeylet));
-
-        env(vault.deposit({.depositor = lender, .id = vaultKeylet.key, .amount = deposit}));
-        env.close();
-        if (auto const vaultSle = env.le(keylet::vault(vaultKeylet.key)); BEAST_EXPECT(vaultSle))
-            BEAST_EXPECT(vaultSle->at(sfAssetsAvailable) == deposit.value());
-
-        auto const keylet = keylet::loanbroker(lender.id(), env.seq(lender));
-
-        env(set(lender, vaultKeylet.key, params.flags),
-            kDATA(params.data),
-            kMANAGEMENT_FEE_RATE(params.managementFeeRate),
-            kDEBT_MAXIMUM(debtMaximumValue),
-            kCOVER_RATE_MINIMUM(coverRateMinValue),
-            kCOVER_RATE_LIQUIDATION(TenthBips32(params.coverRateLiquidation)));
-
-        if (coverDepositValue != beast::kZERO)
-            env(coverDeposit(lender, keylet.key, coverDepositValue));
-
-        env.close();
-
-        return {asset, keylet, vaultKeylet, params};
-    }
-
     // design doc:
     //     AssetsAvailable ≈ 3,333.50
     //     AssetsTotal     ≈ 6,666.50  (3,333.50 cash + 3,333 receivable)
@@ -6256,7 +6161,8 @@ class Vault_test : public beast::unit_test::Suite
         test::jtx::Account bob{"bob"};
         test::jtx::Account borrower{"borrower"};
         std::optional<PrettyAsset> asset;
-        std::optional<BrokerInfo> broker;
+        std::optional<Keylet> vaultKeylet;
+        uint256 brokerID;
         std::optional<Keylet> loanKeylet;
         MPTID shareAsset;
         std::uint64_t sharesLender = 0;
@@ -6274,7 +6180,6 @@ class Vault_test : public beast::unit_test::Suite
     setupStuckDepositor(test::jtx::Env& env)
     {
         using namespace test::jtx;
-        using namespace loan;
 
         StuckDepositorFixture f;
         f.asset = f.issuer[iouCurrency_];
@@ -6292,50 +6197,65 @@ class Vault_test : public beast::unit_test::Suite
         env(pay(f.issuer, f.borrower, (*f.asset)(kSTUCK_BORROWER_IOU)));
         env.close();
 
-        // Lender's deposit happens inside createVaultAndBroker. To get a
-        // clean 50/50 split between Lender and Bob, we set vaultDeposit
-        // to the target per-depositor amount and let Bob match it via an
-        // explicit deposit below. No cover, no management fee.
-        BrokerParameters const params{
-            .vaultDeposit = kSTUCK_DEPOSIT,
-            .debtMax = kSTUCK_PRINCIPAL * 10,
-            .coverRateMin = TenthBips32{0},
-            .coverDeposit = 0,
-            .managementFeeRate = TenthBips16{0},
-            .coverRateLiquidation = TenthBips32{0}};
-
-        f.broker = createVaultAndBroker(env, *f.asset, f.lender, params);
+        // Vault: Lender creates and seeds it; Bob matches the deposit for a
+        // clean 50/50 split.
         Vault v{env};
+        auto [createTx, vaultKeylet] = v.create({.owner = f.lender, .asset = *f.asset});
+        env(createTx);
+        env.close();
+        if (!BEAST_EXPECT(env.le(vaultKeylet)))
+            return f;
+        f.vaultKeylet = vaultKeylet;
 
         env(v.deposit({
+                .depositor = f.lender,
+                .id = vaultKeylet.key,
+                .amount = (*f.asset)(kSTUCK_DEPOSIT),
+            }),
+            Ter(tesSUCCESS));
+        env(v.deposit({
                 .depositor = f.bob,
-                .id = f.broker->vaultKeylet().key,
+                .id = vaultKeylet.key,
                 .amount = (*f.asset)(kSTUCK_DEPOSIT),
             }),
             Ter(tesSUCCESS));
         env.close();
 
-        auto const sleBroker = env.le(keylet::loanbroker(f.broker->brokerID));
+        // Loan broker: no cover, no management fee, debt cap 10x principal.
+        f.brokerID = keylet::loanbroker(f.lender.id(), env.seq(f.lender)).key;
+        {
+            using namespace loanBroker;
+            env(set(f.lender, vaultKeylet.key),
+                kMANAGEMENT_FEE_RATE(TenthBips16{0}),
+                kDEBT_MAXIMUM((*f.asset)(kSTUCK_PRINCIPAL * 10).value()),
+                kCOVER_RATE_MINIMUM(TenthBips32{0}),
+                kCOVER_RATE_LIQUIDATION(TenthBips32{0}));
+            env.close();
+        }
+
+        // Loan: 3,333 USD principal, impaired immediately.
+        auto const sleBroker = env.le(keylet::loanbroker(f.brokerID));
         if (!BEAST_EXPECT(sleBroker))
             return f;
+        f.loanKeylet = keylet::loan(f.brokerID, sleBroker->at(sfLoanSequence));
 
-        f.loanKeylet = keylet::loan(f.broker->brokerID, sleBroker->at(sfLoanSequence));
+        {
+            using namespace loan;
+            env(set(f.borrower, f.brokerID, kSTUCK_PRINCIPAL),
+                Sig(sfCounterpartySignature, f.lender),
+                kPAYMENT_TOTAL(kSTUCK_PAY_TOTAL),
+                kPAYMENT_INTERVAL(kSTUCK_PAY_INTERVAL),
+                Fee(env.current()->fees().base * 2),
+                Ter(tesSUCCESS));
+            env.close();
+            env(manage(f.lender, f.loanKeylet->key, tfLoanImpair), Ter(tesSUCCESS));
+            env.close();
+        }
 
-        env(set(f.borrower, f.broker->brokerID, kSTUCK_PRINCIPAL),
-            Sig(sfCounterpartySignature, f.lender),
-            kPAYMENT_TOTAL(kSTUCK_PAY_TOTAL),
-            kPAYMENT_INTERVAL(kSTUCK_PAY_INTERVAL),
-            Fee(env.current()->fees().base * 2),
-            Ter(tesSUCCESS));
-        env.close();
-
-        env(manage(f.lender, f.loanKeylet->key, tfLoanImpair), Ter(tesSUCCESS));
-        env.close();
-
-        auto const vaultSle = env.le(f.broker->vaultKeylet());
+        auto const vaultSle = env.le(vaultKeylet);
         if (!BEAST_EXPECT(vaultSle))
             return f;
-        BEAST_EXPECT(vaultSle->at(sfLossUnrealized) == f.broker->asset(kSTUCK_PRINCIPAL).value());
+        BEAST_EXPECT(vaultSle->at(sfLossUnrealized) == (*f.asset)(kSTUCK_PRINCIPAL).value());
 
         f.shareAsset = vaultSle->at(sfShareMPTID);
 
@@ -6348,7 +6268,7 @@ class Vault_test : public beast::unit_test::Suite
         STAmount const bobShareAmt{MPTIssue{f.shareAsset}, Number(sharesBob)};
         env(v.withdraw({
                 .depositor = f.bob,
-                .id = f.broker->vaultKeylet().key,
+                .id = vaultKeylet.key,
                 .amount = bobShareAmt,
             }),
             Ter(tesSUCCESS));
@@ -6364,7 +6284,7 @@ class Vault_test : public beast::unit_test::Suite
             return f;
         BEAST_EXPECT(sleIssuance->getFieldU64(sfOutstandingAmount) == f.sharesLender);
 
-        auto const vaultAfterBob = env.le(f.broker->vaultKeylet());
+        auto const vaultAfterBob = env.le(vaultKeylet);
         if (!BEAST_EXPECT(vaultAfterBob))
             return f;
         BEAST_EXPECT(vaultAfterBob->at(sfLossUnrealized) > beast::kZERO);
@@ -6393,10 +6313,10 @@ class Vault_test : public beast::unit_test::Suite
 
         Env env(*this, features);
         auto const f = setupStuckDepositor(env);
-        if (!BEAST_EXPECT(f.broker.has_value() && f.asset.has_value()) || f.sharesLender == 0)
+        if (!BEAST_EXPECT(f.vaultKeylet.has_value() && f.asset.has_value()) || f.sharesLender == 0)
             return;
 
-        auto const vaultBefore = env.le(f.broker->vaultKeylet());
+        auto const vaultBefore = env.le(*f.vaultKeylet);
         if (!BEAST_EXPECT(vaultBefore))
             return;
         Number const availableBefore = vaultBefore->at(sfAssetsAvailable);
@@ -6429,13 +6349,13 @@ class Vault_test : public beast::unit_test::Suite
         Vault v{env};
         env(v.withdraw({
                 .depositor = f.lender,
-                .id = f.broker->vaultKeylet().key,
+                .id = f.vaultKeylet->key,
                 .amount = requestAssets,
             }),
             Ter(withFix ? TER{tesSUCCESS} : TER{tecINVARIANT_FAILED}));
         env.close();
 
-        auto const vaultAfter = env.le(f.broker->vaultKeylet());
+        auto const vaultAfter = env.le(*f.vaultKeylet);
         if (!BEAST_EXPECT(vaultAfter))
             return;
         auto const issuanceAfter = env.le(keylet::mptIssuance(f.shareAsset));
@@ -6502,10 +6422,10 @@ class Vault_test : public beast::unit_test::Suite
 
         Env env(*this, features);
         auto const f = setupStuckDepositor(env);
-        if (!BEAST_EXPECT(f.broker.has_value()) || f.sharesLender == 0)
+        if (!BEAST_EXPECT(f.vaultKeylet.has_value()) || f.sharesLender == 0)
             return;
 
-        auto const vaultBefore = env.le(f.broker->vaultKeylet());
+        auto const vaultBefore = env.le(*f.vaultKeylet);
         if (!BEAST_EXPECT(vaultBefore))
             return;
         Number const availableBefore = vaultBefore->at(sfAssetsAvailable);
@@ -6517,14 +6437,14 @@ class Vault_test : public beast::unit_test::Suite
         Vault v{env};
         env(v.withdraw({
                 .depositor = f.lender,
-                .id = f.broker->vaultKeylet().key,
+                .id = f.vaultKeylet->key,
                 .amount = shareAmt,
             }),
             Ter(withFix ? TER{tecINSUFFICIENT_FUNDS} : TER{tecINVARIANT_FAILED}));
         env.close();
 
         // Either way the transaction was rejected; vault state unchanged.
-        auto const vaultAfter = env.le(f.broker->vaultKeylet());
+        auto const vaultAfter = env.le(*f.vaultKeylet);
         if (!BEAST_EXPECT(vaultAfter))
             return;
         auto const issuanceAfter = env.le(keylet::mptIssuance(f.shareAsset));
@@ -6553,7 +6473,7 @@ class Vault_test : public beast::unit_test::Suite
 
         Env env(*this, all_ | fixCleanup3_2_0);
         auto const f = setupStuckDepositor(env);
-        if (!BEAST_EXPECT(f.broker.has_value() && f.asset.has_value()) || f.sharesLender == 0)
+        if (!BEAST_EXPECT(f.vaultKeylet.has_value() && f.asset.has_value()) || f.sharesLender == 0)
             return;
 
         Vault v{env};
@@ -6565,7 +6485,7 @@ class Vault_test : public beast::unit_test::Suite
             STAmount const requestAssets = (*f.asset)(1000).value();
             env(v.withdraw({
                     .depositor = f.lender,
-                    .id = f.broker->vaultKeylet().key,
+                    .id = f.vaultKeylet->key,
                     .amount = requestAssets,
                 }),
                 Ter(tesSUCCESS));
@@ -6586,7 +6506,7 @@ class Vault_test : public beast::unit_test::Suite
         env(pay(f.borrower, f.loanKeylet->key, repayAsset(kSTUCK_PRINCIPAL * 2)), Ter(tesSUCCESS));
         env.close();
 
-        auto const vaultAfterRepay = env.le(f.broker->vaultKeylet());
+        auto const vaultAfterRepay = env.le(*f.vaultKeylet);
         if (!BEAST_EXPECT(vaultAfterRepay))
             return;
         BEAST_EXPECT(vaultAfterRepay->at(sfLossUnrealized) == beast::kZERO);
@@ -6601,13 +6521,13 @@ class Vault_test : public beast::unit_test::Suite
         STAmount const allShares{MPTIssue{f.shareAsset}, Number(retainedShares)};
         env(v.withdraw({
                 .depositor = f.lender,
-                .id = f.broker->vaultKeylet().key,
+                .id = f.vaultKeylet->key,
                 .amount = allShares,
             }),
             Ter(tesSUCCESS));
         env.close();
 
-        auto const vaultFinal = env.le(f.broker->vaultKeylet());
+        auto const vaultFinal = env.le(*f.vaultKeylet);
         if (!BEAST_EXPECT(vaultFinal))
             return;
         auto const issuanceFinal = env.le(keylet::mptIssuance(f.shareAsset));
@@ -6656,21 +6576,21 @@ class Vault_test : public beast::unit_test::Suite
         env(pay(issuer, lender, asset(kSTUCK_DEPOSITOR_IOU)));
         env.close();
 
-        BrokerParameters const params{
-            .vaultDeposit = kSTUCK_DEPOSIT,
-            .debtMax = 1,
-            .coverRateMin = TenthBips32{0},
-            .coverDeposit = 0,
-            .managementFeeRate = TenthBips16{0},
-            .coverRateLiquidation = TenthBips32{0}};
-
-        // Lender's deposit (kSTUCK_DEPOSIT) happens inside
-        // createVaultAndBroker; no further deposits, so Lender is the
-        // sole shareholder of a clean vault.
-        auto const broker = createVaultAndBroker(env, asset, lender, params);
+        // Sole shareholder of a clean vault — no loan broker needed.
         Vault v{env};
+        auto [createTx, vaultKeylet] = v.create({.owner = lender, .asset = asset});
+        env(createTx);
+        env.close();
 
-        auto const vaultBefore = env.le(broker.vaultKeylet());
+        env(v.deposit({
+                .depositor = lender,
+                .id = vaultKeylet.key,
+                .amount = asset(kSTUCK_DEPOSIT),
+            }),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const vaultBefore = env.le(vaultKeylet);
         if (!BEAST_EXPECT(vaultBefore))
             return;
         auto const shareAsset = vaultBefore->at(sfShareMPTID);
@@ -6683,13 +6603,13 @@ class Vault_test : public beast::unit_test::Suite
         STAmount const allShares{MPTIssue{shareAsset}, Number(sharesLender)};
         env(v.withdraw({
                 .depositor = lender,
-                .id = broker.vaultKeylet().key,
+                .id = vaultKeylet.key,
                 .amount = allShares,
             }),
             Ter(tesSUCCESS));
         env.close();
 
-        auto const vaultFinal = env.le(broker.vaultKeylet());
+        auto const vaultFinal = env.le(vaultKeylet);
         if (!BEAST_EXPECT(vaultFinal))
             return;
         auto const issuanceFinal = env.le(keylet::mptIssuance(shareAsset));
@@ -6725,10 +6645,10 @@ class Vault_test : public beast::unit_test::Suite
 
         Env env(*this, all_ | fixCleanup3_2_0);
         auto const f = setupStuckDepositor(env);
-        if (!BEAST_EXPECT(f.broker.has_value() && f.asset.has_value()) || f.sharesLender == 0)
+        if (!BEAST_EXPECT(f.vaultKeylet.has_value() && f.asset.has_value()) || f.sharesLender == 0)
             return;
 
-        auto const vaultBefore = env.le(f.broker->vaultKeylet());
+        auto const vaultBefore = env.le(*f.vaultKeylet);
         if (!BEAST_EXPECT(vaultBefore))
             return;
         Number const totalBefore = vaultBefore->at(sfAssetsTotal);
@@ -6744,7 +6664,7 @@ class Vault_test : public beast::unit_test::Suite
         Vault v{env};
         env(v.withdraw({
                 .depositor = f.lender,
-                .id = f.broker->vaultKeylet().key,
+                .id = f.vaultKeylet->key,
                 .amount = halfAmt,
             }),
             Ter(tesSUCCESS));
@@ -6767,7 +6687,7 @@ class Vault_test : public beast::unit_test::Suite
             (totalBefore - lossBefore) * Number(halfShares) / Number(f.sharesLender);
         BEAST_EXPECT(received > discounted);
 
-        auto const vaultAfter = env.le(f.broker->vaultKeylet());
+        auto const vaultAfter = env.le(*f.vaultKeylet);
         if (!BEAST_EXPECT(vaultAfter))
             return;
         auto const issuanceAfter = env.le(keylet::mptIssuance(f.shareAsset));
