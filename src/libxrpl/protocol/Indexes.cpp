@@ -232,7 +232,7 @@ negativeUNL() noexcept
 }
 
 Keylet
-BookT::operator()(Book const& b) const
+book(Book const& b)
 {
     return {ltDIR_NODE, getBookBase(b)};
 }
@@ -285,20 +285,20 @@ quality(Keylet const& k, std::uint64_t q) noexcept
 }
 
 Keylet
-NextT::operator()(Keylet const& k) const
+next(Keylet const& k)
 {
-    XRPL_ASSERT(k.type == ltDIR_NODE, "xrpl::keylet::NextT::operator() : valid input type");
+    XRPL_ASSERT(k.type == ltDIR_NODE, "xrpl::keylet::next : valid input type");
     return {ltDIR_NODE, getQualityNext(k.key)};
 }
 
 Keylet
-TicketT::operator()(AccountID const& id, std::uint32_t ticketSeq) const
+ticket(AccountID const& id, std::uint32_t ticketSeq)
 {
     return {ltTICKET, getTicketIndex(id, ticketSeq)};
 }
 
 Keylet
-TicketT::operator()(AccountID const& id, SeqProxy ticketSeq) const
+ticket(AccountID const& id, SeqProxy ticketSeq)
 {
     return {ltTICKET, getTicketIndex(id, ticketSeq)};
 }

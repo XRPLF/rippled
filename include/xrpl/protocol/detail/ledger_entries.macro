@@ -112,7 +112,7 @@ LEDGER_ENTRY(ltSIGNER_LIST, 0x0053, SignerList, signer_list, ({
 
 /** A ledger object which describes a ticket.
 
-    \sa keylet::kTicket
+    \sa keylet::ticket
  */
 LEDGER_ENTRY(ltTICKET, 0x0054, Ticket, ticket, ({
     {sfAccount,              SoeRequired},

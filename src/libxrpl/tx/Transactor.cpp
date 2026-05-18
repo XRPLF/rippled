@@ -492,7 +492,7 @@ Transactor::checkSeqProxy(ReadView const& view, STTx const& tx, beast::Journal j
         }
 
         // Transaction can never succeed if the Ticket is not in the ledger.
-        if (!view.exists(keylet::kTicket(id, tSeqProx)))
+        if (!view.exists(keylet::ticket(id, tSeqProx)))
         {
             JLOG(j.trace()) << "applyTransaction: ticket already used or never created "
                             << "a_seq=" << aSeq << " t_seq=" << tSeqProx;
@@ -557,7 +557,7 @@ Transactor::ticketDelete(
 {
     // Delete the Ticket, adjust the account root ticket count, and
     // reduce the owner count.
-    SLE::pointer const sleTicket = view.peek(keylet::kTicket(ticketIndex));
+    SLE::pointer const sleTicket = view.peek(keylet::ticket(ticketIndex));
     if (!sleTicket)
     {
         // LCOV_EXCL_START

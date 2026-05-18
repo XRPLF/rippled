@@ -75,14 +75,8 @@ Keylet const&
 negativeUNL() noexcept;
 
 /** The beginning of an order book */
-struct BookT
-{
-    explicit BookT() = default;
-
-    Keylet
-    operator()(Book const& b) const;
-};
-static BookT const kBook{};
+Keylet
+book(Book const& b);
 
 /** The index of a trust line for a given currency
 
@@ -119,33 +113,23 @@ Keylet
 quality(Keylet const& k, std::uint64_t q) noexcept;
 
 /** The directory for the next lower quality */
-struct NextT
-{
-    explicit NextT() = default;
-
-    Keylet
-    operator()(Keylet const& k) const;
-};
-static NextT const kNext{};
+Keylet
+next(Keylet const& k);
 
 /** A ticket belonging to an account */
-struct TicketT
+/** @{ */
+Keylet
+ticket(AccountID const& id, std::uint32_t ticketSeq);
+
+Keylet
+ticket(AccountID const& id, SeqProxy ticketSeq);
+
+inline Keylet
+ticket(uint256 const& key)
 {
-    explicit TicketT() = default;
-
-    Keylet
-    operator()(AccountID const& id, std::uint32_t ticketSeq) const;
-
-    Keylet
-    operator()(AccountID const& id, SeqProxy ticketSeq) const;
-
-    Keylet
-    operator()(uint256 const& key) const
-    {
-        return {ltTICKET, key};
-    }
-};
-static TicketT const kTicket{};
+    return {ltTICKET, key};
+}
+/** @} */
 
 /** A SignerList */
 Keylet

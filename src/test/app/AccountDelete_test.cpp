@@ -662,7 +662,7 @@ public:
             BEAST_EXPECT(closed->exists(keylet::account(bob.id())));
             for (std::uint32_t i = 0; i < 250; ++i)
             {
-                BEAST_EXPECT(closed->exists(keylet::kTicket(bob.id(), ticketSeq + i)));
+                BEAST_EXPECT(closed->exists(keylet::ticket(bob.id(), ticketSeq + i)));
             }
         }
 
@@ -681,7 +681,7 @@ public:
             BEAST_EXPECT(!closed->exists(keylet::account(bob.id())));
             for (std::uint32_t i = 0; i < 250; ++i)
             {
-                BEAST_EXPECT(!closed->exists(keylet::kTicket(bob.id(), ticketSeq + i)));
+                BEAST_EXPECT(!closed->exists(keylet::ticket(bob.id(), ticketSeq + i)));
             }
         }
     }
