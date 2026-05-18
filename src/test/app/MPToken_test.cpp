@@ -2189,7 +2189,7 @@ class MPToken_test : public beast::unit_test::Suite
                 BEAST_EXPECT(persisted.negative() == bad.negative);
                 BEAST_EXPECT(persisted.mpt().value() == bad.mptValue);
                 if (!bad.negative)
-                    BEAST_EXPECT(persisted.mantissa() > kMAX_MP_TOKEN_AMOUNT);
+                    BEAST_EXPECT(persisted.mantissa() > kMaxMpTokenAmount);
             };
 
         for (auto const& bad : badMPTAmounts)
@@ -2535,7 +2535,7 @@ class MPToken_test : public beast::unit_test::Suite
                 auto tx = withNonCanonicalMPTAmount(
                     env.jt(
                         escrow::create(alice, bob, STAmount{issue, std::uint64_t{1}}),
-                        escrow::kFINISH_TIME(env.now() + 1s)),
+                        escrow::kFinishTime(env.now() + 1s)),
                     sfAmount,
                     badAmount,
                     alice);
@@ -2554,7 +2554,7 @@ class MPToken_test : public beast::unit_test::Suite
                 auto tx = withNonCanonicalMPTAmount(
                     env.jt(
                         escrow::create(alice, bob, STAmount{issue, std::uint64_t{1}}),
-                        escrow::kFINISH_TIME(env.now() + 1s)),
+                        escrow::kFinishTime(env.now() + 1s)),
                     sfAmount,
                     badAmount,
                     alice);

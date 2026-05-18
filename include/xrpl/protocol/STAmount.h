@@ -591,7 +591,7 @@ isLegalMPTAmount(Rules const& rules, STAmount const& value)
         return true;
 
     return !value.holds<MPTIssue>() ||
-        (value.exponent() == 0 && value.mantissa() <= kMAX_MP_TOKEN_AMOUNT &&
+        (value.exponent() == 0 && value.mantissa() <= kMaxMpTokenAmount &&
          (value.mantissa() != 0 || !value.negative()));
 }
 

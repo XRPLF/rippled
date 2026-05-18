@@ -3968,7 +3968,7 @@ class Invariants_test : public beast::unit_test::Suite
             return STAmount{
                 field,
                 nonCanonicalMPTIssue,
-                kMAX_MP_TOKEN_AMOUNT + std::uint64_t{1},
+                kMaxMpTokenAmount + std::uint64_t{1},
                 0,
                 false,
                 STAmount::Unchecked{}};
