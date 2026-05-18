@@ -7674,9 +7674,9 @@ protected:
 
         env(set(borrower, broker.brokerID, Number{1, -2}),
             Sig(sfCounterpartySignature, lender),
-            kINTEREST_RATE(TenthBips32{0}),
-            kPAYMENT_TOTAL(1),
-            kPAYMENT_INTERVAL(86400 * 365),
+            kInterestRate(TenthBips32{0}),
+            kPaymentTotal(1),
+            kPaymentInterval(86400 * 365),
             Fee(XRP(10)));
         env.close();
         if (!BEAST_EXPECT(env.le(tinyLoanKeylet)))
@@ -7693,9 +7693,9 @@ protected:
 
         env(set(borrower, broker.brokerID, Number{500}),
             Sig(sfCounterpartySignature, lender),
-            kINTEREST_RATE(TenthBips32{100'000}),
-            kPAYMENT_TOTAL(20),
-            kPAYMENT_INTERVAL(86400 * 365),
+            kInterestRate(TenthBips32{100'000}),
+            kPaymentTotal(20),
+            kPaymentInterval(86400 * 365),
             Fee(XRP(10)));
         env.close();
         if (!BEAST_EXPECT(env.le(bigLoanKeylet)))
@@ -7735,10 +7735,10 @@ protected:
         // cover lands exactly at that threshold.
         env(env.json(
             coverClawback(issuer),
-            kLOAN_BROKER_ID(broker.brokerID),
-            Fee(kNONE),
-            Seq(kNONE),
-            Sig(kNONE)));
+            kLoanBrokerId(broker.brokerID),
+            Fee(kNone),
+            Seq(kNone),
+            Sig(kNone)));
         env.close();
 
         // Re-read the broker after cover reduction.
@@ -7861,9 +7861,9 @@ protected:
         // deposit).
         env(set(borrower, broker.brokerID, Number{500}),
             Sig(sfCounterpartySignature, lender),
-            kINTEREST_RATE(TenthBips32{100'000}),
-            kPAYMENT_TOTAL(20),
-            kPAYMENT_INTERVAL(86400 * 365),
+            kInterestRate(TenthBips32{100'000}),
+            kPaymentTotal(20),
+            kPaymentInterval(86400 * 365),
             Fee(XRP(10)));
         env.close();
 
@@ -7975,27 +7975,27 @@ protected:
         // rounding at scale -11 is a no-op, masking the amendment's effect.
         env(set(borrower, broker.brokerID, Number{1, -2}),
             Sig(sfCounterpartySignature, lender),
-            kINTEREST_RATE(TenthBips32{0}),
-            kPAYMENT_TOTAL(1),
-            kPAYMENT_INTERVAL(86400 * 365),
+            kInterestRate(TenthBips32{0}),
+            kPaymentTotal(1),
+            kPaymentInterval(86400 * 365),
             Fee(XRP(10)));
         env.close();
 
         env(set(borrower, broker.brokerID, Number{500}),
             Sig(sfCounterpartySignature, lender),
-            kINTEREST_RATE(TenthBips32{100'000}),
-            kPAYMENT_TOTAL(20),
-            kPAYMENT_INTERVAL(86400 * 365),
+            kInterestRate(TenthBips32{100'000}),
+            kPaymentTotal(20),
+            kPaymentInterval(86400 * 365),
             Fee(XRP(10)));
         env.close();
 
         // Clawback to reduce cover to the clawback transactor's minimum.
         env(env.json(
             coverClawback(issuer),
-            kLOAN_BROKER_ID(broker.brokerID),
-            Fee(kNONE),
-            Seq(kNONE),
-            Sig(kNONE)));
+            kLoanBrokerId(broker.brokerID),
+            Fee(kNone),
+            Seq(kNone),
+            Sig(kNone)));
         env.close();
 
         // Verify scales.
@@ -8022,18 +8022,18 @@ protected:
         {
             env(set(borrower, broker.brokerID, tinyPrincipal),
                 Sig(sfCounterpartySignature, lender),
-                kINTEREST_RATE(TenthBips32{0}),
-                kPAYMENT_TOTAL(1),
-                kPAYMENT_INTERVAL(86400 * 365),
+                kInterestRate(TenthBips32{0}),
+                kPaymentTotal(1),
+                kPaymentInterval(86400 * 365),
                 Fee(XRP(10)));
         }
         else
         {
             env(set(borrower, broker.brokerID, tinyPrincipal),
                 Sig(sfCounterpartySignature, lender),
-                kINTEREST_RATE(TenthBips32{0}),
-                kPAYMENT_TOTAL(1),
-                kPAYMENT_INTERVAL(86400 * 365),
+                kInterestRate(TenthBips32{0}),
+                kPaymentTotal(1),
+                kPaymentInterval(86400 * 365),
                 Fee(XRP(10)),
                 Ter(tecINSUFFICIENT_FUNDS));
         }
