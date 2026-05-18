@@ -92,17 +92,20 @@ protected:
 
     FeatureBitset const all_{jtx::testableAmendments()};
 
-    // The four feature combinations every amendment-sensitive test is
-    // exercised under, to make sure neither code path regresses.
-    auto
-    amendmentCombinations() const
+    // All 2^N permutations of `all_` with each subset of the given features
+    // excluded. The first entry is always `all_` itself (empty exclusion);
+    // the last excludes every feature in the list.
+    std::vector<FeatureBitset>
+    amendmentCombinations(std::initializer_list<uint256> features) const
     {
-        return std::array{
-            all_,
-            all_ - fixCleanup3_2_0,
-            all_ - featureMPTokensV2,
-            all_ - fixCleanup3_2_0 - featureMPTokensV2,
-        };
+        std::vector<FeatureBitset> result{all_};
+        for (auto const& f : features)
+        {
+            auto const previous = result;
+            for (auto const& combo : previous)
+                result.push_back(combo - f);
+        }
+        return result;
     }
 
     std::string const iouCurrency_{"IOU"};
@@ -7810,7 +7813,7 @@ public:
         runAmendmentIndependent();
         testDosLoanPay(all_ | fixCleanup3_1_3);
         testDosLoanPay(all_ - fixCleanup3_1_3);
-        for (auto const& features : amendmentCombinations())
+        for (auto const& features : amendmentCombinations({fixCleanup3_2_0, featureMPTokensV2}))
             runAmendmentSensitive(features);
     }
 };
