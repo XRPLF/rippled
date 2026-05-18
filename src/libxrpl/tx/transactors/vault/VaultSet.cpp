@@ -28,7 +28,7 @@ VaultSet::checkExtraFeatures(PreflightContext const& ctx)
 NotTEC
 VaultSet::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfVaultID] == beast::kZERO)
+    if (ctx.tx[sfVaultID] == beast::kZero)
     {
         JLOG(ctx.j.debug()) << "VaultSet: zero/empty vault ID.";
         return temMALFORMED;
@@ -36,7 +36,7 @@ VaultSet::preflight(PreflightContext const& ctx)
 
     if (auto const data = ctx.tx[~sfData])
     {
-        if (data->empty() || data->length() > kMAX_DATA_PAYLOAD_LENGTH)
+        if (data->empty() || data->length() > kMaxDataPayloadLength)
         {
             JLOG(ctx.j.debug()) << "VaultSet: invalid data payload size.";
             return temMALFORMED;
@@ -45,7 +45,7 @@ VaultSet::preflight(PreflightContext const& ctx)
 
     if (auto const assetMax = ctx.tx[~sfAssetsMaximum])
     {
-        if (*assetMax < beast::kZERO)
+        if (*assetMax < beast::kZero)
         {
             JLOG(ctx.j.debug()) << "VaultSet: invalid max assets.";
             return temMALFORMED;
@@ -95,7 +95,7 @@ VaultSet::preclaim(PreclaimContext const& ctx)
             return tecNO_PERMISSION;
         }
 
-        if (*domain != beast::kZERO)
+        if (*domain != beast::kZero)
         {
             auto const sleDomain = ctx.view.read(keylet::permissionedDomain(*domain));
             if (!sleDomain)
@@ -153,7 +153,7 @@ VaultSet::doApply()
 
     if (auto const domainId = tx[~sfDomainID]; domainId)
     {
-        if (*domainId != beast::kZERO)
+        if (*domainId != beast::kZero)
         {
             // In VaultSet::preclaim we enforce that lsfVaultPrivate must have
             // been set in the vault. We currently do not support making such a

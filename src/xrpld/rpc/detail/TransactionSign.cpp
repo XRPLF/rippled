@@ -382,7 +382,7 @@ checkTxJsonFields(
     }
 
     // Check for current ledger.
-    if (verify && !config.standalone() && (validatedLedgerAge > Tuning::kMAX_VALIDATED_LEDGER_AGE))
+    if (verify && !config.standalone() && (validatedLedgerAge > Tuning::kMaxValidatedLedgerAge))
     {
         if (apiVersion == 1)
         {
@@ -848,7 +848,7 @@ getTxFee(Application const& app, Config const& config, json::Value tx)
         if (!tx[jss::Signers].isArray())
             return config.FEES.reference_fee;
 
-        if (tx[jss::Signers].size() > STTx::kMAX_MULTI_SIGNERS)
+        if (tx[jss::Signers].size() > STTx::kMaxMultiSigners)
             return config.FEES.reference_fee;
 
         // check multi-signed signers
@@ -945,8 +945,8 @@ checkFee(
     if (!doAutoFill)
         return RPC::missingFieldError("tx_json.Fee");
 
-    int mult = Tuning::kDEFAULT_AUTO_FILL_FEE_MULTIPLIER;
-    int div = Tuning::kDEFAULT_AUTO_FILL_FEE_DIVISOR;
+    int mult = Tuning::kDefaultAutoFillFeeMultiplier;
+    int div = Tuning::kDefaultAutoFillFeeDivisor;
     if (request.isMember(jss::fee_mult_max))
     {
         if (request[jss::fee_mult_max].isInt())

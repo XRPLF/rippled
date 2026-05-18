@@ -180,7 +180,7 @@ PathRequest::isValid(std::shared_ptr<AssetCache> const& crCache)
     if (!raSrcAccount_ || !raDstAccount_)
         return false;
 
-    if (!convert_all_ && (saSendMax_ || saDstAmount_ <= beast::kZERO))
+    if (!convert_all_ && (saSendMax_ || saDstAmount_ <= beast::kZero))
     {
         // If send max specified, dst amt must be -1.
         jvStatus_ = rpcError(RpcDstAmtMalformed);
@@ -314,7 +314,7 @@ PathRequest::parseJson(json::Value const& jvParams)
 
     convert_all_ = saDstAmount_ == STAmount(saDstAmount_.asset(), 1u, 0, true);
 
-    if (!validAsset(saDstAmount_.asset()) || (!convert_all_ && saDstAmount_ <= beast::kZERO))
+    if (!validAsset(saDstAmount_.asset()) || (!convert_all_ && saDstAmount_ <= beast::kZero))
     {
         jvStatus_ = rpcError(RpcDstAmtMalformed);
         return PFR_PJ_INVALID;
@@ -332,7 +332,7 @@ PathRequest::parseJson(json::Value const& jvParams)
         saSendMax_.emplace();
         if (!amountFromJsonNoThrow(*saSendMax_, jvParams[jss::send_max]) ||
             !validAsset(saSendMax_->asset()) ||
-            (*saSendMax_ <= beast::kZERO &&
+            (*saSendMax_ <= beast::kZero &&
              *saSendMax_ != STAmount(saSendMax_->asset(), 1u, 0, true)))
         {
             jvStatus_ = rpcError(RpcSendmaxMalformed);
@@ -344,7 +344,7 @@ PathRequest::parseJson(json::Value const& jvParams)
     {
         json::Value const& jvSrcCurrencies = jvParams[jss::source_currencies];
         if (!jvSrcCurrencies.isArray() || jvSrcCurrencies.size() == 0 ||
-            jvSrcCurrencies.size() > RPC::Tuning::kMAX_SRC_CUR)
+            jvSrcCurrencies.size() > RPC::Tuning::kMaxSrcCur)
         {
             jvStatus_ = rpcError(RpcSrcCurMalformed);
             return PFR_PJ_INVALID;
@@ -523,7 +523,7 @@ PathRequest::getPathFinder(
     // NOLINTEND(bugprone-unchecked-optional-access)
     if (pathfinder->findPaths(level, continueCallback))
     {
-        pathfinder->computePathRanks(kMAX_PATHS, continueCallback);
+        pathfinder->computePathRanks(kMaxPaths, continueCallback);
     }
     else
     {
@@ -556,7 +556,7 @@ PathRequest::findPaths(
                     [&]<typename TAsset>(TAsset const& a) {
                         if (!sameAccount || a != saDstAmount_.asset())
                         {
-                            if (sourceAssets.size() >= RPC::Tuning::kMAX_AUTO_SRC_CUR)
+                            if (sourceAssets.size() >= RPC::Tuning::kMaxAutoSrcCur)
                                 return false;
                             if constexpr (std::is_same_v<TAsset, Currency>)
                             {
@@ -596,7 +596,7 @@ PathRequest::findPaths(
 
         STPath fullLiquidityPath;
         auto ps = pathfinder->getBestPaths(
-            kMAX_PATHS, fullLiquidityPath, context_[asset], asset.getIssuer(), continueCallback);
+            kMaxPaths, fullLiquidityPath, context_[asset], asset.getIssuer(), continueCallback);
         context_[asset] = ps;
 
         auto const& sourceAccount = [&] {

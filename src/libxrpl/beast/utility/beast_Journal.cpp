@@ -62,8 +62,8 @@ public:
 Journal::Sink&
 Journal::getNullSink()
 {
-    static NullJournalSink kSINK;
-    return kSINK;
+    static NullJournalSink kSink;
+    return kSink;
 }
 
 //------------------------------------------------------------------------------

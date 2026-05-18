@@ -92,7 +92,7 @@ AMMClawback::preflight(PreflightContext const& ctx)
         return temBAD_AMOUNT;
     }
 
-    if (clawAmount && *clawAmount <= beast::kZERO)
+    if (clawAmount && *clawAmount <= beast::kZero)
         return temBAD_AMOUNT;
 
     return tesSUCCESS;
@@ -187,7 +187,7 @@ AMMClawback::applyGuts(Sandbox& sb)
     {
         // retrieve LP token balance inside the amendment gate to avoid inconsistent error behavior
         auto const lpTokenBalance = ammLPHolds(sb, *ammSle, holder, j_);
-        if (lpTokenBalance == beast::kZERO)
+        if (lpTokenBalance == beast::kZero)
             return tecAMM_BALANCE;
 
         if (auto const res = verifyAndAdjustLPTokenBalance(sb, lpTokenBalance, ammSle, holder);
@@ -216,7 +216,7 @@ AMMClawback::applyGuts(Sandbox& sb)
     // calling a second time on purpose since `verifyAndAdjustLPTokenBalance` rounds and may adjust
     // the balance
     auto const holdLPtokens = ammLPHolds(sb, *ammSle, holder, j_);
-    if (holdLPtokens == beast::kZERO)
+    if (holdLPtokens == beast::kZero)
         return tecAMM_BALANCE;
 
     if (!clawAmount)
@@ -335,7 +335,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
         auto tokensAdj = getRoundedLPTokens(rules, lptAMMBalance, frac, IsDeposit::No);
 
         // LCOV_EXCL_START
-        if (tokensAdj == beast::kZERO)
+        if (tokensAdj == beast::kZero)
             return {tecAMM_INVALID_TOKENS, STAmount{}, STAmount{}, std::nullopt};
         // LCOV_EXCL_STOP
 
