@@ -52,7 +52,7 @@ public:
         // Carol offers to buy 1000 XRP for 1000 USD. She removes Bob's next
         // 1000 offers as unfunded and hits the step limit.
         env(offer("carol", usd(1'000), XRP(1'000)));
-        env.require(Balance("carol", usd(kNONE)));
+        env.require(Balance("carol", usd(kNone)));
         env.require(Owners("carol", 1));
         env.require(Balance("bob", usd(0)));
         env.require(Owners("bob", 1));
@@ -198,13 +198,13 @@ public:
                      .token = "USD",
                      .issuer = gw,
                      .holders = {alice, carol},
-                     .limit = kMAX_MP_TOKEN_AMOUNT});
+                     .limit = kMaxMpTokenAmount});
                 auto const eur = issue2(
                     {.env = env,
                      .token = "EUR",
                      .issuer = gw,
                      .holders = {bob},
-                     .limit = kMAX_MP_TOKEN_AMOUNT});
+                     .limit = kMaxMpTokenAmount});
 
                 env(pay(gw, alice, usd(4'000)));
                 env(pay(gw, carol, usd(3)));
@@ -289,13 +289,13 @@ public:
                      .token = "USD",
                      .issuer = gw,
                      .holders = {alice, carol},
-                     .limit = kMAX_MP_TOKEN_AMOUNT});
+                     .limit = kMaxMpTokenAmount});
                 auto const eur = issue2(
                     {.env = env,
                      .token = "EUR",
                      .issuer = gw,
                      .holders = {bob},
-                     .limit = kMAX_MP_TOKEN_AMOUNT});
+                     .limit = kMaxMpTokenAmount});
 
                 env(pay(gw, alice, usd(4'000)));
                 env(pay(gw, carol, usd(3)));

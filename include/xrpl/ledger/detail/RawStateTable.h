@@ -19,16 +19,16 @@ public:
     // Initial size for the monotonic_buffer_resource used for allocations
     // The size was chosen from the old `qalloc` code (which this replaces).
     // It is unclear how the size initially chosen in qalloc.
-    static constexpr size_t kINITIAL_BUFFER_SIZE = kilobytes(256);
+    static constexpr size_t kInitialBufferSize = kilobytes(256);
 
     RawStateTable()
         : monotonic_resource_{std::make_unique<boost::container::pmr::monotonic_buffer_resource>(
-              kINITIAL_BUFFER_SIZE)}
+              kInitialBufferSize)}
         , items_{monotonic_resource_.get()} {};
 
     RawStateTable(RawStateTable const& rhs)
         : monotonic_resource_{std::make_unique<boost::container::pmr::monotonic_buffer_resource>(
-              kINITIAL_BUFFER_SIZE)}
+              kInitialBufferSize)}
         , items_{rhs.items_, monotonic_resource_.get()}
         , dropsDestroyed_{rhs.dropsDestroyed_} {};
 

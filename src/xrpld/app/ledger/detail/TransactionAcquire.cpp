@@ -29,14 +29,10 @@ namespace xrpl {
 using namespace std::chrono_literals;
 
 // Timeout interval in milliseconds
-auto constexpr kTX_ACQUIRE_TIMEOUT = 250ms;
+constexpr auto kTxAcquireTimeout = 250ms;
 
-// Need to be named before converting
-// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-enum {
-    NormTimeouts = 4,
-    MaxTimeouts = 20,
-};
+static constexpr auto kNormTimeouts = 4;
+static constexpr auto kMaxTimeouts = 20;
 
 TransactionAcquire::TransactionAcquire(
     Application& app,
@@ -45,7 +41,7 @@ TransactionAcquire::TransactionAcquire(
     : TimeoutCounter(
           app,
           hash,
-          kTX_ACQUIRE_TIMEOUT,
+          kTxAcquireTimeout,
           {.jobType = JtTxnData, .jobName = "TxAcq", .jobLimit = {}},
           app.getJournal("TransactionAcquire"))
     , peerSet_(std::move(peerSet))
@@ -85,14 +81,14 @@ TransactionAcquire::done()
 void
 TransactionAcquire::onTimer(bool progress, ScopedLockType& psl)
 {
-    if (timeouts_ > MaxTimeouts)
+    if (timeouts_ > kMaxTimeouts)
     {
         failed_ = true;
         done();
         return;
     }
 
-    if (timeouts_ >= NormTimeouts)
+    if (timeouts_ >= kNormTimeouts)
         trigger(nullptr);
 
     addPeers(1);
@@ -259,7 +255,7 @@ TransactionAcquire::stillNeed()
 {
     ScopedLockType const sl(mtx_);
 
-    timeouts_ = std::min<int>(timeouts_, NormTimeouts);
+    timeouts_ = std::min<int>(timeouts_, kNormTimeouts);
     failed_ = false;
 }
 

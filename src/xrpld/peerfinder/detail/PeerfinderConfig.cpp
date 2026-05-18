@@ -15,20 +15,10 @@ Config::Config() : outPeers(calcOutPeers())
 {
 }
 
-bool
-operator==(Config const& lhs, Config const& rhs)
-{
-    return lhs.autoConnect == rhs.autoConnect && lhs.peerPrivate == rhs.peerPrivate &&
-        lhs.wantIncoming == rhs.wantIncoming && lhs.inPeers == rhs.inPeers &&
-        lhs.maxPeers == rhs.maxPeers && lhs.outPeers == rhs.outPeers &&
-        lhs.features == rhs.features && lhs.ipLimit == rhs.ipLimit &&
-        lhs.listeningPort == rhs.listeningPort;
-}
-
 std::size_t
 Config::calcOutPeers() const
 {
-    return std::max((maxPeers * Tuning::OutPercent + 50) / 100, std::size_t(Tuning::MinOutCount));
+    return std::max((maxPeers * Tuning::kOutPercent + 50) / 100, std::size_t(Tuning::kMinOutCount));
 }
 
 void
@@ -41,8 +31,8 @@ Config::applyTuning()
         // IP addresses.
         ipLimit = 2;
 
-        if (inPeers > Tuning::DefaultMaxPeers)
-            ipLimit += std::min(5, static_cast<int>(inPeers / Tuning::DefaultMaxPeers));
+        if (inPeers > Tuning::kDefaultMaxPeers)
+            ipLimit += std::min(5, static_cast<int>(inPeers / Tuning::kDefaultMaxPeers));
     }
 
     // We don't allow a single IP to consume all incoming slots,
@@ -60,6 +50,7 @@ Config::onWrite(beast::PropertyStream::Map& map) const
     map["port"] = listeningPort;
     map["features"] = features;
     map["ip_limit"] = ipLimit;
+    map["verify_endpoints"] = verifyEndpoints;
 }
 
 Config
@@ -67,7 +58,8 @@ Config::makeConfig(
     xrpl::Config const& cfg,
     std::uint16_t port,
     bool validationPublicKey,
-    int ipLimit)
+    int ipLimit,
+    bool verifyEndpoints)
 {
     PeerFinder::Config config;
 
@@ -81,7 +73,7 @@ Config::makeConfig(
         if (cfg.PEERS_MAX != 0)
             config.maxPeers = cfg.PEERS_MAX;
 
-        config.maxPeers = std::max<std::size_t>(config.maxPeers, Tuning::MinOutCount);
+        config.maxPeers = std::max<std::size_t>(config.maxPeers, Tuning::kMinOutCount);
         config.outPeers = config.calcOutPeers();
 
         // Calculate the number of outbound peers we want. If we dont want
@@ -120,6 +112,7 @@ Config::makeConfig(
     config.listeningPort = port;
     config.features = "";
     config.ipLimit = ipLimit;
+    config.verifyEndpoints = verifyEndpoints;
 
     // Enforce business rules
     config.applyTuning();

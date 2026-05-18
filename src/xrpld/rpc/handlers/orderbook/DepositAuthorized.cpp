@@ -86,7 +86,7 @@ doDepositAuthorized(RPC::JsonContext& context)
         return result;
     }
 
-    bool const reqAuth = ((sleDest->getFlags() & lsfDepositAuth) != 0u) && (srcAcct != dstAcct);
+    bool const reqAuth = sleDest->isFlag(lsfDepositAuth) && (srcAcct != dstAcct);
     bool const credentialsPresent = params.isMember(jss::credentials);
 
     std::set<std::pair<AccountID, Slice>> sorted;
@@ -101,7 +101,7 @@ doDepositAuthorized(RPC::JsonContext& context)
                 RPC::expectedFieldMessage(
                     jss::credentials, "is non-empty array of CredentialID(hash256)"));
         }
-        if (creds.size() > kMAX_CREDENTIALS_ARRAY_SIZE)
+        if (creds.size() > kMaxCredentialsArraySize)
         {
             return RPC::makeError(
                 RpcInvalidParams, RPC::expectedFieldMessage(jss::credentials, "array too long"));
@@ -135,7 +135,7 @@ doDepositAuthorized(RPC::JsonContext& context)
                 return result;
             }
 
-            if ((sleCred->getFlags() & lsfAccepted) == 0u)
+            if (!sleCred->isFlag(lsfAccepted))
             {
                 RPC::injectError(RpcBadCredentials, "credentials aren't accepted", result);
                 return result;

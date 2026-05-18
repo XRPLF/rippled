@@ -134,13 +134,13 @@ public:
     bool
     getInteger(Integer& number, int offset)
     {
-        static auto const kBYTES = sizeof(Integer);
-        if ((offset + kBYTES) > data_.size())
+        static auto const kBytes = sizeof(Integer);
+        if ((offset + kBytes) > data_.size())
             return false;
         number = 0;
 
         auto ptr = &data_[offset];
-        for (auto i = 0; i < kBYTES; ++i)
+        for (auto i = 0; i < kBytes; ++i)
         {
             if (i)
                 number <<= 8;
