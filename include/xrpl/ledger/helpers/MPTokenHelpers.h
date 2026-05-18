@@ -108,10 +108,18 @@ enforceMPTokenAuthorization(
     XRPAmount const& priorBalance,
     beast::Journal j);
 
-/** Resolve a vault share's underlying asset from the share's MPTokenIssuance
- *  and the holding SLE pointed to by sfReferenceHolding (an MPToken or a
- *  RippleState). Caller must ensure both SLEs exist and the holding is one
- *  of the two expected types.
+/** Resolve the underlying asset of a vault share.
+ *
+ *  Reads sfReferenceHolding from @p sleShareIssuance to determine which
+ *  asset the vault wraps. @p sleHolding must be the SLE that
+ *  sfReferenceHolding points to — either an ltMPTOKEN (returns its
+ *  MPTIssue) or an ltRIPPLE_STATE (returns its low/high Issue).
+ *
+ *  @pre Both SLEs must exist and @p sleHolding must be of type ltMPTOKEN
+ *       or ltRIPPLE_STATE. Passing any other type is undefined behaviour.
+ *  @param sleShareIssuance  MPTokenIssuance SLE for the vault share token.
+ *  @param sleHolding        SLE referenced by sfReferenceHolding.
+ *  @return The underlying Asset (MPTIssue or Issue).
  */
 [[nodiscard]] Asset
 assetOfHolding(SLE const& sleShareIssuance, SLE const& sleHolding);

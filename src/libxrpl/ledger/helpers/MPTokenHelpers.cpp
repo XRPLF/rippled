@@ -498,15 +498,6 @@ enforceMPTokenAuthorization(
     // LCOV_EXCL_STOP
 }
 
-// Resolve the underlying asset of a vault share given the share's
-// MPTokenIssuance and the holding SLE pointed to by sfReferenceHolding.
-// Branches on holding type:
-//   - ltMPTOKEN: the holding is the vault pseudo's MPToken; the
-//     underlying MPT is sfMPTokenIssuanceID directly.
-//   - ltRIPPLE_STATE: the holding is the vault pseudo's trust line with
-//     the IOU issuer. The IOU issuer is whichever side of the line is
-//     not the vault pseudo (the share's sfIssuer). Both limit STAmounts
-//     encode the counterparty as their issuer field.
 [[nodiscard]] Asset
 assetOfHolding(SLE const& sleShareIssuance, SLE const& sleHolding)
 {
