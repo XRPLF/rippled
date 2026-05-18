@@ -35,8 +35,8 @@ class FetchPackTest : public ::testing::Test
 protected:
     beast::Journal const j_{TestSink::instance()};
 
-    static constexpr auto kTABLE_ITEMS = 100;
-    static constexpr auto kTABLE_ITEMS_EXTRA = 20;
+    static constexpr auto kTableItems = 100;
+    static constexpr auto kTableItemsExtra = 20;
 
     using Map = hash_map<SHAMapHash, Blob>;
     using Table = SHAMap;
