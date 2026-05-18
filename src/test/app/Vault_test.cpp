@@ -6184,7 +6184,7 @@ class Vault_test : public beast::unit_test::Suite
             env.close();
 
             // Create the IOU vault.
-            Vault vault{env};
+            Vault const vault{env};
             auto [vaultTx, keylet] = vault.create({.owner = owner, .asset = usd});
             env(vaultTx);
             env.close();
