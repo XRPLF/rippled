@@ -1201,7 +1201,7 @@ class Invariants_test : public beast::unit_test::Suite
                 STArray nfTokens = makeNFTokenIDs(2);
                 std::iter_swap(nfTokens.begin(), nfTokens.begin() + 1);
 
-                auto nftPage = std::make_shared<SLE>(keylet::nftokenPageMax(A1));
+                auto nftPage = std::make_shared<SLE>(keylet::nftokenPageMax(a1));
                 nftPage->setFieldArray(sfNFTokens, nfTokens);
 
                 ac.view().insert(nftPage);
@@ -1214,7 +1214,7 @@ class Invariants_test : public beast::unit_test::Suite
                 STArray nfTokens = makeNFTokenIDs(1);
                 nfTokens[0].setFieldVL(sfURI, Blob{});
 
-                auto nftPage = std::make_shared<SLE>(keylet::nftokenPageMax(A1));
+                auto nftPage = std::make_shared<SLE>(keylet::nftokenPageMax(a1));
                 nftPage->setFieldArray(sfNFTokens, nfTokens);
 
                 ac.view().insert(nftPage);
@@ -1259,9 +1259,9 @@ class Invariants_test : public beast::unit_test::Suite
             [&makeNFTokenIDs](Account const& a1, Account const& a2, ApplyContext& ac) {
                 STArray nfTokens = makeNFTokenIDs(1);
                 auto nftPage = std::make_shared<SLE>(keylet::nftokenPage(
-                    keylet::nftokenPageMax(A1), ++(nfTokens[0].getFieldH256(sfNFTokenID))));
+                    keylet::nftokenPageMax(a1), ++(nfTokens[0].getFieldH256(sfNFTokenID))));
                 nftPage->setFieldArray(sfNFTokens, nfTokens);
-                nftPage->setFieldH256(sfNextPageMin, keylet::nftokenPageMax(A2).key);
+                nftPage->setFieldH256(sfNextPageMin, keylet::nftokenPageMax(a2).key);
 
                 ac.view().insert(nftPage);
                 return true;
@@ -1272,7 +1272,7 @@ class Invariants_test : public beast::unit_test::Suite
             [&makeNFTokenIDs](Account const& a1, Account const&, ApplyContext& ac) {
                 STArray nfTokens = makeNFTokenIDs(2);
                 auto nftPage = std::make_shared<SLE>(keylet::nftokenPage(
-                    keylet::nftokenPageMax(A1), (nfTokens[1].getFieldH256(sfNFTokenID))));
+                    keylet::nftokenPageMax(a1), (nfTokens[1].getFieldH256(sfNFTokenID))));
                 nftPage->setFieldArray(sfNFTokens, nfTokens);
 
                 ac.view().insert(nftPage);
@@ -3394,7 +3394,7 @@ class Invariants_test : public beast::unit_test::Suite
                     keylet::ownerDir(a1.id()), sleVault->key(), describeOwnerDir(a1.id()));
                 sleVault->setFieldU64(sfOwnerNode, *vaultPage);
 
-                auto const sharesMptId = makeMptID(sequence, A2.id());
+                auto const sharesMptId = makeMptID(sequence, a2.id());
                 auto const sharesKeylet = keylet::mptokenIssuance(sharesMptId);
                 auto sleShares = std::make_shared<SLE>(sharesKeylet);
                 auto const sharesPage = ac.view().dirInsert(

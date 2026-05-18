@@ -352,7 +352,11 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
         // Get the index of the middle page.
         uint256 const carolMiddleNFTokenPageIndex = [&env, &carol]() {
             auto lastNFTokenPage = env.le(keylet::nftokenPageMax(carol));
+            return lastNFTokenPage->at(sfPreviousPageMin);
         }();
+
+        // carol sells all of the tokens in the very last page to daria.
+        std::vector<uint256> dariaNFTs;
         dariaNFTs.reserve(32);
         for (int i = 0; i < 32; ++i)
         {
@@ -523,9 +527,13 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
             auto const bobNewFirstNFTokenPage = env.le(
                 keylet::nftokenPage(
                     keylet::nftokenPageMin(bob), bobLastNFTokenPage->at(sfPreviousPageMin)));
+            if (!BEAST_EXPECT(bobNewFirstNFTokenPage))
+                return;
+
+            BEAST_EXPECT(
                 bobNewFirstNFTokenPage->isFieldPresent(sfNextPageMin) &&
                 bobNewFirstNFTokenPage->at(sfNextPageMin) == lastPageKeylet.key);
-                BEAST_EXPECT(!bobNewFirstNFTokenPage->isFieldPresent(sfPreviousPageMin));
+            BEAST_EXPECT(!bobNewFirstNFTokenPage->isFieldPresent(sfPreviousPageMin));
         }
 
         // bob's middle page should be gone.

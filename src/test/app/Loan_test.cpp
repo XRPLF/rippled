@@ -7195,7 +7195,7 @@ protected:
                 .coverDeposit = 500'000,
             });
         auto const [currentSeq, vaultKeylet] = [&]() {
-            auto const brokerSle = env.le(keylet::loanbroker(brokerInfo.brokerID));
+            auto const brokerSle = env.le(keylet::loanBroker(brokerInfo.brokerID));
             if (!BEAST_EXPECT(brokerSle))
                 return std::make_tuple(0u, keylet::unchecked(beast::kZero));
             auto const currentSeq = brokerSle->at(sfLoanSequence);
@@ -7483,7 +7483,7 @@ protected:
         createJson["PaymentTotal"] = 3;
         createJson["PaymentInterval"] = 600;
 
-        auto const brokerStateBefore = env.le(keylet::loanbroker(broker.brokerID));
+        auto const brokerStateBefore = env.le(keylet::loanBroker(broker.brokerID));
         auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
         auto const keylet = keylet::loan(broker.brokerID, loanSequence);
 
@@ -7566,7 +7566,7 @@ protected:
         createJson["PaymentTotal"] = 3;
         createJson["PaymentInterval"] = 600;
 
-        auto const brokerStateBefore = env.le(keylet::loanbroker(broker.brokerID));
+        auto const brokerStateBefore = env.le(keylet::loanBroker(broker.brokerID));
         auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
         auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
         createJson = env.json(createJson, Sig(sfCounterpartySignature, lender));
