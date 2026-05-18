@@ -347,20 +347,20 @@ private:
     bool const standalone_;
 
     // How many ledgers before the current ledger do we allow peers to request?
-    std::uint32_t const fetch_depth_;
+    std::uint32_t const fetchDepth_;
 
     // How much history do we want to keep
-    std::uint32_t const ledger_history_;
+    std::uint32_t const ledgerHistorySize_;
 
-    std::uint32_t const ledger_fetch_size_;
+    std::uint32_t const ledgerFetchSize_;
 
-    TaggedCache<uint256, Blob> fetch_packs_;
+    TaggedCache<uint256, Blob> fetchPacks_;
 
-    std::uint32_t fetch_seq_{0};
+    std::uint32_t fetchSeq_{0};
 
     // Try to keep a validator from switching from test to live network
     // without first wiping the database.
-    LedgerIndex const max_ledger_difference_{1000000};
+    LedgerIndex const maxLedgerDifference_{1000000};
 
     // Time that the previous upgrade warning was issued.
     TimeKeeper::time_point upgradeWarningPrevTime_;

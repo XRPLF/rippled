@@ -30,9 +30,9 @@ WorkSSL::WorkSSL(
     callback_type cb)
     : WorkBase(host, path, port, ios, lastEndpoint, lastStatus, cb)
     , context_(
-          config.SSL_VERIFY_DIR,
-          config.SSL_VERIFY_FILE,
-          config.SSL_VERIFY,
+          config.sslVerifyDir,
+          config.sslVerifyFile,
+          config.sslVerify,
           j,
           boost::asio::ssl::context::tlsv12_client)
     , stream_(socket_, context_.context())

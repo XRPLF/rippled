@@ -2108,7 +2108,7 @@ class MPToken_test : public beast::unit_test::Suite
         Account const alice{"alice"};
 
         auto cfg = envconfig();
-        cfg->FEES.reference_fee = 10;
+        cfg->fees.referenceFee = 10;
         Env env{*this, std::move(cfg), features};
         MPTTester mptAlice(env, alice);
 

@@ -112,16 +112,16 @@ public:
             return;
 
         std::vector<std::uint8_t> decompressed;
-        decompressed.resize(header->uncompressed_size);
+        decompressed.resize(header->uncompressedSize);
 
-        BEAST_EXPECT(header->payload_wire_size == buffer.size() - header->header_size);
+        BEAST_EXPECT(header->payloadWireSize == buffer.size() - header->headerSize);
 
         ZeroCopyInputStream stream(buffers.data());
-        stream.Skip(header->header_size);
+        stream.Skip(header->headerSize);
 
         auto decompressedSize = xrpl::compression::decompress(
-            stream, header->payload_wire_size, decompressed.data(), header->uncompressed_size);
-        BEAST_EXPECT(decompressedSize == header->uncompressed_size);
+            stream, header->payloadWireSize, decompressed.data(), header->uncompressedSize);
+        BEAST_EXPECT(decompressedSize == header->uncompressedSize);
         auto const proto1 = std::make_shared<T>();
 
         BEAST_EXPECT(proto1->ParseFromArray(decompressed.data(), decompressedSize));
@@ -408,9 +408,8 @@ public:
                 << enable << "\n";
             c.loadFromString(str.str());
             auto env = std::make_shared<jtx::Env>(*this);
-            env->app().config().COMPRESSION = c.COMPRESSION;
-            env->app().config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE =
-                c.VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE;
+            env->app().config().compression = c.compression;
+            env->app().config().vpReduceRelayBaseSquelchEnable = c.vpReduceRelayBaseSquelchEnable;
             return env;
         };
         auto handshake = [&](int outboundEnable, int inboundEnable) {
@@ -419,10 +418,10 @@ public:
             auto env = getEnv(outboundEnable);
             auto request = xrpl::makeRequest(
                 true,
-                env->app().config().COMPRESSION,
+                env->app().config().compression,
                 false,
-                env->app().config().TX_REDUCE_RELAY_ENABLE,
-                env->app().config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE);
+                env->app().config().txReduceRelayEnable,
+                env->app().config().vpReduceRelayBaseSquelchEnable);
             http_request_type httpRequest;
             httpRequest.version(request.version());
             httpRequest.base() = request.base();

@@ -98,8 +98,8 @@ private:
 
     // If both mutex are to be locked at the same time, `sites_mutex_` must be
     // locked before `state_mutex_` or we may deadlock.
-    std::mutex mutable sites_mutex_;
-    std::mutex mutable state_mutex_;
+    std::mutex mutable sitesMutex_;
+    std::mutex mutable stateMutex_;
 
     std::condition_variable cv_;
     std::weak_ptr<detail::Work> work_;
