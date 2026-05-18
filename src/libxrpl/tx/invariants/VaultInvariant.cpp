@@ -854,7 +854,7 @@ ValidVault::finalize(
                     // XRP and MPT remain strict. Because they are integer-exact, a zero
                     // destination delta indicates a true accounting bug, not a rounding artifact.
                     bool const tolerateZeroDelta =
-                        view.rules().enabled(fixCleanup3_2_0) && vaultAsset.holds<Issue>();
+                        view.rules().enabled(fixCleanup3_2_0) && !vaultAsset.integral();
                     auto const invalidBalanceChange = tolerateZeroDelta
                         ? roundedDestinationDelta < kZero
                         : roundedDestinationDelta <= kZero;
