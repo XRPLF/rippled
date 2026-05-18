@@ -481,7 +481,7 @@ CheckCash::doApply()
                     return std::nullopt;
                 },
                 [&](MPTIssue const& issue) -> std::optional<TER> {
-                    if (account_ != deliverIssuer)
+                    if (accountID_ != deliverIssuer)
                     {
                         auto const& mptID = issue.getMptID();
                         // Create MPT if it doesn't exist

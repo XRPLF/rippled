@@ -105,7 +105,7 @@ DelegateSet::doApply()
 
     sle->setFieldArray(sfPermissions, permissions);
 
-    // Add to delegating account's owner directory.
+    // Add to delegating account's owner directory
     auto const page = ctx_.view().dirInsert(
         keylet::ownerDir(accountID_), delegateKey, describeOwnerDir(accountID_));
 

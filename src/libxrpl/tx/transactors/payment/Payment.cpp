@@ -597,10 +597,10 @@ Payment::doApply()
     auto const reserve = view().fees().accountReserve(ownerCount);
 
     // In a delegated payment, the fee payer is the delegated account,
-    // not the source account (account_).
-    bool const accountIsPayer = (ctx_.tx.getFeePayer() == account_);
+    // not the source account (accountID_).
+    bool const accountIsPayer = (ctx_.tx.getFeePayer() == accountID_);
 
-    // preFeeBalance_ is the balance on the source account (account_) BEFORE the fees
+    // preFeeBalance_ is the balance on the source account (accountID_) BEFORE the fees
     // were charged. If source account is the fee payer, it must also cover the fee.
     // The final spend may use the reserve to cover fees.
     auto const minRequiredFunds =

@@ -80,14 +80,14 @@ AMMVote::preclaim(PreclaimContext const& ctx)
 }
 
 static std::pair<TER, bool>
-applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& accountId, beast::Journal j)
+applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& accountID, beast::Journal j)
 {
     auto const feeNew = ctx.tx[sfTradingFee];
     auto ammSle = sb.peek(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
     if (!ammSle)
         return {tecINTERNAL, false};
     STAmount const lptAMMBalance = (*ammSle)[sfLPTokenBalance];
-    auto const lpTokensNew = ammLPHolds(sb, *ammSle, accountId, ctx.journal);
+    auto const lpTokensNew = ammLPHolds(sb, *ammSle, accountID, ctx.journal);
     std::optional<STAmount> minTokens;
     std::size_t minPos{0};
     AccountID minAccount{0};
@@ -108,13 +108,13 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& accountId, beast::Jou
         auto lpTokens = ammLPHolds(sb, *ammSle, entryAccount, ctx.journal);
         if (lpTokens == beast::kZero)
         {
-            JLOG(j.debug()) << "AMMVote::applyVote, accountId " << entryAccount << " is not LP";
+            JLOG(j.debug()) << "AMMVote::applyVote, accountID " << entryAccount << " is not LP";
             continue;
         }
         auto feeVal = entry[sfTradingFee];
         STObject newEntry = STObject::makeInnerObject(sfVoteEntry);
         // The account already has the vote entry.
-        if (entryAccount == accountId)
+        if (entryAccount == accountID)
         {
             lpTokens = lpTokensNew;
             feeVal = feeNew;
@@ -156,7 +156,7 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& accountId, beast::Jou
                 sfVoteWeight,
                 static_cast<std::int64_t>(
                     Number(lpTokensNew) * kVoteWeightScaleFactor / lptAMMBalance));
-            newEntry.setAccountID(sfAccount, accountId);
+            newEntry.setAccountID(sfAccount, accountID);
             num += feeNew * lpTokensNew;
             den += lpTokensNew;
             if (minPos)

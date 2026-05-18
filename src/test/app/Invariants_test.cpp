@@ -182,7 +182,7 @@ class Invariants_test : public beast::unit_test::Suite
 
         // Invariants normally run in the Transaction's "apply" (operator()) context, and can always
         // access global Rules.
-        CurrentTransactionRulesGuard const rg(ov.rules());
+        CurrentTransactionRulesGuard const rulesGuard(ov.rules());
 
         BEAST_EXPECT(precheck(a1, a2, ac));
 

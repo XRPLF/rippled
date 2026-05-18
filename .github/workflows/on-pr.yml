@@ -64,11 +64,13 @@ jobs:
             .github/workflows/reusable-build-test-config.yml
             .github/workflows/reusable-build-test.yml
             .github/workflows/reusable-clang-tidy.yml
+            .github/workflows/reusable-package.yml
             .github/workflows/reusable-strategy-matrix.yml
             .github/workflows/reusable-test.yml
             .github/workflows/reusable-upload-recipe.yml
             .clang-tidy
             .codecov.yml
+            cfg/**
             cmake/**
             conan/**
             external/**
@@ -78,6 +80,10 @@ jobs:
             CMakeLists.txt
             conanfile.py
             conan.lock
+            LICENSE.md
+            package/**
+            README.md
+
       - name: Check whether to run
         # This step determines whether the rest of the workflow should
         # run. The rest of the workflow will run if this job runs AND at
@@ -134,6 +140,11 @@ jobs:
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
+  package:
+    needs: [should-run, build-test]
+    if: ${{ needs.should-run.outputs.go == 'true' }}
+    uses: ./.github/workflows/reusable-package.yml
+
   upload-recipe:
     needs:
       - should-run
@@ -168,6 +179,7 @@ jobs:
       - check-rename
       - clang-tidy
       - build-test
+      - package
       - upload-recipe
       - notify-clio
     runs-on: ubuntu-latest

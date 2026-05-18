@@ -434,6 +434,8 @@ Transactor::payFee()
     payerAcct->setFieldAmount(sfBalance, payerAcct->getFieldAmount(sfBalance) - feePaid);
     if (feePayer != accountID_)
         payerAcct.update();  // done in `apply()` for the account
+
+    // VFALCO Should we call view().rawDestroyXRP() here as well?
     return tesSUCCESS;
 }
 
@@ -626,19 +628,18 @@ Transactor::apply()
 
     // If the transactor requires a valid account and the transaction doesn't
     // list one, preflight will have already a flagged a failure.
-    WAccountRoot acct(accountID_, view(), j_);
 
     // acct must exist except for transactions
     // that allow zero account.
     XRPL_ASSERT(
-        acct.exists() || accountID_ == beast::kZero,
+        account_.exists() || accountID_ == beast::kZero,
         "xrpl::Transactor::apply : non-null SLE or zero account");
 
-    if (acct)
+    if (account_)
     {
-        preFeeBalance_ = STAmount{(*acct)[sfBalance]}.xrp();
+        preFeeBalance_ = STAmount{(*account_)[sfBalance]}.xrp();
 
-        TER result = consumeSeqProxy(acct.mutableSle());
+        TER result = consumeSeqProxy(account_.mutableSle());
         if (!isTesSuccess(result))
             return result;
 
@@ -646,10 +647,10 @@ Transactor::apply()
         if (!isTesSuccess(result))
             return result;
 
-        if (acct->isFieldPresent(sfAccountTxnID))
-            acct->setFieldH256(sfAccountTxnID, ctx_.tx.getTransactionID());
+        if (account_->isFieldPresent(sfAccountTxnID))
+            account_->setFieldH256(sfAccountTxnID, ctx_.tx.getTransactionID());
 
-        acct.update();
+        account_.update();
     }
 
     return doApply();
