@@ -1086,7 +1086,7 @@ private:
         BEAST_EXPECT(ammCarol.expectBalances(
             aBux(3'093'541'659'651'603), bBux(3'200'215'509'984'419), ammCarol.tokens()));
         BEAST_EXPECT(expectOffers(
-            env, cam, 1, {{Amounts{bBux(200'215'509'984'419), aBux(200'215'509'984'420)}}}));
+            env, cam, 1, {{Amounts{bBux(200'215'509'984'419), aBux(200'215'509'984'419)}}}));
     }
 
     void

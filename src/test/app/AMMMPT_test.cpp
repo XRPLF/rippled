@@ -5038,15 +5038,15 @@ private:
             env.close();
 
             BEAST_EXPECT(ammAlice.expectBalances(
-                btc(1'060'6848287928033), eth(1'037'0658372213574), ammAlice.tokens()));
+                btc(1'060'6848287928025), eth(1'037'0658372213582), ammAlice.tokens()));
             // Consumed offer ~72.93e13ETH/72.93e13BTC
             BEAST_EXPECT(expectOffers(
-                env, carol_, 1, {Amounts{eth(27'0658372213574), btc(27'0658372213575)}}));
+                env, carol_, 1, {Amounts{eth(27'0658372213582), btc(27'0658372213582)}}));
             BEAST_EXPECT(expectOffers(env, bob_, 0));
             BEAST_EXPECT(expectOffers(env, ed, 0));
 
-            env.require(Balance(carol_, btc(19'116'439'640'089'955)));
-            env.require(Balance(carol_, eth(20'729'341'627'786'426)));
+            env.require(Balance(carol_, btc(19'116'439'640'089'965)));
+            env.require(Balance(carol_, eth(20'729'341'627'786'418)));
             env.require(Balance(bob_, btc(20'100'000'000'000'000)));
             env.require(Balance(ed, eth(19'875'000'000'000'000)));
         }

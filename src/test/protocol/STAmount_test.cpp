@@ -6,11 +6,14 @@
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Rate.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/Serializer.h>
@@ -24,6 +27,7 @@
 #include <string>
 #include <type_traits>
 #include <typeinfo>
+#include <unordered_set>
 
 namespace xrpl {
 
@@ -1040,6 +1044,70 @@ public:
     }
 
     void
+    testMPTRateRounding()
+    {
+        testcase("MPT transfer rate rounding uses Number arithmetic");
+
+        MPTIssue const asset{makeMptID(1, AccountID(0x4985601))};
+        Rate const transferRate{1'500'000'000};
+        STAmount const largeAmount{asset, 1'230'000'000'000'000'000LL};
+        STAmount const scaledAmount{asset, 1'845'000'000'000'000'000LL};
+
+        auto rules = [](bool const mptV2) {
+            // Rules keeps a reference to the presets set, so use static
+            // storage here rather than a local temporary.
+            static std::unordered_set<uint256, beast::Uhash<>> const kNO_FEATURES;
+            static std::unordered_set<uint256, beast::Uhash<>> const kMPT_V2_FEATURES{
+                featureMPTokensV2};
+            return Rules{mptV2 ? kMPT_V2_FEATURES : kNO_FEATURES};
+        };
+
+        auto throwsOverflow = [&](auto&& f) {
+            bool threw = false;
+            try
+            {
+                f();
+            }
+            catch (std::overflow_error const&)
+            {
+                threw = true;
+            }
+            BEAST_EXPECT(threw);
+        };
+
+        {
+            CurrentTransactionRulesGuard const rg(rules(false));
+            NumberSO const numberSO{true};
+
+            throwsOverflow([&] { (void)multiplyRound(largeAmount, transferRate, asset, true); });
+            throwsOverflow([&] { (void)divideRound(scaledAmount, transferRate, asset, true); });
+        }
+
+        {
+            CurrentTransactionRulesGuard const rg(rules(true));
+            NumberSO const numberSO{false};
+
+            throwsOverflow([&] { (void)multiplyRound(largeAmount, transferRate, asset, true); });
+            throwsOverflow([&] { (void)divideRound(scaledAmount, transferRate, asset, true); });
+        }
+
+        {
+            CurrentTransactionRulesGuard const rg(rules(true));
+            NumberSO const numberSO{true};
+            STAmount const one{asset, 1};
+            STAmount const two{asset, 2};
+
+            BEAST_EXPECT(multiplyRound(one, transferRate, asset, true) == two);
+            BEAST_EXPECT(multiplyRound(one, transferRate, asset, false) == one);
+            BEAST_EXPECT(divideRound(two, transferRate, asset, true) == two);
+            BEAST_EXPECT(divideRound(two, transferRate, asset, false) == one);
+
+            BEAST_EXPECT(multiplyRound(largeAmount, transferRate, asset, true) == scaledAmount);
+            BEAST_EXPECT(divideRound(scaledAmount, transferRate, asset, true) == largeAmount);
+        }
+    }
+
+    void
     testCanSubtractXRP()
     {
         testcase("can subtract xrp");
@@ -1224,6 +1292,7 @@ public:
         testCanAddXRP();
         testCanAddIOU();
         testCanAddMPT();
+        testMPTRateRounding();
         testCanSubtractXRP();
         testCanSubtractIOU();
         testCanSubtractMPT();

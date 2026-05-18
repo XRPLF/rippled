@@ -3177,10 +3177,36 @@ public:
         auto const issuer = Account("issuer");
         auto const taker = Account("taker");
 
-        // Each scenario below targets a specific overflow path. The expected
-        // behavior is the same in all cases: remove the unusable book tip offer
-        // and let the taker's crossing offer remain rather than returning
-        // tecINTERNAL with the poison offer still on-ledger.
+        {
+            Env env{*this, features};
+            env.fund(XRP(10'000), issuer, taker);
+            env.close();
+
+            auto constexpr takerFunds = 2'000'000'000'000'000'000LL;
+            MPTTester const token{
+                {.env = env,
+                 .issuer = issuer,
+                 .holders = {taker},
+                 .transferFee = 50'000,
+                 .pay = takerFunds,
+                 .maxAmt = kMAX_MP_TOKEN_AMOUNT}};
+
+            // Covers OfferCreate::flowCross() sendMax calculation. A large
+            // non-issuer MPT offer with a transfer fee used to overflow in
+            // multiplyRound() before the offer could be placed.
+            auto constexpr offerAmount = 1'230'000'000'000'000'000LL;
+            auto const takerSeq = env.seq(taker);
+            env(offer(taker, XRP(1), token(offerAmount)));
+            env.close();
+
+            BEAST_EXPECT(env.le(keylet::offer(taker.id(), takerSeq)) != nullptr);
+            BEAST_EXPECT(env.balance(taker, token) == token(takerFunds));
+        }
+
+        // Each scenario below targets a BookStep/OfferStream overflow path.
+        // The expected behavior is the same in all cases: remove the unusable
+        // book tip offer and let the taker's crossing offer remain rather than
+        // returning tecINTERNAL with the poison offer still on-ledger.
         {
             Env env{*this, features};
             env.fund(XRP(10'000), issuer, taker);
